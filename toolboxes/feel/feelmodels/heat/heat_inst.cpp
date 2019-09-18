@@ -1,6 +1,6 @@
 
 #include "heatconfig.h"
-#include <feel/feelmodels/heat/heatassembly.cpp>
+#include <feel/feelmodels/heat/heat.cpp>
 
 namespace Feel {
 namespace FeelModels {

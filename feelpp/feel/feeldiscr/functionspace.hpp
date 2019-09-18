@@ -2664,7 +2664,7 @@ public:
 
         value_type localToGlobal( index_type e, index_type l, int c ) const
         {
-            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=M_functionspace->dof()->localToGlobal( e, l, c ).index();
             return super::operator()( index );
         }
 #if 0
@@ -3099,19 +3099,19 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto const& rangeElt : elements( P0h->mesh() ) )
+            for ( auto const& rangeElt : P0h->template rangeElements<0>() /*elements( P0h->mesh() )*/ )
             {
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
                 index_type eid = meshElt.id();
 
-                index_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
+                index_type dofp0 = P0h->dof()->localToGlobal( eid, 0, 0 ).index();
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
 
                 index_type dofpn = 0;
 
                 for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
                 {
-                    dofpn = boost::get<0>( this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ) );
+                    dofpn = this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
                     values[local_id] = this->operator()( dofpn );
                 }
 
@@ -4090,13 +4090,14 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+        BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
                                          save,
                                          tag,
                                          ( required
                                            ( path,* ) )
                                          ( optional
-                                           ( type,( std::string ),std::string( "binary" ) )
+                                           ( name,( std::string ), M_name )
+                                           ( type,( std::string ),std::string( "default" ) )
                                            ( suffix,( std::string ),std::string( "" ) )
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
@@ -4104,7 +4105,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            saveImpl( path, type, suffix, sep );
+            saveImpl( Environment::expand( path ), name, type, suffix, sep );
         }
 
         //!
@@ -4114,8 +4115,24 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filenames
         //!
-        void saveImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "") const
         {
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( typeUsed != "binary" && typeUsed != "text" && typeUsed != "xml" &&  typeUsed != "hdf5" )
+            {
+                LOG(WARNING)  << "[save] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return;
+            }
+
             // if directory does not exist, create it only by one process
             if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
@@ -4124,39 +4141,42 @@ public:
             // wait creating directory
             this->worldComm().barrier();
 
-            std::ostringstream os1;
-            os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-            fs::path p = fs::path( path ) / os1.str();
-            LOG(INFO) << "saving "  << p << "\n";
-
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                fs::ofstream ofs( p );
-                boost::archive::binary_oarchive oa( ofs );
-                oa << *this;
-            }
+                std::ostringstream os1;
+                os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                fs::path p = fs::path( path ) / os1.str();
+                LOG(INFO) << "saving "  << p << "\n";
 
-            else if ( type == "text" )
-            {
-                fs::ofstream ofs( p );
-                boost::archive::text_oarchive oa( ofs );
-                oa << *this;
-            }
+                if ( typeUsed == "binary" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::binary_oarchive oa( ofs );
+                    oa << *this;
+                }
 
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_oarchive oa(ofs);
-                //oa << *this;
+                else if ( typeUsed == "text" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::text_oarchive oa( ofs );
+                    oa << *this;
+                }
+
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_oarchive oa(ofs);
+                    //oa << *this;
+                }
             }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
                 std::ostringstream os2;
-                os2 << M_name << sep << suffix << ".h5";
+                os2 << name << sep << suffix << ".h5";
                 fs::path filename = fs::path( path ) / os2.str();
 #ifdef FEELPP_HAS_HDF5
                 this->saveHDF5( filename.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
         }
@@ -4167,7 +4187,8 @@ public:
             ( required
               ( path,* ) )
             ( optional
-              ( type,( std::string ),std::string( "binary" ) )
+              ( name,( std::string ), M_name )
+              ( type,( std::string ),std::string( "default" ) )
               ( suffix,( std::string ),std::string( "" ) )
               ( sep,( std::string ),std::string( "" ) )
             )
@@ -4176,7 +4197,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            return loadImpl( path, type, suffix, sep );
+            return loadImpl( Environment::expand( path ), name, type, suffix, sep );
         }
         //!
         //! load function space element from file
@@ -4185,82 +4206,94 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filename
         //!
-        bool loadImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
         {
-            fs::path partial_path = fs::path(path);
-            fs::path full_path_dir_sol(fs::current_path());
-            full_path_dir_sol = full_path_dir_sol/partial_path;
-
-            std::ostringstream os1;
-            std::ostringstream os2;
-            std::ostringstream os3;
+            std::ostringstream oss;
             fs::path p;
 
-            if ( type == "hdf5" )
+            if ( !fs::exists( path ) )
             {
-                os3 << M_name << sep << suffix << ".h5";
-                p = fs::path( path ) / os3.str();
+                LOG(WARNING) << "[load] : directory or file " << p << " not exists";
+                return false;
+            }
+
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( fs::is_directory(path) )
+            {
+                if ( typeUsed == "hdf5" )
+                    oss << name << sep << suffix << ".h5";
+                else
+                    oss << name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                p = fs::path(path)/oss.str();
+
                 if ( !fs::exists( p ) )
                 {
-                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os3.str() << " DO NOT EXIST" << std::endl ;
-                    //std::cerr << "ATTENTION :  p does not exist
+                    LOG(WARNING) << "[load] : file " << p << " not exists";
+                    return 0;
+                }
+                if ( !fs::is_regular_file( p ) )
+                {
+                    LOG(WARNING) << "[load] : file " << p << " is not a  regular_file";
                     return 0;
                 }
             }
+            else if ( fs::is_regular_file( path ) )
+            {
+                p = path;
+            }
             else
             {
-                os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-                p = fs::path( path ) / os1.str();
-                //std::cout << " In load the first full path is " << p << std::endl;
-                if ( !fs::exists( p ) )
-                {
-                    os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
-                    p = fs::path( path ) / os2.str();
-
-                    if ( !fs::exists( p ) )
-                    {
-                        LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
-                        //std::cerr << "ATTENTION :  p does not exist
-                        return 0;
-                    }
-                }
-            }
-            LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
-            if ( !fs::is_regular_file( p ) )
-            {
-                LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                LOG(WARNING) << "[load] : file " << path << " is not a directory or a regular_file";
                 return 0;
             }
 
-            fs::ifstream ifs( p );
 
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                boost::archive::binary_iarchive ia( ifs );
-                ia >> *this;
-            }
+                fs::ifstream ifs( p );
+                if ( typeUsed == "binary" )
+                {
+                    boost::archive::binary_iarchive ia( ifs );
+                    ia >> *this;
+                }
 
-            else if ( type == "text" )
-            {
-                boost::archive::text_iarchive ia( ifs );
-                ia >> *this;
+                else if ( typeUsed == "text" )
+                {
+                    boost::archive::text_iarchive ia( ifs );
+                    ia >> *this;
+                }
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_iarchive ia(ifs);
+                    //ia >> *this;
+                    return false;
+                }
             }
-
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_iarchive ia(ifs);
-                //ia >> *this;
-                return false;
-            }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
                 this->loadHDF5( p.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
+            else
+            {
+                LOG(WARNING)  << "[load] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return false;
+            }
+
             return true;
+
         }
 
         void printMatlab( std::string fname, bool gmsh = false ) const
@@ -4322,9 +4355,15 @@ public:
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                if ( close )
+                {
+                    std::string opUsed = ( accumulate )? "+" : "=";
+                    sync( *this, opUsed, this->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true ) );
+                }
             }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
@@ -4338,9 +4377,10 @@ public:
                                            ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, geomap, true, verbose );
+                this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
 
@@ -5596,7 +5636,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5635,6 +5675,13 @@ private:
 
             }
         }
+    template <typename RangeType>
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && !std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            CHECK(false) << "TODO";
+        }
+
     template <typename RangeType>
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
                typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
@@ -5914,24 +5961,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
-
-    if ( basis_type::nDofPerEdge || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_EDGES;
-
-    /*
-     * update faces info in mesh only if dofs exists on faces or the
-     * expansion is continuous between elements. This case handles strong
-     * Dirichlet imposition
-     */
-    if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_FACES;
-
-    if ( !M_mesh->isUpdatedForUse() )
+    if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
     {
-        M_mesh->components().set( mesh_components );
-        M_mesh->updateForUse();
-    }
 
+        if ( basis_type::nDofPerEdge || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_EDGES;
+
+        /*
+         * update faces info in mesh only if dofs exists on faces or the
+         * expansion is continuous between elements. This case handles strong
+         * Dirichlet imposition
+         */
+        if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_FACES;
+
+        if ( !M_mesh->isUpdatedForUse() )
+        {
+            M_mesh->components().set( mesh_components );
+            M_mesh->updateForUse();
+        }
+    }
     if ( is_periodic )
     {
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
@@ -5939,17 +5988,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_ref_fe = std::make_shared<basis_type>();
 
+    tic();
+    tic();
     M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-
+    toc("FunctionSpace dof-1", FLAGS_v>0);
+    tic();
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
-
+    toc("FunctionSpace dof-2", FLAGS_v>0);
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+    tic();
     M_dof->setDofIndices( dofindices );
+    toc("FunctionSpace dof-3", FLAGS_v>0);
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+    tic();
     if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
         M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
+    toc("FunctionSpace dof-4", FLAGS_v>0);
+    tic();
     M_dof->build( M_mesh );
-
+    toc("FunctionSpace dof-5", FLAGS_v>0);
+    toc("FunctionSpace dof table", FLAGS_v > 0 );
     M_dofOnOff = M_dof;
 
     this->applyUpdateInformationObject();
@@ -6449,6 +6507,14 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
-
+//!
+//! @return the support of a function space
+//!
+template<typename SpaceT>
+typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+support( std::shared_ptr<SpaceT> const& X )
+{
+    return X->template meshSupport<0>();
+}
 
 #endif /* __FunctionSpace_H */

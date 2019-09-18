@@ -267,7 +267,7 @@ class Trace : public ExprDynamicBase
  */
 template <typename ExprT>
 inline Expr<Trace<ExprT>>
-trace( ExprT v )
+trace( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
 {
     typedef Trace<ExprT> trace_t;
     return Expr<trace_t>( trace_t( v ) );

@@ -279,7 +279,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
             static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
             inline static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
-                            :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O ))); \
+                                                     :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O )))|(VF_OP_TYPE_IS_VALUE( T )?vm::INTERPOLANT:vm::BASIS_FUNCTION); \
                                                                         \
                                                                         \
             template<typename Func>                                     \

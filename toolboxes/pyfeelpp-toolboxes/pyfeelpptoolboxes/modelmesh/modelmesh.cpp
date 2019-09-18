@@ -74,11 +74,11 @@ void defToolbox(py::module &m)
         .def( "displacementOnMovingBoundaryInRef", &toolbox_t::displacementOnMovingBoundaryInRef, "returns the displacement on moving boundary in reference domain" )
         .def( "displacementInRef", &toolbox_t::displacementInRef, "returns the displacement in reference domain" )
         .def( "displacement", &toolbox_t::displacement, "returns the displacement field" )
-        .def( "velocity", static_cast<ale_map_element_ptr_t  (toolbox_t::*)()>(&toolbox_t::velocity), "returns the velocity field" )
+        .def( "velocity", &toolbox_t::velocity, "returns the velocity field" )
 
         .def( "revertReferenceMesh", &toolbox_t::revertReferenceMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
         .def( "revertMovingMesh", &toolbox_t::revertMovingMesh, py::arg("updateMeshMeasures") = true, "revert mesh in reference state" )
-        .def( "updateBdf", &toolbox_t::updateBdf, "update BDF" )
+        .def( "updateTimeStep", &toolbox_t::updateTimeStep, "update time step" )
         .def( "exportResults", &toolbox_t::exportResults, py::arg("time")=0., "export results" );
 }
 

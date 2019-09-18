@@ -302,29 +302,38 @@ public :
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
     ModelCrbBase() = delete;
-    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ModelCrbBase( std::string const& name,  worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
-        ModelCrbBase( name, Environment::randomUUID( true ), worldComm )
+        ModelCrbBase( name, Environment::randomUUID( true ), worldComm, prefix )
         {}
-    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
+    ModelCrbBase( std::string const& name, uuids::uuid const& uid, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& prefix = "" )
         :
         super( worldComm ),
+        M_prefix(prefix),
         Dmu( parameterspace_type::New( 0,worldComm ) ),
         XN( new rbfunctionspace_type( worldComm ) ),
         M_backend( backend() ),
         M_crbModelDb( name, uid ),
         M_is_initialized( false ),
-        M_has_displacement_field( false )
+        M_has_displacement_field( false ),
+        M_rebuildDb(boption(_prefix=M_prefix,_name="crb.rebuild-database")),
+        M_dbLoad(ioption(_prefix=M_prefix, _name="crb.db.load" )),
+        M_dbFilename(soption(_prefix=M_prefix, _name="crb.db.filename")),
+        M_dbId(soption(_prefix=M_prefix,_name="crb.db.id")),
+        M_dbUpdate(ioption(_prefix=M_prefix, _name="crb.db.update" )),
+        M_serEimFreq(ioption(_prefix=M_prefix,_name = "ser.eim-frequency")),
+        M_serRbFreq(ioption(_prefix=M_prefix,_name = "ser.rb-frequency")),
+        M_serErrorEstimation(boption(_prefix=M_prefix,_name="ser.error-estimation")),
+        M_crbUseNewton(boption(_prefix=M_prefix,_name="crb.use-newton")),
+        M_isOnlineModel(false)
     {
 
-        bool rebuilddb = boption(_name="crb.rebuild-database");// || ( ioption(_name="crb.restart-from-N") == 0 );
-        if ( !rebuilddb )
+        if ( !M_rebuildDb )
         {
-            int loadmode = ioption( _name="crb.db.load" );
-            switch ( loadmode )
+            switch ( M_dbLoad )
             {
             case 0 :
-                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                M_crbModelDb.updateIdFromDBFilename( M_dbFilename );
                 break;
             case 1:
                 M_crbModelDb.updateIdFromDBLast( crb::last::created );
@@ -333,17 +342,16 @@ public :
                 M_crbModelDb.updateIdFromDBLast( crb::last::modified );
                 break;
             case 3:
-                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                M_crbModelDb.updateIdFromId( M_dbId );
                 break;
             }
         }
         else
         {
-            int updatemode = ioption( _name="crb.db.update" );
-            switch ( updatemode )
+            switch ( M_dbUpdate )
             {
             case 0 :
-                M_crbModelDb.updateIdFromDBFilename( soption( _name="crb.db.filename") );
+                M_crbModelDb.updateIdFromDBFilename( M_dbFilename );
                 break;
             case 1:
                 M_crbModelDb.updateIdFromDBLast( crb::last::created );
@@ -352,7 +360,7 @@ public :
                 M_crbModelDb.updateIdFromDBLast( crb::last::modified );
                 break;
             case 3:
-                M_crbModelDb.updateIdFromId( soption(_name="crb.db.id") );
+                M_crbModelDb.updateIdFromId( M_dbId );
                 break;
             default:
                 // don't do anything and let the system pick up a new unique id
@@ -363,6 +371,7 @@ public :
         if ( this->worldComm().isMasterRank() )
         {
             fs::path modeldir = M_crbModelDb.dbRepository();
+            Feel::cout << "Model repository: " << modeldir.string() << std::endl;
             if ( !fs::exists( modeldir ) )
                 fs::create_directories( modeldir );
             boost::property_tree::ptree ptree;
@@ -387,6 +396,9 @@ public :
      */
     void setModelName( std::string const& name ) { M_crbModelDb.setName( name ); }
 
+    std::string const& prefix() const { return M_prefix; }
+
+    void setPrefix( std::string const& prefix ) { M_prefix = prefix; }
 
     /**
      * Define the model as an online (sequential) model
@@ -400,6 +412,9 @@ public :
     //! functions call by deim to init specific part of the model when online.
     virtual void initOnlineModel()
     {}
+
+    void setOnlineModel() { M_isOnlineModel = true; }
+    bool isOnlineModel() const { return M_isOnlineModel; }
 
     //!
     //! unique id for CRB Model
@@ -976,7 +991,7 @@ public :
 
     virtual void assemble()
     {
-        if( (ioption(_name = "ser.eim-frequency") != 0) || (ioption(_name = "ser.rb-frequency") != 0) )
+        if( (M_serEimFreq != 0) || (M_serRbFreq != 0) )
         {
             Feel::cout << "************************************************************************ \n"
                        << "** SER method is asked without implementation of assemble() function. ** \n"
@@ -1085,7 +1100,7 @@ public :
 
     virtual affine_decomposition_type computePicardAffineDecomposition()
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs     **"<<std::endl;
@@ -1244,7 +1259,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1331,7 +1346,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( parameter_type const& mu ,  double time , bool only_terms_time_dependent=false)
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1340,6 +1355,41 @@ public :
         }
         return computeBetaQm( mu, time , only_terms_time_dependent );
     }
+
+
+
+    virtual std::vector<double> computeBetaTri( parameter_type const& mu )
+        {
+            return M_betaTri;
+        }
+
+    virtual sparse_matrix_ptrtype assembleTrilinearJ( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearJ to use trilinear crb models\n";
+            sparse_matrix_ptrtype M;
+            return M;
+        }
+    virtual vector_ptrtype assembleTrilinearR( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearR to use trilinear crb models\n";
+            vector_ptrtype R;
+            return R;
+        }
+    virtual sparse_matrix_ptrtype assembleTrilinearOperator( element_type const& u, int const& q )
+        {
+            CHECK(false) << "You have to implement assembleTrilinearOperator to use trilinear crb models\n";
+            sparse_matrix_ptrtype M;
+            return M;
+        }
+
+    virtual int sizeOfBilinearJ() const
+        { return -1; }
+
+    virtual int sizeOfLinearR() const
+        { return -1; }
+
+    virtual bool hasZeroMeanPressure()
+        { return false; }
 
     void buildGinacBetaExpressions( parameter_type const& mu )
     {
@@ -1472,7 +1522,7 @@ public :
 
     virtual betaqm_type computePicardBetaQm( element_type const& u , parameter_type const& mu )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1483,7 +1533,7 @@ public :
     }
     virtual betaqm_type computePicardBetaQm( element_type const& u, parameter_type const& mu ,  double time , bool only_time_dependent_terms=false )
     {
-        if( this->worldComm().isMasterRank() && boption(_name="ser.error-estimation") && boption(_name="crb.use-newton") )
+        if( this->worldComm().isMasterRank() && M_serErrorEstimation && M_crbUseNewton )
         {
             std::cout<<"****************************************************************"<<std::endl;
             std::cout<<"** Use of SER error estimation with newton needs"<<std::endl;
@@ -1572,6 +1622,11 @@ public :
      * but non-linear : yes
      * and also those using CRBTrilinear
      */
+    virtual std::pair<element_type,bool> safeSolve( parameter_type const& mu )
+        {
+            element_type u = solve( mu );
+            return std::make_pair( u, true );
+        }
     virtual element_type solve( parameter_type const& mu )
     {
         element_type solution;
@@ -2052,6 +2107,7 @@ public:
     {
         return Xh->mesh();
     }
+
     /**
      * \brief Returns the function space
      */
@@ -2098,6 +2154,8 @@ public:
 
 
 protected :
+    std::string M_prefix;
+
     parameterspace_ptrtype Dmu;
     functionspace_ptrtype Xh;
     rbfunctionspace_ptrtype XN;
@@ -2149,6 +2207,7 @@ protected :
     std::vector< std::string > M_symbols_vec;
     std::string M_symbolicExpressionBuildDir;
 
+    std::vector<double> M_betaTri;
     beta_vector_type M_betaAqm;
     beta_vector_type M_betaMqm;
     std::vector<beta_vector_type> M_betaFqm;
@@ -2167,6 +2226,17 @@ protected :
     std::map<int,double> M_eim_error_aq;
     std::vector< std::map<int,double> > M_eim_error_fq;
 
+    bool M_rebuildDb;
+    int M_dbLoad;
+    std::string M_dbFilename;
+    std::string M_dbId;
+    int M_dbUpdate;
+    int M_serEimFreq;
+    int M_serRbFreq;
+    bool M_serErrorEstimation;
+    bool M_crbUseNewton;
+
+    bool M_isOnlineModel;
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };

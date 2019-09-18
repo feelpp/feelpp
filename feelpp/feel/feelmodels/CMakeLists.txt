@@ -23,7 +23,9 @@
 #
 
 SET( SRC
-  modelproperties.cpp modelmodels.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp modelfunctions.cpp modeloutputs.cpp modelexpression.cpp modelboundaryconditions.cpp modelmarkers.cpp
+  modelproperties.cpp modelmodels.cpp modelparameters.cpp modelmaterials.cpp modelpostprocess.cpp
+  modelfunctions.cpp modeloutputs.cpp modelexpression.cpp modelboundaryconditions.cpp modelinitialconditions.cpp
+  modelmarkers.cpp modelindexes.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp  )

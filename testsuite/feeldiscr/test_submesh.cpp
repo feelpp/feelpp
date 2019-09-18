@@ -31,7 +31,15 @@
 #define BOOST_TEST_MODULE submesh testsuite
 #include <feel/feelcore/testsuite.hpp>
 
-#include <feel/feel.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelmesh/meshmover.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 
 const double DEFAULT_MESH_SIZE=0.1;
 
@@ -78,7 +86,7 @@ struct test_submesh: public Application
     void operator()()
     {
         //mesh_ptrtype meshbdy( new mesh_type );
-        auto meshbdy = createSubmesh( mesh, boundaryelements( mesh ) );
+        auto meshbdy = createSubmesh( _mesh=mesh, _range=boundaryelements( mesh ) );
         BOOST_CHECK_EQUAL( nelements(elements(meshbdy),false), nelements( boundaryelements( mesh ) ) );
         //saveGMSHMesh( _mesh=meshbdy, _filename=shape+"_sub.msh" );
         using namespace Feel::vf;
@@ -98,7 +106,7 @@ struct test_submesh: public Application
 
 
         //mesh_ptrtype meshint( new mesh_type );
-        auto meshint = createSubmesh( mesh, internalelements(mesh) );
+        auto meshint = createSubmesh( _mesh=mesh, _range=internalelements(mesh) );
         BOOST_CHECK_EQUAL( nelements(elements(meshint),false), nelements(internalelements(mesh)) );
         //saveGMSHMesh( _mesh=meshbdy, _filename="meshbdy" );
 
@@ -215,7 +223,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
 
     boost::mpi::timer t;
     // with optimization
-    auto mesh2 = createSubmesh( mesh, boundaryelements( mesh ) );
+    auto mesh2 = createSubmesh( _mesh=mesh, _range=boundaryelements( mesh ) );
     auto Yh = Pch<1>( mesh2 );
 
     auto opI=opInterpolation( _domainSpace=Xh,
@@ -232,7 +240,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh2, T, dim2_types )
 
     // without optimization
     t.restart();
-    auto mesh3 = createSubmesh( mesh, boundaryelements( mesh ), 0 );
+    auto mesh3 = createSubmesh( _mesh=mesh, _range=boundaryelements( mesh ), _context=0 );
     auto Zh = Pch<1>( mesh3 );
 
     auto opI2=opInterpolation( _domainSpace=Xh,
@@ -305,7 +313,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
 
     BOOST_TEST_MESSAGE("optimized version");
     // with optimization
-    auto mesh2 = createSubmesh( mesh, elements( mesh ) );
+    auto mesh2 = createSubmesh( _mesh=mesh, _range=elements( mesh ) );
     auto Yh = Pch<2>( mesh2 );
     auto u = Yh->element();
 
@@ -329,7 +337,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     {
     BOOST_TEST_MESSAGE("non optimized version");
     // without optimization
-    auto mesh3 = createSubmesh( mesh, allelements( mesh ), 0 );
+    auto mesh3 = createSubmesh( _mesh=mesh, _range=allelements( mesh ), _context=0 );
     BOOST_TEST_MESSAGE( "mesh generated" );
     //LOG(INFO) << "mesh generated\n";     google::FlushLogFiles(google::GLOG_INFO);
     BOOST_CHECK_EQUAL( mesh->numElements(), mesh3->numElements() );
@@ -361,4 +369,113 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh3, T, dim2_types )
     } // if (Environment::worldComm().size() == 1)
 
 }
+
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_submesh_view, T, dim2_types )
+    //BOOST_AUTO_TEST_CASE( test_submesh_view, T, dim2_types )
+{
+    using namespace Feel;
+    static const int nDim = T::value;
+    typedef Mesh<Simplex<nDim>> mesh_type;
+
+    std::shared_ptr<mesh_type> mesh;
+    int nBoundaryMarker = 4;
+    std::string exprDispStr = "{0,0.1*sin(3*pi*x)}:x";
+    double meshSize = doption(_name="gmsh.hsize");
+    if constexpr ( nDim == 2 )
+    {
+        GeoTool::Node x1( 0,0 );
+        GeoTool::Node x2( 1,1 );
+        GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
+        R.setMarker(_type="line",_name="Boundary0",_marker1=true);
+        R.setMarker(_type="line",_name="Boundary1",_marker2=true);
+        R.setMarker(_type="line",_name="Boundary2",_marker3=true);
+        R.setMarker(_type="line",_name="Boundary3",_marker4=true);
+        R.setMarker(_type="surface",_name="Omega",_markerAll=true);
+        mesh = R.createMesh( _mesh=new mesh_type,_name="domainRectangle" );
+    }
+    else
+    {
+        GeoTool::Node x1(0,0,0);
+        GeoTool::Node x2(1,1,1);
+        GeoTool::Cube C( meshSize,"OMEGA",x1,x2);
+        C.setMarker(_type="surface",_name="Boundary0",_marker1=true);
+        C.setMarker(_type="surface",_name="Boundary1",_marker2=true);
+        C.setMarker(_type="surface",_name="Boundary2",_marker3=true);
+        C.setMarker(_type="surface",_name="Boundary3",_marker4=true);
+        C.setMarker(_type="surface",_name="Boundary4",_marker5=true);
+        C.setMarker(_type="surface",_name="Boundary5",_marker6=true);
+        C.setMarker(_type="volume",_name="Omega",_markerAll=true);
+        mesh = C.createMesh( _mesh=new mesh_type,_name="domainCube" );
+        nBoundaryMarker=6;
+        exprDispStr = "{0,0.1*sin(3*pi*x),0.1*sin(3*pi*y)}:x:y";
+    }
+
+    std::vector<faces_reference_wrapper_t<mesh_type>> rangeSubmesh;
+    std::vector< typename mesh_type::trace_mesh_ptrtype> submesh;
+    std::vector<double> measureInitial;
+    for (int k=0;k<nBoundaryMarker;++k)
+    {
+        rangeSubmesh.push_back( markedfaces(mesh,(boost::format("Boundary%1%")%k).str() ) );
+        submesh.push_back( createSubmesh( _mesh=mesh, _range=rangeSubmesh[k],_view=true ) );
+
+        double measureParent = measure(_range=rangeSubmesh[k] );
+        double measureSubmesh = measure(_range=elements(submesh[k]));
+        double measureSubmesh2 = submesh[k]->measure();
+        BOOST_CHECK_CLOSE( measureParent, measureSubmesh, 1e-10 );
+        if ( false ) // NOT WORK IN 3D, need to understant the bug with submesh[k]->measure();
+            BOOST_CHECK_CLOSE( measureParent, measureSubmesh2, 1e-10  );
+        measureInitial.push_back( measureParent );
+    }
+
+    auto Vh = Pchv<1>( mesh );
+    auto uDisp = Vh->element();
+
+    auto exprDisp = expr<mesh_type::nDim,1>( exprDispStr );
+    uDisp.on(_range=elements(mesh),_expr=exprDisp );
+
+    meshMove( mesh,uDisp );
+
+    for (int k=0;k<nBoundaryMarker;++k)
+    {
+        double measureParent = measure(_range=rangeSubmesh[k] );
+        double measureSubmesh = measure(_range=elements(submesh[k]));
+        double measureSubmesh2 = submesh[k]->measure();
+        BOOST_CHECK_CLOSE( measureParent, measureSubmesh, 1e-10  );
+        if ( false ) // NOT WORK IN 3D, need to understant the bug with submesh[k]->measure();
+            BOOST_CHECK_CLOSE( measureParent, measureSubmesh2, 1e-10  );
+    }
+
+    auto submeshFace = createSubmesh( _mesh=mesh,_range=faces(mesh),_view=true,_update=0 );
+    auto VhF = Pchv<1>( submeshFace );
+    auto uDispF = VhF->element();
+
+    //uDispF.on(_range=elements(submeshFace),_expr= -idv(uDisp) ); // use localization, not mesh relation
+    uDispF.on(_range=faces(mesh),_expr= -idv(uDisp) );
+
+    meshMove( submeshFace,uDispF );
+
+    for (int k=0;k<nBoundaryMarker;++k)
+    {
+        double measureParent = measure(_range=rangeSubmesh[k] );
+        double measureSubmesh = measure(_range=elements(submesh[k]));
+        double measureSubmesh2 = submesh[k]->measure();
+        BOOST_CHECK_CLOSE( measureParent, measureSubmesh, 1e-10  );
+        if ( false ) // NOT WORK IN 3D, need to understant the bug with submesh[k]->measure();
+            BOOST_CHECK_CLOSE( measureParent, measureSubmesh2, 1e-10  );
+        BOOST_CHECK_CLOSE( measureParent, measureInitial[k], 1e-10  );
+    }
+
+    // check meshesWithNodesShared data
+    int nMeshWithNodeShared = 2 + submesh.size();
+    BOOST_CHECK_EQUAL( mesh->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    for ( int k=0;k< submesh.size();++k )
+        BOOST_CHECK_EQUAL( submesh[k]->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    BOOST_CHECK_EQUAL( submeshFace->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    submeshFace->clear();
+    --nMeshWithNodeShared;
+    BOOST_CHECK_EQUAL( mesh->meshesWithNodesShared().size(), nMeshWithNodeShared );
+    for ( int k=0;k< submesh.size();++k )
+        BOOST_CHECK_EQUAL( submesh[k]->meshesWithNodesShared().size(), nMeshWithNodeShared );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

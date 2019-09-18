@@ -357,7 +357,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
                                                                 return false;
                                                             });
 
-    auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
 
     M_Vh = Pdhms<Order>( M_mesh, true );
@@ -371,7 +371,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
         ibc_markers.push_back(M_IBCList[i].marker());
     }
 
-    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( _mesh=M_mesh, _range=markedfaces(M_mesh, ibc_markers), _update=0 );
     M_Ch = Pchv<0>( ibc_mesh, true );
     // M_Ch = Pchv<0>( M_mesh, true );
 

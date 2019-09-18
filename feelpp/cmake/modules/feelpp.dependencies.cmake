@@ -352,6 +352,7 @@ ELSE ()
   CHECK_FUNCTION_EXISTS (dlopen FEELPP_HAS_DLOPEN)
 ENDIF (FEELPP_HAS_LIBDL)
 
+if ( 0 )
 find_package(GMP)
 if ( GMP_FOUND )
   SET(FEELPP_LIBRARIES  ${GMP_LIBRARIES} ${FEELPP_LIBRARIES})
@@ -365,7 +366,7 @@ if ( GMM_FOUND )
   include_directories(${GMM_INCLUDE_DIR})
   SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Gmm" )
 endif()
-
+endif()
 #
 # Intel MKL
 #

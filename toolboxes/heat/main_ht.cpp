@@ -3,7 +3,7 @@
 #include <feel/feelmodels/heat/heat.hpp>
 
 template <int nDim,int OrderT>
-void
+int
 runApplicationHeat()
 {
     using namespace Feel;
@@ -37,6 +37,7 @@ runApplicationHeat()
             heat->exportResults();
         }
     }
+    return !heat->checkResults();
 }
 
 int
@@ -71,13 +72,14 @@ main(int argc, char**argv )
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
 #endif
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+    int status = 0;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )
                     {
                         constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                         constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                         if ( dimension == _dim && discretization == _discretization )
-                            runApplicationHeat<_dim,_torder>();
+                            status = runApplicationHeat<_dim,_torder>();
                     } );
-    return 0;
+    return status;
 }

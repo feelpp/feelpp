@@ -388,14 +388,14 @@ Mesh3D<GEOSHAPE, T, IndexT>::~Mesh3D()
 template <typename GEOSHAPE, typename T, typename IndexT>
 void Mesh3D<GEOSHAPE, T, IndexT>::clear()
 {
+    super::clear();
     super_elements::clear();
     super_points::clear();
     super_faces::clear();
     super_edges::clear();
 
     M_e2e.resize( boost::extents[0][0] );
-    FEELPP_ASSERT( isEmpty() )
-        .error( "all mesh containers should be empty after a clear." );
+    CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
 }
 
 template <typename GEOSHAPE, typename T, typename IndexT>

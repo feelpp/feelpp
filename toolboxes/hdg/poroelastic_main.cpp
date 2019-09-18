@@ -65,7 +65,7 @@ runApplicationPoroelastic()
     else if ( soption( "gmsh.submesh" ).empty() )
     {
         Feel::cout << "Using submesh for Elasticity: " << soption("hdg.elasticity.gmsh.submesh") << std::endl;
-        auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
+        auto cmeshElasticity = createSubmesh( _mesh=mesh, _range=markedelements(mesh,listSubmesh ) );
 
         Idh_el = IPtr( _domainSpace=Pdhv<OrderT>(cmeshElasticity), _imageSpace=Pdhv<OrderT>(mesh) );
         Idhv_el = IPtr( _domainSpace=Pdhms<OrderT>(cmeshElasticity), _imageSpace=Pdhms<OrderT>(mesh) );
@@ -77,7 +77,7 @@ runApplicationPoroelastic()
     else if ( soption("hdg.elasticity.gmsh.submesh").empty() )
     {
         Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
-        auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
+        auto cmeshPoisson = createSubmesh( _mesh=mesh, _range=markedelements(mesh,soption("gmsh.submesh")) );
 
         Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
         Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );
@@ -90,8 +90,8 @@ runApplicationPoroelastic()
         Feel::cout << "Using submesh for Poisson: " << soption("gmsh.submesh") << std::endl;
         Feel::cout << "Using submesh for Elasticity: " << soption("hdg.elasticity.gmsh.submesh") << std::endl;
 
-        auto cmeshPoisson = createSubmesh( mesh, markedelements(mesh,soption("gmsh.submesh")), Environment::worldComm() );
-        auto cmeshElasticity = createSubmesh( mesh, markedelements(mesh,listSubmesh ), Environment::worldComm() );
+        auto cmeshPoisson = createSubmesh( _mesh=mesh, _range=markedelements(mesh,soption("gmsh.submesh")) );
+        auto cmeshElasticity = createSubmesh( _mesh=mesh, _range=markedelements(mesh,listSubmesh ) );
 
         Idh_poi = IPtr( _domainSpace=Pdh<OrderT>(cmeshPoisson), _imageSpace=Pdh<OrderT>(mesh) );
         Idhv_poi = IPtr( _domainSpace=Pdhv<OrderT>(cmeshPoisson), _imageSpace=Pdhv<OrderT>(mesh) );

@@ -38,7 +38,7 @@ namespace vf
    \brief handler for unary plus expression
 */
 template < class ExprT >
-class UnaryPlus
+class UnaryPlus : public ExprDynamicBase
 {
 public:
 
@@ -104,7 +104,8 @@ public:
     {
         M_expr.setParameterValues( mp );
     }
-
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
+    
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
@@ -223,7 +224,7 @@ operator + ( const Expr<T>& expr )
    \brief handler for unary minus expression
 */
 template < class ExprT >
-class UnaryMinus
+class UnaryMinus : public ExprDynamicBase
 {
 public:
 
@@ -306,7 +307,7 @@ public:
     {
         M_expr.setParameterValues( mp );
     }
-
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
