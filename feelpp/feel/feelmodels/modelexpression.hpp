@@ -26,6 +26,7 @@
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelmodels/modelindexes.hpp>
 
 namespace Feel {
 
@@ -108,7 +109,7 @@ public :
     void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = boost::optional<expr_matrix33_type>( expr ); }
 
     //! set an expression from a key of a ptree p
-    void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr );
+    void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
     void setExpr( std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" );
 
     void setParameterValues( std::map<std::string,double> const& mp )

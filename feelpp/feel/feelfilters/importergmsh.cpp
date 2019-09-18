@@ -26,61 +26,58 @@
 namespace Feel
 {
 #if defined(FEELPP_HAS_GMSH_H)
+#if !defined( FEELPP_HAS_GMSH_API )
 // EDF MED format
 const auto med = GmshReaderFactory::instance().emplace( ".med",
-                                                        []( std::string fname )
+                                                        []( std::string const& fname,std::string const& gname )
                                                         {
+                                                            GModel *m = new GModel( gname );
                                                             int status = 1;
 #ifdef FEELPP_HAS_GMSH_HAS_MED
-                                                            status = GModel::readMED(fname);
-                                                            GModel *gm = new GModel();
-                                                            gm = GModel::current();
-                                                            auto m = std::make_shared<GModel>( *gm );
+                                                            status = m->readMED(fname);
 #else
-                                                            auto m = std::make_shared<GModel>();
                                                             throw std::logic_error("Gmsh MED support is not available. Cannot load MED file");
 #endif
-                                                            return std::make_pair( status, m );
+                                                            return status;
                                                         });
 // Medit inria format
 const auto mesh = GmshReaderFactory::instance().emplace( ".mesh",
-                                                         []( std::string fname )
+                                                         []( std::string const& fname,std::string const& gname )
                                                          {
-                                                             auto m = std::make_shared<GModel>();
-
+                                                             GModel *m = new GModel( gname );
                                                              int status = m->readMESH(fname);
-                                                             return std::make_pair( status, m );
+                                                             return status;
                                                          });
 // Nastran Bulk Data File format
 const auto reader_bdf = GmshReaderFactory::instance().emplace( ".bdf",
-                                                               []( std::string fname )
+                                                               []( std::string const& fname,std::string const& gname )
                                                                {
-                                                                   auto m = std::make_shared<GModel>();
+                                                                   GModel *m = new GModel( gname );
                                                                    int status = m->readBDF(fname);
-                                                                   return std::make_pair( status, m );
+                                                                   return status;
                                                                });
 // Plot3D files
 const auto reader_p3d = GmshReaderFactory::instance().emplace( ".p3d",
-                                                               []( std::string fname )
+                                                               []( std::string const& fname,std::string const& gname )
                                                                {
-                                                                   auto m = std::make_shared<GModel>();
+                                                                   GModel *m = new GModel( gname );
                                                                    int status = m->readP3D(fname);
-                                                                   return std::make_pair( status, m );
+                                                                   return status;
                                                                });
 // CFD General Notation System files
 const auto reader_cgns = GmshReaderFactory::instance().emplace( ".cgns",
-                                                                []( std::string fname )
+                                                                []( std::string const& fname,std::string const& gname )
                                                                 {
-                                                                    auto m = std::make_shared<GModel>();
+                                                                    GModel *m = new GModel( gname );
                                                                     int status = 1;
 #ifdef FEELPP_HAS_GMSH_HAS_CGNS
                                                                     status = m->readCGNS(fname);
 #else
                                                                     throw std::logic_error("Gmsh CGNS(HDF) support is not available. Cannot load CGNS file");
 #endif
-                                                                    return std::make_pair( status, m );
+                                                                    return status;
                                                                 });
-
+#endif
 
 #endif // FEELPP_HAS_GMSH_H
 namespace detail
@@ -123,7 +120,15 @@ void SwapBytes(char *array, int size, int n)
 }
 #endif
 
-
+#if defined( FEELPP_HAS_GMSH_API )
+int getInfoMSH(const int typeMSH, std::string & elementName)
+{
+    int dim, order, numNodes;
+    std::vector<double> parametricCoord;
+    gmsh::model::mesh::getElementProperties( typeMSH,elementName,dim,order,numNodes,parametricCoord );
+    return numNodes;
+}
+#else
 int getInfoMSH(const int typeMSH, const char **const name)
 {
     CHECK(typeMSH != MSH_POLYG_ && typeMSH != MSH_POLYH_ && typeMSH != MSH_POLYG_B)
@@ -274,5 +279,8 @@ int getInfoMSH(const int typeMSH, const char **const name)
         if(name) *name = "Unknown";
         return 0;
     }
+
 #endif // FEELPP_HAS_GMSH_H
 }
+
+#endif // !FEELPP_HAS_GMSH_API

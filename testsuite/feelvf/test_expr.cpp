@@ -101,6 +101,14 @@ public:
             Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
             return std::stod( locals.at("expected_value") );
         }
+
+    template<typename ScalarFieldT, typename ExprT>
+    double evaluateWithForm1( ScalarFieldT const& u, ExprT const& e )
+        {
+            auto l = form1( _test = u.functionSpace() );
+            l = integrate( _range=elements(mesh), _expr=id(u)*e );
+            return l(u);
+        }
     
     template<typename ExprT>
     void check( ExprT const& e, double expected_value, double tolerance = 1e-10 )
@@ -119,6 +127,11 @@ public:
         {
             double v = integrate( _range=boundaryfaces(mesh), _expr=e ).evaluate()( 0, 0 );
             BOOST_CHECK_SMALL( v, tolerance );
+        }
+    
+    void checkClose( double v1, double v2, double tolerance = 1e-10 )
+        {
+            BOOST_CHECK_CLOSE( v1, v2, tolerance );
         }
     std::shared_ptr<mesh_type> mesh;
 };
@@ -179,6 +192,15 @@ BOOST_AUTO_TEST_CASE( t1 )
     BOOST_CHECK_EQUAL( hasValue( staticContext( e1 ), vm::POINT ), false );
     expected_v = t.evaluateWithSympy( "sin(1+z)" );
     t.check( e1, expected_v, 1e-2 );
+
+
+    auto e2 = expr( "6*x:x" );
+    BOOST_CHECK_EQUAL( hasDynamicContext( e1 ), true );
+    BOOST_CHECK_EQUAL( vm::hasJACOBIAN( dynamicContext( e1 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasPOINT( dynamicContext( e1 ) ), true );
+    BOOST_CHECK_EQUAL( hasValue( staticContext( e1 ), vm::POINT ), false );
+    expected_v = t.evaluateWithSympy( "6*x" );
+    t.check( e2, expected_v );
 }
 
 BOOST_AUTO_TEST_CASE( t2 )
@@ -281,6 +303,32 @@ BOOST_AUTO_TEST_CASE( t3 )
     BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e4 ) ), true );
     expected_v = t.evaluateWithSympy( "3" );
     t.checkOnBoundary( e4, expected_v );
+}
+BOOST_AUTO_TEST_CASE( t4 )
+{
+    using namespace Feel::vf;
+    TestIntegrate<3> t;
+    auto mesh = t.mesh;
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+    
+    u.on(_range=elements(mesh), _expr=expr("1"));
+    auto e0 = expr( "6*x:x");
+    
+    BOOST_CHECK_EQUAL( hasDynamicContext( e0 ), true );
+    BOOST_CHECK_EQUAL( vm::hasJACOBIAN( dynamicContext( e0 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasGRAD( dynamicContext( e0 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasKB( dynamicContext( e0 ) ), false );
+    BOOST_CHECK_EQUAL( vm::hasPOINT( dynamicContext( e0 ) ), true );
+    BOOST_CHECK_EQUAL( vm::hasNORMAL( dynamicContext( e0 ) ), false );
+    double expected_v1 = t.evaluateWithForm1( u, -e0 );
+    double expected_v2 = t.evaluateWithSympy( "-6*x" );
+    t.checkClose( expected_v1, expected_v2 );
+
+    expected_v1 = t.evaluateWithForm1( u, +e0 );
+    expected_v2 = t.evaluateWithSympy( "+6*x" );
+    t.checkClose( expected_v1, expected_v2 );
+
 }
 BOOST_AUTO_TEST_SUITE_END()
 

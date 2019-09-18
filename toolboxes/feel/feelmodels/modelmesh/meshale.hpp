@@ -94,11 +94,6 @@ public :
     typedef typename ale_map_functionspace_type::element_type ale_map_element_type;
     typedef std::shared_ptr<ale_map_element_type> ale_map_element_ptrtype;
 
-    typedef FunctionSpace< mesh_type, bases<Lagrange< mesh_type::nOrder/*-1*/,Vectorial,Discontinuous> > > ale_map_functionspacedisc_type;
-    typedef std::shared_ptr<ale_map_functionspacedisc_type> ale_map_functionspacedisc_ptrtype;
-    typedef typename ale_map_functionspacedisc_type::element_type ale_map_elementdisc_type;
-    typedef std::shared_ptr<ale_map_elementdisc_type> ale_map_elementdisc_ptrtype;
-
 
     typedef Bdf< ale_map_functionspace_ref_type > bdf_ale_displacement_ref_type;
     typedef std::shared_ptr<bdf_ale_displacement_ref_type> bdf_ale_displacement_ref_ptrtype;
