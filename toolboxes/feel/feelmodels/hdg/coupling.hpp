@@ -383,7 +383,7 @@ CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces(){
             }
             return false; });
 		/
-    	auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    	auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
     	this->M_Mh = Pdh<Order>( face_mesh, true );
     	this->M_M0h = Pdh<0>( face_mesh );
@@ -394,7 +394,7 @@ CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces(){
          	0d_markers.push_back(M_0dList[i].marker());
      	}
 
-     	auto 0d_mesh = createSubmesh( this->mesh(), markedfaces(this->mesh(), 0d_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+     	auto 0d_mesh = createSubmesh( _mesh=this->mesh(), _range=markedfaces(this->mesh(), 0d_markers), _update=0 );
     	this->M_Ch = Pch<0>( 0d_mesh, true );
 		*/
     	// auto zeroSpaces = boost::make_shared<ProductSpace<Ch_ptr_t,true> >( 2*M_0dCondition, this->M_Ch);
