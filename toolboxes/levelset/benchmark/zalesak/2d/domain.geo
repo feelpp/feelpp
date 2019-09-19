@@ -1,13 +1,13 @@
 // In this file we describe the full domain, which is a square
 
 // mesh size
-h=5.0;
+h=0.05;
 
 // square bounds
-xmin = 0;
-xmax = 100;
-ymin = 0;
-ymax = 100;
+xmin = 0.0;
+xmax = 1.0;
+ymin = 0.0;
+ymax = 1.0;
 
 // square vertices
 Point(1) = {xmin,ymin,0.0,h};
