@@ -151,6 +151,17 @@ public:
     //@{
     GinacExVF() : super(){}
 
+    explicit GinacExVF( value_type value )
+        :
+        super(),
+        M_cfun( new GiNaC::FUNCP_CUBA() ),
+        M_exprDesc( std::to_string( value ) ),
+        M_isPolynomial( true ),
+        M_polynomialOrder( 0 ),
+        M_isNumericExpression( true ),
+        M_numericValue( value )
+        {}
+
     explicit GinacExVF( ginac_expression_type const & fun,
                         std::vector<GiNaC::symbol> const& syms,
                         std::string const& exprDesc,
@@ -288,7 +299,7 @@ public:
                         });
         return indices_vec;
     }
-    bool isZero() const { return M_fun.is_zero(); }
+    bool isZero() const { return M_isNumericExpression? (M_numericValue == 0) : M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     std::string const& exprDesc() const { return M_exprDesc; }
@@ -592,10 +603,17 @@ private :
         CHECK( resToNum.size() == 1 )  << "invalid size " << resToNum.size() << " : must be 1";
         M_isNumericExpression = resToNum[0].first;
         if ( M_isNumericExpression )
+        {
             M_numericValue = resToNum[0].second;
+            M_isPolynomial = 1;
+            M_polynomialOrder = 0;
+        }
     }
     void updateForUse()
     {
+        if ( M_isNumericExpression )
+            return;
+
         std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
