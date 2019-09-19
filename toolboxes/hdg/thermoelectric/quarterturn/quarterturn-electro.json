@@ -2,6 +2,10 @@
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
     "Model":"hdg",
+    "Parameters":
+    {
+        "dif":0.05
+    },
     "Materials":
     {
         "omega":
@@ -11,25 +15,25 @@
     },
     "BoundaryConditions":
     {
-        "flux":
-        {
-            "Integral":
-            {
-                "V1":
-                {
-                    "expr":"-4724"
-                }
-            }
-        },
+        // "flux":
+        // {
+        //     "Integral":
+        //     {
+        //         "V0":
+        //         {
+        //             "expr":"-4000"
+        //         }
+        //     }
+        // },
         "potential":
         {
             "Dirichlet":
             {
-                // "V1":
-                // {
-                //     "expr":"0.04"
-                // },
                 "V0":
+                {
+                    "expr":"0.05"
+                },
+                "V1":
                 {
                     "expr":"0"
                 }
@@ -60,14 +64,14 @@
 	        {
 		        "omega":
 		        {
-		            "expr":"2*0.04/Pi*atan2(x,y):x:y"
+		            "expr":"2*0.05/Pi*atan2(y,x):x:y:z:dif"
 		        }
 	        },
             "u_exact":
             {
                 "omega":
                 {
-                    "expr":"{-2*4.8e7*0.04/Pi*y/(x*x+y*y),2*4.8e7*0.04/Pi*x/(x*x+y*y),0}:x:y:z"
+                    "expr":"{2*58e3*0.05/Pi*y/(x*x+y*y),-2*58e3*0.05/Pi*x/(x*x+y*y),0}:x:y:z:dif"
                 }
             }
 	    }

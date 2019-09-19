@@ -14,11 +14,12 @@ Line(4) = {2, 3};
 Line Loop(5) = {3, -2, -4, 1};
 Plane Surface(1) = {5};
 
-out[] = Extrude {0,0,0.2} {Surface{1};};
+out[] = Extrude {0,0,1} {Surface{1};};
 
 Physical Volume("omega") = {out[1]};
 Physical Surface("top") = {out[0]};
 Physical Surface("bottom") = {1};
-Physical Surface("R") = {out[3],out[5]};
-Physical Surface("in") = {out[2]};
-Physical Surface("out") = {out[4]};
+Physical Surface("Rint") = {out[3]}
+Physical Surface("Rext") = {out[5]};
+Physical Surface("V0") = {out[2]};
+Physical Surface("V1") = {out[4]};

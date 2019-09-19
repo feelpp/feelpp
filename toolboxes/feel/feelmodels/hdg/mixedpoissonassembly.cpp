@@ -46,15 +46,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
 {
-    this->modelProperties().parameters().updateParameterValues();
-    M_paramValues = this->modelProperties().parameters().toParameterValues();
-    for( auto const& [k,v] : M_paramValues )
-    {
-        Feel::cout << " - parameter " << k << " : " << v << std::endl;
-    }
-    this->modelProperties().materials().setParameterValues( M_paramValues );
-    //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
-    this->modelProperties().postProcess().setParameterValues( M_paramValues );
     M_A_cst->zero();
     M_F->zero();
     tic();
@@ -691,7 +682,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
 
     // <lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * idt(uI) * id(w) );
+                                        _expr=-tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=normalt(u) * id(nu) );
@@ -933,8 +924,32 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                 auto itField = modelProperties().boundaryConditions().find("Exact solution");
                 if ( itField != modelProperties().boundaryConditions().end() )
                 {
+                    double l2err_p = 0, l2norm_pex = 1, l2err_u = 0, l2norm_uex = 1;
                     auto mapField = (*itField).second;
-                    auto itType = mapField.find( "p_exact" );
+                    bool hasUExact = false;
+                    auto itType = mapField.find( "u_exact" );
+                    if (itType != mapField.end() )
+                    {
+                        hasUExact = true;
+                        for (auto const& exAtMarker : (*itType).second )
+                        {
+                            if (exAtMarker.isExpression() )
+                            {
+                                auto u_exact = expr<Dim,1>(exAtMarker.expression()) ;
+                                if ( !this->isStationary() )
+                                    u_exact.setParameterValues( { {"t", time } } );
+                                u_exact.setParameterValues( M_paramValues );
+                                auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
+
+                                l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up) );
+                                l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+                                if (l2norm_uex < 1)
+                                    l2norm_uex = 1.0;
+                            }
+                        }
+                    }
+                    itType = mapField.find( "p_exact" );
                     if (itType != mapField.end() )
                     {
                         for (auto const& exAtMarker : (*itType).second )
@@ -945,48 +960,70 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
                                 p_exact.setParameterValues( M_paramValues );
-                                double K = 1;
-                                for( auto const& pairMat : modelProperties().materials() )
-                                {
-                                    auto material = pairMat.second;
-                                    K = material.getScalar( "k" ).evaluate(M_paramValues);
-                                }
-                                auto gradp_exact = grad<Dim>(p_exact) ;
-                                if ( !this->isStationary() )
-                                    gradp_exact.setParameterValues( { {"t", time } } );
-                                gradp_exact.setParameterValues( M_paramValues );
-                                auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
-
                                 auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
-                                auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
-
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
-                                M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
-                                // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
-                                auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
-                                auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
-
-                                if (l2norm_uex < 1)
-                                    l2norm_uex = 1.0;
-
-
-                                auto l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
-                                auto l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+                                l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
+                                l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
                                 if (l2norm_pex < 1)
                                     l2norm_pex = 1.0;
 
-                                Feel::cout << "----- Computed Errors -----" << std::endl;
-                                Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
-                                Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
-                                Feel::cout << "---------------------------" << std::endl;
+                                if( !hasUExact )
+                                {
+                                    double K = 1;
+                                    for( auto const& pairMat : modelProperties().materials() )
+                                    {
+                                        auto material = pairMat.second;
+                                        K = material.getScalar( "k" ).evaluate(M_paramValues);
+                                    }
+                                    auto gradp_exact = grad<Dim>(p_exact) ;
+                                    if ( !this->isStationary() )
+                                        gradp_exact.setParameterValues( { {"t", time } } );
+                                    gradp_exact.setParameterValues( M_paramValues );
+                                    auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
 
-                                // Export the errors
-                                M_exporter -> step( time )->add(prefixvm(prefix(), "p_error_L2"), l2err_p/l2norm_pex );
-                                M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
+                                    auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+
+                                    M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
+
+                                    // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
+                                    auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
+                                    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+
+                                    if (l2norm_uex < 1)
+                                        l2norm_uex = 1.0;
+                                }
                             }
                         }
                     }
+                    Feel::cout << "----- Computed Errors -----" << std::endl;
+                    Feel::cout << "||p-p_ex||_L2=\t" << l2err_p/l2norm_pex << std::endl;
+                    Feel::cout << "||u-u_ex||_L2=\t" << l2err_u/l2norm_uex << std::endl;
+                    Feel::cout << "---------------------------" << std::endl;
+                    if( Environment::isMasterRank() )
+                    {
+                        std::ofstream file ( this->prefix()+"measures.csv" );
+                        if( file )
+                        {
+                            double p_err_rel = l2err_p/l2norm_pex;
+                            double u_err_rel = l2err_u/l2norm_uex;
+                            boost::format fmter("%1% %|14t|");
+                            file << fmter % "p_error_L2";
+                            file << fmter % "p_error_rel_L2";
+                            file << fmter % "u_error_L2";
+                            file << fmter % "u_error_rel_L2";
+                            file << std::endl;
+                            file << fmter % l2err_p;
+                            file << fmter % p_err_rel;
+                            file << fmter % l2err_u;
+                            file << fmter % u_err_rel;
+                            file << std::endl;
+                            file.close();
+                        }
+                    }
+                    // Export the errors
+                    M_exporter -> step( time )->add(prefixvm(prefix(), "p_error_L2"), l2err_p/l2norm_pex );
+                    M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
                 }
             }
             else if (field == "scaled_potential" )

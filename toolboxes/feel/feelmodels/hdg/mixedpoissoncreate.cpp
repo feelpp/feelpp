@@ -104,6 +104,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
 {
+    this->modelProperties().parameters().updateParameterValues();
+    M_paramValues = this->modelProperties().parameters().toParameterValues();
+    for( auto const& [k,v] : M_paramValues )
+    {
+        Feel::cout << " - parameter " << k << " : " << v << std::endl;
+    }
+    this->modelProperties().materials().setParameterValues( M_paramValues );
+    //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
+    this->modelProperties().postProcess().setParameterValues( M_paramValues );
 
     // initialize marker lists for each boundary condition type
     auto itField = modelProperties().boundaryConditions().find( "potential");
