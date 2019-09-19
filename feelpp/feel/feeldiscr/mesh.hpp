@@ -24,6 +24,8 @@
 #ifndef FEELPP_MESH_HPP
 #define FEELPP_MESH_HPP 1
 
+#include <bitset>
+
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
@@ -305,10 +307,11 @@ class Mesh
     //!  Default mesh constructor
     //!
     explicit Mesh( std::string const& name,
-                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+                   worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                   std::string const& props = "00001" );
 
-    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() )
-        : Mesh( "", worldComm ) {}
+    explicit Mesh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(), std::string const& props = "00001"  )
+        : Mesh( "", worldComm, props ) {}
 
     ~Mesh() {}
 
@@ -832,6 +835,28 @@ class Mesh
     {
         return M_substructuring;
     }
+
+    //!
+    //! return true if mesh is unstructured, false otherwise
+    //!
+    bool isUnstructured() const
+    {
+        return M_structure_property.test( 0 );
+    }
+    //!
+    //! return true if mesh is structured, false otherwise
+    //!
+    bool isStructured() const
+        {
+            return M_structure_property.test( 1 ) || isCartesian();
+        }
+    //!
+    //! return true if mesh is cartesian, false otherwise
+    //!
+    bool isCartesian() const
+        {
+            return M_structure_property.test( 2 );
+        }
     //! @}
 
     //!  @name  Mutators
@@ -842,7 +867,12 @@ class Mesh
     {
         M_substructuring = s;
     }
-
+protected:
+    void setStructureProperty( std::string const& prop )
+        {
+            M_structure_property = std::bitset<5>( prop );
+        }
+public:
     //!
     //!  set the partitioner to \p partitioner
     //!
@@ -1195,12 +1225,18 @@ class Mesh
     //!
     //!  load mesh in hdf5
     //!
-    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) { ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate ); }
+    void loadHDF5( std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isLoading, filename, ctxMeshUpdate, scale );
+    }
 
     //!
     //!  save mesh in hdf5
     //!
-    void saveHDF5( std::string const& filename ) { ioHDF5( IOStatus::isSaving, filename ); }
+    void saveHDF5( std::string const& filename, double scale = 1 )
+    {
+        ioHDF5( IOStatus::isSaving, filename, 0, scale );
+    }
 #endif
 
   private:
@@ -1214,7 +1250,7 @@ class Mesh
     //!
     //!  save mesh in hdf5
     //!
-    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES );
+    void ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES, double scale = 1 );
 #endif
 
     //! @}
@@ -1660,6 +1696,15 @@ class Mesh
     //! !sub structuring
     bool M_substructuring;
 
+    //!
+    //! 0: unstructured
+    //! 1: structured
+    //! 2: cartesian
+    //! 3: semistructured
+    //! 4: boundary layer
+    //!
+    std::bitset<5> M_structure_property;
+    
     //!
     //!  The processors who neighbor the current
     //!  processor
@@ -2410,9 +2455,9 @@ struct MeshPoints
     std::vector<int> numberOfPoints, numberOfElements;
     int global_nelts{0}, global_npts{0};
     std::vector<int32_t> ids;
-    std::map<int32_t, int32_t> new2old;
-    std::map<int32_t, int32_t> old2new;
-    std::map<int32_t, int32_t> nodemap;
+    std::unordered_map<int32_t, int32_t> new2old;
+    std::unordered_map<int32_t, int32_t> old2new;
+    std::unordered_map<int32_t, int32_t> nodemap;
     std::vector<T> coords;
     std::vector<int32_t> elemids;
     std::vector<int32_t> elem;
@@ -2424,7 +2469,7 @@ struct MeshPoints
 //!  Builds information around faces/elements for exporting data
 //!  @param mesh The mesh from which data is extracted
 //!  @param it Starting iterator over the faces/elements
-//!  @param en Ending iterator over the faces/elements
+//!  @param en Endoing iterator over the faces/elements
 //!  @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
 //!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
 //!  @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)

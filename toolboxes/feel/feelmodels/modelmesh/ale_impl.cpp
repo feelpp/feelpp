@@ -433,8 +433,8 @@ template < class Convex, int Order >
 void
 ALE<Convex,Order>::interpolateLow2High( mpl::bool_<true> )
 {
-    interpolate( M_fspaceHigh, *M_displacementLow, *M_displacementHigh, INTERPOLATE_SAME_MESH );
-    interpolate( M_fspaceHigh, *M_aleLow, *M_aleHigh, INTERPOLATE_SAME_MESH );
+    interpolate( M_fspaceHigh, *M_displacementLow, *M_displacementHigh );
+    interpolate( M_fspaceHigh, *M_aleLow, *M_aleHigh );
 }
 template < class Convex, int Order >
 void

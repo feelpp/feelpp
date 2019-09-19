@@ -32,106 +32,38 @@ ModelMarkers::ModelMarkers( std::string const& marker )
 }
 
 void
-ModelMarkers::setPTree( pt::ptree const& p )
+ModelMarkers::setPTree( pt::ptree const& p, ModelIndexes const& indexes )
 {
-    M_p = p;
     this->clear();
     // markers = mark
-    if( M_p.empty() )
-        this->insert(M_p.template get_value<std::string>());
+    if( p.empty() )
+        this->insert( indexes.replace( p.template get_value<std::string>()) );
     else
     {
-        for( auto const& item : M_p )
+        auto indexesAllCases = ModelIndexes::generateAllCases( p, indexes );
+        for ( auto const& indexesNew : indexesAllCases )
         {
-            // markers = [mark1,mark2]
-            if( item.first.empty() ) // array
-                this->insert(item.second.template get_value<std::string>());
-            else if( item.first == "name" )
+            for( auto const& item : p )
             {
-                // markers : { name = mark }
-                if( item.second.empty() )
-                    this->insert(item.second.template get_value<std::string>() );
-                else
+                // markers = [mark1,mark2]
+                if( item.first.empty() ) // array
+                    this->insert( indexesNew.replace( item.second.template get_value<std::string>() ) );
+                else if( item.first == "name" )
                 {
-                    // markers : { name = [mark1, mark2] }
-                    for( auto const& item2 : item.second )
-                        this->insert( item2.second.template get_value<std::string>() );
+                    // markers : { name = mark }
+                    if( item.second.empty() )
+                        this->insert(indexesNew.replace( item.second.template get_value<std::string>() ) );
+                    else
+                    {
+                        // markers : { name = [mark1, mark2] }
+                        for( auto const& item2 : item.second )
+                            this->insert( indexesNew.replace( item2.second.template get_value<std::string>() ) );
+                    }
                 }
             }
         }
-        this->generateMarkersList();
     }
 }
 
-void ModelMarkers::generateMarkersList()
-{
-    for( int k = 0; k < 10; ++k )
-    {
-        std::vector<std::string> argK = this->getArguments(k);
-        this->generateMarkersListForIndex(k, argK);
-    }
-}
-
-std::vector<std::string>
-ModelMarkers::getArguments( int k )
-{
-    std::string strK = (boost::format("index%1%")%k).str();
-    std::vector<std::string> argK;
-    if( auto indiceK = M_p.get_child_optional(strK) )
-    {
-        // indexN = [ A, B ]
-        for( auto const& item : M_p.get_child(strK) )
-            argK.push_back(item.second.template get_value<std::string>());
-        // index N = start:end(:step)
-        if( argK.empty() )
-        {
-            std::string rangeK = M_p.template get<std::string>(strK);
-            boost::char_separator<char> sep(":");
-            boost::tokenizer<boost::char_separator<char> > kvlist( rangeK, sep);
-            int sizeRange = std::distance(kvlist.begin(),kvlist.end());
-            if( sizeRange != 2 && sizeRange != 3 )
-            {
-                LOG(WARNING) << "range " << rangeK << " for markers has "
-                             << sizeRange << " elements, should be 2 or 3";
-                return argK;
-            }
-
-            std::vector<int> range;
-            for( auto const& r : kvlist )
-                range.push_back(std::stoi(r));
-            if( sizeRange == 2 )
-                range.push_back(1);
-            auto argKInt = boost::irange(range[0],range[1],range[2]);
-            for( auto const& i : argKInt )
-                argK.push_back( std::to_string(i));
-        }
-    }
-    return argK;
-}
-
-void ModelMarkers::generateMarkersListForIndex( int k, std::vector<std::string> argK )
-{
-    auto it = this->begin();
-    while( it != this->end() )
-    {
-        std::string m = *it;
-        auto pos = m.find("%"+std::to_string(k)+"%");
-        if( pos != std::string::npos )
-        {
-            std::set<std::string> ms;
-            for( auto const& s : argK )
-            {
-                std::string currentMarker = m;
-                currentMarker.replace(pos, 3, s);
-                ms.insert(currentMarker);
-            }
-            this->erase(it);
-            this->insert(ms.begin(),ms.end());
-            it = this->begin();
-        }
-        else
-            std::advance(it,1);
-    }
-}
 
 }

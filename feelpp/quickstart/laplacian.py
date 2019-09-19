@@ -28,6 +28,8 @@ ns=nsyms( dim );
 grad_p=grad(p,s);
 flux=-k*grad(p,s);
 u=flux;
+J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
+print('J=',J);
 un=n(flux,1,ns);
 f=div(flux,s);
 if 'r_2' in locals() and locals()['r_2']:

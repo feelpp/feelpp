@@ -31,6 +31,8 @@ namespace Feel
 
 template <typename T>
 using holo3_image = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+
 //! Structured mesh class
 //!
 //! A structured mesh is such that points and elements can
@@ -49,7 +51,8 @@ class MeshStructured : public Mesh<Hypercube<2>>
     using element_type = super::element_type;
     using face_type = super::face_type;
     using node_type = super::node_type;
-    MeshStructured() = default;
+
+    MeshStructured(): super() { this->setStructureProperty( "00010" ); }
     MeshStructured( MeshStructured const& ) = delete;
     MeshStructured( MeshStructured&& ) = delete;
     MeshStructured& operator=( MeshStructured const& ) = delete;
