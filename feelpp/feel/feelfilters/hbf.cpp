@@ -206,13 +206,19 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_rows(n
 Hbf2FeelppStruc::q1_element_type
 Hbf2FeelppStruc::operator()( holo3_image<float> const& x )
 {
-    q1_element_type u( M_Xh );
+    tic();
+    q1_element_type u = M_Xh->element();
+    toc("h2f", FLAGS_v>0);
+    tic();
     for( auto const & dof : M_relation.left )
     {
         u( dof.second ) = x(dof.first.first,dof.first.second);
     }
+    toc("h2f dof", FLAGS_v>0);
+    tic();
     sync(u,"=");
     u.close();
+    toc("h2f sync+close()", FLAGS_v>0);
     return u;
 
 

@@ -1,4 +1,4 @@
-#include "../feel/feelmodels/hdg/mixedpoisson.hpp"
+#include <feel/feelmodels/hdg/coupling.hpp>
 
 using namespace Feel;
 
@@ -14,71 +14,49 @@ makeAbout()
                      "Copyright (c) 2016 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Romain Hild", "developer", "", "" );
-    about.addAuthor( "Daniele Prada", "developer", "", "" );
+    about.addAuthor( "Lorenzo Sala", "developer", "", "" );
     return about;
 }
 
-template<int nDim, int OrderT>
+
+
+// template<int nDim, int OrderT>
 void
-runApplicationMixedPoisson( std::string  const& prefix )
+runApplicationCoupledMixedPoisson()
 {
     using namespace Feel;
 
-    typedef FeelModels::MixedPoisson<nDim,OrderT> mp_type;
+    const int nDim = 3;
+    const int nOrder = 2;
 
-    std::string p = "hdg.poisson";
-    if( !prefix.empty() )
-        p += "."+prefix;
-    auto MP = mp_type::New(p);
-    auto mesh = loadMesh( _mesh=new typename mp_type::mesh_type );
-    decltype( IPtr( _domainSpace=Pdh<OrderT>(mesh), _imageSpace=Pdh<OrderT>(mesh) ) ) Idh ;
-    decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idhv;
+    typedef FeelModels::CoupledMixedPoisson<nDim,nOrder> cmp_type;
+
+    auto CMP = cmp_type::New();
+    auto mesh = loadMesh( _mesh=new cmp_type::mesh_type );
+    decltype( IPtr( _domainSpace=Pdh<nOrder>(mesh), _imageSpace=Pdh<nOrder>(mesh) ) ) Idh ;
+    decltype( IPtr( _domainSpace=Pdhv<nOrder>(mesh), _imageSpace=Pdhv<nOrder>(mesh) ) ) Idhv;
     if ( soption( "gmsh.submesh" ).empty() )
-        MP -> init(mesh);
+        CMP -> init(mesh);
     else
     {
         Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
-        auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,soption("gmsh.submesh")) );
-
-        Idh = IPtr( _domainSpace=Pdh<OrderT>(cmesh), _imageSpace=Pdh<OrderT>(mesh) );
-        Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
-        MP -> init( cmesh, mesh );
-    }
-	
-	// Feel::cout << "Stationary: " << MP -> isStationary() << std::endl;
-	// Feel::cout << "boption steady: " << boption("ts.steady") << std::endl;
-
-    if ( MP -> isStationary() )
-    {
-        MP->assembleAll();
-        MP->solve();
-        MP->exportResults( mesh, Idh, Idhv );
-    }
-    else
-    {
-        //MP->assembleCstPart();
-        for ( ; !MP->timeStepBase()->isFinished() ; MP->updateTimeStep() )
-        {
-            Feel::cout << "============================================================\n";
-            Feel::cout << "time simulation: " << MP->time() << "s \n";
-            Feel::cout << "============================================================\n";
-            // MP->assembleNonCstPart();
-            MP->assembleAll();
-            MP->solve();
-            MP->exportResults( mesh, Idh, Idhv );
-        }
+		auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,soption("gmsh.submesh")) );
+        Idh = IPtr( _domainSpace=Pdh<nOrder>(cmesh), _imageSpace=Pdh<nOrder>(mesh) );
+        Idhv = IPtr( _domainSpace=Pdhv<nOrder>(cmesh), _imageSpace=Pdhv<nOrder>(mesh) );
+        CMP -> init( cmesh, mesh );
     }
 
-    // MP->computeError();
+    CMP -> run ( Idh, Idhv);
 
 }
+
 
 int main(int argc, char *argv[])
 {
     using namespace Feel;
 
     po::options_description mpoptions( "hdg.poisson options" );
-    mpoptions.add( FeelModels::makeMixedPoissonOptions("","hdg.poisson") );
+    mpoptions.add( FeelModels::makeCoupledMixedPoissonOptions("","hdg.poisson") );
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
@@ -88,9 +66,10 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=mpoptions,
-                           _desc_lib=FeelModels::makeMixedPoissonLibOptions("","hdg.poisson").add(feel_options())
+                           _desc_lib=FeelModels::makeCoupledMixedPoissonLibOptions("","hdg.poisson").add(feel_options())
                            );
 
+    /*
     int dimension = ioption(_name="case.dimension");
     std::string discretization = soption(_name="case.discretization");
 
@@ -112,8 +91,11 @@ int main(int argc, char *argv[])
                                                                                              std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
                                                                                              constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
                                                                                              if ( dimension == _dim && discretization == _discretization )
-                                                                                                 runApplicationMixedPoisson<_dim,_torder>( "" );
+                                                                                                 runApplicationCoupledMixedPoisson<_dim,_torder>();
                                                                                          } );
+    */
+    
+    runApplicationCoupledMixedPoisson();
 
     return 0;
 }
