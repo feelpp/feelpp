@@ -18,13 +18,13 @@ makeAbout()
     return about;
 }
 
-template<int nDim, int OrderT>
+template<int nDim, int OrderT, int GOrder = 1>
 void
 runApplicationMixedPoisson( std::string  const& prefix )
 {
     using namespace Feel;
 
-    typedef FeelModels::MixedPoisson<nDim,OrderT> mp_type;
+    typedef FeelModels::MixedPoisson<nDim,OrderT,GOrder> mp_type;
 
     std::string p = "hdg.poisson";
     if( !prefix.empty() )
@@ -92,24 +92,32 @@ int main(int argc, char *argv[])
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2>, hana::int_c<1> ),
+                                             hana::make_tuple("P3", hana::int_c<3>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ),
+                                             hana::make_tuple("P2G2", hana::int_c<2>, hana::int_c<2> ),
+                                             hana::make_tuple("P3G2", hana::int_c<3>, hana::int_c<2> ) );
 #elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ),
+                                             hana::make_tuple("P2G2", hana::int_c<2>, hana::int_c<2> ) );
 #else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ) );
 #endif
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                                                                                         {
-                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                                                                                             if ( dimension == _dim && discretization == _discretization )
-                                                                                                 runApplicationMixedPoisson<_dim,_torder>( "" );
-                                                                                         } );
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                    [&discretization,&dimension]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>( hana::at_c<1>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretization )
+                                runApplicationMixedPoisson<_dim,_torder,_gorder>( "" );
+                        } );
 
     return 0;
 }

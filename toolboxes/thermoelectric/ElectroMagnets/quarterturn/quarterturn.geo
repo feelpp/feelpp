@@ -14,7 +14,7 @@ Line(4) = {5,2};
 Line Loop(1) = {1,2,3,4};
 Plane Surface(1) = {1};
 
-out[] = Extrude{0,0,5} {Surface{1};};
+out[] = Extrude{0,0,4} {Surface{1};};
 
 Physical Volume("omega") = {out[1]};
 Physical Surface("top") = {out[0]};

@@ -5,14 +5,18 @@
     "Parameters":
     {
         "dif":0.03125,
-        "sigma":58e3
+        "sigma":58e3,
+        "k":0.38,
+        "h":0.08,
+        "Tw":293
     },
     "Materials":
     {
         "omega":
         {
             "name":"copper",
-            "cond":"58e+3"
+            "cond":"0.38",
+            "k":0.38
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"58e+3",
@@ -27,26 +31,31 @@
         {
             "SourceTerm":
             {
-                "": {"expr":"0"}
+                "omega":
+                {
+                    "expr":"sigma*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:z:dif:sigma"
+                }
             },
-            "Dirichlet":
+            "Robin":
             {
-                "V0":
+                "Rint":
                 {
-                    "expr":"dif:dif"
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
                 },
-                "V1":
+                "Rext":
                 {
-                    "expr":"0"
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
                 }
             },
             "Neumann":
             {
-                "Rint":
+                "V0":
                 {
                     "expr":"0"
                 },
-                "Rext":
+                "V1":
                 {
                     "expr":"0"
                 },
@@ -66,16 +75,9 @@
 	        {
 		        "omega":
 		        {
-		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
+		            "expr":"(-(2*58e3*0.03125^2)/(Pi^2*0.38))*log(sqrt(x*x+y*y))^2 + (-(-(2*58e3*0.03125^2)/(Pi^2*0.38))*((2*0.38*2*log(1)-0.08*2*1*log(1)^2)+(2*0.38*1*log(2)+0.08*2*1*log(2)^2))/(0.38*(1+2)+0.08*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*0.08*2*1)*(((2*0.38*2*log(1)-0.08*2*1*log(1)^2)-(2*0.38*1*log(2)+0.08*2*1*log(2)^2))*(-(2*58e3*0.03125^2)/(Pi^2*0.38)) + (0.38*(2-1) - 0.08*2*1*log(2*1))*(-(-(2*58e3*0.03125^2)/(Pi^2*0.38))*((2*0.38*2*log(1)-0.08*2*1*log(1)^2)+(2*0.38*1*log(2)+0.08*2*1*log(2)^2))/(0.38*(1+2)+0.08*2*1*log(2/1))))+293):x:y:z"
 		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*sigma*dif/Pi*y/(x*x+y*y),-2*sigma*dif/Pi*x/(x*x+y*y),0}:x:y:z:dif:sigma"
-                }
-            }
+	        }
 	    }
     },
     "PostProcess":
