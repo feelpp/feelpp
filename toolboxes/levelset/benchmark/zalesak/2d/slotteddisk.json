@@ -7,11 +7,11 @@
     },
     "Parameters":
     {
-	"centerx":"50.0",
-	"centery":"75.0",
-	"radius":"15.0",
-	"slotwidth":"5",
-	"slotlength":"25"
+	"centerx":"0.5",
+	"centery":"0.75",
+	"radius":"0.15",
+	"slotwidth":"0.05",
+	"slotlength":"0.25"
 	
     },
     "InitialConditions":
@@ -29,6 +29,45 @@
     },
     "PostProcess":
     {
-	"PhysicalQuantities": ["volume,perimeter"]
+	    "PhysicalQuantities": ["volume, perimeter, velocity_com"],
+        "Exports":
+        {
+            "fields":["advection-velocity", "pid"]
+        },
+        "Measures":
+        {
+            "Statistics":
+            {
+                "TestStat":
+                {
+                    "type":["min", "max", "mean"],
+                    "field":"advection-velocity",
+                    "marker":"Omega"
+                }
+            },
+            "Norm":
+            {
+                "VelocityNorm":
+                {
+                    "type":"L2",
+                    "field":"velocity"
+                },
+                "AvectionVelocityNorm":
+                {
+                    "type":"L2",
+                    "field":"advection-velocity"
+                },
+                "HeavisideNorm":
+                {
+                    "type":"L2",
+                    "field":"heaviside"
+                },
+                "DiracNorm":
+                {
+                    "type":"L2",
+                    "field":"dirac"
+                }
+            }
+        }
     }  
 }
