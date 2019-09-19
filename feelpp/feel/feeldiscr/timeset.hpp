@@ -670,6 +670,7 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_scalar>::type* = nullptr)
         {
+            tic();
             bool extendeddof = false;//(soption(_name="exporter.format") == "ensightgold");
             boost::timer t;
 
@@ -742,11 +743,13 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 scalar %1%")%__n).str(),FLAGS_v>0);
         }
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr)
             {
+                tic();
                 bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
@@ -837,11 +840,13 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 vectorial %1%")%__n).str(),FLAGS_v>0);
             }
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr)
             {
+                tic();
                 bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
@@ -932,12 +937,14 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 tensor2 %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<true>,
                                    typename std::enable_if<FunctionType::is_tensor2symm>::type* = nullptr)
             {
+                tic();
                 bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 boost::timer t;
 
@@ -1029,12 +1036,16 @@ public:
 
                 showMe( "Step::add" );
                 DVLOG(2) << "[timset::add] scalar time : " << t.elapsed() << "\n";
+                toc((boost::format("Timeset::add p1 tensor2symm %1%")%__n).str(),FLAGS_v>0);
+                
+                
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_scalar>::type* = nullptr )
             {
+                tic();
                 if ( !func.worldComm().isActive() ) return;
 
                 this->updateScalarP0Field( func );
@@ -1075,12 +1086,14 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 scalar %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_vectorial>::type* = nullptr )
             {
+                tic();
                 bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
 
@@ -1139,12 +1152,14 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 vectorial %1%")%__n).str(),FLAGS_v>0);
             }
 
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func, mpl::bool_<false>, mpl::bool_<false>,
                                    typename std::enable_if<FunctionType::is_tensor2>::type* = nullptr )
             {
+                tic();
                 bool extendeddof = false; //(soption(_name="exporter.format") == "ensightgold");
                 if ( !func.worldComm().isActive() ) return;
                 if ( !M_ts->M_tensor2_p0 )
@@ -1221,6 +1236,7 @@ public:
                 M_state.clear( STEP_ON_DISK );
                 showMe( "Step::addElement" );
                 DVLOG(2) << "[TimeSet::add] p0 function done\n";
+                toc((boost::format("Timeset::add p0 tensor2symm %1%")%__n).str(),FLAGS_v>0);
             }
 
         //@}

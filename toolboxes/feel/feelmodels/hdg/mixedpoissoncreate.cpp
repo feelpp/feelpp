@@ -78,26 +78,26 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    toc("mesh");
+    toc("mesh", FLAGS_v > 0);
 
     tic();
     this->initModel();
-    toc("model");
+    toc("model", FLAGS_v > 0);
 
     tic();
     this->initSpaces();
-    toc("spaces");
+    toc("spaces", FLAGS_v > 0);
 
     if(!this->isStationary()){
         tic();
         this->createTimeDiscretization();
         this->initTimeStep();
-        toc("timeDiscretization",true);
+        toc("timeDiscretization", FLAGS_v > 0);
     }
 
     tic();
     this->initExporter( meshVisu );
-    toc("exporter");
+    toc("exporter", FLAGS_v > 0);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -281,7 +281,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
     M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
-    toc("matrixCondensed");
+    toc("matrixCondensed", FLAGS_v > 0);
 #endif
 }
 
