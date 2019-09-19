@@ -71,6 +71,7 @@ BOOST_PARAMETER_FUNCTION(
       ( format,         *, ioption(_prefix=prefix,_name="gmsh.format") )
       ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
       //( geo_parameters,  *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map("") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale") )
       ( parametricnodes, *( boost::is_integral<mpl::_> ), 0 )
       ( in_memory,       *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.in-memory") )
       ( straighten,      *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
@@ -164,6 +165,7 @@ BOOST_PARAMETER_FUNCTION(
             }
             else
             {
+                import.setScaling( scale );
                 _mesh->accept( import );
                 _mesh->components().reset();
                 _mesh->components().set( update );
@@ -174,7 +176,7 @@ BOOST_PARAMETER_FUNCTION(
         if ( partitions > 1 )
         {
             mpi::broadcast( worldcomm->globalComm(), fname, worldcomm->masterRank() );
-            _mesh->loadHDF5( fname, update );
+            _mesh->loadHDF5( fname, update, scale );
         }
 
         if ( straighten && _mesh_type::nOrder > 1 )

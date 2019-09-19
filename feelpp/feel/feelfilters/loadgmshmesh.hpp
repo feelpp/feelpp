@@ -58,7 +58,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale") )
       ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
@@ -139,7 +139,6 @@ BOOST_PARAMETER_FUNCTION(
         // need to replace physical_region by elementary_region while reading
         if ( physical_are_elementary_regions )
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
-        import.setScaling( scale );
         import.setRespectPartition( respect_partition );
 
         if ( rebuild_partitions && partitions > 1 )
@@ -163,6 +162,7 @@ BOOST_PARAMETER_FUNCTION(
         else
         {
             tic();
+            import.setScaling( scale );
             _mesh->accept( import );
             toc("loadGMSHMesh.readmesh", FLAGS_v>0);
 
@@ -177,7 +177,7 @@ BOOST_PARAMETER_FUNCTION(
     if ( rebuild_partitions && partitions > 1 )
     {
         mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
-        _mesh->loadHDF5( fnamePartitioned, update );
+        _mesh->loadHDF5( fnamePartitioned, update, scale );
     }
 
     if ( straighten && _mesh_type::nOrder > 1 )

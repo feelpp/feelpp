@@ -256,6 +256,7 @@ private:
     mutable int M_timeExponent;
     // file position for explicit pointers
     mutable MPI_Offset posInFile;
+    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
 };
 
 

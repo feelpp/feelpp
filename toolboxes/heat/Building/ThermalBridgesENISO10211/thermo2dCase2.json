@@ -64,7 +64,7 @@
     {
         "Exports":
         {
-            "fields":["temperature"]
+            "fields":["temperature","pid"]
         },
         "Save":
         {
@@ -91,6 +91,13 @@
                     "expr":"-heat_Aluminium_k*heat_dnT - h_bottom*(heat_T-T0_bottom):heat_Aluminium_k:heat_dnT:heat_T:h_bottom:T0_bottom",
                     "markers":"bottom"
                 },
+                "CheckGeneric_Heat-Flux_%1_1%":
+                {
+                    "type":"integrate",
+                    "expr":"-heat_%1_2%_k*heat_dnT - h_%1_1%*(heat_T-T0_%1_1%):heat_%1_2%_k:heat_dnT:heat_T:h_%1_1%:T0_%1_1%",
+                    "markers":"%1_1%",
+                    "index1":[ ["top", "Concrete"],["bottom", "Aluminium"] ]
+                },
                 "Inward-Heat-Flux_bottom":
                 {
                     "type":"integrate",
@@ -100,50 +107,20 @@
             },
             "Points":
             {
-                "pointA":
+                "point%1_1%":
                 {
-                    "coord":"{0,0.0475}",
-                    "fields":"temperature"
-                },
-                "pointB":
-                {
-                    "coord":"{0.5,0.0475}",
-                    "fields":"temperature"
-                },
-                "pointC":
-                {
-                    "coord":"{0,0.0415}",
-                    "fields":"temperature"
-                },
-                "pointD":
-                {
-                    "coord":"{0.015,0.0415}",
-                    "fields":"temperature"
-                },
-                "pointE":
-                {
-                    "coord":"{0.5,0.0415}",
-                    "fields":"temperature"
-                },
-                "pointF":
-                {
-                    "coord":"{0,0.0365}",
-                    "fields":"temperature"
-                },
-                "pointG":
-                {
-                    "coord":"{0.015,0.0365}",
-                    "fields":"temperature"
-                },
-                "pointH":
-                {
-                    "coord":"{0,0}",
-                    "fields":"temperature"
-                },
-                "pointI":
-                {
-                    "coord":"{0.5,0}",
-                    "fields":"temperature"
+                    "coord":"%1_2%",
+                    "fields":"temperature",
+                    "index1":[ ["A", "{0,0.0475}"],
+                               ["B", "{0.5,0.0475}"],
+                               ["C", "{0,0.0415}"],
+                               ["D", "{0.015,0.0415}"],
+                               ["E", "{0.5,0.0415}"],
+                               ["F", "{0,0.0365}"],
+                               ["G", "{0.015,0.0365}"],
+                               ["H", "{0,0}"],
+                               ["I", "{0.5,0}"]
+                             ]
                 }
             }
         },
@@ -151,50 +128,20 @@
         {
             "Measures":
             {
-                "Points_pointA_temperature":
+                "Points_point%1_1%_temperature":
                 {
-                    "value":7.1,
-                    "tolerance":1e-1
-                },
-                "Points_pointB_temperature":
-                {
-                    "value":0.8,
-                    "tolerance":1e-1
-                },
-                "Points_pointC_temperature":
-                {
-                    "value":7.9,
-                    "tolerance":1e-1
-                },
-                "Points_pointD_temperature":
-                {
-                    "value":6.3,
-                    "tolerance":1e-1
-                },
-                "Points_pointE_temperature":
-                {
-                    "value":0.8,
-                    "tolerance":1e-1
-                },
-                "Points_pointF_temperature":
-                {
-                    "value":16.4,
-                    "tolerance":1e-1
-                },
-                "Points_pointG_temperature":
-                {
-                    "value":16.3,
-                    "tolerance":1e-1
-                },
-                "Points_pointH_temperature":
-                {
-                    "value":16.8,
-                    "tolerance":1e-1
-                },
-                "Points_pointI_temperature":
-                {
-                    "value":18.3,
-                    "tolerance":1e-1
+                    "value":"%1_2%",
+                    "tolerance":1e-1,
+                    "index1": [ [ "A", "7.1" ],
+                                [ "B", "0.8" ],
+                                [ "C", "7.9" ],
+                                [ "D", "6.3" ],
+                                [ "E", "0.8" ],
+                                [ "F", "16.4" ],
+                                [ "G", "16.3" ],
+                                [ "H", "16.8" ],
+                                [ "I", "18.3" ]
+                              ]
                 },
                 "Statistics_Check_Heat-Flux_top_integrate":
                 {
@@ -205,6 +152,12 @@
                 {
                     "value":0,
                     "tolerance":0.5
+                },
+                "Statistics_CheckGeneric_Heat-Flux_%1%_integrate":
+                {
+                    "value":0,
+                    "tolerance":0.5,
+                    "index1":["top","bottom"]
                 },
                 "Statistics_Inward-Heat-Flux_bottom_integrate":
                 {
