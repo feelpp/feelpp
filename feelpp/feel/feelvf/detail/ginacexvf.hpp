@@ -154,6 +154,7 @@ public:
     explicit GinacExVF( value_type value )
         :
         super(),
+        M_fun( value ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_exprDesc( std::to_string( value ) ),
         M_isPolynomial( true ),
