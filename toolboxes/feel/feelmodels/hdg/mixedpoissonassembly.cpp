@@ -689,9 +689,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr= idt(uI) * normal(u) );
 
-    // <lambda, tau w>_Gamma_I
+    // -<lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * idt(uI) * id(w) );
+                                        _expr=-tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=normalt(u) * id(nu) );
