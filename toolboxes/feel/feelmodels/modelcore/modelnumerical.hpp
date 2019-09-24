@@ -144,15 +144,25 @@ class ModelNumerical : public ModelAlgebraic
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
 
-        bool hasPostProcessExportsField( std::string const& fieldName ) const { return M_postProcessExportsFields.find( fieldName ) != M_postProcessExportsFields.end(); }
-        std::set<std::string> const& postProcessExportsFields() const { return M_postProcessExportsFields; }
+        bool hasPostProcessExportsField( std::string const& fieldName ) const { return hasPostProcessExportsField( "",fieldName ); }
+        bool hasPostProcessExportsField(  std::string const& exportTag, std::string const& fieldName ) const
+            {
+                auto itFindTag = M_postProcessExportsFields.find( exportTag );
+                if ( itFindTag == M_postProcessExportsFields.end() )
+                    return false;
+                return std::get<0>( itFindTag->second ).find( fieldName ) != std::get<0>( itFindTag->second ).end();
+            }
+        std::set<std::string> const& postProcessExportsFields( std::string const& exportTag = "" ) const { return std::get<0>( M_postProcessExportsFields.find( exportTag )->second ); }
+        std::string const& postProcessExportsPidName( std::string const& exportTag = "" ) const { return std::get<2>( M_postProcessExportsFields.find( exportTag )->second ); }
         std::set<std::string> const& postProcessSaveFields() const { return M_postProcessSaveFields; }
         fs::path const& postProcessSaveRepository() const { return M_postProcessSaveRepository; }
-        std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+        std::set<std::string> postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
         template <typename ExporterType,typename TupleFieldsType>
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields );
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields );
+        template <typename ExporterType,typename TupleFieldsType>
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields ) { this->executePostProcessExports(exporter,"",time,tupleFields); }
         template <typename ExporterType,typename TupleFieldsType>
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
 
@@ -180,7 +190,10 @@ class ModelNumerical : public ModelAlgebraic
 
     protected :
 
-        void setPostProcessExportsAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessExportsAllFieldsAvailable = ifields; }
+        void setPostProcessExportsAllFieldsAvailable( std::set<std::string> const& ifields ) { this->setPostProcessExportsAllFieldsAvailable( "", ifields ); }
+        void setPostProcessExportsAllFieldsAvailable( std::string const& exportTag, std::set<std::string> const& ifields ) { std::get<1>( M_postProcessExportsFields[exportTag] ) = ifields; }
+        void setPostProcessExportsPidName( std::string const& pidName ) { this->setPostProcessExportsPidName( "", pidName ); }
+        void setPostProcessExportsPidName( std::string const& exportTag,std::string const& pidName ) { std::get<2>( M_postProcessExportsFields[exportTag] ) = pidName; }
         void setPostProcessSaveAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessSaveAllFieldsAvailable = ifields; }
         virtual void initPostProcess();
 
@@ -236,8 +249,8 @@ class ModelNumerical : public ModelAlgebraic
         std::string M_meshFile, M_geoFile;
 
         std::string M_exporterPath;
-        std::set<std::string> M_postProcessExportsFields, M_postProcessSaveFields;
-        std::set<std::string> M_postProcessExportsAllFieldsAvailable, M_postProcessSaveAllFieldsAvailable;
+        std::map<std::string,std::tuple< std::set<std::string>, std::set<std::string>, std::string > > M_postProcessExportsFields; // (fields, allFieldsAvailable,pidName)
+        std::set<std::string> M_postProcessSaveFields, M_postProcessSaveAllFieldsAvailable;
         std::string M_postProcessSaveFieldsFormat;
         fs::path M_postProcessSaveRepository;
         ModelMeasuresIO M_postProcessMeasuresIO;
@@ -325,9 +338,19 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
 
 template <typename ExporterType,typename TupleFieldsType>
 void
-ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields )
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields )
 {
-    bool hasFieldToExport = this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields );
+    std::set<std::string> const& fieldsNamesToExport = this->postProcessExportsFields( tag );
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields );
+    if ( exporter && exporter->doExport() )
+    {
+        std::string const& pidName = this->postProcessExportsPidName( tag );
+        if ( !pidName.empty() && fieldsNamesToExport.find( pidName ) != fieldsNamesToExport.end() )
+        {
+            exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+            hasFieldToExport = true;
+        }
+    }
     if ( hasFieldToExport )
     {
         exporter->save();
@@ -345,21 +368,43 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     bool hasFieldToExport = false;
     hana::for_each( tupleFields, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
-                        std::string const& fieldName = e.first;
-                        auto const& fieldPtr = e.second;
-                        if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                        if constexpr ( is_iterable_v<decltype(e)> )
+                            {
+                                for ( auto const& [fieldName,fieldPtr] : e )
+                                {
+                                    if (!fieldPtr )
+                                        return;
+                                    if constexpr ( decay_type<ExporterType>::mesh_type::nDim == decay_type<decltype(fieldPtr)>::mesh_type::nDim )
+                                                 {
+                                                     if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                                                     {
+                                                         exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                                                      *fieldPtr );
+                                                         hasFieldToExport = true;
+                                                     }
+                                                 }
+                                }
+                            }
+                        else
                         {
-                            exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
-                                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
-                                                         *fieldPtr );
-                            hasFieldToExport = true;
+                            std::string const& fieldName = e.first;
+                            auto const& fieldPtr = e.second;
+                            if (!fieldPtr )
+                                return;
+                            if constexpr ( decay_type<ExporterType>::mesh_type::nDim == decay_type<decltype(fieldPtr)>::mesh_type::nDim )
+                                         {
+                                             if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                                             {
+                                                 exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                                              prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                                              *fieldPtr );
+                                                 hasFieldToExport = true;
+                                             }
+                                         }
                         }
                     });
-    if ( fieldsNamesToExport.find( "pid" ) != fieldsNamesToExport.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
+
     return hasFieldToExport;
 }
 
@@ -422,14 +467,30 @@ ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNames
     std::string formatUsed = (format.empty())? "default" : format;
     hana::for_each( fieldTuple, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
                     {
-                        std::string const& fieldName = e.first;
-                        auto const& fieldPtr = e.second;
-                        if ( fieldPtr && fieldsNamesToSave.find( fieldName ) != fieldsNamesToSave.end() )
+                        if constexpr ( is_iterable_v<decltype(e)> )
+                            {
+                                for ( auto const& [fieldName,fieldPtr] : e )
+                                {
+                                    if ( fieldPtr && fieldsNamesToSave.find( fieldName ) != fieldsNamesToSave.end() )
+                                    {
+                                        std::string fieldNameSaved = fieldName;
+                                        if ( index != invalid_uint32_type_value )
+                                            fieldNameSaved = (boost::format("%1%_%2%")%fieldNameSaved%index).str();
+                                        fieldPtr->save(_path=this->postProcessSaveRepository().string(),_name=fieldNameSaved,_type=formatUsed );
+                                    }
+                                }
+                            }
+                        else
                         {
-                            std::string fieldNameSaved = fieldName;
-                            if ( index != invalid_uint32_type_value )
-                                fieldNameSaved = (boost::format("%1%_%2%")%fieldNameSaved%index).str();
-                            fieldPtr->save(_path=this->postProcessSaveRepository().string(),_name=fieldNameSaved,_type=formatUsed );
+                            std::string const& fieldName = e.first;
+                            auto const& fieldPtr = e.second;
+                            if ( fieldPtr && fieldsNamesToSave.find( fieldName ) != fieldsNamesToSave.end() )
+                            {
+                                std::string fieldNameSaved = fieldName;
+                                if ( index != invalid_uint32_type_value )
+                                    fieldNameSaved = (boost::format("%1%_%2%")%fieldNameSaved%index).str();
+                                fieldPtr->save(_path=this->postProcessSaveRepository().string(),_name=fieldNameSaved,_type=formatUsed );
+                            }
                         }
                     });
 }

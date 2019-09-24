@@ -68,41 +68,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
     auto rowStartInVector = this->rowStartInVector();
-    auto bilinearForm_PatternDefault = form2( _test=Xh,_trial=Xh,_matrix=A,
+    auto bilinearFormVV_PatternDefault = form2( _test=XhV,_trial=XhV,_matrix=A,
                                               _pattern=size_type(Pattern::DEFAULT),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _rowstart=rowStartInMatrix+0,
+                                              _colstart=colStartInMatrix+0 );
+    auto bilinearFormVV_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
+                                              _rowstart=rowStartInMatrix+0,
+                                              _colstart=colStartInMatrix+0 );
+    auto bilinearFormVP = form2( _test=XhV,_trial=XhP,_matrix=A,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+0,
+                                 _colstart=colStartInMatrix+1 );
+    auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=A,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+1,
+                                 _colstart=colStartInMatrix+0 );
 
-    auto myLinearForm =form1( _test=Xh, _vector=F,
-                              _rowstart=rowStartInVector );
+    auto myLinearFormV =form1( _test=XhV, _vector=F,
+                               _rowstart=rowStartInVector+0 );
 
 
     //std::shared_ptr<element_fluid_external_storage_type> fieldVelocityPressureExtrapolated;
-    element_fluid_ptrtype fieldVelocityPressureExtrapolated;
+    element_velocity_ptrtype fieldVelocityPressureExtrapolated;
     if ( this->solverName() == "Picard" )
     {
-        fieldVelocityPressureExtrapolated = Xh->elementPtr();
-        *fieldVelocityPressureExtrapolated = *Xh->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
+        fieldVelocityPressureExtrapolated = XhV->elementPtr();
+        *fieldVelocityPressureExtrapolated = *XhV->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
     }
     else if ( !this->isStationary() )
     {
         fieldVelocityPressureExtrapolated = M_fieldConvectionVelocityExtrapolated;
     }
 
-    auto const& U = this->fieldVelocityPressure();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& v = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
+    auto const& q = this->fieldPressure();
 
     // strain tensor (trial)
     auto deft = sym(gradt(u));
@@ -127,10 +135,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         {
             if ( fieldVelocityPressureExtrapolated )
             {
-                auto const& BetaU = *fieldVelocityPressureExtrapolated;
-                auto betaU = BetaU.template element<0>();
+                auto const& betaU = *fieldVelocityPressureExtrapolated;
                 auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*this->materialProperties(),matName);
-                bilinearForm_PatternCoupled +=
+                bilinearFormVV_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
                                _geomap=this->geomap() );
@@ -140,7 +147,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 // case with steady Stokes
                 CHECK( dynamicViscosity.isNewtonianLaw() ) << "not allow with non newtonian law";
                 auto myViscosity = Feel::FeelModels::fluidMecViscosity( zero<nDim,nDim>(),*this->materialProperties(),matName);
-                bilinearForm_PatternCoupled +=
+                bilinearFormVV_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
                                _geomap=this->geomap() );
@@ -148,7 +155,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         }
         if ( BuildCstPart )
         {
-            bilinearForm_PatternCoupled +=
+            bilinearFormVP +=
                 integrate( _range=range,
                            _expr= -div(v)*idt(p),
                            _geomap=this->geomap() );
@@ -157,7 +164,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     // incompressibility term
     if ( BuildCstPart )
     {
-        bilinearForm_PatternCoupled +=
+        bilinearFormPV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
@@ -173,12 +180,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         this->timerTool("Solve").start();
 
         CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-        auto const& BetaU = *fieldVelocityPressureExtrapolated;
-        auto betaU = BetaU.template element<0>();
+        auto const& betaU = *fieldVelocityPressureExtrapolated;
         if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-            bilinearForm_PatternDefault +=
+            bilinearFormVV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
                            _geomap=this->geomap() );
@@ -186,7 +192,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         }
         else
         {
-            bilinearForm_PatternDefault +=
+            bilinearFormVV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
@@ -194,7 +200,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
         if ( this->doStabConvectionEnergy() )
         {
-            bilinearForm_PatternCoupled +=
+            bilinearFormVV_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= timeSteppingScaling*0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
@@ -207,7 +213,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             && build_ConvectiveTerm && this->isMoveDomain() )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-        bilinearForm_PatternDefault +=
+        bilinearFormVV_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -timeSteppingScaling*idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
                        _geomap=this->geomap() );
@@ -222,17 +228,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     {
         if (build_Form2TransientTerm)
         {
-            bilinearForm_PatternDefault +=
+            bilinearFormVV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                           _expr= idv(rho)*trans(idt(u))*id(v)*M_bdfVelocity->polyDerivCoefficient(0),
                            _geomap=this->geomap() );
         }
 
         if (build_Form1TransientTerm)
         {
-            auto Buzz = M_bdf_fluid->polyDeriv();
-            auto buzz = Buzz.template element<0>();
-            myLinearForm +=
+            auto buzz = M_bdfVelocity->polyDeriv();
+            myLinearFormV +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= idv(rho)*trans(idv(buzz))*id(v),
                            _geomap=this->geomap() );
@@ -252,7 +257,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             for( auto const& d : this->M_volumicForcesProperties )
             {
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-                myLinearForm +=
+                myLinearFormV +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
@@ -263,14 +268,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     // source given by user
     if ( M_haveSourceAdded && BuildNonCstPart)
     {
-        myLinearForm +=
+        myLinearFormV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
                        _geomap=this->geomap() );
     }
     if ( M_useGravityForce && BuildCstPart )
     {
-        myLinearForm +=
+        myLinearFormV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(v)),
                        _geomap=this->geomap() );
@@ -283,8 +288,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart  )
         {
             double beta = this->definePressureCstPenalisationBeta();
+            auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=A,
+                                         _pattern=size_type(Pattern::COUPLED),
+                                         _rowstart=rowStartInMatrix+1,
+                                         _colstart=colStartInMatrix+1 );
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
-                bilinearForm_PatternCoupled +=
+                bilinearFormPP +=
                     integrate( _range=rangeElt,
                                _expr=beta*idt(p)*id(q),
                                _geomap=this->geomap() );
@@ -299,16 +308,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                 for ( int k=0;k<M_XhMeanPressureLM.size();++k )
                 {
                     auto lambda = M_XhMeanPressureLM[k]->element();
-                    form2( _test=Xh, _trial=M_XhMeanPressureLM[k], _matrix=A,
-                           _rowstart=this->rowStartInMatrix(),
+                    form2( _test=XhP, _trial=M_XhMeanPressureLM[k], _matrix=A,
+                           _rowstart=this->rowStartInMatrix()+1,
                            _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
                         integrate( _range=M_definePressureCstMeshRanges[k],
                                    _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                                    _geomap=this->geomap() );
 
-                    form2( _test=M_XhMeanPressureLM[k], _trial=Xh, _matrix=A,
+                    form2( _test=M_XhMeanPressureLM[k], _trial=XhP, _matrix=A,
                            _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k,
-                           _colstart=this->colStartInMatrix() ) +=
+                           _colstart=this->colStartInMatrix()+1 ) +=
                         integrate( _range=M_definePressureCstMeshRanges[k],
                                    _expr= + idt(p)*id(lambda),
                                    _geomap=this->geomap() );
@@ -337,22 +346,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     // div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildNonCstPart)
     {
-        myLinearForm +=
+        auto myLinearFormP =form1( _test=XhP, _vector=F,
+                                   _rowstart=rowStartInVector+1 );
+        myLinearFormP +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
-        myLinearForm +=
+        myLinearFormV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= val(timeSteppingScaling*coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
 
         if ( this->doStabConvectionEnergy() )
         {
-            auto BetaU = M_bdf_fluid->poly();
-            auto betaU = BetaU.template element<0>();
-            myLinearForm +=
+            auto const& betaU = *fieldVelocityPressureExtrapolated;
+            myLinearFormV +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= timeSteppingScaling*0.5*idv(rho)*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
                            _geomap=this->geomap() );
@@ -385,16 +395,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
 
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
     auto mesh = this->mesh();
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                               _rowstart=this->rowStartInMatrix(),
-                               _colstart=this->colStartInMatrix() );
-    // special hack : use bilinearform only on velocity
-    // use operotor on(..) doesnt work on composite space (velocity+pressure) ( see bilinearform.hpp l731 no support component)
-    auto bilinearFormComp = form2( _test=this->functionSpaceVelocity(),_trial=this->functionSpaceVelocity(),_matrix=A,
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=this->colStartInMatrix() );
+    auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
+                                 _rowstart=this->rowStartInMatrix(),
+                                 _colstart=this->colStartInMatrix() );
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
@@ -423,17 +428,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
             continue;
         auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
         if ( !listMarkerFaces.empty() )
-            bilinearForm +=
+            bilinearFormVV +=
                 on( _range=markedfaces( mesh, listMarkerFaces ),
                     _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
         if ( !listMarkerEdges.empty() )
-            bilinearForm +=
+            bilinearFormVV +=
                 on( _range=markededges( mesh, listMarkerEdges ),
                     _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
         if ( !listMarkerPoints.empty() )
-            bilinearForm +=
+            bilinearFormVV +=
                 on( _range=markedpoints( mesh, listMarkerPoints ),
                     _element=u, _rhs=F, _expr=expression(d,this->symbolsExpr()) );
     }
@@ -448,21 +453,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 continue;
             auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
             if ( !listMarkerFaces.empty() )
-                bilinearFormComp +=
+                bilinearFormVV +=
                     on( _range=markedfaces( mesh, listMarkerFaces ),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _element=u[comp],
                         _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
             if ( !listMarkerEdges.empty() )
-                bilinearFormComp +=
+                bilinearFormVV +=
                     on( _range=markededges( this->mesh(), listMarkerEdges ),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _element=u[comp],
                         _rhs=F, _expr=expression(d,this->symbolsExpr()) );
             auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
             if ( !listMarkerPoints.empty() )
-                bilinearFormComp +=
+                bilinearFormVV +=
                     on( _range=markedpoints( mesh, listMarkerPoints ),
-                        _element=this->M_Solution->template element<0>()[comp], //u[comp],
+                        _element=u[comp],
                         _rhs=F, _expr=expression(d,this->symbolsExpr()) );
         }
     }
@@ -472,7 +477,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         std::string const& marker = std::get<0>( inletbc );
         auto const& inletVel = std::get<0>( M_fluidInletVelocityInterpolated.find(marker)->second );
 
-        bilinearForm +=
+        bilinearFormVV +=
             on( _range=markedfaces(this->mesh(),marker),
                 _element=u, _rhs=F,
                 _expr=-idv(inletVel)*N() );
@@ -481,7 +486,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     for( auto const& d : M_bcMovingBoundaryImposed )
     {
         auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
-        bilinearForm +=
+        bilinearFormVV +=
             on( _range=markedfaces(this->mesh(),listMarkerFaces),
                 _element=u, _rhs=F,
                 _expr=idv(M_meshALE->velocity()) );
