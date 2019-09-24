@@ -191,7 +191,12 @@ ModelNumerical::initPostProcess()
 {
     if ( this->hasModelProperties() )
     {
-        M_postProcessExportsFields = this->postProcessExportsFields( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+        for ( auto & [tag,fields] : M_postProcessExportsFields )
+        {
+            if ( !std::get<2>( fields ).empty() ) // add the pid name
+                std::get<1>( fields ).insert( std::get<2>( fields ) );
+            std::get<0>( fields ) = this->postProcessExportsFields( tag, this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+        }
         M_postProcessSaveFields = this->postProcessSaveFields( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
         M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
     }
@@ -200,12 +205,15 @@ ModelNumerical::initPostProcess()
 }
 
 std::set<std::string>
-ModelNumerical::postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix ) const
+ModelNumerical::postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix ) const
 {
     std::set<std::string> res;
+    auto itFindTag = M_postProcessExportsFields.find( tag );
+    if ( itFindTag == M_postProcessExportsFields.end() )
+        return res;
     for ( auto const& o : ifields )
     {
-        for ( auto const& fieldAvailable : M_postProcessExportsAllFieldsAvailable )
+        for ( auto const& fieldAvailable : std::get<1>( itFindTag->second ) )
             if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
                 res.insert( fieldAvailable );
     }

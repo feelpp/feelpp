@@ -626,6 +626,13 @@ public :
         }
     }
 
+
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            // TODO
+        }
+
 private :
     std::string M_prefix;
     space_ptrtype M_space;

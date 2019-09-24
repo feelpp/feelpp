@@ -44,25 +44,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
     size_type rowStartInVector = this->rowStartInVector();
-    auto bilinearForm_PatternDefault = form2( _test=Xh,_trial=Xh,_matrix=J,
+    auto bilinearFormVV_PatternDefault = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::DEFAULT),
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
+    auto bilinearFormVV_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=rowStartInMatrix,
                                               _colstart=colStartInMatrix );
+    auto bilinearFormVP = form2( _test=XhV,_trial=XhP,_matrix=J,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+0,
+                                 _colstart=colStartInMatrix+1 );
+    auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=J,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+1,
+                                 _colstart=colStartInMatrix+0 );
 
-    auto U = Xh->element(XVec, rowStartInVector);
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto u = XhV->element(XVec, rowStartInVector+0);
+    auto const& v = u;
+    auto p = XhP->element(XVec, rowStartInVector+1);
+    auto const& q = p;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -92,7 +100,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
 
             auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
-            bilinearForm_PatternCoupled +=
+            bilinearFormVV_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
                 integrate ( _range=M_rangeMeshElements,
                             _expr=timeSteppingScaling*convecTerm,
@@ -105,7 +113,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 #else
             auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
 #endif
-            bilinearForm_PatternCoupled +=
+            bilinearFormVV_PatternCoupled +=
                 //bilinearForm_PatternDefault +=
                 integrate ( _range=M_rangeMeshElements,
                             _expr=timeSteppingScaling*convecTerm,
@@ -116,7 +124,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && BuildCstPart )
     {
-        bilinearForm_PatternCoupled +=
+        bilinearFormVV_PatternCoupled +=
             //bilinearForm_PatternDefault +=
             integrate (_range=M_rangeMeshElements,
                        _expr= -timeSteppingScaling*trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
@@ -135,7 +143,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         auto const& range = rangeData.second;
         auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
         if ( BuildCstPart )
-            bilinearForm_PatternCoupled +=
+            bilinearFormVP +=
                 integrate( _range=range,
                            _expr= -idt(p)*div(v),
                            _geomap=this->geomap() );
@@ -144,7 +152,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
              ( !dynamicViscosity.isNewtonianLaw() && BuildNonCstPart ) )
         {
             auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianViscousStressTensorJacobian(gradv(u),u,*this->materialProperties(),matName);
-            bilinearForm_PatternCoupled +=
+            bilinearFormVV_PatternCoupled +=
                 integrate( _range=range,
                            _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
                            _geomap=this->geomap() );
@@ -155,7 +163,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     // incompressibility term
     if (BuildCstPart)
     {
-        bilinearForm_PatternCoupled +=
+        bilinearFormPV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -divt(u)*id(q),
                        _geomap=this->geomap() );
@@ -168,9 +176,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
     {
-        bilinearForm_PatternDefault +=
+        bilinearFormVV_PatternDefault +=
             integrate( _range=M_rangeMeshElements,
-                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdf_fluid->polyDerivCoefficient(0),
+                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdfVelocity->polyDerivCoefficient(0),
                        _geomap=this->geomap() );
     }
 
@@ -187,7 +195,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
         norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
 
-        bilinearForm_PatternDefault +=
+        bilinearFormVV_PatternDefault +=
             integrate(_range=M_rangeMeshElements,
                       _expr=(1./pseudoTimeStepDelta)*idv(norm2_uu)*inner(idt(u),id(u)),
                       //_expr=(1./pseudoTimeStepDelta)*(norm2(idv(u))/h())*inner(idt(u),id(u)),
@@ -200,9 +208,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     {
         if ( this->definePressureCstMethod() == "penalisation" && BuildCstPart )
         {
+            auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=J,
+                                         _pattern=size_type(Pattern::COUPLED),
+                                         _rowstart=rowStartInMatrix+1,
+                                         _colstart=colStartInMatrix+1 );
             double beta = this->definePressureCstPenalisationBeta();
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
-                bilinearForm_PatternCoupled +=
+                bilinearFormPP +=
                     integrate( _range=rangeElt,
                                _expr=beta*idt(p)*id(q),
                                _geomap=this->geomap() );
@@ -214,16 +226,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             for ( int k=0;k<M_XhMeanPressureLM.size();++k )
             {
                 auto lambda = M_XhMeanPressureLM[k]->element();
-                form2( _test=Xh, _trial=M_XhMeanPressureLM[k], _matrix=J,
-                       _rowstart=this->rowStartInMatrix(),
+                form2( _test=XhP, _trial=M_XhMeanPressureLM[k], _matrix=J,
+                       _rowstart=this->rowStartInMatrix()+1,
                        _colstart=this->colStartInMatrix()+startBlockIndexDefinePressureCstLM+k ) +=
                     integrate( _range=M_definePressureCstMeshRanges[k],
                                _expr= id(p)*idt(lambda) /*+ idt(p)*id(lambda)*/,
                                _geomap=this->geomap() );
 
-                form2( _test=M_XhMeanPressureLM[k], _trial=Xh, _matrix=J,
+                form2( _test=M_XhMeanPressureLM[k], _trial=XhP, _matrix=J,
                        _rowstart=this->rowStartInMatrix()+startBlockIndexDefinePressureCstLM+k,
-                       _colstart=this->colStartInMatrix() ) +=
+                       _colstart=this->colStartInMatrix()+1 ) +=
                     integrate( _range=M_definePressureCstMeshRanges[k],
                                _expr= + idt(p)*id(lambda),
                                _geomap=this->geomap() );
@@ -233,11 +245,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateJacobianStabilisation( data, U );
+    this->updateJacobianStabilisation( data, u,p );
 
     //--------------------------------------------------------------------------------------------------//
 
-    this->updateJacobianWeakBC( data, U );
+    this->updateJacobianWeakBC( data, u,p );
 
     //--------------------------------------------------------------------------------------------------//
     /*double*/ timeElapsed=thetimer.elapsed();

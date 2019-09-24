@@ -122,17 +122,48 @@ measureStatisticsEvaluation( RangeType const& range,
     {
         hana::for_each( fieldTuple, [&]( auto const& e )
                         {
-                            if ( ppStat.field() == e.first )
-                            {
-                                auto const& fieldFunc = e.second;
-                                for ( std::string const& statType : ppStatType )
+                            if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    if ( statType == "min" || statType == "max" || statType == "min-max"  )
-                                        measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
-                                    else if ( statType == "mean" )
-                                        measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
-                                    else if ( statType == "integrate" )
-                                        measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                    for ( auto const& [fieldName,fieldFunc] : e )
+                                    {
+                                        if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                            {
+                                                if ( !fieldFunc )
+                                                    continue;
+                                            }
+                                        if ( ppStat.field() == fieldName )
+                                        {
+                                            for ( std::string const& statType : ppStatType )
+                                            {
+                                                if ( statType == "min" || statType == "max" || statType == "min-max"  )
+                                                    measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
+                                                else if ( statType == "mean" )
+                                                    measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
+                                                else if ( statType == "integrate" )
+                                                    measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                            }
+                                        }
+                                    }
+                                }
+                            else
+                            {
+                                if ( ppStat.field() == e.first )
+                                {
+                                    auto const& fieldFunc = e.second;
+                                    if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                        {
+                                            if ( !fieldFunc )
+                                                return;
+                                        }
+                                    for ( std::string const& statType : ppStatType )
+                                    {
+                                        if ( statType == "min" || statType == "max" || statType == "min-max"  )
+                                            measureStatisticsEvaluationMinMax( range, idv(fieldFunc), ppStat, res, statType, false );
+                                        else if ( statType == "mean" )
+                                            measureStatisticsEvaluationMean( range, idv(fieldFunc), ppStat, res, false );
+                                        else if ( statType == "integrate" )
+                                            measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
+                                    }
                                 }
                             }
                         });

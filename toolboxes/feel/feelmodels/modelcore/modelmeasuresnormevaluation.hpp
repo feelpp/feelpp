@@ -141,11 +141,35 @@ measureNormEvaluation( RangeType const& range,
     {
         hana::for_each( fieldTuple, [&]( auto const& e )
                         {
-                            if ( ppNorm.field() == e.first )
+                            if constexpr ( is_iterable_v<decltype(e)> )
+                                {
+                                    for ( auto const& [fieldName,fieldFunc] : e )
+                                    {
+                                        if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                            {
+                                                if ( !fieldFunc )
+                                                    continue;
+                                            }
+                                        if ( ppNorm.field() == fieldName )
+                                        {
+                                            for ( std::string const& normType : ppNorm.types() )
+                                                measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+                                        }
+                                    }
+                                }
+                            else
                             {
-                                auto const& fieldFunc = e.second;
-                                for ( std::string const& normType : ppNorm.types() )
-                                    measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+                                if ( ppNorm.field() == e.first )
+                                {
+                                    auto const& fieldFunc = e.second;
+                                    if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                        {
+                                            if ( !fieldFunc )
+                                                return;
+                                        }
+                                    for ( std::string const& normType : ppNorm.types() )
+                                        measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+                                }
                             }
                         });
     }
