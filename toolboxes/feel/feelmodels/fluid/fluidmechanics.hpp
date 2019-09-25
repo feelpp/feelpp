@@ -622,17 +622,17 @@ public :
             this->updateVorticity();
         }
 
-    auto allFields() const
+    auto allFields( std::string const& prefix = "" ) const
         {
             std::map<std::string,element_normalstress_ptrtype> fields_normalstress;
-            fields_normalstress["trace.normal-stress"] = this->fieldNormalStressPtr();
-            fields_normalstress["trace.wall-shear-stress"] = this->fieldWallShearStressPtr();
+            fields_normalstress[prefixvm(prefix,"trace.normal-stress")] = this->fieldNormalStressPtr();
+            fields_normalstress[prefixvm(prefix,"trace.wall-shear-stress")] = this->fieldWallShearStressPtr();
             std::map<std::string, typename mesh_ale_type::ale_map_element_ptrtype> fields_disp;
             if ( this->isMoveDomain() )
-                fields_disp["displacement"] = this->meshALE()->displacement();
-            return hana::make_tuple( std::make_pair( "velocity",this->fieldVelocityPtr() ),
-                                     std::make_pair( "pressure",this->fieldPressurePtr() ),
-                                     std::make_pair( "vorticity",this->fieldVorticityPtr() ),
+                fields_disp[prefixvm(prefix,"displacement")] = this->meshALE()->displacement();
+            return hana::make_tuple( std::make_pair( prefixvm( prefix,"velocity"),this->fieldVelocityPtr() ),
+                                     std::make_pair( prefixvm( prefix,"pressure"),this->fieldPressurePtr() ),
+                                     std::make_pair( prefixvm( prefix,"vorticity"),this->fieldVorticityPtr() ),
                                      fields_disp,
                                      fields_normalstress );
         }

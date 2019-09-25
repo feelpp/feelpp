@@ -256,7 +256,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
-    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme 
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
                             _name="temperature"+suffixName,
                             _prefix=this->prefix(),
@@ -306,15 +306,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
             icTemperatureFields = M_bdfTemperature->unknowns();
         this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
 
-        if ( !this->isStationary() )
-            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
-
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
         {
             auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                                 "",this->worldComm(),this->repository().expr() );
-            this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
+            icTemperatureFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            for ( int k=1;k<icTemperatureFields.size();++k )
+                *icTemperatureFields[k] = *icTemperatureFields[0];
         }
+
+        if ( !this->isStationary() )
+            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
     }
 }
 
@@ -325,7 +327,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
     super_type::initPostProcess();
 

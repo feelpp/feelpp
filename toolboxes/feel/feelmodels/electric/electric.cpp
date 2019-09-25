@@ -253,7 +253,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses","pid"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();
 
