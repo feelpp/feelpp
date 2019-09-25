@@ -167,7 +167,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeatt, M_postProcessFieldExportedFluid;
 };
 
 } // namespace FeelModels

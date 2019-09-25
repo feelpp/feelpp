@@ -153,6 +153,7 @@ class ModelNumerical : public ModelAlgebraic
                 return std::get<0>( itFindTag->second ).find( fieldName ) != std::get<0>( itFindTag->second ).end();
             }
         std::set<std::string> const& postProcessExportsFields( std::string const& exportTag = "" ) const { return std::get<0>( M_postProcessExportsFields.find( exportTag )->second ); }
+        std::set<std::string> const& postProcessExportsAllFieldsAvailable( std::string const& exportTag = "" ) const { return std::get<1>( M_postProcessExportsFields.find( exportTag )->second ); }
         std::string const& postProcessExportsPidName( std::string const& exportTag = "" ) const { return std::get<2>( M_postProcessExportsFields.find( exportTag )->second ); }
         std::set<std::string> const& postProcessSaveFields() const { return M_postProcessSaveFields; }
         fs::path const& postProcessSaveRepository() const { return M_postProcessSaveRepository; }

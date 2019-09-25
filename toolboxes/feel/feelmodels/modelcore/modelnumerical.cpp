@@ -192,11 +192,8 @@ ModelNumerical::initPostProcess()
     if ( this->hasModelProperties() )
     {
         for ( auto & [tag,fields] : M_postProcessExportsFields )
-        {
-            if ( !std::get<2>( fields ).empty() ) // add the pid name
-                std::get<1>( fields ).insert( std::get<2>( fields ) );
             std::get<0>( fields ) = this->postProcessExportsFields( tag, this->modelProperties().postProcess().exports( this->keyword() ).fields() );
-        }
+
         M_postProcessSaveFields = this->postProcessSaveFields( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
         M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
     }
@@ -216,6 +213,12 @@ ModelNumerical::postProcessExportsFields( std::string const& tag, std::set<std::
         for ( auto const& fieldAvailable : std::get<1>( itFindTag->second ) )
             if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
                 res.insert( fieldAvailable );
+    }
+    std::string const& pidName = std::get<2>( itFindTag->second );
+    if ( !pidName.empty() )
+    {
+        if ( ifields.find( pidName ) != ifields.end() || ifields.find( "all" ) != ifields.end() )
+            res.insert( pidName );
     }
     return res;
 }

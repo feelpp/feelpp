@@ -161,13 +161,13 @@ public :
 
     void updateParameterValues();
 
-    auto allFields() const
+    auto allFields( std::string const& prefix = "" ) const
         {
-            return hana::make_tuple( std::make_pair( "electric-potential",this->fieldElectricPotentialPtr() ),
-                                     std::make_pair( "electric-field",this->fieldElectricFieldPtr() ),
-                                     std::make_pair( "electric-conductivity",M_electricProperties->fieldElectricConductivityPtr() ),
-                                     std::make_pair( "current-density",this->fieldCurrentDensityPtr() ),
-                                     std::make_pair( "joules-losses",this->fieldJoulesLossesPtr() )
+            return hana::make_tuple( std::make_pair( prefixvm(prefix,"electric-potential"),this->fieldElectricPotentialPtr() ),
+                                     std::make_pair( prefixvm(prefix,"electric-field"),this->fieldElectricFieldPtr() ),
+                                     std::make_pair( prefixvm(prefix,"electric-conductivity"),M_electricProperties->fieldElectricConductivityPtr() ),
+                                     std::make_pair( prefixvm(prefix,"current-density"),this->fieldCurrentDensityPtr() ),
+                                     std::make_pair( prefixvm(prefix,"joules-losses"),this->fieldJoulesLossesPtr() )
                                      );
         }
 

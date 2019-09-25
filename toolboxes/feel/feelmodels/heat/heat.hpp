@@ -229,12 +229,12 @@ class Heat : public ModelNumerical,
                 this->thermalProperties()->updateFields( symbolsExpr );
             }
 
-        auto allFields() const
+        auto allFields( std::string const& prefix = "" ) const
             {
-                return hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ),
-                                         std::make_pair( "velocity-convection", this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() ),
-                                         std::make_pair( "thermal-conductivity",this->thermalProperties()->fieldThermalConductivityPtr() ),
-                                         std::make_pair( "density", this->thermalProperties()->fieldRhoPtr() )
+                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() ),
+                                         std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() ),
+                                         std::make_pair( prefixvm( prefix,"thermal-conductivity" ),this->thermalProperties()->fieldThermalConductivityPtr() ),
+                                         std::make_pair( prefixvm( prefix,"density" ), this->thermalProperties()->fieldRhoPtr() )
                                          );
             }
 
