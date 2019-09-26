@@ -788,19 +788,40 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
     }
 
 }
+
 template<typename FE1,  typename FE2, typename ElemContType>
 template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0 )
 {
-    //size_type row_start = M_lb.front().globalRowStart();
-    //size_type col_start = M_lb.front().globalColumnStart();
+    index_type trial_eid = this->trialElementId( elt_0 );
+    this->assemble( std::make_pair( elt_0, trial_eid ) );
+}
+
+template<typename FE1,  typename FE2, typename ElemContType>
+template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
+void
+BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( std::pair<index_type, index_type> const& elt )
+{
+    index_type elt_0 = elt.first;
+    index_type trial_eid = elt.second;
+    size_type row_start = M_lb.front().globalRowStart();
+    size_type col_start = M_lb.front().globalColumnStart();
+
+    //
+    DCHECK( trial_eid != invalid_v<index_type> )
+        << "this case should have been taken care of earlier before the assembly process\n";
+
+    DVLOG(2) << "local Assembly for element " << elt_0
+             << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
 
 #if !defined(NDEBUG)
-    DVLOG(2) << "[BilinearForm::assemble] global assembly in element " << elt_0 << "\n";
-#endif /* NDEBUG */
+    bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( elt_0 );
+    bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( trial_eid );
+#endif
+
     bool do_less = ( !UseMortar && ( M_form.isPatternDefault() &&
-                       ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
+                                     ( M_test_dof->nComponents == M_trial_dof->nComponents ) ) &&
                      !M_form.isPatternCoupled() );
 
     if ( do_less )
@@ -811,13 +832,13 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                                     test_dof_type::fe_type::nLocalDof, trial_dof_type::fe_type::nLocalDof );
             M_c_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTest() ).array().segment( c*test_dof_type::fe_type::nLocalDof,
                                     test_dof_type::fe_type::nLocalDof );
-            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( elt_0,M_form.dofIdToContainerIdTrial() ).array().segment( c*trial_dof_type::fe_type::nLocalDof,
+            M_c_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid,M_form.dofIdToContainerIdTrial() ).array().segment( c*trial_dof_type::fe_type::nLocalDof,
                                     trial_dof_type::fe_type::nLocalDof );
 
             if ( test_dof_type::is_modal || trial_dof_type::is_modal )
             {
                 M_c_local_rowsigns = M_test_dof->localToGlobalSigns( elt_0 ).segment( c*test_dof_type::fe_type::nLocalDof,test_dof_type::fe_type::nLocalDof );
-                M_c_local_colsigns = M_trial_dof->localToGlobalSigns( elt_0 ).segment( c*trial_dof_type::fe_type::nLocalDof,trial_dof_type::fe_type::nLocalDof );
+                M_c_local_colsigns = M_trial_dof->localToGlobalSigns( trial_eid ).segment( c*trial_dof_type::fe_type::nLocalDof,trial_dof_type::fe_type::nLocalDof );
                 M_c_rep.array() *= ( M_c_local_rowsigns*M_c_local_colsigns.transpose() ).array().template cast<value_type>();
             }
 
@@ -826,38 +847,7 @@ BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExp
                               M_c_rep.data(), elt_0 );
         }
     }
-
-    else
-    {
-        size_type trial_eid= this->trialElementId( elt_0 );
-        assemble( std::make_pair( elt_0, trial_eid ) );
-    }
-}
-
-
-template<typename FE1,  typename FE2, typename ElemContType>
-template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
-void
-BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::
-assemble( std::pair<index_type, index_type> const& elt )
-{
-    size_type elt_0 = elt.first;
-    size_type row_start = M_lb.front().globalRowStart();
-    size_type col_start = M_lb.front().globalColumnStart();
-
-    size_type trial_eid= elt.second;
-    //
-    DCHECK( trial_eid != invalid_v<size_type> )
-        << "this case should have been taken care of earlier before the assembly process\n";
-
-    DVLOG(2) << "local Assembly for element " << elt_0
-             << " UseMortar=" << UseMortar << " bdy: " << M_test_dof->mesh()->isBoundaryElement( elt_0 );
-
-#if !defined(NDEBUG)
-    bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( elt_0 );
-    bool useMortarTrialAssembly = trial_dof_type::is_mortar && M_trial_dof->mesh()->isBoundaryElement( trial_eid );
-#endif
-    if ( UseMortarType == 0 )
+    else if constexpr ( UseMortarType == 0 )
     {
         M_local_rows.array() = M_test_dof->localToGlobalIndices( elt_0, M_form.dofIdToContainerIdTest() ).array();
         M_local_cols.array() = M_trial_dof->localToGlobalIndices( trial_eid, M_form.dofIdToContainerIdTrial() ).array();
@@ -875,7 +865,7 @@ assemble( std::pair<index_type, index_type> const& elt )
                           M_local_cols.data(), M_local_cols.size(),
                           M_rep.data(), elt_0, trial_eid );
     }
-    else if ( UseMortarType == 1 )
+    else if constexpr ( UseMortarType == 1 )
     {
 #if !defined(NDEBUG)
         CHECK( useMortarTestAssembly && !useMortarTrialAssembly ) << "bad UseMortarType";
@@ -895,7 +885,7 @@ assemble( std::pair<index_type, index_type> const& elt )
                           M_mortarTest_rep.data() );
 
     }
-    else if ( UseMortarType == 2 )
+    else if constexpr ( UseMortarType == 2 )
     {
 #if !defined(NDEBUG)
         CHECK( !useMortarTestAssembly && useMortarTrialAssembly ) << "bad UseMortarType";
@@ -923,11 +913,8 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assemble( index_type elt_0, index_type elt_1  )
 {
-    //size_type row_start = M_lb.front().globalRowStart();
-    //size_type col_start = M_lb.front().globalColumnStart();
-
-    size_type trial_e0id= this->trialElementId( elt_0 );
-    size_type trial_e1id= this->trialElementId( elt_1 );
+    index_type trial_e0id= this->trialElementId( elt_0 );
+    index_type trial_e1id= this->trialElementId( elt_1 );
 
     this->assemble( std::make_pair( elt_0, trial_e0id ), std::make_pair( elt_1, trial_e1id ) );
 }
@@ -940,10 +927,10 @@ assemble( std::pair<index_type,index_type> const& elt_0,
           std::pair<index_type,index_type> const& elt_1 )
 {
 
-    size_type test_elt_0 = elt_0.first;
-    size_type test_elt_1 = elt_1.first;
-    size_type trial_elt_0 = elt_0.second;
-    size_type trial_elt_1 = elt_1.second;
+    index_type test_elt_0 = elt_0.first;
+    index_type test_elt_1 = elt_1.first;
+    index_type trial_elt_0 = elt_0.second;
+    index_type trial_elt_1 = elt_1.second;
 
     M_local_rows_2.template head<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_0,M_form.dofIdToContainerIdTest() ).array();
     M_local_rows_2.template tail<test_dof_type::nDofPerElement>().array() = M_test_dof->localToGlobalIndices( test_elt_1,M_form.dofIdToContainerIdTest() ).array();
@@ -986,11 +973,8 @@ template<typename GeomapTestContext,typename ExprT,typename IM,typename GeomapEx
 void
 BilinearForm<FE1,FE2,ElemContType>::Context<GeomapTestContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::assembleInCaseOfInterpolate()
 {
-    //size_type row_start = M_lb.front().globalRowStart();
-    //size_type col_start = M_lb.front().globalColumnStart();
-
-    size_type eltTestId = fusion::at_key<gmc<0> >( M_test_gmc )->id();
-    size_type eltTrialId = fusion::at_key<gmc<0> >( M_trial_gmc )->id();
+    index_type eltTestId = fusion::at_key<gmc<0> >( M_test_gmc )->id();
+    index_type eltTrialId = fusion::at_key<gmc<0> >( M_trial_gmc )->id();
 
 #if !defined(NDEBUG)
     bool useMortarTestAssembly = test_dof_type::is_mortar && M_test_dof->mesh()->isBoundaryElement( eltTestId );
