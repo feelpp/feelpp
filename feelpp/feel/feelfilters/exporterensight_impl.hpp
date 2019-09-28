@@ -285,17 +285,19 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             auto __tstp_it = boost::prior(__tstp_en);
 
-            typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__tstp_it )->beginNodalScalar();
-            typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__tstp_it )->endNodalScalar();
+            typename timeset_type::step_type::nodal_const_iterator __it = ( *__tstp_it )->beginNodal();
+            typename timeset_type::step_type::nodal_const_iterator __end = ( *__tstp_it )->endNodal();
 
             while ( __it != __end )
             {
+                auto const& nodalData =  __it->second;
+                auto const& nodalField = unwrap_ptr( nodalData.second[0][0] );
                 __out << "scalar per node: "
                     << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __it->second.name() << " " << this->prefix() << "." << __it->first << "-" << this->worldComm().globalSize() << "_" << __it->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                    << nodalField.name() << " " << this->prefix() << "." << __it->first << "-" << this->worldComm().globalSize() << "_" << nodalField.worldComm().localRank() << ".***" << "\n";// important localRank !!
                 ++__it;
             }
-
+#if 0
             typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__tstp_it )->beginNodalVector();
             typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__tstp_it )->endNodalVector();
 
@@ -353,6 +355,7 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
                     << __itt_el->second.name() << " " << this->prefix() << "." << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << __itt_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
                 ++__itt_el;
             }
+#endif
         }
 
         ++__ts_it;
@@ -513,13 +516,13 @@ ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 
                 if ( __step->isInMemory() )
                 {
-                    saveNodal( __step, __step->beginNodalScalar(), __step->endNodalScalar() );
-                    saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
-                    saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
+                    saveNodal( __step, __step->beginNodal(), __step->endNodal() );
+                    //saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
+                    //saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
 
-                    saveElement( __step, __step->beginElementScalar(), __step->endElementScalar() );
-                    saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
-                    saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
+                    saveElement( __step, __step->beginElement(), __step->endElement() );
+                    //saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
+                    //saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
 
                 }
 
@@ -541,26 +544,30 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
     Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
     while ( __var != en )
     {
-        if ( !__var->second.worldComm().isActive() ) return;
+        auto const& nodalData =  __var->second;
+        auto const& nodalField00 = unwrap_ptr( nodalData.second[0][0] );
+
+        if ( !nodalField00.worldComm().isActive() ) return;
 
         std::ostringstream __varfname;
 
         __varfname << this->path() << "/" << this->prefix() << "." << __var->first
-                   << "-" << this->worldComm().globalSize() << "_" << __var->second.worldComm().localRank() // important localRank
+                   << "-" << this->worldComm().globalSize() << "_" << nodalField00.worldComm().localRank() // important localRank
                    << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
         DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
         std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
-        strcpy( buffer, __var->second.name().c_str() );
+        strcpy( buffer, nodalField00.name().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        uint16_type nComponents = __var->second.nComponents;
-
+        uint16_type nComponents = nodalField00.nComponents;
+#if 0 // TODO
         if ( __var->second.is_vectorial )
             nComponents = 3;
         if ( __var->second.is_tensor2 )
             nComponents = 9;
+#endif
 
         /**
          * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -570,7 +577,7 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
          * space which has the "right" size.
          */
         std::vector<float> m_field( nComponents*mp.ids.size() );
-        CHECK( m_field.size()/nComponents == __var->second.localSize()/__var->second.nComponents ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
+        CHECK( m_field.size()/nComponents == nodalField00.localSize()/nodalField00.nComponents ) << "Invalid size : " << m_field.size() << "!=" << nodalField00.localSize();
 
         //__field.clear();
         auto rangeElements = __step->mesh()->elementsWithProcessId();
@@ -579,8 +586,8 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
 
         size_type e = 0;
 
-        if ( !__var->second.areGlobalValuesUpdated() )
-            __var->second.updateGlobalValues();
+        //if ( !__var->second.areGlobalValuesUpdated() )
+        //__var->second.updateGlobalValues();
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
@@ -597,11 +604,11 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
                                                                  << " mesh numPoints: " << __step->mesh()->numPoints();
                     //DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 #endif
-                    if ( c < __var->second.nComponents )
+                    if ( c < nodalField00.nComponents )
                     {
-                        size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt.id(),p, c ).index();
+                        size_type dof_id = nodalField00.functionSpace()->dof()->localToGlobal( elt.id(),p, c ).index();
 
-                        m_field[global_node_id] = __var->second.globalValue( dof_id );
+                        m_field[global_node_id] = nodalField00.globalValue( dof_id );
                     }
                     else
                         m_field[global_node_id] = 0;
@@ -622,6 +629,7 @@ template<typename Iterator>
 void
 ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
 {
+#if 0 // TODO
     while ( __evar != __evaren )
     {
         if ( !__evar->second.worldComm().isActive() ) return;
@@ -726,6 +734,7 @@ ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __
         DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "done\n";
         ++__evar;
     }
+#endif
 }
 
 template<typename MeshType, int N>

@@ -240,7 +240,7 @@ private:
     */
     FEELPP_NO_EXPORT void writeVariableFiles() const;
 
-    template<typename Iterator>
+    template<bool IsNodal,typename Iterator>
     FEELPP_NO_EXPORT void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
     template<typename Iterator>
