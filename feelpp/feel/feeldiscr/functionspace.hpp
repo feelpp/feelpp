@@ -1540,7 +1540,9 @@ using Component = ComponentType;
 enum FunctionSpaceType
 {
     SCALAR = 0,
-    VECTORIAL = 1
+    VECTORIAL = 1,
+    TENSOR2,
+    TENSOR2_SYMM
 };
 
 template<uint16_type PN,
