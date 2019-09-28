@@ -35,6 +35,26 @@ namespace Feel
 {
 enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
 
+
+template <class T>
+struct is_std_vector : mpl::false_ {};
+template <class T>
+struct is_std_vector<std::vector<T> > : mpl::true_ {};
+template<class T>
+constexpr bool is_std_vector_v = is_std_vector<T>::value;
+template <class T>
+struct remove_std_vector
+{
+    typedef T type;
+};
+template <class T>
+struct remove_std_vector<std::vector<T> >
+{
+    typedef T type;
+};
+template<typename T>
+using remove_std_vector_t = typename remove_std_vector<T>::type;
+
 template<typename SpaceType, typename FunctionType>
 bool
 interpolate_copy( std::shared_ptr<SpaceType> const& space,
@@ -62,6 +82,25 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
     return false;
 }
 
+template<typename InterpType>
+void
+interpolate_sync( InterpType & interp, bool hasMeshSupportPartialDomain, std::set<size_type> const& dofUsedWithPartialMeshSupport )
+{
+    static const bool interp_is_vector = is_std_vector_v<InterpType>;
+    if constexpr ( !interp_is_vector )
+    {
+        if ( hasMeshSupportPartialDomain )
+            sync( interp, "=", dofUsedWithPartialMeshSupport );
+        else
+            sync( interp, "=" );
+    }
+    else
+    {
+        for ( auto & interp_c1 : interp )
+            for ( auto & interp_c2 : interp_c1 )
+                interpolate_sync( unwrap_ptr( interp_c2 ), hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
+    }
+}
 /**
  * Given a space \p space using a lagrange basis, compute the
  * interpolation \p interp of \p f belonging to another function
@@ -75,12 +114,13 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
  * interpolate( Xh, f, u );
  * </pre>
  */
-template<typename SpaceType, typename FunctionType>
+template<typename SpaceType, typename FunctionType, typename InterpType>
 void
 interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
-             typename SpaceType::element_type& interp )
+             /*typename SpaceType::element_type*/  InterpType & interp )
 {
+    static const bool interp_is_vector = is_std_vector_v<InterpType>;
     typedef typename SpaceType::value_type value_type;
     typedef boost::multi_array<value_type,3> array_type;
     typedef typename SpaceType::element_type interp_element_type;
@@ -113,10 +153,13 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // basis
     typedef typename SpaceType::basis_type basis_type;
 
-    // if same space type and mesh  then return the function itself
-    if ( interpolate_copy( space, f, interp ) )
-        return; 
-    
+    if constexpr ( !interp_is_vector )
+        {
+            // if same space type and mesh  then return the function itself
+            if ( interpolate_copy( space, f, interp ) )
+                return;
+        }
+
     dof_type const* __dof = space->dof().get();
     basis_type const* __basis = space->basis().get();
     gm_ptrtype __gm = space->gm();
@@ -128,22 +171,14 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     geopc_ptrtype __geopc( new geopc_type( __gm, __basis->dual().points() ) );
 
 
-    f.updateGlobalValues();
-
-    //auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
-    //auto en = f.functionSpace()->mesh()->endElementWithProcessId();
     bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->buildDofTableMPIExtended();
     bool outputUseDofTableMPIExtended = space->dof()->buildDofTableMPIExtended();
     bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && inputUseDofTableMPIExtended && outputUseDofTableMPIExtended );
 
     bool applyVectorSync = !upExtendedElt && outputUseDofTableMPIExtended;
 
-    //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
-
-    //f.id( *fectx, fvalues );
-
     // if same mesh but not same function space (different order)
-    if ( ( MeshBase<>* )f.functionSpace()->mesh().get() == ( MeshBase<>* )space->mesh().get() )
+    if ( f.functionSpace()->mesh()->isSameMesh( space->mesh() ) )
     {
         elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
@@ -167,22 +202,21 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         {
             if ( applyVectorSync )
             {
-                if ( hasMeshSupportPartialDomain )
-                    sync( interp, "=", dofUsedWithPartialMeshSupport );
-                else
-                    sync( interp, "=" );
+                interpolate_sync( interp, hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
             }
             return;
         }
 
         DVLOG(2) << "[interpolate] Same mesh but not same space\n";
-
+#if 0
         domain_gm_ptrtype __dgm = f.functionSpace()->gm();
         typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
         typedef typename domain_gm_type::precompute_type domain_geopc_type;
         domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
 
-        domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+        domain_gmc_ptrtype gmc( new domain_gmc_type( __dgm, *it, __dgeopc ) );
+
+
         auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
 
         f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
@@ -191,67 +225,92 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
         typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
-
-
-
         typename f_fectx_type::id_type m_id;
-        for ( ; it != en; ++ it )
-        {
-            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
-            __c->update( curElt );
-            fectx->update( __c, pc );
-
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.));
-            f.id( *fectx, fvalues );
-
-            //std::cout << "interpfunc :  " << interpfunc << "\n";
-            for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
-            {
-
-                const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
-                const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
-
-                for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
-                    for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
-                {
-                    size_type globaldof =  __dof->localToGlobal( curElt.id(),
-                                                                 l, ncdof2*comp1+comp2 ).index();
-
-#if 0
-                    size_type globaldof_f =  f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ).index();
-                    std::cout << "elt : " << curElt.id() << "\n"
-                              << "  l : " << l << "\n"
-                              << " comp: " << comp << "\n"
-                              << " dof: " << globaldof_f << "\n"
-                              << "  value: " << f( globaldof_f ) << "\n";
 #endif
 
-                    //DVLOG(2) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
-                    // update only values on the processor
-                    if ( globaldof >= interp.firstLocalIndex() &&
-                            globaldof < interp.lastLocalIndex() )
+        auto __fe = space->fe();
+        auto ex = idv(f);
+        const size_type context = ex.context|vm::POINT|vm::KB|vm::JACOBIAN;
+        auto gmc = __gm->template context<context>( unwrap_ref(*it), __geopc );
+        auto expr_evaluator = ex.evaluator( vf::mapgmc(gmc) );
+        if constexpr ( !interp_is_vector )
+        {
+            auto IhLoc = __fe->localInterpolant();
+            for ( ; it != en; ++ it )
+            {
+                auto const& curElt = unwrap_ref(*it);
+                gmc->update( curElt );
+                expr_evaluator.update( vf::mapgmc( gmc ) );
+                __fe->interpolate( expr_evaluator, IhLoc );
+
+                auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                {
+                    index_type index = ldof.second.index();
+                    interp( index ) = s(ldof.first.localDof())*IhLoc( ldof.first.localDof() );
+                    dofUsedWithPartialMeshSupport.insert( index );
+                }
+#if 0
+                static const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
+                static const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
+                for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
+                {
+                    for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
                     {
-                        interp( globaldof ) = fvalues[l]( comp1,comp2 );
-                        dofUsedWithPartialMeshSupport.insert( globaldof );
-                        //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
-                        //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                        for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
+                        {
+                            uint16_type c = ncdof2*comp1+comp2;
+                            size_type globaldof =  __dof->localToGlobal( curElt.id(), l, c ).index();
+
+                            interp( globaldof ) = fvalues[l]( comp1,comp2 );
+                            dofUsedWithPartialMeshSupport.insert( globaldof );
+                        }
                     }
+                }
+#endif
+            }
+        }
+        else
+        {
+            //std::vector<std::vector<decltype(__fe->localInterpolant())>> IhLocs;
+            std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> IhLocsByComp;
+            for ( uint16_type c1=0; c1<interp.size(); ++c1 )
+                for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
+                    IhLocsByComp.push_back( std::make_tuple( c1,c2,__fe->localInterpolant()) );
+
+            //std::vector<decltype(__fe->localInterpolant())> IhLocs(listOfComp.size());
+            //for ( auto const& [c1,c2] : listOfComp )
+
+            for ( ; it != en; ++ it )
+            {
+                auto const& curElt = unwrap_ref(*it);
+                gmc->update( curElt );
+                expr_evaluator.update( vf::mapgmc( gmc ) );
+
+                for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
+                    for( int q = 0; q <  __fe->nLocalDof; ++q )
+                        IhLoc( q ) = expr_evaluator.evalq( c1, c2, q );
+
+                auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                {
+                    index_type gindex = ldof.second.index();
+                    uint16_type lindex = ldof.first.localDof();
+                    for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
+                        unwrap_ptr(interp[c1][c2])( gindex ) = s(lindex)*IhLoc( lindex );
+                    dofUsedWithPartialMeshSupport.insert( gindex );
                 }
             }
         }
-
         if ( applyVectorSync )
         {
-            if ( hasMeshSupportPartialDomain )
-                sync( interp, "=", dofUsedWithPartialMeshSupport );
-            else
-                sync( interp, "=" );
+            interpolate_sync( interp, hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
         }
 
         DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
     } // same mesh
 
-    else // INTERPOLATE_DIFFERENT_MESH
+    else if constexpr ( !interp_is_vector ) // INTERPOLATE_DIFFERENT_MESH
     {
         EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
