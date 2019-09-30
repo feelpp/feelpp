@@ -315,8 +315,6 @@ template<typename Iterator,typename TSt>
 void
 ExporterEnsightGold<MeshType,N>::writeCaseFileVariables( Iterator it, Iterator end,
                                                          std::string const& loc,
-                                                         std::string const& /*type*/,
-                                                         std::string const& /*ext*/,
                                                          TSt const& __ts,
                                                          std::ostream& __out ) const
 {
@@ -498,43 +496,12 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
                 writeCaseFileVariables( ( *__tstp_it )->beginNodal(),
                                         ( *__tstp_it )->endNodal(),
-                                        "node", "scalar", "scl",
+                                        "node",
                                         __ts, __out );
                 writeCaseFileVariables( ( *__tstp_it )->beginElement(),
                                         ( *__tstp_it )->endElement(),
-                                        "element",  "scalar", "scl",
+                                        "element",
                                         __ts, __out );
-
-#if 0
-                writeCaseFileVariables( ( *__tstp_it )->beginNodalVector(),
-                                        ( *__tstp_it )->endNodalVector(),
-                                        "node", "vector", "vec",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2(),
-                                        ( *__tstp_it )->endNodalTensor2(),
-                                        "node", "tensor asym", "tsr",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginNodalTensor2Symm(),
-                                        ( *__tstp_it )->endNodalTensor2Symm(),
-                                        "node", "tensor symm", "tsrs",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginElementScalar(),
-                                        ( *__tstp_it )->endElementScalar(),
-                                        "element",  "scalar", "scl",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginElementVector(),
-                                        ( *__tstp_it )->endElementVector(),
-                                        "element", "vector", "vec",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2(),
-                                        ( *__tstp_it )->endElementTensor2(),
-                                        "element", "tensor asym", "tsr",
-                                        __ts, __out );
-                writeCaseFileVariables( ( *__tstp_it )->beginElementTensor2Symm(),
-                                        ( *__tstp_it )->endElementTensor2Symm(),
-                                        "element", "tensor symm", "tsrs",
-                                        __ts, __out );
-#endif
 
             }
 
@@ -1710,36 +1677,11 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
                 int dist = 0;
 
                 if( (dist = std::distance(__step->beginNodal(), __step->endNodal())) != 0)
-                { LOG(INFO) << "NodalScalar: " << dist << std::endl; }
-#if 0
-                if( (dist = std::distance(__step->beginNodalVector(), __step->endNodalVector())) != 0)
-                { LOG(INFO) << "NodalVector: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginNodalTensor2(), __step->endNodalTensor2())) != 0)
-                { LOG(INFO) << "NodalTensor2: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm())) != 0)
-                { LOG(INFO) << "NodalTensor2Symm: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginElementScalar(), __step->endElementScalar())) != 0)
-                { LOG(INFO) << "ElementScalar: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginElementVector(), __step->endElementVector())) != 0)
-                { LOG(INFO) << "ElementVector: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginElementTensor2(), __step->endElementTensor2())) != 0)
-                { LOG(INFO) << "ElementTensor2: " << dist << std::endl; }
-                if( (dist = std::distance(__step->beginElementTensor2Symm(), __step->endElementTensor2Symm())) != 0)
-                { LOG(INFO) << "ElementTensor2Symm: " << dist << std::endl; }
-#endif
-                saveNodal<true>( __ts, __step, (__it == __ts->beginStep()), __step->beginNodal(), __step->endNodal() );
-                saveNodal<false>( __ts, __step, (__it == __ts->beginStep()), __step->beginElement(), __step->endElement() );
-#if 0
-                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalVector(), __step->endNodalVector() );
-                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2(), __step->endNodalTensor2() );
-                saveNodal( __ts, __step, (__it == __ts->beginStep()), __step->beginNodalTensor2Symm(), __step->endNodalTensor2Symm() );
-
-                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementScalar(), __step->endElementScalar() );
-                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementVector(), __step->endElementVector() );
-                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2(), __step->endElementTensor2() );
-                saveElement( __ts, __step, (__it == __ts->beginStep()), __step->beginElementTensor2Symm(), __step->endElementTensor2Symm() );
-#endif
-
+                    LOG(INFO) << "Nodal: " << dist << std::endl;
+                if( (dist = std::distance(__step->beginElement(), __step->endElement())) != 0)
+                    LOG(INFO) << "Element: " << dist << std::endl;
+                saveFields<true>( __ts, __step, (__it == __ts->beginStep()), __step->beginNodal(), __step->endNodal() );
+                saveFields<false>( __ts, __step, (__it == __ts->beginStep()), __step->beginElement(), __step->endElement() );
             }
 
             ++__it;
@@ -1753,7 +1695,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 template<typename MeshType, int N>
 template<bool IsNodal,typename Iterator>
 void
-ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
+ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const
 {
     tic();
     int size = 0;
@@ -1771,36 +1713,36 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
     while ( __var != en )
     {
         tic();
-        auto const& nodalData =  __var->second;
-        auto const& nodalField00 = unwrap_ptr( nodalData.second[0][0] );
+        auto const& fieldData =  __var->second;
+        auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
 
-        if ( !nodalField00.worldComm().isActive() ) return;
+        if ( !field00.worldComm().isActive() ) return;
 
         uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
         std::string fileExt;
         bool isTensor2Symm = false;
-        if ( nodalData.first == FunctionSpaceType::SCALAR )
+        if ( fieldData.first == FunctionSpaceType::SCALAR )
         {
             nComponents = 1;
             nComponents1 = 1;
             nComponents2 = 1;
             fileExt = ".scl";
         }
-        else if ( nodalData.first == FunctionSpaceType::VECTORIAL )
+        else if ( fieldData.first == FunctionSpaceType::VECTORIAL )
         {
             nComponents = 3;
             nComponents1 = 3;
             nComponents2 = 1;
             fileExt = ".vec";
         }
-        else if ( nodalData.first == FunctionSpaceType::TENSOR2 )
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2 )
         {
             nComponents = 9;
             nComponents1 = 3;
             nComponents2 = 3;
             fileExt = ".tsr";
         }
-        else if ( nodalData.first == FunctionSpaceType::TENSOR2_SYMM )
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM )
         {
             nComponents = 6;
             nComponents1 = 3;
@@ -1831,7 +1773,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
         {
             __varfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
         }
-        DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveFields] saving " << __varfname.str() << "...\n";
         std::fstream __out;
 
         /* Open File with MPI IO */
@@ -1898,7 +1840,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
         if( this->worldComm().isMasterRank() )
         {
             memset(buffer, '\0', sizeof(buffer));
-            strncpy(buffer, nodalField00.name().c_str(), 80);
+            strncpy(buffer, field00.name().c_str(), 80);
             // buffer = __var->second.name().c_str();
             MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
             // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
@@ -1974,18 +1916,18 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                         size_type pid = mp.old2new[face.point( j ).id()]-1;
                         for ( uint16_type c1 = 0; c1 < nComponents1; ++c1 )
                         {
-                            if ( c1 >= nodalData.second.size() )
+                            if ( c1 >= fieldData.second.size() )
                                 continue;
                             for ( uint16_type c2 = 0; c2 < nComponents2; ++c2 )
                             {
-                                if ( c2 >= nodalData.second[c1].size() )
+                                if ( c2 >= fieldData.second[c1].size() )
                                     continue;
-                                auto const& nodalField = unwrap_ptr( nodalData.second[c1][c2] );
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                                 uint16_type c = c2*nComponents1+c1;
                                 size_type global_node_id = nfaces*c + pid ;
-                                size_type thedof =  nodalField.start() +
-                                    nodalField.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ).index();
-                                field[global_node_id] = nodalField.globalValue( thedof );
+                                size_type thedof =  fieldComp.start() +
+                                    fieldComp.functionSpace()->dof()->faceLocalToGlobal( face.id(), j, c ).index();
+                                field[global_node_id] = fieldComp.globalValue( thedof );
                             }
                         }
                     }
@@ -2001,16 +1943,16 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 sumOffsets = localOffset + fieldWritingSize;
                 MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
                 // - write in file on cursor : posInFile + localOffset
-                for ( uint16_type c = 0; c < nodalField00.nComponents; ++c )
+                for ( uint16_type c = 0; c < field00.nComponents; ++c )
                 {
                     MPI_File_write_at(fh, posInFile + localOffset + c*sumOffsets, \
                                       field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
                     // MPI_File_write_ordered(fh, field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
                 }
-                posInFile += nodalField00.nComponents * sumOffsets;
+                posInFile += field00.nComponents * sumOffsets;
             } // boundaries loop
         }
-        toc("saveNodal intro",FLAGS_v>0);
+        toc("saveFields intro",FLAGS_v>0);
         /* handle elements */
         for( std::set<int>::iterator mit = M_markersToWrite.begin(); mit != M_markersToWrite.end(); mit++)
         {
@@ -2044,7 +1986,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             auto r = markedelements(__mesh, *mit );
             auto elt_it = r.template get<1>();
             auto elt_en = r.template get<2>();
-            toc("saveNodal part",FLAGS_v>0);
+            toc("saveFields part",FLAGS_v>0);
 
 
             /* create an array to store data per node */
@@ -2054,13 +1996,12 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             //size_type __field_size = npts*nComponents;
 
             Eigen::VectorXf __field;// = Eigen::VectorXf::Zero( __field_size );
-            //VLOG(1) << "field size=" << __field_size;
 
             int reorder_tensor2symm[6] = { 0,3,4,1,5,2 };
 
             /* Loop on the elements */
             tic();
-            auto const& d = nodalField00.functionSpace()->dof().get();
+            auto const& d = field00.functionSpace()->dof().get();
 
             if constexpr ( IsNodal )
                 {
@@ -2086,11 +2027,12 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                         for ( uint16_type p = 0; p < np; ++p )
                         {
                             size_type ptid = mp.old2new[elt.point( p ).id()]-1;
-                            for ( uint16_type c1 = 0; c1 < nodalData.second.size(); ++c1 )
+                            size_type dof_id = locglob_ind(d->localDofId(p,0));
+                            for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
                             {
-                                for ( uint16_type c2 = 0; c2 < nodalData.second[c1].size(); ++c2 )
+                                for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
                                 {
-                                    auto const& nodalField = unwrap_ptr( nodalData.second[c1][c2] );
+                                    auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                                     uint16_type cMap = c2*nComponents1+c1;
                                     if ( isTensor2Symm )
                                         cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
@@ -2102,10 +2044,8 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                                                                                  << " mesh numPoints: " << __step->mesh()->numPoints();
                                     DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
 
-                                    size_type dof_id = locglob_ind(d->localDofId(p,0));
-
-                                    __field(global_node_id) = nodalField.globalValue( dof_id );
-                                    DVLOG(3) << "v[" << global_node_id << "]=" << nodalField.globalValue( dof_id ) << "  dof_id:" << dof_id;
+                                    __field(global_node_id) = fieldComp.globalValue( dof_id );
+                                    DVLOG(3) << "v[" << global_node_id << "]=" << fieldComp.globalValue( dof_id ) << "  dof_id:" << dof_id;
                                 }
                             }
                         }
@@ -2125,24 +2065,24 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                     auto const& elt = elt_it->get();
                     auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
                     size_type dof_id = locglob_ind(d->localDofId(0,0));
-                    for ( uint16_type c1 = 0; c1 < nodalData.second.size(); ++c1 )
+                    for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
                     {
-                        for ( uint16_type c2 = 0; c2 < nodalData.second[c1].size(); ++c2 )
+                        for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
                         {
-                            auto const& nodalField = unwrap_ptr( nodalData.second[c1][c2] );
+                            auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
                             uint16_type cMap = c2*nComponents1+c1;
                             if ( isTensor2Symm )
                                 cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
 
                             size_type global_node_id = cMap*nValuesPerComponent + e;
-                            __field(global_node_id) = nodalField.globalValue( dof_id );
-                            DVLOG(3) << "v[" << global_node_id << "]=" << nodalField.globalValue( dof_id ) << "  dof_id:" << dof_id;
+                            __field(global_node_id) = fieldComp.globalValue( dof_id );
+                            DVLOG(3) << "v[" << global_node_id << "]=" << fieldComp.globalValue( dof_id ) << "  dof_id:" << dof_id;
                         }
                     }
                 }
             }
 
-            toc("saveNodal element loop",FLAGS_v>0);
+            toc("saveFields element loop",FLAGS_v>0);
             tic();
             /* Write each component separately */
             // All procs write :
@@ -2161,7 +2101,7 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
                 // MPI_File_write_ordered(fh, ((float *)(__field.data().begin())) + nValuesPerComponent * c, nValuesPerComponent, MPI_FLOAT, &status);
             }
             posInFile += nComponents*sumOffsets;
-            toc("saveNodal write part",FLAGS_v>0);
+            toc("saveFields write part",FLAGS_v>0);
         } // parts loop
 
         if( boption(_name="exporter.ensightgold.merge.timesteps") )
@@ -2178,286 +2118,15 @@ ExporterEnsightGold<MeshType,N>::saveNodal( timeset_ptrtype __ts, typename times
             // write back the file index
             index.write( fh );
         }
-        DVLOG(2) << "[ExporterEnsightGold::saveNodal] saving " << __varfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsightGold::saveFields] saving " << __varfname.str() << "done\n";
 
         MPI_File_close(&fh);
 
         ++__var;
     }
-    toc("saveNodal", FLAGS_v>0);
+    toc("saveFields", FLAGS_v>0);
 }
 
-template<typename MeshType, int N>
-template<typename Iterator>
-void
-ExporterEnsightGold<MeshType,N>::saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const
-{
-#if 0 // TODO
-    int size;
-    char buffer[ 80 ];
-
-    MPI_File fh;
-    MPI_Offset offset = 0;
-    MPI_Status status;
-
-    int sizeOfInt32_t;
-    int  sizeOfFloat;
-    MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
-    MPI_Type_size( MPI_FLOAT , &sizeOfFloat );
-    int localOffset, sumOffsets;
-    while ( __evar != __evaren )
-    {
-        if ( !__evar->second.worldComm().isActive() ) return;
-
-        std::ostringstream __evarfname;
-
-        __evarfname << this->path() << "/" << __ts->name() << "." << __evar->first;
-
-        if( ! boption( _name="exporter.ensightgold.merge.markers") )
-        { __evarfname << "-" << this->worldComm().globalSize() << "_" << this->worldComm().localRank(); }
-        /* if we want to pack data in several files instead of one */
-        /* we compute an index to add to the filename */
-        if( boption( _name = "exporter.ensightgold.merge.timesteps")
-            && ioption( _name="exporter.ensightgold.pack.timesteps" ) > 1 )
-        {
-            // timestep indices start at 1
-            __evarfname << "." << ((__step->index() - TS_INITIAL_INDEX) / ioption( _name="exporter.ensightgold.pack.timesteps" ) + 1);
-        }
-        // add extension
-        if(__evar->second.is_scalar)
-        { __evarfname << ".scl"; }
-        else if(__evar->second.is_vectorial)
-        { __evarfname << ".vec"; }
-        else if(__evar->second.is_tensor2)
-        { __evarfname << ".tsr"; }
-        else if(__evar->second.is_tensor2symm)
-        { __evarfname << ".tsrs"; }
-        else
-        { __evarfname << ".scl"; LOG(ERROR) << "Could not detect data type (scalar, vector, tensor2, tensor2symm). Defaulted to scalar." << std::endl; }
-
-        if(! boption( _name="exporter.ensightgold.merge.timesteps") )
-        {
-            __evarfname << "." << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
-        }
-        DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "...\n";
-
-        auto __mesh = __step->mesh();
-
-        /* Open File with MPI IO */
-        char * str = strdup(__evarfname.str().c_str());
-
-        /* Check if file exists if we are on step one and delete it if so */
-        /* (MPI IO does not have a truncate mode ) */
-        // std::cout << "Elt: " << this->worldComm().isMasterRank() << " " << __step->index() << " " << isFirstStep << " " << fs::exists(str) << std::endl;
-        if(this->worldComm().isMasterRank() && isFirstStep && fs::exists(str))
-        {
-            MPI_File_delete(str, MPI_INFO_NULL);
-        }
-        MPI_Barrier(this->worldComm().comm());
-
-        //init MPI_Info object fromhints defined as environment variables
-        //MPI_Info info = initIoInfoFromEnvVars();
-        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-        else
-            MPI_File_open( this->worldComm().comm(), str, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &fh );
-
-        //MPI_Info_free(&info);
-        free(str);
-
-        // INIT CURSOR IN FILE
-        posInFile = 0;
-
-        Feel::detail::FileIndex index;
-
-        if( boption( _name = "exporter.ensightgold.merge.timesteps") )
-        {
-            // first read
-            index.read(fh);
-
-            /* Move to the beginning of the fie index section */
-            /* to overwrite it */
-            if ( index.defined() && (__step->index() - TS_INITIAL_INDEX) > 0 ) {
-                // MPI_File_seek_shared(fh, index.fileblock_n_steps, MPI_SEEK_SET);
-                posInFile = index.fileblock_n_steps;
-            }
-            else {
-                // we position the cursor at the beginning of the file
-                //MPI_File_seek_shared(fh, 0, MPI_SEEK_SET);
-                posInFile = 0;
-            }
-
-            /* Write time step start */
-            if( this->worldComm().isMasterRank() )
-            {
-                memset(buffer, '\0', sizeof(buffer));
-                strncpy(buffer, "BEGIN TIME STEP",80);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-            }
-            posInFile+=80;
-
-            /* add the beginning of the new block to the file */
-            // MPI_File_get_position_shared(fh, &offset);
-            index.add( posInFile );
-        }
-
-        if( this->worldComm().isMasterRank() )
-        {
-            memset(buffer, '\0', sizeof(buffer));
-            strncpy( buffer, __evar->second.name().c_str(), 80);
-            // buffer = __evar->second.name().c_str();
-            MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-            // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-        }
-        posInFile+=80;
-        // iterate over the markers
-        for( std::set<int>::iterator mit = M_markersToWrite.begin() ; mit != M_markersToWrite.end(); mit++ )
-        {
-            if( this->worldComm().isMasterRank() )
-            {
-                memset(buffer, '\0', sizeof(buffer));
-                strncpy(buffer, "part", 80);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-                int32_t partid = *mit + 1;
-                MPI_File_write_at(fh, posInFile+80, &partid, 1, MPI_INT32_T, &status);
-                DVLOG(2) << "part " << buffer << "\n";
-                memset(buffer, '\0', sizeof(buffer));
-                strncpy(buffer, this->elementType().c_str(), 80);
-                MPI_File_write_at(fh, posInFile+80+sizeOfInt32_t, buffer, sizeof(buffer), MPI_CHAR, &status);
-                DVLOG(2) << "element type " << buffer << "\n";
-
-            }
-            posInFile+=160+sizeOfInt32_t;
-
-            uint16_type nComponents = __evar->second.nComponents;
-
-            if ( __evar->second.is_vectorial )
-                nComponents = 3;
-            if ( __evar->second.is_tensor2 )
-                nComponents = 9;
-            if ( __evar->second.is_tensor2symm )
-                nComponents = 6;
-
-            int nc = __evar->second.nComponents;
-            if ( __evar->second.is_tensor2symm )
-                nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
-
-            size_type __field_size = nComponents * __evar->second.size()/nc;
-
-            Eigen::VectorXf __field = Eigen::VectorXf::Zero( __field_size );
-
-            auto r = markedelements(__step->mesh(), *mit, EntityProcessType::LOCAL_ONLY );
-            auto elt_st = r.template get<1>();
-            auto elt_en = r.template get<2>();
-
-            if ( !__evar->second.areGlobalValuesUpdated() )
-                __evar->second.updateGlobalValues();
-
-            DVLOG(2) << "[saveElement] firstLocalIndex = " << __evar->second.firstLocalIndex() << "\n";
-            DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
-            DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
-
-            //size_type ncells = __evar->second.size()/__evar->second.nComponents;
-            size_type ncells = std::distance( elt_st, elt_en );
-
-            /*
-             std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents
-             << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
-             */
-            int reorder_tensor2symm[6] = { 0, 3, 1, 4, 5, 2 };
-            auto const& d = __evar->second.functionSpace()->dof().get();
-            tic();
-            size_type e = 0;
-            for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
-            {
-                auto const& elt = boost::unwrap_ref( *elt_it );
-                DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                         << " elt_it :  " << elt.id()
-                         << " e : " << e << "\n";
-
-                auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
-                
-                for ( int c = 0; c < nComponents; ++c )
-                {
-                    uint16_type c1= c;
-                    if ( __evar->second.is_tensor2symm )
-                        c1=reorder_tensor2symm[c];
-                    int nc = __evar->second.nComponents;
-                    if ( __evar->second.is_tensor2symm )
-                        nc = __evar->second.nComponents1*(__evar->second.nComponents1+1)/2;
-                        
-                    size_type global_node_id = c1*ncells+e ;
-
-                    if ( c < nc)
-                    {
-                        size_type dof_id = locglob_ind( d->localDofId( 0, c ) );
-                        
-                        DVLOG(2) << "c : " << c
-                                 << " gdofid: " << global_node_id
-                                 << " dofid : " << dof_id
-                                 << " f.size : " <<  __field.size()
-                                 << " e.size : " <<  __evar->second.size()
-                                 << "\n";
-
-                        __field(global_node_id) = __evar->second.globalValue( dof_id );
-
-#if 1
-                        //__field[global_node_id] = __evar->second.globalValue(dof_id);
-                        DVLOG(2) << "c : " << c
-                                 << " gdofid: " << global_node_id
-                                 << " dofid : " << dof_id
-                                 << " field :  " << __field[global_node_id]
-                                 << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
-#endif
-                    }
-                }
-            }
-            toc("saveElement element loop",FLAGS_v>0);
-            /* Write each component separately */
-            tic();
-            // All procs write :
-            // - calculate every proc size of part to write
-            int fieldWritingSize = ncells*sizeOfFloat;
-            localOffset = 0;
-            // - calculate every proc offset "localOffset" with Mpi_Exscan
-            MPI_Exscan(&fieldWritingSize, &localOffset, 1, MPI_INT, MPI_SUM, this->worldComm());
-            sumOffsets = localOffset + fieldWritingSize;
-            MPI_Bcast(&sumOffsets, 1, MPI_INT, this->worldComm().globalSize()-1, this->worldComm());
-            // - write in file on cursor : posInFile + localOffset
-
-            for ( uint16_type c = 0; c < nComponents; ++c )
-            {
-                MPI_File_write_at(fh, posInFile + c*sumOffsets + localOffset, \
-                                  __field.data() + ncells * c, ncells, MPI_FLOAT, &status);
-                // MPI_File_write_ordered(fh, __field.data().begin() + ncells * c, ncells, MPI_FLOAT, &status);
-            }
-            toc("saveElement write",FLAGS_v>0);
-            posInFile += nComponents*sumOffsets;
-        }
-
-        if( boption(_name="exporter.ensightgold.merge.timesteps") )
-        {
-            /* write timestep end */
-            if( this->worldComm().isMasterRank() )
-            {
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy(buffer,"END TIME STEP");
-                // MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-                MPI_File_write_at(fh, posInFile, buffer, sizeof(buffer), MPI_CHAR, &status);
-            }
-            posInFile+=80;
-            // write back the file index
-            index.write( fh );
-        }
-
-        MPI_File_close(&fh);
-
-        DVLOG(2) << "[ExporterEnsightGold::saveElement] saving " << __evarfname.str() << "done\n";
-        ++__evar;
-    }
-#endif
-}
 
 template<typename MeshType, int N>
 void
