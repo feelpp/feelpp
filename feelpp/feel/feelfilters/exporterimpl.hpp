@@ -46,7 +46,7 @@
 #endif
 
 #if defined(FEELPP_HAS_VTK)
-//#include <feel/feelfilters/exportervtk.hpp>
+#include <feel/feelfilters/exportervtk.hpp>
 #endif
 
 #if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
@@ -190,10 +190,12 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N == 1 && ( exportername == "hdf5" ))
         exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
 #endif
+#endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( exportername == "vtk"  ) )
         exporter = new ExporterVTK<MeshType, N>( worldComm );
 #endif
+#if 0 // TODO
 #ifdef FEELPP_HAS_GMSH
     else if ( N > 1 || ( exportername == "gmsh" ) )
         exporter = new ExporterGmsh<MeshType,N>( worldComm );
@@ -241,10 +243,12 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
     else if ( N == 1 && ( estr == "hdf5" ) )
         exporter = std::make_shared<Exporterhdf5<MeshType, N>> ( prefix, worldComm ) ;
 #endif
+#endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( estr == "vtk"  ) )
         exporter = std::make_shared<ExporterVTK<MeshType, N>>( prefix, worldComm );
 #endif
+#if 0 // TODO
 #ifdef FEELPP_HAS_GMSH
     else if ( N > 1 || estr == "gmsh" )
         exporter = std::make_shared<ExporterGmsh<MeshType,N>>( prefix, worldComm );
