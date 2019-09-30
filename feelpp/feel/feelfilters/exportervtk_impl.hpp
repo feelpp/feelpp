@@ -427,12 +427,8 @@ ExporterVTK<MeshType,N>::save() const
             {
                 /* write data into vtk object */
                 this->saveMesh(__step->mesh(), out);
-                this->saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
-                this->saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
-                this->saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
-                this->saveElementData( __step, __step->beginElementScalar(), __step->endElementScalar(), out );
-                this->saveElementData( __step, __step->beginElementVector(), __step->endElementVector(), out );
-                this->saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
+                this->saveFields<true>( __step, __step->beginNodal(), __step->endNodal(), out );
+                this->saveFields<false>( __step, __step->beginElement(), __step->endElement(), out );
 
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
                 out->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), __step->time());
@@ -599,12 +595,8 @@ ExporterVTK<MeshType,N>::getOutput() const
             {
                 /* write data into vtk object */
                 this->saveMesh(__step->mesh(), out);
-                this->saveNodeData( __step, __step->beginNodalScalar(), __step->endNodalScalar(), out );
-                this->saveNodeData( __step, __step->beginNodalVector(), __step->endNodalVector(), out );
-                this->saveNodeData( __step, __step->beginNodalTensor2(), __step->endNodalTensor2(), out );
-                this->saveElementData( __step, __step->beginElementScalar(), __step->endElementScalar(), out );
-                this->saveElementData( __step, __step->beginElementVector(), __step->endElementVector(), out );
-                this->saveElementData( __step, __step->beginElementTensor2(), __step->endElementTensor2(), out );
+                this->saveFields<true>( __step, __step->beginNodal(), __step->endNodal(), out );
+                this->saveFields<false>( __step, __step->beginElement(), __step->endElement(), out );
 
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
                 out->GetInformation()->Set(vtkDataObject::DATA_TIME_STEP(), __step->time());
@@ -634,7 +626,8 @@ ExporterVTK<MeshType,N>::saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_typ
     auto elt_en = r.template get<2>();
 
     /* Gather points and elements into vectors + info about data */
-    Feel::detail::MeshPoints<float> mp( mesh.get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
+    M_cache_mp.try_emplace(  0 /*dummy value*/,mesh.get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
+    auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
 
     /* Add points to data structure */
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -645,7 +638,7 @@ ExporterVTK<MeshType,N>::saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_typ
     for ( int i = 0; i < mp.ids.size() ; i++ )
     {
         points->SetPoint( (vtkIdType)(mp.ids[i]), coords + i * 3 );
-    } 
+    }
 
     out->SetPoints(points);
 
@@ -666,105 +659,45 @@ ExporterVTK<MeshType,N>::saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_typ
 }
 
 template<typename MeshType, int N>
-template<typename Iterator>
+template<bool IsNodal,typename Iterator>
 void
-ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const
+ExporterVTK<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const
 {
     while ( __var != en )
     {
-        if ( !__var->second.worldComm().isActive() ) return;
+        auto const& fieldData =  __var->second;
+        auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
+        if ( !field00.worldComm().isActive() ) return;
 
-        /* handle faces data */
-#if 0
-        if ( boption( _name="exporter.ensightgold.save-face" ) )
+        uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
+        bool isTensor2Symm = false;
+        if ( fieldData.first == FunctionSpaceType::SCALAR )
         {
-            BOOST_FOREACH( auto m, __mesh->markerNames() )
-            {
-                if ( m.second[1] != __mesh->nDim-1 )
-                    continue;
-                VLOG(1) << "writing face with marker " << m.first << " with id " << m.second[0];
-                auto pairit = __mesh->facesWithMarker( m.second[0], this->worldComm().localRank() );
-                auto fit = pairit.first;
-                auto fen = pairit.second;
-
-                Feel::detail::MeshPoints<float> mp( __mesh.get(), this->worldComm(), fit, fen, true, true, true );
-                int __ne = std::distance( fit, fen );
-
-                int nverts = fit->numLocalVertices;
-                DVLOG(2) << "Faces : " << __ne << "\n";
-
-                if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy( buffer, "part" );
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-                int32_t partid = m.second[0];
-                if( this->worldComm().isMasterRank() )
-                { size = 1; }
-                else
-                { size = 0; }
-                MPI_File_write_ordered(fh, &partid, size, MPI_INT32_T, &status);
-
-                if( this->worldComm().isMasterRank() )
-                { size = sizeof(buffer); }
-                else
-                { size = 0; }
-                memset(buffer, '\0', sizeof(buffer));
-                strcpy( buffer, "coordinates" );
-                MPI_File_write_ordered(fh, buffer, size, MPI_CHAR, &status);
-
-                // write values
-                fit = pairit.first;
-                fen = pairit.second;
-
-                uint16_type nComponents = __var->second.nComponents;
-                if ( __var->second.is_vectorial )
-                    nComponents = 3;
-
-                int nfaces = mp.ids.size();
-                std::vector<float> field( nComponents*nfaces, 0.0 );
-                for( ; fit != fen; ++fit )
-                {
-                    for ( uint16_type c = 0; c < nComponents; ++c )
-                    {
-                        for ( size_type j = 0; j < nverts; j++ )
-                        {
-                            size_type pid = mp.old2new[fit->point( j ).id()]-1;
-                            size_type global_node_id = nfaces*c + pid ;
-                            if ( c < __var->second.nComponents )
-                            {
-                                size_type thedof =  __var->second.start() +
-                                    __var->second.functionSpace()->dof()->faceLocalToGlobal( fit->id(), j, c ).index();
-
-                                field[global_node_id] = __var->second.globalValue( thedof );
-                            }
-                            else
-                            {
-                                field[global_node_id] = 0;
-                            }
-                        }
-                    }
-                }
-                /* Write each component separately */
-                for ( uint16_type c = 0; c < __var->second.nComponents; ++c )
-                {
-                    MPI_File_write_ordered(fh, field.data() + nfaces * c, nfaces, MPI_FLOAT, &status);
-                }
-            } // boundaries loop
+            nComponents = 1;
+            nComponents1 = 1;
+            nComponents2 = 1;
         }
-#endif
-        /* handle elements */
-        uint16_type nComponents = __var->second.nComponents;
-
-        VLOG(1) << "nComponents field: " << nComponents;
-        if ( __var->second.is_vectorial )
+        else if ( fieldData.first == FunctionSpaceType::VECTORIAL )
         {
             nComponents = 3;
-            VLOG(1) << "nComponents field(is_vectorial): " << nComponents;
+            nComponents1 = 3;
+            nComponents2 = 1;
         }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2 )
+        {
+            nComponents = 9;
+            nComponents1 = 3;
+            nComponents2 = 3;
+        }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM )
+        {
+            nComponents = 6;
+            nComponents1 = 3;
+            nComponents2 = 3;
+            isTensor2Symm = true;
+        }
+
+        VLOG(1) << "nComponents field: " << nComponents;
 
         /* we get that from the local processor */
         /* We do not need the renumbered global index */
@@ -773,218 +706,114 @@ ExporterVTK<MeshType,N>::saveNodeData( typename timeset_type::step_ptrtype step,
         auto elt_it = r.template get<1>();
         auto elt_en = r.template get<2>();
 
-        Feel::detail::MeshPoints<float> mp( step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
-        
-        // previous implementation
-        //size_type __field_size = mp.ids.size();
-        //int nelts = std::distance(elt_it, elt_en);
-        int npts = mp.ids.size();
-        size_type __field_size = npts;
-        if ( __var->second.is_vectorial )
-            __field_size *= 3;
-        std::vector<float> __field( __field_size, 0.0 );
-        size_type e = 0;
-        VLOG(1) << "field size=" << __field_size;
-        if ( !__var->second.areGlobalValuesUpdated() )
-            __var->second.updateGlobalValues();
-
         vtkSmartPointer<vtkFloatArray> da = vtkSmartPointer<vtkFloatArray>::New();
         da->SetName(__var->first.c_str());
-
         /* set array parameters */
         /* no need for preallocation if we are using Insert* methods */
         da->SetNumberOfComponents(nComponents);
-        da->SetNumberOfTuples(npts);
 
-        /*
-           std::cout << this->worldComm().rank() << " nbPts:" << npts << " nComp:" << nComponents 
-           << " __var->second.nComponents:" << __var->second.nComponents << std::endl;
-        */
 
-        /*
-           std::cout << this->worldComm().rank() << " marker=" << *mit << " nbPts:" << npts << " nComp:" << nComponents 
-           << " __evar->second.nComponents:" << __var->second.nComponents << std::endl;
-           */
+        auto const& d = field00.functionSpace()->dof().get();
+        //int reorder_tensor2symm[6] = { 0,3,4,1,2,5 };
+        int reorder_tensor2symm[6] = { 0,3,5,1,4,2 };
 
-        /* loop on the elements */
-        int index = 0;
-        for ( ; elt_it != elt_en; ++elt_it )
-        {
-            auto const& elt = boost::unwrap_ref( *elt_it );
-            VLOG(3) << "is ghost cell " << elt.isGhostCell();
-            /* looop on the ccomponents is outside of the loop on the vertices */
-            for ( uint16_type c = 0; c < nComponents; ++c )
+        if constexpr ( IsNodal )
             {
-                for ( uint16_type p = 0; p < step->mesh()->numLocalVertices(); ++p, ++e )
+                M_cache_mp.try_emplace(  0 /*dummy value*/,step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true, true, 0 );
+                auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
+                index_type nValuesPerComponent = mp.ids.size();
+                da->SetNumberOfTuples(nValuesPerComponent);
+                Eigen::VectorXf __field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+
+                /* loop on the elements */
+                for ( ; elt_it != elt_en; ++elt_it )
                 {
-                    size_type ptid = mp.old2new[elt.point( p ).id()];
-                    size_type global_node_id = ptid * nComponents + c;
-                    //size_type global_node_id = mp.ids.size()*c + ptid ;
-                    //LOG(INFO) << elt.point( p ).id() << " " << ptid << " " << global_node_id << std::endl;
-                    DCHECK( ptid < step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt.id()
-                        << " local pt:" << p
-                        << " mesh numPoints: " << step->mesh()->numPoints();
-                    DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
-
-                    if ( c < __var->second.nComponents )
+                    auto const& elt = unwrap_ref( *elt_it );
+                    auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                    for ( uint16_type p = 0; p < step->mesh()->numLocalVertices(); ++p )
                     {
-                        size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
-
-                        __field[global_node_id] = __var->second.globalValue( dof_id );
-                        //__field[npts*c + index] = __var->second.globalValue( dof_id );
-                        //DVLOG(3) << "v[" << global_node_id << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
-                        DVLOG(3) << "v[" << (npts*c + index) << "]=" << __var->second.globalValue( dof_id ) << "  dof_id:" << dof_id;
-                    }
-                    else
-                    {
-                        __field[global_node_id] = 0.0;
-                        //__field[npts*c + index] = 0.0;
+                        size_type ptid = mp.old2new[elt.point( p ).id()];
+                        size_type dof_id = locglob_ind(d->localDofId(p,0));
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents * ptid + cMap;
+                                __field[global_node_id] = fieldComp.globalValue( dof_id );
+                            }
+                        }
                     }
                 }
+
+                /* insert data into array */
+                for(int i = 0; i < nValuesPerComponent; i++)
+                {
+                    da->SetTuple(mp.ids[i], __field.data() + i * nComponents);
+                }
+
+                /* add data array into the vtk object */
+                out->GetPointData()->AddArray(da);
+
+                /* Set the first scalar/vector/tensor data, we process as active */
+                if ( fieldData.first == FunctionSpaceType::SCALAR && !(out->GetPointData()->GetScalars()) )
+                    out->GetPointData()->SetActiveScalars(da->GetName());
+                else if ( fieldData.first == FunctionSpaceType::VECTORIAL && !(out->GetPointData()->GetVectors()) )
+                    out->GetPointData()->SetActiveVectors(da->GetName());
+                else if ( fieldData.first == FunctionSpaceType::TENSOR2 && !(out->GetPointData()->GetTensors()) )
+                    out->GetPointData()->SetActiveTensors(da->GetName());
+                else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM && !(out->GetPointData()->GetTensors()) )
+                    out->GetPointData()->SetActiveTensors(da->GetName());
+
             }
-
-            /* increment index of vertex */
-            index++;
-        }
-
-        /* insert data into array */
-        for(int i = 0; i < npts; i++)
+        else
         {
-            da->SetTuple(mp.ids[i], __field.data() + i * nComponents);
+            float * array = new float[nComponents];
+            index_type nValuesPerComponent = std::distance(elt_it,elt_en);
+            da->SetNumberOfTuples( nValuesPerComponent);
+            //m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+            for ( index_type e=0 ; elt_it != elt_en; ++elt_it,++e )
+            {
+                auto const& elt = unwrap_ref( *elt_it );
+                auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                size_type dof_id = locglob_ind(d->localDofId(0,0));
+                for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                {
+                    for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                    {
+                        auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                        uint16_type cMap = c2*nComponents1+c1;
+                        if ( isTensor2Symm )
+                            cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                        size_type global_node_id = nComponents * e + cMap;
+                        array[cMap] = fieldComp.globalValue( dof_id );
+                    }
+                }
+                da->SetTuple(e, array);
+            }
+            delete[] array;
+            /* add data array into the vtk object */
+            out->GetCellData()->AddArray(da);
+
+            /* Set the first scalar/vector/tensor data, we process as active */
+            if ( fieldData.first == FunctionSpaceType::SCALAR && !(out->GetCellData()->GetScalars()) )
+                out->GetCellData()->SetActiveScalars(da->GetName());
+            else if ( fieldData.first == FunctionSpaceType::VECTORIAL && !(out->GetCellData()->GetVectors()) )
+                out->GetCellData()->SetActiveVectors(da->GetName());
+            else if ( fieldData.first == FunctionSpaceType::TENSOR2 && !(out->GetCellData()->GetTensors()) )
+                out->GetCellData()->SetActiveTensors(da->GetName());
+            else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM && !(out->GetCellData()->GetTensors()) )
+                out->GetCellData()->SetActiveTensors(da->GetName());
         }
-
-        /* add data array into the vtk object */
-        out->GetPointData()->AddArray(da);
-
-        /* Set the first scalar/vector/tensor data, we process as active */
-        if( __var->second.is_scalar && !(out->GetPointData()->GetScalars()))
-        { out->GetPointData()->SetActiveScalars(da->GetName()); }
-        if( __var->second.is_vectorial && !(out->GetPointData()->GetVectors()))
-        { out->GetPointData()->SetActiveVectors(da->GetName()); }
-        if( __var->second.is_tensor2 && !(out->GetPointData()->GetTensors()))
-        { out->GetPointData()->SetActiveTensors(da->GetName()); }
 
         DVLOG(2) << "[ExporterVTK::saveNodal] saving " << __var->first << "done\n";
 
         ++__var;
     }
 }
-
-template<typename MeshType, int N>
-template<typename Iterator>
-void
-ExporterVTK<MeshType,N>::saveElementData( typename timeset_type::step_ptrtype step, Iterator __evar, Iterator __evaren, vtkSmartPointer<vtkout_type> out ) const
-{
-    while ( __evar != __evaren )
-    {
-        if ( !__evar->second.worldComm().isActive() ) return;
-
-        auto mesh = step->mesh();
-
-        auto r = elements( step->mesh() );
-        auto elt_st = r.template get<1>();
-        auto elt_en = r.template get<2>();
-
-        if ( !__evar->second.areGlobalValuesUpdated() )
-            __evar->second.updateGlobalValues();
-
-        //size_type ncells = __evar->second.size()/__evar->second.nComponents;
-        size_type ncells = std::distance( elt_st, elt_en );
-
-        uint16_type nComponents = __evar->second.nComponents;
-
-        if ( __evar->second.is_vectorial )
-            nComponents = 3;
-
-        size_type __field_size = nComponents * ncells;
-        std::vector<float> __field( __field_size );
-        __field.clear();
-
-        DVLOG(2) << "[saveElement] firstLocalIndex = " << __evar->second.firstLocalIndex() << "\n";
-        DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
-        DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
-
-        vtkSmartPointer<vtkFloatArray> da = vtkSmartPointer<vtkFloatArray>::New();
-        da->SetName(__evar->first.c_str());
-
-        /* set array parameters */
-        da->SetNumberOfComponents(nComponents);
-        da->SetNumberOfTuples(ncells);
-
-        /*
-           std::cout << this->worldComm().rank() << " nbElts:" << ncells << " nComp:" << nComponents 
-           << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
-        */
-        /*
-           std::cout << this->worldComm().rank() << " marker=" << *mit << " nbElts:" << ncells << " nComp:" << nComponents 
-           << " __evar->second.nComponents:" << __evar->second.nComponents << std::endl;
-           */
-
-        float * array = new float[nComponents];
-
-        size_type e = 0;
-        for ( auto elt_it = elt_st ; elt_it != elt_en; ++elt_it, ++e )
-        {
-            auto const& elt = boost::unwrap_ref( *elt_it );
-            DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                << " elt_it :  " << elt.id()
-                << " e : " << e << "\n";
-
-            for ( int c = 0; c < nComponents; ++c )
-            {
-                size_type global_node_id = e*ncells+c ;
-
-                if ( c < __evar->second.nComponents )
-                {
-                    size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
-
-                    DVLOG(2) << "c : " << c
-                        << " gdofid: " << global_node_id
-                        << " dofid : " << dof_id
-                        << " f.size : " <<  __field.size()
-                        << " e.size : " <<  __evar->second.size()
-                        << "\n";
-
-                    //__field[global_node_id] = __evar->second.globalValue( dof_id );
-                    array[c] =  __evar->second.globalValue( dof_id );
-
-#if 1
-                    //__field[global_node_id] = __evar->second.globalValue(dof_id);
-                    DVLOG(2) << "c : " << c
-                        << " gdofid: " << global_node_id
-                        << " dofid : " << dof_id
-                        << " field :  " << __field[global_node_id]
-                        << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
-#endif
-                }
-
-                else
-                {
-                    //__field[global_node_id] = 0;
-                    array[c] = 0.0;
-                }
-            }
-            da->SetTuple(e, array);
-        }
-
-        delete[] array;
-
-        /* add data array into the vtk object */
-        out->GetCellData()->AddArray(da);
-
-        /* Set the first scalar/vector/tensor data, we process as active */
-        if( __evar->second.is_scalar && !(out->GetCellData()->GetScalars()))
-        { out->GetCellData()->SetActiveScalars(da->GetName()); }
-        if( __evar->second.is_vectorial && !(out->GetCellData()->GetVectors()))
-        { out->GetCellData()->SetActiveVectors(da->GetName()); }
-        if( __evar->second.is_tensor2 && !(out->GetCellData()->GetTensors()))
-        { out->GetCellData()->SetActiveTensors(da->GetName()); }
-
-        DVLOG(2) << "[ExporterVTK::saveElement] saving " << __evar->first << "done\n";
-        ++__evar;
-    }
-}
-
 
 template<typename MeshType, int N>
 void

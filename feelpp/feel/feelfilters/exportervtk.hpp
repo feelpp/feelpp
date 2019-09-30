@@ -273,10 +273,8 @@ public:
      * save the \p mesh to the file \p filename
      */
     void saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const;
-    template<typename Iterator>
-    void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
-    template<typename Iterator>
-    void saveElementData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
 
 #ifdef FEELPP_HAS_LIBXML2
     /**
@@ -315,7 +313,7 @@ private:
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
 #endif
 #endif
-
+    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
 };
 
 } // Feel
