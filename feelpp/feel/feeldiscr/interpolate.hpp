@@ -30,6 +30,7 @@
 #define __interpolate_H 1
 
 #include <feel/feelmesh/intersect.hpp>
+#include <feel/feelvf/operators.hpp>
 
 namespace Feel
 {
