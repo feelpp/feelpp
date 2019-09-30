@@ -212,8 +212,6 @@ private:
     template<typename Iterator, typename TSt>
     void writeCaseFileVariables( Iterator it, Iterator end,
                                  std::string const& loc,
-                                 std::string const& type,
-                                 std::string const& ext,
                                  TSt const& __ts,
                                  std::ostream& __out ) const;
     /**
@@ -241,10 +239,7 @@ private:
     FEELPP_NO_EXPORT void writeVariableFiles() const;
 
     template<bool IsNodal,typename Iterator>
-    FEELPP_NO_EXPORT void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
-
-    template<typename Iterator>
-    FEELPP_NO_EXPORT void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
+    FEELPP_NO_EXPORT void saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
 
 private:
     mutable std::string M_filename;

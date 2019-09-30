@@ -219,16 +219,15 @@ private:
     */
     void _F_writeVariableFiles() const;
 
-    template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
-    template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
 private:
 
     mutable std::string M_filename;
     std::string M_element_type;
+    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
 };
 
 
