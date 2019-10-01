@@ -36,11 +36,20 @@ runLevelsetApplication()
             //) - ls_radius;
     //LS->setInitialValue( phi_init );
 
+    Feel::cout << "============================================================\n";
+    Feel::cout << "Levelset toolbox with errors measures\n";
+    Feel::cout << "============================================================\n";
     LS->init();
     LS->printAndSaveInfo();
     if( !LS->doRestart() )
         LS->exportResults(0.);
 
+    // Errors measures :
+    // LS is initialized, we save the phi, heaviside and dirac functions' initial values
+    auto phi_0 = LS->phi();
+    auto H_0 = LS->heaviside();
+    auto dirac_0 = LS->dirac();
+    
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
     std::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
@@ -87,6 +96,21 @@ runLevelsetApplication()
                 myExporter->step(iter)->add("distToBoundary", *distToBoundary );
                 myExporter->save();
             }
+	    // Error measures :
+	    // we compute the L2 norm error integrals :
+
+	    auto  chi_of_phi0_positive = chi( dirac_0 > 0 );
+	    double first_integral = integrate( _range=elements(LS->mesh()),
+					       _expr=chi_of_phi0_positive
+					       ).evaluate();
+	    double second_integral = integrate( _range=elements(LS->mesh()),
+						_expr(
+						      pow( idv(phi_0)-idv(LS->phi), 2.0 ) * chi_of_phi0_positive
+						      )
+						).evaluate();
+	    double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
+
+	    Feel::cout << "Erreur norme e_L2 = " + l2_norm_error << std::endl;
         }
     }
 }
