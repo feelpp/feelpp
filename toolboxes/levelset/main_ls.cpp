@@ -100,17 +100,11 @@ runLevelsetApplication()
 	    // we compute the L2 norm error integrals :
 
 	    auto  chi_of_phi0_positive = chi( dirac_0 > 0 );
-	    double first_integral = integrate( _range=elements(LS->mesh()),
-					       _expr=chi_of_phi0_positive
-					       ).evaluate();
-	    double second_integral = integrate( _range=elements(LS->mesh()),
-						_expr(
-						      pow( idv(phi_0)-idv(LS->phi), 2.0 ) * chi_of_phi0_positive
-						      )
-						).evaluate();
+	    double first_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi0_positive ).evaluate();
+	    double second_integral = integrate( _range=elements(LS->mesh()), _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_phi0_positive ) ).evaluate();
 	    double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
 
-	    Feel::cout << "Erreur norme e_L2 = " + l2_norm_error << std::endl;
+	    Feel::cout << "Erreur norme e_L2 = " << l2_norm_error << std::endl;
         }
     }
 }
