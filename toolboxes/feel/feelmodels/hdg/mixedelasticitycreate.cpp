@@ -165,32 +165,32 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    M_timers["mesh"].push_back(toc("initMesh"));
+    M_timers["mesh"].push_back(toc("initMesh", this->verbose() || FLAGS_v > 0));
 
     tic();
     this->initModel();
-    M_timers["initModel"].push_back(toc("initModel"));
+    M_timers["initModel"].push_back(toc("initModel", this->verbose() || FLAGS_v > 0));
 
     tic();
     this->initSpaces();
-    M_timers["spaces"].push_back(toc("initSpaces"));
+    M_timers["spaces"].push_back(toc("initSpaces", this->verbose() || FLAGS_v > 0));
 
     if (!isStationary())
     {
         tic();
         this->createTimeDiscretization();
         this->initTimeStep();
-        toc("time_discretization");
+        toc("time_discretization", this->verbose() || FLAGS_v > 0);
     }
 
     tic();
     this->initExporter(meshVisu);
-    M_timers["exporter"].push_back(toc("initExporter"));
+    M_timers["exporter"].push_back(toc("initExporter", this->verbose() || FLAGS_v > 0));
 
 
     tic();
     this->assemble();
-    M_timers["asbMatrix"].push_back(toc("assembleMatrix"));
+    M_timers["asbMatrix"].push_back(toc("assembleMatrix", this->verbose() || FLAGS_v > 0));
 
 
 }

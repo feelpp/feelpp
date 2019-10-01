@@ -37,17 +37,17 @@ namespace FeelModels
 
 inline
 po::options_description
-makeMixedPoissonElasticityOptions( std::string prefix = "mixedpoissonelasticity" )
+makeMixedPoissonElasticityOptions( std::string prefix = "hdg.poroelasticity" )
 {
     po::options_description mpOptions( "Mixed Poisson Elasticity HDG options");
-    mpOptions.add ( makeMixedPoissonOptions("mixedpoisson") );
-    mpOptions.add ( makeMixedElasticityOptions("mixedelasticity") );
+    mpOptions.add ( makeMixedPoissonOptions("hdg.poisson") );
+    mpOptions.add ( makeMixedElasticityOptions("hdg.elasticity") );
 
     return mpOptions;
 }
 
 inline po::options_description
-makeMixedPoissonElasticityLibOptions( std::string prefix = "mixedpoissonelasticity" )
+makeMixedPoissonElasticityLibOptions( std::string prefix = "hdg.poroelasticity" )
 {
     po::options_description mpLibOptions( "Mixed Poisson Elasticity HDG Lib options");
     // if ( !prefix.empty() )
@@ -114,11 +114,11 @@ public:
             M_mesh = meshCommon;
 
 
-            M_PoissonModel = mp_type::New("mixedpoisson");
+            M_PoissonModel = mp_type::New("hdg.poisson");
             M_PoissonModel->init( _meshPoisson , meshVisu );
 
 
-            M_ElasticityModel = me_type::New("mixedelasticity");
+            M_ElasticityModel = me_type::New("hdg.elasticity");
             M_ElasticityModel->init( _meshElasticity , meshVisu );
 
 
