@@ -548,6 +548,17 @@ void runTest4()
     params["a"]=2;
     params["b"]=4.5;
 
+    // constant
+    double cstValue = 3.14;
+    auto exprCst = expr( cstValue );
+    BOOST_CHECK( exprCst.expression().isConstant() );
+    BOOST_CHECK( exprCst.isPolynomial() );
+    BOOST_CHECK( exprCst.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprCst.evaluate(), cstValue, 1e-12 );
+    double intCst1 = integrate(_range=elements(mesh),_expr=cst(cstValue)).evaluate()(0,0);
+    double intCst2 = integrate(_range=elements(mesh),_expr=exprCst).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intCst1, intCst2, 1e-12 );
+
     // scalar
     auto exprA = expr("2*a*b:a:b");
     exprA.setParameterValues( params );

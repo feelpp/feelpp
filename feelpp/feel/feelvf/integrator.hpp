@@ -3452,7 +3452,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
             else
             {
-#if 1
                 if ( !isInitConnectionTo0 )
                 {
                     form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
@@ -3464,27 +3463,18 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 __c0->update( elt0Test,__face_id_in_elt_0 );
                 //t0 += ti0.elapsed();
 
-                FEELPP_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
-                    ( __face_id_in_elt_0 )
-                    ( __c0->faceId() ).warn ( "invalid face id" );
-
                 //ti1.restart();
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
                 form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
                 //t1 += ti1.elapsed();
 
                 //ti2.restart();
-                form->integrate( );
+                form->integrate();
                 //t2 += ti2.elapsed();
 
                 //ti3.restart();
-                form->assemble( elt0Test.id() );
+                form->assemble();
                 //t3 += ti3.elapsed();
-#else
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-                form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
-                form->integrate( );
-#endif
             } // end loop on elements
         }
     }// end loop on list of element
