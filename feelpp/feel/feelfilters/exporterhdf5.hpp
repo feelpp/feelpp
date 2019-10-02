@@ -121,22 +121,13 @@ public:
         void writeStats() const;
 
         /*!
-         * \brief save solutions on nodes 
+         * \brief save solutions on nodes or elements
          * \param __step a time step
          * \param __var  iterator on solutions (begin)
          * \param en     iterator on solutions (end)
          */
-        template<typename Iterator>
-            void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
-
-        /*!
-         * \brief save solutions on elements 
-         * \param __step   a time step
-         * \param __evar   iterator on solutions (begin)
-         * \param __evaren iterator on solutions (end)
-         */
-        template<typename Iterator>
-            void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
+         template<bool IsNodal,typename Iterator>
+         void saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
     private :
         mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
@@ -147,7 +138,8 @@ public:
         mutable std::string M_element_type;    /*!< element's type */
 
         mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
-        mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
+    //    mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
+    mutable std::map<int,std::ostringstream> M_XDMFContent;
 };
 } // Feel
 
