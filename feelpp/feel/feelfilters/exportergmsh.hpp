@@ -161,10 +161,11 @@ public:
     void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart ) const;
     void gmshSaveElementsEnd( std::ostream& out ) const;
 
-    void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
-
     void computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const;
     void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step, size_type indexEltStart) const;
+
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, std::ostream& out ) const;
 
     template<typename ConvexType=typename mesh_type::shape_type>
     void gmshSaveOneElementAsMesh( std::string const& filename,
