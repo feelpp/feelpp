@@ -107,7 +107,24 @@ runLevelsetApplication()
 	    double second_integral = integrate( _range=elements(LS->mesh()), _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_phi0_positive ) ).evaluate()(0,0);
 	    double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
 
-	    Feel::cout << "Erreur norme e_L2 = " << l2_norm_error << std::endl;
+	    Feel::cout << "First integral = " << first_integral << std::endl;
+	    Feel::cout << "Second integral = " << second_integral << std::endl;
+	    Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
+
+	    // Sign change error :
+	    auto e_sc_integrand = pow(
+				      ( 1-idv(H_0) ), - ( 1-idv(*LS->heaviside()) ),
+				      2.0
+				      );
+	    double e_sc_integral = integrate(
+					   _range=elements(LS->mesh()),
+					   _expr=e_sc_integrand
+					   ).evaluate()(0,0);
+	    double sign_change_error = std::sqrt(
+						 e_sc_integral
+						 );
+
+	    Feel::cout << "Sign change error = " << sign_change_error << std::endl;
         }
     }
 }
