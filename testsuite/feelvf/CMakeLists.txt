@@ -1,5 +1,7 @@
 set_directory_properties(PROPERTIES LABEL testvf )
 
+feelpp_add_test( expr CFG test_expr.cfg PYTHON test_expr.py )
+
 feelpp_add_test( ginac )
 feelpp_add_test( inner CFG test_inner.cfg )
 feelpp_add_test( vf_operators )

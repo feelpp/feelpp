@@ -24,17 +24,11 @@
 #ifndef FEELPP_MODELPOSTPROCESS_HPP
 #define FEELPP_MODELPOSTPROCESS_HPP 1
 
-
-#include <map>
-
-#include <boost/property_tree/ptree.hpp>
-
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 
 namespace Feel {
-
-namespace pt =  boost::property_tree;
 
 class FEELPP_EXPORT ModelPostprocessExports
 {
@@ -56,6 +50,24 @@ class FEELPP_EXPORT ModelPostprocessExports
   private :
     std::set<std::string> M_fields;
     std::string M_format;
+};
+
+class FEELPP_EXPORT ModelPostprocessSave
+{
+  public :
+    ModelPostprocessSave() = default;
+    ModelPostprocessSave( ModelPostprocessSave const& ) = default;
+    ModelPostprocessSave( ModelPostprocessSave&& ) = default;
+    ModelPostprocessSave& operator=( ModelPostprocessSave const& ) = default;
+    ModelPostprocessSave& operator=( ModelPostprocessSave && ) = default;
+
+    std::set<std::string> const& fieldsNames() const { return M_fieldsNames; }
+    std::string const& fieldsFormat() const { return M_fieldsFormat; }
+
+    void setup( pt::ptree const& p );
+  private :
+    std::set<std::string> M_fieldsNames;
+    std::string M_fieldsFormat;
 };
 
 class FEELPP_EXPORT ModelPointPosition
@@ -106,25 +118,26 @@ private:
 
 };
 
-class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >
+class FEELPP_EXPORT ModelPostprocessPointPosition : public std::pair< ModelPointPosition, std::set<std::string> >, public CommObject
 {
     typedef std::pair< ModelPointPosition, std::set<std::string> > super_type;
 public :
-    ModelPostprocessPointPosition( WorldComm const& world = Environment::worldComm() )
+    using super2 = CommObject;
+    ModelPostprocessPointPosition( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type(),
-        M_worldComm( world )
+        super2( world )
         {}
-    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, WorldComm const& world = Environment::worldComm() )
+    ModelPostprocessPointPosition( ModelPointPosition const& ptPos, worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type( ptPos,std::set<std::string>() ),
-        M_worldComm( world )
+        super2( world )
         {}
     ModelPostprocessPointPosition( ModelPointPosition const& ptPos, std::set<std::string> const& fields,
-                                   WorldComm const& world = Environment::worldComm() )
+                                   worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
         super_type( ptPos,fields ),
-        M_worldComm( world )
+        super2( world )
         {}
     ModelPostprocessPointPosition( ModelPostprocessPointPosition const& ) = default;
     ModelPostprocessPointPosition( ModelPostprocessPointPosition&& ) = default;
@@ -136,26 +149,26 @@ public :
     std::set<std::string> const& fields() const { return this->second; }
     std::set<std::string> & fields() { return this->second; }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setFields( std::set<std::string> const& fields ) { this->second = fields; }
     void addFields( std::string const& field ) { this->second.insert( field ); }
     void setParameterValues( std::map<std::string,double> const& mp ) { this->pointPosition().setParameterValues( mp ); }
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 };
 
 //! store informations require by the postprocessing Norm
-class FEELPP_EXPORT ModelPostprocessNorm
+class FEELPP_EXPORT ModelPostprocessNorm : public CommObject
 {
 public :
-    ModelPostprocessNorm( WorldComm const& world = Environment::worldComm() )
+    using super = CommObject;
+    ModelPostprocessNorm( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        M_worldComm( world ),
+        super( world ),
         M_quadOrder( 5 ),
         M_quad1Order( 5 )
         {}
@@ -190,14 +203,13 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
@@ -208,12 +220,13 @@ private:
 };
 
 //! store informations require by the postprocessing Statistics
-class FEELPP_EXPORT ModelPostprocessStatistics
+class FEELPP_EXPORT ModelPostprocessStatistics : public CommObject
 {
 public :
-    ModelPostprocessStatistics( WorldComm const& world = Environment::worldComm() )
+    using super = CommObject;
+    ModelPostprocessStatistics( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
-        M_worldComm( world ),
+        super( world ),
         M_quadOrder( 5 ),
         M_quad1Order( 5 )
         {}
@@ -242,14 +255,13 @@ public :
     //! return true if a field has been given
     bool hasField() const { return !M_field.empty(); }
 
-    void setPTree( pt::ptree const& _p, std::string const& name ) { M_p = _p; this->setup( name ); }
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
     void setParameterValues( std::map<std::string,double> const& mp );
 
 private:
-    void setup( std::string const& name );
+    void setup( std::string const& name, ModelIndexes const& indexes );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
     std::string M_name, M_field;
@@ -259,29 +271,74 @@ private:
     uint16_type M_quadOrder, M_quad1Order;
 };
 
-class FEELPP_EXPORT ModelPostprocess
+class FEELPP_EXPORT ModelPostprocessCheckerMeasure : public CommObject
+{
+    using super = CommObject;
+  public :
+    ModelPostprocessCheckerMeasure( worldcomm_ptr_t const& world = Environment::worldCommPtr(), double value=0., double tol=0.01 )
+        :
+        super( world ),
+        M_value( value ),
+        M_tolerance( tol )
+        {}
+    ModelPostprocessCheckerMeasure( ModelPostprocessCheckerMeasure const& ) = default;
+    ModelPostprocessCheckerMeasure( ModelPostprocessCheckerMeasure&& ) = default;
+    ModelPostprocessCheckerMeasure& operator=( ModelPostprocessCheckerMeasure const& ) = default;
+    ModelPostprocessCheckerMeasure& operator=( ModelPostprocessCheckerMeasure && ) = default;
+
+    //! name of a measure to check
+    std::string const& name() const { return M_name; }
+    //! reference value
+    double value() const { return M_value; }
+    //! tolerance used in comparison
+    double tolerance() const { return M_tolerance; }
+    //! check if the arg val is close at tolerance to the reference value
+    //! \return tuple ( check is true, diff value )
+    std::tuple<bool,double> run( double val ) const;
+
+    void setPTree( pt::ptree const& _p, std::string const& name, ModelIndexes const& indexes ) { M_p = _p; this->setup( name, indexes ); }
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
+  private:
+    void setup( std::string const& name, ModelIndexes const& indexes );
+  private :
+    pt::ptree M_p;
+    std::string M_name;
+    std::string M_directoryLibExpr;
+    ModelExpression M_valueExpr;
+    double M_value;
+    double M_tolerance;
+};
+
+class FEELPP_EXPORT ModelPostprocess : public CommObject
 {
 public:
-
-    ModelPostprocess( WorldComm const& world = Environment::worldComm() );
-    ModelPostprocess( pt::ptree const& p, WorldComm const& world = Environment::worldComm() );
+    using super = CommObject;
+    ModelPostprocess( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
+    ModelPostprocess( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelPostprocess();
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
     pt::ptree pTree( std::string const& name ) const;
     bool useModelName() const { return M_useModelName; }
     std::map<std::string,ModelPostprocessExports> allExports() const { return M_exports; }
+    std::map<std::string,ModelPostprocessSave> allSave() const { return M_save; }
     std::map<std::string,std::vector<ModelPostprocessPointPosition> > const& allMeasuresPoint() const { return M_measuresPoint; }
     std::map<std::string,std::vector<ModelPostprocessNorm> > const& allMeasuresNorm() const { return M_measuresNorm; }
     std::map<std::string,std::vector<ModelPostprocessStatistics> > const& allMeasuresStatistics() const { return M_measuresStatistics; }
+    std::map<std::string,std::vector<ModelPostprocessCheckerMeasure> > const& allCheckersMeasure() const { return M_checkersMeasure; }
     bool hasExports( std::string const& name = "" ) const;
+    bool hasSave( std::string const& name = "" ) const;
     bool hasMeasuresPoint( std::string const& name = "" ) const;
     bool hasMeasuresNorm( std::string const& name = "" ) const;
     bool hasMeasuresStatistics( std::string const& name = "" ) const;
+    bool hasCheckersMeasure( std::string const& name = "" ) const;
     ModelPostprocessExports const& exports( std::string const& name = "" ) const;
+    ModelPostprocessSave const& save( std::string const& name = "" ) const;
     std::vector<ModelPostprocessPointPosition> const& measuresPoint( std::string const& name = "" ) const;
     std::vector<ModelPostprocessNorm> const& measuresNorm( std::string const& name = "" ) const;
     std::vector<ModelPostprocessStatistics> const& measuresStatistics( std::string const& name = "" ) const;
+    std::vector<ModelPostprocessCheckerMeasure> const& checkersMeasure( std::string const& name = "" ) const;
 
     void setPTree( pt::ptree const& _p );
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
@@ -302,17 +359,20 @@ private:
     void setup();
     void setup( std::string const& name, pt::ptree const& p );
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     bool M_useModelName;
     std::map<std::string,ModelPostprocessExports> M_exports;
+    std::map<std::string,ModelPostprocessSave> M_save;
     std::map<std::string,std::vector< ModelPostprocessPointPosition > > M_measuresPoint;
     std::map<std::string,std::vector< ModelPostprocessNorm > > M_measuresNorm;
     std::map<std::string,std::vector< ModelPostprocessStatistics > > M_measuresStatistics;
+    std::map<std::string,std::vector< ModelPostprocessCheckerMeasure > > M_checkersMeasure;
     ModelPostprocessExports M_emptyExports;
+    ModelPostprocessSave M_emptySave;
     std::vector< ModelPostprocessPointPosition > M_emptyMeasuresPoint;
     std::vector< ModelPostprocessNorm > M_emptyMeasuresNorm;
     std::vector< ModelPostprocessStatistics > M_emptyMeasuresStatistics;
+    std::vector< ModelPostprocessCheckerMeasure > M_emptyCheckersMeasure;
     std::string M_directoryLibExpr;
 };
 

@@ -34,12 +34,7 @@
 
 namespace Feel
 {
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nDim;
-template<typename Shape, typename T, int Tag>
-const uint16_type Mesh<Shape, T, Tag>::nOrder;
 
-//
 // Explicit instatiations
 //
 #if defined( FEELPP_INSTANTIATION_MODE )

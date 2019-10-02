@@ -63,6 +63,14 @@ template<typename MeshType,
          template<class, uint16_type, class> class Pts = PointSetEquiSpaced,
          int Tag = 0>
 using Pch_ptrtype = typename meta::Pch<MeshType,Order,T,Pts,Tag>::ptrtype;
+
+template<typename MeshType,int Order,typename T = double, template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+using Pch_element_t=typename Pch_type<MeshType,Order, T,Pts, Tag>::element_type;
+
+template<typename MeshType,int Order,typename T = double,template<class, uint16_type, class> class Pts = PointSetEquiSpaced, int Tag = 0>
+using Pch_element_type=Pch_element_t<MeshType,Order,T,Pts, Tag>;
+
+
 /**
  * \fn Pch<k,MeshType>
  *
@@ -96,12 +104,13 @@ template<int Order,
          int Tag = 0>
 inline
 Pch_ptrtype<MeshType,Order,T,Pts,Tag>
-Pch( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false )
+Pch( std::shared_ptr<MeshType> mesh, elements_reference_wrapper_t<MeshType> const& rangeElt, bool buildExtendedDofTable=false, size_type components = 0 )
 {
     return Pch_type<MeshType,Order,T,Pts,Tag>::New( _mesh=mesh,
                                                     _range=rangeElt,
                                                     _worldscomm=makeWorldsComm( 1,mesh->worldComm() ),
-                                                    _extended_doftable=buildExtendedDofTable );
+                                                    _extended_doftable=buildExtendedDofTable,
+                                                    _components=components );
 }
 
 

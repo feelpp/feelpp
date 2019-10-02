@@ -138,6 +138,11 @@ public:
         return M_expr;
     }
 
+    auto
+    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate( p, worldcomm ); // TODO : take into composant
+        }
     /** @name Operator overloads
      */
     //@{
@@ -252,7 +257,85 @@ public:
 
 class IntegratorBase {};
 
+class ExprDynamicBase
+{
+public:
+    ExprDynamicBase() = default;
+    explicit ExprDynamicBase( size_type c ) : M_context( c ) {}
+    size_type dynamicContext() const { return M_context; }
+private:
+    size_type M_context = 0;
+};
 
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+constexpr bool hasStaticContext()
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return true if the expr hass static context, false otherwise
+//!
+template <class T>
+inline bool hasStaticContext( T const& t )
+{
+    return !has_dynamic_v<T::context>;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+constexpr size_type staticContext()
+{
+    return T::context;
+}
+
+//!
+//! @return the static context  
+//!
+template <class T>
+inline size_type staticContext( T const& t )
+{
+    return T::context;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+constexpr bool hasDynamicContext()
+{
+    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return true if the expression has dynamic context, false otherwise
+//!
+template <class T>
+inline bool hasDynamicContext( T const& t )
+{
+    return has_dynamic_v<T::context> && std::is_base_of_v<ExprDynamicBase, T>;
+}
+
+//!
+//! @return the dynamic context  if the expression has one or the static context otherwise
+//!
+template <class T>
+size_type dynamicContext( T const& t )
+{
+    if constexpr ( hasDynamicContext<T>() )
+    {
+        return t.dynamicContext() | T::context;
+    }
+    else
+    {
+        return T::context;
+    }
+}
 
 /*!
   \class Expr
@@ -262,11 +345,11 @@ class IntegratorBase {};
   @see
 */
 template<typename ExprT>
-class Expr : public ExprBase //: public std::enable_shared_from_this<Expr<ExprT> >
+class Expr : public ExprBase, public ExprDynamicBase //: public std::enable_shared_from_this<Expr<ExprT> >
 {
 public:
 
-    static const size_type context = ExprT::context;
+    inline static const size_type context = ExprT::context;
     static const bool is_terminal = ExprT::is_terminal;
 
     template<typename Func>
@@ -415,7 +498,24 @@ public:
         {
         }
 
-    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    template<typename ExprTT>
+    explicit Expr( ExprTT const& )
+        {
+            
+        }
+    template<typename ExprTT>
+    ExprT operator=( ExprTT const& e )
+        {
+            
+        }
+    //! @return the dynamic context of the expression
+    size_type dynamicContext() const
+        {
+            //std::cout << "dynctx:" << Feel::vf::dynamicContext( M_expr ) << " hasp:" << vm::hasPOINT(Feel::vf::dynamicContext( M_expr )) << std::endl;
+            return Feel::vf::dynamicContext( M_expr );
+        }
+    
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
 
@@ -467,43 +567,43 @@ public:
         {
             M_tensor_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept
         {
             M_tensor_expr.update( geom, fev, feu );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev )
+        void update( Geo_t const& geom, Basis_i_t const& fev ) noexcept 
         {
             M_tensor_expr.update( geom, fev );
         }
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) noexcept 
         {
             M_tensor_expr.update( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) noexcept
         {
             M_tensor_expr.update( geom, face );
         }
         template<typename ... CTX>
-        void updateContext( CTX const& ... ctx )
+        void updateContext( CTX const& ... ctx ) noexcept 
         {
             M_tensor_expr.updateContext( ctx... );
         }
 
 
         value_type
-        evalij( uint16_type i, uint16_type j ) const
+        evalij( uint16_type i, uint16_type j ) const noexcept
         {
             return M_tensor_expr.evalij( i, j );
         }
 
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const noexcept 
         {
             return M_tensor_expr.evalijq( i, j, q );
         }
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept 
         {
             return M_tensor_expr.evalijq( i, j, c1, c2, q );
         }
@@ -511,31 +611,31 @@ public:
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext> ) const
+                 mpl::int_<PatternContext> ) const noexcept
         {
             return M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
         }
 
 
         value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
             return M_tensor_expr.evaliq( i, c1, c2, q );
         }
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
-        evaliq( uint16_type i, uint16_type q ) const
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
+        evaliq( uint16_type i, uint16_type q ) const noexcept
         {
             return M_tensor_expr.evaliq( i, q );
         }
 
         value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
             value_type e = M_tensor_expr.evalq( c1, c2, q );
             return e;
         }
-        Eigen::Matrix<value_type, shape::M, shape::N> const&
-        evalq( uint16_type q ) const
+        Eigen::Map<const Eigen::Matrix<value_type, shape::M,shape::N>>
+        evalq( uint16_type q ) const noexcept
         {
             return M_tensor_expr.evalq( q );
         }
@@ -624,8 +724,6 @@ public:
     {
         return M_expr.isSymetric();
     }
-
-    //this_ptrtype ptr() { return boost::shared_from_this(); }
 
     expression_type const& expression() const
     {
@@ -724,6 +822,7 @@ private:
 
     mutable expression_type  M_expr;
 };
+
 
 template <typename ExprT>
 Expr<ExprT>

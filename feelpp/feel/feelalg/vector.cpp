@@ -349,6 +349,13 @@ void Vector<T>::localize( Vector<T> const& v )
 {
 }
 
+#if 0
+template class Vector<uint16_type>;
+template class Vector<uint32_type>;
+template class Vector<int16_type>;
+template class Vector<int32_type>;
+#endif
+template class Vector<float>;
 template class Vector<double>;
 template class Vector<std::complex<double>>;
 //template class Vector<long double>;

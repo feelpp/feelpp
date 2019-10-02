@@ -7,7 +7,7 @@ namespace Feel
 {
 
 template <int nDim,uint16_type OrderVelocity,uint16_type OrderPressure, uint16_type OrderGeo = 1>
-void
+int
 runApplicationFluid()
 {
     using namespace Feel;
@@ -44,6 +44,8 @@ runApplicationFluid()
         }
     }
 
+    return !FM->checkResults();
+
 }
 
 } // namespace Feel
@@ -73,9 +75,11 @@ main( int argc, char** argv )
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
 
     auto discretizationt = hana::make_tuple( hana::make_tuple("P2P1G1", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<1>) ),
-                                             hana::make_tuple("P2P1G2", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<2>) ) );
+                                             hana::make_tuple("P2P1G2", hana::make_tuple( hana::int_c<2>,hana::int_c<1>,hana::int_c<2>) ),
+                                             hana::make_tuple("P1P1G1", hana::make_tuple( hana::int_c<1>,hana::int_c<1>,hana::int_c<1>) ) );
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+    int status = 0;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&status]( auto const& d )
                     {
                         constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
@@ -83,7 +87,7 @@ main( int argc, char** argv )
                         constexpr int _porder = std::decay_t<decltype(hana::at_c<1>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
                         constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
                         if ( dimension == _dim && discretization == _discretization )
-                            runApplicationFluid<_dim,_uorder,_porder,_gorder>();
+                            status = runApplicationFluid<_dim,_uorder,_porder,_gorder>();
                     } );
-    return 0;
+    return status;
 }

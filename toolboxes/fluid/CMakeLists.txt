@@ -29,7 +29,8 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   feelpp_toolbox_fluid_lib_2dP2P1G2
   feelpp_toolbox_fluid_lib_3dP2P1G1
   feelpp_toolbox_fluid_lib_3dP2P1G2
-  #feelpp_toolbox_fluid_lib_2dP1P1G1
+  feelpp_toolbox_fluid_lib_2dP1P1G1
+  feelpp_toolbox_fluid_lib_3dP1P1G1
   INSTALL TESTS
 )
 
@@ -37,3 +38,4 @@ feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)
 feelpp_add_testcase(TurekHron CATEGORY CFD)
 feelpp_add_testcase(TurekHronExt3d CATEGORY CFD)
 feelpp_add_testcase(backwardfacingstep CATEGORY CFD)
+feelpp_add_testcase(movingboundary CATEGORY CFD)

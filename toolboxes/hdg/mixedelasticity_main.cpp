@@ -27,7 +27,7 @@ runApplicationMixedElasticity()
 
     typedef FeelModels::MixedElasticity<nDim,OrderT> me_type;
 
-    auto ME = me_type::New("mixedelasticity");
+    auto ME = me_type::New("hdg.elasticity");
     auto mesh = loadMesh( _mesh=new typename me_type::mesh_type );
 
     decltype( IPtr( _domainSpace=Pdhv<OrderT>(mesh), _imageSpace=Pdhv<OrderT>(mesh) ) ) Idh ;
@@ -35,7 +35,7 @@ runApplicationMixedElasticity()
 
     std::list<std::string> listSubmesh;
 
-    std::string unseparatedList = soption( "mixedelasticity.gmsh.submesh");
+    std::string unseparatedList = soption( "hdg.elasticity.gmsh.submesh");
 
     char help;
     std::string nameSubmesh;
@@ -61,7 +61,7 @@ runApplicationMixedElasticity()
     else
     {
         Feel::cout << "Using submesh: " << listSubmesh << std::endl;
-        auto cmesh = createSubmesh( mesh, markedelements( mesh, listSubmesh ), Environment::worldComm() );
+        auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements( mesh, listSubmesh ) );
         Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
         ME -> init( cmesh, mesh );
@@ -84,7 +84,8 @@ runApplicationMixedElasticity()
      Feel::cout << "Using submesh 2: " << soption("gmsh.submesh2") << std::endl;
      listSubmeshes.push_back( soption("gmsh.submesh2") );
      }
-     auto cmesh = createSubmesh( mesh, markedelements(mesh,listSubmeshes), Environment::worldComm() );
+     auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,listSubmeshes) );
+
      Idh = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
      Idhv = IPtr( _domainSpace=Pdhms<OrderT>(cmesh), _imageSpace=Pdhms<OrderT>(mesh) );
      ME -> init( cmesh, mesh );
@@ -125,8 +126,8 @@ int main(int argc, char *argv[])
 {
     using namespace Feel;
 
-    po::options_description meoptions( "mixedelasticity options" );
-    meoptions.add( FeelModels::makeMixedElasticityOptions("mixedelasticity") );
+    po::options_description meoptions( "hdg.elasticity options" );
+    meoptions.add( FeelModels::makeMixedElasticityOptions("hdg.elasticity") );
     meoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
@@ -136,7 +137,7 @@ int main(int argc, char *argv[])
                            _argv=argv,
                            _about=makeAbout(),
                            _desc=meoptions,
-                           _desc_lib=FeelModels::makeMixedElasticityLibOptions("mixedelasticity").add(feel_options())
+                           _desc_lib=FeelModels::makeMixedElasticityLibOptions("hdg.elasticity").add(feel_options())
                            );
 
 

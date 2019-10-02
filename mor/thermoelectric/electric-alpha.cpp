@@ -30,16 +30,46 @@
 
 namespace Feel {
 
-AlphaElectric::AlphaElectric()
-    : AlphaElectric(nullptr)
+po::options_description
+AlphaElectric::makeOptions( std::string const& prefix )
+{
+    po::options_description options( "Electric" );
+    options.add_options()
+        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("electric.json"),
+          "json file containing application parameters and boundary conditions")
+        ( "thermoelectric.penal-dir", po::value<double>()->default_value( 1e5 ), "penalisation term" )
+        ( "thermoelectric.trainset-deim-size", po::value<int>()->default_value(40), "size of the deim trainset" )
+        ( "thermoelectric.trainset-mdeim-size", po::value<int>()->default_value(40), "size of the mdeim trainset" )
+        ( "thermoelectric.test-deim", po::value<bool>()->default_value(false), "test deim interpolation" )
+        ( "thermoelectric.db.base", po::value<std::string>()->default_value("alphaelectric"), "database basename" )
+        ( "thermoelectric.verbose", po::value<int>()->default_value(0), "verbosity level" )
+        ;
+    options.add(backend_options("feV") );
+    options.add(deimOptions("vec")).add(deimOptions("mat"));
+    options.add(crbOptions(prefix));
+    options.add(crbSEROptions(prefix));
+    options.add(eimOptions());
+    options.add(podOptions());
+    options.add(backend_options("backend-primal"));
+    options.add(backend_options("backend-dual"));
+    options.add(backend_options("backend-l2"));
+
+    return options;
+}
+
+AlphaElectric::AlphaElectric(std::string const& prefix)
+    : AlphaElectric(nullptr, prefix)
 {}
 
-AlphaElectric::AlphaElectric( mesh_ptrtype mesh )
-    : super_type( "electric" ),
+AlphaElectric::AlphaElectric( mesh_ptrtype mesh,  std::string const& prefix )
+    : super_type( soption("thermoelectric.db.base"), Environment::worldCommPtr(), prefix),
       M_trainsetDeimSize(ioption("thermoelectric.trainset-deim-size")),
       M_trainsetMdeimSize(ioption("thermoelectric.trainset-mdeim-size")),
       M_penalDir(doption("thermoelectric.penal-dir")),
-      M_propertyPath(Environment::expand( soption("thermoelectric.filename")))
+      M_propertyPath(Environment::expand( soption("thermoelectric.filename"))),
+      M_testDeim(boption("thermoelectric.test-deim")),
+      M_dbBasename(soption("thermoelectric.db.base")),
+      M_verbose(ioption("thermoelectric.verbose"))
 {
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
@@ -66,7 +96,7 @@ AlphaElectric::AlphaElectric( mesh_ptrtype mesh )
     M_mu = Dmu->element();
 
     // keep only materials with physic electric
-    M_materials = M_modelProps->materials().materialWithPhysic("electric");
+    M_materials = M_modelProps->materials().materialWithPhysic("electric-geo");
     for( auto const& mp : M_materials )
     {
         if( mp.second.hasProperty("zmin")
@@ -181,7 +211,34 @@ AlphaElectric::parameter_type AlphaElectric::param0()
     return this->paramFromVec(x);
 }
 
-std::string AlphaElectric::alpha( parameter_type const& mu, ModelMaterial const& material )
+std::string AlphaElectric::alphaRef( parameter_type const& mu, ModelMaterial const& material )
+{
+    using boost::math::binomial_coefficient;
+
+    double zb = material.getDouble("zmin");
+    double zt = material.getDouble("zmax");
+    auto paramNames = material.getVecString("params");
+
+    int n = paramNames.size() + 1;
+
+    std::stringstream alphaStream;
+    alphaStream << "0 + (z<" << zt << ")*(z>" << zb << ")*(";
+    for( int k = 1; k < n; ++k )
+    {
+        double ckn = binomial_coefficient<double>(n,k);
+        alphaStream << " + " << ckn
+                    << "*((z-" << zb << ")/" << zt-zb << ")^" << k
+                    << "*(1-(z-" << zb << ")/" << zt-zb << ")^" << n-k
+                    << "*" << paramNames[k-1];
+    }
+    alphaStream << "):x:y:z";
+    for( auto const& p : paramNames )
+        alphaStream << ":" << p;
+
+    return alphaStream.str();
+}
+
+std::string AlphaElectric::alpha( ModelMaterial const& material )
 {
     using boost::math::binomial_coefficient;
 
@@ -207,6 +264,35 @@ std::string AlphaElectric::alpha( parameter_type const& mu, ModelMaterial const&
     alphaStream << "):x:y:z";
 
     return alphaStream.str();
+}
+
+std::string AlphaElectric::alphaPrimeRef( ModelMaterial const& material )
+{
+    using boost::math::binomial_coefficient;
+
+    double zb = material.getDouble("zmin");
+    double zt = material.getDouble("zmax");
+    auto paramNames = material.getVecString("params");
+    paramNames.insert(paramNames.begin(), "0");
+    paramNames.push_back("0");
+
+    int n = paramNames.size() - 1;
+
+    std::stringstream alphaPrimeStream;
+    alphaPrimeStream << "0 + (z<" << zt << ")*(z>" << zb << ")*(";
+    alphaPrimeStream << n << "/" << zt-zb << "*(";
+    for( int k = 0; k < n; ++k )
+    {
+        double ckn1 = binomial_coefficient<double>(n-1,k);
+        alphaPrimeStream << " + (" << paramNames[k+1] << "-" << paramNames[k] << ")*" << ckn1
+                         << "*((z-" << zb << ")/" << zt-zb << ")^" << k
+                         << "*(1-(z-" << zb << ")/" << zt-zb << ")^" << n-1-k;
+    }
+    alphaPrimeStream << ")):x:y:z";
+    for( int k = 1; k < n; ++k )
+        alphaPrimeStream << ":" << paramNames[k];
+
+    return alphaPrimeStream.str();
 }
 
 std::string AlphaElectric::alphaPrime( parameter_type const& mu, ModelMaterial const& material )
@@ -276,22 +362,18 @@ AlphaElectric::assembleForMDEIM( parameter_type const& mu, int const& tag )
                         material.second.getDouble("sigma")/sigmaMax*inner(gradt(V),grad(phiV)) );
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        a += integrate( markedfaces(mesh, exAtM.marker()),
-                        sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
-                                        -inner(grad(V)*N(),id(phiV))
-                                        -inner(grad(phiV)*N(),idt(V)) ) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            a += integrate( markedfaces(mesh, exAtM.marker()),
+                            sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
+                                            -inner(grad(V)*N(),id(phiV))
+                                            -inner(grad(phiV)*N(),idt(V)) ) );
+        }
     }
 
     auto am = a.matrixPtr();
     am->close();
-
-    // Feel::cout << "assemble for mu=[" << mu(0);
-    // for( int i = 1; i < mu.size(); ++i)
-    //     Feel::cout << "," << mu(i);
-    // Feel::cout << "]" << std::endl << "alpha : " << alpha(mu) << std::endl
-    //            << "alpha\': " << std::endl << alphaPrime(mu) << std::endl
-    //            << "norm A = " << am->l1Norm() << std::endl;
 
     return am;
 }
@@ -314,27 +396,22 @@ AlphaElectric::assembleForDEIM( parameter_type const& mu, int const& tag )
     auto f = form1(_test=Xh);
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        auto dif = expr(exAtM.expression());
-        f += integrate( markedfaces(mesh, exAtM.marker()),
-                        sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            auto dif = expr(exAtM.expression());
+            f += integrate( markedfaces(mesh, exAtM.marker()),
+                            sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        }
     }
     auto fv = f.vectorPtr();
     fv->close();
-
-    // Feel::cout << "assemble for mu=[" << mu(0);
-    // for( int i = 1; i < mu.size(); ++i)
-    //     Feel::cout << "," << mu(i);
-    // Feel::cout << "] " << std::endl << "alpha : " << alpha(mu) << std::endl
-    //            << "alpha\': " << std::endl << alphaPrime(mu) << std::endl
-    //            << "norm F = " << fv->l2Norm() << std::endl;
 
     return fv;
 }
 
 void AlphaElectric::initModel()
 {
-    Feel::cout << "initModel" << std::endl;
     this->addModelFile("property-file", M_propertyPath);
 
     if( !M_mesh )
@@ -345,14 +422,13 @@ void AlphaElectric::initModel()
     auto domain = markedelements(M_mesh, range);
     this->setFunctionSpaces(functionspace_type::New( _mesh=M_mesh, _range=domain ) );
 
-    Feel::cout << "nDof: " << Xh->nDof() << std::endl;
+    Feel::cout << "initModel with nDof: " << Xh->nDof() << std::endl;
 
     if( !pT )
         pT = element_ptrtype( new element_type( Xh ) );
 
     auto PsetV = this->Dmu->sampling();
-
-    std::string supersamplingname =(boost::format("DmuDEim-Ne%1%-generated-by-master-proc") % M_trainsetDeimSize ).str();
+    std::string supersamplingname =(boost::format("DmuDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetDeimSize ).str();
     std::ifstream file ( supersamplingname );
     bool all_proc_same_sampling=true;
     if( ! file )
@@ -369,12 +445,10 @@ void AlphaElectric::initModel()
     auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(d);
     this->deim()->run();
-
     Feel::cout << tc::green << "Electric DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
-
-    supersamplingname =(boost::format("DmuMDEim-Ne%1%-generated-by-master-proc") % M_trainsetMdeimSize ).str();
+    supersamplingname =(boost::format("DmuMDEim-P%1%-Ne%2%-generated-by-master-proc") % this->Dmu->dimension() % M_trainsetMdeimSize ).str();
     std::ifstream fileM ( supersamplingname );
     if( ! fileM )
     {
@@ -395,49 +469,52 @@ void AlphaElectric::initModel()
     this->resizeQm();
     this->decomposition();
 
-    auto VFE = this->solve(M_mu);
-    auto A = this->assembleForMDEIM(M_mu, 0 );
-    auto F = this->assembleForDEIM(M_mu, 0 );
-
-    auto betaA = this->mdeim()->beta(M_mu);
-    auto betaF = deim()->beta(M_mu);
-    auto qa = mdeim()->q();
-    auto qf = deim()->q();
-    auto Am = backend()->newMatrix(Xh,Xh);
-    Am->zero();
-    for( int m = 0; m < mdeim()->size(); ++m )
+    if( M_testDeim )
     {
-        Am->addMatrix( betaA(m), qa[m]);
-        Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
+        auto VFE = this->solve(M_mu);
+        auto A = this->assembleForMDEIM(M_mu, 0 );
+        auto F = this->assembleForDEIM(M_mu, 0 );
+
+        auto betaA = this->mdeim()->beta(M_mu);
+        auto betaF = deim()->beta(M_mu);
+        auto qa = mdeim()->q();
+        auto qf = deim()->q();
+        auto Am = backend()->newMatrix(Xh,Xh);
+        Am->zero();
+        for( int m = 0; m < mdeim()->size(); ++m )
+        {
+            Am->addMatrix( betaA(m), qa[m]);
+            Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
+        }
+        auto Fm = backend()->newVector(Xh);
+        Fm->zero();
+        for( int m = 0; m < deim()->size(); ++m )
+        {
+            Fm->add( betaF(m), qf[m]);
+            Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
+        }
+
+        auto VEIM = Xh->element();
+        backend()->solve( _matrix=Am, _rhs=Fm, _solution=VEIM);
+
+        auto e = exporter(M_mesh);
+        e->add("VFE", VFE);
+        e->add("VEIM", VEIM);
+        e->save();
+
+        auto errV = normL2(domain, idv(VFE)-idv(VEIM) );
+        auto normV = normL2(domain, idv(VFE) );
+        Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
+
+        Am->addMatrix(-1., A);
+        Fm->add(-1., F);
+        auto errA = Am->linftyNorm();
+        auto normA = A->linftyNorm();
+        auto errF = Fm->linftyNorm();
+        auto normF = F->linftyNorm();
+        Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
+                   << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
     }
-    auto Fm = backend()->newVector(Xh);
-    Fm->zero();
-    for( int m = 0; m < deim()->size(); ++m )
-    {
-        Fm->add( betaF(m), qf[m]);
-        Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
-    }
-
-    auto VEIM = Xh->element();
-    backend()->solve( _matrix=Am, _rhs=Fm, _solution=VEIM);
-
-    auto e = exporter(M_mesh);
-    e->add("VFE", VFE);
-    e->add("VEIM", VEIM);
-    e->save();
-
-    auto errV = normL2(elements(M_mesh), idv(VFE)-idv(VEIM) );
-    auto normV = normL2(elements(M_mesh), idv(VFE) );
-    Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
-
-    Am->addMatrix(-1., A);
-    Fm->add(-1., F);
-    auto errA = Am->linftyNorm();
-    auto normA = A->linftyNorm();
-    auto errF = Fm->linftyNorm();
-    auto normF = F->linftyNorm();
-    Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
-               << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
 }
 
 void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
@@ -451,9 +528,6 @@ void AlphaElectric::setupSpecificityModel( boost::property_tree::ptree const& pt
     M_modelProps = std::make_shared<prop_type>(propertyPath);
 
     auto parameters = M_modelProps->parameters();
-    Feel::cout << "Using parameters:" << std::endl
-               << "dif  : " << parameters["dif"].value() << std::endl;
-
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                    {
                                        return p.second.hasMinMax();
@@ -583,8 +657,6 @@ AlphaElectric::computeInitialGuessAffineDecomposition()
 AlphaElectric::element_type
 AlphaElectric::solve( parameter_type const& mu )
 {
-    Feel::cout << "solve for parameter:" << std::endl << mu << std::endl;
-
     auto solution = Xh->element();
 
     auto V = Xh->element();
@@ -626,22 +698,21 @@ AlphaElectric::solve( parameter_type const& mu )
     auto fV = form1(_test=Xh);
     for( auto const& exAtM : bc["potential"]["Dirichlet"] )
     {
-        auto sigma = M_materials[exAtM.material()].getDouble("sigma");
-        aV += integrate( markedfaces(M_mesh, exAtM.marker()),
-                         sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
-                                         -inner(grad(V)*N(),id(phiV))
-                                         -inner(grad(phiV)*N(),idt(V)) ) );
+        if( isInMaterials(exAtM) )
+        {
+            auto sigma = M_materials[exAtM.material()].getDouble("sigma");
+            aV += integrate( markedfaces(M_mesh, exAtM.marker()),
+                             sigma/sigmaMax*(M_penalDir/hFace()*inner(idt(V),id(phiV))
+                                             -inner(grad(V)*N(),id(phiV))
+                                             -inner(grad(phiV)*N(),idt(V)) ) );
 
-        auto dif = expr(exAtM.expression());
-        fV += integrate( markedfaces(M_mesh, exAtM.marker()),
-                         sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+            auto dif = expr(exAtM.expression());
+            fV += integrate( markedfaces(M_mesh, exAtM.marker()),
+                             sigma/sigmaMax*dif*(M_penalDir/hFace()*id(phiV) - grad(phiV)*N()) );
+        }
     }
     aV.solve(_rhs=fV, _solution=solution, _name="feV");
-    toc("solve V");
-
-    // auto e = exporter(M_mesh);
-    // e->add("sol", solution);
-    // e->save();
+    toc("solve V", M_verbose > 0);
 
     return solution;
 }
@@ -679,6 +750,11 @@ void AlphaElectric::computeTruthCurrentDensity( current_element_type& j, paramet
         auto sigma = mat.second.getDouble("sigma");
         j += vf::project(Vh, markedelements(M_mesh,mat.first), cst(-1.)*sigma*trans(gradv(V)) );
     }
+}
+
+bool AlphaElectric::isInMaterials(ExpressionStringAtMarker const& ex) const
+{
+    return ex.hasMaterial() && M_materials.find(ex.material()) != M_materials.end();
 }
 
 FEELPP_CRB_PLUGIN( AlphaElectric, electric)

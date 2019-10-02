@@ -78,26 +78,26 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshVisu
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    toc("mesh");
+    toc("mesh", FLAGS_v > 0);
 
     tic();
     this->initModel();
-    toc("model");
+    toc("model", FLAGS_v > 0);
 
     tic();
     this->initSpaces();
-    toc("spaces");
+    toc("spaces", FLAGS_v > 0);
 
     if(!this->isStationary()){
         tic();
         this->createTimeDiscretization();
         this->initTimeStep();
-        toc("timeDiscretization",true);
+        toc("timeDiscretization", FLAGS_v > 0);
     }
 
     tic();
     this->initExporter( meshVisu );
-    toc("exporter");
+    toc("exporter", FLAGS_v > 0);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -236,7 +236,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
                                                                 }
                                                                 return false; });
 
-    auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
 
     M_Vh = Pdhv<Order>( M_mesh, true);
@@ -245,13 +245,14 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
 
+    // we need one space per ibc
     std::vector<std::string> ibc_markers(M_integralCondition);
     for( int i = 0; i < M_integralCondition; i++)
     {
         ibc_markers.push_back(M_IBCList[i].marker());
     }
 
-    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( _mesh=M_mesh, _range=markedfaces(M_mesh, ibc_markers), _update=0 );
     M_Ch = Pch<0>( ibc_mesh, true );
 
     Feel::cout << "Vh<" << Order << "> : " << M_Vh->nDof() << std::endl
@@ -276,9 +277,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
     M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
 #else
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    tic();
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    toc("matrixCondensed", FLAGS_v > 0);
 #endif
 }
 

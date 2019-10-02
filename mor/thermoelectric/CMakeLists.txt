@@ -22,6 +22,18 @@
 #
 #
 
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
+  if(NOT FEELPP_FOUND)
+    message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
+  endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(FATAL_ERROR "Feel++ was not installed with toolboxes")
+  endif()
+else()
+  include_directories(${CMAKE_SOURCE_DIR}/toolboxes ${CMAKE_BINARY_DIR}/toolboxes)
+endif()
+
 # crb_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
 # set(FEELPP_CRB_ELECTRIC_LIBRARIES ${CRB_LIB_ELECTRIC} PARENT_SCOPE)
 # set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_LIBRARIES PARENT_SCOPE)
@@ -46,9 +58,13 @@ crb_add_library( electric-alpha SRCS electric-alpha.cpp EXEC CRB_LIB_ELECTRIC_AL
 set(FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} PARENT_SCOPE)
 set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
+crb_add_library( biotsavart-electric-alpha SRCS biotsavart-electric-alpha.hpp biotsavart-electric-alpha.cpp LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA} ${GLPK_LIBRARIES} EXEC CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA )
+target_include_directories(feelpp_crb_biotsavart-electric-alpha PUBLIC ${GLPK_INCLUDE_DIR} )
+set(FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} PARENT_SCOPE)
+set(FEELPP_CRB_LIBRARIES ${FEELPP_CRB_LIBRARIES} FEELPP_CRB_BIOTSAVART_ELECTRIC_ALPHA_LIBRARIES PARENT_SCOPE)
 
 #install( FILES electric.hpp thermic.hpp thermoelectric-simple.hpp thermoelectric-linear.hpp thermoelectric-nonlinear.hpp electric-alpha.hpp
-install( FILES thermoelectric-nonlinear.hpp electric-alpha.hpp
+install( FILES thermoelectric-nonlinear.hpp electric-alpha.hpp biotsavart.hpp biotsavart-electric-alpha.hpp
          DESTINATION include/feelpp/crb/thermoelectric COMPONENT Devel)
 
 
@@ -80,6 +96,12 @@ feelpp_add_application( electric-alpha-app
                         LINK_LIBRARIES ${CRB_LIB_ELECTRIC_ALPHA}
                         EXEC ELECTRIC_ALPHA_APP
                         )
+feelpp_add_application( biotsavart-app
+                        SRCS thermoelectric-nonlinear.hpp biotsavart.hpp biotsavart_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
+feelpp_add_application( biotsavart-electric-alpha-app
+                        SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
+                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} feelpp_toolbox_electric_lib feelpp_modelcore )
 
 # feelpp_add_application( test SRCS test.cpp )
 
@@ -94,3 +116,9 @@ feelpp_add_application( electric-alpha-app
 # feelpp_add_testcase( crb-thermoelectric-linear CATEGORY CRB)
 feelpp_add_testcase( crb-thermoelectric-nonlinear CATEGORY CRB)
 feelpp_add_testcase( crb-electric-alpha CATEGORY CRB)
+feelpp_add_testcase( crb-biotsavart CATEGORY CRB)
+feelpp_add_testcase( bs-alpha-hel CATEGORY CRB)
+
+
+feelpp_add_application( test_eq SRCS test_eq.cpp LINK_LIBRARIES ${GLPK_LIBRARIES} )
+target_include_directories(feelpp_mor_test_eq PUBLIC ${GLPK_INCLUDE_DIR} )

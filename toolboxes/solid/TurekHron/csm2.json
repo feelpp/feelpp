@@ -61,6 +61,22 @@
                     "fields":["displacement"]
                 }
             }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "displacement_pointA_x":
+                {
+                    "value":-0.469e-3,
+                    "tolerance":1e-1
+                },
+                "displacement_pointA_y":
+                {
+                    "value":-16.97e-3,
+                    "tolerance":1e-1
+                }
+            }
         }
     }
 

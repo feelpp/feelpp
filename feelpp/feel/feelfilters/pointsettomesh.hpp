@@ -298,10 +298,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
             pf.setPoint( 1, M_mesh->point( __i+2 ) );
         }
 
-        element_type const& e  = M_mesh->addElement( pf );
-        DVLOG(2) << "o element " << e.id() << "\n"
-                      << "  p1 = " << e.point( 0 ).node() << "\n"
-                      << "  p2 = " << e.point( 1 ).node() << "\n";
+        M_mesh->addElement( pf );
     }
 
 

@@ -25,7 +25,7 @@ CONFIGURE_FILE(feelconfig.h.in feelconfig.h  @ONLY)
 CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 
 
-SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models fmi hwsys event)
+SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
 endforeach()
@@ -52,13 +52,14 @@ endforeach()
 
 # Add target for dynamic library
 #add_library(feelpp-dynamic SHARED $<TARGET_OBJECTS:feelpp-core>)
-if(FEELPP_ENABLE_BUILD_STATIC)
-  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
-else()
+#if(FEELPP_ENABLE_BUILD_STATIC)
+#  add_library(feelpp STATIC options.cpp ${FEELPP_SRCS})
+#else()
   add_library(feelpp SHARED options.cpp ${FEELPP_SRCS})
   set_target_properties(feelpp PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
-  set_property(TARGET ${target} PROPERTY MACOSX_RPATH ON)
-endif()
+  set_property(TARGET feelpp PROPERTY MACOSX_RPATH ON)
+  set_property(TARGET feelpp PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
+#endif()
 add_library(Feelpp::feelpp ALIAS feelpp )  # to match exported target
 set_target_properties(feelpp PROPERTIES OUTPUT_NAME "feelpp")
 #set_target_properties(feelpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
@@ -152,12 +153,12 @@ if ( FFTW_FOUND )
 endif()
 if ( ANN_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_ANN FEELPP_HAS_ANN_H )
-  target_include_directories( feelpp PRIVATE ${ANN_INCLUDE_DIR} )
+  target_include_directories( feelpp PUBLIC ${ANN_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${ANN_LIBRARIES} )
 endif()
 if ( GLPK_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GLPK FEELPP_HAS_GLPK_H )
-  target_include_directories( feelpp PRIVATE ${GLPK_INCLUDE_DIR} )
+  target_include_directories( feelpp PUBLIC ${GLPK_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${GLPK_LIBRARIES} )
 endif()
 if ( GOOGLE_PERFTOOLS_FOUND )
@@ -182,10 +183,22 @@ endif()
 # Gmsh
 if ( GMSH_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GMSH FEELPP_HAS_GMSH_H FEELPP_HAS_GMSH_LIBRARY GMSH_EXECUTABLE=${GMSH_EXECUTABLE} )
+  if ( FEELPP_HAS_GMSH_API )
+    target_compile_definitions( feelpp PUBLIC FEELPP_HAS_GMSH_API )
+    if ( GMSH_LIBRARY_VERSION VERSION_LESS 4.2 )
+      target_compile_definitions( feelpp PUBLIC GMSH_API_VERSION_MAJOR=${GMSH_MAJOR_VERSION} GMSH_API_VERSION_MINOR=${GMSH_MINOR_VERSION} )
+    endif()
+  endif()
   if ( FEELPP_HAS_MED )
     target_compile_definitions( feelpp PUBLIC FEELPP_HAS_MED FEELPP_HAS_GMSH_HAS_MED )
   endif()
-  target_include_directories( feelpp BEFORE PUBLIC ${GMSH_INCLUDE_DIR} )
+  if ( FEELPP_HAS_GMSH_API )
+    if ( NOT FEELPP_GMSH_API_MISSING_HEADERS )
+      target_include_directories( feelpp PUBLIC ${GMSH_INCLUDE_DIR} )
+    endif()
+  else()
+    target_include_directories( feelpp BEFORE PUBLIC ${GMSH_INCLUDE_DIR} )  # fix conflicts (on macos homebrew) with some Python sources
+  endif()
   if ( GL2PS_LIBRARY )
     if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
       target_link_libraries( feelpp PUBLIC ${GL2PS_LIBRARY} ${GL_LIBRARY})
@@ -195,11 +208,13 @@ if ( GMSH_FOUND )
   endif()
   # GMSH_EXTERNAL_LIBRARIES may contain the med / cgns libs if they have been found
   target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
-  
-  target_include_directories( feelpp
-    PUBLIC
-    $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
-    $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+
+  if( ( NOT FEELPP_HAS_GMSH_API ) OR FEELPP_GMSH_API_MISSING_HEADERS )
+    target_include_directories( feelpp
+      PUBLIC
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
+      $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+  endif()
 endif( GMSH_FOUND )
 
 # Paraview

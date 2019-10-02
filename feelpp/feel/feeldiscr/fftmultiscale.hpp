@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeltiming/tic.hpp>
+#include <feel/feelfilters/hbf.hpp>
 
 #if defined( FEELPP_HAS_FFTW )
 #include <fftw3.h>
@@ -53,9 +54,6 @@ using namespace boost::numeric;
 
 namespace Feel
 {
-template <typename T = float>
-using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
-
 class FFTFeel
 {
 public :    
@@ -191,9 +189,9 @@ void gradImage (holo3_image<float> const& im )
             tabFFTY[i][j]= holo3_image<float>(meshp+1,meshp+1);
             fftw_complex* image = (fftw_complex*)fftw_malloc(sizeof(fftw_complex)*(meshp+1)*(meshp+1));
             
-            for (int k=0;k<meshp+1;k++)
+            for (int k=0;k<meshp;k++)
             {
-                for (int l=0;l<meshp+1;l++)
+                for (int l=0;l<meshp;l++)
                 {
                     image[(meshp+1)*k+l][0]=im((i)*(meshp)+k,(j)*(meshp)+l);
                     image[(meshp+1)*k+l][1]=0;

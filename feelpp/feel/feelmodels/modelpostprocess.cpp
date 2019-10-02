@@ -41,13 +41,19 @@ std::vector<T> as_vector(pt::ptree const& pt, pt::ptree::key_type const& key)
 void
 ModelPostprocessExports::setup( pt::ptree const& p )
 {
-    auto fields = p.get_child_optional("fields");
-    if ( fields )
+    if ( auto fields = p.get_child_optional("fields") )
     {
-        for ( std::string const& fieldName : as_vector<std::string>(p, "fields"))
+        if ( fields->empty() ) // value case
+            M_fields.insert( fields->get_value<std::string>() );
+        else // array case
         {
-            M_fields.insert( fieldName );
-            LOG(INFO) << "add to postprocess field  " << fieldName;
+            for ( auto const& item : *fields )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                M_fields.insert( fieldName );
+                LOG(INFO) << "add to postprocess field  " << fieldName;
+            }
         }
     }
     if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
@@ -55,7 +61,32 @@ ModelPostprocessExports::setup( pt::ptree const& p )
 }
 
 void
-ModelPostprocessPointPosition::setup( std::string const& name )
+ModelPostprocessSave::setup( pt::ptree const& p )
+{
+    if ( auto fieldsPtree = p.get_child_optional("Fields") )
+    {
+        if ( auto fieldsNamesPtree = fieldsPtree->get_child_optional("names") )
+        {
+            if ( fieldsNamesPtree->empty() ) // value case
+                M_fieldsNames.insert( fieldsNamesPtree->get_value<std::string>() );
+            else // array case
+            {
+                for ( auto const& item : *fieldsNamesPtree )
+                {
+                    CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                    std::string const& fieldName = item.second.template get_value<std::string>();
+                    M_fieldsNames.insert( fieldName );
+                }
+            }
+        }
+        if ( auto formatOpt = fieldsPtree->get_optional<std::string>( "format" ) )
+            M_fieldsFormat = *formatOpt;
+    }
+}
+
+
+void
+ModelPostprocessPointPosition::setup( std::string const& name, ModelIndexes const& indexes )
 {
 
     // fields is necessary
@@ -77,7 +108,7 @@ ModelPostprocessPointPosition::setup( std::string const& name )
     }
     if ( hasCoord )
     {
-        std::string coordExpr = M_p.get<std::string>( "coord" );
+        std::string coordExpr = indexes.replace( M_p.get<std::string>( "coord" ) );
         //std::cout << "coordExpr : "<< coordExpr << "\n";
 
         auto parseExpr = GiNaC::parse(coordExpr);
@@ -110,7 +141,7 @@ ModelPostprocessPointPosition::setup( std::string const& name )
         else
         {
             LOG(INFO) << "point coord is a symbolic expr : " << coordExpr;
-            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, M_worldComm );
+            this->pointPosition().setExpression( coordExpr, M_directoryLibExpr, this->worldComm() );
         }
     } // hasCoord
 
@@ -118,7 +149,7 @@ ModelPostprocessPointPosition::setup( std::string const& name )
     std::vector<std::string> fieldList = as_vector<std::string>( M_p, "fields" );
     if ( fieldList.empty() )
     {
-        std::string fieldUnique = M_p.get<std::string>( "fields" );
+        std::string fieldUnique = indexes.replace( M_p.get<std::string>( "fields" ) );
         if ( !fieldUnique.empty() )
             fieldList = { fieldUnique };
     }
@@ -131,36 +162,35 @@ ModelPostprocessPointPosition::setup( std::string const& name )
 }
 
 void
-ModelPostprocessNorm::setup( std::string const& name )
+ModelPostprocessNorm::setup( std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
     if ( auto itField = M_p.get_optional<std::string>("field") )
-        M_field = *itField;
+        M_field = indexes.replace( *itField );
     else if ( auto ptexpr = M_p.get_child_optional("expr") )
     {
-        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
         if ( auto ptgradexpr = M_p.get_child_optional("grad_expr") )
-            M_gradExpr.setExpr( "grad_expr", M_p, M_worldComm, M_directoryLibExpr );
+            M_gradExpr.setExpr( "grad_expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     }
 
-    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers);
+        M_markers.setPTree(*ptmarkers,indexes);
 
     if ( auto pttype = M_p.get_child_optional("type") )
     {
         for( auto const& item : M_p.get_child("type") )
-            M_types.insert(item.second.template get_value<std::string>());
+            M_types.insert( indexes.replace( item.second.template get_value<std::string>() ) );
         if( M_types.empty() )
-            M_types.insert(M_p.get<std::string>("type") );
+            M_types.insert( indexes.replace( M_p.get<std::string>("type") ) );
     }
 
     if ( auto itSol = M_p.get_optional<std::string>("solution") )
-        M_solution.setExpr( "solution", M_p, M_worldComm, M_directoryLibExpr );
+        M_solution.setExpr( "solution", M_p, this->worldComm(), M_directoryLibExpr,indexes );
 
     if ( auto itSol = M_p.get_optional<std::string>("grad_solution") )
-        M_gradSolution.setExpr( "grad_solution", M_p, M_worldComm, M_directoryLibExpr );
+        M_gradSolution.setExpr( "grad_solution", M_p, this->worldComm(), M_directoryLibExpr,indexes );
 
     if ( auto itQuad = M_p.get_optional<int>("quad") )
     {
@@ -184,27 +214,26 @@ ModelPostprocessNorm::setParameterValues( std::map<std::string,double> const& mp
 }
 
 void
-ModelPostprocessStatistics::setup( std::string const& name )
+ModelPostprocessStatistics::setup( std::string const& name, ModelIndexes const& indexes )
 {
     M_name = name;
 
     if ( auto itField = M_p.get_optional<std::string>("field") )
-        M_field = *itField;
+        M_field = indexes.replace( *itField );
     else if ( auto ptexpr = M_p.get_child_optional("expr") )
     {
-        M_expr.setExpr( "expr", M_p, M_worldComm, M_directoryLibExpr );
+        M_expr.setExpr( "expr", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     }
 
-    M_markers = ModelMarkers(M_name);
     if ( auto ptmarkers = M_p.get_child_optional("markers") )
-        M_markers.setPTree(*ptmarkers);
+        M_markers.setPTree(*ptmarkers, indexes);
 
     if ( auto pttype = M_p.get_child_optional("type") )
     {
         for( auto const& item : M_p.get_child("type") )
-            M_types.insert(item.second.template get_value<std::string>());
+            M_types.insert( indexes.replace( item.second.template get_value<std::string>() ) );
         if( M_types.empty() )
-            M_types.insert(M_p.get<std::string>("type") );
+            M_types.insert( indexes.replace( M_p.get<std::string>("type") ) );
     }
 
     if ( auto itQuad = M_p.get_optional<int>("quad") )
@@ -226,15 +255,50 @@ ModelPostprocessStatistics::setParameterValues( std::map<std::string,double> con
 }
 
 
-ModelPostprocess::ModelPostprocess( WorldComm const& world )
+void
+ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes const& indexes )
+{
+    M_name = name;
+
+    M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
+    CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
+    M_value = M_valueExpr.exprScalar().evaluate();
+
+    if ( auto itTol = M_p.get_optional<double>("tolerance") )
+        M_tolerance = *itTol;
+}
+std::tuple<bool,double>
+ModelPostprocessCheckerMeasure::run( double val ) const
+{
+    if ( std::abs(val) < 1e-10 || std::abs(M_value) < 1e-10 )
+    {
+        double diff = std::abs(val-M_value);
+        return std::make_tuple( std::abs(val-M_value) <= M_tolerance, diff );
+    }
+    else
+    {
+        double diffAbs = std::abs(val-M_value);
+        double maxDiffRel = std::max(diffAbs/std::abs(val),diffAbs/std::abs(M_value));
+        return std::make_tuple( diffAbs/std::abs(val) <= M_tolerance && diffAbs/std::abs(M_value) <= M_tolerance, maxDiffRel );
+    }
+}
+
+void
+ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
+{
+    M_valueExpr.setParameterValues( mp );
+    M_value = M_valueExpr.exprScalar().evaluate();
+}
+
+ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )
     :
-    M_worldComm( world ),
+    super( world ),
     M_useModelName( false )
 {}
 
-ModelPostprocess::ModelPostprocess(pt::ptree const& p, WorldComm const& world )
+ModelPostprocess::ModelPostprocess(pt::ptree const& p, worldcomm_ptr_t const& world )
     :
-    M_worldComm( world ),
+    super( world ),
     M_useModelName( false )
 {}
 
@@ -286,6 +350,13 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         if ( !ppexports.fields().empty() )
             M_exports[name] = ppexports;
     }
+    if ( auto save = p.get_child_optional("Save") )
+    {
+        ModelPostprocessSave ppsave;
+        ppsave.setup( *save );
+        if ( !ppsave.fieldsNames().empty() )
+            M_save[name] = ppsave;
+    }
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
@@ -294,11 +365,15 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& evalPoint : *evalPoints )
             {
-                ModelPostprocessPointPosition myPpPtPos( M_worldComm );
-                myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
-                myPpPtPos.setPTree( evalPoint.second, evalPoint.first );
-                if ( !myPpPtPos.fields().empty() )
-                    M_measuresPoint[name].push_back( myPpPtPos );
+                auto indexesAllCases = ModelIndexes::generateAllCases( evalPoint.second );
+                for ( auto const& indexes : indexesAllCases )
+                {
+                    ModelPostprocessPointPosition myPpPtPos( this->worldCommPtr() );
+                    myPpPtPos.setDirectoryLibExpr( M_directoryLibExpr );
+                    myPpPtPos.setPTree( evalPoint.second, indexes.replace( evalPoint.first ), indexes );
+                    if ( !myPpPtPos.fields().empty() )
+                        M_measuresPoint[name].push_back( myPpPtPos );
+                }
             }
         }
 
@@ -307,11 +382,15 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& ptreeNorm : *ptreeNorms )
             {
-                ModelPostprocessNorm ppNorm( M_worldComm );
-                ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
-                ppNorm.setPTree( ptreeNorm.second, ptreeNorm.first );
-                if ( ppNorm.hasField() || ppNorm.hasExpr() )
-                    M_measuresNorm[name].push_back( ppNorm );
+                auto indexesAllCases = ModelIndexes::generateAllCases(  ptreeNorm.second );
+                for ( auto const& indexes : indexesAllCases )
+                {
+                    ModelPostprocessNorm ppNorm( this->worldCommPtr() );
+                    ppNorm.setDirectoryLibExpr( M_directoryLibExpr );
+                    ppNorm.setPTree( ptreeNorm.second, indexes.replace( ptreeNorm.first ), indexes );
+                    if ( ppNorm.hasField() || ppNorm.hasExpr() )
+                        M_measuresNorm[name].push_back( ppNorm );
+                }
             }
         }
         auto ptreeStatistics = measures->get_child_optional("Statistics");
@@ -319,14 +398,35 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
         {
             for( auto const& ptreeStatistic : *ptreeStatistics )
             {
-                ModelPostprocessStatistics ppStatistics( M_worldComm );
-                ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
-                ppStatistics.setPTree( ptreeStatistic.second, ptreeStatistic.first );
-                if ( ppStatistics.hasField() || ppStatistics.hasExpr() )
-                    M_measuresStatistics[name].push_back( ppStatistics );
+                auto indexesAllCases = ModelIndexes::generateAllCases( ptreeStatistic.second );
+                for ( auto const& indexes : indexesAllCases )
+                {
+                    ModelPostprocessStatistics ppStatistics( this->worldCommPtr() );
+                    ppStatistics.setDirectoryLibExpr( M_directoryLibExpr );
+                    ppStatistics.setPTree( ptreeStatistic.second, indexes.replace( ptreeStatistic.first ), indexes );
+                    if ( ppStatistics.hasField() || ppStatistics.hasExpr() )
+                        M_measuresStatistics[name].push_back( ppStatistics );
+                }
             }
         }
+    }
 
+    if ( auto checkers = p.get_child_optional("Checkers") )
+    {
+        if ( auto measures = checkers->get_child_optional("Measures") )
+        {
+            for( auto const& ptreeCheckerMeasure : *measures )
+            {
+                auto indexesAllCases = ModelIndexes::generateAllCases( ptreeCheckerMeasure.second );
+                for ( auto const& indexes : indexesAllCases )
+                {
+                    ModelPostprocessCheckerMeasure ppCheckerMeasure( this->worldCommPtr() );
+                    ppCheckerMeasure.setDirectoryLibExpr( M_directoryLibExpr );
+                    ppCheckerMeasure.setPTree( ptreeCheckerMeasure.second, indexes.replace( ptreeCheckerMeasure.first ), indexes );
+                    M_checkersMeasure[name].push_back( ppCheckerMeasure );
+                }
+            }
+        }
     }
 }
 
@@ -360,6 +460,14 @@ ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
     for( auto & p : M_measuresNorm )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );
+
+    for( auto & p : M_measuresStatistics )
+        for( auto & p2 : p.second )
+            p2.setParameterValues( mp );
+
+    for( auto & p : M_checkersMeasure )
+        for( auto & p2 : p.second )
+            p2.setParameterValues( mp );
 }
 
 bool
@@ -367,6 +475,12 @@ ModelPostprocess::hasExports( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
     return M_exports.find( nameUsed ) != M_exports.end();
+}
+bool
+ModelPostprocess::hasSave( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_save.find( nameUsed ) != M_save.end();
 }
 bool
 ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
@@ -386,6 +500,13 @@ ModelPostprocess::hasMeasuresStatistics( std::string const& name ) const
     std::string nameUsed = (M_useModelName)? name : "";
     return M_measuresStatistics.find( nameUsed ) != M_measuresStatistics.end();
 }
+bool
+ModelPostprocess::hasCheckersMeasure( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_checkersMeasure.find( nameUsed ) != M_checkersMeasure.end();
+}
+
 ModelPostprocessExports const&
 ModelPostprocess::exports( std::string const& name ) const
 {
@@ -395,6 +516,16 @@ ModelPostprocess::exports( std::string const& name ) const
         return M_exports.find( nameUsed )->second;
     else
         return M_emptyExports;
+}
+ModelPostprocessSave const&
+ModelPostprocess::save( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasSave( nameUsed ) ) << "no save with name:"<<name;
+    if ( this->hasSave( nameUsed ) )
+        return M_save.find( nameUsed )->second;
+    else
+        return M_emptySave;
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const
@@ -425,6 +556,15 @@ ModelPostprocess::measuresStatistics( std::string const& name ) const
         return M_measuresStatistics.find( nameUsed )->second;
     else
         return M_emptyMeasuresStatistics;
+}
+std::vector<ModelPostprocessCheckerMeasure> const&
+ModelPostprocess::checkersMeasure( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    if ( this->hasCheckersMeasure( nameUsed ) )
+        return M_checkersMeasure.find( nameUsed )->second;
+    else
+        return M_emptyCheckersMeasure;
 }
 
 

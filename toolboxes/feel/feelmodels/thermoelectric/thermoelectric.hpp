@@ -72,7 +72,7 @@ public:
     //___________________________________________________________________________________//
     // constructor
     ThermoElectric( std::string const& prefix,
-                    bool buildMesh = true,
+                    std::string const& keyword = "thermo-electric",
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -82,8 +82,8 @@ public:
 
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
-    void initPostProcess();
+    void initMesh();
+    void initPostProcess() override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
@@ -120,17 +120,27 @@ public :
     void startTimeStep() { this->heatModel()->startTimeStep(); }
     void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
-    //___________________________________________________________________________________//
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+
+    template <typename FieldTemperatureType,typename FieldElectricPotentialType>
+    auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
+        {
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
+            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                             M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        }
+//___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
 
-    void updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const;
-    void updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const;
-    void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
-
-    void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
+    void updateLinear_Heat( DataUpdateLinear & data ) const;
+    void updateResidual_Heat( DataUpdateResidual & data ) const;
+    void updateLinear_Electric( DataUpdateLinear & data ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
@@ -139,7 +149,15 @@ public :
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
     //___________________________________________________________________________________//
-    void updateCurrentDensity();
+
+    bool checkResults() const override
+        {
+            // several calls (not do in on line) to be sure that all check have been run
+            bool checkThermoElectric = super_type::checkResults();
+            bool checkHeat = this->heatModel()->checkResults();
+            bool checkElectric = this->electricModel()->checkResults();
+            return checkThermoElectric && checkHeat && checkElectric;
+        }
 
 private :
     heat_model_ptrtype M_heatModel;

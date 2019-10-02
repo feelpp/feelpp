@@ -64,18 +64,20 @@ namespace Feel { namespace vf {
 
 #
 
-const size_type jn = vm::JACOBIAN|vm::NORMAL;
-const size_type jkbn = vm::JACOBIAN|vm::KB|vm::NORMAL;
-const size_type jt = vm::JACOBIAN|vm::NORMAL|vm::TANGENT;
-const size_type jp = vm::JACOBIAN|vm::POINT;
-const size_type jkp = vm::KB|vm::JACOBIAN|vm::POINT;
+const size_type jn = vm::NORMAL;
+const size_type jj = vm::JACOBIAN;
+const size_type jkbn = vm::KB|vm::NORMAL;
+const size_type jkbl = vm::KB|vm::LOCAL_BASIS;
+const size_type jt = vm::KB|vm::NORMAL|vm::TANGENT;
+const size_type jp = vm::POINT;
+const size_type jkp = vm::KB;
 const size_type mctx = vm::MEASURE;
 
 # /* List of applicative unary operators. */
 #if 1
 # define VF_GD                                                          \
    BOOST_PP_TUPLE_TO_LIST(                                              \
-       22,                                                              \
+       27,                                                              \
       (                                                                 \
        ( N       , GDN       , 0, jkbn, Vectorial, M_gmc->unitNormal( q )[ c1 ] , 0), \
        ( Nx      , GDNx      , 0, jkbn, Scalar   , M_gmc->unitNormal( q )[ 0 ]  , 0), \
@@ -88,7 +90,7 @@ const size_type mctx = vm::MEASURE;
        ( Tx      , GDTx      , 0, jt, Scalar   , M_gmc->unitTangent( q )[ 0 ] , 0), \
        ( Ty      , GDTy      , 1, jt, Scalar   , M_gmc->unitTangent( q )[ 1 ] , 0), \
        ( Tz      , GDTz      , 2, jt, Scalar   , M_gmc->unitTangent( q )[ 2 ] , 0), \
-       ( detJ    , GDDetJ    , 0, jp, Scalar   , M_gmc->J( q )                , 0), \
+       ( detJ    , GDDetJ    , 0, jj, Scalar   , M_gmc->J( q )                , 0), \
        ( J       , GDJ       , 0, jkp,Tensor2  , M_gmc->K( c1, c2, q )        , 0), \
        ( JinvT   , GDJinv    , 0, jkp,Tensor2  , M_gmc->B( c1, c2, q )        , 0), \
        ( P       , GDP       , 0, jp, Vectorial, M_gmc->xReal( q )[ c1 ]      , 1), \
@@ -98,13 +100,18 @@ const size_type mctx = vm::MEASURE;
        ( C       , GDC       , 0, jp, Vectorial, M_gmc->barycenterReal()[c1]  , 0), \
        ( Cx      , GDCx      , 0, jp, Scalar   , M_gmc->barycenterReal()[0]   , 0), \
        ( Cy      , GDCy      , 1, jp, Scalar   , M_gmc->barycenterReal()[1]   , 0), \
-       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0) \
+       ( Cz      , GDCz      , 2, jp, Scalar   , M_gmc->barycenterReal()[2]   , 0), \
+       ( localBasis, LocalBasis, 0, jkbl, Tensor2, M_gmc->localBasis(c1,c2,q)       , 0), \
+       ( basisN, BasisN, 0, jkbl, Vectorial, M_gmc->basisN(c1,0, q)      , 0), \
+       ( basisT, BasisT, 0, jkbl, Vectorial, M_gmc->localBasis(c1,1, q)      , 0), \
+       ( basisT1, BasisT1, 0, jkbl, Vectorial, M_gmc->localBasis(c1,1, q)      , 0), \
+       ( basisT2, BasisT2, 0, jkbl, Vectorial, M_gmc->localBasis(c1,2, q)      , 0) \
           )                                                             \
        )
 /**/
 # define VF_GD2                                                         \
     BOOST_PP_TUPLE_TO_LIST(                                             \
-        10,                                                              \
+        11,                                                              \
         (                                                               \
             ( h       , GDH       , 0, mctx , Scalar   , M_gmc->h()                   , 0), \
             ( hMin    , GDHMin    , 0, mctx , Scalar   , M_gmc->hMin()                , 0), \
@@ -115,7 +122,8 @@ const size_type mctx = vm::MEASURE;
             ( measFace, GDHMeasFace,0, mctx , Scalar   , M_gmc->measFace()            , 0), \
             ( eid     , GDEid     , 0, 0    , Scalar   , M_gmc->id()                  , 0), \
             ( emarker , GDEmarker , 0, 0    , Scalar   , M_gmc->marker().value()      , 0), \
-            ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0) \
+            ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0), \
+            ( epid    , GDEPid    , 0, 0    , Scalar   , M_gmc->element().processId() , 0) \
             )                                                           \
         )                                                               \
 /**/
@@ -203,6 +211,7 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
         constexpr bool isPolynomial() const { return true; }            \
+        evaluate_type evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const { return 0; } \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \

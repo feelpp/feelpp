@@ -69,6 +69,22 @@
                     "fields":"pressure"
                 }
             }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "lift_wall2":
+                {
+                    "value":-1.119,
+                    "tolerance":1e-1
+                },
+                "drag_wall2":
+                {
+                    "value":-14.29,
+                    "tolerance":1e-1
+                }
+            }
         }
     }
 

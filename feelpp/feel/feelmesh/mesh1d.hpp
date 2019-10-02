@@ -70,15 +70,13 @@ namespace Feel
 //! @author Christophe Prud'homme
 //! @see Mesh2D, Mesh3D
 //!
-template<typename Shape, typename T = double>
+template<typename Shape, typename T = double, typename IndexT = uint32_type>
 class Mesh1D
     :
         public VisitableBase<>,
-        public MeshBase,
-        public Elements<Shape,T>,
-        public Points<Shape::nRealDim,T>,
-        public Faces<typename Shape::template shape<0,Shape::nOrder,Shape::nRealDim>::type,
-                     typename Elements<Shape,T>::element_type>
+        public MeshBase<IndexT>,
+        public Elements<Shape,T,IndexT>,
+        public Points<Shape::nRealDim,T,IndexT, SubFaceOf<typename Elements<Shape,T,IndexT>::element_type> >
 {
     // check at compilation time that the shape has indeed dimension 1
     BOOST_STATIC_ASSERT( Shape::nDim == 1 );
@@ -94,35 +92,43 @@ class Mesh1D
     typedef typename VisitableBase<>::return_type return_type;
 
     typedef VisitableBase<> super_visitable;
-    typedef MeshBase super;
+    typedef MeshBase<IndexT> super;
 
-    typedef Elements<Shape,T> super_elements;
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+
+    typedef Elements<Shape,T,IndexT> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
     typedef typename super_elements::element_iterator element_iterator;
     typedef typename super_elements::element_const_iterator element_const_iterator;
     typedef typename super_elements::update_element_neighbor_type update_element_neighbor_type;
 
-    typedef Points<nRealDim,T> super_points;
+    typedef Points<nRealDim,T,IndexT,SubFaceOf<typename Elements<Shape,T,IndexT>::element_type>> super_points;
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<typename Shape::template shape<0, Shape::nOrder, Shape::nRealDim>::type, typename super_elements::element_type> super_faces;
-    typedef typename super_faces::face_iterator face_iterator;
-    typedef typename super_faces::face_const_iterator face_const_iterator;
-    typedef typename super_faces::faces_type faces_type;
-    typedef typename super_faces::face_type face_type;
+    typedef super_points super_faces;
+    typedef typename super_faces::point_iterator face_iterator;
+    typedef typename super_faces::point_const_iterator face_const_iterator;
+    typedef typename super_faces::points_type faces_type;
+    typedef typename super_faces::point_type face_type;
+    typedef typename super_faces::points_reference_wrapper_type faces_reference_wrapper_type;
+    typedef typename super_faces::points_reference_wrapper_ptrtype faces_reference_wrapper_ptrtype;
+    typedef typename faces_reference_wrapper_type::iterator face_reference_wrapper_iterator;
+    typedef typename faces_reference_wrapper_type::const_iterator face_reference_wrapper_const_iterator;
+
     typedef face_type edge_type;
 
     typedef super_faces super_edges;
-    typedef typename super_edges::face_iterator edge_iterator;
-    typedef typename super_edges::face_const_iterator edge_const_iterator;
-    typedef typename super_edges::faces_reference_wrapper_type edges_reference_wrapper_type;
-    typedef typename super_edges::faces_reference_wrapper_ptrtype edges_reference_wrapper_ptrtype;
+    typedef typename super_edges::point_iterator edge_iterator;
+    typedef typename super_edges::point_const_iterator edge_const_iterator;
+    typedef typename super_edges::points_reference_wrapper_type edges_reference_wrapper_type;
+    typedef typename super_edges::points_reference_wrapper_ptrtype edges_reference_wrapper_ptrtype;
     typedef typename edges_reference_wrapper_type::iterator edge_reference_wrapper_iterator;
     typedef typename edges_reference_wrapper_type::const_iterator edge_reference_wrapper_const_iterator;
 
-    typedef Mesh1D<Shape,T> self_type;
+    typedef Mesh1D<Shape,T, IndexT> self_type;
 
     typedef std::shared_ptr<self_type> self_ptrtype;
 
@@ -144,8 +150,7 @@ class Mesh1D
         : super_visitable(),
           super( 1, nRealDim, worldComm ),
           super_elements( worldComm ),
-          super_points( worldComm ),
-          super_faces( worldComm )
+          super_points( worldComm )
     {
     }
 
@@ -154,8 +159,7 @@ class Mesh1D
         : super_visitable(),
           super( m ),
           super_elements( m ),
-          super_points( m ),
-          super_faces( m )
+          super_points( m )
     {
     }
 
@@ -177,7 +181,6 @@ class Mesh1D
             super::operator=( m );
             super_elements::operator=( m );
             super_points::operator=( m );
-            super_faces::operator=( m );
         }
 
         return *this;
@@ -195,8 +198,7 @@ class Mesh1D
     bool isEmpty() const override
     {
         return ( super_elements::isEmpty() &&
-                 super_points::isEmpty() &&
-                 super_faces::isEmpty() );
+                 super_points::isEmpty() );
     }
 
     //!
@@ -238,11 +240,11 @@ class Mesh1D
      */
     size_type numFaces() const override
     {
-        return this->faces().size();
+        return this->points().size();
     }
     size_type numEdges() const
     {
-        return this->faces().size();
+        return this->points().size();
     }
 
     /**
@@ -265,11 +267,128 @@ class Mesh1D
      */
     //@{
 
+    faces_type & faces()
+    {
+        return this->points();
+    }
+
+    faces_type const& faces() const
+    {
+        return this->points();
+    }
+
+    bool hasFace( size_type i ) const
+    {
+        return this->hasPoint( i );
+    }
+
+    face_type const& face( size_type i ) const
+    {
+        return this->point( i );
+    }
+
+    face_const_iterator faceIterator( size_type i ) const
+    {
+        return this->pointIterator( i );
+    }
+    face_iterator faceIterator( size_type i )
+    {
+        return this->pointIterator( i );
+    }
+    face_const_iterator faceIterator( face_type const& face ) const
+    {
+        return faceIterator( face.id() );
+    }
+    face_iterator faceIterator( face_type const& face )
+    {
+        return faceIterator( face.id() );
+    }
+
+    face_iterator beginFace()
+    {
+        return this->beginPoint();
+    }
+    face_const_iterator beginFace() const
+    {
+        return this->beginPoint();
+    }
+    face_iterator endFace()
+    {
+        return this->endPoint();
+    }
+    face_const_iterator endFace() const
+    {
+        return this->endPoint();
+    }
+
+     std::pair<face_iterator,bool> addFace( face_type& f )
+        {
+            return this->addPoint( f );
+        }
+    std::pair<face_iterator,bool> addFace( face_type&& f )
+        {
+             return this->addPoint( f );
+        }
+
+     face_iterator eraseFace( face_iterator it )
+        {
+            return this->erasePoint( it );
+        }
+
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    internalFaces( rank_type p = invalid_rank_type_value ) const
+        {
+            return this->internalPoints( p );
+        }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesOnBoundary( rank_type p = invalid_rank_type_value ) const
+        {
+            return this->boundaryPoints( p );
+        }
+
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarkerByType( uint16_type markerType, std::set<flag_type> const& markerFlags, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->pointsWithMarkerByType( markerType, markerFlags, p );
+        }
+     std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarkerByType( uint16_type markerType, flag_type m, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->pointsWithMarkerByType( markerType, m, p );
+        }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->facesWithMarkerByType( 1, m, p );
+        }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker2( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->facesWithMarkerByType( 2, m, p );
+        }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithMarker3( flag_type m = invalid_flag_type_value, rank_type p = invalid_rank_type_value ) const
+        {
+            return this->facesWithMarkerByType( 3, m, p );
+        }
+
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    facesWithProcessId( rank_type p = invalid_rank_type_value ) const
+        {
+            return this->pointsWithProcessId( p );
+        }
+    std::tuple<face_reference_wrapper_const_iterator,face_reference_wrapper_const_iterator,faces_reference_wrapper_ptrtype>
+    interProcessFaces( rank_type neighbor_pid = invalid_rank_type_value ) const
+        {
+            return this->interProcessPoints( neighbor_pid );
+        }
+    
+    
+
     virtual void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
     {
-        MeshBase::setWorldComm( _worldComm );
+        MeshBase<IndexT>::setWorldComm( _worldComm );
         this->setWorldCommElements( _worldComm );
-        this->setWorldCommFaces( _worldComm );
         this->setWorldCommPoints( _worldComm );
     }
 
@@ -279,10 +398,10 @@ class Mesh1D
      */
     virtual void clear() override
         {
+            super::clear();
             super_elements::clear();
             super_points::clear();
-            super_faces::clear();
-            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+            CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
         }
 
     FEELPP_DEFINE_VISITABLE();
@@ -295,8 +414,7 @@ class Mesh1D
      */
     void renumber() override
     {
-        FEELPP_ASSERT( 0 )
-            .error( "invalid call" );
+        CHECK( false ) << "invalid call";
     }
 
     /**
@@ -324,8 +442,6 @@ class Mesh1D
             ar & boost::serialization::base_object<super>( *this );
             DVLOG(2) << "Serializing points\n";
             ar & boost::serialization::base_object<super_points>( *this );
-            DVLOG(2) << "Serializing faces\n";
-            ar & boost::serialization::base_object<super_faces>( *this );
             DVLOG(2) << "Serializing elements\n";
             ar & boost::serialization::base_object<super_elements>( *this );
         }

@@ -24,6 +24,7 @@
 #ifndef FEELPP_DISCRTRAITS_HPP
 #define FEELPP_DISCRTRAITS_HPP 1
 
+#include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelpoly/traits.hpp>
 #include <feel/feelpoly/policy.hpp>
@@ -37,21 +38,19 @@ namespace Feel {
  * @{
  */
 /**
- * if \p T has base class \p MeshBase (hense if it is a function space)
+ * if \p T has base class \p MeshBase<> (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
 template<typename MeshType>
-using is_mesh = typename std::is_base_of<MeshBase,MeshType>::type;
+using is_mesh = typename std::is_base_of<MeshBase<>,MeshType>::type;
 
 /**
  * provides the mesh  type
  * if \p MeshType is a shared_ptr of a Mesh then provides the mesh type
  * \note it checks that the \p Mesh is indeed a mesh type and return void if it is not the case.
  */
-template<typename MeshType>
-using mesh_t = typename mpl::if_<is_mesh<decay_type<MeshType> >,
-                                 mpl::identity<decay_type<MeshType>>,
-                                 mpl::identity<void> >::type::type;
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
+using mesh_t = decay_type<MeshType>;
 
 
 /**

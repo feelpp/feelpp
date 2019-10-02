@@ -97,7 +97,8 @@ public:
 
     };
     //static const size_type context = vm::POINT|expression_type::context;
-    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+    //static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::DYNAMIC>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
 
     static const bool is_terminal = false;
 
@@ -149,6 +150,18 @@ public:
      */
     //@{
     GinacExVF() : super(){}
+
+    explicit GinacExVF( value_type value )
+        :
+        super(),
+        M_fun( value ),
+        M_cfun( new GiNaC::FUNCP_CUBA() ),
+        M_exprDesc( std::to_string( value ) ),
+        M_isPolynomial( true ),
+        M_polynomialOrder( 0 ),
+        M_isNumericExpression( true ),
+        M_numericValue( value )
+        {}
 
     explicit GinacExVF( ginac_expression_type const & fun,
                         std::vector<GiNaC::symbol> const& syms,
@@ -287,7 +300,7 @@ public:
                         });
         return indices_vec;
     }
-    bool isZero() const { return M_fun.is_zero(); }
+    bool isZero() const { return M_isNumericExpression? (M_numericValue == 0) : M_fun.is_zero(); }
     std::vector<GiNaC::symbol> const& syms() const { return M_syms; }
 
     std::string const& exprDesc() const { return M_exprDesc; }
@@ -461,7 +474,7 @@ public:
             if ( M_is_constant ) return;
 
             uint16_type k=0;
-            hana::for_each( M_t_expr, [&k,&geom,&fev,feu,this]( auto & evec )
+            hana::for_each( M_t_expr, [&k,&geom,&fev,&feu,this]( auto & evec )
                             {
                                 for ( auto & e : evec )
                                 {
@@ -575,13 +588,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        return this->evaluateImpl();
+        return this->evaluateImpl( true, Environment::worldCommPtr() );
     }
 
     evaluate_type
     evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
-        return this->evaluateImpl();
+        return this->evaluateImpl( parallel, worldcomm );
     }
 private :
 
@@ -591,10 +604,17 @@ private :
         CHECK( resToNum.size() == 1 )  << "invalid size " << resToNum.size() << " : must be 1";
         M_isNumericExpression = resToNum[0].first;
         if ( M_isNumericExpression )
+        {
             M_numericValue = resToNum[0].second;
+            M_isPolynomial = 1;
+            M_polynomialOrder = 0;
+        }
     }
     void updateForUse()
     {
+        if ( M_isNumericExpression )
+            return;
+
         std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
@@ -631,14 +651,30 @@ private :
     }
 
     evaluate_type
-    evaluateImpl() const
+    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
     {
         if ( M_isNumericExpression )
             return M_numericValue;
         int no = 1;
         int ni = M_syms.size();
+
+        vec_type x( ni );
+        for ( uint16_type k=0;k<ni;++k )
+            x[k] = M_params[k];
+        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
+                        {
+                            for ( auto const& e : evec )
+                            {
+                                uint16_type idx = this->index( e.first );
+                                if ( idx == invalid_uint16_type_value )
+                                    continue;
+                                auto const& theexpr = e.second;
+                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                            }
+                        });
+
         value_type res;
-        (*M_cfun)(&ni,M_params.data(),&no,&res);
+        (*M_cfun)(&ni,x.data(),&no,&res);
         return res;
     }
 

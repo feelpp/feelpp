@@ -117,18 +117,18 @@ public :
      * constructor
      *
      */
-    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool moveGhostEltFromExtendedStencil=false,
+    ALE( mesh_ptrtype mesh, std::string prefix="", worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(),
          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     /**
      * copy constructor
      */
-    ALE( ALE const& tc );
+    ALE( ALE const& ) = default;
 
     /**
      * desctructor
      */
-    ~ALE();
+    ~ALE() {}
 
     void init() override;
 
@@ -188,6 +188,10 @@ public :
      * reset all the data from the class
      */
     void restart( mesh_ptrtype mesh );
+
+    void initMetricMeshAdaptation() override;
+    void updateMetricMeshAdaptation( Expr<GinacExVF<2>> const& e ) override;
+    void updateMetricMeshAdaptation( typename super_type::metricmeshadaptation_type::element_scalar_type const& u ) override;
 
 private:
 
@@ -249,6 +253,9 @@ private:
     void updateBoundaryElements( ale_map_element_type const & dispOnBoundary,
                                  mpl::bool_<false> /**/ );
 
+    // metric mesh adaptation
+    void updateMetricMeshAdaptationForUse();
+
 private :
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
 
@@ -278,8 +285,6 @@ private :
     winslow_ptrtype M_winslowFactory;
 #endif
     bool M_isInitHarmonicExtension, M_isInitWinslow;
-
-    bool M_moveGhostEltFromExtendedStencil;
 
     std::map<std::string,std::set<size_type> > M_dofsHighOnBoundary;
 };

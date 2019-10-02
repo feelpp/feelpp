@@ -24,23 +24,28 @@
 cmake_minimum_required(VERSION 3.7.2)
 project(mor)
 
+set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
+set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 # with this it is possible to compile applications/MOR from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  message(STATUS "[feelpp] module path: ${CMAKE_MODULE_PATH}")
+  find_package(Feel++ COMPONENTS Toolboxes PATHS $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
   if(NOT FEELPP_FOUND)
     message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
   endif()
+  if (NOT FEELPP_TOOLBOXES_FOUND)
+    message(WARNING "Feel++ was not installed with toolboxes")
+  endif()
+else()
+  include_directories(${FEELPP_MOR_SOURCE_DIR})
+  include_directories(${FEELPP_MOR_BINARY_DIR})  
 endif()
 
-set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
-set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
 
 
-include_directories(${FEELPP_MOR_SOURCE_DIR})
-include_directories(${FEELPP_MOR_BINARY_DIR})
+
+
 
 OPTION(FEELPP_ENABLE_MOR_ALL "enable all MOR testcase" OFF)
 
@@ -64,7 +69,12 @@ OPTION(FEELPP_ENABLE_MOR_EEG "enable EEG testcase" OFF)
 OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
-OPTION(FEELPP_ENABLE_MOR_BIOTSAVART "enable biosavart testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
+
+
+if ( NOT FEELPP_TOOLBOXES_FOUND )
+  set( FEELPP_ENABLE_MOR_THERMOELECTRIC OFF )
+endif()
 
 set(FEELPP_MOR_LIBRARIES)
 
@@ -169,8 +179,8 @@ endif()
 if ( FEELPP_ENABLE_MOR_THERMOELECTRIC )
   add_subdirectory(thermoelectric)
 endif()
-if ( FEELPP_ENABLE_MOR_BIOTSAVART )
-  add_subdirectory(biotsavart)
+if ( FEELPP_ENABLE_MOR_GREPLDEIM )
+  add_subdirectory(grepldeim)
 endif()
 
 add_subdirectory(pyfeelpp-mor)

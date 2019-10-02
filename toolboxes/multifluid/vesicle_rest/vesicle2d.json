@@ -12,7 +12,7 @@
         "a0": "0.650",
         "b0": "2.244"
     },
-    "InitialConditions":
+    "InitialConditionsDeprecated":
     {
         "multifluid.levelset1":
         {

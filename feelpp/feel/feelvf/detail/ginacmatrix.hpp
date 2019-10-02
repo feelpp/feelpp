@@ -94,7 +94,7 @@ public:
 
     };
 
-    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::DYNAMIC>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
     static const bool is_terminal = false;
 
     template<typename Funct>
@@ -342,13 +342,13 @@ public:
     evaluate( std::map<std::string,value_type> const& mp  )
     {
         this->setParameterValues( mp );
-        return this->evaluateImpl();
+        return this->evaluateImpl( true, Environment::worldCommPtr() );
     }
 
     Eigen::MatrixXd
     evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
-        return this->evaluateImpl();
+        return this->evaluateImpl( parallel, worldcomm );
     }
 
     //@}
@@ -510,7 +510,7 @@ public:
                 if ( M_is_constant ) return;
 
                 uint16_type k=0;
-                hana::for_each( M_t_expr, [&k,&geom,&fev,feu,this]( auto & evec )
+                hana::for_each( M_t_expr, [&k,&geom,&fev,&feu,this]( auto & evec )
                                 {
                                     for ( auto & e : evec )
                                     {
@@ -689,14 +689,30 @@ private :
     }
 
     evaluate_type
-    evaluateImpl() const
+    evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
     {
         if ( M_isNumericExpression )
             return M_numericValue;
         int no = M*N;
         int ni = M_syms.size();
+
+        vec_type x( ni );
+        for ( uint16_type k=0;k<ni;++k )
+            x[k] = M_params[k];
+        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
+                        {
+                            for ( auto const& e : evec )
+                            {
+                                uint16_type idx = this->index( e.first );
+                                if ( idx == invalid_uint16_type_value )
+                                    continue;
+                                auto const& theexpr = e.second;
+                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                            }
+                        });
+
         evaluate_type res = evaluate_type::Zero();
-        (*M_cfun)(&ni,M_params.data(),&no,res.data());
+        (*M_cfun)(&ni,x.data(),&no,res.data());
         return res;
     }
 

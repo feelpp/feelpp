@@ -93,7 +93,11 @@ public :
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial(matName) ) << "no material with name " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     std::map<std::string, ModelExpressionScalar> const& electricConductivityByMaterial() const { return M_electricConductivityByMaterial; }
@@ -167,6 +171,36 @@ public :
         {
             for ( auto & prop : M_electricConductivityByMaterial )
                 prop.second.setParameterValues( mp );
+        }
+
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            this->updateElectricConductivityField( symbolsExpr );
+        }
+
+    template <typename SymbolsExpr>
+    void updateElectricConductivityField( SymbolsExpr const& symbolsExpr )
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                this->updateElectricConductivityField( matName, symbolsExpr );
+            }
+        }
+
+    template <typename SymbolsExpr>
+    void updateElectricConductivityField( std::string const& matName, SymbolsExpr const& symbolsExpr )
+        {
+            if  ( !M_fieldElectricConductivity )
+                return;
+            if ( !this->hasMaterial( matName ) )
+                return;
+            auto const& range = this->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->electricConductivity( matName );
+
+            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+            M_fieldElectricConductivity->on(_range=range,_expr=sigmaExpr );
         }
 
 
