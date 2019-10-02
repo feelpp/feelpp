@@ -47,11 +47,11 @@ runLevelsetApplication()
     // Errors measures :
     // LS is initialized, we save the phi, heaviside and dirac functions' initial values
     auto phi_0 = LS->functionSpace()->element();
-    phi_0 = phi();
+    phi_0 = *LS->phi();
     auto H_0 = LS->functionSpace()->element();
-    H_0=LS->heaviside();
+    H_0=*LS->heaviside();
     auto dirac_0 = LS->functionSpace()->element();
-    dirac_0=LS->dirac();
+    dirac_0=*LS->dirac();
     
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
