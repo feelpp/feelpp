@@ -112,14 +112,13 @@ runLevelsetApplication()
 	    Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
 
 	    // Sign change error :
-	    auto e_sc_integrand = pow(
-				      ( 1-idv(H_0) ), - ( 1-idv(*LS->heaviside()) ),
-				      2.0
-				      );
 	    double e_sc_integral = integrate(
-					   _range=elements(LS->mesh()),
-					   _expr=e_sc_integrand
-					   ).evaluate()(0,0);
+					     _range=elements(LS->mesh()),
+					     _expr=pow(
+						       ( 1-idv(H_0) ) - ( 1-idv(*LS->heaviside()) ),
+						       2.0
+						       )
+					     ).evaluate()(0,0);
 	    double sign_change_error = std::sqrt(
 						 e_sc_integral
 						 );
