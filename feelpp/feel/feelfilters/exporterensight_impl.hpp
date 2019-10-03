@@ -563,24 +563,53 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
 
         if constexpr ( IsNodal )
             {
-                auto rangeElements = __step->mesh()->elementsWithProcessId();
-                auto elt_it = std::get<0>( rangeElements );
-                auto elt_en = std::get<1>( rangeElements );
-
-                M_cache_mp.try_emplace(  0 /*dummy value*/, __step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true );
-                auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
-
-                index_type nValuesPerComponent = mp.ids.size();
-                m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
-
-                for ( ; elt_it != elt_en; ++elt_it )
+                if (!M_mapNodalArrayToDofId )
                 {
-                    auto const& elt = unwrap_ref( *elt_it );
-                    auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
-                    for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p )
+                    auto rangeElements = __step->mesh()->elementsWithProcessId();
+                    auto elt_it = std::get<0>( rangeElements );
+                    auto elt_en = std::get<1>( rangeElements );
+
+                    M_cache_mp.try_emplace(  0 /*dummy value*/, __step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true );
+                    auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
+
+                    index_type nValuesPerComponent = mp.ids.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+
+                    M_mapNodalArrayToDofId = std::make_optional<std::vector<size_type>>( nValuesPerComponent,invalid_size_type_value );
+                    auto & mapArrayToDofId = *M_mapNodalArrayToDofId;
+
+                    for ( ; elt_it != elt_en; ++elt_it )
                     {
-                        size_type ptid = mp.old2new[elt.point( p ).id()]-1;
-                        size_type dof_id = locglob_ind(d->localDofId(p,0));
+                        auto const& elt = unwrap_ref( *elt_it );
+                        auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                        for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p )
+                        {
+                            size_type ptid = mp.old2new[elt.point( p ).id()]-1;
+                            size_type dof_id = locglob_ind(d->localDofId(p,0));
+                            mapArrayToDofId[ptid] = dof_id;
+                            for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                            {
+                                for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                                {
+                                    auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                    uint16_type cMap = c2*nComponents1+c1;
+                                    if ( isTensor2Symm )
+                                        cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                    size_type global_node_id = nComponents * ptid + cMap;
+                                    m_field[global_node_id] = fieldComp.globalValue( dof_id );
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    auto const& mapArrayToDofId = *M_mapNodalArrayToDofId;
+                    index_type nValuesPerComponent = mapArrayToDofId.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    for ( size_type k=0;k<nValuesPerComponent;++k )
+                    {
+                        size_type dof_id = mapArrayToDofId[k];
                         for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
                         {
                             for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
@@ -589,7 +618,7 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
                                 uint16_type cMap = c2*nComponents1+c1;
                                 if ( isTensor2Symm )
                                     cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
-                                size_type global_node_id = nComponents * ptid + cMap;
+                                size_type global_node_id = nComponents*k + cMap;
                                 m_field[global_node_id] = fieldComp.globalValue( dof_id );
                             }
                         }
@@ -610,28 +639,56 @@ ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __s
                 __out.write( ( char * ) & buffer, sizeof( buffer ) );
                 DVLOG(2) << "element type " << buffer << "\n";
 
-                auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
-                auto elt_m_it = std::get<0>( rangeMarkedElements );
-                auto const elt_m_en = std::get<1>( rangeMarkedElements );
-
-                index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
-                m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
-
-                for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
+                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(p_it->first);
+                if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
                 {
-                    auto const& elt = unwrap_ref( *elt_m_it );
-                    auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
-                    size_type dof_id = locglob_ind(d->localDofId(0,0));
-                    for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                    auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
+                    auto elt_m_it = std::get<0>( rangeMarkedElements );
+                    auto const elt_m_en = std::get<1>( rangeMarkedElements );
+                    index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[p_it->first];
+                    mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
+
+                    for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
                     {
-                        for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                        auto const& elt = unwrap_ref( *elt_m_it );
+                        auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                        size_type dof_id = locglob_ind(d->localDofId(0,0));
+                        mapArrayToDofId[e] = dof_id;
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
                         {
-                            auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
-                            uint16_type cMap = c2*nComponents1+c1;
-                            if ( isTensor2Symm )
-                                cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
-                            size_type global_node_id = nComponents * e + cMap;
-                            m_field(global_node_id) = fieldComp.globalValue( dof_id );
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents * e + cMap;
+                                m_field(global_node_id) = fieldComp.globalValue( dof_id );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    auto const& mapArrayToDofId = itFindMapElementArrayToDofId->second;
+                    index_type nValuesPerComponent = mapArrayToDofId.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    for ( size_type k=0;k<nValuesPerComponent;++k )
+                    {
+                        size_type dof_id = mapArrayToDofId[k];
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents*k + cMap;
+                                m_field[global_node_id] = fieldComp.globalValue( dof_id );
+                            }
                         }
                     }
                 }
