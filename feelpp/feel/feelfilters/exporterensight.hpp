@@ -228,6 +228,8 @@ private:
     mutable std::string M_filename;
     std::string M_element_type;
     mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
+    mutable std::optional<std::vector<size_type>> M_mapNodalArrayToDofId;
+    mutable std::map<int,std::vector<size_type>> M_mapElementArrayToDofId;
 };
 
 

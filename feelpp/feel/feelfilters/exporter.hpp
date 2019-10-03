@@ -558,7 +558,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), Environment::exportsRepository()+"/"+soption("exporter.format")+"/"+name )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), (fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
