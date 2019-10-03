@@ -124,6 +124,17 @@ runLevelsetApplication()
 						 );
 
 	    Feel::cout << "Sign change error = " << sign_change_error << std::endl;
+
+	    // Mass error
+	    auto chi_of_phi0_negative = chi(  idv(dirac_0) < 0 );
+	    auto chi_of_phi_negative = chi(  idv(*LS->dirac()) < 0 );
+	    double em_phi0_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi0_negative ).evaluate()(0,0);
+	    double em_phi_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi_negative ).evaluate()(0,0);
+	    double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
+
+	    Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
+	    Feel::cout << "phi integral = " << em_phi_integral << std::endl;
+	    Feel::cout << "Mass error = " << mass_error << std::endl;
         }
     }
 }
