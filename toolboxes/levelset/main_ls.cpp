@@ -49,9 +49,9 @@ runLevelsetApplication()
     auto phi_0 = LS->functionSpace()->element();
     phi_0 = *LS->phi();
     auto H_0 = LS->functionSpace()->element();
-    H_0=*LS->heaviside();
+    H_0 = *LS->heaviside();
     auto dirac_0 = LS->functionSpace()->element();
-    dirac_0=*LS->dirac();
+    dirac_0 = *LS->dirac();
     
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
@@ -99,6 +99,7 @@ runLevelsetApplication()
                 myExporter->step(iter)->add("distToBoundary", *distToBoundary );
                 myExporter->save();
             }
+	    
 	    // Error measures :
 	    // we compute the L2 norm error integrals :
 
@@ -126,10 +127,18 @@ runLevelsetApplication()
 	    Feel::cout << "Sign change error = " << sign_change_error << std::endl;
 
 	    // Mass error
-	    auto chi_of_phi0_negative = chi(  idv(dirac_0) < 0 );
-	    auto chi_of_phi_negative = chi(  idv(*LS->dirac()) < 0 );
-	    double em_phi0_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi0_negative ).evaluate()(0,0);
-	    double em_phi_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi_negative ).evaluate()(0,0);
+	    auto chi_of_phi0_negative = chi(  idv(phi_0) < 0 );
+	    auto chi_of_phi_negative = chi(  idv(LS->phi()) < 0 ); // add a * to LS ?
+
+	    double em_phi0_integral = integrate(
+						_range=elements(LS->mesh()),
+
+						_expr=chi_of_phi0_negative
+						).evaluate()(0,0);
+	    double em_phi_integral = integrate(
+					       _range=elements(LS->mesh()),
+					       _expr=chi_of_phi_negative
+					       ).evaluate()(0,0);
 	    double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
 
 	    Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
