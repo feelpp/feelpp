@@ -502,14 +502,19 @@ class Mesh
 
         if ( MeshBase<>::worldComm().localSize() > 1 )
         {
+            std::vector<int> parts;
+            for ( auto const& [partId,n] : this->parts() )
+                parts.push_back( partId );
+
             std::vector<boost::tuple<boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>,
-                                     boost::tuple<size_type, size_type, size_type>, size_type>>
+                                     boost::tuple<size_type, size_type, size_type>, size_type, std::vector<int>>>
                 dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple( boost::make_tuple( ne, neall ), boost::make_tuple( nf, nfmarkedall ), boost::make_tuple( ned, nedmarkedall ),
-                                                          boost::make_tuple( np, npall, npmarkedall ), nv );
+                                                          boost::make_tuple( np, npall, npmarkedall ), nv, parts );
             mpi::all_gather( MeshBase<>::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
+            std::set<int> allParts;
             for ( rank_type p = 0; p < nProc; ++p )
             {
                 auto const& dataOnProc = dataRecvFromAllGather[p];
@@ -518,7 +523,9 @@ class Mesh
                 M_statEdges[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ) );
                 M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<3>( dataOnProc ) ), boost::get<1>( boost::get<3>( dataOnProc ) ), boost::get<2>( boost::get<3>( dataOnProc ) ) );
                 M_statVertices[p] = boost::get<4>( dataOnProc );
+                allParts.insert(  boost::get<5>( dataOnProc ).begin(), boost::get<5>( dataOnProc ).end() );
             }
+            this->addParts( allParts );
 
             size_type numFaceGlobalCounter = nf, numEdgeGlobalCounter = ned, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
@@ -647,14 +654,20 @@ class Mesh
 
         if ( nProc > 1 )
         {
+            std::vector<int> parts;
+            for ( auto const& [partId,n] : this->parts() )
+                parts.push_back( partId );
+
             std::vector<boost::tuple<boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>,
-                                     boost::tuple<size_type, size_type, size_type>, size_type>>
+                                     boost::tuple<size_type, size_type, size_type>, size_type, std::vector<int>>>
                 dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple( boost::make_tuple( ne, neall ), boost::make_tuple( nf, nfmarkedall ),
-                                                          boost::make_tuple( np, npall, npmarkedall ), nv );
+                                                          boost::make_tuple( np, npall, npmarkedall ), nv, parts );
             mpi::all_gather( MeshBase<>::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
+
+            std::set<int> allParts;
             for ( rank_type p = 0; p < nProc; ++p )
             {
                 auto const& dataOnProc = dataRecvFromAllGather[p];
@@ -662,7 +675,9 @@ class Mesh
                 M_statFaces[p] = std::make_tuple( boost::get<0>( boost::get<1>( dataOnProc ) ), boost::get<1>( boost::get<1>( dataOnProc ) ) );
                 M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ), boost::get<2>( boost::get<2>( dataOnProc ) ) );
                 M_statVertices[p] = boost::get<3>( dataOnProc );
+                allParts.insert(  boost::get<4>( dataOnProc ).begin(), boost::get<4>( dataOnProc ).end() );
             }
+            this->addParts( allParts );
 
             size_type numFaceGlobalCounter = nf, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
@@ -2440,6 +2455,339 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
 
 namespace detail
 {
+
+template <typename MeshType>
+struct MeshContiguousNumberingMapping
+{
+    using mesh_type = MeshType;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
+    using index_type = typename mesh_type::index_type;
+
+    MeshContiguousNumberingMapping( mesh_type* mesh )
+        {
+            rank_type currentPid = mesh->worldComm().localRank();
+            rank_type worldSize = mesh->worldComm().localSize();
+
+
+            // point id -> (  ( map of idsInOtherPart ), ( vector of ( marker, element id, id in elt) ) )
+            std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>>>> dataPointsInterProcess;
+
+            auto const en_part = mesh->endParts();
+            for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
+            {
+                auto rangeElt = markedelements(mesh,it_part->first );
+                index_type nEltInRange = nelements(rangeElt);
+                auto & elementIdToContiguous = M_elementIdToContiguous[it_part->first];
+                auto & pointIdsInElements = M_pointIdsInElements[it_part->first];
+                auto & pointIdToContiguous = M_pointIdToContiguous[it_part->first];
+                pointIdsInElements.resize( nEltInRange*mesh_type::element_type::numPoints, invalid_v<index_type> );
+                index_type countPtId = 0, countEltId = 0;
+                for ( auto const& eltWrap : rangeElt )
+                {
+                    auto const& elt = unwrap_ref( eltWrap );
+                    index_type eltId = elt.id();
+                    auto [itElt,eltIsInserted] = elementIdToContiguous.try_emplace( eltId, countEltId++ );
+                    CHECK( eltIsInserted ) << "something wrong, element already inserted";
+                    index_type newEltId = itElt->second;
+                    for ( uint16_type j = 0; j < mesh_type::element_type::numPoints; j++ )
+                    {
+                        auto const& pt = elt.point( j );
+                        index_type ptid = pt.id();
+                        auto const& ptIdnOthersPartitions = pt.idInOthersPartitions();
+                        if ( pt.idInOthersPartitions().empty() )// true ) // pt.idInOthersPartitions().empty() || ( *pt.idInOthersPartitions()->begin() > currentPid ) )
+                        {
+                            auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptid,std::make_pair(countPtId,boost::cref(pt)) );
+                            if ( isInserted )
+                                ++countPtId;
+                            index_type newPtId = itPt->second.first;
+
+                            CHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
+                            pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                        }
+                        else
+                        {
+                            auto infoIpElt = std::make_tuple( it_part->first, newEltId/*eltId*/, j );
+                            auto itFindPtIP = dataPointsInterProcess.find( ptid );
+                            if ( itFindPtIP == dataPointsInterProcess.end() )
+                                dataPointsInterProcess[ptid] = std::make_tuple( ptIdnOthersPartitions,  std::vector< std::tuple<int,index_type,uint16_type>>( { infoIpElt } ) );
+                            else
+                                std::get<1>( itFindPtIP->second ).push_back( infoIpElt );
+                        }
+                    }
+                }
+            }
+
+            // --------------------------------------------------------------------------------------- //
+            // treatment of interprocess point
+            std::map<int,std::map<rank_type,std::map<index_type,index_type>>> dataPointsNotInProcess;
+            if ( worldSize > 1 )
+            {
+                std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToSend;
+                std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToRecv;
+                for ( auto const& [ ptId, dataIP ] : dataPointsInterProcess )
+                {
+                    auto const& dataIdInOtherPartition =  std::get<0>( dataIP );
+                    auto const& dataEltInfo = std::get<1>( dataIP );
+                    for ( auto const& [ procId, ptIdOtherPart ] : dataIdInOtherPartition )
+                    {
+                        for ( auto const& [marker,eltId,ptIdInElt ] : dataEltInfo )
+                            dataToSend[procId].push_back( std::make_pair(marker, ptIdOtherPart) );
+                    }
+                }
+                int neighborSubdomains = mesh->neighborSubdomains().size();
+                int nbRequest = 2 * neighborSubdomains;
+                mpi::request* reqs = new mpi::request[nbRequest];
+                int cptRequest = 0;
+                for ( rank_type neighborRank : mesh->neighborSubdomains() )
+                {
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
+                    reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+                }
+                // wait all requests
+                mpi::wait_all( reqs, reqs + nbRequest );
+
+                std::map<int,std::map<index_type, std::set<rank_type> > > treatRecv;
+                // others process
+                for ( auto const& [pid, ptData ] : dataToRecv )
+                {
+                    for ( auto const& [marker, ptId] : ptData )
+                        treatRecv[marker][ptId].insert( pid );
+                }
+                // self process
+                for ( auto const& [ ptId, dataIP ] : dataPointsInterProcess )
+                {
+                    auto const& dataEltInfo = std::get<1>( dataIP );
+                    for ( auto const& [marker,eltId,ptIdInElt ] : dataEltInfo )
+                        treatRecv[marker][ptId].insert( currentPid );
+                }
+                // determine which process have points
+                std::map<int,std::set<index_type>> ipPointsOnCurrentProcess;
+                for ( auto const& [marker, mapIdToPids] : treatRecv )
+                {
+                    for ( auto const& [ptId,allPids] : mapIdToPids )
+                        if ( currentPid == *allPids.begin() )
+                            ipPointsOnCurrentProcess[marker].insert( ptId );
+                }
+                // update M_pointIdToContiguous
+                std::map<rank_type,std::vector<boost::tuple<int,index_type,index_type>>> dataToReSend;
+                std::map<rank_type,std::vector<boost::tuple<int,index_type,index_type>>> dataToReRecv;
+                for ( auto const& [marker, ptIds] : ipPointsOnCurrentProcess )
+                {
+                    auto & pointIdToContiguous = M_pointIdToContiguous[marker];
+                    auto & pointIdsInElements = M_pointIdsInElements[marker];
+                    index_type countPtId = pointIdToContiguous.size();
+                    for ( index_type ptId : ptIds )
+                    {
+                        auto const& pt = mesh->point( ptId );
+                        auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptId,std::make_pair(countPtId,boost::cref(pt)) );
+                        index_type newPtId = itPt->second.first;
+                        if ( isInserted )
+                        {
+                            ++countPtId;
+                            for (auto const& [opid, optId] : pt.idInOthersPartitions() )
+                                dataToReSend[opid].push_back( boost::make_tuple( marker,optId,newPtId ) );
+                        }
+
+                        auto itFindDataIP = dataPointsInterProcess.find( ptId );
+                        CHECK( itFindDataIP != dataPointsInterProcess.end() ) << "point not register";
+                        auto const& infoEltAssociated = std::get<1>( itFindDataIP->second );
+                        for ( auto const& [ marker2, newEltId, j ] : infoEltAssociated )
+                        {
+                            if ( marker != marker2 )
+                                continue;
+                            pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
+                        }
+                    }
+                }
+
+                cptRequest = 0;
+                for ( rank_type neighborRank : mesh->neighborSubdomains() )
+                {
+                    reqs[cptRequest++] = mesh->worldComm().localComm().isend( neighborRank, 0, dataToReSend[neighborRank] );
+                    reqs[cptRequest++] = mesh->worldComm().localComm().irecv( neighborRank, 0, dataToReRecv[neighborRank] );
+                }
+                // wait all requests
+                mpi::wait_all( reqs, reqs + nbRequest );
+                // delete reqs because finish comm
+                delete[] reqs;
+
+
+                for ( auto const& [pid, dataByProc] : dataToReRecv )
+                {
+                    for ( auto const&  dataPt : dataByProc )
+                    {
+                        int marker = boost::get<0>( dataPt );
+                        index_type ptId =  boost::get<1>( dataPt );
+                        index_type newPtId =  boost::get<2>( dataPt );
+                        dataPointsNotInProcess[marker][pid][ptId] = newPtId;
+                    }
+                }
+
+            }
+
+            // --------------------------------------------------------------------------------------- //
+            // build nodes vector
+            for ( auto const& [markerId,pointIdToContiguous] : M_pointIdToContiguous )
+            {
+                auto & nodes = M_nodes[markerId];
+                nodes.resize( 3*pointIdToContiguous.size(),0 );
+                for ( auto const& [ptId,ptData] : pointIdToContiguous )
+                {
+                    index_type newPtId = ptData.first;
+                    auto const& pt = unwrap_ref( ptData.second );
+                    for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
+                    {
+                        CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
+                        nodes[3*newPtId+d] = pt.node()[d];
+                    }
+                }
+            }
+
+            // --------------------------------------------------------------------------------------- //
+            // information in world comm
+            int k=0;
+            std::vector<boost::tuple<index_type,index_type>> nPointElementByMarker( M_pointIdToContiguous.size() );
+            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+            {
+                nPointElementByMarker[k] = boost::make_tuple( pointIdToContiguous.size(), M_elementIdToContiguous.find( marker)->second.size() );
+                ++k;
+            }
+
+            std::vector<std::vector<boost::tuple<index_type,index_type>>> recvInfos;
+            mpi::all_gather( mesh->worldComm().comm(), nPointElementByMarker, recvInfos );
+
+            k=0;
+            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+            {
+                auto & numberOfPointElement = M_numberOfPointElement[marker];
+                numberOfPointElement.resize( worldSize );
+                index_type startPtId = 0, startEltId = 0;
+                for ( rank_type p=0;p<worldSize;++p )
+                {
+                    index_type nPt = boost::get<0>( recvInfos[p][k] );
+                    index_type nElt = boost::get<1>( recvInfos[p][k] );
+                    numberOfPointElement[p] = std::make_tuple( startPtId, nPt, startEltId, nElt );
+                    startPtId+=nPt;
+                    startEltId+=nElt;
+                }
+                ++k;
+                M_numberOfPointElementAllProcess[marker] = std::make_tuple( startPtId,startEltId );
+            }
+
+            // --------------------------------------------------------------------------------------- //
+            // shift ids
+            for ( auto const& [marker,pointIdToContiguous] : M_pointIdToContiguous )
+            {
+                index_type spi = this->startPointIds(marker,currentPid);
+                index_type sei = this->startElementIds(marker,currentPid);
+                for ( auto & [ptId,newPtData] :  M_pointIdToContiguous[marker] )
+                    newPtData.first += spi;
+                for ( auto & [eltId,newEltId] : M_elementIdToContiguous[marker] )
+                    newEltId += sei;
+                for ( index_type & ptId : M_pointIdsInElements[marker] )
+                {
+                    if ( ptId != invalid_v<index_type> )
+                        ptId += spi;
+                }
+            }
+
+            // --------------------------------------------------------------------------------------- //
+            // update M_pointIdsInElements with interprocess points
+            for ( auto const& [marker, dataByMarker ] : dataPointsNotInProcess )
+            {
+                auto & pointIdsInElements = M_pointIdsInElements[marker];
+                for( auto const& [pid,dataByProc] : dataByMarker )
+                {
+                    index_type shiftPointId = this->startPointIds( marker, pid );
+                    for ( auto const& [ ptId,newPtId ] : dataByProc )
+                    {
+                        auto itFindPtIp = dataPointsInterProcess.find( ptId );
+                        CHECK( itFindPtIp != dataPointsInterProcess.end() ) << "invalid point ";
+                        auto const& infosElt = std::get<1>( itFindPtIp->second );
+                        for (auto const& [ marker2, newEltId, j ] : infosElt )
+                        {
+                            if ( marker == marker2 )
+                                pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId + shiftPointId;
+                        }
+                    }
+                }
+            }
+
+        }
+
+    using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
+    std::unordered_map<index_type,std::pair<index_type,point_ref_type>> const& pointIdToContiguous( int part ) const
+        {
+            auto itFindData = M_pointIdToContiguous.find( part );
+            CHECK( itFindData != M_pointIdToContiguous.end() ) << "part not registerd";
+            return itFindData->second;
+        }
+    index_type pointIdToContiguous( int part, index_type ptId ) const
+        {
+            auto itFindData = M_pointIdToContiguous.find( part );
+            if ( itFindData == M_pointIdToContiguous.end() )
+                return invalid_v<index_type>;
+            auto const& data =  itFindData->second;
+            auto itFindPt = data.find( ptId );
+            if (  itFindPt == data.end() )
+                return invalid_v<index_type>;
+            return itFindPt->second.first;
+        }
+    std::unordered_map<index_type,index_type> const& elementIdToContiguous( int part ) const
+        {
+            auto itFindData = M_elementIdToContiguous.find( part );
+            CHECK( itFindData == M_elementIdToContiguous.end() ) << "part not registerd";
+            return itFindData->second;
+        }
+    index_type elementIdToContiguous( int part, index_type eltId ) const
+        {
+            auto itFindData = M_elementIdToContiguous.find( part );
+            if ( itFindData == M_elementIdToContiguous.end() )
+                return invalid_v<index_type>;
+            auto const& data =  itFindData->second;
+            auto itFindElt = data.find( eltId );
+            if (  itFindElt == data.end() )
+                return invalid_v<index_type>;
+            return itFindElt->second;
+        }
+    std::vector<index_type>  const& pointIdsInElements( int part ) const { return M_pointIdsInElements.find( part )->second; }
+    std::vector<float> const& nodes( int part ) const { return M_nodes.find( part )->second; }
+
+    index_type startPointIds( int part, rank_type therank ) const { return genericInfo<0>( part, therank ); }
+    index_type numberOfPoint( int part, rank_type therank ) const { return genericInfo<1>( part, therank ); }
+    index_type startElementIds( int part, rank_type therank ) const { return genericInfo<2>( part, therank ); }
+    index_type numberOfElement( int part, rank_type therank ) const { return genericInfo<3>( part, therank ); }
+
+    index_type numberOfPointAllProcess( int part ) const { return genericInfoAllProcess<0>( part ); }
+    index_type numberOfElementAllProcess( int part ) const { return genericInfoAllProcess<1>( part ); }
+
+private :
+
+    template <int TupleId>
+    index_type genericInfo( int part, rank_type therank ) const
+        {
+            auto itFindNumberOfPointElement = M_numberOfPointElement.find( part );
+            CHECK( itFindNumberOfPointElement!= M_numberOfPointElement.end()) << "invalid part";
+            CHECK( therank < itFindNumberOfPointElement->second.size() ) << "invalid rank";
+            return std::get<TupleId>( itFindNumberOfPointElement->second[therank] );
+        }
+    template <int TupleId>
+    index_type genericInfoAllProcess( int part ) const
+        {
+            auto itFindNumberOfPointElementAllProcess = M_numberOfPointElementAllProcess.find( part );
+            CHECK( itFindNumberOfPointElementAllProcess != M_numberOfPointElementAllProcess.end()) << "invalid part";
+            return std::get<TupleId>( itFindNumberOfPointElementAllProcess->second );
+        }
+private:
+    std::map<int,std::unordered_map<index_type,std::pair<index_type,point_ref_type> >> M_pointIdToContiguous;
+    std::map<int,std::unordered_map<index_type,index_type>> M_elementIdToContiguous;
+    std::map<int,std::vector<index_type>> M_pointIdsInElements;
+    std::map<int,std::vector<float>> M_nodes;
+    std::map<int,std::vector<std::tuple<index_type,index_type,index_type,index_type>>> M_numberOfPointElement;
+    std::map<int,std::tuple<index_type,index_type>> M_numberOfPointElementAllProcess;
+};
+
+
 template <typename T>
 struct MeshPoints
 {
