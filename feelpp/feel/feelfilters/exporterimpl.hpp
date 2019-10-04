@@ -49,7 +49,7 @@
 #include <feel/feelfilters/exportervtk.hpp>
 #endif
 
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#if defined(FEELPP_HAS_HDF5)
 #include <feel/feelfilters/exporterhdf5.hpp>
 #endif
 
@@ -68,7 +68,7 @@ template<typename MeshType, int N> class ExporterEnsightGold;
 #ifdef FEELPP_HAS_GMSH
 template<typename MeshType, int N> class ExporterGmsh;
 #endif
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#if defined(FEELPP_HAS_HDF5)
 //template<typename MeshType, int N> class Exporterhdf5;
 #endif
 
@@ -185,7 +185,7 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 #endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#if defined(FEELPP_HAS_HDF5)
     else if ( N == 1 && ( exportername == "hdf5" ))
         exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
 #endif
@@ -234,7 +234,7 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm );
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
+#if defined(FEELPP_HAS_HDF5)
     else if ( N == 1 && ( estr == "hdf5" ) )
         exporter = std::make_shared<Exporterhdf5<MeshType, N>> ( prefix, worldComm ) ;
 #endif

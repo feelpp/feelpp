@@ -118,7 +118,7 @@ public:
         /*!
          * \brief write informations of the mesh in .h5 file (unused for now)
          */
-        void writeStats() const;
+    //void writeStats() const;
 
         /*!
          * \brief save solutions on nodes or elements
@@ -140,6 +140,10 @@ public:
         mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
     //    mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
     mutable std::map<int,std::ostringstream> M_XDMFContent;
+
+    mutable std::unordered_map<int, Feel::detail::MeshContiguousNumberingMapping<mesh_type,float>> M_cache_mp;
+    mutable std::map<int,std::vector<size_type>> M_mapNodalArrayToDofId;
+    mutable std::map<int,std::vector<size_type>> M_mapElementArrayToDofId;
 };
 } // Feel
 
