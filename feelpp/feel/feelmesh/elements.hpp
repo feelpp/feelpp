@@ -419,6 +419,14 @@ public:
         return M_parts.end();
     }
 
+    parts_map_type const& parts() const { return M_parts; }
+
+    void addParts( std::set<int> const& someParts )
+        {
+            for ( int p : someParts )
+                M_parts.try_emplace( p, 0 );
+        }
+
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with marker \p m on processor \p p
