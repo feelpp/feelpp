@@ -210,7 +210,7 @@ void Feel::HDF5::openTable( const std::string& tableName,
 
 void Feel::HDF5::write( const std::string& tableName,
                         hid_t& memDataType, hsize_t currentCount[],
-                        hsize_t currentOffset[], void* buffer, unsigned int nbDims )
+                        hsize_t currentOffset[], const void* buffer, unsigned int nbDims )
 {
     tableHandle& currentTable = M_tableList[tableName];
 
