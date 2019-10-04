@@ -454,6 +454,41 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
     return markedelementsByType( mesh, 3, markersFlag );
 }
 
+
+
+/**
+ *
+ * \ingroup MeshIterators
+ * \return a mapping between a id and pair of iterators to iterate over elements of the
+ * mesh with marker \p flag
+ */
+template<typename MeshType>
+std::map<int,markedelements_t<MeshType> >
+collectionOfMarkedelements( MeshType const& mesh, boost::any const& collectionOfMarkersFlag )
+{
+    std::map<int,std::set<flag_type>> collectionOfMarkerFlagSet;
+    if ( boost::any_cast<std::map<int,int> >( &collectionOfMarkersFlag ) )
+    {
+        auto argCasted = boost::any_cast<std::map<int,int>>( collectionOfMarkersFlag);
+        for ( auto const& [part,markersFlag] : argCasted )
+            collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr( mesh ).markersId( markersFlag );
+    }
+    else
+        CHECK( false ) << "TODO : others cast";
+
+    uint16_type markerType = 1;
+    rank_type pid = rank( mesh );
+    auto collectionOfRangeElement = Feel::unwrap_ptr( mesh ).collectionOfElementsWithMarkerByType( markerType, collectionOfMarkerFlagSet, pid );
+    std::map<int,markedelements_t<MeshType> > res;
+    for ( auto const& [part,rangeElementsWithMarker] : collectionOfRangeElement )
+        res[part] = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                       std::get<0>( rangeElementsWithMarker ),
+                                       std::get<1>( rangeElementsWithMarker ),
+                                       std::get<2>( rangeElementsWithMarker ) );
+    return res;
+}
+
+
 /**
  *
  * \ingroup MeshIterators
