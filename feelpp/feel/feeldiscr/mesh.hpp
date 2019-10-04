@@ -2456,30 +2456,58 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
 namespace detail
 {
 
-template <typename MeshType>
+template <typename MeshType,typename StorageNodeValueType>
 struct MeshContiguousNumberingMapping
 {
     using mesh_type = MeshType;
     using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using index_type = typename mesh_type::index_type;
+    using storage_node_value_type = StorageNodeValueType;
+    using range_element_type = elements_reference_wrapper_t<mesh_type>;
 
     MeshContiguousNumberingMapping( mesh_type* mesh )
+        :
+        M_mesh( mesh )
         {
+            this->updateForUse();
+        }
+
+    void updateForUse()
+        {
+            mesh_type* mesh = M_mesh;
             rank_type currentPid = mesh->worldComm().localRank();
             rank_type worldSize = mesh->worldComm().localSize();
 
+            if ( M_partIdToRangeElement.empty() )
+            {
+                std::map<int,int> collectionOfMarkersFlag;
+                auto const en_part = mesh->endParts();
+                for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
+                    collectionOfMarkersFlag[it_part->first] = it_part->first;
+
+                auto allRanges = collectionOfMarkedelements( mesh, collectionOfMarkersFlag );
+                for ( auto const& [part,rangeElt] : allRanges )
+                {
+                    std::string markerName = mesh->markerName( part );
+                    if ( markerName.empty() || !mesh->hasElementMarker( markerName ) )
+                        markerName = "";
+                    M_partIdToRangeElement[part] = std::make_tuple(markerName, rangeElt );
+                }
+            }
 
             // point id -> (  ( map of idsInOtherPart ), ( vector of ( marker, element id, id in elt) ) )
             std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>>>> dataPointsInterProcess;
 
-            auto const en_part = mesh->endParts();
-            for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
+            //auto const en_part = mesh->endParts();
+            //for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
+            for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
             {
-                auto rangeElt = markedelements(mesh,it_part->first );
+                //auto rangeElt = markedelements(mesh,it_part->first );
+                auto const& rangeElt = std::get<1>( nameAndRangeElt );
                 index_type nEltInRange = nelements(rangeElt);
-                auto & elementIdToContiguous = M_elementIdToContiguous[it_part->first];
-                auto & pointIdsInElements = M_pointIdsInElements[it_part->first];
-                auto & pointIdToContiguous = M_pointIdToContiguous[it_part->first];
+                auto & elementIdToContiguous = M_elementIdToContiguous[part];
+                auto & pointIdsInElements = M_pointIdsInElements[part];
+                auto & pointIdToContiguous = M_pointIdToContiguous[part];
                 pointIdsInElements.resize( nEltInRange*mesh_type::element_type::numPoints, invalid_v<index_type> );
                 index_type countPtId = 0, countEltId = 0;
                 for ( auto const& eltWrap : rangeElt )
@@ -2487,26 +2515,26 @@ struct MeshContiguousNumberingMapping
                     auto const& elt = unwrap_ref( eltWrap );
                     index_type eltId = elt.id();
                     auto [itElt,eltIsInserted] = elementIdToContiguous.try_emplace( eltId, countEltId++ );
-                    CHECK( eltIsInserted ) << "something wrong, element already inserted";
+                    DCHECK( eltIsInserted ) << "something wrong, element already inserted";
                     index_type newEltId = itElt->second;
                     for ( uint16_type j = 0; j < mesh_type::element_type::numPoints; j++ )
                     {
                         auto const& pt = elt.point( j );
                         index_type ptid = pt.id();
                         auto const& ptIdnOthersPartitions = pt.idInOthersPartitions();
-                        if ( pt.idInOthersPartitions().empty() )// true ) // pt.idInOthersPartitions().empty() || ( *pt.idInOthersPartitions()->begin() > currentPid ) )
+                        if ( ptIdnOthersPartitions.empty() ) // not a interprocess point
                         {
                             auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptid,std::make_pair(countPtId,boost::cref(pt)) );
                             if ( isInserted )
                                 ++countPtId;
                             index_type newPtId = itPt->second.first;
 
-                            CHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
+                            DCHECK( (newEltId*mesh_type::element_type::numPoints+j) < pointIdsInElements.size() ) << "invalid size : " << (newEltId*mesh_type::element_type::numPoints+j) << " vs " <<  pointIdsInElements.size();
                             pointIdsInElements[newEltId*mesh_type::element_type::numPoints+j] = newPtId;
                         }
                         else
                         {
-                            auto infoIpElt = std::make_tuple( it_part->first, newEltId/*eltId*/, j );
+                            auto infoIpElt = std::make_tuple( part, newEltId/*eltId*/, j );
                             auto itFindPtIP = dataPointsInterProcess.find( ptid );
                             if ( itFindPtIP == dataPointsInterProcess.end() )
                                 dataPointsInterProcess[ptid] = std::make_tuple( ptIdnOthersPartitions,  std::vector< std::tuple<int,index_type,uint16_type>>( { infoIpElt } ) );
@@ -2715,6 +2743,8 @@ struct MeshContiguousNumberingMapping
 
         }
 
+    std::map<int,std::tuple<std::string,range_element_type>> const& partIdToRangeElement() const { return M_partIdToRangeElement; }
+
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
     std::unordered_map<index_type,std::pair<index_type,point_ref_type>> const& pointIdToContiguous( int part ) const
         {
@@ -2751,7 +2781,7 @@ struct MeshContiguousNumberingMapping
             return itFindElt->second;
         }
     std::vector<index_type>  const& pointIdsInElements( int part ) const { return M_pointIdsInElements.find( part )->second; }
-    std::vector<float> const& nodes( int part ) const { return M_nodes.find( part )->second; }
+    std::vector<storage_node_value_type> const& nodes( int part ) const { return M_nodes.find( part )->second; }
 
     index_type startPointIds( int part, rank_type therank ) const { return genericInfo<0>( part, therank ); }
     index_type numberOfPoint( int part, rank_type therank ) const { return genericInfo<1>( part, therank ); }
@@ -2779,10 +2809,12 @@ private :
             return std::get<TupleId>( itFindNumberOfPointElementAllProcess->second );
         }
 private:
+    mesh_type* M_mesh;
+    std::map<int,std::tuple<std::string,range_element_type>> M_partIdToRangeElement;
     std::map<int,std::unordered_map<index_type,std::pair<index_type,point_ref_type> >> M_pointIdToContiguous;
     std::map<int,std::unordered_map<index_type,index_type>> M_elementIdToContiguous;
     std::map<int,std::vector<index_type>> M_pointIdsInElements;
-    std::map<int,std::vector<float>> M_nodes;
+    std::map<int,std::vector<storage_node_value_type>> M_nodes;
     std::map<int,std::vector<std::tuple<index_type,index_type,index_type,index_type>>> M_numberOfPointElement;
     std::map<int,std::tuple<index_type,index_type>> M_numberOfPointElementAllProcess;
 };
