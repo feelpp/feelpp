@@ -551,6 +551,46 @@ public:
         {
             return this->elementsWithMarkerByType( 3, m, p );
         }
+
+
+        /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p markerFlags on processor \p p
+     */
+    std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> >
+    collectionOfElementsWithMarkerByType( uint16_type markerType,  std::map<int,std::set<flag_type>> const& collectionOfMarkerFlagSet, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+
+            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements;
+            for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+                collectionOfElements[part].reset( new elements_reference_wrapper_type );
+            auto it = this->beginOrderedElement();
+            auto en = this->endOrderedElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = unwrap_ref( *it );
+                if ( elt.processId() != part )
+                    continue;
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
+                    continue;
+                for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+                {
+                    if ( markersFlag.find( elt.marker( markerType ).value() ) == markersFlag.end() )
+                        continue;
+                    collectionOfElements[part]->push_back(boost::cref(elt));
+                    break;
+                }
+            }
+
+            std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
+            for ( auto const& [part,myelements] : collectionOfElements )
+                collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+            return collectionOfRangeElement;
+        }
+
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * on processor \p p
