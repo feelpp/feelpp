@@ -125,7 +125,12 @@ int getInfoMSH(const int typeMSH, std::string & elementName)
 {
     int dim, order, numNodes;
     std::vector<double> parametricCoord;
+#if GMSH_VERSION_LESS_THAN( 4,4,2 )
     gmsh::model::mesh::getElementProperties( typeMSH,elementName,dim,order,numNodes,parametricCoord );
+#else
+    int numPrimaryNodes;
+    gmsh::model::mesh::getElementProperties( typeMSH,elementName,dim,order,numNodes,parametricCoord,numPrimaryNodes );
+#endif
     return numNodes;
 }
 #else
