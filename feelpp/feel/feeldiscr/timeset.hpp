@@ -78,7 +78,7 @@
 
 namespace Feel
 {
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
 
 enum
 {
@@ -86,6 +86,7 @@ enum
     STEP_HAS_DATA  = ( 1<<1 ),
     STEP_ON_DISK   = ( 1<<2 ),
     STEP_IN_MEMORY = ( 1<<3 ),
+    STEP_IGNORED   = ( 1<<4 ),
     STEP_OVERWRITE = ( 1<<10 )
 };
 template<typename A0,typename A1,typename A2,typename A3,typename A4> class FunctionSpace;
@@ -253,6 +254,11 @@ public:
         bool isInMemory() const
         {
             return M_state.test( STEP_IN_MEMORY );
+        }
+
+        bool isIgnored() const
+        {
+            return M_state.test( STEP_IGNORED );
         }
 
         /**
@@ -469,7 +475,8 @@ public:
 
         void setState( size_type __st )
         {
-            executeState( __st );
+            M_state.set( __st );
+            //executeState( __st );
             showMe( "Step::setState" );
         }
         void setMesh( mesh_ptrtype const& __m )
@@ -566,7 +573,7 @@ public:
 
         template<typename FunctionType>
         void add( std::string const& __n, FunctionType const& func, std::string const& rep = "",
-                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
+                  typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
             {
                 std::set<std::string> reps;
                 if ( !reps.empty() )
@@ -627,10 +634,11 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, std::string const& rep = "" )
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, std::string const& rep = "",
+                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
             {
                 std::set<std::string> reps;
-                if ( !reps.empty() )
+                if ( !rep.empty() )
                     reps.insert( rep );
                 this->add( __n,__fname,func,reps );
             }
@@ -674,7 +682,7 @@ public:
 
             auto scalarSpace = this->scalarFunctionSpace<IsNodal>( func );
             auto & fieldsMap = this->fields<IsNodal>();
-            std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y, ComponentType::Z };
+            //std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y, ComponentType::Z };
 
             if constexpr ( FunctionType::is_scalar )
                 {
@@ -769,6 +777,79 @@ public:
             toc((boost::format("Timeset::add p1 scalar %1%")%__n).str(),FLAGS_v>0);
         }
 
+
+
+        template<typename ExprT>
+        void add( std::string const& __n, ExprT const& expr, std::string const& rep = "",
+                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+            {
+                this->add( __n, __n, expr, rep );
+            }
+        template<typename ExprT>
+        void add( std::string const& __n, ExprT const& expr,  elements_reference_wrapper_t<mesh_type> const& rangElt, std::string const& rep = "",
+                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+            {
+                this->add( __n, __n, expr, rangElt, rep );
+            }
+        template<typename ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, std::string const& rep = "",
+                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+            {
+                CHECK( this->hasMesh() ) << "no mesh provided";
+                this->add( __n, __fname, expr, elements(this->mesh()), rep );
+            }
+        template<typename ExprT>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, std::string const& _rep = "",
+                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+            {
+                std::set<std::string> reps;
+                if ( !_rep.empty() )
+                    reps.insert( _rep );
+
+                //std::set<std::string> reps = _reps;
+                if ( reps.empty() )
+                    reps.insert( "nodal" );
+
+                for ( std::string const& rep : reps )
+                    CHECK( rep == "nodal" || rep == "element" ) << "invalid represation " << rep << ": should be nodal or element";
+
+                std::map<std::string,std::string> repToSuffix = { { "nodal", "_n" }, { "element", "_e" } };
+
+                for ( std::string const& rep : reps )
+                {
+                    std::string nameUsed = (reps.size() > 1)? sanitize(__n+repToSuffix[rep]) : sanitize(__n);
+                    std::string fnameUsed =  (reps.size() > 1)? __fname+repToSuffix[rep] : __fname;
+                    if ( rep == "element" )
+                        this->addExpr<false>( nameUsed,fnameUsed,expr,rangElt );
+                    else if ( rep == "nodal" )
+                        this->addExpr<true>( nameUsed,fnameUsed,expr,rangElt );
+                }
+            }
+        template<bool IsNodal,typename ExprT>
+        FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt )
+            {
+                auto scalarSpace = this->scalarFunctionSpace<IsNodal>();
+                auto & fieldsMap = this->fields<IsNodal>();
+
+                using ExprShapeType = typename ExprT::template evaluator_t<typename mesh_type::element_type>::shape;
+
+                if constexpr ( ExprShapeType::is_scalar )
+                    {
+                        fieldsMap[ __fname].first = FunctionSpaceType::SCALAR;
+                        //fieldsMap[ __fname].second.resize( 1, { scalarSpace->elementPtr( __n ) } );
+                        fieldsMap[ __fname].second.resize( 1 );
+                        fieldsMap[ __fname].second[0].resize( 1 );
+                        if ( !fieldsMap[__fname].second[0][0] )
+                            fieldsMap[__fname].second[0][0] = scalarSpace->elementPtr( __n );
+                        fieldsMap[__fname].second[0][0]->on(_range=rangeElt,_expr=expr);
+                    }
+                else
+                    CHECK( false ) << "expression shape not supported";
+
+                M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
+                M_state.clear( STEP_ON_DISK );
+            }
+
         //@}
 
         /** @name  Methods
@@ -817,6 +898,23 @@ public:
             DVLOG(2) << str << " isOnDisk() " << isOnDisk() << "\n";
             DVLOG(2) << str << " isInMemory() " << isInMemory() << "\n";
         }
+
+        void cleanup()
+            {
+                auto clear = []( auto& c ) {
+                    c.second.second.clear();
+                    //for ( auto & c1 : c.second.second )
+                    //    for ( auto & c2 : c1 )
+                    //       c2->clear(); //????
+                };
+                std::for_each( M_nodal.begin(),
+                               M_nodal.end(),
+                               clear );
+                std::for_each( M_element.begin(),
+                               M_element.end(),
+                               clear );
+                M_state.clear( STEP_IN_MEMORY );
+            }
         //@}
 
 
@@ -1416,37 +1514,6 @@ public:
         return M_step_set.size();
     }
 
-    /**
-       \return the number of steps ignored
-    */
-    size_type numberOfStepsIgnored() const
-    {
-        return M_stepIgnored_set.size();
-    }
-
-    /**
-       \return the number of steps already stored
-    */
-    size_type numberOfSteps( mpl::bool_<false> /**/ ) const
-    {
-        return M_step_set.size();
-    }
-
-    /**
-       \return the number of steps ignored
-    */
-    size_type numberOfSteps( mpl::bool_<true> /**/ ) const
-    {
-        return M_stepIgnored_set.size();
-    }
-
-    /**
-       \return the number of steps already stored + steps ignored
-    */
-    size_type numberOfTotalSteps() const
-    {
-        return M_step_set.size()+M_stepIgnored_set.size();
-    }
 
     /**
        \return the time increment between two steps
@@ -1456,17 +1523,21 @@ public:
         return M_time_increment;
     }
 
-    /**
-       \return the step set container
-    */
-    //step_set_type & step_set( mpl::bool_<false> /**/ ) { return M_step_set; }
-
-    /**
-       \return the step ignored set container
-    */
-    //step_set_type & step_set( mpl::bool_<true> /**/ ) { return M_stepIgnored_set; }
-
-    //@}
+    step_set_type stepsToWriteOnDisk() const
+        {
+            auto __it = this->beginStep();
+            auto __end = this->endStep();
+            step_set_type stepToWriteOnDisk;
+            for ( ; __it != __end ; ++__it )
+            {
+                step_ptrtype __step = *__it;
+                if ( __step->isOnDisk() || __step->isIgnored() )
+                    continue;
+                if (  __step->hasData() && __step->isInMemory() )
+                    stepToWriteOnDisk.insert( __step );
+            }
+            return stepToWriteOnDisk;
+        }
 
     /** @name  Mutators
      */
@@ -1497,17 +1568,7 @@ public:
      *        __ignoreStep : exporter don't save
      * \return a step defined at time \c __time if not found then generate a new one
      */
-    step_ptrtype step( Real __time, bool __ignoreStep=false )
-    {
-        if ( __ignoreStep )
-            return step< mpl::bool_<true> >( __time );
-
-        else
-            return step< mpl::bool_<false> >( __time );
-    }
-
-    template <typename IgnoreStepType>
-    step_ptrtype step( Real __time );
+    step_ptrtype step( Real __time, bool __ignoreStep=false );
 
 
     step_iterator beginStep()
@@ -1547,56 +1608,17 @@ public:
     }
 
 
-    step_iterator beginStep( mpl::bool_<false> /**/ )
-    {
-        return M_step_set.begin();
-    }
-    step_const_iterator beginStep(  mpl::bool_<false> /**/ ) const
-    {
-        return M_step_set.begin();
-    }
-    step_iterator endStep( mpl::bool_<false> /**/ )
-    {
-        return M_step_set.end();
-    }
-    step_const_iterator endStep( mpl::bool_<false> /**/ ) const
-    {
-        return M_step_set.end();
-    }
-
-    step_iterator beginStep( mpl::bool_<true> /**/ )
-    {
-        return M_stepIgnored_set.begin();
-    }
-    step_const_iterator beginStep(  mpl::bool_<true> /**/ ) const
-    {
-        return M_stepIgnored_set.begin();
-    }
-    step_iterator endStep( mpl::bool_<true> /**/ )
-    {
-        return M_stepIgnored_set.end();
-    }
-    step_const_iterator endStep( mpl::bool_<true> /**/ ) const
-    {
-        return M_stepIgnored_set.end();
-    }
-
-    std::pair<step_iterator,bool> insertStep( step_ptrtype __step, mpl::bool_<false> /**/ )
+    std::pair<step_iterator,bool> insertStep( step_ptrtype __step )
     {
         return M_step_set.insert( __step );
-    }
-    std::pair<step_iterator,bool> insertStep( step_ptrtype __step, mpl::bool_<true> /**/ )
-    {
-        return M_stepIgnored_set.insert( __step );
     }
 
     void clear()
     {
         M_step_set.clear();
-        M_stepIgnored_set.clear();
     }
 
-    void load( std::string _nameFile, Real __time )
+    void load( std::string const& _nameFile, Real __time )
     {
         fs::ifstream ifs( _nameFile );
         // load data from archive
@@ -1606,12 +1628,8 @@ public:
         resetPreviousTime( __time );
     }
 
-    void save( std::string _nameFile )
+    void save( std::string const& _nameFile )
     {
-        setNumberOfStepsInMemory( 0 );
-        cleanup();
-        setNumberOfStepsInMemory( 1 );
-
         fs::ofstream ofs( _nameFile );
         // save data from archive
         boost::archive::text_oarchive oa( ofs );
@@ -1639,11 +1657,6 @@ protected:
     step_set_type M_step_set;
 
     /**
-       steps ignored because of frequence > 1 in exporter
-    */
-    step_set_type M_stepIgnored_set;
-
-    /**
        time increment
     */
     Real M_time_increment;
@@ -1665,8 +1678,6 @@ private:
         {
             size_type s = M_step_set.size();
             ar & boost::serialization::make_nvp( "number_of_steps", s );
-            size_type s2 = M_stepIgnored_set.size();
-            ar & boost::serialization::make_nvp( "number_of_steps_ignored", s2 );
 
             step_iterator __it = M_step_set.begin();
             step_iterator __en = M_step_set.end();
@@ -1689,34 +1700,12 @@ private:
                 ar & boost::serialization::make_nvp( "state", state );
             }
 
-            __it = M_stepIgnored_set.begin();
-            __en = M_stepIgnored_set.end();
-
-            for ( ; __it != __en; ++__it )
-            {
-                if ( !( *__it )->isOnDisk() )
-                {
-                    DVLOG(2) << "not including step " << ( *__it )->index()
-                                  << " at time " << ( *__it )->time() << "\n";
-                    ( *__it )->showMe( "TimeSet::serialize" );
-                    continue;
-                }
-
-                double t = ( *__it )->time();
-                ar & boost::serialization::make_nvp( "time_ignored", t );
-                size_type ind = ( *__it )->index();
-                ar & boost::serialization::make_nvp( "index_ignored", ind );
-                size_type state = ( *__it )->state();
-                ar & boost::serialization::make_nvp( "state_ignored", state );
-            }
         }
 
         if ( Archive::is_loading::value )
         {
             size_type s( 0 );
             ar & boost::serialization::make_nvp( "number_of_steps", s );
-            size_type s2( 0 );
-            ar & boost::serialization::make_nvp( "number_of_steps_ignored", s2 );
 
             for ( size_type __i = 0; __i < s; ++__i )
             {
@@ -1731,34 +1720,16 @@ private:
 
                 step_iterator __sit;
                 bool __inserted;
-                boost::tie( __sit, __inserted ) = M_step_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
+                boost::tie( __sit, __inserted ) = M_step_set.insert( step_ptrtype( new Step( this, t, ind, __state ) ) );
 
-                FEELPP_ASSERT( __inserted )( t )( ind ).error ( "insertion failed" );
-            }
-
-            for ( size_type __i = 0; __i < s2; ++__i )
-            {
-                double t = 0;
-                ar & boost::serialization::make_nvp( "time_ignored", t );
-
-                size_type ind = 0;
-                ar & boost::serialization::make_nvp( "index_ignored", ind );
-
-                size_type __state = 0;
-                ar & boost::serialization::make_nvp( "state_ignored", __state );
-
-                step_iterator __sit;
-                bool __inserted;
-                boost::tie( __sit, __inserted ) = M_stepIgnored_set.insert( step_ptrtype( new Step( this, t,ind, __state ) ) );
-
-                FEELPP_ASSERT( __inserted )( t )( ind ).error ( "insertion failed" );
+                CHECK( __inserted ) <<  "insertion failed at t="<< t << " and ind="<< ind;
             }
 
         }
     }
 
     //! cleanup steps states
-    FEELPP_NO_EXPORT void cleanup();
+    //FEELPP_NO_EXPORT void cleanup();
 
     //! delete all time next this __time (after a restart by exemple)
     FEELPP_NO_EXPORT void resetPreviousTime( Real __time );
@@ -1909,6 +1880,7 @@ TimeSet<MeshType, N>::operator=( TimeSet const& __ts )
     return *this;
 }
 
+#if 0
 template<typename MeshType, int N>
 void
 TimeSet<MeshType, N>::cleanup()
@@ -1922,33 +1894,8 @@ TimeSet<MeshType, N>::cleanup()
             ( *__it )->setState( STEP_ON_DISK );
     }
 
-    __it = M_stepIgnored_set.begin();
-    __en = M_stepIgnored_set.end();
-
-    for ( ; __it != __en; ++__it )
-    {
-        if ( ( *__it )->index() <= M_stepIgnored_set.size() - M_keep_steps )
-            ( *__it )->setState( STEP_ON_DISK );
-    }
-
-
-#if 0
-    std::ostringstream __str;
-    __str << M_name << ".ts";
-
-    std::ofstream ofs( __str.str().c_str() );
-
-    if ( !ofs.fail() )
-    {
-        boost::archive::binary_oarchive oa( ofs );
-
-        oa << const_cast<TimeSet<MeshType, N>const&>( *this );
-
-        ofs.close();
-    }
-
-#endif
 }
+#endif
 
 template<typename MeshType, int N>
 void
@@ -1981,79 +1928,36 @@ TimeSet<MeshType, N>::resetPreviousTime( Real __time )
 
     if ( find ) M_step_set.erase( __it,__en );
 
-    __it = M_stepIgnored_set.begin();
-    __en = M_stepIgnored_set.end();
-    find=false;
-
-    while ( !find &&  __it != __en )
-    {
-        if ( !( *__it )->isOnDisk() )
-        {
-            DVLOG(2) << "not including step " << ( *__it )->index()
-                          << " at time " << ( *__it )->time() << "\n";
-            ( *__it )->showMe( "TimeSet::resetPreviousTime" );
-            ++__it;
-        }
-
-        else
-        {
-            double t = ( *__it )->time();
-            double eps = 1e-10;
-
-            if ( ( t-eps ) <= __time ) ++__it;
-
-            else find=true;
-        }
-    }
-
-    if ( find ) M_stepIgnored_set.erase( __it,__en );
-
 }
 
 
 template<typename MeshType, int N>
-template <typename IgnoreStepType>
 typename TimeSet<MeshType, N>::step_ptrtype
-TimeSet<MeshType, N>::step( Real __time )
+TimeSet<MeshType, N>::step( Real __time,  bool __ignoreStep )
 {
-    namespace lambda = boost::lambda;
-    /*
-    step_iterator __sit = std::find_if( M_step_set.begin(), M_step_set.end(),
-                                        lambda::bind( &Step::time, lambda::_1 ) - __time < 1e-10 &&
-                                        lambda::bind( &Step::time, lambda::_1 ) - __time > -1e-10 );
-    */
-    step_iterator __sit = beginStep( mpl::bool_<IgnoreStepType::value>() );
+    step_iterator __sit = beginStep();
 
-    for ( ; __sit != endStep( mpl::bool_<IgnoreStepType::value>() ); ++__sit )
+    for ( ; __sit != endStep(); ++__sit )
     {
         if ( math::abs( ( *__sit )->time() - __time ) < 1e-10 )
             break;
     }
 
-    if ( __sit == endStep( mpl::bool_<IgnoreStepType::value>() ) )
+    if ( __sit == endStep() )
     {
         bool __inserted;
 
-        DVLOG(2) << "[TimeSet<MeshType, N>::step] Inserting new step at time " << __time << " with index "
-                      << numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) << "\n";
+        DVLOG(2) << "[TimeSet<MeshType, N>::step] Inserting new step at time " << __time << " with index " << numberOfSteps();
 
-        step_ptrtype thestep( new Step( this, __time, numberOfSteps( mpl::bool_<IgnoreStepType::value>() ) + 1 ) );
-        if ( this->hasMesh() )
+        size_type theState = __ignoreStep? STEP_NEW|STEP_OVERWRITE|STEP_IGNORED : STEP_NEW|STEP_OVERWRITE;
+        step_ptrtype thestep( new Step( this, __time, numberOfSteps() + 1, theState ) );
+        if ( this->hasMesh() && !__ignoreStep )
             thestep->setMesh( this->mesh() );
-        boost::tie( __sit, __inserted ) = insertStep( thestep,mpl::bool_<IgnoreStepType::value>() );
-
-        //boost::tie( __sit, __inserted ) = M_step_set.insert( step_ptrtype( new Step( this, __time,
-        //                                                                              M_step_set.size() + 1 ) ) );
+        boost::tie( __sit, __inserted ) = insertStep( thestep );
 
         DVLOG(2) << "[TimeSet<MeshType, N>::step] step was inserted properly? " << ( __inserted?"yes":"no" ) << "\n";
         DVLOG(2) << "[TimeSet<MeshType, N>::step] step index : " << ( *__sit )->index() << " time : " << ( *__sit )->time() << "\n";
-        namespace lambda = boost::lambda;
-        //std::cerr << "time values:";
-        //std::for_each( M_step_set.begin(), M_step_set.end(),
-        //               std::cerr << lambda::bind( &step_type::time, *lambda::_1 ) << boost::lambda::constant( ' ' ) );
-        //std::cerr << "\n";
-
-        cleanup();
+        //cleanup();
     }
 
     else
@@ -2138,6 +2042,7 @@ TimeSet<MeshType, N>::Step::executeState( size_type __st )
 
         if ( hasData() )
         {
+            std::cout << "releasing step " << M_index << " at time " << M_time << " allocated memory for this step\n";
             DVLOG(2) << "releasing step " << M_index << " at time " << M_time << " allocated memory for this step\n";
             auto clear = []( auto& c ) {
                 for ( auto & c1 : c.second.second )
