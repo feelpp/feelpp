@@ -96,12 +96,18 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
+    typedef typename timeset_type::step_set_type step_set_type;
 
     typedef typename mesh_type::index_type index_type;
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
     };
+
+  protected :
+    typedef std::vector<std::pair<timeset_ptrtype,step_set_type>> steps_write_on_disk_type;
+  public :
+
     //@}
 
     /** @name Constructors, destructor
@@ -266,12 +272,6 @@ public:
      */
     virtual Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" );
 
-    /**
-     * set the options from the \p variables_map \p vm as well as the prefix \p
-     * exp_prefix
-     */
-    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED { return setOptions( exp_prefix ); }
-
 
     /**
      * set to \p __type the type of exporter (gmsh, ensight...)
@@ -411,6 +411,14 @@ public:
             this->step( 0 )->add( name, u );
         }
 
+    template<typename ExprT>
+    void
+    add( std::string const& name, ExprT const& expr, std::string const& rep = "",
+         typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+    {
+        this->step( 0 )->add( name, expr, rep );
+    }
+
     void
     addRegions()
         {
@@ -452,18 +460,65 @@ public:
             M_ts_set.push_back( __ts );
     }
 
+    //! save timeset in memory on disk
+    void save() const
+    {
+        if ( !this->worldComm().isActive() )
+            return;
 
-    /**
-     * this p save function is defined by the Exporter subclasses and implement
-     * saving the data to files
-     */
-    virtual void save() const = 0;
+        DVLOG(2) << "checking if frequency is ok\n";
+        if ( this->cptOfSave() % this->freq()  )
+        {
+            this->saveTimeSet();
+            return;
+        }
+
+        steps_write_on_disk_type stepsToWriteOnDisk;
+        timeset_const_iterator __ts_it = this->beginTimeSet();
+        timeset_const_iterator __ts_en = this->endTimeSet();
+        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+            auto steps = __ts->stepsToWriteOnDisk();
+            if ( !steps.empty() )
+                stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
+        }
+
+
+        this->save( stepsToWriteOnDisk );
+
+        for ( auto & [__ts, steps ] : stepsToWriteOnDisk )
+        {
+            for ( auto & step : steps )
+            {
+                step->setState( STEP_ON_DISK );
+                step->cleanup();
+            }
+        }
+
+#if 0
+        timeset_const_iterator __ts_it = this->beginTimeSet();
+        timeset_const_iterator __ts_en = this->endTimeSet();
+        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+            auto steps = __ts->stepsToWriteOnDisk();
+            for ( auto & step : steps )
+            {
+                step->setState( STEP_ON_DISK );
+                step->cleanup();
+            }
+        }
+#endif
+        this->saveTimeSet();
+
+    }
 
     //!
     //! serve results though a webserver
     //!
     virtual void serve() const;
-    
+
     /**
      * save in a file set of time which are been exported
      */
@@ -509,6 +564,13 @@ public:
     ExporterGeometry exporterGeometry() const { return M_ex_geometry; }
     //@}
 protected:
+
+    /**
+     * this p save function is defined by the Exporter subclasses and implement
+     * saving the data to files
+     */
+    virtual void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const = 0;
+
 
     bool M_do_export;
     bool M_use_single_transient_file;

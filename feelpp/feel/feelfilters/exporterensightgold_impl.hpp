@@ -138,18 +138,9 @@ ExporterEnsightGold<MeshType,N>::init()
 
 template<typename MeshType, int N>
 void
-ExporterEnsightGold<MeshType,N>::save() const
+ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
     tic();
-    if ( !this->worldComm().isActive() ) return;
-
-    DVLOG(2) << "checking if frequency is ok\n";
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
 
     /* Check that we have steps to save */
     /* Ensures that we do not end up in a segfault */
@@ -217,9 +208,6 @@ ExporterEnsightGold<MeshType,N>::save() const
         writeVariableFiles();
         toc("ExporterEnsightGold::save variables",FLAGS_v>1);
     }
-    tic();
-    this->saveTimeSet();
-    toc("ExporterEnsightGold::save timeset",FLAGS_v>1);
 
     tic();
     writeCaseFile();
@@ -1656,11 +1644,9 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 {
-    namespace lambda = boost::lambda;
     timeset_const_iterator __ts_it = this->beginTimeSet();
     timeset_const_iterator __ts_en = this->endTimeSet();
-
-    while ( __ts_it != __ts_en )
+    for ( ;  __ts_it != __ts_en ;  ++__ts_it )
     {
         timeset_ptrtype __ts = *__ts_it;
 
@@ -1674,20 +1660,16 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles() const
 
             if ( __step->isInMemory() )
             {
-                int dist = 0;
 
-                if( (dist = std::distance(__step->beginNodal(), __step->endNodal())) != 0)
-                    LOG(INFO) << "Nodal: " << dist << std::endl;
-                if( (dist = std::distance(__step->beginElement(), __step->endElement())) != 0)
-                    LOG(INFO) << "Element: " << dist << std::endl;
-                saveFields<true>( __ts, __step, (__it == __ts->beginStep()), __step->beginNodal(), __step->endNodal() );
-                saveFields<false>( __ts, __step, (__it == __ts->beginStep()), __step->beginElement(), __step->endElement() );
+                LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Nodal: " << std::distance(__step->beginNodal(), __step->endNodal());
+                LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Element: " << std::distance(__step->beginElement(), __step->endElement());
+                bool isFirstStep = (__step->index() == (*__ts->beginStep())->index());
+                saveFields<true>( __ts, __step, isFirstStep, __step->beginNodal(), __step->endNodal() );
+                saveFields<false>( __ts, __step, isFirstStep, __step->beginElement(), __step->endElement() );
             }
 
             ++__it;
         }
-
-        ++__ts_it;
     }
 }
 

@@ -371,23 +371,13 @@ ExporterVTK<MeshType,N>::write( int stepIndex, std::string filename, vtkSmartPoi
 
 template<typename MeshType, int N>
 void
-ExporterVTK<MeshType,N>::save() const
+ExporterVTK<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
     int stepIndex = TS_INITIAL_INDEX;
     double time = 0.0;
     bool hasSteps = true;
     std::ostringstream fname;
     std::ostringstream oss;
-
-    DVLOG(2) << "[ExporterVTK] checking if frequency is ok\n";
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
-
-    DVLOG(2) << "[ExporterVTK] frequency is ok\n";
 
     DVLOG(2) << "[ExporterVTK] save()...\n";
 
@@ -546,8 +536,6 @@ ExporterVTK<MeshType,N>::save() const
     }
 
     DVLOG(2) << "[ExporterVTK] saving done\n";
-
-    this->saveTimeSet();
 }
 
 template<typename MeshType, int N>

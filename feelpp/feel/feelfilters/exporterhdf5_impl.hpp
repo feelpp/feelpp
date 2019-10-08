@@ -117,7 +117,7 @@ Exporterhdf5<MeshType,N>::init()
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::save () const 
+void Exporterhdf5<MeshType, N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
     /* make sure to reset values from previous calls */
     M_XDMFContent.clear();
