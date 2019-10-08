@@ -112,21 +112,8 @@ ExporterEnsight<MeshType,N>::init()
 }
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::save() const
+ExporterEnsight<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    if ( !this->worldComm().isActive() ) return;
-
-    //static int freq = 0;
-
-    DVLOG(2) << "[ExporterEnsight::save] checking if frequency is ok\n";
-
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
-
     boost::timer ti;
     DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
 
@@ -148,11 +135,6 @@ ExporterEnsight<MeshType,N>::save() const
     DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
     _F_writeVariableFiles();
     DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
-
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export time set\n";
-    this->saveTimeSet();
-    DVLOG(2) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
 }
 
 template<typename MeshType, int N>

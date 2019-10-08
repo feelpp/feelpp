@@ -84,25 +84,13 @@ ExporterGmsh<MeshType,N>::~ExporterGmsh()
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::save() const
+ExporterGmsh<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    DVLOG(2) << "[ExporterGmsh] checking if frequency is ok\n";
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
-
-    DVLOG(2) << "[ExporterGmsh] frequency is ok\n";
-
     DVLOG(2) << "[ExporterGmsh] save()...\n";
 
     gmshSaveAscii();
 
     DVLOG(2) << "[ExporterGmsh] saving done\n";
-
-    this->saveTimeSet();
 }
 
 template<typename MeshType, int N>

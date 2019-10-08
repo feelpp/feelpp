@@ -142,6 +142,9 @@ public:
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
     typedef typename timeset_type::step_const_iterator step_const_iterator;
+protected :
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+public :
 
     /* Use the vtkUnstructuredGrid type to store data */
     /* as it handles all the element type needed */
@@ -235,19 +238,6 @@ public:
 
     void init();
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
     //@}
 
     /** @name  Methods
@@ -257,7 +247,7 @@ public:
     /**
        save the timeset
      */
-    void save() const;
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
     /**
      * Returns a VTK structure representing the last timestep
@@ -267,7 +257,7 @@ public:
     /**
      * export mesh
      */
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     /**
      * save the \p mesh to the file \p filename
