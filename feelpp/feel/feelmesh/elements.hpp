@@ -421,12 +421,6 @@ public:
 
     parts_map_type const& parts() const { return M_parts; }
 
-    void addParts( std::set<int> const& someParts )
-        {
-            for ( int p : someParts )
-                M_parts.try_emplace( p, 0 );
-        }
-
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with marker \p m on processor \p p
@@ -482,6 +476,7 @@ public:
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
+            myelements->shrink_to_fit();
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
         }
     /**
@@ -508,6 +503,7 @@ public:
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
+            myelements->shrink_to_fit();
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
         }
     /**
@@ -586,8 +582,11 @@ public:
             }
 
             std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
-            for ( auto const& [part,myelements] : collectionOfElements )
+            for ( auto & [part,myelements] : collectionOfElements )
+            {
+                myelements->shrink_to_fit();
                 collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+            }
             return collectionOfRangeElement;
         }
 
@@ -609,6 +608,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -655,6 +655,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -689,6 +690,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -710,6 +712,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -898,6 +901,13 @@ public:
         }
 
     //@}
+protected :
+
+    void addParts( std::set<int> const& someParts )
+        {
+            for ( int p : someParts )
+                M_parts.try_emplace( p, 0 );
+        }
 
 private:
 
