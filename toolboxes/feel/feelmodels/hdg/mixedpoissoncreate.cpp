@@ -251,6 +251,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     M_Vh = Pdhv<Order>( M_mesh, true);
     M_Wh = Pdh<Order>( M_mesh, true );
+    M_Whp = Pdh<Order+1>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
@@ -273,26 +274,26 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
     M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
+    auto pps = product( M_Whp );
+
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
+    M_ppp = M_Whp->element( "pp" );
 
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(M_Ch->element("mup"));
 
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+    solve::strategy spp = solve::strategy::local;
 
-#if 0
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
-#else
     tic();
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
+    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
     toc("matrixCondensed");
-#endif
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS

@@ -700,6 +700,56 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     toc("assembleIbc");
 }
 
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessCstPart()
+{
+    auto pps = product( M_Whp );
+    auto b = blockform2( pps, M_App);
+    b( 0_c, 0_c ) = integrate( _range=elements(M_mesh),
+                               _expr=inner(gradt(M_ppp),grad(M_ppp)));
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessNonCstPart()
+{
+    auto pps = product( M_Whp );
+    auto ell = blockform1( pps, M_Fpp);
+    for( auto const& pairMat : modelProperties().materials() )
+    {
+        auto marker = pairMat.first;
+        auto material = pairMat.second;
+        auto cond = material.getScalar(M_conductivityKey, M_paramValues);
+        ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+                               _expr=-grad(M_ppp)*idv(M_up)/cond);
+    }
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
+{
+    auto pps = product( M_Whp );
+    auto PP = pps.element();
+    auto b = blockform2( pps, M_App);
+    auto ell = blockform1( pps, M_Fpp);
+    b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
+    M_ppp=PP(0_c);
+    auto P0dh = Pdh<0>(M_mesh);
+    M_ppp -= M_ppp.ewiseMean(P0dh);
+    M_ppp += M_pp.ewiseMean(P0dh);
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::postProcess()
+{
+    this->assemblePostProcessCstPart();
+    this->assemblePostProcessNonCstPart();
+    this->solvePostProcess();
+}
+
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
