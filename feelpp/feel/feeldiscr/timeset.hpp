@@ -203,6 +203,8 @@ public:
         typedef typename map_element_type::iterator element_iterator;
         typedef typename map_element_type::const_iterator element_const_iterator;
 
+        typedef std::variant<std::string, std::set<std::string> > variant_representation_arg_type;
+
         //@}
 
         /** @name Constructors, destructor
@@ -572,17 +574,7 @@ public:
 
 
         template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, std::string const& rep = "",
-                  typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
-            {
-                std::set<std::string> reps;
-                if ( !reps.empty() )
-                    reps.insert( rep );
-                this->add( __n,func,reps );
-            }
-
-        template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, std::set<std::string> const& reps,
+        void add( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
                   typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             tic();
@@ -613,7 +605,7 @@ public:
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
         template<typename FunctionType>
-        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, std::set<std::string> const& reps, mpl::bool_<true> )
+        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps, mpl::bool_<true> )
         {
             std::vector<std::string> s;
             // s.push_back(__n);
@@ -628,33 +620,19 @@ public:
             fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
         }
         template<typename FunctionType>
-        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, std::set<std::string> const& reps, mpl::bool_<false> )
+        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps, mpl::bool_<false> )
         {
             add( __n,__n,unwrap_ptr(func), reps );
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, std::string const& rep = "",
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps,
                   typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
-            {
-                std::set<std::string> reps;
-                if ( !rep.empty() )
-                    reps.insert( rep );
-                this->add( __n,__fname,func,reps );
-            }
-
-        template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, std::set<std::string> const& _reps )
         {
             using FunctionDecayType = decay_type<FunctionType>;
             constexpr bool funcIsNodal = (FunctionDecayType::is_continuous || FunctionDecayType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionDecayType::is_hcurl_conforming) && (!FunctionDecayType::is_hdiv_conforming);
 
-            std::set<std::string> reps = _reps;
-            if ( reps.empty() )
-                reps.insert( funcIsNodal? "nodal" : "element" );
-
-            for ( std::string const& rep : reps )
-                CHECK( rep == "nodal" || rep == "element" ) << "invalid represation " << rep << ": should be nodal or element";
+            std::set<std::string> reps = representationType( _reps , (funcIsNodal? "nodal" : "element") );
 
             std::map<std::string,std::string> repToSuffix = { { "nodal", "_n" }, { "element", "_e" } };
 
@@ -780,46 +758,30 @@ public:
 
 
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr,  std::variant<std::string, std::set<std::string> >/*std::string*/ const& rep = "",
+        void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 this->add( __n, __n, expr, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr,  elements_reference_wrapper_t<mesh_type> const& rangElt,  std::variant<std::string, std::set<std::string> > /*std::string*/ const& rep = "",
+        void add( std::string const& __n, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 this->add( __n, __n, expr, rangElt, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, std::variant<std::string, std::set<std::string> > /*std::string*/ const& rep = "",
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 CHECK( this->hasMesh() ) << "no mesh provided";
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
+
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt,  std::variant<std::string, std::set<std::string> >/*std::string*/ const& _rep = "",
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& _rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
-                std::set<std::string> reps;
-
-                if( auto repStringPtr = std::get_if<std::string>(&_rep))
-                {
-                    if ( !repStringPtr->empty() )
-                        reps.insert( *repStringPtr );
-                }
-                else if ( auto repSetPtr = std::get_if<std::set<std::string>>(&_rep))
-                {
-                    reps = *repSetPtr;
-                }
-
-                //std::set<std::string> reps = _reps;
-                if ( reps.empty() )
-                    reps.insert( "nodal" );
-
-                for ( std::string const& rep : reps )
-                    CHECK( rep == "nodal" || rep == "element" ) << "invalid represation " << rep << ": should be nodal or element";
+                std::set<std::string> reps = representationType( _rep , "nodal" );
 
                 std::map<std::string,std::string> repToSuffix = { { "nodal", "_n" }, { "element", "_e" } };
 
@@ -1399,6 +1361,30 @@ public:
          */
         FEELPP_NO_EXPORT void executeState( size_type state );
 
+        static
+        std::set<std::string>
+        representationType( variant_representation_arg_type const& _rep, std::string const& valueIfEmpty = "" )
+            {
+                std::set<std::string> reps;
+                if( auto repStringPtr = std::get_if<std::string>(&_rep))
+                {
+                    if ( !repStringPtr->empty() )
+                        reps.insert( *repStringPtr );
+                }
+                else if ( auto repSetPtr = std::get_if<std::set<std::string>>(&_rep))
+                {
+                    reps = *repSetPtr;
+                }
+                if ( reps.empty() && !valueIfEmpty.empty() )
+                    reps.insert( valueIfEmpty );
+
+                for ( std::string const& rep : reps )
+                    CHECK( rep == "nodal" || rep == "element" ) << "invalid represation " << rep << ": should be nodal or element";
+
+                return reps;
+            }
+
+
     private:
 
         TimeSet* M_ts;
@@ -1812,23 +1798,23 @@ TimeSet<MeshType, N>::TimeSet( std::string __name, bool init )
     M_time_increment( 0.1 ),
     M_keep_steps( 1 )
 {
+#if 0
     std::ostringstream __str;
     __str << M_name << ".ts";
 
     if ( fs::exists( __str.str() ) && !init )
     {
-#if 0
         std::ifstream ifs( __str.str().c_str() );
         boost::archive::binary_iarchive ia( ifs );
 
         ia >> *this;
 
         ifs.close();
-#endif
     }
 
     else if ( fs::exists( __str.str() ) )
         fs::remove( __str.str() );
+#endif
 }
 
 template<typename MeshType, int N>

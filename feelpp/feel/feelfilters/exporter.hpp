@@ -396,18 +396,26 @@ public:
      */
     template<typename F>
     void
-    add( std::string const& name, F const& u,
+    add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
          typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
         {
-            this->step( 0 )->add( name, u );
+            this->step( 0 )->add( name, u, reps );
         }
 
     template<typename ExprT>
     void
-    add( std::string const& name, ExprT const& expr, std::string const& rep = "",
+    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
          typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
     {
-        this->step( 0 )->add( name, expr, rep );
+        this->step( 0 )->add( name, expr, reps );
+    }
+
+    template<typename ExprT>
+    void
+    add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
+         typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+    {
+        this->step( 0 )->add( name, expr, rangeElt, reps );
     }
 
     void
