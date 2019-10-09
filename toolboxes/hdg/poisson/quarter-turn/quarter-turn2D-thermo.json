@@ -1,17 +1,26 @@
 {
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
-    "Models":{"equations":"hdg"},
+    "Models":
+    {
+        "equations":"hdg",
+        "p_expr":"(-(2*sigma*dif^2)/(Pi^2*k))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*h*2*1)*(((2*k*2*log(1)-h*2*1*log(1)^2)-(2*k*1*log(2)+h*2*1*log(2)^2))*(-(2*sigma*dif^2)/(Pi^2*k)) + (k*(2-1) - h*2*1*log(2*1))*(-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1))))+Tw):x:y:sigma:k:dif:h:Tw",
+	    "u_expr":"{-k*((-(2*sigma*dif^2)/(Pi^2*k))*x*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*x/(x*x+y*y)) , -k*((-(2*sigma*dif^2)/(Pi^2*k))*y*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*y/(x*x+y*y))}:x:y:sigma:k:dif:h"
+    },
     "Parameters":
     {
-        "k0":-1
+        "dif":0.03125,
+        "sigma":58e3,
+        "k":0.38,
+        "h":0.08,
+        "Tw":293
     },
     "Materials":
     {
         "omega":
         {
-            "cond":"-1",
-            "k":"k0:k0"
+            "cond":"0.38",
+            "k":"k:k"
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -26,25 +35,29 @@
         {
             "SourceTerm":
             {
-                "": {"expr":"0"}
+                "omega":
+                {
+                    "expr":"sigma*dif*dif*4/(Pi^2)/(x^2+y^2):x:y:dif:sigma"
+                }
             },
-            "Dirichlet":
+            "Robin":
+            {
+                "R":
+                {
+                    "expr1":"-h:h",
+                    "expr2":"-h*Tw:h:Tw"
+                }
+            }
+            "Neumann":
             {
                 "top":
                 {
-                    "expr":"5"
+                    "expr":"0"
                 },
                 "bottom":
                 {
                     "expr":"0"
-                }
-            },
-            "Neumann":
-            {
-                "R":
-                {
-                    "expr":0
-                }
+                }		    
             }
         },
 	    "Exact solution":
@@ -53,16 +66,16 @@
 	        {
 		        "omega":
 		        {
-		            "expr":"10/Pi*atan2(y,x):x:y:z"
+		            "expr":"(-(2*sigma*dif^2)/(Pi^2*k))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*h*2*1)*(((2*k*2*log(1)-h*2*1*log(1)^2)-(2*k*1*log(2)+h*2*1*log(2)^2))*(-(2*sigma*dif^2)/(Pi^2*k)) + (k*(2-1) - h*2*1*log(2*1))*(-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1))))+Tw):x:y:sigma:k:dif:h:Tw"
 		        }
 	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{-10/Pi*y/(x*x+y*y),10/Pi*x/(x*x+y*y)}:x:y:z"
-                }
-            }
+	        "u_exact":
+	        {
+		        "omega":
+		        {
+		            "expr":"{-k*((-(2*sigma*dif^2)/(Pi^2*k))*x*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*x/(x*x+y*y)) , -k*((-(2*sigma*dif^2)/(Pi^2*k))*y*log(x*x+y*y)/(x*x+y*y) + (-(-(2*sigma*dif^2)/(Pi^2*k))*((2*k*2*log(1)-h*2*1*log(1)^2)+(2*k*1*log(2)+h*2*1*log(2)^2))/(k*(1+2)+h*2*1*log(2/1)))*y/(x*x+y*y))}:x:y:sigma:k:dif:h"
+		        }
+	        }
 	    }
     },
     "PostProcess":
