@@ -35,8 +35,8 @@ namespace FeelModels {
 //!
 //! Mixed poisson command line options
 //!
-po::options_description makeMixedPoissonOptions( std::string prefix = "mixedpoisson" );
-po::options_description makeMixedPoissonLibOptions( std::string prefix = "mixedpoisson" );
+po::options_description makeMixedPoissonOptions( std::string prefix = "hdg.poisson" );
+po::options_description makeMixedPoissonLibOptions( std::string prefix = "hdg.poisson" );
 
 //!
 //! options for mixed elasticity applications
@@ -45,16 +45,16 @@ po::options_description makeMixedPoissonLibOptions( std::string prefix = "mixedp
 //! Environment env( _argc=..., _argv=..., _desc = makeMixedElasticityOptions( <prefix>, ... );
 //! @endcode
 //!
-po::options_description makeMixedElasticityOptions( std::string prefix = "mixedelasticity" );
+po::options_description makeMixedElasticityOptions( std::string prefix = "hdg.elasticity" );
 
-po::options_description makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" );
+po::options_description makeMixedElasticityLibOptions( std::string prefix = "hdg.elasticity" );
 
 //!
 //! options for poroelasticity model
 //!
-po::options_description makeMixedPoissonElasticityOptions( std::string prefix = "mixedpoissonelasticity" );
+po::options_description makeMixedPoissonElasticityOptions( std::string prefix = "hdg.poroelasticity" );
 
-po::options_description makeMixedPoissonElasticityLibOptions( std::string prefix = "mixedpoissonelasticity" );
+po::options_description makeMixedPoissonElasticityLibOptions( std::string prefix = "hdg.poroelasticity" );
 
 }
 

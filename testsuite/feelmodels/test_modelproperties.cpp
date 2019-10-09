@@ -210,6 +210,47 @@ BOOST_AUTO_TEST_CASE( test_bc2 )
 }
 #endif
 
+
+BOOST_AUTO_TEST_CASE( test_postprocess )
+{
+    ModelProperties model_props( Environment::expand(soption("json_filename")) );
+
+    std::map<std::string,std::tuple<double,std::set<std::string>> > ppStatExpected;
+    for ( std::string const& i : std::vector<std::string>( {"A","B"} ) )
+    {
+        for ( int j : std::vector<int>( {3,5,7} ) )
+        {
+            std::get<0>( ppStatExpected[(boost::format("my_%1%_%2%_eval1")%i%j).str()] )=3.5*j;
+            std::get<1>( ppStatExpected[(boost::format("my_%1%_%2%_eval1")%i%j).str()] )=
+                { (boost::format("mat%1%%2%_x")%i%j).str(), (boost::format("mat%1%%2%_y")%i%j).str(), (boost::format("mat%1%%2%_z")%i%j).str() };
+        }
+        for ( auto [j,jstr] : std::vector<std::pair<int,std::string>>( { std::make_pair(3,"trois"), std::make_pair(5,"cinq"),std::make_pair(7,"sept") } ) )
+        {
+            std::get<0>( ppStatExpected[(boost::format("my_%1%_%2%_eval2")%i%jstr).str()] )=3.5*j;
+            std::get<1>( ppStatExpected[(boost::format("my_%1%_%2%_eval2")%i%jstr).str()] )=
+                { (boost::format("mat%1%%2%")%i%j).str() };
+        }
+    }
+
+    std::map<std::string,std::tuple<double,std::set<std::string>> > ppStatRegistered;
+    for (auto const& stat : model_props.postProcess().measuresStatistics() )
+    {
+        //std::cout << "stat.name() " << stat.name() << " " << stat.markers()  << std::endl;
+        std::get<0>( ppStatRegistered[stat.name()] ) = stat.expr().exprScalar().evaluate();
+        std::get<1>( ppStatRegistered[stat.name()] ) = stat.markers();
+    }
+
+    for ( auto const& [name,statValues] : ppStatExpected )
+    {
+        auto itFindStat = ppStatRegistered.find( name );
+        BOOST_CHECK( itFindStat != ppStatRegistered.end() );
+        BOOST_CHECK_CLOSE( std::get<0>( itFindStat->second ), std::get<0>(statValues ), 1e-10 );
+        for ( std::string const& marker : std::get<1>(statValues ) )
+            BOOST_CHECK(  std::get<1>( itFindStat->second ).find( marker ) != std::get<1>( itFindStat->second ).end() );
+    }
+
+}
+
 BOOST_AUTO_TEST_CASE( test_outputs )
 {
     ModelProperties model_props( Environment::expand(soption("json_filename")) );

@@ -660,16 +660,16 @@ public:
                 M_rep_2.resize( 2*nDofPerElementTest, 2*nDofPerElementTrial );
         }
 
-        bool trialElementIsOnBoundary( size_type test_eid ) const { return M_form.trialSpace()->mesh()->element( this->trialElementId( test_eid ) ).isOnBoundary(); }
+        bool trialElementIsOnBoundary( index_type test_eid ) const { return M_form.trialSpace()->mesh()->element( this->trialElementId( test_eid ) ).isOnBoundary(); }
 
-        size_type trialElementId( size_type trial_eid ) const
+        index_type trialElementId( index_type trial_eid ) const
             {
                 return trialElementId( trial_eid,mpl::int_<nDimDiffBetweenTestTrial>() );
             }
-        size_type trialElementId( size_type trial_eid,mpl::int_<0> ) const
+        index_type trialElementId( index_type trial_eid,mpl::int_<0> ) const
             {
-                size_type idElem = trial_eid;
-                size_type domain_eid = idElem;
+                index_type idElem = trial_eid;
+                index_type domain_eid = idElem;
                 const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
                 const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
                 const bool test_sibling_of_trial = M_form.testSpace()->mesh()->isSiblingOf( M_form.trialSpace()->mesh() );
@@ -690,10 +690,10 @@ public:
                 }
                 return domain_eid;
             }
-        size_type trialElementId( size_type trial_eid,mpl::int_<1> ) const
+        index_type trialElementId( index_type trial_eid,mpl::int_<1> ) const
             {
-                size_type idElem = trial_eid;
-                size_type domain_eid = idElem;
+                index_type idElem = trial_eid;
+                index_type domain_eid = idElem;
                 const bool test_related_to_trial = M_form.testSpace()->mesh()->isSubMeshFrom( M_form.trialSpace()->mesh() );
                 const bool trial_related_to_test = M_form.trialSpace()->mesh()->isSubMeshFrom( M_form.testSpace()->mesh() );
                 if ( test_related_to_trial )
@@ -704,35 +704,35 @@ public:
                 if( trial_related_to_test )
                 {
                     auto const& eltTest = M_form.testSpace()->mesh()->element(idElem);
-                    std::set<size_type> idsFind;
+                    std::set<index_type> idsFind;
                     for (uint16_type f=0;f< M_form.testSpace()->mesh()->numLocalFaces();++f)
                         {
-                            const size_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
-                            if ( idFind != invalid_v<size_type> ) idsFind.insert( idFind );
+                            const index_type idFind = M_form.trialSpace()->mesh()->meshToSubMesh( eltTest.face(f).id() );
+                            if ( idFind != invalid_v<index_type> ) idsFind.insert( idFind );
                         }
                     if ( idsFind.size()>1 ) std::cout << " TODO trialElementId " << std::endl;
 
                     if ( idsFind.size()>0 )
                         domain_eid = *idsFind.begin();
                     else
-                        domain_eid = invalid_v<size_type>;
+                        domain_eid = invalid_v<index_type>;
 
                     DVLOG(2) << "[trial_related_to_test] test element id: "  << idElem << " trial element id : " << domain_eid << "\n";
                 }
                 return domain_eid;
             }
-        size_type trialElementId( typename mesh_1_type::element_iterator it ) const
+        index_type trialElementId( typename mesh_1_type::element_iterator it ) const
             {
                 return trialElementId( it->id() );
             }
-        size_type trialElementId( typename mesh_1_type::element_type const& e ) const
+        index_type trialElementId( typename mesh_1_type::element_type const& e ) const
             {
                 return trialElementId( e.id() );
             }
-        bool isZero( size_type i ) const
+        bool isZero( index_type i ) const
             {
-                size_type domain_eid = trialElementId( i );
-                if ( domain_eid == invalid_v<size_type> )
+                index_type domain_eid = trialElementId( i );
+                if ( domain_eid == invalid_v<index_type> )
                     return true;
                 return false;
             }
