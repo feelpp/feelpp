@@ -47,10 +47,12 @@ public:
 
     using electro_type = FeelModels::MixedPoisson<Dim, OrderV, OrderG>;
     using electro_ptrtype = std::shared_ptr<electro_type>;
-    using potential_type = typename electro_type::Wh_element_t;
-    using potential_ptrtype = typename electro_type::Wh_element_ptr_t;
+    using potential_type = typename electro_type::Whp_element_t;
+    using potential_ptrtype = typename electro_type::Whp_element_ptr_t;
     using current_type = typename electro_type::Vh_element_t;
     using current_ptrtype = typename electro_type::Vh_element_ptr_t;
+
+    using property_type = typename electro_type::Wh_element_t;
 
     using mesh_type = typename thermo_type::mesh_type;
     using mesh_ptrtype = typename thermo_type::mesh_ptrtype;
@@ -76,9 +78,9 @@ private:
     init_guess_space_ptrtype M_initGuessSpace;
     init_guess_type M_initGuess;
 
-    potential_type M_joule;
-    potential_type M_sigma;
-    potential_type M_k;
+    property_type M_joule;
+    property_type M_sigma;
+    property_type M_k;
 
 
     int M_itMax;
@@ -231,6 +233,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
                                        {"T"}, {idv(M_initGuess)},
                                        {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
             M_electro->updateConductivityTerm( sigma, marker);
+            M_electro->assemblePostProcessRhs(sigma,marker);
             M_sigma += vf::project( _space=M_electro->potentialSpace(),
                                        _range=markedelements(M_mesh,marker),
                                        _expr=sigma );
@@ -255,7 +258,11 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
     }
     M_electro->assemblePotentialRHS( cst(0.), "");
     M_electro->solve();
-    M_potential = M_electro->potentialField();
+    M_electro->assemblePostProcessCstPart();
+    if( !boption("thermoelectric.load-initial-guess") )
+        M_electro->assemblePostProcessNonCstPart();
+    M_electro->solvePostProcess();
+    M_potential = M_electro->postPotentialField();
     M_current = M_electro->fluxField();
 
 
@@ -363,7 +370,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
     M_temperature = M_thermo->potentialField();
     M_tempflux = M_thermo->fluxField();
 
-    potential_type oldPotential = M_electro->potentialSpace()->element();
+    potential_type oldPotential = M_electro->postPotentialSpace()->element();
     current_type oldCurrent = M_electro->fluxSpace()->element();
     temp_type oldTemperature = M_thermo->potentialSpace()->element();
     tempflux_type oldTempflux = M_thermo->fluxSpace()->element();
@@ -465,6 +472,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
                                            {"T"}, {idv(M_temperature)},
                                            {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
                 M_electro->updateConductivityTerm( sigma, marker);
+                M_electro->assemblePostProcessRhs(sigma,marker);
                 M_sigma += vf::project( _space=M_electro->potentialSpace(),
                                            _range=markedelements(M_mesh,marker),
                                            _expr=sigma );
@@ -486,8 +494,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             toc("assembleElectro");
             tic();
             M_electro->solve();
+            M_electro->assemblePostProcessCstPart();
+            M_electro->solvePostProcess();
             toc("solveElectro");
-            M_potential = M_electro->potentialField();
+            M_potential = M_electro->postPotentialField();
             M_current = M_electro->fluxField();
 
             tic();
