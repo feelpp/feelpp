@@ -1,7 +1,7 @@
 h=0.2;
 r1=1;
 r2=2;
-Mesh.ElementOrder = 1;
+
 Point(1) = {0, 0, 0, h};
 Point(2) = {r1, 0, 0, h};
 Point(3) = {r2, 0, 0, h};

@@ -1,17 +1,27 @@
 {
     "Name": "HDG-Mixed-Poisson ",
     "ShortName":"MP",
-    "Models":{"equations":"hdg"},
+    "Models":
+    {
+        "equations":"hdg",
+        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+        "u_expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
+    },
     "Parameters":
     {
-        "k0":-1
+        "dif":0.03125,
+        "sigma":58e3,
+        "k":0.38,
+        "h":0.08,
+        "Tw":293
     },
     "Materials":
     {
         "omega":
         {
-            "cond":"-1",
-            "k":"k0:k0"
+            "name":"copper",
+            "cond":"58e3",
+            "k":58e3
             // "alpha":"3.35e-3",
             // "T0":"293",
             // "sigma0":"50",
@@ -32,7 +42,7 @@
             {
                 "top":
                 {
-                    "expr":"5"
+                    "expr":"dif:dif"
                 },
                 "bottom":
                 {
@@ -43,7 +53,8 @@
             {
                 "R":
                 {
-                    "expr":0
+                    // "expr":0
+                    "expr":"2*dif*sigma/Pi*y/(x*x+y*y)*nx-2*dif*sigma/Pi*x/(x*x+y*y)*ny:x:y:nx:ny:dif:sigma"                               
                 }
             }
         },
@@ -53,14 +64,14 @@
 	        {
 		        "omega":
 		        {
-		            "expr":"10/Pi*atan2(y,x):x:y:z"
+		            "expr":"2*dif/Pi*atan2(y,x):x:y:z:dif"
 		        }
 	        },
             "u_exact":
             {
                 "omega":
                 {
-                    "expr":"{-10/Pi*y/(x*x+y*y),10/Pi*x/(x*x+y*y)}:x:y:z"
+                    "expr":"{2*dif*sigma/Pi*y/(x*x+y*y),-2*dif*sigma/Pi*x/(x*x+y*y)}:x:y:z:dif:sigma"
                 }
             }
 	    }
