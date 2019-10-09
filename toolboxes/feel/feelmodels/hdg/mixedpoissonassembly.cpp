@@ -221,7 +221,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateConductivityTerm( bool isNL)
         }
         else
         {
-            auto cond = material.getScalar(M_nlConductivityKey, "p", idv(M_pp));
+            auto cond = material.getScalar(M_nlConductivityKey,
+                                           {"p"}, {idv(M_pp)}, M_paramValues);
             // (sigma(p)^-1 j, v)
             bbf(0_c,0_c) += integrate(_range=markedelements(M_mesh,marker),
                                       _expr=(trans(idt(u))*id(v))/cond );
@@ -443,7 +444,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                 for( auto const& pairMat : modelProperties().materials() )
                 {
                     auto material = pairMat.second;
-                    auto K = material.getDouble( "k" );
+                    auto K = material.getScalar(M_conductivityKey, M_paramValues);
 
                     auto g = expr(-K* trans(gradp_ex)) ;
                     auto gn = inner(g,N());
@@ -729,7 +730,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
                         for( auto const& pairMat : modelProperties().materials() )
                         {
                             auto material = pairMat.second;
-                            K = material.getDouble( "k" );
+                            K = material.getDouble("k");
                         }
                         auto gradp_init = grad<Dim>(p_init) ;
                         auto u_init = cst(-K)*trans(gradp_init);
@@ -942,8 +943,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
                                 M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
-                                l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up) );
-                                l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact );
+                                l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up), _quad=M_quadError );
+                                l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact, _quad=M_quadError );
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
                             }
@@ -963,8 +964,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
 
-                                l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp) );
-                                l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact );
+                                l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp), _quad=M_quadError );
+                                l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact, _quad=M_quadError );
                                 if (l2norm_pex < 1)
                                     l2norm_pex = 1.0;
 
@@ -974,7 +975,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                     for( auto const& pairMat : modelProperties().materials() )
                                     {
                                         auto material = pairMat.second;
-                                        K = material.getScalar( "k" ).evaluate(M_paramValues);
+                                        K = material.getDouble("k");
                                     }
                                     auto gradp_exact = grad<Dim>(p_exact) ;
                                     if ( !this->isStationary() )
@@ -987,8 +988,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                     M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
                                     // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
-                                    auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport) );
-                                    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact );
+                                    auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport), _quad=M_quadError );
+                                    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact, _quad=M_quadError );
 
                                     if (l2norm_uex < 1)
                                         l2norm_uex = 1.0;

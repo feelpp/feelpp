@@ -37,7 +37,9 @@ makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _
         ( prefixvm( prefix, "hface" ).c_str(), po::value<int>()->default_value( 0 ), "hface" )
         ( prefixvm( prefix, "conductivity_json" ).c_str(), po::value<std::string>()->default_value( "cond" ), "key for conductivity in json" )
         ( prefixvm( prefix, "conductivityNL_json" ).c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
-        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" );
+        ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
+        ( prefixvm( prefix, "error-quadrature").c_str(), po::value<int>()->default_value(10), "quadrature to compute errors" )
+        ;
     mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add( backend_options( prefix + ".sc" ) );
     return mpOptions;
@@ -58,7 +60,7 @@ class MixedPoisson    : public ModelNumerical
 public:
     typedef ModelNumerical super_type;
 
-    static const uint16_type expr_order = Order+E_Order;
+    static const uint16_type expr_order = (Order+E_Order)*G_Order;
     //! numerical type is double
     typedef double value_type;
     //! linear algebra backend factory
@@ -175,7 +177,8 @@ protected:
 
     bool M_isPicard;
     std::map<std::string,value_type> M_paramValues;
-    
+
+    int M_quadError;
 public:
 
     // constructor

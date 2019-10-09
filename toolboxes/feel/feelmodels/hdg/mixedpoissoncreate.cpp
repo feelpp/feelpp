@@ -22,7 +22,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_conductivityKey(soption( prefixvm(this->prefix(), "conductivity_json")) ),
       M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_useUserIBC(false)
+      M_useUserIBC(false),
+      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
