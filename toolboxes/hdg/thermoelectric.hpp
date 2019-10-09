@@ -15,18 +15,19 @@ makeThermoElectricHDGOptions( std::string prefix = "thermoelectric",
           "picard tolerance" )
         ( prefixvm( prefix, "itmax").c_str(), po::value<int>()->default_value( 20 ),
           "picard max iteration")
+        ( prefixvm( prefix, "input-marker").c_str(), po::value<std::string>()->default_value("V1"),
+          "marker for input (where V=0)")
+        ( prefixvm( prefix, "output-marker").c_str(), po::value<std::string>()->default_value("V0"),
+          "marker for output (where V!=0)")
         ( prefixvm( prefix, "continuation").c_str(), po::value<bool>()->default_value(false),
           "use continuation for Picard" )
         ( prefixvm( prefix, "continuation.steps").c_str(), po::value<int>()->default_value(1),
           "number of steps to use for continuation for Picard" )
-        ( prefixvm( prefix, "continuation.marker").c_str(), po::value<std::string>()->default_value("V1"),
-          "marker to use for continuation for Picard" )
         ( prefixvm( prefix, "load-initial-guess").c_str(), po::value<bool>()->default_value(false), "load initial guess" )
         ( prefixvm( prefix, "load-initial-guess.path").c_str(), po::value<std::string>()->default_value(""), "path to load initial guess" )
         ( prefixvm( prefix, "use-current-joule").c_str(), po::value<int>()->default_value(0), "use idv(current) or gradv(potential)" )
         ( "quad", po::value<int>()->default_value(2), "quadrature order" )
         ( prefixvm( prefix, "current-expr").c_str(), po::value<std::string>()->default_value("{0,0,0}"), "expression for current density" )
-        ( prefixvm( prefix, "joule-expr").c_str(), po::value<std::string>()->default_value("0"), "expression for joule losses" )
         ;
     teOptions.add( makeMixedPoissonOptions( prefixThermo ) );
     teOptions.add( makeMixedPoissonOptions( prefixElectro ) );
@@ -75,17 +76,30 @@ private:
     init_guess_space_ptrtype M_initGuessSpace;
     init_guess_type M_initGuess;
 
+    potential_type M_joule;
+    potential_type M_sigma;
+    potential_type M_k;
+
+
     int M_itMax;
     double M_tolerance;
     bool M_useContinuation;
     int M_continuationSteps;
-    std::string M_continuationMarker;
+    std::string M_inputMarker;
+    std::string M_outputMarker;
 
 public:
     ThermoElectricHDG( std::string prefix = "thermoelectric",
                        std::string prefixThermo = "thermo",
                        std::string prefixElectro = "electro" );
-    void run();
+    void init( mesh_ptrtype const& mesh = nullptr );
+    void solve();
+    void exportResults();
+
+    mesh_ptrtype mesh() const { return M_mesh; }
+    thermo_ptrtype thermo() const { return M_thermo; }
+    electro_ptrtype electro() const { return M_electro; }
+    ModelProperties modelProperties() const { return M_electro->modelProperties(); }
 };
 
 template<int Dim, int OrderT, int OrderV, int OrderG>
@@ -100,12 +114,24 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::ThermoElectricHDG( std::string p
     M_tolerance(doption(prefixvm( M_prefix, "tolerance"))),
     M_useContinuation(boption(prefixvm( M_prefix, "continuation"))),
     M_continuationSteps(ioption(prefixvm( M_prefix, "continuation.steps"))),
-    M_continuationMarker(soption(prefixvm( M_prefix, "continuation.marker")))
+    M_inputMarker(soption(prefixvm( M_prefix, "input-marker"))),
+    M_outputMarker(soption(prefixvm( M_prefix, "output-marker")))
 {
     tic();
     M_thermo = thermo_type::New(M_prefixThermo);
     M_electro = electro_type::New(M_prefixElectro);
-    M_mesh = loadMesh( new mesh_type );
+    toc("construct");
+}
+
+template<int Dim, int OrderT, int OrderV, int OrderG>
+void
+ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::init( mesh_ptrtype const& mesh )
+{
+    tic();
+    if( mesh )
+        M_mesh = mesh;
+    else
+        M_mesh = loadMesh( new mesh_type );
     M_thermo->init( M_mesh );
     M_electro->init( M_mesh );
     toc("init");
@@ -113,7 +139,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::ThermoElectricHDG( std::string p
 
 template<int Dim, int OrderT, int OrderV, int OrderG>
 void
-ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
+ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
 {
     auto electroProp = M_electro->modelProperties();
     auto electroMat = electroProp.materials();
@@ -133,7 +159,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                 for ( auto const& exAtMarker : (*itType).second )
                 {
                     std::string marker = exAtMarker.marker();
-                    if(marker == M_continuationMarker )
+                    if(marker == M_outputMarker )
                         Vinit = std::stod(exAtMarker.expression());
                 }
             }
@@ -150,7 +176,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                     for ( auto const& exAtMarker : (*itType).second )
                     {
                         std::string marker = exAtMarker.marker();
-                        if(marker == M_continuationMarker )
+                        if(marker == M_outputMarker )
                             Iinit = std::stod(exAtMarker.expression());
                     }
                 }
@@ -161,7 +187,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                 I = Iinit/M_continuationSteps;
             }
             else
-                Feel::cout << tc::red << "marker for continuation " << M_continuationMarker
+                Feel::cout << tc::red << "marker for continuation " << M_outputMarker
                            << " not found in Dirichlet or Ibc. Continuation not used !"
                            << tc::reset << std::endl;
         }
@@ -171,9 +197,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
         }
     }
 
-    auto joule = M_electro->potentialSpace()->element();
-    auto kField = M_electro->potentialSpace()->element();
-    auto sigmaField = M_electro->potentialSpace()->element();
+    M_joule = M_electro->potentialSpace()->element();
+    M_k = M_electro->potentialSpace()->element();
+    M_sigma = M_electro->potentialSpace()->element();
 
     M_electro->setCstMatrixToZero();
     M_electro->setVectorToZero();
@@ -205,7 +231,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                                        {"T"}, {idv(M_initGuess)},
                                        {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
             M_electro->updateConductivityTerm( sigma, marker);
-            sigmaField += vf::project( _space=M_electro->potentialSpace(),
+            M_sigma += vf::project( _space=M_electro->potentialSpace(),
                                        _range=markedelements(M_mesh,marker),
                                        _expr=sigma );
         }
@@ -219,12 +245,12 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
     {
         if( conditionIbc )
         {
-            M_electro->assembleRhsIBC(0, M_continuationMarker, I-Iinit);
+            M_electro->assembleRhsIBC(0, M_outputMarker, I-Iinit);
         }
         else
         {
             auto g = expr(std::to_string(V-Vinit));
-            M_electro->assembleRhsDirichlet(g,M_continuationMarker);
+            M_electro->assembleRhsDirichlet(g,M_outputMarker);
         }
     }
     M_electro->assemblePotentialRHS( cst(0.), "");
@@ -256,7 +282,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
         auto k = mat.getScalar(soption(prefixvm(M_prefixThermo,"conductivityNL_json")),
                                {{"T",T0},{"k0",k0},{"T0",T0},{"alpha",alpha},{"Lorentz",L},{"sigma0",sigma0}});
         M_thermo->updateConductivityTerm( k, marker);
-        kField += vf::project( _space=M_electro->potentialSpace(),
+        M_k += vf::project( _space=M_electro->potentialSpace(),
                                _range=markedelements(M_mesh,marker),
                                _expr=k );
     }
@@ -274,7 +300,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                                       {"T"}, {idv(M_initGuess)},
                                       {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
             auto rhs = inner(idv(M_current),idv(M_current))/cond;
-            joule += vf::project( _space=M_electro->potentialSpace(),
+            M_joule += vf::project( _space=M_electro->potentialSpace(),
                                   _range=markedelements(M_mesh,marker),
                                   _expr=rhs );
             M_thermo->assemblePotentialRHS( rhs, marker);
@@ -286,7 +312,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             if( ioption("thermoelectric.use-current-joule") == 1 )
             {
                 auto rhs = inner(idv(M_current),idv(M_current))/sigma;
-                joule += vf::project( _space=M_electro->potentialSpace(),
+                M_joule += vf::project( _space=M_electro->potentialSpace(),
                                       _range=markedelements(M_mesh,marker),
                                       _expr=rhs );
                 double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
@@ -301,7 +327,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             else if( ioption("thermoelectric.use-current-joule") == 0 )
             {
                 auto rhs = sigma*inner(gradv(M_potential));
-                joule += vf::project( _space=M_electro->potentialSpace(),
+                M_joule += vf::project( _space=M_electro->potentialSpace(),
                                       _range=markedelements(M_mesh,marker),
                                       _expr=rhs );
                 double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
@@ -315,58 +341,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             }
             else if( ioption("thermoelectric.use-current-joule") == 2 )
             {
-                auto rhs = -inner(trans(gradv(M_potential)),idv(M_current));
-                joule += vf::project( _space=M_electro->potentialSpace(),
-                                      _range=markedelements(M_mesh,marker),
-                                      _expr=rhs );
-                double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                Feel::cout << "norm J     = " << n << std::endl
-                           << "integral J = " << nn << std::endl
-                           << "min J      = " << mima.min() << std::endl
-                           << "max J      = " << mima.max() << std::endl;
-                M_thermo->assemblePotentialRHS( rhs, marker);
-            }
-            else if( ioption("thermoelectric.use-current-joule") == 3 )
-            {
                 auto j = expr<3,1>(soption("thermoelectric.current-expr"));
                 auto rhs = sigma*inner(j);
-                joule += vf::project( _space=M_electro->potentialSpace(),
-                                      _range=markedelements(M_mesh,marker),
-                                      _expr=rhs,
-                                      _quad=ioption("quad") );
-                double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                Feel::cout << "use current expr" << std::endl
-                           << "\tnorm J     = " << n << std::endl
-                           << "\tintegral J = " << nn << std::endl
-                           << "\tmin J      = " << mima.min() << std::endl
-                           << "\tmax J      = " << mima.max() << std::endl;
-                M_thermo->assemblePotentialRHS( rhs, marker);
-            }
-            else if( ioption("thermoelectric.use-current-joule") == 4 )
-            {
-                auto rhs = sigma*expr(soption("thermoelectric.joule-expr"));
-                joule += vf::project( _space=M_electro->potentialSpace(),
-                                      _range=markedelements(M_mesh,marker),
-                                      _expr=rhs,
-                                      _quad=ioption("quad") );
-                double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                Feel::cout << "use current expr" << std::endl
-                           << "\tnorm J     = " << n << std::endl
-                           << "\tintegral J = " << nn << std::endl
-                           << "\tmin J      = " << mima.min() << std::endl
-                           << "\tmax J      = " << mima.max() << std::endl;
-                M_thermo->assemblePotentialRHS( rhs, marker);
-            }
-            else if( ioption("thermoelectric.use-current-joule") == 5 )
-            {
-                auto rhs = expr(soption("thermoelectric.joule-expr"))/sigma;
-                joule += vf::project( _space=M_electro->potentialSpace(),
+                M_joule += vf::project( _space=M_electro->potentialSpace(),
                                       _range=markedelements(M_mesh,marker),
                                       _expr=rhs,
                                       _quad=ioption("quad") );
@@ -442,9 +419,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             auto mima = minmax(_range=elements(M_mesh), _pset=_Q<>(), _expr=idv(M_temperature));
             auto mi = mima.min();
             auto ma = mima.max();
-            auto power = integrate(_range=elements(M_mesh), _expr=idv(joule)).evaluate()(0,0);
-            auto int0 = integrate(_range=markedfaces(M_mesh,"V0"),_expr=inner(idv(M_current),N())).evaluate()(0,0);
-            auto int1 = integrate(_range=markedfaces(M_mesh,"V1"),_expr=inner(idv(M_current),N())).evaluate()(0,0);
+            auto power = integrate(_range=elements(M_mesh), _expr=idv(M_joule)).evaluate()(0,0);
+            auto int0 = integrate(_range=markedfaces(M_mesh,M_outputMarker),_expr=inner(idv(M_current),N())).evaluate()(0,0);
+            auto int1 = integrate(_range=markedfaces(M_mesh,M_inputMarker),_expr=inner(idv(M_current),N())).evaluate()(0,0);
 
             Feel::cout << std::setw(20) << "tempMax";
             Feel::cout << std::setw(20) << "tempMoy";
@@ -465,9 +442,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             oldCurrent = M_current;
             oldTemperature = M_temperature;
             oldTempflux = M_tempflux;
-            sigmaField.zero();
-            kField.zero();
-            joule.zero();
+            M_sigma.zero();
+            M_k.zero();
+            M_joule.zero();
 
             tic();
 #ifdef USE_SAME_MAT
@@ -488,7 +465,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                                            {"T"}, {idv(M_temperature)},
                                            {{"sigma0",sigma0},{"alpha",alpha},{"T0",T0}});
                 M_electro->updateConductivityTerm( sigma, marker);
-                sigmaField += vf::project( _space=M_electro->potentialSpace(),
+                M_sigma += vf::project( _space=M_electro->potentialSpace(),
                                            _range=markedelements(M_mesh,marker),
                                            _expr=sigma );
             }
@@ -497,12 +474,12 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             {
                 if( conditionIbc )
                 {
-                    M_electro->assembleRhsIBC(0, M_continuationMarker, I-Iinit);
+                    M_electro->assembleRhsIBC(0, M_outputMarker, I-Iinit);
                 }
                 else
                 {
                     auto g = expr(std::to_string(V-Vinit));
-                    M_electro->assembleRhsDirichlet(g,M_continuationMarker);
+                    M_electro->assembleRhsDirichlet(g,M_outputMarker);
                 }
             }
             M_electro->assemblePotentialRHS( cst(0.), "");
@@ -538,7 +515,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                                        {{"k0",k0},{"T0",T0},{"alpha",alpha},
                                         {"Lorentz",L},{"sigma0",sigma0}});
                 M_thermo->updateConductivityTerm( k, marker);
-                kField += vf::project( _space=M_electro->potentialSpace(),
+                M_k += vf::project( _space=M_electro->potentialSpace(),
                                        _range=markedelements(M_mesh,marker),
                                        _expr=k );
             }
@@ -557,7 +534,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                 if( ioption("thermoelectric.use-current-joule") == 1 )
                 {
                     auto rhs = inner(idv(M_current),idv(M_current))/sigma;
-                    joule += vf::project( _space=M_electro->potentialSpace(),
+                    M_joule += vf::project( _space=M_electro->potentialSpace(),
                                           _range=markedelements(M_mesh,marker),
                                           _expr=rhs,
                                           _quad=ioption("quad"));
@@ -574,7 +551,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                 else if( ioption("thermoelectric.use-current-joule") == 0 )
                 {
                     auto rhs = sigma*inner(gradv(M_potential));
-                    joule += vf::project( _space=M_electro->potentialSpace(),
+                    M_joule += vf::project( _space=M_electro->potentialSpace(),
                                           _range=markedelements(M_mesh,marker),
                                           _expr=rhs,
                                           _quad=ioption("quad") );
@@ -590,60 +567,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
                 }
                 else if( ioption("thermoelectric.use-current-joule") == 2 )
                 {
-                    auto rhs = -inner(trans(gradv(M_potential)),idv(M_current));
-                    joule += vf::project( _space=M_electro->potentialSpace(),
-                                          _range=markedelements(M_mesh,marker),
-                                          _expr=rhs,
-                                          _quad=ioption("quad") );
-                    double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                    double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                    auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                    Feel::cout << "use inner(current,grad(v))" << std::endl
-                               << "\tnorm J     = " << n << std::endl
-                               << "\tintegral J = " << nn << std::endl
-                               << "\tmin J      = " << mima.min() << std::endl
-                               << "\tmax J      = " << mima.max() << std::endl;
-                    M_thermo->assemblePotentialRHS( rhs, marker);
-                }
-                else if( ioption("thermoelectric.use-current-joule") == 3 )
-                {
                     auto j = expr<3,1>(soption("thermoelectric.current-expr"));
                     auto rhs = sigma*inner(j);
-                    joule += vf::project( _space=M_electro->potentialSpace(),
-                                          _range=markedelements(M_mesh,marker),
-                                          _expr=rhs,
-                                          _quad=ioption("quad") );
-                    double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                    double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                    auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                    Feel::cout << "use current expr" << std::endl
-                               << "\tnorm J     = " << n << std::endl
-                               << "\tintegral J = " << nn << std::endl
-                               << "\tmin J      = " << mima.min() << std::endl
-                               << "\tmax J      = " << mima.max() << std::endl;
-                    M_thermo->assemblePotentialRHS( rhs, marker);
-                }
-                else if( ioption("thermoelectric.use-current-joule") == 4 )
-                {
-                    auto rhs = sigma*expr(soption("thermoelectric.joule-expr"));
-                    joule += vf::project( _space=M_electro->potentialSpace(),
-                                          _range=markedelements(M_mesh,marker),
-                                          _expr=rhs,
-                                          _quad=ioption("quad") );
-                    double n = normL2(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad"));
-                    double nn = integrate(_range=markedelements(M_mesh,marker),_expr=rhs,_quad=ioption("quad")).evaluate()(0,0);
-                    auto mima = minmax(_range=markedelements(M_mesh,marker), _pset=_Q<>(ioption("quad")), _expr=rhs);
-                    Feel::cout << "use current expr" << std::endl
-                               << "\tnorm J     = " << n << std::endl
-                               << "\tintegral J = " << nn << std::endl
-                               << "\tmin J      = " << mima.min() << std::endl
-                               << "\tmax J      = " << mima.max() << std::endl;
-                    M_thermo->assemblePotentialRHS( rhs, marker);
-                }
-                else if( ioption("thermoelectric.use-current-joule") == 5 )
-                {
-                    auto rhs = expr(soption("thermoelectric.joule-expr"))/sigma;
-                    joule += vf::project( _space=M_electro->potentialSpace(),
+                    M_joule += vf::project( _space=M_electro->potentialSpace(),
                                           _range=markedelements(M_mesh,marker),
                                           _expr=rhs,
                                           _quad=ioption("quad") );
@@ -679,7 +605,12 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
             toc("loop");
         } // Picard loop
     }
+}
 
+template<int Dim, int OrderT, int OrderV, int OrderG>
+void
+ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::exportResults()
+{
     M_electro->exportResults();
     M_thermo->exportResults();
     auto e = exporter( M_mesh );
@@ -687,18 +618,18 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::run()
     e->add("current", M_current);
     e->add("temperature", M_temperature);
     e->add("tempflux", M_tempflux);
-    e->add("joule", joule);
-    e->add("sigma", sigmaField);
-    e->add("k", kField);
+    e->add("joule", M_joule);
+    e->add("sigma", M_sigma);
+    e->add("k", M_k);
     e->save();
 
     auto meanT = mean(_range=elements(M_mesh), _expr=idv(M_temperature));
     auto mima = minmax(_range=elements(M_mesh), _pset=_Q<>(), _expr=idv(M_temperature));
     auto mi = mima.min();
     auto ma = mima.max();
-    auto power = integrate(_range=elements(M_mesh), _expr=idv(joule)).evaluate()(0,0);
-    auto int0 = integrate(_range=markedfaces(M_mesh,"V0"),_expr=inner(idv(M_current),N())).evaluate()(0,0);
-    auto int1 = integrate(_range=markedfaces(M_mesh,"V1"),_expr=inner(idv(M_current),N())).evaluate()(0,0);
+    auto power = integrate(_range=elements(M_mesh), _expr=idv(M_joule)).evaluate()(0,0);
+    auto int0 = integrate(_range=markedfaces(M_mesh,M_outputMarker),_expr=inner(idv(M_current),N())).evaluate()(0,0);
+    auto int1 = integrate(_range=markedfaces(M_mesh,M_inputMarker),_expr=inner(idv(M_current),N())).evaluate()(0,0);
 
     Feel::cout << std::setw(20) << "tempMax";
     Feel::cout << std::setw(20) << "tempMoy";
