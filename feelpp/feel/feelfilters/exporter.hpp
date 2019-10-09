@@ -227,15 +227,6 @@ public:
         return M_freq;
     }
 
-
-    /**
-     * \return the frequency at which the results are saved
-     */
-    int cptOfSave() const
-    {
-        return M_cptOfSave;
-    }
-
     /**
      * \return the file type format (ASCII or BINARY)
      */
@@ -430,19 +421,15 @@ public:
      */
     step_ptrtype step( double time )
     {
-        if ( this->cptOfSave() % this->freq()  )
-            return M_ts_set.back()->step( time, true );
-
-        else
-            return M_ts_set.back()->step( time, false );
+        CHECK( !M_ts_set.empty() ) << "timeset is empty";
+        return this->step( time, M_ts_set.size() -1 );
     }
     step_ptrtype step( double time, int s )
     {
-        if ( M_cptOfSave % this->freq()  )
-            return M_ts_set[s]->step( time, true );
-
-        else
-            return M_ts_set[s]->step( time, false );
+        CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
+        timeset_ptrtype __ts = M_ts_set[s];
+        bool stepIsIgnored = (( __ts->numberOfSteps() % this->freq()  ) > 0);
+        return __ts->step( time, stepIsIgnored );
     }
 
     //@}
@@ -466,13 +453,7 @@ public:
         if ( !this->worldComm().isActive() )
             return;
 
-        DVLOG(2) << "checking if frequency is ok\n";
-        if ( this->cptOfSave() % this->freq()  )
-        {
-            this->saveTimeSet();
-            return;
-        }
-
+        bool hasStepToWrite = false;
         steps_write_on_disk_type stepsToWriteOnDisk;
         timeset_const_iterator __ts_it = this->beginTimeSet();
         timeset_const_iterator __ts_en = this->endTimeSet();
@@ -480,10 +461,13 @@ public:
         {
             timeset_ptrtype __ts = *__ts_it;
             auto steps = __ts->stepsToWriteOnDisk();
+            stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
             if ( !steps.empty() )
-                stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
+                hasStepToWrite = true;
         }
 
+        if ( !hasStepToWrite )
+            return;
 
         this->save( stepsToWriteOnDisk );
 
@@ -494,53 +478,15 @@ public:
                 step->setState( STEP_ON_DISK );
                 step->cleanup();
             }
+            std::string filename = this->path()+"/"+prefix()+".timeset";
+            __ts->save( filename, this->worldComm() );
         }
-
-#if 0
-        timeset_const_iterator __ts_it = this->beginTimeSet();
-        timeset_const_iterator __ts_en = this->endTimeSet();
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
-        {
-            timeset_ptrtype __ts = *__ts_it;
-            auto steps = __ts->stepsToWriteOnDisk();
-            for ( auto & step : steps )
-            {
-                step->setState( STEP_ON_DISK );
-                step->cleanup();
-            }
-        }
-#endif
-        this->saveTimeSet();
-
     }
 
     //!
     //! serve results though a webserver
     //!
     virtual void serve() const;
-
-    /**
-     * save in a file set of time which are been exported
-     */
-    void saveTimeSet() const
-    {
-        if ( ! this->worldComm().isMasterRank() )
-            {
-                ++M_cptOfSave;
-                return;
-            }
-
-        auto __ts_it = this->beginTimeSet();
-        auto __ts_en = this->endTimeSet();
-
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
-        {
-            auto filename = this->path()+"/"+prefix()+".timeset";
-            ( *__ts_it )->save( filename );
-        }
-
-        ++M_cptOfSave;
-    }
 
     /**
      * reload from file set of time which are been exported
@@ -556,8 +502,6 @@ public:
             if ( !fs::exists( filename ) )
                 return;
             ( *__ts_it )->load( filename,__time );
-
-            M_cptOfSave = ( *__ts_it )->numberOfTotalSteps()+1;
         }
     }
 
@@ -577,7 +521,6 @@ protected:
     std::string M_type;
     std::string M_prefix;
     int M_freq;
-    mutable int M_cptOfSave;
     FileType M_ft;
     std::string M_path;
     ExporterGeometry M_ex_geometry;
