@@ -780,31 +780,39 @@ public:
 
 
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr, std::string const& rep = "",
+        void add( std::string const& __n, ExprT const& expr,  std::variant<std::string, std::set<std::string> >/*std::string*/ const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 this->add( __n, __n, expr, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr,  elements_reference_wrapper_t<mesh_type> const& rangElt, std::string const& rep = "",
+        void add( std::string const& __n, ExprT const& expr,  elements_reference_wrapper_t<mesh_type> const& rangElt,  std::variant<std::string, std::set<std::string> > /*std::string*/ const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 this->add( __n, __n, expr, rangElt, rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, std::string const& rep = "",
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, std::variant<std::string, std::set<std::string> > /*std::string*/ const& rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 CHECK( this->hasMesh() ) << "no mesh provided";
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
         template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, std::string const& _rep = "",
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt,  std::variant<std::string, std::set<std::string> >/*std::string*/ const& _rep = "",
                   typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
             {
                 std::set<std::string> reps;
-                if ( !_rep.empty() )
-                    reps.insert( _rep );
+
+                if( auto repStringPtr = std::get_if<std::string>(&_rep))
+                {
+                    if ( !repStringPtr->empty() )
+                        reps.insert( *repStringPtr );
+                }
+                else if ( auto repSetPtr = std::get_if<std::set<std::string>>(&_rep))
+                {
+                    reps = *repSetPtr;
+                }
 
                 //std::set<std::string> reps = _reps;
                 if ( reps.empty() )
@@ -1628,12 +1636,15 @@ public:
         resetPreviousTime( __time );
     }
 
-    void save( std::string const& _nameFile )
+    void save( std::string const& _nameFile, WorldComm const& worldComm )
     {
-        fs::ofstream ofs( _nameFile );
-        // save data from archive
-        boost::archive::text_oarchive oa( ofs );
-        oa << *this;
+        if ( worldComm.isMasterRank() )
+        {
+            fs::ofstream ofs( _nameFile );
+            // save data from archive
+            boost::archive::text_oarchive oa( ofs );
+            oa << *this;
+        }
     }
 
 
