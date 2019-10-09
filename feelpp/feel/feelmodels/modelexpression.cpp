@@ -33,7 +33,7 @@ ModelExpression::setExpr( std::string const& key, pt::ptree const& p, WorldComm 
     {
         double val = *itvald;
         VLOG(1) << "expr at key " << key << " is constant : " << val;
-        this->setExprScalar( Feel::vf::expr<expr_order>( (boost::format("%1%")%val).str(),"",worldComm,directoryLibExpr ) );
+        this->setExprScalar( Feel::vf::expr( val ) );
     }
     else if( boost::optional<std::string> itvals = p.get_optional<std::string>( key ) )
         this->setExpr( indexes.replace( *itvals ), worldComm, directoryLibExpr );

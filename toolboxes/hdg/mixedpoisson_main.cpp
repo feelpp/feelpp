@@ -39,10 +39,14 @@ runApplicationMixedPoisson( std::string  const& prefix )
     {
         Feel::cout << "Using submesh: " << soption("gmsh.submesh") << std::endl;
         auto cmesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,soption("gmsh.submesh")) );
+
         Idh = IPtr( _domainSpace=Pdh<OrderT>(cmesh), _imageSpace=Pdh<OrderT>(mesh) );
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
     }
+	
+	// Feel::cout << "Stationary: " << MP -> isStationary() << std::endl;
+	// Feel::cout << "boption steady: " << boption("ts.steady") << std::endl;
 
     if ( MP -> isStationary() )
     {
