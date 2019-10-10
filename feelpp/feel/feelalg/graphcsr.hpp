@@ -75,7 +75,7 @@ public:
 
     //typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
     typedef boost::tuple<size_type, size_type, std::set<size_type> > row_type;
-    typedef std::unordered_map<size_type, row_type > storage_type;
+    typedef std::map<size_type, row_type > storage_type;
     typedef std::shared_ptr<storage_type> storage_ptrtype;
 
     typedef storage_type::iterator iterator;
