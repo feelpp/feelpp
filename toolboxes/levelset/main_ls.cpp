@@ -52,6 +52,11 @@ runLevelsetApplication()
     H_0 = *LS->heaviside();
     auto dirac_0 = LS->functionSpace()->element();
     dirac_0 = *LS->dirac();
+
+    // Quadrature order used for integrals computed in errors measures:
+    int error_quad_order = ioption( _name="levelset.quad.order" );
+    Feel::cout << "Error quadrature order = " << error_quad_order << std::endl;
+
     
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
@@ -99,50 +104,67 @@ runLevelsetApplication()
                 myExporter->step(iter)->add("distToBoundary", *distToBoundary );
                 myExporter->save();
             }
-	    
+
+	    	    
 	    // Error measures :
 	    // we compute the L2 norm error integrals :
 
-	    auto  chi_of_phi0_positive = chi( idv(dirac_0) > 0 );
-	    double first_integral = integrate( _range=elements(LS->mesh()), _expr=chi_of_phi0_positive ).evaluate()(0,0);
-	    double second_integral = integrate( _range=elements(LS->mesh()), _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_phi0_positive ) ).evaluate()(0,0);
+	    auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );
+	    double first_integral = integrate(
+					      _range=elements(LS->mesh()),
+					      _expr=chi_of_dirac0_positive
+					      ).evaluate()(0,0);
+	    double second_integral = integrate(
+					       _range=elements(LS->mesh()),
+					       _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_dirac0_positive ),
+					       _quad=error_quad_order
+					       ).evaluate()(0,0);
 	    double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
 
-	    Feel::cout << "First integral = " << first_integral << std::endl;
-	    Feel::cout << "Second integral = " << second_integral << std::endl;
+	    //Feel::cout << "First integral = " << first_integral << std::endl;
+	    //Feel::cout << "Second integral = " << second_integral << std::endl;
 	    Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
 
 	    // Sign change error :
 	    double e_sc_integral = integrate(
 					     _range=elements(LS->mesh()),
 					     _expr=pow(
-						       ( 1-idv(H_0) ) - ( 1-idv(*LS->heaviside()) ),
+						       ( 1-idv(H_0) ) - ( 1-idv(LS->heaviside()) ),
 						       2.0
-						       )
+						       ),
+					     _quad=error_quad_order
 					     ).evaluate()(0,0);
-	    double sign_change_error = std::sqrt(
+	    double sign_change_error_h = std::sqrt(
 						 e_sc_integral
 						 );
 
-	    Feel::cout << "Sign change error = " << sign_change_error << std::endl;
+	    Feel::cout << "Sign change error (h) = " << sign_change_error_h << std::endl;
 
+	    double sign_change_error_chi = std::sqrt( integrate(
+								_range=elements(LS->mesh()),
+								_expr=chi( idv( LS->phi() ) * idv(phi_0) < 0 ),
+								_quad=error_quad_order
+								).evaluate()(0,0) );
+	    Feel::cout << "Sign change error (chi) = " << sign_change_error_chi << std::endl;
+	    
 	    // Mass error
 	    auto chi_of_phi0_negative = chi(  idv(phi_0) < 0 );
-	    auto chi_of_phi_negative = chi(  idv(LS->phi()) < 0 ); // add a * to LS ?
+	    auto chi_of_phi_negative = chi(  idv(LS->phi()) < 0 );
 
 	    double em_phi0_integral = integrate(
 						_range=elements(LS->mesh()),
-
-						_expr=chi_of_phi0_negative
+						_expr=chi_of_phi0_negative,
+						_quad=error_quad_order
 						).evaluate()(0,0);
 	    double em_phi_integral = integrate(
 					       _range=elements(LS->mesh()),
-					       _expr=chi_of_phi_negative
+					       _expr=chi_of_phi_negative,
+					       _quad=error_quad_order
 					       ).evaluate()(0,0);
 	    double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
 
-	    Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
-	    Feel::cout << "phi integral = " << em_phi_integral << std::endl;
+	    //Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
+	    //Feel::cout << "phi integral = " << em_phi_integral << std::endl;
 	    Feel::cout << "Mass error = " << mass_error << std::endl;
         }
     }
@@ -160,6 +182,7 @@ int main( int argc, char** argv )
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
         ("levelset.reinit-every", Feel::po::value<int>()->default_value( -1 ), "reinitialize levelset every n iterations" )
         ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
+      ("levelset.quad.order", Feel::po::value<int>()->default_value( 1 ), "Quadrature order used for integrals computed in errors measures")
         ;
 
     Environment env( 
