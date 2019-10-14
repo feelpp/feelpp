@@ -626,7 +626,7 @@ public:
         }
 
         template<typename FunctionType>
-        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps,
+        void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps = "",
                   typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             using FunctionDecayType = decay_type<FunctionType>;
