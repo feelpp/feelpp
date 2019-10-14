@@ -2743,7 +2743,22 @@ struct MeshContiguousNumberingMapping
 
         }
 
+    const mesh_type* mesh() const { return M_mesh; }
+
     std::map<int,std::tuple<std::string,range_element_type>> const& partIdToRangeElement() const { return M_partIdToRangeElement; }
+
+    std::string const& name( int part ) const
+        {
+            auto itFindPart = M_partIdToRangeElement.find( part );
+            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registerd";
+            return std::get<0>( itFindPart->second );
+        }
+    range_element_type const& rangeElement( int part ) const
+        {
+            auto itFindPart = M_partIdToRangeElement.find( part );
+            CHECK( itFindPart !=  M_partIdToRangeElement.end() ) << "part not registerd";
+            return std::get<1>( itFindPart->second );
+        }
 
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
     std::unordered_map<index_type,std::pair<index_type,point_ref_type>> const& pointIdToContiguous( int part ) const
