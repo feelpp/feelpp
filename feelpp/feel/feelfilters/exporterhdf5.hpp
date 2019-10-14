@@ -97,22 +97,25 @@ protected :
         /*!
          * \brief write .h5 files for each process
          */
-        void writeHDF5() const;
+        void writeHDF5( steps_write_on_disk_type const& stepsToWriteOnDisk ) const;
 
         /*!
          * \brief write .xmf file
          */
-        void writeXDMF() const;
+        void writeXDMF( steps_write_on_disk_type const& stepsToWriteOnDisk ) const;
 
         /*!
          * \brief write mesh data
          */
-        void saveMesh(mesh_ptrtype mesh, int stepIndex) const;
+        void saveMesh(mesh_ptrtype mesh, std::string const& geofilename ) const;
 
         /*!
          * \brief write informations of the mesh in .h5 file (unused for now)
          */
     //void writeStats() const;
+    void saveFields( typename timeset_type::step_ptrtype __step, std::string const& fieldsfilename ) const;
+    template <bool IsNodal,typename MeshContiguousType, typename FieldDataType>
+    void saveFields( std::string const& fieldsfilename, std::string const& groupName, MeshContiguousType const& mp, int part, FieldDataType const& fieldData,  std::vector<float> & realBuffer ) const;
 
         /*!
          * \brief save solutions on nodes or elements
@@ -120,20 +123,21 @@ protected :
          * \param __var  iterator on solutions (begin)
          * \param en     iterator on solutions (end)
          */
-         template<bool IsNodal,typename Iterator>
-         void saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    //template<bool IsNodal,typename Iterator>
+    //    void saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
     private :
-        mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
-        mutable std::ostringstream M_fileName;        /*!< file name */
-        mutable HDF5 M_HDF5;                   /*!< HDF5 IO */
+    //mutable int tabCount;                   /*!< Number of tabs to print for Xdmf */
+    //mutable std::ostringstream M_fileName;        /*!< file name */
+    mutable HDF5 M_hdf5Fields/*, M_hdf5Geo*/;                   /*!< HDF5 IO */
 
         // Mesh geometry
         mutable std::string M_element_type;    /*!< element's type */
 
-        mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
+    //    mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
     //    mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
     mutable std::map<int,std::ostringstream> M_XDMFContent;
+    mutable std::map<int,std::tuple<std::string,std::ostringstream>> M_XDMFGeoContent;
 
     mutable std::unordered_map<int, Feel::detail::MeshContiguousNumberingMapping<mesh_type,float>> M_cache_mp;
     mutable std::map<int,std::vector<size_type>> M_mapNodalArrayToDofId;
