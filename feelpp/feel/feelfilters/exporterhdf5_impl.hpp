@@ -123,55 +123,41 @@ void Exporterhdf5<MeshType, N>::save( steps_write_on_disk_type const& stepsToWri
     M_XDMFContent.clear();
 
     /* build file name */
-    M_fileName.str("");
-    M_fileName << this->prefix();
+    //M_fileName.str("");
+    //M_fileName << this->prefix();
     //std::cout << this->prefix() << std::endl;
 
     /* First write hdf5 files */
-    writeHDF5();
+    writeHDF5( stepsToWriteOnDisk );
 
     /* Then the Xdmf description file */
     /* This must be written after the HDF5 file */
     /* For the XDMF content to be built on each processor in the case we are using MPI IO */
-    writeXDMF();
+    writeXDMF( stepsToWriteOnDisk );
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::writeXDMF() const 
+void Exporterhdf5<MeshType, N>::writeXDMF( steps_write_on_disk_type const& stepsToWriteOnDisk ) const 
 {
-    int size;
-    int stepIndex = TS_INITIAL_INDEX;
+    //int size;
+    //int stepIndex = TS_INITIAL_INDEX;
     std::ostringstream cbuf;
-    MPI_File fh;
-    MPI_Status status;
+    //MPI_File fh;
+    //MPI_Status status;
 
-    timeset_const_iterator __ts_it = this->beginTimeSet();
-    timeset_const_iterator __ts_en = this->endTimeSet();
+    //timeset_const_iterator __ts_it = this->beginTimeSet();
+    //meset_const_iterator __ts_en = this->endTimeSet();
 
-    timeset_ptrtype __ts = *__ts_it;
-
-    while ( __ts_it != __ts_en )
+    //timeset_ptrtype __ts = *__ts_it;
+    //while ( __ts_it != __ts_en )
+    for ( auto const& [__ts,steps] : stepsToWriteOnDisk  )
     {
-        __ts = *__ts_it;
-        typename timeset_type::step_const_iterator __it = __ts->beginStep();
-        typename timeset_type::step_const_iterator __end = __ts->endStep();
-
-        typename timeset_type::step_ptrtype __step;
-
-        /* If we have a timestep to save, we replace the defaulted step index by the corresponding index */
-        if(__it != __end)
+        for ( auto const&  __step : steps )
         {
-            __it = boost::prior ( __end );
-            __step = *__it;
-
-            stepIndex = __step->index();
-        }
-
-        if( __it == __end || ( __it != __end && __step->isInMemory() ) )
-        {
+            int stepIndex =  __step->index();
             if ( this->worldComm().isMasterRank() )
             {
-                std::string filename = (fs::path(this->path())/(boost::format("%1%-%2%.xmf")% M_fileName.str() %stepIndex).str()).string();
+                std::string filename = (fs::path(this->path())/(boost::format("%1%-%2%.xmf")% __ts->name() %stepIndex).str()).string();
                 std::ofstream out( filename.c_str() );
 
                 out << "<?xml version=\"1.0\" ?>" << "\n";
@@ -180,13 +166,20 @@ void Exporterhdf5<MeshType, N>::writeXDMF() const
                 out << "<Domain>" << "\n";
                 out << "<Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">" << "\n";
 
-
                 std::ostringstream XDMFContentAllMarkers;
-                for ( auto const& [markerId,ossMarker] : M_XDMFContent )
+
+                //for ( auto const& [markerId,ossMarker] : M_XDMFContent )
+                for ( auto const& [part, nameAndOssGeo] : M_XDMFGeoContent )
                 {
-                    XDMFContentAllMarkers << "<Grid Name=\"" << "toto" << markerId << "\" GridType=\"Uniform\">" << std::endl // TODO markername
-                                          << ossMarker.str()
-                                          << "</Grid>" << std::endl;
+                    std::string gridName = std::get<0>( nameAndOssGeo );
+                    if ( gridName.empty() )
+                        gridName = (boost::format("marker_%1%")%part).str();
+                    XDMFContentAllMarkers << "<Grid Name=\"" << gridName << "\" GridType=\"Uniform\">" << "\n"
+                                          <<  std::get<1>( nameAndOssGeo ).str();
+                    auto itFindXDMF = M_XDMFContent.find( part );
+                    if ( itFindXDMF != M_XDMFContent.end() )
+                        XDMFContentAllMarkers << itFindXDMF->second.str();
+                    XDMFContentAllMarkers << "</Grid>" << std::endl;
                 }
                 std::string XDMFContentAllMarkersStr = XDMFContentAllMarkers.str();
                 out << XDMFContentAllMarkersStr;
@@ -197,134 +190,41 @@ void Exporterhdf5<MeshType, N>::writeXDMF() const
                 out.close();
             }
 
-#if 0
-
-            
-            std::string filename = (fs::path(this->path())/(boost::format("%1%-%2%.xmf")% M_fileName.str() %stepIndex).str()).string();
-            /* build file name */
-            //cbuf << M_fileName.str() << "-" << stepIndex << ".xmf";
-
-            /* Test master rank only once */
-            bool isMasterRank = this->worldComm().isMasterRank();
-
-            /* Open file with MPI IO */
-            //char * strTmp = strdup(cbuf.str().c_str());
-            if(isMasterRank && fs::exists(filename))
-            {
-                MPI_File_delete(filename.c_str(), MPI_INFO_NULL);
-            }
-
-            MPI_Barrier(this->worldComm().comm());
-            MPI_File_open(this->worldComm().comm(), filename.c_str(), MPI_MODE_RDWR | MPI_MODE_CREATE, MPI_INFO_NULL, &fh);
-
-            //free(strTmp);
-
-            /* write file header */
-            cbuf.str("");
-            cbuf << "<?xml version=\"1.0\" ?>" << std::endl;
-            cbuf << "<!DOCTYPE Xdmf SYSTEM \"Xdmf.dtd\" []>" << std::endl;
-            cbuf << "<Xdmf Version=\"2.0\">" << std::endl;
-            cbuf << "<Domain>" << std::endl;
-            cbuf << "<Grid Name=\"Simulation\" GridType=\"Collection\" CollectionType=\"Spatial\">" << std::endl;
-
-            if( isMasterRank ) 
-            { size = cbuf.str().size(); }
-            else
-            { size = 0; }
-            char * strTmp = strdup(cbuf.str().c_str());
-            MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
-            free(strTmp);
-
-            /* Write time info */
-            /*
-               timeset_const_iterator __ts_it = this->beginTimeSet ();
-               timeset_const_iterator __ts_en = this->endTimeSet ();
-               timeset_ptrtype __ts = *__ts_it;
-
-               cbuf.str("");
-               cbuf << "       <Grid Name=\"Simulation over time\" GridType=\"Collection\" CollectionType=\"Temporal\">" << "" << std::endl;
-               cbuf << "           <Time TimeType=\"HyperSlab\">" << std::endl;
-               M_xmf << "               <DataItem Format=\"XML\" NumberType=\"Float\" Dimensions=\"3\">" << std::endl;
-               cbuf << "               " << (*(__ts->beginStep()))->time() << " " << __ts->timeIncrement() << " " << __ts->numberOfTotalSteps() << std::endl;
-               cbuf << "               </DataItem>" << std::endl;
-               cbuf << "           </Time>" << std::endl;
-
-               if( isMasterRank ) 
-               { size = cbuf.str().size(); }
-               else
-               { size = 0; }
-               MPI_File_write_ordered(fh, cbuf.str().c_str(), size, MPI_CHAR, &status);
-               */
-
-            /* write Xdmf content */
-
-            std::ostringstream XDMFContentAllMarkers;
-            for ( auto const& [markerId,ossMarker] : M_XDMFContent )
-            {
-                XDMFContentAllMarkers << "<Grid Name=\"" << "toto" << markerId << "\" GridType=\"Uniform\">" << std::endl // TODO markername
-                                      << ossMarker.str()
-                                      << "</Grid>" << std::endl;
-            }
-            std::string XDMFContentAllMarkersStr = XDMFContentAllMarkers.str();
-            MPI_File_write_ordered(fh, XDMFContentAllMarkersStr.c_str(), XDMFContentAllMarkersStr.size(), MPI_CHAR, &status);
-#if 0
-            strTmp = strdup(M_XDMFContent.str().c_str());
-            MPI_File_write_ordered(fh, strTmp, M_XDMFContent.str().size(), MPI_CHAR, &status);
-            free(strTmp);
-#endif
-            /* write footer */
-            cbuf.str("");
-            cbuf << "</Grid>" << std::endl;
-            cbuf << "</Domain>" << std::endl;
-            cbuf << "</Xdmf>" << std::endl;
-
-            if( isMasterRank ) 
-            { size = cbuf.str().size(); }
-            else
-            { size = 0; }
-            strTmp = strdup(cbuf.str().c_str());
-            MPI_File_write_ordered(fh, strTmp, size, MPI_CHAR, &status);
-            free(strTmp);
-
-            MPI_File_close(&fh);
-#endif
         }
-        ++__ts_it;
     }
 }
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::writeHDF5() const 
+void Exporterhdf5<MeshType, N>::writeHDF5( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    int size;
-    int stepIndex = TS_INITIAL_INDEX;
+    //int size;
+    //int stepIndex = TS_INITIAL_INDEX;
     std::ostringstream oss;
 
-    timeset_const_iterator __ts_it = this->beginTimeSet();
-    timeset_const_iterator __ts_en = this->endTimeSet();
-    
-    timeset_ptrtype __ts = *__ts_it;
-
-    while ( __ts_it != __ts_en )
+    //timeset_const_iterator __ts_it = this->beginTimeSet();
+    //timeset_const_iterator __ts_en = this->endTimeSet();
+    for ( auto const& [__ts,steps] : stepsToWriteOnDisk  )//; __ts_it != __ts_en ; ++__ts_it )
     {
-        __ts = *__ts_it;
-        typename timeset_type::step_const_iterator __it = __ts->beginStep();
-        typename timeset_type::step_const_iterator __end = __ts->endStep();
-        typename timeset_type::step_ptrtype __step;
+        for ( auto const&  __step : steps )
+        {
+        //timeset_ptrtype __ts = *__ts_it;
+        int stepIndex =  __step->index();
+        //__ts = *__ts_it;
+        //typename timeset_type::step_const_iterator __it = __ts->beginStep();
+        //typename timeset_type::step_const_iterator __end = __ts->endStep();
+        //typename timeset_type::step_ptrtype __step;
 
         /* If we have a timestep to save, we replace the defaulted step index by the corresponding index */
-        if(__it != __end)
+        /*if(__it != __end)
         {
             __step = *(boost::prior( __end ));
             stepIndex = __step->index();
-        }
+         }*/
 
-        std::string filename = (fs::path(this->path())/(boost::format("%1%-%2%.h5")% M_fileName.str() %stepIndex).str()).string();
         //oss.str("");
         //oss << M_fileName.str() << "-" << stepIndex << ".h5";
 
         /* open the corresponding h5 file for output */
-        M_HDF5.openFile(filename, this->worldComm(), false);
 
         /* TODO find a way to incorporate time steps directly info the xml data */
         /*
@@ -335,23 +235,28 @@ void Exporterhdf5<MeshType, N>::writeHDF5() const
            */
 
         /* check if we have steps for the current dataset */
-        if(__it == __end)
-        {
-            LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
+        // if(__it == __end)
+        // {
+        //     LOG(INFO) << "Timeset " << __ts->name() << " (" << __ts->index() << ") contains no timesteps (Consider using add() or addRegions())" << std::endl;
 
-            /* if we have a mesh, we write mesh data */
-            if(__ts->hasMesh())
-            {
-                saveMesh(__ts->mesh(), stepIndex);
-            }
-        }
-        else
+        //     /* if we have a mesh, we write mesh data */
+        //     if(__ts->hasMesh())
+        //     {
+        //         saveMesh(__ts->mesh(), stepIndex);
+        //     }
+        // }
+        // else
         {
-            if ( __step->isInMemory() )
+            //if ( __step->isInMemory() )
             {
-                tic();
-                saveMesh(__step->mesh(), stepIndex);
-                toc("Exporterhdf5::saveMesh" ,FLAGS_v>1);
+                if ( this->exporterGeometry() != EXPORTER_GEOMETRY_STATIC || M_XDMFGeoContent.empty() )
+                {
+                    tic();
+                    //std::string geofilename = (fs::path(this->path())/(boost::format("%1%-%2%.geo.h5")% __ts->name() %stepIndex).str()).string();
+                    std::string geofilename = (boost::format("%1%-%2%.geo.h5")% __ts->name() %stepIndex).str();
+                    saveMesh(__step->mesh(), geofilename );
+                    toc("Exporterhdf5::saveMesh" ,FLAGS_v>1);
+                }
                 /*
                 if ( this->worldComm().globalRank() == this->worldComm().masterRank() )
                 {
@@ -363,19 +268,22 @@ void Exporterhdf5<MeshType, N>::writeHDF5() const
                 }
                 */
 
+                //std::string fieldsfilename = (fs::path(this->path())/(boost::format("%1%-%2%.fields.h5")% __ts->name() %stepIndex).str()).string();
+                std::string fieldsfilename = (boost::format("%1%-%2%.fields.h5")% __ts->name() %stepIndex).str();
+                saveFields(__step, fieldsfilename );
+#if 0
                 tic();
                 saveFields<true>(__step, __step->beginNodal(), __step->endNodal() );
                 toc("Exporterhdf5::saveFields [nodal]" ,FLAGS_v>1);
                 tic();
                 saveFields<false>(__step, __step->beginElement(), __step->endElement() );
                 toc("Exporterhdf5::saveFields [element]" ,FLAGS_v>1);
+#endif
             }
         }
 
         // TODO Check if it must be done here
-        M_HDF5.closeFile();
-
-        ++__ts_it;
+        }
     }
 }
 
@@ -386,10 +294,16 @@ void Exporterhdf5<MeshType, N>::visit ( mesh_type* mesh)
 
 
 template <typename MeshType, int N>
-void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
+void Exporterhdf5<MeshType, N>::saveMesh( mesh_ptrtype mesh, std::string const& geofilename ) const
 {
+    std::string geopath = (fs::path(this->path())/geofilename).string();
+    HDF5 M_hdf5Geo;
+    M_hdf5Geo.openFile( geopath, this->worldComm(), false );
+
     rank_type currentPid = mesh->worldComm().localRank();
     //Feel::detail::MeshContiguousNumberingMapping<mesh_type> mp( mesh.get() );
+
+    M_XDMFGeoContent.clear();
 
     M_cache_mp.try_emplace(  0 /*dummy value*/, mesh.get() );
     auto const& mp =  M_cache_mp.at(  0 /*dummy value*/ );
@@ -406,7 +320,7 @@ void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
     {
         // build up group name
         std::string groupName = (boost::format("/%1%")% part).str();
-        M_HDF5.createGroup(groupName);
+        M_hdf5Geo.createGroup(groupName);
 
         localDims[0] = mp.numberOfPoint( part,currentPid );
         localDims[1] = 3;
@@ -416,9 +330,9 @@ void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
         currentOffset[1] = 0;
 
         /* write the point coordinates */
-        M_HDF5.createTable(groupName + "/point_coords", H5T_NATIVE_FLOAT, globalPointDims);
-        M_HDF5.write(groupName + "/point_coords", H5T_NATIVE_FLOAT, localDims, currentOffset, mp.nodes(part).data());
-        M_HDF5.closeTable(groupName + "/point_coords");
+        M_hdf5Geo.createTable(groupName + "/point_coords", H5T_NATIVE_FLOAT, globalPointDims);
+        M_hdf5Geo.write(groupName + "/point_coords", H5T_NATIVE_FLOAT, localDims, currentOffset, mp.nodes(part).data());
+        M_hdf5Geo.closeTable(groupName + "/point_coords");
 
         localDims[0] = mp.numberOfElement( part,currentPid );
         localDims[1] = mesh_type::element_type::numPoints;//elt.numLocalVertices;
@@ -427,28 +341,256 @@ void Exporterhdf5<MeshType, N>::saveMesh(mesh_ptrtype mesh, int stepIndex) const
         currentOffset[0] = mp.startElementIds( part,currentPid );
 
         /* write the element */
-        M_HDF5.createTable(groupName + "/element_nodes", H5T_STD_I32LE, globalElementDims);
-        M_HDF5.write(groupName + "/element_nodes", /*H5T_NATIVE_LLONG*/ H5T_STD_I32LE /*H5T_NATIVE_B32*/, localDims, currentOffset, mp.pointIdsInElements( part ).data() );
-        M_HDF5.closeTable(groupName + "/element_nodes");
+        M_hdf5Geo.createTable(groupName + "/element_nodes", H5T_STD_I32LE, globalElementDims);
+        M_hdf5Geo.write(groupName + "/element_nodes", /*H5T_NATIVE_LLONG*/ H5T_STD_I32LE /*H5T_NATIVE_B32*/, localDims, currentOffset, mp.pointIdsInElements( part ).data() );
+        M_hdf5Geo.closeTable(groupName + "/element_nodes");
 
+        M_hdf5Geo.closeGroup( groupName );
 
-        std::ostringstream & XDMFContentByMarker = M_XDMFContent[part];
-        //XDMFContentByMarker << "<Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" <<  currentSpaceDims[0] << "\" NodesPerElement=\"" <<  currentSpaceDims[1] << "\">" << std::endl;
+        std::get<0>( M_XDMFGeoContent[part] ) = std::get<0>( nameAndRangeElt ); // name given to the part
+        std::ostringstream & XDMFContentByMarker = std::get<1>( M_XDMFGeoContent[part] );
         XDMFContentByMarker << "<Topology TopologyType=\"" << M_element_type << "\" NumberOfElements=\"" <<  globalElementDims[0] << "\">" << std::endl;
         XDMFContentByMarker << "<DataItem Dimensions=\"" << globalElementDims[0] << " " << globalElementDims[1] << "\" NumberType=\"Int\" Precision=\"4\" Format=\"HDF\" Endian=\"Little\">" << std::endl;
-        XDMFContentByMarker << M_fileName.str() << "-" << stepIndex << ".h5:" << groupName << "/element_nodes" << std::endl;
+        XDMFContentByMarker << geofilename << ":" << groupName << "/element_nodes" << std::endl;
         XDMFContentByMarker << "</DataItem>" << std::endl;
         XDMFContentByMarker << "</Topology>" << std::endl;
 
         XDMFContentByMarker << "<Geometry GeometryType=\"XYZ\">" << std::endl;
         XDMFContentByMarker << "<DataItem Dimensions=\"" << globalPointDims[0] << " 3\" NumberType=\"Float\" Precision=\"4\" Format=\"HDF\" Endian=\"Little\">" << std::endl;
-        XDMFContentByMarker << M_fileName.str() << "-" << stepIndex << ".h5:" << groupName << "/point_coords" << std::endl;
+        XDMFContentByMarker << geofilename << ":" << groupName << "/point_coords" << std::endl;
         XDMFContentByMarker << "</DataItem>" << std::endl;
         XDMFContentByMarker << "</Geometry>" << std::endl;
     }
+
+      M_hdf5Geo.closeFile();
 }
 
 
+template <typename MeshType, int N>
+void Exporterhdf5<MeshType, N>::saveFields( typename timeset_type::step_ptrtype __step, std::string const& fieldsfilename ) const
+{
+    M_XDMFContent.clear();
+
+    auto itNodal = __step->beginNodal(), enNodal=__step->endNodal();
+    auto itElement = __step->beginElement(), enElement=__step->endElement();
+    if ( ( std::distance( itNodal, enNodal ) +  std::distance( itElement, enElement ) ) == 0 )
+         return;
+
+    M_cache_mp.try_emplace(  0 /*dummy value*/, __step->mesh().get() );
+    auto const& mp =  M_cache_mp.at(  0 /*dummy value*/ );
+
+    std::string fieldspath = (fs::path(this->path())/fieldsfilename).string();
+    M_hdf5Fields.openFile(fieldspath, this->worldComm(), false);
+    std::vector<float> realBuffer;
+    for ( auto const& [part,nameAndRangeElt] : mp.partIdToRangeElement() )
+    {
+        std::string groupName = (boost::format("/%1%")% part).str();
+        M_hdf5Fields.createGroup(groupName);
+
+        for ( itNodal = __step->beginNodal() ; itNodal != enNodal ;++itNodal )
+            this->saveFields<true>( fieldsfilename, groupName, mp, part, itNodal->second, realBuffer );
+        for ( itElement = __step->beginElement() ; itElement != enElement ;++itElement )
+            this->saveFields<false>( fieldsfilename, groupName, mp, part, itElement->second, realBuffer );
+
+        M_hdf5Fields.closeGroup( groupName );
+    }
+
+    M_hdf5Fields.closeFile();
+}
+
+template <typename MeshType, int N>
+template <bool IsNodal,typename MeshContiguousType, typename FieldDataType>
+void Exporterhdf5<MeshType, N>::saveFields( std::string const& fieldsfilename, std::string const& groupName, MeshContiguousType const& mp, int part, FieldDataType const& fieldData, std::vector<float> & realBuffer ) const
+{
+    std::string saveFieldType = IsNodal? "nodal" : "element";
+    std::string attributeCenterType = IsNodal? "Node" : "Cell";
+
+    hsize_t localDims[2];
+    hsize_t globalDims[2];
+    hsize_t currentOffset[2];
+
+    auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
+
+    std::string attributeType;
+    std::string const& fieldName = field00.name();
+    uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
+    bool isTensor2Symm = false;
+    if ( fieldData.first == FunctionSpaceType::SCALAR )
+    {
+        nComponents = 1;
+        nComponents1 = 1;
+        nComponents2 = 1;
+        attributeType = "Scalar";
+    }
+    else if ( fieldData.first == FunctionSpaceType::VECTORIAL )
+    {
+        nComponents = 3;
+        nComponents1 = 3;
+        nComponents2 = 1;
+        attributeType = "Vector";
+    }
+    else if ( fieldData.first == FunctionSpaceType::TENSOR2 )
+    {
+        nComponents = 9;
+        nComponents1 = 3;
+        nComponents2 = 3;
+        attributeType = "Tensor";
+    }
+    else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM )
+    {
+        nComponents = 6;
+        nComponents1 = 3;
+        nComponents2 = 3;
+        isTensor2Symm = true;
+        attributeType = "Tensor6";
+    }
+
+
+    std::string tableName = prefixvm( saveFieldType, fieldName );
+    auto const& d = field00.functionSpace()->dof().get();
+
+    rank_type currentPid = mp.mesh()->/*__step->mesh()->*/worldComm().localRank();
+
+    //std::vector<float> realBuffer;
+
+    typename mesh_type::index_type nValuesPerComponent = invalid_v<typename mesh_type::index_type>;
+
+    if constexpr ( IsNodal )
+        {
+            localDims[0] = mp.numberOfPoint( part,currentPid );
+            localDims[1] = nComponents;
+            globalDims[0] = mp.numberOfPointAllProcess( part );
+            globalDims[1] = nComponents;
+            currentOffset[0] = mp.startPointIds( part,currentPid );
+            currentOffset[1] = 0;
+
+            realBuffer.resize( localDims[0] * localDims[1], 0);
+
+            if ( M_mapNodalArrayToDofId.find( part ) == M_mapNodalArrayToDofId.end() )
+            {
+                auto const& r =  mp.rangeElement( part );
+                auto elt_it = r.template get<1>();
+                auto elt_en = r.template get<2>();
+
+                nValuesPerComponent = localDims[0];
+                auto & mapArrayToDofId = M_mapNodalArrayToDofId[part];
+                mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
+                for ( ; elt_it != elt_en; ++elt_it )
+                {
+                    auto const& elt = unwrap_ref( *elt_it );
+                    auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                    for ( uint16_type p = 0; p <  mesh_type::element_type::numPoints/*__step->mesh()->numLocalVertices()*/; ++p )
+                    {
+                        index_type ptid = mp.pointIdToContiguous(part,elt.point( p ).id());
+                        if ( ptid == invalid_v<typename mesh_type::index_type> ) // point not in this process
+                            continue;
+                        DCHECK( ptid >= currentOffset[0] ) << "aie " <<   ptid << " vs " << currentOffset[0];
+                        ptid -= currentOffset[0];
+                        size_type dof_id = locglob_ind(d->localDofId(p,0));
+                        mapArrayToDofId[ptid] = dof_id;
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                                size_type global_node_id = nComponents * ptid + cMap;
+                                DCHECK( global_node_id < realBuffer.size() ) << "invalid node id " << global_node_id << " vs " << realBuffer.size();
+                                realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
+                            }
+                        }
+                    }
+                }
+            }
+        } // IsNodal
+    else
+    {
+        localDims[0] = mp.numberOfElement( part,currentPid );
+        localDims[1] = nComponents;
+        globalDims[0] = mp.numberOfElementAllProcess( part );
+        globalDims[1] = nComponents;
+        currentOffset[0] = mp.startElementIds( part,currentPid );
+        currentOffset[1] = 0;
+
+        realBuffer.resize( localDims[0] * localDims[1], 0);
+
+        if ( M_mapElementArrayToDofId.find( part ) == M_mapElementArrayToDofId.end() )
+        {
+            auto const& r = mp.rangeElement( part );
+            auto elt_it = r.template get<1>();
+            auto elt_en = r.template get<2>();
+
+            nValuesPerComponent = localDims[0];
+            auto & mapArrayToDofId =  M_mapElementArrayToDofId[part];
+            mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
+            for ( ; elt_it != elt_en; ++elt_it )
+            {
+                auto const& elt = unwrap_ref( *elt_it );
+                index_type e = mp.elementIdToContiguous(part,elt.id());
+                e -= currentOffset[0];
+                auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                size_type dof_id = locglob_ind(d->localDofId(0,0));
+                mapArrayToDofId[e] = dof_id;
+                for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                {
+                    for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                    {
+                        auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                        uint16_type cMap = c2*nComponents1+c1;
+                        if ( isTensor2Symm )
+                            cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                        size_type global_node_id = nComponents * e + cMap;
+                        realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
+                    }
+                }
+            }
+        }
+    }
+
+
+    //
+    if ( nValuesPerComponent == invalid_v<typename mesh_type::index_type> )
+    {
+        auto const& mapArrayToDofId = (IsNodal)? M_mapNodalArrayToDofId.find( part )->second : M_mapElementArrayToDofId.find( part )->second;
+        nValuesPerComponent = mapArrayToDofId.size();
+        CHECK( localDims[0] * localDims[1] == nValuesPerComponent*nComponents ) << "invalid size";
+        realBuffer.resize( localDims[0] * localDims[1], 0);
+        for ( size_type k=0;k<nValuesPerComponent;++k )
+        {
+            size_type dof_id = mapArrayToDofId[k];
+            for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+            {
+                for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                {
+                    auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                    uint16_type cMap = c2*nComponents1+c1;
+                    if ( isTensor2Symm )
+                        cMap = /*reorder_tensor2symm[*/Feel::detail::symmetricIndex( c1,c2, nComponents1 );
+                    size_type global_node_id = nComponents*k + cMap;
+                    realBuffer[global_node_id] = fieldComp.globalValue( dof_id );
+                }
+            }
+        }
+    }
+
+    //M_hdf5Fields.createTable(groupName, tableName , H5T_NATIVE_FLOAT, globalDims, true);
+    M_hdf5Fields.createTable(groupName + "/" + tableName, H5T_NATIVE_FLOAT, globalDims);
+    M_hdf5Fields.write( groupName + "/" + tableName, H5T_NATIVE_FLOAT, localDims, currentOffset, realBuffer.data() );
+    M_hdf5Fields.closeTable( groupName + "/" + tableName);
+
+    std::ostringstream & XDMFContentByMarker = M_XDMFContent[part];
+    XDMFContentByMarker << "<Attribute AttributeType=\""<< attributeType << "\" Name=\"" << fieldName << "\" Center=\""<< attributeCenterType << "\">" << std::endl;
+    XDMFContentByMarker << "<DataItem Dimensions=\""<< globalDims[0] << " " << globalDims[1] << "\" NumberType=\"Float\" Precision=\"4\" Format=\"HDF\" Endian=\"Little\">" << std::endl;
+    XDMFContentByMarker << fieldsfilename << ":" << groupName << "/" << tableName << std::endl;
+    XDMFContentByMarker << "</DataItem>" << std::endl;
+    XDMFContentByMarker << "</Attribute>" << std::endl;
+}
+
+
+
+#if 0
 template <typename MeshType, int N>
 template <bool IsNodal,typename Iterator>
 void Exporterhdf5<MeshType, N>::saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
@@ -516,6 +658,7 @@ void Exporterhdf5<MeshType, N>::saveFields( typename timeset_type::step_ptrtype 
         for ( auto const& [part,nameAndRangeElt] : mp.partIdToRangeElement() )
         {
             std::string groupName = (boost::format("/%1%")% part).str();
+            M_hdf5Fields.createGroup(groupName);
             std::vector<float> realBuffer;
 
             typename mesh_type::index_type nValuesPerComponent = invalid_v<typename mesh_type::index_type>;
@@ -640,10 +783,12 @@ void Exporterhdf5<MeshType, N>::saveFields( typename timeset_type::step_ptrtype 
                 }
             }
 
-            //M_HDF5.createTable(groupName, tableName , H5T_NATIVE_FLOAT, globalDims, true);
-            M_HDF5.createTable(groupName + "/" + tableName, H5T_NATIVE_FLOAT, globalDims);
-            M_HDF5.write( groupName + "/" + tableName, H5T_NATIVE_FLOAT, localDims, currentOffset, realBuffer.data() );
-            M_HDF5.closeTable( groupName + "/" + tableName);
+            //M_hdf5Fields.createTable(groupName, tableName , H5T_NATIVE_FLOAT, globalDims, true);
+            M_hdf5Fields.createTable(groupName + "/" + tableName, H5T_NATIVE_FLOAT, globalDims);
+            M_hdf5Fields.write( groupName + "/" + tableName, H5T_NATIVE_FLOAT, localDims, currentOffset, realBuffer.data() );
+            M_hdf5Fields.closeTable( groupName + "/" + tableName);
+
+            M_hdf5Fields.closeGroup( groupName );
 
             std::ostringstream & XDMFContentByMarker = M_XDMFContent[part];
             XDMFContentByMarker << "<Attribute AttributeType=\""<< attributeType << "\" Name=\"" << fieldName << "\" Center=\""<< attributeCenterType << "\">" << std::endl;
@@ -655,6 +800,7 @@ void Exporterhdf5<MeshType, N>::saveFields( typename timeset_type::step_ptrtype 
         ++__var;
     }
 }
+#endif
 #if 0
 template <typename MeshType, int N>
 void Exporterhdf5<MeshType, N>::writeStats() const 
