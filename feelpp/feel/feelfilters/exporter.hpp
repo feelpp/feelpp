@@ -470,7 +470,7 @@ public:
             timeset_ptrtype __ts = *__ts_it;
             auto steps = __ts->stepsToWriteOnDisk();
             stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
-            if ( !steps.empty() )
+            if ( !steps.empty() || __ts->hasMesh() )
                 hasStepToWrite = true;
         }
 
