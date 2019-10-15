@@ -2795,8 +2795,18 @@ struct MeshContiguousNumberingMapping
                 return invalid_v<index_type>;
             return itFindElt->second;
         }
-    std::vector<index_type>  const& pointIdsInElements( int part ) const { return M_pointIdsInElements.find( part )->second; }
-    std::vector<storage_node_value_type> const& nodes( int part ) const { return M_nodes.find( part )->second; }
+    std::vector<index_type> const& pointIdsInElements( int part ) const
+        {
+            auto itFindPointIdsInElements =  M_pointIdsInElements.find( part );
+            CHECK( itFindPointIdsInElements != M_pointIdsInElements.end() ) << "part not registerd";
+            return itFindPointIdsInElements->second;
+        }
+    std::vector<storage_node_value_type> const& nodes( int part ) const
+        {
+            auto itFindNodes =  M_nodes.find( part );
+            CHECK( itFindNodes != M_nodes.end() ) << "part not registerd";
+            return itFindNodes->second;
+        }
 
     index_type startPointIds( int part, rank_type therank ) const { return genericInfo<0>( part, therank ); }
     index_type numberOfPoint( int part, rank_type therank ) const { return genericInfo<1>( part, therank ); }

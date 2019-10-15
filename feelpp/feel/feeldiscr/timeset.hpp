@@ -915,7 +915,7 @@ public:
         /**
            only TimeSet can use the copy constructor
         */
-        FEELPP_NO_EXPORT Step( Step const & );
+        FEELPP_NO_EXPORT Step( Step const & ) = default;
 
 
 
@@ -925,7 +925,7 @@ public:
          */
         //@{
 
-        FEELPP_NO_EXPORT Step& operator=( Step const& );
+        FEELPP_NO_EXPORT Step& operator=( Step const& ) = default;
 
         //@}
 
@@ -1862,7 +1862,7 @@ TimeSet<MeshType, N>::~TimeSet()
 
 
 }
-
+#if 0
 template<typename MeshType, int N>
 TimeSet<MeshType, N>&
 TimeSet<MeshType, N>::operator=( TimeSet const& __ts )
@@ -1876,7 +1876,7 @@ TimeSet<MeshType, N>::operator=( TimeSet const& __ts )
 
     return *this;
 }
-
+#endif
 #if 0
 template<typename MeshType, int N>
 void
@@ -1993,7 +1993,7 @@ TimeSet<MeshType, N>::Step::Step( TimeSet* ts, Real __t, size_type __index, size
 {
     showMe( "Step::Step()" );
 }
-
+#if 0
 template<typename MeshType, int N>
 TimeSet<MeshType, N>::Step::Step( Step const& __step )
     :
@@ -2002,7 +2002,7 @@ TimeSet<MeshType, N>::Step::Step( Step const& __step )
     M_state( __step.M_state )
 {
 }
-
+#endif
 template<typename MeshType, int N>
 TimeSet<MeshType, N>::Step::~Step()
 {
