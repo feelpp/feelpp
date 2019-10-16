@@ -140,7 +140,6 @@ BOOST_PARAMETER_FUNCTION(
         if ( physical_are_elementary_regions )
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
         import.setRespectPartition( respect_partition );
-
         if ( rebuild_partitions && partitions > 1 )
         {
             _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
@@ -148,7 +147,7 @@ BOOST_PARAMETER_FUNCTION(
             _meshSeq->components().reset();
             _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
             _meshSeq->updateForUse();
-
+#if defined(FEELPP_HAS_HDF5)
             using io_t = PartitionIO<_mesh_type>;
             if ( fnamePartitioned.empty() )
                 fnamePartitioned = (fs::current_path() / fs::path( filename_with_path ).filename().replace_extension( ".json" )).string();
@@ -158,6 +157,7 @@ BOOST_PARAMETER_FUNCTION(
             io_t io( fnamePartitioned );
             std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
             io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+#endif
         }
         else
         {
@@ -173,13 +173,13 @@ BOOST_PARAMETER_FUNCTION(
             toc("loadGMSHMesh.update", FLAGS_v>0);
         }
     }
-
+#if defined(FEELPP_HAS_HDF5)
     if ( rebuild_partitions && partitions > 1 )
     {
         mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
         _mesh->loadHDF5( fnamePartitioned, update, scale );
     }
-
+#endif
     if ( straighten && _mesh_type::nOrder > 1 )
         return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
 
