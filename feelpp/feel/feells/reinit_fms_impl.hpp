@@ -342,14 +342,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    auto __v = vf::project(M_functionspace, elements(M_functionspace->mesh()), idv(phi) );
+    auto __v = vf::project(_space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=idv(phi) );
 
     // acquire interface (=done) cells
     // the chosen approach assumes monotonicity of the FE-function in the
     // element, thus valid only for P1 elements
 
     std::set<size_type> done;
-    auto status = vf::project( M_functionspace, elements(M_functionspace->mesh()), vf::cst(FAR) );
+    auto status = vf::project( _space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=vf::cst(FAR) );
 
     /* VD, sometime, I need to give myself the elements which are already done, thus use marker2*/
     if (useMarker2AsDoneMarker)
