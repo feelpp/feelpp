@@ -40,6 +40,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/detail/fileindex.hpp>
 
 namespace Feel
 {
@@ -217,8 +218,8 @@ private:
        write the 'geo' file for ensight
     */
     FEELPP_NO_EXPORT void writeGeoFiles( timeset_ptrtype __ts, mesh_ptrtype mesh, int timeIndex, bool isFirstStep ) const;
-    FEELPP_NO_EXPORT void writeGeoMarkers( MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp ) const;
-    FEELPP_NO_EXPORT void writeGeoHeader(MPI_File fh) const;
+    FEELPP_NO_EXPORT void writeGeoMarkers( MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, bool writeHeaderBeginFile, bool writeBeginEndTimeSet, Feel::detail::FileIndex & index ) const;
+    //FEELPP_NO_EXPORT void writeGeoHeader( MPI_File fh, bool writeHeaderBeginFile ) const;
     FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<index_type> > & m) const;
     FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, int part ) const;
 
