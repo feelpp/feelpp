@@ -354,10 +354,12 @@ public:
 
     timeset_ptrtype defaultTimeSet()
     {
+        CHECK( !M_ts_set.empty() ) << "time set is empty";
         return M_ts_set.front();
     }
     timeset_ptrtype timeSet( int ts )
         {
+            CHECK( 0 <= ts && ts < M_ts_set.size() ) << "invalid time set index " << ts;
             return M_ts_set[ts];
         }
 
@@ -449,10 +451,21 @@ public:
     /**
      * add the timeset \p __ts to the Exporter
      */
-    void addTimeSet( timeset_ptrtype const& __ts )
+    uint16_type addTimeSet( timeset_ptrtype const& __ts )
     {
         if ( __ts )
+        {
             M_ts_set.push_back( __ts );
+            return M_ts_set.size()-1;
+        }
+        return invalid_v<uint16_type>;
+    }
+    //! add the timeset with name \p __tsname to the Exporter
+    //! if the name is empty, use the prefix exporter
+    uint16_type addTimeSet( std::string const& tsname = "" )
+    {
+        std::string tsnameUsed = tsname.empty()? this->prefix() : tsname;
+        return this->addTimeSet( timeset_ptrtype( new timeset_type( tsnameUsed ) ) );
     }
 
     //! save timeset in memory on disk

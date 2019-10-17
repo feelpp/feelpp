@@ -45,6 +45,8 @@ void FileIndex::read( MPI_File fh )
 
     int sizeOfInt32_t;
     MPI_Type_size( MPI_INT32_T , &sizeOfInt32_t );
+    int sizeOfInt64_t;
+    MPI_Type_size( MPI_INT64_T , &sizeOfInt64_t );
 
 
     LOG(INFO) << "Start reading FILE_INDEX (if any)";
@@ -91,14 +93,14 @@ void FileIndex::read( MPI_File fh )
             int64_type fb;
             MPI_File_read_at(fh, offset,  &fb, 1, MPI_INT64_T, &status);
             this->fileblocks.push_back( fb );
-            offset+=sizeOfInt32_t;
+            offset+=sizeOfInt64_t;
         }
 
         int32_type flag;
         MPI_File_read_at(fh, offset, &flag, 1, MPI_INT32_T, &status);
         offset+=sizeOfInt32_t;
 
-        CHECK( flag == 0 ) << "invalid FILE_INDEX, flag must be equal to 0";
+        CHECK( flag == 0 ) << "invalid FILE_INDEX, flag must be equal to 0 but we have " << flag ;
         LOG(INFO) << "Done reading FILE_INDEX";
     }
 
