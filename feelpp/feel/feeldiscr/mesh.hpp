@@ -2816,6 +2816,29 @@ struct MeshContiguousNumberingMapping
     index_type numberOfPointAllProcess( int part ) const { return genericInfoAllProcess<0>( part ); }
     index_type numberOfElementAllProcess( int part ) const { return genericInfoAllProcess<1>( part ); }
 
+
+    void updateNodesCoordinates()
+        {
+            rank_type currentPid = M_mesh->worldComm().localRank();
+            for ( auto const& [part,pointIdToContiguous] : M_pointIdToContiguous )
+            {
+                index_type spi = this->startPointIds(part,currentPid);
+                auto & nodes = M_nodes[part];
+                CHECK( nodes.size() == 3*pointIdToContiguous.size() ) << "wrong size";
+                //nodes.resize( 3*pointIdToContiguous.size(),0 );
+                for ( auto const& [ptId,ptData] : pointIdToContiguous )
+                {
+                    index_type newPtId = ptData.first - spi;
+                    auto const& pt = unwrap_ref( ptData.second );
+                    for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
+                    {
+                        CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
+                        nodes[3*newPtId+d] = pt.node()[d];
+                    }
+                }
+            }
+        }
+
 private :
 
     template <int TupleId>
