@@ -558,29 +558,21 @@ public:
 
         template<typename FunctionType>
         void add( std::initializer_list<std::string>  __n, FunctionType const& func,
-                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
+                  typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
-            std::vector<std::string> str( sanitize( __n ) );
-            add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            //std::vector<std::string> str( sanitize( __n ) );
+            //add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
+            std::vector<std::string> str( __n );
+            add( str, func );
         }
 
-        template<typename FunctionType>
+        /*template<typename FunctionType>
         void add( std::vector<std::string> const& __n, FunctionType const& func,
                   typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
         {
             add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
-        }
+         }*/
 
-
-
-        template<typename FunctionType>
-        void add( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
-                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
-        {
-            tic();
-            add_( sanitize(__n), func, reps, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
-            toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
-        }
 
         template<typename TSet>
         struct AddFunctionProduct
@@ -593,9 +585,49 @@ public:
             operator()( T const& fun ) const
                 {
                     LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( sanitize(fun.name()), fun, mpl::bool_<false>() );
+                    M_tset.add_( fun.name(), fun );
                 }
         };
+
+
+        template<typename FunctionType>
+        void add( std::variant<std::string,std::vector<std::string>> const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
+                  typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
+        {
+            //tic();
+
+            std::vector<std::string> names;
+            if( auto  nameStringPtr = std::get_if<std::string>(&__n))
+            {
+                if ( !nameStringPtr->empty() )
+                    names.push_back( *nameStringPtr );
+            }
+            else if ( auto nameVectorPtr = std::get_if<std::vector<std::string>>(&__n))
+            {
+                names = *nameVectorPtr;
+            }
+            CHECK( !names.empty() ) << "no field name given";
+
+            constexpr int nSpaces = decay_type<FunctionType>::functionspace_type::nSpaces;
+            if constexpr( nSpaces > 1 )
+            {
+                if ( names.size() == 1 )
+                {
+                    std::string nameGiven = names[0];
+                    names.resize( nSpaces );
+                    for(int i=0; i<nSpaces; i++)
+                        names[i] = (boost::format("%1%_%2%")%nameGiven %i).str();
+                }
+                fusion::for_each( subelements(func,names), AddFunctionProduct<step_type>( *this ) );
+            }
+            else
+            {
+                add( names[0], names[0], func, reps );
+            }
+            //toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
+        }
+
+#if 0
         template<typename FunctionType>
         FEELPP_NO_EXPORT void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
         {
@@ -624,10 +656,10 @@ public:
         {
             add( __n,__n,unwrap_ptr(func), reps );
         }
-
+#endif
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps = "",
-                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
+                  typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
             using FunctionDecayType = decay_type<FunctionType>;
             constexpr bool funcIsNodal = (FunctionDecayType::is_continuous || FunctionDecayType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionDecayType::is_hcurl_conforming) && (!FunctionDecayType::is_hdiv_conforming);
