@@ -1213,7 +1213,7 @@ getOptionsDescGAMG( std::string const& prefix, std::string const& sub )
           "number of smoothing steps" )
         ( prefixvm( prefix,pcctx+"gamg-coarse-grid-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
           "verbose internal petsc info for gamg" )
-        ( prefixvm( prefix,pcctx+"gamg-levels-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( true ),
+        ( prefixvm( prefix,pcctx+"gamg-levels-use-config-default-petsc").c_str(), Feel::po::value<bool>()->default_value( false ),
           "verbose internal petsc info for gamg" )
         ;
 
@@ -1581,7 +1581,7 @@ ConfigurePCHYPRE_EUCLID::ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<do
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescILU(prefix,sub,prefixOverwrite) ),
-    M_levels( option(_name="pc-factor-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+    M_levels( option(_name="pc-factor-levels",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_EUCLID(ILU)\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -1605,15 +1605,15 @@ ConfigurePCHYPRE_BOOMERAMG::ConfigurePCHYPRE_BOOMERAMG( PC& pc, PreconditionerPe
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescBOOMERAMG(prefix,sub,prefixOverwrite) ),
-    M_max_iter( option(_name="pc-hypre-boomeramg-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_tol( option(_name="pc-hypre-boomeramg-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_cycle_type( option(_name="pc-hypre-boomeramg-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>()+1 ),
-    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_coarsen_type( option(_name="pc-hypre-boomeramg-coarsen-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_strong_threshold( option(_name="pc-hypre-boomeramg-strong-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_agg_nl( option(_name="pc-hypre-boomeramg-agg-nl",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_relax_type_all( option(_name="pc-hypre-boomeramg-relax-type-all",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_interp_type( option(_name="pc-hypre-boomeramg-interp-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() )
+    M_max_iter( option(_name="pc-hypre-boomeramg-max-iter",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_tol( option(_name="pc-hypre-boomeramg-tol",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() ),
+    M_cycle_type( option(_name="pc-hypre-boomeramg-cycle-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>()+1 ),
+    M_max_levels( option(_name="pc-hypre-boomeramg-max-levels",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_coarsen_type( option(_name="pc-hypre-boomeramg-coarsen-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_strong_threshold( option(_name="pc-hypre-boomeramg-strong-threshold",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() ),
+    M_agg_nl( option(_name="pc-hypre-boomeramg-agg-nl",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_relax_type_all( option(_name="pc-hypre-boomeramg-relax-type-all",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_interp_type( option(_name="pc-hypre-boomeramg-interp-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() )
 {
     VLOG(2) << "ConfigurePC : HYPRE_BOOMERAMG\n"
             << "  |->prefix     : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
@@ -1685,19 +1685,19 @@ ConfigurePCHYPRE_AMS::ConfigurePCHYPRE_AMS( PC& pc, PreconditionerPetsc<double> 
                                                   std::vector<std::string> const& prefixOverwrite )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix,prefixOverwrite,getOptionsDescAMS(prefix,sub,prefixOverwrite) ),
-    M_print_level(option(_name="pc-hypre-ams-print-level",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_max_iter(option(_name="pc-hypre-ams-max-iter",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_cycle_type(option(_name="pc-hypre-ams-cycle-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_tol(option(_name="pc-hypre-ams-tol",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_relax_type(option(_name="pc-hypre-ams-relax-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_relax_weight(option(_name="pc-hypre-ams-relax-weight",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_omega(option(_name="pc-hypre-ams-omega",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() )
+    M_print_level(option(_name="pc-hypre-ams-print-level",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_max_iter(option(_name="pc-hypre-ams-max-iter",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_cycle_type(option(_name="pc-hypre-ams-cycle-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_tol(option(_name="pc-hypre-ams-tol",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() ),
+    M_relax_type(option(_name="pc-hypre-ams-relax-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_relax_times(option(_name="pc-hypre-ams-relax-times",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_relax_weight(option(_name="pc-hypre-ams-relax-weight",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() ),
+    M_omega(option(_name="pc-hypre-ams-omega",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() )
     #if 0
-    M_amg_alpha_theta(_name="pc-hypre-ams-amg-alpha-theta",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>())
-    M_amg_alpha_options(_name="pc-hypre-ams-amg-alpha-options",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double[5]>())
-    M_amg_alpha_theta(_name="pc-hypre-ams-amg-beta-theta",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>())
-    M_amg_alpha_options(_name="pc-hypre-ams-amg-beta-options",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double[5]>())
+    M_amg_alpha_theta(_name="pc-hypre-ams-amg-alpha-theta",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>())
+    M_amg_alpha_options(_name="pc-hypre-ams-amg-alpha-options",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double[5]>())
+    M_amg_alpha_theta(_name="pc-hypre-ams-amg-beta-theta",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>())
+    M_amg_alpha_options(_name="pc-hypre-ams-amg-beta-options",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double[5]>())
     #endif
 {
     VLOG(2) << "ConfigurePC : HYPRE_AMS\n"
@@ -1983,12 +1983,12 @@ ConfigurePCML::ConfigurePCML( PC& pc, PreconditionerPetsc<double> * precFeel,
                               worldcomm_ptr_t const& worldComm, std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescML(prefix,sub) ),
-    M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
-    M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_mlReuseInterp( option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_mlKeepAggInfo( option(_name="pc-ml-keep-agg-info",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_mlReusable( option(_name="pc-ml-reusable",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_mlOldHierarchy( option(_name="pc-ml-old-hierarchy",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_mlReuseInterp( option(_name="pc-ml-reuse-interpolation",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_mlKeepAggInfo( option(_name="pc-ml-keep-agg-info",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_mlReusable( option(_name="pc-ml-reusable",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_mlOldHierarchy( option(_name="pc-ml-old-hierarchy",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2015,7 +2015,7 @@ ConfigurePCML::run( PC& pc )
 #endif
 #if 0
     // warning, this function (seems) create 2 smoother up and down
-    int smoothdown= option(_name="pc-mg-smoothdown",_prefix=prefix,_sub=sub,_worldcomm=worldComm).as<int>();
+    int smoothdown= option(_name="pc-mg-smoothdown",_prefix=prefix,_sub=sub).as<int>();
     ierr = PCMGSetNumberSmoothDown( pc, smoothdown );
     CHKERRABORT( worldComm->globalComm(),ierr );
 #endif
@@ -2088,17 +2088,17 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
                                   std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescGAMG(prefix,sub) ),
-    M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
-    M_gamgType( option(_name="pc-gamg-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
-    M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_procEqLim( option(_name="pc-gamg-proc-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_coarseEqLim(option(_name="pc-gamg-coarse-eq-lim",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<double>() ),
-    M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_reuseInterpolation( option(_name="pc-gamg-reuse-interpolation",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_nSmooths( option(_name="pc-gamg-nsmooths",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<int>() ),
-    M_coarseGridUseConfigDefaultPetsc( option(_name="pc-gamg-coarse-grid-use-config-default-petsc",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
-    M_gamgLevelsUseConfigDefaultPetsc( option(_name="pc-gamg-levels-use-config-default-petsc",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<bool>() ),
+    M_mgType( option(_name="pc-mg-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_gamgType( option(_name="pc-gamg-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_nLevels( option(_name="pc-mg-levels",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_procEqLim( option(_name="pc-gamg-proc-eq-lim",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_coarseEqLim(option(_name="pc-gamg-coarse-eq-lim",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_threshold( option(_name="pc-gamg-threshold",_prefix=prefix,_sub=sub,_vm=this->vm()).as<double>() ),
+    M_setSymGraph( option(_name="pc-gamg-set-sym-graph",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_reuseInterpolation( option(_name="pc-gamg-reuse-interpolation",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_nSmooths( option(_name="pc-gamg-nsmooths",_prefix=prefix,_sub=sub,_vm=this->vm()).as<int>() ),
+    M_coarseGridUseConfigDefaultPetsc( option(_name="pc-gamg-coarse-grid-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
+    M_gamgLevelsUseConfigDefaultPetsc( option(_name="pc-gamg-levels-use-config-default-petsc",_prefix=prefix,_sub=sub,_vm=this->vm()).as<bool>() ),
     M_prefixMGCoarse( (boost::format( "%1%%2%mg-coarse" ) %prefixvm( prefix,"" ) %std::string((sub.empty())?"":sub+"-")  ).str() ),
     M_coarsePCtype( option(_name="pc-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
@@ -2395,9 +2395,9 @@ ConfigurePCFieldSplit::ConfigurePCFieldSplit( PC& pc, PreconditionerPetsc<double
                                               std::string const& sub, std::string const& prefix )
     :
     ConfigurePCBase( precFeel, worldComm,sub,prefix, getOptionsDescFieldSplit( prefix,sub ) ),
-    M_type( option(_name="fieldsplit-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
-    M_schurFactType( option(_name="fieldsplit-schur-fact-type",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() ),
-    M_schurPrecond( option(_name="fieldsplit-schur-precondition",_prefix=prefix,_sub=sub,_worldcomm=worldComm,_vm=this->vm()).as<std::string>() )
+    M_type( option(_name="fieldsplit-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_schurFactType( option(_name="fieldsplit-schur-fact-type",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() ),
+    M_schurPrecond( option(_name="fieldsplit-schur-precondition",_prefix=prefix,_sub=sub,_vm=this->vm()).as<std::string>() )
 {
     VLOG(2) << "ConfigurePC : FieldSplit\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"

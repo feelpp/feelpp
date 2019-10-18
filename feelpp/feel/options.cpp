@@ -199,14 +199,15 @@ mesh_options( std::string const& prefix )
 {
     po::options_description _options( "Mesh " + prefix + " options" );
     _options.add_options()
-        ( prefixvm( prefix,"mesh.filename").c_str(), po::value<std::string>()->default_value( "untitled.geo" ), "mesh filename" )
+        ( prefixvm( prefix,"mesh.filename").c_str(), po::value<std::string>(), "mesh filename" )
         ( prefixvm( prefix,"mesh.partition.enable").c_str(), po::value<bool>()->default_value(0), "partition the mesh using Feel++ partitioners" )
         ( prefixvm( prefix,"mesh.partition.size").c_str(), po::value<int>()->default_value(1), "number of partitions" )
         ( prefixvm( prefix,"mesh.partition.type").c_str(), po::value<std::string>()->default_value("metis"), "mesh partitioner: metis, (more to come)" )
-        ( prefixvm( prefix,"mesh.save.enable" ).c_str(), Feel::po::value<bool>()->default_value( true ), "enable saving mesh to disk" )
+        ( prefixvm( prefix,"mesh.save.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable saving mesh to disk" )
         ( prefixvm( prefix,"mesh.save.formats" ).c_str(), Feel::po::value<std::vector<std::string>>()->default_value( {"json+h5","msh"} ), "format of the mesh: json+h5, msh" )
-        ( prefixvm( prefix,"mesh.load.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable loading mesh from disk, overriding file name extension" );
-        ( prefixvm( prefix,"mesh.load.format" ).c_str(), Feel::po::value<std::string>()->default_value( "json+h5" ), "file format to load: msh, json" );
+        ( prefixvm( prefix,"mesh.load.enable" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable loading mesh from disk, overriding file name extension" )
+        ( prefixvm( prefix,"mesh.load.format" ).c_str(), Feel::po::value<std::string>()->default_value( "json+h5" ), "file format to load: msh, json" )
+        ( prefixvm( prefix,"mesh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" );
 
     return _options;
 }
@@ -221,7 +222,6 @@ gmsh_options( std::string const& prefix )
         ( prefixvm( prefix,"gmsh.filename" ).c_str(), Feel::po::value<std::string>()->default_value( "untitled.geo" ), "Gmsh filename" )
         ( prefixvm( prefix,"gmsh.depends" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "list of files separated by , or ; that are dependencies of a loaded Gmsh geometry" )
         ( prefixvm( prefix,"gmsh.hsize" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "default characteristic mesh size" )
-        ( prefixvm( prefix,"gmsh.scale" ).c_str(), Feel::po::value<double>()->default_value( 1 ), "scale the mesh after loading" )
         ( prefixvm( prefix,"gmsh.hsize2" ).c_str(), Feel::po::value<double>()->default_value( 0.1 ), "characteristic mesh size" )
         ( prefixvm( prefix,"gmsh.geo-variables-list" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "modify a list of geo variables (ex : alpha=1:beta=2)" )
         ( prefixvm( prefix,"gmsh.save" ).c_str(), Feel::po::value<bool>()->default_value( true ), "save msh file to disk once generated" )
@@ -457,6 +457,8 @@ po::options_description sc_options( std::string const& prefix )
         ( prefixvm( prefix, "sc.localsolve.parallel" ).c_str(), po::value<bool>()->default_value( true ), "enable/disable parallel local solve in static condensation" )
         ( prefixvm( prefix, "sc.localsolve.grain" ).c_str(), po::value<int>()->default_value( 100 ), "grain size for parallel local solve in static condensation" )
         ( prefixvm( prefix, "sc.localsolve.parallel.n" ).c_str(), po::value<int>()->default_value( 2 ), "number of tasks for parallel local solve in static condensation" )
+        ( prefixvm( prefix, "sc.ibc_partitioning" ).c_str(), po::value<bool>()->default_value( false ), "enable/disable special partitioning with IBC: all faces with IBC imposed with the same pid" )
+        ( prefixvm( prefix, "sc.ibc_partitioning.marker" ).c_str(), po::value<std::string>()->default_value( "Ibc" ), "marker of the IBC to apply the special partitioning" )
         ;
 
     return _options.add( backend_options( prefixvm(prefix,"sc") ) ).add( backend_options( prefixvm(prefix,"sc.post") ) );

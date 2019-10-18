@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
                                                         _shape=shape,
                                                         _h=doption(_name="gmsh.hsize") ),
                                           _update=MESH_CHECK|MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
-    auto mesh = createSubmesh( mesh2d, boundaryfaces( mesh2d ), 0 );
+    auto mesh = createSubmesh( _mesh=mesh2d, _range=boundaryfaces( mesh2d ) );
 
     double exact_perim = 0.;
     if ( shape == "hypercube" )
@@ -80,12 +80,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( evaluate1, T, dim_types )
     auto u = P1h->element();
     u.setOnes();
     auto m = form2(_trial=P1h, _test=P1h );
-    m = integrate( elements(mesh), idt(u)*id(u) );
+    m = integrate( _range=elements(mesh), _expr=idt(u)*id(u) );
     auto perim2 = m( u, u );
     BOOST_CHECK_CLOSE( perim2, perim, 1e-10 );
 
     auto s = form2(_trial=P1h, _test=P1h );
-    s = integrate( elements(mesh), gradt(u)*trans(grad(u)) );
+    s = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
     auto zero = s( u, u );
     BOOST_CHECK_SMALL( zero, 1e-10 );
 

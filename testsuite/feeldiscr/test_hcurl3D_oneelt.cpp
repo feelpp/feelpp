@@ -281,7 +281,7 @@ TestHCurl3DOneElt::shape_functions( std::string one_element_mesh )
     std::vector<std::string> edges = {"zAxis","yAxis","yzAxis","xyAxis","xzAxis","xAxis"};
 
     submesh1d_ptrtype edgeMesh( new submesh1d_type );
-    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh), 0 ); //submesh of edges
+    edgeMesh = createSubmesh(_mesh=oneelement_mesh, _range=boundaryedges(oneelement_mesh), _context=0 ); //submesh of edges
 
     double div1sqrt2 = 1/sqrt(2.);
 

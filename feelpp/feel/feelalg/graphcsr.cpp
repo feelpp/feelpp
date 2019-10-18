@@ -1078,7 +1078,7 @@ GraphCSR::showMe( std::ostream& __out ) const
 void
 GraphCSR::printPython( std::string const& nameFile ) const
 {
-
+#if 0
 #if 0
     std::cout << "first_row_entry_on_proc " << this->firstRowEntryOnProc() << std::endl;
     std::cout << "last_row_entry_on_proc " << this->lastRowEntryOnProc() << std::endl;
@@ -1143,7 +1143,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
             if (M_storage.size() > 0)
                 {
-                    for ( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
+                    for ( auto it = M_storage.begin(), en = std::prev(M_storage.end()) ; it != en; ++it )
                         {
                             auto const& row = it->second;
 
@@ -1151,7 +1151,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
                                 for ( auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2 )
                                     graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
                         }
-                    auto it = --M_storage.end();
+                    auto it = std::prev(M_storage.end());
                     auto const& row = it->second;
 
                     if ( ( int )row.get<0>()==proc )
@@ -1160,11 +1160,11 @@ GraphCSR::printPython( std::string const& nameFile ) const
                                 {
                                     if ( row.get<2>().size()>1 )
                                         {
-                                            for ( auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2 )
+                                            for ( auto it2 = row.get<2>().begin(), en2= std::prev(row.get<2>().end()) ; it2!=en2 ; ++it2 )
                                                 graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
                                         }
 
-                                    auto it2 = --row.get<2>().end();
+                                    auto it2 = std::prev(row.get<2>().end());
 
                                     if ( proc==this->worldComm().globalSize()-1 || M_storage.size()==1 )
                                         graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
@@ -1203,7 +1203,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
     }
 
-
+#endif
 } // printPython
 
 void

@@ -98,8 +98,8 @@ void defDiscr(py::module &m)
         .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
         .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
         
-        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
-        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ");
+        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
+        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ");
 
         if constexpr( space_t::is_scalar )
             {

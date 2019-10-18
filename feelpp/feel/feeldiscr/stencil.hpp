@@ -823,11 +823,11 @@ BOOST_PARAMETER_FUNCTION(
       ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     )
     ( optional                                  //    four optional parameters, with defaults
-      ( pattern,          *( boost::is_integral<mpl::_> ), Pattern::COUPLED )
+      ( pattern,          ( size_type ), Pattern::COUPLED )
       ( pattern_block,    *, default_block_pattern )
-      ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), false )
-      ( collect_garbage,  *( boost::is_integral<mpl::_> ), true )
-      ( close,            *( boost::is_integral<mpl::_> ), true )
+      ( diag_is_nonzero,  ( bool ), false )
+      ( collect_garbage,  ( bool ), true )
+      ( close,            ( bool ), true )
       ( range,            *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
       ( range_extended,   *( boost::is_convertible<mpl::_, stencilRangeMapTypeBase>) , stencilRangeMap0Type() )
       ( quad,             *( boost::is_convertible<mpl::_, stencilQuadSetBase>), stencilQuadSet<>() )
@@ -1810,7 +1810,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
 
     graph_ptrtype sparsity_graph( new graph_type( _M_X1->dof(),_M_X2->dof() ) );
 
-
+    tic();
     Feel::Context graph( hints );
     CHECK( graph.test( Pattern::HDG ) ) << "Invalid graph pattern, must be set to HDG";
 
@@ -1914,7 +1914,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
             DVLOG(2) << "[Stencil::computeGraphHDG] work with row " << ig1 << " " << row << std::endl;
         } // test dof loop
     } // element iterator loop
-
+    toc("sc.condense.graph",FLAGS_v>0);
     return sparsity_graph;
 }
 

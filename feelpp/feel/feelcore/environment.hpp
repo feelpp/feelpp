@@ -656,9 +656,8 @@ public:
         ( required
           ( name,( std::string ) ) )
         ( optional
-          ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
-          ( sub,( std::string ),"" )
-          ( prefix,( std::string ),"" )
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
           ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
@@ -894,13 +893,12 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
       ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
-    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix, _vm=vm );
+    return Environment::vm( _name=name,_sub=sub,_prefix=prefix, _vm=vm );
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -909,7 +907,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -918,7 +915,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<double>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<double>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -935,7 +932,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -944,7 +940,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<bool>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<bool>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -961,7 +957,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -970,7 +965,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<int>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<int>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -988,7 +983,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -997,7 +991,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::string>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::string>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1014,7 +1008,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1023,7 +1016,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1040,7 +1033,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1049,7 +1041,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1085,14 +1077,13 @@ BOOST_PARAMETER_FUNCTION(
       ( name,( std::string ) )
       ( in_out( opt ),* ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
 {
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
     }
 
     catch ( boost::bad_any_cast const& bac )

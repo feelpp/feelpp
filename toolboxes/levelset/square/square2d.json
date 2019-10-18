@@ -12,7 +12,7 @@
         "r0": "0.08"
     },
 
-    "InitialConditions":
+    "InitialConditionsDeprecated":
     {
         "levelset":
         {

@@ -511,7 +511,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
         {
             // check only component 0
             DCHECK( M_face_l2g.find( faceip.id() ) != M_face_l2g.end() ) << "not found the face id "<< faceip << "into the mapping faceLocalToGlobal";
-            const size_type theglobdoftest = faceLocalToGlobal( faceip.id(),locDof, 0 ).template get<0>();
+            const size_type theglobdoftest = faceLocalToGlobal( faceip.id(),locDof, 0 ).index();
             CHECK( theglobdoftest < this->M_n_localWithGhost_df[myRank] ) << "invalid globdof " << theglobdoftest << "\n";
             if ( dofdone[theglobdoftest] ) continue;
 
@@ -550,7 +550,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 for ( uint16_type c = 0; c < ncdof; ++c )
                 {
                     // add dof in subcontainer
-                    const size_type theglobdof = faceLocalToGlobal( faceip.id(),locDof,c ).template get<0>();
+                    const size_type theglobdof = faceLocalToGlobal( faceip.id(),locDof,c ).index();
                     dofIsGhost[theglobdof] = true;
                     compglobdofs[c]=theglobdof;
                     //listToSend[IdProcessOfGhost][idFaceInPartition].insert(boost::make_tuple(theglobdof,c));
@@ -815,7 +815,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                 for ( uint16_type l = 0; ( l < nbFaceDof && !find ) ; ++l )
                 {
                     // dof point in face
-                    auto itFindDofPoint = M_dof_points.find( faceLocalToGlobal( idFaceInMyPartition, l, comp ).template get<0>() );
+                    auto itFindDofPoint = M_dof_points.find( faceLocalToGlobal( idFaceInMyPartition, l, comp ).index() );
                     CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built";
                     auto const& thedofPtInFace = itFindDofPoint->second.template get<0>();
                     DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
@@ -840,7 +840,7 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
                 //------------------------------------------------------------------------------//
                 // get global dof
                 const auto thedof = faceLocalToGlobal( idFaceInMyPartition, locDof, comp );
-                const auto dofGlobAsked = thedof.template get<0>();
+                const auto dofGlobAsked = thedof.index();
                 // save response
                 resAskedWithMultiProcess[cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
                 this->M_activeDofSharedOnCluster[dofGlobAsked].insert(proc);
@@ -1081,7 +1081,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 for ( uint16_type l = 0 ; l < nbFaceDof && !find ; ++l )
                 {
                     // dof point in face
-                    auto itFindDofPoint = M_dof_points.find( faceLocalToGlobal( idFaceInMyPartition, l, comp ).template get<0>() );
+                    auto itFindDofPoint = M_dof_points.find( faceLocalToGlobal( idFaceInMyPartition, l, comp ).index() );
                     CHECK( itFindDofPoint != M_dof_points.end() ) << "dof point is not built";
                     auto const& thedofPtInFace = itFindDofPoint->second.template get<0>();
                     DVLOG(3) << "[buildGhostInterProcessDofMap] (myRank:" <<  myRank << ") "
@@ -1107,7 +1107,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                 {
                     // get global dof
                     const auto thedof = faceLocalToGlobal( idFaceInMyPartition, locDof, comp );
-                    const auto dofGlobAsked = thedof.template get<0>();
+                    const auto dofGlobAsked = thedof.index();
                     // save response
                     dataToReSend[idProc][cptFace][cptDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];
                     this->M_activeDofSharedOnCluster[dofGlobAsked].insert(idProc);
@@ -1117,7 +1117,7 @@ DofTable<MeshType, FEType, PeriodicityType,MortarType>::buildGlobalProcessToGlob
                     for (uint16_type comp2=0; comp2<ncdof ; ++comp2)
                     {
                         const auto thedof = faceLocalToGlobal( idFaceInMyPartition, locDof, comp2 );
-                        const size_type dofGlobAsked = thedof.template get<0>();
+                        const size_type dofGlobAsked = thedof.index();
                         const int indexDofInFace = comp2*nDofInFace + cptDofInFace;
                         // save response
                         dataToReSend[idProc][cptFace][indexDofInFace] = this->M_mapGlobalProcessToGlobalCluster[dofGlobAsked];

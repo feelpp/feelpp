@@ -59,8 +59,9 @@ makeMixedPoissonLibOptions( std::string const&  prefix , std::string const&  _to
 }
 
 po::options_description
-makeMixedElasticityOptions( std::string prefix )
+makeMixedElasticityOptions( std::string const&  _prefix, std::string const&  _toolbox_prefix )
 {
+    std::string prefix = _toolbox_prefix.empty()?"hdg.elasticity":_toolbox_prefix;
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
         ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
@@ -79,7 +80,7 @@ makeMixedElasticityOptions( std::string prefix )
     return mpOptions;
 }
 
-po::options_description makeMixedElasticityLibOptions( std::string prefix )
+po::options_description makeMixedElasticityLibOptions( std::string const&  _prefix, std::string const&  _toolbox_prefix )
 {
     po::options_description mpLibOptions( "Mixed Elasticity HDG Lib options");
     // if ( !prefix.empty() )
@@ -94,8 +95,8 @@ po::options_description
 makeMixedPoissonElasticityOptions( std::string prefix  )
 {
 	po::options_description mpOptions( "Mixed Poisson Elasticity HDG options");
-	mpOptions.add ( makeMixedPoissonOptions("mixedpoisson") );
-	mpOptions.add ( makeMixedElasticityOptions("mixedelasticity") );
+	mpOptions.add ( makeMixedPoissonOptions("hdg.poisson") );
+	mpOptions.add ( makeMixedElasticityOptions("hdg.elasticity") );
 	mpOptions.add_options()
     	( prefixvm( "poroelastic", "itmax").c_str(), po::value<int>()->default_value( 10 ), "Picard max iteration inner loop" )
     	( prefixvm( "poroelastic", "tolerance").c_str(), po::value<double>()->default_value( 1e-10 ), "Picard tolerance inner loop" )

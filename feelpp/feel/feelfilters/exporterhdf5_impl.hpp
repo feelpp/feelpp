@@ -514,7 +514,7 @@ void Exporterhdf5<MeshType, N>::saveNodal ( typename timeset_type::step_ptrtype 
 
                         if ( c < __var->second.nComponents ) 
                         {
-                            size_type dof_id = boost::get<0>( __var->second.functionSpace()->dof()->localToGlobal ( elt_it->get().id(), p, c ) );
+                            size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal ( elt_it->get().id(), p, c ).index();
                             realBuffer[global_node_id] = __var->second.globalValue ( dof_id );
                         }
                         else
@@ -620,7 +620,7 @@ void Exporterhdf5<MeshType, N>::saveElement ( typename timeset_type::step_ptrtyp
                     size_type global_node_id = e * nComponents + c;
                     if ( c < __evar->second.nComponents )
                     {
-                        size_type dof_id = boost::get<0>( __evar->second.functionSpace()->dof()->localToGlobal( elt.id(), 0, c ) );
+                        size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(), 0, c ).index();
                         realBuffer[global_node_id] = __evar->second.globalValue ( dof_id );
                     }
                     else 

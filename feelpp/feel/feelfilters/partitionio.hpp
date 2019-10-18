@@ -188,8 +188,8 @@ public:
      *        parts (RegionMesh objects). This pointer is released after
      *        writing, so the mesh parts can be cleared from memory
      */
-    void write ( mesh_ptrtype mesh);
-    void write ( mesh_partitionset_ptrtype&& mesh);
+    void write ( mesh_ptrtype mesh, double scale = 1);
+    void write ( mesh_partitionset_ptrtype&& mesh, double scale = 1);
     //! Read method
     /*!
      * Call this method to read from the HDF5 file the mesh part associated
@@ -197,7 +197,7 @@ public:
      * \param mesh pointer to a mesh . If the RegionMesh has been initialized and contains any
      *        state, it will be destroyed before reading
      */
-    void read (mesh_ptrtype mesh, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES );
+    void read (mesh_ptrtype mesh, size_type ctxMeshUpdate = MESH_UPDATE_EDGES|MESH_UPDATE_FACES, double scale = 1 );
 
 
     //@}
@@ -224,13 +224,13 @@ private:
 
     // Methods for writing
     FEELPP_NO_EXPORT void writeStats();
-    FEELPP_NO_EXPORT void writePoints();
+    FEELPP_NO_EXPORT void writePoints( double scale );
     FEELPP_NO_EXPORT void writeElements();
     FEELPP_NO_EXPORT void writeGhostElements();
     FEELPP_NO_EXPORT void writeMarkedSubEntities();
     // Methods for reading
     FEELPP_NO_EXPORT void readStats( std::vector<rank_type> const& partIds );
-    FEELPP_NO_EXPORT void readPoints( std::vector<rank_type> const& partIds );
+    FEELPP_NO_EXPORT void readPoints( std::vector<rank_type> const& partIds, double scale );
     FEELPP_NO_EXPORT void readElements( std::vector<rank_type> const& partIds, std::map<rank_type,std::vector<size_type>> & mapGhostHdf5IdToFeelId );
     FEELPP_NO_EXPORT void readGhostElements( std::vector<rank_type> const& partIds, std::map<rank_type,std::vector<size_type>> const& mapGhostHdf5IdToFeelId );
     FEELPP_NO_EXPORT void readMarkedSubEntities( std::vector<rank_type> const& partIds );
@@ -291,13 +291,13 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::write (mesh_ptrtype meshParts)
+void PartitionIO<MeshType>::write (mesh_ptrtype meshParts, double scale )
 {
     //M_meshPartitionSet = std::make_shared<mesh_partitionset_type>( meshParts );
-    this->write( std::make_unique<mesh_partitionset_type>( meshParts ) );
+    this->write( std::make_unique<mesh_partitionset_type>( meshParts ), scale );
 }
 template<typename MeshType>
-void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype&& meshpartset )
+void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype&& meshpartset, double scale )
 {
     M_meshPartitionSet = std::move(meshpartset);
     M_meshPartsOut = M_meshPartitionSet->mesh();
@@ -313,7 +313,7 @@ void PartitionIO<MeshType>::write ( mesh_partitionset_ptrtype&& meshpartset )
     writeStats();
     toc("PartitionIO writing stats",FLAGS_v>0);
     tic();
-    writePoints();
+    writePoints( scale );
     toc("PartitionIO writing points",FLAGS_v>0);
     tic();
     writeElements();
@@ -344,7 +344,7 @@ void PartitionIO<MeshType>::writeMetaData (mesh_ptrtype meshParts)
     pt::write_json(M_filename, pt);
 }
 template<typename MeshType>
-void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdate)
+void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdate, double scale )
 {
     readMetaData( meshParts );
     M_meshPartIn = meshParts;
@@ -380,7 +380,7 @@ void PartitionIO<MeshType>::read (mesh_ptrtype meshParts, size_type ctxMeshUpdat
     readStats( partIds );
     toc("PartitionIO reading stats",FLAGS_v>0);
     tic();
-    readPoints( partIds );
+    readPoints( partIds, scale );
     toc("PartitionIO reading points",FLAGS_v>0);
     tic();
     std::map<rank_type,std::vector<size_type>> mapGhostHdf5IdToFeelId;
@@ -561,7 +561,7 @@ void PartitionIO<MeshType>::writeStats()
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::writePoints()
+void PartitionIO<MeshType>::writePoints( double scale )
 {
     int d = M_meshPartsOut->nRealDim;
     int nValIds = 1;
@@ -619,11 +619,11 @@ void PartitionIO<MeshType>::writePoints()
                 auto const& thepoint = boost::unwrap_ref(*pt_it);
                 M_uintBuffer[currentBufferIndexIds++] = thepoint.id();
 
-                M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](0);
+                M_realBuffer[currentBufferIndexCoords++] = scale*thepoint.operator[](0);
                 if ( mesh_type::nRealDim >= 2 )
-                    M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](1);
+                    M_realBuffer[currentBufferIndexCoords++] = scale*thepoint.operator[](1);
                 if ( mesh_type::nRealDim >= 3 )
-                    M_realBuffer[currentBufferIndexCoords++] = thepoint.operator[](2);
+                    M_realBuffer[currentBufferIndexCoords++] = scale*thepoint.operator[](2);
             }
 
             M_HDF5IO.write ("point_ids", H5T_NATIVE_UINT, localDimsIds, offsetIds, &M_uintBuffer[0]);
@@ -975,7 +975,7 @@ void PartitionIO<MeshType>::readStats( std::vector<rank_type> const& partIds )
 }
 
 template<typename MeshType>
-void PartitionIO<MeshType>::readPoints( std::vector<rank_type> const& partIds )
+void PartitionIO<MeshType>::readPoints( std::vector<rank_type> const& partIds, double scale )
 {
     if ( partIds.empty() )
         return;
@@ -1051,7 +1051,7 @@ void PartitionIO<MeshType>::readPoints( std::vector<rank_type> const& partIds )
                 int id = M_uintBuffer[currentBufferIndexIds++];
                 for( int c = 0; c < mesh_type::nRealDim; ++c )
                 {
-                    coords[c] = M_realBuffer[currentBufferIndexCoords++];
+                    coords[c] = scale*M_realBuffer[currentBufferIndexCoords++];
                 }
 
                 point_type pt( id, coords, false/*onbdy*/ );
@@ -1145,11 +1145,12 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
                     DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
                     e.setPoint( k, M_meshPartIn->point( ptId ) );
                 }
-                auto const& eltInserted = M_meshPartIn->addElement( e, true/*false*/ );
+                auto [eit,inserted] = M_meshPartIn->addElement( e, true/*false*/ );
+                auto const& [eid,eltInserted] = *eit;
 
                 if ( j >= nActiveElement )
                 {
-                    mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eltInserted.id();
+                    mapGhostHdf5IdToFeelId[partId][j-nActiveElement] = eid;
                 }
 
             }

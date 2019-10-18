@@ -28,7 +28,6 @@ CONFIGURE_FILE(feelinfo.h.in feelinfo.h  @ONLY)
 SET(DIRS core timing math alg mesh partition poly opt crb discr ts filters material vf pde ls fit models python fmi hwsys event)
 foreach(dir ${DIRS})
   add_subdirectory(feel${dir})
-  # message(STATUS "${dir}: ${FEELPP_SRCS}")
 endforeach()
 
 # add_subdirectory (feelcore)
@@ -154,7 +153,7 @@ if ( FFTW_FOUND )
 endif()
 if ( ANN_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_ANN FEELPP_HAS_ANN_H )
-  target_include_directories( feelpp PRIVATE ${ANN_INCLUDE_DIR} )
+  target_include_directories( feelpp PUBLIC ${ANN_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${ANN_LIBRARIES} )
 endif()
 if ( GLPK_FOUND )
@@ -168,7 +167,7 @@ if ( GOOGLE_PERFTOOLS_FOUND )
 endif()
 if (PETSC_FOUND)
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PETSC FEELPP_HAS_PETSC_H )
-  target_include_directories( feelpp PUBLIC ${PETSC_PACKAGE_INCLUDES} ${PETSC_INCLUDE_DIR} PRIVATE ${PETSC_INCLUDE_CONF})
+  target_include_directories( feelpp PUBLIC ${PETSC_PACKAGE_INCLUDES} ${PETSC_INCLUDE_DIR} ${PETSC_INCLUDE_CONF})
   target_link_libraries( feelpp PUBLIC ${PETSC_LIBRARIES} ${PETSC_PACKAGE_LIBS} )
 endif()
 if (SLEPC_FOUND)
@@ -209,11 +208,13 @@ if ( GMSH_FOUND )
   endif()
   # GMSH_EXTERNAL_LIBRARIES may contain the med / cgns libs if they have been found
   target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
-  
-  target_include_directories( feelpp
-    PUBLIC
-    $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
-    $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+
+  if( ( NOT FEELPP_HAS_GMSH_API ) OR FEELPP_GMSH_API_MISSING_HEADERS )
+    target_include_directories( feelpp
+      PUBLIC
+      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
+      $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+  endif()
 endif( GMSH_FOUND )
 
 # Paraview
