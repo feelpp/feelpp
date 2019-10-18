@@ -149,14 +149,13 @@ struct norm_inf_adaptor
 template <typename T = double, uint16_type S = 3>
 struct node
 {
-    //typedef ublas::vector<T, ublas::bounded_array<T, S> >  type;
-    typedef ublas::vector<T>  type;
+    using type=Eigen::Matrix<T,S,1>;
 };
-template<typename T>
+template<typename T,int S=3>
 using node_t = typename node<T>::type;
 
-template <typename T = double, uint16_type S = 3>
-using node_t = typename node<T,S>::type;
+//template <typename T = double, uint16_type S = 3>
+//using node_t = typename node<T,S>::type;
 
 /*!
   hessian type
