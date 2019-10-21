@@ -54,5 +54,13 @@
                 }
             }
         }
+    },
+    "PostProcess":
+    {
+        "PhysicalQuantities": ["volume"],
+        "Exports":
+        {
+            "fields": ["normal", "curvature"]
+        }
     }
 }
