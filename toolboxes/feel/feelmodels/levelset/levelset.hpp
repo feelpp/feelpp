@@ -77,6 +77,8 @@ enum class LevelSetMeasuresExported
 };
 enum class LevelSetFieldsExported
 {
+    Dirac, Heaviside,
+    Normal, Curvature,
     GradPhi, ModGradPhi, 
     Distance, DistanceNormal, DistanceCurvature,
     AdvectionVelocity,
