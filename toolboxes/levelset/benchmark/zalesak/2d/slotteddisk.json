@@ -33,9 +33,9 @@
 	    "PhysicalQuantities": ["volume, perimeter, velocity_com"],
         "Exports":
         {
-            "fields":["advection-velocity"]
+            //"fields":["advection-velocity"]
             //"fields":["advection-velocity", "heaviside", "modgradphi", "pid"]
-            //"fields":[""]
+            "fields":[""]
         },
         "Measures":
         {
