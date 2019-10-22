@@ -3,8 +3,11 @@
 LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
 NARGS=3
 CFG_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/benchmark/zalesak/2d
-LOGPATH=logs/space_convergence
+EXPERIMENT_PREFIX=""
+#EXPERIMENT_PREFIX="full_time_min_and_max_modGradPhi_"
+LOGPATH=logs/${EXPERIMENT_PREFIX}space_convergence
 TIME_FINAL=628.0
+#TIME_FINAL=100.0
 #TIME_FINAL=0.5
 TIME_SCHEME=BDF2
 LS_REINIT_EVERY="-1"
@@ -16,9 +19,9 @@ QUAD_ORDER=2
 #QUAD_ORDER=6
 #HN=${hostname 2>&1}
 RESTART=""
-RESTART="--ts.restart=true --ts.restart.at-last-save=true"
+#RESTART="--ts.restart=true --ts.restart.at-last-save=true"
 EXPORTER_EXPORT=""
-EXPORTER_EXPORT="--exporter.export=0"
+#EXPORTER_EXPORT="--exporter.export=0"
 mkdir -p ${LOGPATH} 
 
 usage(){
@@ -111,11 +114,11 @@ printf "h = $HSIZE, dt = ${DELTA_T}\n"
 CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
     --config-file=${CFG_DIR}/slotteddisk.cfg \
     --levelset.mesh.filename=${CFG_DIR}/meshes/${HSIZE}/domain_0_p${NCORE}.json \
-    --directory=toolboxes/levelset/zalesak2d/space_convergence/${STABILIZATION_METHOD}_reinitevery_${LS_REINIT_EVERY}/h_${HSIZE}/quadorder_${QUAD_ORDER} \
+    --directory=toolboxes/levelset/zalesak2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_reinitevery_${LS_REINIT_EVERY}/h_${HSIZE}/quadorder_${QUAD_ORDER} \
     --ts.time-step=${DELTA_T} \
     --ts.time-final=${TIME_FINAL} \
     --levelset.reinit-every=${LS_REINIT_EVERY} \
-    --levelset.bdf.order=${ORDER} \
+    --levelset.ts.order=${ORDER} \
     --levelset.gmsh.hsize=${HSIZE} \
     --levelset.stabilization.method=${STABILIZATION_METHOD} \
     --levelset.quad.order=$QUAD_ORDER \
