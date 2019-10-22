@@ -44,6 +44,9 @@ runLevelsetApplication()
     if( !LS->doRestart() )
         LS->exportResults(0.);
 
+    double min_modGradPhi = LS->modGradPhi()->min();
+    double max_modGradPhi = LS->modGradPhi()->max();
+    
     // Errors measures :
     // LS is initialized, we save the phi, heaviside and dirac functions' initial values
     auto phi_0 = LS->functionSpace()->element();
@@ -90,6 +93,11 @@ runLevelsetApplication()
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
             LS->solve();
+
+	    min_modGradPhi = LS->modGradPhi()->min();
+	    max_modGradPhi = LS->modGradPhi()->max();
+	    Feel::cout << "modGradphi : min = " << min_modGradPhi << ", max = " << max_modGradPhi << std::endl;
+	    
             if( reinit_every > 0 && iter%reinit_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
@@ -104,69 +112,84 @@ runLevelsetApplication()
                 myExporter->step(iter)->add("distToBoundary", *distToBoundary );
                 myExporter->save();
             }
-
-	    	    
-	    // Error measures :
-	    // we compute the L2 norm error integrals :
-
-	    auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );
-	    double first_integral = integrate(
-					      _range=elements(LS->mesh()),
-					      _expr=chi_of_dirac0_positive
-					      ).evaluate()(0,0);
-	    double second_integral = integrate(
-					       _range=elements(LS->mesh()),
-					       _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_dirac0_positive ),
-					       _quad=error_quad_order
-					       ).evaluate()(0,0);
-	    double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
-
-	    //Feel::cout << "First integral = " << first_integral << std::endl;
-	    //Feel::cout << "Second integral = " << second_integral << std::endl;
-	    Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
-
-	    // Sign change error :
-	    double e_sc_integral = integrate(
-					     _range=elements(LS->mesh()),
-					     _expr=pow(
-						       ( 1-idv(H_0) ) - ( 1-idv(LS->heaviside()) ),
-						       2.0
-						       ),
-					     _quad=error_quad_order
-					     ).evaluate()(0,0);
-	    double sign_change_error_h = std::sqrt(
-						 e_sc_integral
-						 );
-
-	    Feel::cout << "Sign change error (h) = " << sign_change_error_h << std::endl;
-
-	    double sign_change_error_chi = std::sqrt( integrate(
-								_range=elements(LS->mesh()),
-								_expr=chi( idv( LS->phi() ) * idv(phi_0) < 0 ),
-								_quad=error_quad_order
-								).evaluate()(0,0) );
-	    Feel::cout << "Sign change error (chi) = " << sign_change_error_chi << std::endl;
-	    
-	    // Mass error
-	    auto chi_of_phi0_negative = chi(  idv(phi_0) < 0 );
-	    auto chi_of_phi_negative = chi(  idv(LS->phi()) < 0 );
-
-	    double em_phi0_integral = integrate(
-						_range=elements(LS->mesh()),
-						_expr=chi_of_phi0_negative,
-						_quad=error_quad_order
-						).evaluate()(0,0);
-	    double em_phi_integral = integrate(
-					       _range=elements(LS->mesh()),
-					       _expr=chi_of_phi_negative,
-					       _quad=error_quad_order
-					       ).evaluate()(0,0);
-	    double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
-
-	    //Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
-	    //Feel::cout << "phi integral = " << em_phi_integral << std::endl;
-	    Feel::cout << "Mass error = " << mass_error << std::endl;
         }
+	tic();
+	// Error measures :
+	// we compute the L2 norm error integrals :
+
+	auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );
+	double first_integral = integrate(
+					  _range=elements(LS->mesh()),
+					  _expr=chi_of_dirac0_positive
+					  ).evaluate()(0,0);
+	double second_integral = integrate(
+					   _range=elements(LS->mesh()),
+					   _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_dirac0_positive ),
+					   _quad=error_quad_order
+					   ).evaluate()(0,0);
+	double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
+	
+	//Feel::cout << "First integral = " << first_integral << std::endl;
+	//Feel::cout << "Second integral = " << second_integral << std::endl;
+	Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
+	toc("L2 error:");
+	// Sign change error :
+	double e_sc_integral = integrate(
+					 _range=elements(LS->mesh()),
+					 _expr=pow(
+						   ( 1-idv(H_0) ) - ( 1-idv(LS->heaviside()) ),
+						   2.0
+						   ),
+					 _quad=error_quad_order
+					 ).evaluate()(0,0);
+	double sign_change_error_h = std::sqrt(
+					       e_sc_integral
+					       );
+	
+	Feel::cout << "Sign change error (h) = " << sign_change_error_h << std::endl;
+	toc("Sign change error (h):");
+	
+	double sign_change_error_chi = std::sqrt( integrate(
+							    _range=elements(LS->mesh()),
+							    _expr=chi( idv( LS->phi() ) * idv(phi_0) < 0 ),
+							    _quad=error_quad_order
+							    ).evaluate()(0,0) );
+	Feel::cout << "Sign change error (chi) = " << sign_change_error_chi << std::endl;
+	toc("Sign change error (h):");
+	
+	// Mass error
+	auto chi_of_phi0_negative = chi(  idv(phi_0) < 0 );
+	auto chi_of_phi_negative = chi(  idv(LS->phi()) < 0 );
+	
+	double em_phi0_integral = integrate(
+					    _range=elements(LS->mesh()),
+					    _expr=chi_of_phi0_negative,
+					    _quad=error_quad_order
+					    ).evaluate()(0,0);
+	double em_phi_integral = integrate(
+					   _range=elements(LS->mesh()),
+					   _expr=chi_of_phi_negative,
+					   _quad=error_quad_order
+					   ).evaluate()(0,0);
+	double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
+	toc("Mass error (h):");
+	
+	//Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
+	//Feel::cout << "phi integral = " << em_phi_integral << std::endl;
+	Feel::cout << "Mass error = " << mass_error << std::endl;
+	double hsize = doption( _name="levelset.gmsh.hsize" );
+	
+	// Compute min and max of |grad(phi)|
+	/*
+	auto mm = minmax(
+			 _range=( elements(LS->mesh()) ),
+			 _pset=( LS->functionSpace()->fe()->points() ),
+			 _expr=( idv(LS->modGradPhi()) )
+			 );
+	*/
+	//double mingradphi = 1-mm[0]; 
+	//double maxgradphi = 1-mm[1]; 
+			 
     }
 }
 
