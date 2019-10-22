@@ -72,15 +72,19 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::copyCstPart()
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
-void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setCstMatrixToZero()
+void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setMatricesAndVectorToZero()
 {
-    M_A_cst->zero();
-}
-
-MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
-void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::setVectorToZero()
-{
-    M_F->zero();
+    if( M_setZeroByInit )
+    {
+        this->initMatricesAndVector();
+    }
+    else
+    {
+        M_A_cst->zero();
+        M_F->zero();
+        M_App->zero();
+        M_Fpp->zero();
+    }
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS

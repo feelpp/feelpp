@@ -39,6 +39,7 @@ makeMixedPoissonOptions( std::string const&  _prefix = "", std::string const&  _
         ( prefixvm( prefix, "conductivityNL_json" ).c_str(), po::value<std::string>()->default_value( "condNL" ), "key for non linear conductivity in json (depends on potential p)" )
         ( prefixvm( prefix, "use-sc" ).c_str(), po::value<bool>()->default_value( true ), "use static condensation" )
         ( prefixvm( prefix, "error-quadrature").c_str(), po::value<int>()->default_value(10), "quadrature to compute errors" )
+        ( prefixvm( prefix, "set-zero-by-init").c_str(), po::value<bool>()->default_value(true), "reinit matrix and vector when setting to zero" )
         ;
     mpOptions.add( modelnumerical_options( prefix ) );
     mpOptions.add( backend_options( prefix + ".sc" ) );
@@ -158,7 +159,9 @@ protected:
 
     backend_ptrtype M_backend;
     condensed_matrix_ptr_t<value_type> M_A_cst;
+#ifndef USE_SAME_MAT
     condensed_matrix_ptr_t<value_type> M_A;
+#endif
     condensed_vector_ptr_t<value_type> M_F;
     condensed_matrix_ptr_t<value_type> M_App;
     condensed_vector_ptr_t<value_type> M_Fpp;
@@ -188,6 +191,7 @@ protected:
     std::map<std::string,value_type> M_paramValues;
 
     int M_quadError;
+    bool M_setZeroByInit;
 public:
 
     // constructor
@@ -262,12 +266,12 @@ public:
     virtual void initModel();
     virtual void initSpaces();
     virtual void initExporter( mesh_ptrtype meshVisu = nullptr );
+    virtual void initMatricesAndVector();
     virtual void assembleAll();
     virtual void assembleCstPart();
     virtual void assembleNonCstPart();
     void copyCstPart();
-    void setCstMatrixToZero();
-    void setVectorToZero();
+    void setMatricesAndVectorToZero();
 
     void assembleRHS();
     template<typename ExprT> void updateConductivityTerm( Expr<ExprT> expr, std::string marker = "");

@@ -23,7 +23,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
       M_useUserIBC(false),
-      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) )
+      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) ),
+      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -274,8 +275,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     auto ibcSpaces = std::make_shared<ProductSpace<Ch_ptr_t,true> >( M_integralCondition, M_Ch);
     M_ps = std::make_shared<product2_space_type>(product2(ibcSpaces,M_Vh,M_Wh,M_Mh));
-    auto pps = product( M_Whp );
-
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
@@ -284,17 +283,26 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(M_Ch->element("mup"));
 
+    tic();
+    this->initMatricesAndVector();
+    toc("matrixCondensed", FLAGS_v > 0);
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMatricesAndVector()
+{
     solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
     solve::strategy spp = solve::strategy::local;
-
-    tic();
+    auto pps = product( M_Whp );
 
     M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+#ifndef USE_SAME_MAT
     M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+#endif
     M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
     M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
     M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
-    toc("matrixCondensed", FLAGS_v > 0);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
