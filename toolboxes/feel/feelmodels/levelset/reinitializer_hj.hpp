@@ -102,7 +102,8 @@ public:
         bool hasSourceTerm() const { return false; }
     };
 
-    typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
+    //typedef AdvectionHJ<FunctionSpaceType> advectionhj_type;
+    typedef Feel::FeelModels::AdvDiffReac<FunctionSpaceType> advectionhj_type;
     typedef std::shared_ptr<advectionhj_type> advectionhj_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -159,16 +160,20 @@ REINITIALIZERHJ_CLASS_TEMPLATE_DECLARATIONS
 REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::ReinitializerHJ( 
         functionspace_ptrtype const& space,
         std::string const& prefix )
-    : super_type( space, prefix )
-    , M_nGlobalIter(1)
+: 
+    super_type( space, prefix ),
+    M_advectionHJ( new advectionhj_type( prefix, space->worldCommPtr() ) ),
+    M_nGlobalIter(1)
 {
     this->loadParametersFromOptionsVm();
 
-    M_advectionHJ = advectionhj_type::New( prefix );
+    //M_advectionHJ = advectionhj_type::New( prefix );
+    M_advectionHJ->setModelName( "Advection" );
     M_advectionHJ->setTimeInitial(0.);
     M_advectionHJ->setTimeFinal( M_timeStep * M_maxIterations );
     M_advectionHJ->setTimeStep( M_timeStep );
-    M_advectionHJ->init( space );
+    M_advectionHJ->setFunctionSpace( space );
+    M_advectionHJ->init();
 
     M_functionSpaceP1Vec = functionspace_P1v_type::New( space->mesh() );
     M_projectorL2Vec = projector(M_functionSpaceP1Vec, M_functionSpaceP1Vec, 

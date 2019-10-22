@@ -1,12 +1,12 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 #include <feel/feelmodels/levelset/cauchygreentensorexpr.hpp>
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
+//#include <feel/feelmodels/levelset/levelsetcurvatureexpr.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -98,9 +98,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
     //M_periodicity(periodicityLS),
-    M_reinitializerIsUpdatedForUse(false),
-    M_hasReinitialized(false),
-    M_iterSinceReinit(0)
+    M_redistanciationIsUpdatedForUse(false),
+    M_hasRedistanciated(false),
+    M_iterSinceRedistanciation(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -111,8 +111,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     this->loadParametersFromOptionsVm();
     // Load initial value
     this->loadConfigICFile();
-    // Load boundary conditions
-    this->loadConfigBCFile();
     // Load post-process
     this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
@@ -161,7 +159,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->createFunctionSpaces();
     // Tools
     this->createInterfaceQuantities();
-    this->createReinitialization();
+    this->createRedistanciation();
     this->createTools();
     this->createExporters();
     // Advection toolbox
@@ -174,6 +172,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         // Set levelset initial value
         this->initLevelsetValue();
     }
+    // Init boundary conditions
+    this->initBoundaryConditions();
     // Init advection toolbox
     M_advectionToolbox->init();
     M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
@@ -185,32 +185,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     M_initialVolume = this->volume();
     M_initialPerimeter = this->perimeter();
 
-    // Init iterSinceReinit
+    // Init iterSinceRedistanciation
     if( this->doRestart() )
     {
-        // Reload saved iterSinceReinit data
-        auto iterSinceReinitPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
-        if( fs::exists( iterSinceReinitPath ) )
+        // Reload saved iterSinceRedistanciation data
+        auto iterSinceRedistanciationPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
+        if( fs::exists( iterSinceRedistanciationPath ) )
         {
-            fs::ifstream ifs( iterSinceReinitPath );
+            fs::ifstream ifs( iterSinceRedistanciationPath );
             boost::archive::text_iarchive ia( ifs );
-            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
-            M_iterSinceReinit = M_vecIterSinceReinit.back();
+            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceRedistanciation );
+            M_iterSinceRedistanciation = M_vecIterSinceRedistanciation.back();
         }
         else
         {
-            // If iterSinceReinit not found, we assume that last step reinitialized by default
-            M_iterSinceReinit = 0;
+            // If iterSinceRedistanciation not found, we assume that last step redistanciated by default
+            M_iterSinceRedistanciation = 0;
         }
     }
     else
     {
-            M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+            M_vecIterSinceRedistanciation.push_back( M_iterSinceRedistanciation );
     }
-    // Adjust BDF order with iterSinceReinit
-    if( M_iterSinceReinit < this->timeOrder() )
+    // Adjust BDF order with iterSinceRedistanciation
+    if( M_iterSinceRedistanciation < this->timeOrder() )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 
     // Init post-process
@@ -280,8 +280,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
                 _range=elements(this->functionSpace()->mesh()),
                 _expr=idv(phi_init) / idv(modGradPhiInit)
                 );
-            // Reinitialize phi_init
-            *phi_init = this->reinitializerFM()->run( *phi_init );
+            // Redistanciate phi_init
+            *phi_init = this->redistanciationFM()->run( *phi_init );
         }
         // Add shapes
         for( auto const& shape: M_icShapes )
@@ -300,7 +300,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     if( M_useGradientAugmented )
     {
         // Initialize modGradPhi
-        if( M_reinitInitialValue )
+        if( M_redistInitialValue )
         {
             M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
         }
@@ -563,29 +563,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
+LEVELSET_CLASS_TEMPLATE_TYPE::createRedistanciation()
 {
-    switch( M_reinitMethod )
+    switch( M_redistanciationMethod )
     { 
         case LevelSetDistanceMethod::NONE :
-        {
-            // Nothing to do
-        }
+        // Nothing to do - Remove warning
         break;
         case LevelSetDistanceMethod::FASTMARCHING :
         {
-            if( !M_reinitializer )
-                M_reinitializer = this->reinitializerFM();
-
-            std::dynamic_pointer_cast<reinitializerFM_type>( M_reinitializer )->setUseMarker2AsMarkerDone( 
-                    M_useMarkerDiracAsMarkerDoneFM 
-                    );
+            if( !M_redistanciationFM )
+                this->createRedistanciationFM();
         }
         break;
         case LevelSetDistanceMethod::HAMILTONJACOBI :
         {
-            if( !M_reinitializer )
-                M_reinitializer = this->reinitializerHJ();
+            if( !M_redistanciationHJ )
+                this->createRedistanciationHJ();
             
             double thickness_heaviside;
             if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj")).defaulted() )
@@ -596,7 +590,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
             {
                 thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
             }
-            std::dynamic_pointer_cast<reinitializerHJ_type>(M_reinitializer)->setThicknessHeaviside( thickness_heaviside );
+            M_redistanciationHJ->setThicknessHeaviside( thickness_heaviside );
         }
         break;
         case LevelSetDistanceMethod::RENORMALISATION :
@@ -604,20 +598,53 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createReinitialization()
         break;
     }
 
-    M_reinitializerIsUpdatedForUse = true;
+    M_redistanciationIsUpdatedForUse = true;
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createRedistanciationFM()
+{
+    M_redistanciationFM.reset( 
+            new LevelSetRedistanciationFM<space_levelset_type>( 
+                this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") 
+                ) 
+            );
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::createRedistanciationHJ()
+{
+    M_redistanciationHJ.reset( 
+            new LevelSetRedistanciationHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
+            );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::createTools()
 {
-    this->toolManager()->createProjectorL2Default();
-    M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
-    M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
+    if( M_useSpaceIsoPN )
+    {
+        this->toolManager()->createProjectorL2IsoPN();
+        M_projectorL2Scalar = this->toolManager()->projectorL2ScalarIsoPN();
+        M_projectorL2Vectorial = this->toolManager()->projectorL2VectorialIsoPN();
 
-    this->toolManager()->createProjectorSMDefault();
-    M_projectorSMScalar = this->toolManager()->projectorSMScalar();
-    M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
+        this->toolManager()->createProjectorSMIsoPN();
+        M_projectorSMScalar = this->toolManager()->projectorSMScalarIsoPN();
+        M_projectorSMVectorial = this->toolManager()->projectorSMVectorialIsoPN();
+    }
+    else
+    {
+        this->toolManager()->createProjectorL2Default();
+        M_projectorL2Scalar = this->toolManager()->projectorL2Scalar();
+        M_projectorL2Vectorial = this->toolManager()->projectorL2Vectorial();
+
+        this->toolManager()->createProjectorSMDefault();
+        M_projectorSMScalar = this->toolManager()->projectorSMScalar();
+        M_projectorSMVectorial = this->toolManager()->projectorSMVectorial();
+    }
 
     if( M_useCauchyAugmented )
     {
@@ -835,7 +862,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::setFastMarchingInitializationMethod( FastMarchingInitializationMethod m )
 {
-    if (M_reinitializerIsUpdatedForUse)
+    if (M_redistanciationIsUpdatedForUse)
         LOG(INFO)<<" !!!  WARNING !!! : fastMarchingInitializationMethod set after the fast marching has been actually initialized ! \n";
     M_fastMarchingInitializationMethod = m;
 }
@@ -847,21 +874,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
-    std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
-    CHECK( LevelSetDistanceMethodIdMap.count( reinitmethod ) ) << reinitmethod << " is not in the list of possible redistantiation methods\n";
-    M_reinitMethod = LevelSetDistanceMethodIdMap.at( reinitmethod );
+    std::string redistmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    CHECK( LevelSetDistanceMethodIdMap.count( redistmethod ) ) << redistmethod << " is not in the list of possible redistanciation methods\n";
+    M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
-    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistantiation methods\n";
+    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
-
-    M_useMarkerDiracAsMarkerDoneFM = boption( _name="use-marker2-as-done", _prefix=prefixvm(this->prefix(), "reinit-fm") );
 
     const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
     CHECK(FastMarchingInitializationMethodIdMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
     M_fastMarchingInitializationMethod = FastMarchingInitializationMethodIdMap.left.at(fm_init_method);
 
-    M_reinitInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
+    M_redistInitialValue = boption( _name="reinit-initial-value", _prefix=this->prefix() );
 
     const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix() );
     CHECK(DerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible gradphi derivation methods\n";
@@ -996,14 +1021,56 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
     M_bcMarkersInflow.clear();
+    M_levelsetParticleInjectors.clear();
 
+    // Inflow BC
     for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
             M_bcMarkersInflow.push_back( bcMarker );
+    }
+
+    // Particle injectors
+    for( std::string const& injectorMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "ParticleInjector" ) )
+    {
+        auto particleInjector = std::make_shared<levelsetparticleinjector_type>( this->shared_from_this(), markedelements( this->mesh(), injectorMarker) );
+
+        // Injector method
+        std::string particleInjectorMethod = "fixed_position"; // default value
+        std::pair<bool, std::string> particleInjectorMethodRead = this->modelProperties().boundaryConditions().sparam( this->prefix(), "ParticleInjector", injectorMarker, "method" );
+        if( particleInjectorMethodRead.first )
+        {
+            particleInjectorMethod = particleInjectorMethodRead.second;
+        }
+        particleInjector->setParticleInjectionMethod( particleInjectorMethod );
+
+        // Injector particles
+        auto const& injectorPTree = this->modelProperties().pTree().get_child( pt::ptree::path_type( "BoundaryConditions/"+this->prefix()+"/ParticleInjector/"+injectorMarker, '/' ) );
+        if( auto const& injectorParticlesPTree = injectorPTree.get_child_optional( "particles" ) )
+        {
+            // read all particles with form "id": { "shape":[shape], [params]... }
+            for( auto const& part: *injectorParticlesPTree )
+            {
+                std::string partId = part.first;
+                std::string partShape = part.second.template get<std::string>( "shape" );
+                parameter_map partParams = particleInjector->levelsetParticleShapes()->readShapeParams( partShape, part.second );
+                particleInjector->addParticle( partId, partShape, partParams );
+            }
+        }
+
+        // Injector particle number
+        int nParticles = 1; // default
+        std::pair<bool, int> nParticlesRead = this->modelProperties().boundaryConditions().iparam( this->prefix(), "ParticleInjector", injectorMarker, "nparticles" );
+        if( nParticlesRead.first )
+        {
+            nParticles = nParticlesRead.second;
+        }
+        particleInjector->setNParticles( nParticles );
+
+        M_levelsetParticleInjectors.push_back( particleInjector );
     }
 }
 
@@ -1295,13 +1362,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
         {
             this->log("LevelSet", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
-            *M_levelsetCurvature = this->projectorL2()->derivate( trans(idv(this->normal())) );
+            auto phi = this->phi();
+            *M_levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case CurvatureMethod::SMOOTH_PROJECTION:
         {
             this->log("LevelSet", "updateCurvature", "perform smooth projection");
-            *M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
+            //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
+            auto phi = this->phi();
+            *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case CurvatureMethod::PN_NODAL_PROJECTION:
@@ -1317,6 +1387,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateCurvature()
                     _space=this->functionSpaceManager()->functionSpaceScalarPN(),
                     _range=this->functionSpaceManager()->rangeMeshPNElements(),
                     _expr=divv(normalPN)
+                    //_expr=levelsetCurvature( *phiPN )
                     );
 
             this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
@@ -1349,7 +1420,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDistance()
     this->log("LevelSet", "updateDistance", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    *M_distance = this->redistantiate( *this->phi(), M_distanceMethod );
+    *M_distance = this->redistanciate( *this->phi(), M_distanceMethod );
 
     M_doUpdateDistance = false;
 
@@ -1898,16 +1969,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
     // Retrieve the elements touching the boundary
     auto boundaryelts = boundaryelements( this->mesh() );
 
-    // Mark the elements in myrange
-    auto mymark = vf::project(
-            _space=this->functionSpaceMarkers(),
-            _range=boundaryelts,
-            _expr=cst(1)
-            );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -1916,9 +1977,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToBoundary()
             );
     phi0.on( _range=boundaryfaces(this->mesh()), _expr=cst(0.) );
 
-    // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToBoundary = this->reinitializerFM()->run( phi0 );
+    // Run FM
+    *distToBoundary = this->redistanciationFM()->run( phi0, boundaryelts );
 
     return distToBoundary;
 }
@@ -1948,13 +2008,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
-    // Mark the elements in myrange
-    auto mymark = this->functionSpaceMarkers()->element();
-    mymark.on( _range=myrange, _expr=cst(1) );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -1964,8 +2017,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->redistanciationFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
@@ -1996,13 +2048,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
-    // Mark the elements in myrange
-    auto mymark = this->functionSpaceMarkers()->element();
-    mymark.on( _range=myrange, _expr=cst(1) );
-
-    // Update mesh marker2
-    this->mesh()->updateMarker2( mymark );
-
     // Init phi0 with h on marked2 elements
     auto phi0 = vf::project(
             _space=this->functionSpace(),
@@ -2012,8 +2057,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost::an
     phi0.on( _range=mfaces, _expr=cst(0.) );
 
     // Run FM using marker2 as marker DONE
-    this->reinitializerFM()->setUseMarker2AsMarkerDone( true );
-    *distToMarkedFaces = this->reinitializerFM()->run( phi0 );
+    *distToMarkedFaces = this->redistanciationFM()->run( phi0, myrange );
 
     return distToMarkedFaces;
 }
@@ -2166,8 +2210,19 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         this->updateInterfaceQuantities();
     }
 
-    // Reset hasReinitialized
-    M_hasReinitialized = false;
+    if( !M_levelsetParticleInjectors.empty() )
+    {
+        auto const& phi = this->phi();
+        // Inject particles
+        for( auto const& particleInjector: M_levelsetParticleInjectors )
+        {
+            *phi = particleInjector->inject( *phi );
+            this->updateInterfaceQuantities();
+        }
+    }
+
+    // Reset hasRedistanciated
+    M_hasRedistanciated = false;
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("LevelSet","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -2179,12 +2234,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     double current_time = this->timeStepBDF()->time();
 
-    if( M_hasReinitialized )
-        M_iterSinceReinit = 0;
+    if( M_hasRedistanciated )
+        M_iterSinceRedistanciation = 0;
     else
-        ++M_iterSinceReinit;
+        ++M_iterSinceRedistanciation;
 
-    M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+    M_vecIterSinceRedistanciation.push_back( M_iterSinceRedistanciation );
 
     this->saveCurrent();
 
@@ -2198,15 +2253,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->updateTime( M_advectionToolbox->currentTime() );
 
-    if( M_iterSinceReinit < this->timeOrder() )
+    if( M_iterSinceRedistanciation < this->timeOrder() )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useGradientAugmented )
-            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useStretchAugmented )
-            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useCauchyAugmented )
-            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 }
 
@@ -2456,22 +2511,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Derivat
 }
 
 //----------------------------------------------------------------------------//
-// Reinitialization
+// Redistanciation
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
 { 
-    this->log("LevelSet", "reinitialize", "start");
-    this->timerTool("Reinit").start();
+    this->log("LevelSet", "redistanciate", "start");
+    this->timerTool("Redist").start();
 
     auto phi = this->phi();
 
-    if ( M_useMarkerDiracAsMarkerDoneFM )
-    {
-        this->mesh()->updateMarker2( *this->markerDirac() );
-    }
-
-    *phi = this->redistantiate( *phi, M_reinitMethod );
+    *phi = this->redistanciate( *phi, M_redistanciationMethod );
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -2489,23 +2539,23 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 );
     }
 
-    M_hasReinitialized = true;
+    M_hasRedistanciated = true;
 
-    double timeElapsed = this->timerTool("Reinit").stop();
-    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    double timeElapsed = this->timerTool("Redist").stop();
+    this->log("LevelSet","redistanciate","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::element_levelset_type
-LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const
 { 
-    auto phiReinit = this->functionSpace()->elementPtr();
+    auto phiRedist = this->functionSpace()->elementPtr();
 
     switch( method )
     {
         case LevelSetDistanceMethod::NONE:
         {
-            *phiReinit = phi;
+            *phiRedist = phi;
         }
         break;
         case LevelSetDistanceMethod::FASTMARCHING:
@@ -2514,7 +2564,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
             {
                 case FastMarchingInitializationMethod::ILP_NODAL :
                 {
-                    phiReinit->on( 
+                    phiRedist->on( 
                             _range=this->rangeMeshElements(), 
                             _expr=idv(phi)/sqrt( inner( gradv(phi), gradv(phi) ) )
                             );
@@ -2524,8 +2574,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 case FastMarchingInitializationMethod::ILP_L2 :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
-                    //*phiReinit = phi;
-                    phiReinit->on( 
+                    //*phiRedist = phi;
+                    phiRedist->on( 
                             _range=this->rangeMeshElements(), 
                             _expr=idv(phi)/idv(modGradPhi) 
                             );
@@ -2535,8 +2585,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 case FastMarchingInitializationMethod::ILP_SMOOTH :
                 {
                     auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
-                    //*phiReinit = phi;
-                    phiReinit->on( 
+                    //*phiRedist = phi;
+                    phiRedist->on( 
                             _range=this->rangeMeshElements(), 
                             _expr=idv(phi)/idv(modGradPhi) 
                             );
@@ -2557,20 +2607,20 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
                 break;
                 case FastMarchingInitializationMethod::NONE :
                 {
-                    *phiReinit = phi;
+                    *phiRedist = phi;
                 }
                 break;
             } // switch M_fastMarchingInitializationMethod
 
-            LOG(INFO)<< "reinit with FMM done"<<std::endl;
-            *phiReinit = M_reinitializer->run( *phiReinit );
+            LOG(INFO)<< "redistanciation with FM done"<<std::endl;
+            *phiRedist = this->redistanciationFM()->run( *phiRedist );
         } // Fast Marching
         break;
 
         case LevelSetDistanceMethod::HAMILTONJACOBI:
         {
             // TODO
-            *phiReinit = M_reinitializer->run( phi );
+            *phiRedist = this->redistanciationHJ()->run( phi );
         } // Hamilton-Jacobi
         break;
 
@@ -2578,7 +2628,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
         {
             //auto R = this->interfaceRectangularFunction( phi );
             auto const modGradPhi = this->modGrad( phi );
-            phiReinit->on(
+            phiRedist->on(
                     _range=this->rangeMeshElements(),
                     //_expr = idv(phi) * ( 1. + ( 1./idv(modGradPhi)-1. )*idv(R) )
                     _expr = idv(phi) / idv(modGradPhi)
@@ -2587,49 +2637,45 @@ LEVELSET_CLASS_TEMPLATE_TYPE::redistantiate( element_levelset_type const& phi, L
         break;
     }
     
-    return *phiReinit;
+    return *phiRedist;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerFM( bool buildOnTheFly )
+typename LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationFM_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationFM( bool buildOnTheFly ) const
 {
-    if( !M_reinitializerFM && buildOnTheFly )
+    if( !M_redistanciationFM && buildOnTheFly )
     {
-        M_reinitializerFM.reset( 
-                new ReinitializerFM<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") ) 
-                );
+        const_cast<self_type*>(this)->createRedistanciationFM();
     }
 
-    return M_reinitializerFM;
+    return M_redistanciationFM;
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-typename LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ_ptrtype const&
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitializerHJ( bool buildOnTheFly )
+typename LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationHJ_ptrtype const&
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciationHJ( bool buildOnTheFly ) const
 {
-    if( !M_reinitializerHJ && buildOnTheFly )
+    if( !M_redistanciationHJ && buildOnTheFly )
     {
-        M_reinitializerHJ.reset( 
-                new ReinitializerHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
-                );
+        const_cast<self_type*>(this)->createRedistanciationHJ();
     }
 
-    return M_reinitializerHJ;
+    return M_redistanciationHJ;
 }
 
 //----------------------------------------------------------------------------//
 // Initial value
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doReinitialize)
+LEVELSET_CLASS_TEMPLATE_TYPE::setInitialValue(element_levelset_ptrtype const& phiv, bool doRedistanciate)
 {
     this->log("LevelSet", "setInitialValue", "start");
 
-    if (doReinitialize)
+    if (doRedistanciate)
     {
         auto phiRedist = phiv->functionSpace()->elementPtr();
-        *phiRedist = this->redistantiate( *phiv, M_reinitMethod );
+        *phiRedist = this->redistanciate( *phiv, M_redistanciationMethod );
         this->M_advectionToolbox->setInitialValue( phiRedist );
     }
     else
@@ -2657,16 +2703,16 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
     const std::string modGradPhiMethod = DerivationMethodMap.right.at(this->M_modGradPhiMethod);
     const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
 
-    std::string reinitMethod;
-    std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
-    if( reinitmethod == "fm" )
+    std::string redistMethod;
+    std::string redistmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    if( redistmethod == "fm" )
     {
-        reinitMethod = "Fast-Marching";
+        redistMethod = "Fast-Marching";
         std::string fmInitMethod = FastMarchingInitializationMethodIdMap.right.at( this->M_fastMarchingInitializationMethod );
-        reinitMethod += " (" + fmInitMethod + ")";
+        redistMethod += " (" + fmInitMethod + ")";
     }
-    else if( reinitmethod == "hj" )
-        reinitMethod = "Hamilton-Jacobi";
+    else if( redistmethod == "hj" )
+        redistMethod = "Hamilton-Jacobi";
 
     std::string scalarSmootherParameters;
     if ( M_projectorSMScalar )
@@ -2731,15 +2777,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- thickness interface (use adaptive)  : " << this->thicknessInterface() << " (" << std::boolalpha << this->M_useAdaptiveThicknessInterface << ")"
            << "\n     -- use regular phi (phi / |grad(phi)|) : " << std::boolalpha << this->M_useRegularPhi
            << "\n     -- Heaviside/Dirac projection method   : " << hdProjectionMethod
-           << "\n     -- reinit initial value                : " << std::boolalpha << this->M_reinitInitialValue
+           << "\n     -- redistanciate initial value         : " << std::boolalpha << this->M_redistInitialValue
            << "\n     -- gradphi projection                  : " << gradPhiMethod
            << "\n     -- modgradphi projection               : " << modGradPhiMethod
            << "\n     -- curvature projection                : " << curvatureMethod
            << "\n     -- use gradient augmented              : " << std::boolalpha << this->M_useGradientAugmented
            << "\n     -- use stretch augmented               : " << std::boolalpha << this->M_useStretchAugmented
 
-           << "\n   Reinitialization Parameters"
-           << "\n     -- reinitialization method         : " << reinitMethod;
+           << "\n   Redistanciation Parameters"
+           << "\n     -- redistanciation method          : " << redistMethod;
     if( this->M_useGradientAugmented )
     *_ostr << "\n     -- reinitialize gradient augmented : " << std::boolalpha << this->M_reinitGradientAugmented;
     if( this->M_useGradientAugmented )
@@ -2799,7 +2845,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     //if (enable_reinit)
     //{
-        //if (reinitmethod == "hj")
+        //if (redistmethod == "hj")
         //{
             //infos << "\n      * hj maximum iteration per reinit : " << hj_max_iter
                   //<< "\n      * hj pseudo time step dtau : " << hj_dtau
@@ -3032,6 +3078,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
         if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
         if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
         this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
         hasMeasureToExport = true;
     }
 
@@ -3126,7 +3174,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
         fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
 
         boost::archive::text_oarchive oa( ofs );
-        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceRedistanciation );
     }
     this->worldComm().barrier();
 }

@@ -97,10 +97,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Init mesh
     this->initMesh();
     // Init FluidMechanics
-    M_fluidModel->setMesh( this->mesh() );
-    M_fluidModel->init( false );
     if( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->init( false );
     // Init LevelSets
     this->initLevelsets();
     // Update current time
@@ -546,19 +546,33 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     // Solve
     if( this->useImplicitCoupling() )
     {
-        this->updateParameterValues();
-
-        this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
-        //for( auto const& ls: M_levelsets )
-        //{
-            //ls.second->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( ls.first ) );
-        //}
-        CHECK(false) << "TODO: implicit coupling\n";
-
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        //TODO
+        this->solveImplicitCoupling();
     }
-    else if ( this->hasInextensibilityLM() ) /* inextensibility-lm block in fluid */
+    else /* explicit coupling */
+    {
+        if( M_usePicardIterations )
+            this->solvePicard();
+        else
+            this->solveExplicitCoupling();
+    }
+
+    // Redistantiate
+    for( auto const& ls: M_levelsets )
+    {
+        if( M_levelsetReinitEvery.at(ls.first) > 0 
+                && (ls.second->iterSinceReinit()+1) % M_levelsetReinitEvery.at(ls.first) == 0 )
+            ls.second->reinitialize();
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveExplicitCoupling()
+{
+    if ( this->hasInextensibilityLM() ) /* inextensibility-lm block in fluid */
     {
         this->updateParameterValues();
 
@@ -587,60 +601,66 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         // Solve fluid
         M_algebraicFactory->solve( this->fluidModel()->solverName(), M_blockVectorSolution.vectorMonolithic() );
         M_blockVectorSolution.localize();
-        // Solve levelsets
-        this->advectLevelsets();
     }
-    else /* explicit coupling */
+    else
     {
         // Solve fluid equations (with direct assembly of interface forces)
         this->solveFluid();
-        // Advect levelsets
-        this->advectLevelsets();
-        // Update density and viscosity
-        this->updateFluidDensityViscosity();
-
-        if( M_usePicardIterations )
-        {
-            double errorVelocityL2 = 0.;
-            int picardIter = 0;
-            auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
-            do
-            {
-                picardIter++;
-                u_old = this->fieldVelocity();
-                // Sub-solves
-                if( M_doUpdateInextensibilityLM )
-                    this->updateInextensibilityLM();
-                this->solveFluid();
-                this->advectLevelsets();
-                this->updateFluidDensityViscosity();
-                auto u = this->fieldVelocity();
-
-                double uOldL2Norm = integrate(
-                        _range=elements(this->mesh()),
-                        _expr=trans(idv(u_old))*idv(u_old)
-                        ).evaluate()(0,0);
-                errorVelocityL2 = integrate(
-                        _range=elements(this->mesh()),
-                        _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
-                        ).evaluate()(0,0);
-                errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
-
-                Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
-            } while( errorVelocityL2 > 0.01);
-        }
     }
+    // Advect levelsets
+    this->advectLevelsets();
+    // Update density and viscosity
+    this->updateFluidDensityViscosity();
+}
 
-    // Redistantiate
-    for( auto const& ls: M_levelsets )
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImplicitCoupling()
+{
+    this->updateParameterValues();
+
+    this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
+    //for( auto const& ls: M_levelsets )
+    //{
+        //ls.second->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( ls.first ) );
+    //}
+    CHECK(false) << "TODO: implicit coupling\n";
+
+    M_blockVectorSolution.updateVectorFromSubVectors();
+    //TODO
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
+{
+    this->solveExplicitCoupling();
+
+    double errorVelocityL2 = 0.;
+    int picardIter = 0;
+    auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
+    do
     {
-        if( M_levelsetReinitEvery.at(ls.first) > 0 
-                && (ls.second->iterSinceReinit()+1) % M_levelsetReinitEvery.at(ls.first) == 0 )
-            ls.second->reinitialize();
-    }
+        picardIter++;
+        u_old = this->fieldVelocity();
+        // Sub-solves
+        if( M_doUpdateInextensibilityLM )
+            this->updateInextensibilityLM();
+        this->solveExplicitCoupling();
+        auto u = this->fieldVelocity();
 
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+        double uOldL2Norm = integrate(
+                _range=elements(this->mesh()),
+                _expr=trans(idv(u_old))*idv(u_old)
+                ).evaluate()(0,0);
+        errorVelocityL2 = integrate(
+                _range=elements(this->mesh()),
+                _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
+                ).evaluate()(0,0);
+        errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
+
+        Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
+    } while( errorVelocityL2 > 0.01);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
