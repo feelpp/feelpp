@@ -1,10 +1,17 @@
 {
     "Name": "HDG-Electro-Thermo ",
     "ShortName":"ET",
-    "Model":"hdg",
+    "Models":
+    {
+        "equations":"hdg",
+        "p_expr":"2*dif/Pi*atan2(y,x):x:y:z:dif",
+        "u_expr":"{2*sigma0*dif/Pi*y/(x*x+y*y),-2*sigma0*dif/Pi*x/(x*x+y*y),0}:x:y:z:dif:sigma0"
+    },
     "Parameters":
     {
-        "dif":0.05
+        "dif":0.03125,
+        "intensity":-800,
+        "sigma0":58e3
     },
     "Materials":
     {
@@ -15,24 +22,24 @@
     },
     "BoundaryConditions":
     {
-        // "flux":
-        // {
-        //     "Integral":
-        //     {
-        //         "V0":
-        //         {
-        //             "expr":"-4000"
-        //         }
-        //     }
-        // },
+        "flux":
+        {
+            "Integral":
+            {
+                "V0":
+                {
+                    "expr":"intensity:intensity"
+                }
+            }
+        },
         "potential":
         {
             "Dirichlet":
             {
-                "V0":
-                {
-                    "expr":"0.05"
-                },
+                // "V0":
+                // {
+                //     "expr":"dif:dif"
+                // },
                 "V1":
                 {
                     "expr":"0"
@@ -57,24 +64,7 @@
                     "expr":"0"
                 }
             }
-        },
-	    "Exact solution":
-	    {
-	        "p_exact":
-	        {
-		        "omega":
-		        {
-		            "expr":"2*0.05/Pi*atan2(y,x):x:y:z:dif"
-		        }
-	        },
-            "u_exact":
-            {
-                "omega":
-                {
-                    "expr":"{2*58e3*0.05/Pi*y/(x*x+y*y),-2*58e3*0.05/Pi*x/(x*x+y*y),0}:x:y:z:dif"
-                }
-            }
-	    }
+        }
     },
     "PostProcess":
     {
