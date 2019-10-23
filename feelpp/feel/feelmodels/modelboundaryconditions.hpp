@@ -99,7 +99,7 @@ private:
     ModelExpression M_modelExpr2;
 };
 
-class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::vector<ModelBoundaryCondition> > >, public CommObject
+class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::map<std::string,ModelBoundaryCondition> > >, public CommObject
 {
   public:
     using super = CommObject;
