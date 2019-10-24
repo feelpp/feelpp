@@ -44,15 +44,42 @@ runApplicationMixedPoisson( std::string  const& prefix )
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
     }
-	
+
 	// Feel::cout << "Stationary: " << MP -> isStationary() << std::endl;
 	// Feel::cout << "boption steady: " << boption("ts.steady") << std::endl;
 
     if ( MP -> isStationary() )
     {
-        MP->assembleAll();
-        MP->solve();
-        MP->exportResults( mesh, Idh, Idhv );
+        if( boption("use-picard") )
+        {
+            int maxit = ioption("picard.maxit");
+            double tol = doption("picard.tol");
+            double error;
+            int i = 0;
+            do
+            {
+                MP->setMatricesAndVectorToZero();
+                auto oldPotential = MP->potentialField();
+                MP->assembleCstPart();
+                MP->modelProperties().parameters().updateParameterValues();
+                MP->updateConductivityTerm(true);
+                MP->assembleRHS();
+                MP->assembleRhsBoundaryCond();
+                MP->solve();
+                auto p = MP->potentialField();
+                auto np = normL2(_range=elements(mesh),_expr=idv(p));
+                error = normL2(_range=elements(mesh),_expr=idv(p)-idv(oldPotential))/np;
+                Feel::cout << "error[" << i++ << "] = " << error << std::endl;
+            }
+            while( error > tol && i < maxit );
+            MP->exportResults( mesh, Idh, Idhv );
+        }
+        else
+        {
+            MP->assembleAll();
+            MP->solve();
+            MP->exportResults( mesh, Idh, Idhv );
+        }
     }
     else
     {
@@ -82,6 +109,9 @@ int main(int argc, char *argv[])
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+        ("use-picard", Feel::po::value<bool>()->default_value(false), "use picard to solve non linear problem" )
+        ("picard.tol", Feel::po::value<double>()->default_value(1e-8), "picard tolerance" )
+        ("picard.maxit", Feel::po::value<int>()->default_value(50), "picard maximum number of iteration")
         ;
 
     Feel::Environment env( _argc=argc,

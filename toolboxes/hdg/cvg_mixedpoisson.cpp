@@ -18,97 +18,56 @@ makeAbout()
     return about;
 }
 
-void printCvg( std::ostream& out, std::vector<double> h, std::vector<std::vector<double>> err )
+void printCvg( std::ostream& out, std::vector<double> h, std::vector<std::map<std::string,std::map<std::string,double> > > errors )
 {
-    auto errP = err[0];
-    auto errRelP = err[1];
-    auto errU = err[2];
-    auto errRelU = err[3];
-    auto errPP = err[4];
-    auto errRelPP = err[5];
-
     boost::format fmter("%1% %|14t|");
     boost::format fmter_endl("%1%\n");
+    std::vector<std::string> fields = {"P","PP","U"};
+    std::vector<std::string> norms = {"L2","L2_rel"};//,"H1","H1_rel"};
 
     out << fmter % "h";
-    out << fmter % "errP_L2";
-    out << fmter % "errP_H1";
-    out << fmter % "errRelP_L2";
-    out << fmter % "errRelP_H1";
-    out << fmter % "errU_L2";
-    out << fmter % "errU_H1";
-    out << fmter % "errRelU_L2";
-    out << fmter % "errRelU_H1";
-    out << fmter % "errPP_L2";
-    out << fmter % "errPP_H1";
-    out << fmter % "errRelPP_L2";
-    out << fmter_endl % "errRelPP_H1";
+    for(auto const& f : fields )
+        for( auto const& n : norms )
+            out << fmter % ("err"+f+"_"+n);
+    out << "\n";
 
     int maxiter = h.size();
     for( int i = 0; i < maxiter; ++i )
     {
         out << fmter % h[i];
-        out << fmter % errP[2*i];
-        out << fmter % errP[2*i+1];
-        out << fmter % errRelP[2*i];
-        out << fmter % errRelP[2*i+1];
-        out << fmter % errU[2*i];
-        out << fmter % errU[2*i+1];
-        out << fmter % errRelU[2*i];
-        out << fmter % errRelU[2*i+1];
-        out << fmter % errPP[2*i];
-        out << fmter % errPP[2*i+1];
-        out << fmter % errRelPP[2*i];
-        out << fmter_endl % errRelPP[2*i+1];
+        for(auto const& f : fields )
+            for( auto const& n : norms )
+                out << fmter % errors[i][f][n];
+        out << "\n";
     }
 }
 
 template<typename ExpF>
-std::tuple<double,double,double,double>
-computeErrors( ExpF F, Expr<GinacExVF<15>> T, bool isScalar)
+void
+computeErrors( ExpF const& F, Expr<GinacExVF<15>> const& T, std::map<std::string, double> & m)
 {
     int quadError = ioption("benchmark.quad");
-    double nL2 = normL2( _range=F.functionSpace()->template rangeElements<0>(),
-                         _expr=idv(F),
-                         _quad=quadError, _quad1=quadError );
-    double errL2 = normL2( _range=F.functionSpace()->template rangeElements<0>(),
-                           _expr=idv(F)-T,
-                           _quad=quadError, _quad1=quadError );
-    double errRelL2 = errL2/nL2;
-    double nH1 = normH1( _range=F.functionSpace()->template rangeElements<0>(),
-                         _expr=idv(F), _grad_expr=gradv(F),
-                         _quad=quadError, _quad1=quadError );
-    double errH1 = normH1( _range=F.functionSpace()->template rangeElements<0>(),
-                           _expr=idv(F)-T,
-                           _grad_expr=gradv(F)-grad<3>(T),
-                           _quad=quadError, _quad1=quadError );
-    double errRelH1 = errH1/nH1;
-
-    return std::make_tuple(errL2,errRelL2,errH1,errRelH1);
+    m["L2"] = normL2( _range=F.functionSpace()->template rangeElements<0>(),
+                      _expr=idv(F)-T,
+                      _quad=quadError, _quad1=quadError );
+    // m["H1"]= normH1( _range=F.functionSpace()->template rangeElements<0>(),
+    //                  _expr=idv(F)-T,
+    //                  _grad_expr=gradv(F)-grad<3>(T),
+    //                  _quad=quadError, _quad1=quadError );
 }
 
 template<typename ExpF, int M>
-std::tuple<double,double,double,double>
-computeErrors( ExpF F, Expr<GinacMatrix<M,1,15>> T, bool isScalar)
+void
+computeErrors( ExpF const& F, Expr<GinacMatrix<M,1,15>> const& T, std::map<std::string, double> & m)
 {
     int quadError = ioption("benchmark.quad");
-    double nL2 = normL2( _range=F.functionSpace()->template rangeElements<0>(),
-                         _expr=idv(F),
-                         _quad=quadError, _quad1=quadError );
-    double errL2 = normL2( _range=F.functionSpace()->template rangeElements<0>(),
-                           _expr=idv(F)-T,
-                           _quad=quadError, _quad1=quadError );
-    double errRelL2 = errL2/nL2;
-    double nH1 = normH1( _range=F.functionSpace()->template rangeElements<0>(),
-                         _expr=idv(F), _grad_expr=gradv(F),
-                         _quad=quadError, _quad1=quadError );
-    double errH1 = normH1( _range=F.functionSpace()->template rangeElements<0>(),
-                           _expr=idv(F)-T,
-                           _grad_expr=gradv(F)-grad(T),
-                           _quad=quadError, _quad1=quadError );
-    double errRelH1 = errH1/nH1;
-
-    return std::make_tuple(errL2,errRelL2,errH1,errRelH1);
+    m["L2"] = normL2( _range=F.functionSpace()->template rangeElements<0>(),
+                      _expr=idv(F)-T,
+                      _quad=quadError, _quad1=quadError );
+    // m["H1"] = normH1( _range=F.functionSpace()->template rangeElements<0>(),
+    //                   _expr=idv(F)-T,
+    //                   _grad_expr=gradv(F)-grad(T),
+    //                   _quad=quadError, _quad1=quadError );
 }
 
 template<int Dim, int OrderT, int GOrder = 1>
@@ -141,9 +100,8 @@ runApplicationMixedPoisson( std::string  const& prefix )
     exporter_ptrtype e( exporter_type::New("convergence") );
 
     std::vector<double> h(maxiter);
-    std::vector<double> normP(2*maxiter), errP(2*maxiter), errRelP(2*maxiter);
-    std::vector<double> normU(2*maxiter), errU(2*maxiter,0), errRelU(2*maxiter,0);
-    std::vector<double> normPP(2*maxiter), errPP(2*maxiter,0), errRelPP(2*maxiter,0);
+    std::vector<std::map<std::string,std::map<std::string,double> > > errors(maxiter, std::map<std::string,std::map<std::string,double> >());
+    std::map<std::string, double> mapP, mapU, mapPP;
 
     for( int i = 0; i < maxiter; ++i )
     {
@@ -160,16 +118,10 @@ runApplicationMixedPoisson( std::string  const& prefix )
         auto PP_h = MP->postPotentialField();
         auto Ph = MP->potentialSpace();
         auto P_ex = Ph->element(pExpr);
-        auto errTP = computeErrors(P_h,pExpr,true);
-        auto errTPP = computeErrors(PP_h,pExpr,true);
-        errP[2*i] = std::get<0>(errTP);
-        errP[2*i+1] = std::get<1>(errTP);
-        errRelP[2*i] = std::get<2>(errTP);
-        errRelP[2*i+1] = std::get<3>(errTP);
-        errPP[2*i] = std::get<0>(errTPP);
-        errPP[2*i+1] = std::get<1>(errTPP);
-        errRelPP[2*i] = std::get<2>(errTPP);
-        errRelPP[2*i+1] = std::get<3>(errTPP);
+        computeErrors(P_h, pExpr, mapP);
+        computeErrors(PP_h, pExpr, mapPP);
+        errors[i]["P"] = mapP;
+        errors[i]["PP"] = mapPP;
         if( e->doExport() )
         {
             e->step(i)->add("P_h", P_h);
@@ -177,38 +129,57 @@ runApplicationMixedPoisson( std::string  const& prefix )
             e->step(i)->add("P_ex", P_ex);
         }
 
-        if( !uString.empty() )
+        auto U_h = MP->fluxField();
+        auto Uh = MP->fluxSpace();
+        auto U_ex = Uh->element(uExpr);
+        computeErrors(U_h, uExpr, mapU);
+        errors[i]["U"] = mapU;
+        if( e->doExport() )
         {
-            auto U_h = MP->fluxField();
-            auto Uh = MP->fluxSpace();
-            auto U_ex = Uh->element(uExpr);
-            auto errTU = computeErrors(U_h,uExpr,false);
-            errU[2*i] = std::get<0>(errTU);
-            errU[2*i+1] = std::get<1>(errTU);
-            errRelU[2*i] = std::get<2>(errTU);
-            errRelU[2*i+1] = std::get<3>(errTU);
-            if( e->doExport() )
-            {
-                e->step(i)->add("U_h", U_h);
-                e->step(i)->add("U_ex", U_ex);
-            }
+            e->step(i)->add("U_h", U_h);
+            e->step(i)->add("U_ex", U_ex);
         }
 
         if( e->doExport() )
             e->save();
 
         size /= factor;
+
+        if( i == maxiter-1 )
+        {
+            int quadError = ioption("benchmark.quad");
+            double nPL2 = normL2( _range=Ph->template rangeElements<0>(),
+                                  _expr=pExpr,
+                                  _quad=quadError, _quad1=quadError );
+            // double nPH1 = normH1( _range=Ph->template rangeElements<0>(),
+            //                            _expr=pExpr, _grad_expr=grad<Dim>(pExpr),
+            //                            _quad=quadError, _quad1=quadError );
+            double nUL2 = normL2( _range=Uh->template rangeElements<0>(),
+                                  _expr=uExpr,
+                                  _quad=quadError, _quad1=quadError );
+            // double nUH1 = normH1( _range=Uh->template rangeElements<0>(),
+            //                            _expr=uExpr, _grad_expr=grad(uExpr),
+            //                            _quad=quadError, _quad1=quadError );
+            for( int j = 0; j < maxiter; ++j)
+            {
+                errors[j]["P"]["L2_rel"] = errors[j]["P"]["L2"]/nPL2;
+                errors[j]["PP"]["L2_rel"] = errors[j]["PP"]["L2"]/nPL2;
+                errors[j]["U"]["L2_rel"] = errors[j]["U"]["L2"]/nUL2;
+                // errors[j]["P"]["H1_rel"] = errors[j]["P"]["H1"]/nPH1;
+                // errors[j]["PP"]["H1_rel"] = errors[j]["PP"]["H1"]/nPH1;
+                // errors[j]["U"]["H1_rel"] = errors[j]["U"]["H1"]/nUH1;
+            }
+        }
     }
 
-    std::vector<std::vector<double>> err = {errP, errRelP, errU, errRelU, errPP, errRelPP};
     Feel::cout << std::endl;
     if( Environment::isMasterRank() )
     {
-        printCvg( std::cout, h, err );
+        printCvg( std::cout, h, errors );
         std::ofstream file ( soption("benchmark.filename") );
         if( file )
         {
-            printCvg( file, h, err );
+            printCvg( file, h, errors );
             file.close();
         }
     }
