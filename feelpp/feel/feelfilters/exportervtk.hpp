@@ -144,6 +144,8 @@ public:
     typedef typename timeset_type::step_const_iterator step_const_iterator;
 protected :
     using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+    using mesh_contiguous_numbering_mapping_type = Feel::detail::MeshContiguousNumberingMapping<mesh_type,float>;
+    using mesh_contiguous_numbering_mapping_ptrtype = std::shared_ptr<mesh_contiguous_numbering_mapping_type>;
 public :
 
     /* Use the vtkUnstructuredGrid type to store data */
@@ -250,21 +252,18 @@ public :
     void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
     /**
-     * Returns a VTK structure representing the last timestep
-     */
-    vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
-
-    /**
      * export mesh
      */
     void visit( mesh_type* mesh ) override;
 
+private :
     /**
      * save the \p mesh to the file \p filename
      */
-    void saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const;
+    void saveMesh( timeset_ptrtype __ts, mesh_ptrtype mesh, std::map<std::string,vtkSmartPointer<vtkout_type>> & outs ) const;
+    void saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype step, std::map<std::string,vtkSmartPointer<vtkout_type>> & outs ) const;
     template<bool IsNodal,typename Iterator>
-    void saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
+    void saveFields( typename timeset_type::step_ptrtype step, mesh_contiguous_numbering_mapping_type const& mp, int part, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
 
 #ifdef FEELPP_HAS_LIBXML2
     /**
@@ -281,13 +280,17 @@ public :
      * on the different processes.
      */
     vtkSmartPointer<vtkMultiBlockDataSet>
-        buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const;
+    buildMultiBlockDataSet( double time, std::map<std::string,vtkSmartPointer<vtkout_type>> const& outs ) const;
 
     /**
      * Actual write of the dataset into a file
      */
     void write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
+
+    void saveData( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
+
+    void updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
     //@}
 
 private:
@@ -303,7 +306,7 @@ private:
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
 #endif
 #endif
-    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
+    mutable std::map<std::string, mesh_contiguous_numbering_mapping_ptrtype > M_cache_mp;
 };
 
 } // Feel
