@@ -1471,6 +1471,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         /* Check if file exists if we are on step one and delete it if so */
         /* (MPI IO does not have a truncate mode ) */
         // std::cout << "Nodes " << this->worldComm().isMasterRank() << " " << __step->index() << " " << isFirstStep << " " << fs::exists(str) << std::endl;
+#if 0
         if ( writeNewFile )
         {
             if( this->worldComm().isMasterRank()  && fs::exists(str))
@@ -1479,6 +1480,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
             }
             MPI_Barrier(this->worldComm().comm());
         }
+#endif
 
         //init MPI_Info object fromhints defined as environment variables
         //MPI_Info info = initIoInfoFromEnvVars();
@@ -1492,6 +1494,10 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 
         // INIT CURSOR IN FILE
         posInFile = 0;
+        // trunc the file
+        if ( writeNewFile )
+            MPI_File_set_size( fh, posInFile );
+
         Feel::detail::FileIndex index( this->worldCommPtr()  );
 
         if( M_mergeTimeSteps )
