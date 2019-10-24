@@ -2464,10 +2464,12 @@ struct MeshContiguousNumberingMapping
     using index_type = typename mesh_type::index_type;
     using storage_node_value_type = StorageNodeValueType;
     using range_element_type = elements_reference_wrapper_t<mesh_type>;
+    using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
-    MeshContiguousNumberingMapping( mesh_type* mesh )
+    MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false )
         :
-        M_mesh( mesh )
+        M_mesh( mesh ),
+        M_interprocessPointAreDuplicated( interprocessPointAreDuplicated )
         {
             this->updateForUse();
         }
@@ -2496,13 +2498,10 @@ struct MeshContiguousNumberingMapping
             }
 
             // point id -> (  ( map of idsInOtherPart ), ( vector of ( marker, element id, id in elt) ) )
-            std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>>>> dataPointsInterProcess;
+            std::unordered_map<index_type, std::tuple< std::map<rank_type, index_type>, std::vector< std::tuple<int,index_type,uint16_type>> >> dataPointsInterProcess;
 
-            //auto const en_part = mesh->endParts();
-            //for ( auto it_part = mesh->beginParts() ; it_part!=en_part;++it_part )
             for ( auto const& [part,nameAndRangeElt] : M_partIdToRangeElement )
             {
-                //auto rangeElt = markedelements(mesh,it_part->first );
                 auto const& rangeElt = std::get<1>( nameAndRangeElt );
                 index_type nEltInRange = nelements(rangeElt);
                 auto & elementIdToContiguous = M_elementIdToContiguous[part];
@@ -2522,7 +2521,7 @@ struct MeshContiguousNumberingMapping
                         auto const& pt = elt.point( j );
                         index_type ptid = pt.id();
                         auto const& ptIdnOthersPartitions = pt.idInOthersPartitions();
-                        if ( ptIdnOthersPartitions.empty() ) // not a interprocess point
+                        if ( M_interprocessPointAreDuplicated || ptIdnOthersPartitions.empty() ) // not a interprocess point
                         {
                             auto [itPt,isInserted] = pointIdToContiguous.try_emplace( ptid,std::make_pair(countPtId,boost::cref(pt)) );
                             if ( isInserted )
@@ -2537,7 +2536,9 @@ struct MeshContiguousNumberingMapping
                             auto infoIpElt = std::make_tuple( part, newEltId/*eltId*/, j );
                             auto itFindPtIP = dataPointsInterProcess.find( ptid );
                             if ( itFindPtIP == dataPointsInterProcess.end() )
-                                dataPointsInterProcess[ptid] = std::make_tuple( ptIdnOthersPartitions,  std::vector< std::tuple<int,index_type,uint16_type>>( { infoIpElt } ) );
+                            {
+                                dataPointsInterProcess.emplace( ptid,  std::make_tuple( ptIdnOthersPartitions,  std::vector< std::tuple<int,index_type,uint16_type>>( { infoIpElt } ) ) );
+                            }
                             else
                                 std::get<1>( itFindPtIP->second ).push_back( infoIpElt );
                         }
@@ -2548,7 +2549,7 @@ struct MeshContiguousNumberingMapping
             // --------------------------------------------------------------------------------------- //
             // treatment of interprocess point
             std::map<int,std::map<rank_type,std::map<index_type,index_type>>> dataPointsNotInProcess;
-            if ( worldSize > 1 )
+            if ( !M_interprocessPointAreDuplicated && worldSize > 1 )
             {
                 std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToSend;
                 std::map<rank_type, std::vector<std::pair<int,index_type>>> dataToRecv;
@@ -2665,7 +2666,7 @@ struct MeshContiguousNumberingMapping
                     auto const& pt = unwrap_ref( ptData.second );
                     for ( uint16_type d=0 ; d<mesh_type::nRealDim ;++d )
                     {
-                        CHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
+                        DCHECK( (3*newPtId+d) < nodes.size() ) << "invalid size : " << (3*newPtId+d) << " vs " << nodes.size() ;
                         nodes[3*newPtId+d] = pt.node()[d];
                     }
                 }
@@ -2732,6 +2733,7 @@ struct MeshContiguousNumberingMapping
                         auto itFindPtIp = dataPointsInterProcess.find( ptId );
                         CHECK( itFindPtIp != dataPointsInterProcess.end() ) << "invalid point ";
                         auto const& infosElt = std::get<1>( itFindPtIp->second );
+                        // up pointIdsInElements
                         for (auto const& [ marker2, newEltId, j ] : infosElt )
                         {
                             if ( marker == marker2 )
@@ -2760,7 +2762,6 @@ struct MeshContiguousNumberingMapping
             return std::get<1>( itFindPart->second );
         }
 
-    using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
     std::unordered_map<index_type,std::pair<index_type,point_ref_type>> const& pointIdToContiguous( int part ) const
         {
             auto itFindData = M_pointIdToContiguous.find( part );
@@ -2816,7 +2817,6 @@ struct MeshContiguousNumberingMapping
     index_type numberOfPointAllProcess( int part ) const { return genericInfoAllProcess<0>( part ); }
     index_type numberOfElementAllProcess( int part ) const { return genericInfoAllProcess<1>( part ); }
 
-
     void updateNodesCoordinates()
         {
             rank_type currentPid = M_mesh->worldComm().localRank();
@@ -2858,6 +2858,7 @@ private :
         }
 private:
     mesh_type* M_mesh;
+    bool M_interprocessPointAreDuplicated;
     std::map<int,std::tuple<std::string,range_element_type>> M_partIdToRangeElement;
     std::map<int,std::unordered_map<index_type,std::pair<index_type,point_ref_type> >> M_pointIdToContiguous;
     std::map<int,std::unordered_map<index_type,index_type>> M_elementIdToContiguous;
