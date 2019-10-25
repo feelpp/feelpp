@@ -22,13 +22,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/*!
- * \file exporterhdf5.hpp
- * \brief HDF5 and XDMF exporter
- * \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
- * \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
- * \date 2014-08-28
- */
 #ifndef FEELPP_FILTERS_EXPORTERXDMF_HPP
 #define FEELPP_FILTERS_EXPORTERXDMF_HPP 1
 
@@ -39,17 +32,17 @@
 #include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 
-namespace Feel 
+namespace Feel
 {
 namespace fs = boost::filesystem;
 
 template <typename MeshType, int N>
 class ExporterXDMF
-    : 
+    :
         public Exporter <MeshType, N>
 {
     typedef Exporter<MeshType, N> super;
-public: 
+public:
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
@@ -68,7 +61,7 @@ public :
 
     ExporterXDMF( ExporterXDMF const & __ex );
 
-    ~ExporterXDMF(); 
+    ~ExporterXDMF();
 
     /** @name  Mutators
      */
@@ -132,8 +125,8 @@ protected :
     //mutable std::ostringstream M_fileName;        /*!< file name */
     mutable HDF5 M_hdf5Fields/*, M_hdf5Geo*/;                   /*!< HDF5 IO */
 
-        // Mesh geometry
-        mutable std::string M_element_type;    /*!< element's type */
+    // Mesh geometry
+    mutable std::string M_element_type;    /*!< element's type */
 
     //    mutable std::ofstream M_xmf;          /*!< Out stream to write the .xmf file */
     //    mutable std::ostringstream M_XDMFContent;               /*!< Content of Xdmf file */
@@ -146,7 +139,7 @@ protected :
 };
 } // Feel
 
-#include <feel/feelfilters/exporterhdf5_impl.hpp>
+#include <feel/feelfilters/exporterxdmf_impl.hpp>
 
 #endif /* FEELL_HAS_HDF5 */
 #endif

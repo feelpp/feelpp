@@ -50,7 +50,7 @@
 #endif
 
 #if defined(FEELPP_HAS_HDF5)
-#include <feel/feelfilters/exporterhdf5.hpp>
+#include <feel/feelfilters/exporterxdmf.hpp>
 #endif
 
 #include <feel/feelfilters/exporterexodus.hpp>

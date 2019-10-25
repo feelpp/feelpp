@@ -22,22 +22,13 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/*!
- * \file exporterhdf5_impl.hpp
- * \brief HDF5 and XDMF exporter
- * \author Benjamin Vanthong <benjamin.vanthong@gmail.com>
- * \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
- * \date 2014-08-28
- */
 #ifndef FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP
 #define FEELPP_FILTERS_EXPORTERXDMF_IMPL_HPP 1
 
 #if defined(FEELPP_HAS_HDF5)
 
 #include <feel/feelcore/feel.hpp>
-
-#include <feel/feelfilters/exporterhdf5.hpp>
-#include <feel/feelcore/hdf5.hpp>
+#include <feel/feelfilters/exporterxdmf.hpp>
 
 namespace Feel
 {
@@ -45,10 +36,9 @@ namespace fs = boost::filesystem;
 
 template<typename MeshType, int N>
 ExporterXDMF<MeshType,N>::ExporterXDMF( worldcomm_ptr_t const& worldComm )
-:
-super( worldComm ),
-M_element_type()
-
+    :
+    super( worldComm ),
+    M_element_type()
 {
     init();
 }
