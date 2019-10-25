@@ -39,6 +39,7 @@
 #include <feel/feelcore/debug.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
