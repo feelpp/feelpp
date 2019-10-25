@@ -69,7 +69,7 @@ template<typename MeshType, int N> class ExporterEnsightGold;
 template<typename MeshType, int N> class ExporterGmsh;
 #endif
 #if defined(FEELPP_HAS_HDF5)
-//template<typename MeshType, int N> class Exporterhdf5;
+//template<typename MeshType, int N> class ExporterXDMF;
 #endif
 
 template<typename MeshType, int N>
@@ -181,8 +181,8 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
 #if defined(FEELPP_HAS_HDF5)
-    else if ( N == 1 && ( exportername == "hdf5" ))
-        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+    else if ( N == 1 && ( exportername == "xdmf" ))
+        exporter = new ExporterXDMF<MeshType, N> ( worldComm ) ;
 #endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( exportername == "vtk"  ) )
@@ -230,8 +230,8 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm );
 #if defined(FEELPP_HAS_HDF5)
-    else if ( N == 1 && ( estr == "hdf5" ) )
-        exporter = std::make_shared<Exporterhdf5<MeshType, N>> ( prefix, worldComm ) ;
+    else if ( N == 1 && ( estr == "xdmf" ) )
+        exporter = std::make_shared<ExporterXDMF<MeshType, N>> ( prefix, worldComm ) ;
 #endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( estr == "vtk"  ) )

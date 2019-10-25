@@ -44,7 +44,7 @@ namespace Feel
 namespace fs = boost::filesystem;
 
 template <typename MeshType, int N>
-class Exporterhdf5
+class ExporterXDMF
     : 
         public Exporter <MeshType, N>
 {
@@ -61,14 +61,14 @@ protected :
     using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
 public :
 
-    explicit Exporterhdf5( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    Exporterhdf5( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    Exporterhdf5( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
-    Exporterhdf5( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterXDMF( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterXDMF( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ExporterXDMF( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    ExporterXDMF( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
-    Exporterhdf5( Exporterhdf5 const & __ex );
+    ExporterXDMF( ExporterXDMF const & __ex );
 
-    ~Exporterhdf5(); 
+    ~ExporterXDMF(); 
 
     /** @name  Mutators
      */
@@ -149,5 +149,4 @@ protected :
 #include <feel/feelfilters/exporterhdf5_impl.hpp>
 
 #endif /* FEELL_HAS_HDF5 */
-#endif /* __Exporterhdf5_H */
-
+#endif
