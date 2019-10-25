@@ -662,9 +662,18 @@ public:
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
             using FunctionDecayType = decay_type<FunctionType>;
-            constexpr bool funcIsNodal = (FunctionDecayType::is_continuous || FunctionDecayType::functionspace_type::continuity_type::is_discontinuous_locally)&& (!FunctionDecayType::is_hcurl_conforming) && (!FunctionDecayType::is_hdiv_conforming);
+            constexpr bool funcIsNodal = ( FunctionDecayType::is_continuous || FunctionDecayType::functionspace_type::continuity_type::is_discontinuous_locally ) && (!FunctionDecayType::is_hcurl_conforming) && (!FunctionDecayType::is_hdiv_conforming);
 
-            std::set<std::string> reps = representationType( _reps , (funcIsNodal? "nodal" : "element") );
+            std::string defaultRepr = funcIsNodal? "nodal" : "element";
+#if 0
+            // if Lagrange discontinuous with order > 0, put nodal representation by default;
+            if constexpr ( is_lagrange_polynomialset_v<typename FunctionDecayType::functionspace_type::fe_type> && !funcIsNodal )
+            {
+                if (  FunctionDecayType::functionspace_type::fe_type::nOrder > 0 )
+                    defaultRepr = "nodal";
+            }
+#endif
+            std::set<std::string> reps = representationType( _reps , defaultRepr );
 
             std::map<std::string,std::string> repToSuffix = { { "nodal", "_n" }, { "element", "_e" } };
 
@@ -688,9 +697,13 @@ public:
         FEELPP_NO_EXPORT void add( std::string const& __n, std::string const& __fname, FunctionType const& func )
         {
             if ( !func.worldComm().isActive() ) return;
-            tic();
 
+            std::string reprType = IsNodal? "nodal":"element";
+            tic();
             auto scalarSpace = this->scalarFunctionSpace<IsNodal>( func );
+            toc( (boost::format("Timeset::add get scalar space %1%")%reprType).str(),FLAGS_v>0);
+
+            tic();
             auto & fieldsMap = this->fields<IsNodal>();
             //std::vector<ComponentType> mapIndicesToComponent = { ComponentType::X, ComponentType::Y, ComponentType::Z };
 
@@ -784,7 +797,7 @@ public:
             M_state.clear( STEP_ON_DISK );
 
             showMe( "Step::add" );
-            toc((boost::format("Timeset::add p1 scalar %1%")%__n).str(),FLAGS_v>0);
+            toc((boost::format("Timeset::add functionspace element %1%")%__n).str(),FLAGS_v>0);
         }
 
 
@@ -830,6 +843,7 @@ public:
         template<bool IsNodal,typename ExprT>
         FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt )
             {
+                tic();
                 auto scalarSpace = this->scalarFunctionSpace<IsNodal>();
                 auto & fieldsMap = this->fields<IsNodal>();
 
@@ -850,6 +864,7 @@ public:
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
+                toc((boost::format("Timeset::add expression %1%")%__n).str(),FLAGS_v>0);
             }
 
         //@}
