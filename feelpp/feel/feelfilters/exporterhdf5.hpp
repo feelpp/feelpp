@@ -29,13 +29,14 @@
  * \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
  * \date 2014-08-28
  */
-#ifndef __Exporterhdf5_H
-#define __Exporterhdf5_H 1
+#ifndef FEELPP_FILTERS_EXPORTERXDMF_HPP
+#define FEELPP_FILTERS_EXPORTERXDMF_HPP 1
 
 #if defined(FEELPP_HAS_HDF5)
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcore/hdf5.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 
 namespace Feel 
@@ -51,7 +52,7 @@ class Exporterhdf5
 public: 
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;    
+    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;

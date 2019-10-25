@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-26
  */
-#ifndef __ExporterEnsight_H
-#define __ExporterEnsight_H 1
+#ifndef FEELPP_FILTERS_EXPORTERENSIGHT_HPP
+#define FEELPP_FILTERS_EXPORTERENSIGHT_HPP 1
 
 #include <iostream>
 #include <fstream>
@@ -39,6 +39,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {

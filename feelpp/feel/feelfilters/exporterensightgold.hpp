@@ -28,8 +28,8 @@
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
-#ifndef __ExporterEnsightGold_H
-#define __ExporterEnsightGold_H 1
+#ifndef FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP
+#define FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP 1
 
 #include <iostream>
 #include <fstream>
@@ -41,6 +41,7 @@
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelfilters/detail/fileindex.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
