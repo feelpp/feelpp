@@ -27,8 +27,8 @@
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2014-11-13
  */
-#ifndef __ExporterVTK_H
-#define __ExporterVTK_H 1
+#ifndef FEELPP_FILTERS_EXPORTERVTK_HPP
+#define FEELPP_FILTERS_EXPORTERVTK_HPP 1
 
 #if defined(FEELPP_HAS_VTK)
 
@@ -109,6 +109,9 @@
 #if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
+
+
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
