@@ -1,0 +1,35 @@
+= Levelset application
+
+== Using test cases
+
+.copy cases files in build directory
+----
+make feelpp_levelset_add_testcase_cases
+----
+
+=== Zalezak
+
+This testcase runs the Zalesak benchmark
+
+To run the benchmark, do the following
+
+----
+./feelpp_toolbox_levelset_2d --config-file cases/benchmark/zalesak/2d/slotteddisk.cfg
+----
+
+=== Injector
+
+The injector case tests the injection of bodies into computational domain
+
+A typical command line reads
+
+----
+./feelpp_toolbox_levelset_2d --config-file 
+----
+
+=== square
+
+
+=== cube
+
+
