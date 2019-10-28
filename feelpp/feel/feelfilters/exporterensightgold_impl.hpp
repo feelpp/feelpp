@@ -491,16 +491,7 @@ template<typename MeshType, int N>
 void
 ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrtype mesh, int timeIndex, bool isFirstStep ) const
 {
-    if ( !isFirstStep && this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
-        return;
-    int size;
-    char buffer[80];
-
-    MPI_File fh;
-    MPI_Status status;
-    //MPI_Info info;
-    MPI_Offset offset = 0;
-
+    // prepare/udate cache
     bool buildNewCache = true;
     auto itFindCache = M_cache_mp.find( __ts->name() );
     if ( itFindCache != M_cache_mp.end() )
@@ -524,8 +515,20 @@ ExporterEnsightGold<MeshType,N>::writeGeoFiles( timeset_ptrtype __ts, mesh_ptrty
         M_mapNodalArrayToDofId.clear();
         M_mapElementArrayToDofId.clear();
     }
-    auto const& mp = *M_cache_mp.find( __ts->name() )->second;
 
+    // mesh already write, do nothing
+    if ( !isFirstStep && this->exporterGeometry() == EXPORTER_GEOMETRY_STATIC )
+        return;
+
+    //int size;
+    //char buffer[80];
+
+    MPI_File fh;
+    //MPI_Status status;
+    //MPI_Info info;
+    //MPI_Offset offset = 0;
+
+    auto const& mp = *M_cache_mp.find( __ts->name() )->second;
 
     bool writeNewGeoFile = true;
 
@@ -1471,7 +1474,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
         /* Check if file exists if we are on step one and delete it if so */
         /* (MPI IO does not have a truncate mode ) */
         // std::cout << "Nodes " << this->worldComm().isMasterRank() << " " << __step->index() << " " << isFirstStep << " " << fs::exists(str) << std::endl;
-#if 0
+#if 1
         if ( writeNewFile )
         {
             if( this->worldComm().isMasterRank()  && fs::exists(str))
@@ -1494,10 +1497,11 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
 
         // INIT CURSOR IN FILE
         posInFile = 0;
-        // trunc the file
+#if 0
+        // trunc the file ( not works always, some part are not good sometimes ??)
         if ( writeNewFile )
             MPI_File_set_size( fh, posInFile );
-
+#endif
         Feel::detail::FileIndex index( this->worldCommPtr()  );
 
         if( M_mergeTimeSteps )
