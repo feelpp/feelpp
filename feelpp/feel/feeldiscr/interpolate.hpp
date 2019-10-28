@@ -208,98 +208,104 @@ interpolate( std::shared_ptr<SpaceType> const& space,
             return;
         }
 
-        DVLOG(2) << "[interpolate] Same mesh but not same space\n";
-#if 0
-        domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-        typedef typename domain_gm_type::precompute_type domain_geopc_type;
-        domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
+        DVLOG(2) << "[interpolate] Same mesh but not same space";
 
-        domain_gmc_ptrtype gmc( new domain_gmc_type( __dgm, *it, __dgeopc ) );
-
-
-        auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
-
-        f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
-                               __c,
-                               pc ) );
-
-        typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
-        array_type fvalues( f.idExtents( *fectx ) );
-        typename f_fectx_type::id_type m_id;
-#endif
-
-        auto __fe = space->fe();
-        auto ex = idv(f);
-        const size_type context = ex.context|vm::POINT|vm::KB|vm::JACOBIAN;
-        auto gmc = __gm->template context<context>( unwrap_ref(*it), __geopc );
-        auto expr_evaluator = ex.evaluator( vf::mapgmc(gmc) );
-        if constexpr ( !interp_is_vector )
+        if constexpr ( is_lagrange_polynomialset_v<basis_type> && (basis_type::nOrder == 1) &&
+                       is_lagrange_polynomialset_v<f_fe_type> && (f_fe_type::nOrder > 0 ) &
+                       !SpaceType::is_mortar && !FunctionType::functionspace_type::is_mortar  )
         {
-            auto IhLoc = __fe->localInterpolant();
+            // we guess that the vertex local dofs id are the same
+            DVLOG(2) << "[interpolate] optimization with Lagrange fe P1";
             for ( ; it != en; ++ it )
             {
                 auto const& curElt = unwrap_ref(*it);
-                gmc->update( curElt );
-                expr_evaluator.update( vf::mapgmc( gmc ) );
-                __fe->interpolate( expr_evaluator, IhLoc );
-
-                auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                auto const& f_indices = f.functionSpace()->dof()->localToGlobalIndices( curElt.id() );
                 for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                 {
                     index_type index = ldof.second.index();
-                    interp( index ) = s(ldof.first.localDof())*IhLoc( ldof.first.localDof() );
                     dofUsedWithPartialMeshSupport.insert( index );
-                }
-#if 0
-                static const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
-                static const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
-                for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
-                {
-                    for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
+                    if constexpr ( !interp_is_vector )
                     {
-                        for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
+                        uint16_type f_ldofId = ldof.first.localDof();
+                        if constexpr ( f_fe_type::nComponents > 1 )
                         {
-                            uint16_type c = ncdof2*comp1+comp2;
-                            size_type globaldof =  __dof->localToGlobal( curElt.id(), l, c ).index();
-
-                            interp( globaldof ) = fvalues[l]( comp1,comp2 );
-                            dofUsedWithPartialMeshSupport.insert( globaldof );
+                            uint16_type comp = f_ldofId/basis_type::nLocalDof;
+                            f_ldofId = space->fe()->dofParent( f_ldofId ) + comp*f_fe_type::nLocalDof;
+                        }
+                        DCHECK( f_ldofId < f_indices.size() ) << "something wrong " << f_ldofId << " vs " << f_indices.size();
+                        index_type f_index = f_indices[f_ldofId];
+                        interp( index ) = f( f_index );
+                    }
+                    else
+                    {
+                        for ( uint16_type c1=0; c1<interp.size(); ++c1 )
+                        {
+                            for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
+                            {
+                                uint16_type newLocalDofId = ldof.first.localDof()+(c2+f_fe_type::nComponents2*c1)*f_fe_type::nLocalDof;
+                                if constexpr ( f_fe_type::is_tensor2symm )
+                                      newLocalDofId = f.functionSpace()->fe()->unsymmToSymm( newLocalDofId );
+                                DCHECK( newLocalDofId <  f_indices.size() ) << "something wrong " << newLocalDofId << " vs " << f_indices.size();
+                                index_type f_index = f_indices[newLocalDofId];
+                                unwrap_ptr(interp[c1][c2])( index ) = f(f_index);
+                            }
                         }
                     }
                 }
-#endif
             }
         }
         else
         {
-            //std::vector<std::vector<decltype(__fe->localInterpolant())>> IhLocs;
-            std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> IhLocsByComp;
-            for ( uint16_type c1=0; c1<interp.size(); ++c1 )
-                for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
-                    IhLocsByComp.push_back( std::make_tuple( c1,c2,__fe->localInterpolant()) );
-
-            //std::vector<decltype(__fe->localInterpolant())> IhLocs(listOfComp.size());
-            //for ( auto const& [c1,c2] : listOfComp )
-
-            for ( ; it != en; ++ it )
+            auto __fe = space->fe();
+            auto ex = idv(f);
+            const size_type context = ex.context|vm::POINT|vm::KB|vm::JACOBIAN;
+            auto gmc = __gm->template context<context>( unwrap_ref(*it), __geopc );
+            auto expr_evaluator = ex.evaluator( vf::mapgmc(gmc) );
+            if constexpr ( !interp_is_vector )
             {
-                auto const& curElt = unwrap_ref(*it);
-                gmc->update( curElt );
-                expr_evaluator.update( vf::mapgmc( gmc ) );
-
-                for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
-                    for( int q = 0; q <  __fe->nLocalDof; ++q )
-                        IhLoc( q ) = expr_evaluator.evalq( c1, c2, q );
-
-                auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
-                for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                auto IhLoc = __fe->localInterpolant();
+                for ( ; it != en; ++ it )
                 {
-                    index_type gindex = ldof.second.index();
-                    uint16_type lindex = ldof.first.localDof();
-                    for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
-                        unwrap_ptr(interp[c1][c2])( gindex ) = s(lindex)*IhLoc( lindex );
-                    dofUsedWithPartialMeshSupport.insert( gindex );
+                    auto const& curElt = unwrap_ref(*it);
+                    gmc->update( curElt );
+                    expr_evaluator.update( vf::mapgmc( gmc ) );
+                    __fe->interpolate( expr_evaluator, IhLoc );
+
+                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                    {
+                        index_type index = ldof.second.index();
+                        interp( index ) = s(ldof.first.localDof())*IhLoc( ldof.first.localDof() );
+                        dofUsedWithPartialMeshSupport.insert( index );
+                    }
+                }
+            }
+            else
+            {
+                std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> IhLocsByComp;
+                for ( uint16_type c1=0; c1<interp.size(); ++c1 )
+                    for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
+                        IhLocsByComp.push_back( std::make_tuple( c1,c2,__fe->localInterpolant()) );
+
+                for ( ; it != en; ++ it )
+                {
+                    auto const& curElt = unwrap_ref(*it);
+                    gmc->update( curElt );
+                    expr_evaluator.update( vf::mapgmc( gmc ) );
+
+                    for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
+                        for( int q = 0; q <  __fe->nLocalDof; ++q )
+                            IhLoc( q ) = expr_evaluator.evalq( c1, c2, q );
+
+                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                    {
+                        index_type gindex = ldof.second.index();
+                        uint16_type lindex = ldof.first.localDof();
+                        for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
+                            unwrap_ptr(interp[c1][c2])( gindex ) = s(lindex)*IhLoc( lindex );
+                        dofUsedWithPartialMeshSupport.insert( gindex );
+                    }
                 }
             }
         }
@@ -308,7 +314,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
             interpolate_sync( interp, hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
         }
 
-        DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
+        DVLOG(2) << "[interpolate] Same mesh but not same space done";
     } // same mesh
 
     else if constexpr ( !interp_is_vector ) // INTERPOLATE_DIFFERENT_MESH
