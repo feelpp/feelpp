@@ -67,6 +67,7 @@ straightenMeshUpdateEdgesOnBoundaryIsolated( ElementSpaceType & straightener, mp
 {
     typedef typename ElementSpaceType::functionspace_type space_type;
     typedef typename space_type::mesh_type mesh_type;
+    using size_type = typename MeshType::size_type;
     typedef typename space_type::dof_type::fe_type fe_type;
 
     auto const ncdof = space_type::dof_type::nComponents;
@@ -167,7 +168,7 @@ straightenMesh( std::shared_ptr<MeshType> mesh, worldcomm_ptr_t const& worldcomm
 {
     typedef MeshType _mesh_type;
     typedef std::shared_ptr<MeshType> _mesh_ptrtype;
-
+    using size_type = typename MeshType::size_type;
     VLOG(1) << "straighten mesh of order " <<  _mesh_type::nOrder << " start";
 
     _mesh_ptrtype _mesh( mesh );
