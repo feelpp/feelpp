@@ -88,7 +88,8 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     typedef typename SpaceType::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename mesh_type::element_iterator mesh_element_iterator;
-
+    using size_type = typename SpaceType::size_type;
+    
     typedef typename FunctionType::functionspace_type::mesh_type domain_mesh_type;
     typedef typename domain_mesh_type::element_type domain_geoelement_type;
     typedef typename domain_mesh_type::element_iterator domain_mesh_element_iterator;

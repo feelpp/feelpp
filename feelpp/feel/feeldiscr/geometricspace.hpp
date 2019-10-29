@@ -220,7 +220,7 @@ public :
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_v<size_type> );
+            auto analysis = loc->run_analysis( m, invalid_v<typename mesh_type::size_type> );
             auto found_points = analysis.template get<0>();
             bool found = found_points[0];
 
