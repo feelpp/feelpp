@@ -44,19 +44,49 @@ runLevelsetApplication()
     if( !LS->doRestart() )
         LS->exportResults(0.);
 
-    double min_modGradPhi = LS->modGradPhi()->min();
-    double max_modGradPhi = LS->modGradPhi()->max();
+    double min_modGradPhi = 0;
+    double max_modGradPhi = 0;
+    
+    if ( LS->modGradPhi() )
+      {
+	min_modGradPhi = LS->modGradPhi()->min();
+	max_modGradPhi = LS->modGradPhi()->max();
+	Feel::cout << "modGradphi : min = " << min_modGradPhi << ", max = " << max_modGradPhi << std::endl;
+      }
+    else
+      {
+	Feel::cout << "error: LS->modGradPhi() is NULL ! " << std::endl;
+      }
+
+
     
     // Errors measures :
     // LS is initialized, we save the phi, heaviside and dirac functions' initial values
+    Feel::cout << "auto phi_0 = LS->functionSpace()->element();" << std::endl;
     auto phi_0 = LS->functionSpace()->element();
-    phi_0 = *LS->phi();
+    Feel::cout << "TESTING phi_0 = *LS->phi();" << std::endl;
+    Feel::cout << "" << std::endl;
+    if ( LS->phi() )
+      {
+	Feel::cout << "LS->phi()->size()... " << std::endl;
+	Feel::cout << "LS->phi()->size() = " << LS->phi()->size() << std::endl;
+	phi_0 = *LS->phi();
+      }
+    else
+      {
+	Feel::cout << "error: LS->phi()=NULL !" << endl;
+      }
+    Feel::cout << "auto H_0 = LS->functionSpace()->element();" << std::endl;
     auto H_0 = LS->functionSpace()->element();
+    Feel::cout << "H_0 = *LS->heaviside();" << std::endl;
     H_0 = *LS->heaviside();
+    Feel::cout << "auto dirac_0 = LS->functionSpace()->element();" << std::endl;
     auto dirac_0 = LS->functionSpace()->element();
+    Feel::cout << "dirac_0 = *LS->dirac();" << std::endl;
     dirac_0 = *LS->dirac();
 
     // Quadrature order used for integrals computed in errors measures:
+    Feel::cout << "int error_quad_order = ioption( _name=\"levelset.quad.order\" );" << std::endl;
     int error_quad_order = ioption( _name="levelset.quad.order" );
     Feel::cout << "Error quadrature order = " << error_quad_order << std::endl;
 
@@ -94,7 +124,9 @@ runLevelsetApplication()
 
             LS->solve();
 
+	    Feel::cout << "min_modGradPhi = LS->modGradPhi()->min();" << std::endl;
 	    min_modGradPhi = LS->modGradPhi()->min();
+	    Feel::cout << "max_modGradPhi = LS->modGradPhi()->max();" << std::endl;
 	    max_modGradPhi = LS->modGradPhi()->max();
 	    Feel::cout << "modGradphi : min = " << min_modGradPhi << ", max = " << max_modGradPhi << std::endl;
 	    
@@ -117,16 +149,20 @@ runLevelsetApplication()
 	// Error measures :
 	// we compute the L2 norm error integrals :
 
+	Feel::cout << "auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );" << std::endl;
 	auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );
+	Feel::cout << "double first_integral = integrate(" << std::endl;
 	double first_integral = integrate(
 					  _range=elements(LS->mesh()),
 					  _expr=chi_of_dirac0_positive
 					  ).evaluate()(0,0);
+	Feel::cout << "" << std::endl;
 	double second_integral = integrate(
 					   _range=elements(LS->mesh()),
 					   _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_dirac0_positive ),
 					   _quad=error_quad_order
 					   ).evaluate()(0,0);
+	Feel::cout << "" << std::endl;
 	double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
 	
 	//Feel::cout << "First integral = " << first_integral << std::endl;
