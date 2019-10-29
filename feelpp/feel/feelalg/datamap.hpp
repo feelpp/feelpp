@@ -39,7 +39,7 @@
 
 namespace Feel
 {
-
+template<typename SizeT>
 class DataMap;
 
 /**
@@ -141,11 +141,13 @@ private :
  *  @author Christophe Prud'homme
  *  @see
  */
+template<typename SizeT=uint32_type>
 class FEELPP_EXPORT DataMap : public CommObject
 {
 
 public:
     using super = CommObject;
+    using size_type=SizeT;
     typedef IndexSplit indexsplit_type;
     typedef std::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
@@ -739,10 +741,13 @@ private:
 
 };
 
-using datamap_t = DataMap;
+template<typename SizeT=uint32_type>
+using datamap_t = DataMap<SizeT>;
 
-using datamap_ptrtype = std::shared_ptr<datamap_t>;
-using datamap_ptr_t = datamap_ptrtype;
+template<typename SizeT=uint32_type>
+using datamap_ptrtype = std::shared_ptr<datamap_t<SizeT>>;
+template<typename SizeT=uint32_type>
+using datamap_ptr_t = datamap_ptrtype<SizeT>;
 
 } // Feel
 #endif /* __DataMap_H */

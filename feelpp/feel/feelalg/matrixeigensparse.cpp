@@ -51,7 +51,7 @@ MatrixEigenSparse<T>::MatrixEigenSparse( size_type r, size_type c, worldcomm_ptr
 {}
 
 template <typename T>
-MatrixEigenSparse<T>::MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+MatrixEigenSparse<T>::MatrixEigenSparse( datamap_ptrtype<> const& dmRow, datamap_ptrtype<> const& dmCol )
     :
     super( dmRow,dmCol ),
     M_is_initialized( false ),

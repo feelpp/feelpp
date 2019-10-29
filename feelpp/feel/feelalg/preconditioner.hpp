@@ -42,9 +42,9 @@
 namespace Feel
 {
 class BackendBase;
-template<typename T> class Backend;
-typedef Backend<double> backend_type;
-typedef std::shared_ptr<Backend<double> > backend_ptrtype;
+template<typename T,typename SizeT> class Backend;
+typedef Backend<double,uint32_type> backend_type;
+typedef std::shared_ptr<Backend<double,uint32_type> > backend_ptrtype;
 
 template<typename T> class OperatorPCDBase;
 
@@ -55,7 +55,7 @@ template<typename T> class OperatorPCDBase;
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T>
+template<typename T,typename SizeT=uint32_type>
 class Preconditioner : public CommObject
 {
 public:
@@ -82,11 +82,12 @@ public:
     //@{
     using super = CommObject;
     typedef T value_type;
-    typedef Preconditioner<T> preconditioner_type;
+    using size_type = SizeT;
+    typedef Preconditioner<T,size_type> preconditioner_type;
     typedef std::shared_ptr<preconditioner_type > preconditioner_ptrtype;
 
     typedef std::shared_ptr<MatrixSparse<T> > sparse_matrix_ptrtype;
-    typedef std::shared_ptr<Vector<T> > vector_ptrtype;
+    typedef std::shared_ptr<Vector<T,size_type> > vector_ptrtype;
 
     typedef std::shared_ptr<OperatorPCDBase<T> > operator_pcdbase_ptrtype;
     
@@ -401,13 +402,13 @@ protected:
     std::map<std::string,operator_pcdbase_ptrtype> M_operatorPCD;
 };
 
-typedef Preconditioner<double> preconditioner_type;
-typedef std::shared_ptr<Preconditioner<double> > preconditioner_ptrtype;
+typedef Preconditioner<double,uint32_type> preconditioner_type;
+typedef std::shared_ptr<Preconditioner<double,uint32_type> > preconditioner_ptrtype;
 
 
-template <typename T>
+template <typename T, typename SizeT>
 FEELPP_STRONG_INLINE
-Preconditioner<T>::Preconditioner ( std::string const& name, worldcomm_ptr_t const& worldComm )
+Preconditioner<T,SizeT>::Preconditioner ( std::string const& name, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_name(name),
@@ -427,14 +428,14 @@ Preconditioner<T>::Preconditioner ( std::string const& name, worldcomm_ptr_t con
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 FEELPP_STRONG_INLINE
-Preconditioner<T>::~Preconditioner ()
+Preconditioner<T,SizeT>::~Preconditioner ()
 {
     this->clear ();
 }
 
-typedef Preconditioner<double> preconditioner_type;
+typedef Preconditioner<double,uint32_type> preconditioner_type;
 typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
@@ -477,8 +478,8 @@ BOOST_PARAMETER_FUNCTION( ( std::shared_ptr<Preconditioner<double> > ),
  * instantiation to the strict minimum
  */
 #if !defined( FEELPP_INSTANTIATE_PRECONDITIONER )
-extern template class Preconditioner<double>;
-extern template class Preconditioner<std::complex<double>>;
+extern template class Preconditioner<double,uint32_type>;
+extern template class Preconditioner<std::complex<double>,uint32_type>;
 #endif
 
 

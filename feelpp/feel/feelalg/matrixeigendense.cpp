@@ -51,7 +51,7 @@ MatrixEigenDense<T>::MatrixEigenDense( size_type r, size_type c, worldcomm_ptr_t
 {}
 
 template <typename T>
-MatrixEigenDense<T>::MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol )
+MatrixEigenDense<T>::MatrixEigenDense( datamap_ptrtype<> const& dmRow, datamap_ptrtype<> const& dmCol )
     :
     super( dmRow,dmCol ),
     M_is_initialized( false ),
