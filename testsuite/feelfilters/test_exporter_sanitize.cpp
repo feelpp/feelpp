@@ -70,15 +70,18 @@ BOOST_AUTO_TEST_CASE( test_1 )
     auto e = exporter(_mesh=mesh);
     e->add( "u ;)[ ", u );
     e->add( "v**v ", v );
-    e->save();
-    auto it = e->step(0)->beginNodalScalar();
-    auto n = it->second.name() ;
+
+    auto it = e->step(0)->beginNodal();
+    auto en = e->step(0)->endNodal();
+    BOOST_CHECK( std::distance( it,en ) == 2 );
+    auto n = it->second.second[0][0]->name() ;
     BOOST_MESSAGE( "1st name : " << n );
     BOOST_CHECK_EQUAL(  n, "u" );
-    n = (++it)->second.name() ;
+    n = (++it)->second.second[0][0]->name() ;
     BOOST_MESSAGE( "2nd name : " << n );
     BOOST_CHECK_EQUAL(  n, "v_v" );
-    
+
+    e->save();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
