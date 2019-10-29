@@ -51,7 +51,7 @@ public :
     static const uint16_type Order_low = convex_type::nOrder;
     typedef Mesh< convex_type > mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
+    using size_type = typename mesh_type::size_type;
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
 protected :

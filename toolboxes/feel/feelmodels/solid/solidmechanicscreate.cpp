@@ -632,7 +632,7 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 template< typename TheBackendType >
 NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
                                    std::shared_ptr<TheBackendType> const& mybackend,
-                                   std::shared_ptr<DataMap> const& dm )
+                                   std::shared_ptr<DataMap<>> const& dm )
 {
     std::vector< typename NullSpace<double>::vector_ptrtype > myvecbasis(ns.size());
     for ( int k=0;k< ns.size();++k )

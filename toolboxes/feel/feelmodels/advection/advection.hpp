@@ -75,7 +75,7 @@ class AdvDiffReac :
 {
 public :
     typedef ModelNumerical super_type;
-
+    using size_type = typename super_type::size_type;
     typedef AdvDiffReac< FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
