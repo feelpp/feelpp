@@ -131,7 +131,7 @@ public :
     */
     explicit ExporterEnsightGold( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ExporterEnsightGold( ExporterEnsightGold const & __ex ) = default;
 

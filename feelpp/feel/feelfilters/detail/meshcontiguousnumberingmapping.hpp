@@ -39,7 +39,7 @@ struct MeshContiguousNumberingMapping
     using range_element_type = elements_reference_wrapper_t<mesh_type>;
     using point_ref_type = boost::reference_wrapper< typename mesh_type::point_type const>;
 
-    MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false )
+    explicit MeshContiguousNumberingMapping( mesh_type* mesh, bool interprocessPointAreDuplicated = false )
         :
         M_mesh( mesh ),
         M_interprocessPointAreDuplicated( interprocessPointAreDuplicated )
@@ -611,7 +611,6 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
         elemids.resize( __ne );
     }
 
-    int tcount = 0;
 
     //!  build the array containing the id of each vertex for each element */
     elt_it = it;
@@ -643,15 +642,6 @@ MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorT
                    { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << nv; } );
 #endif
 
-    //! size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
-    //! size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
-#if 0
-    size_type offset_pts = coords.size()*sizeof(float);
-    size_type offset_elts = elem.size()*sizeof(int);
-#else
-    size_type offset_pts = nv;
-    size_type offset_elts = __ne;
-#endif
 
     //!  gather the number of points and elements fo each process */
     std::vector<int> ost{nv, __ne};

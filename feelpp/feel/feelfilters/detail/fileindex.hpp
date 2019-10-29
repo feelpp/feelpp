@@ -38,7 +38,7 @@ namespace detail {
 class FileIndex : public CommObject
 {
 public:
-    FileIndex( worldcomm_ptr_t const& w );
+    explicit FileIndex( worldcomm_ptr_t const& w );
     void read( MPI_File fh );
     void write( MPI_File fh,  MPI_Offset & offset );
     void add( int64_type tellp ) { M_fileblocks.push_back( tellp ); }

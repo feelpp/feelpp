@@ -57,7 +57,7 @@ public :
     explicit ExporterXDMF( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterXDMF( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterXDMF( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
-    ExporterXDMF( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterXDMF( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ExporterXDMF( ExporterXDMF const & __ex );
 

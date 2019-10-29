@@ -1133,7 +1133,6 @@ public:
     template <typename IteratorRange>
     void updateMarker2WithRange( IteratorRange const& range, flag_type flag, mpl::int_<MESH_ELEMENTS> /**/ )
     {
-        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
         this->updateMarker2WithRangeElements( range, flag );
     }
 

@@ -211,7 +211,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         DVLOG(2) << "[interpolate] Same mesh but not same space";
 
         if constexpr ( is_lagrange_polynomialset_v<basis_type> && (basis_type::nOrder == 1) &&
-                       is_lagrange_polynomialset_v<f_fe_type> && (f_fe_type::nOrder > 0 ) &
+                       is_lagrange_polynomialset_v<f_fe_type> && (f_fe_type::nOrder > 0 ) &&
                        !SpaceType::is_mortar && !FunctionType::functionspace_type::is_mortar  )
         {
             // we guess that the vertex local dofs id are the same
