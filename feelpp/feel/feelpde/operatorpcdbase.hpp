@@ -35,6 +35,8 @@ class OperatorPCDBase : public OperatorBase<T>
 {
     typedef OperatorBase<T> super;
 public :
+    using datamap_type = typename super::datamap_type;
+    using datamap_ptrtype = typename super::datamap_ptrtype;
     OperatorPCDBase( datamap_ptrtype const& map, std::string label, bool use_transpose, bool has_norminf )
         :
         super( map, label, use_transpose, has_norminf )
