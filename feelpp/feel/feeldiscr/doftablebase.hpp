@@ -75,12 +75,15 @@ struct DofTableInfos
     std::string feFamilyName;
 };
 
-class DofTableBase : public DataMap
+template<typename SizeT=uint32_type>
+class DofTableBase : public DataMap<SizeT>
 {
-    typedef DataMap super;
+    typedef DataMap<SizeT> super;
 public:
-    typedef Dof global_dof_type;
-    typedef FaceDof global_dof_fromface_type;
+    using size_type = SizeT;
+    typedef Dof<size_type> global_dof_type;
+    
+    typedef FaceDof<size_type> global_dof_fromface_type;
     typedef std::shared_ptr<MeshSupportBase> mesh_support_base_ptrtype;
 
     DofTableBase( WorldComm const& _worldComm )
