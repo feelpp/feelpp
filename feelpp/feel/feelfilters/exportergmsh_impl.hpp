@@ -1011,7 +1011,7 @@ ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, 
             }
         }
 
-        out << (IsNodal? "$NodeData\n" : "$NodeData\n");
+        out << (IsNodal? "$NodeData\n" : "ElementData\n");
         out << "1\n";//number of string tag
         out << "\"" << field00.name() << "\"\n";
         out << "1\n";//number of real tag
