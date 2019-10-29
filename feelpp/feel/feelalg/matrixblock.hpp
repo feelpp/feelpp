@@ -37,7 +37,7 @@
 namespace Feel
 {
 
-template <typename T>
+template <typename T,typename SizeT>
 class Backend;
 
 template <typename T = double>
@@ -120,13 +120,13 @@ class MatrixBlockBase : public MatrixSparse<T>
     /** @name Typedefs
      */
     //@{
-
+    using size_type = typename super::size_type;
     typedef MatrixBlockBase<T> self_type;
 
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
 
-    typedef Backend<value_type> backend_type;
+    typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef super matrix_type;
@@ -301,7 +301,7 @@ class MatrixBlockBase : public MatrixSparse<T>
     //!
     //! @return the number of non-zero entries
     //!
-    std::size_t nnz() const override { return M_mat->nnz(); }
+    size_type nnz() const override { return M_mat->nnz(); }
     
     /**
      * return row_start, the index of the first

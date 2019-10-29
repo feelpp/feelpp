@@ -563,14 +563,14 @@ VectorUblas<T,Storage>::resize( size_type s, bool preserve )
 }
 
 template <typename T, typename Storage>
-size_type
+typename VectorUblas<T,Storage>::size_type
 VectorUblas<T,Storage>::start( ) const
 {
     return detail::start( M_vec );
 }
 
 template <typename T, typename Storage>
-size_type
+typename VectorUblas<T,Storage>::size_type
 VectorUblas<T,Storage>::startNonContiguousGhosts( ) const
 {
     return detail::start( M_vecNonContiguousGhosts );
@@ -1179,7 +1179,7 @@ VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string table
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
     const int dimsComp1 = (useTransposedStorage)? 0 : 1;
-    DataMap const& dm = this->map();
+    DataMap<> const& dm = this->map();
     std::vector<uint> sizeValues(1, dm.nLocalDofWithoutGhost() );
     hsize_t dims[2];
     dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;
@@ -1244,7 +1244,7 @@ VectorUblas<T,Storage>::loadHDF5( std::string const& filename, std::string table
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
     const int dimsComp1 = (useTransposedStorage)? 0 : 1;
-    DataMap const& dm = this->map();
+    DataMap<> const& dm = this->map();
     std::vector<uint> sizeValues(1, dm.nLocalDofWithoutGhost() );
     hsize_t dims[2];
     dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;

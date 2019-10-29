@@ -48,7 +48,7 @@
 namespace Feel
 {
 
-template<typename T> class Vector;
+template<typename T,typename SizeT> class Vector;
 template<typename T> class MatrixSparse;
 
 
@@ -62,7 +62,7 @@ template<typename T> class MatrixSparse;
  *
  *  @author Christophe Prud'homme
  */
-template <typename T>
+template <typename T,typename SizeT=uint32_type>
 class SolverNonLinear : public CommObject
 {
 public:
@@ -79,10 +79,10 @@ public:
 
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
-
+    using size_type = SizeT;
     typedef std::shared_ptr<Preconditioner<T> > preconditioner_ptrtype;
 
-    typedef std::shared_ptr<Vector<value_type> > vector_ptrtype;
+    typedef std::shared_ptr<Vector<value_type,size_type> > vector_ptrtype;
     typedef std::shared_ptr<MatrixSparse<value_type> > sparse_matrix_ptrtype;
 
     typedef ublas::matrix<value_type> dense_matrix_type;
