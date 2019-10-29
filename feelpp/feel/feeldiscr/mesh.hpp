@@ -2033,8 +2033,9 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
             {
                 new_node_numbers[old_point.id()] = n_new_nodes;
                 DVLOG( 2 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_point << "\n";
-                typename P1_mesh_type::point_type pt( old_point );
-                pt.setId( n_new_nodes );
+                //typename P1_mesh_type::point_type pt( old_point );
+                //pt.setId( n_new_nodes );
+                typename P1_mesh_type::point_type pt( n_new_nodes, old_point, false, false );
                 pt.setProcessId( old_point.processId() );
                 pt.clearElementsGhost();
 
