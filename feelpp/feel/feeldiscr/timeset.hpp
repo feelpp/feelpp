@@ -115,31 +115,13 @@ public:
 
 
     typedef Pdh_type<MeshType,0> scalar_p0_space_type;
-    //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-    //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-    //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
     typedef Pch_type<MeshType,1> scalar_p1_space_type;
-    //typedef Pchv_type<MeshType,1> vector_p1_space_type;
-    //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
-    //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
     typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
-    //typedef std::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
-    //typedef std::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
-    //typedef std::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
     typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
-    //typedef std::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
-    //typedef std::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
-    //typedef std::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
 
     typedef typename scalar_p0_space_type::element_type element_scalar_type;
-    //typedef typename vector_p0_space_type::element_type element_vector_type;
-    //typedef typename tensor2_p0_space_type::element_type element_tensor2_type;
-    //typedef typename tensor2symm_p0_space_type::element_type element_tensor2symm_type;
     typedef typename scalar_p1_space_type::element_type nodal_scalar_type;
-    //typedef typename vector_p1_space_type::element_type nodal_vector_type;
-    //typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
-    //typedef typename tensor2symm_p1_space_type::element_type nodal_tensor2symm_type;
 
 
     /**
@@ -161,38 +143,22 @@ public:
 
 
         typedef Pdh_type<MeshType,0> scalar_p0_space_type;
-        //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Vectorial,Discontinuous> >, Discontinuous > vector_p0_space_type;
-        //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2,Discontinuous> >, Discontinuous > tensor2_p0_space_type;
-        //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<0,Tensor2Symm,Discontinuous> >, Discontinuous > tensor2symm_p0_space_type;
         typedef Pch_type<MeshType,1> scalar_p1_space_type;
-        //typedef Pchv_type<MeshType,1> vector_p1_space_type;
-        //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2> > > tensor2_p1_space_type;
-        //typedef FunctionSpace<MeshType, Feel::bases<Lagrange<N,Tensor2Symm> > > tensor2symm_p1_space_type;
         typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
-        //typedef std::shared_ptr<vector_p0_space_type> vector_p0_space_ptrtype;
-        //typedef std::shared_ptr<tensor2_p0_space_type> tensor2_p0_space_ptrtype;
-        //typedef std::shared_ptr<tensor2symm_p0_space_type> tensor2symm_p0_space_ptrtype;
         typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
-        //typedef std::shared_ptr<vector_p1_space_type> vector_p1_space_ptrtype;
-        //typedef std::shared_ptr<tensor2_p1_space_type> tensor2_p1_space_ptrtype;
-        //typedef std::shared_ptr<tensor2symm_p1_space_type> tensor2symm_p1_space_ptrtype;
 
         typedef typename scalar_p0_space_type::element_type element_scalar_type;
-        //typedef typename vector_p0_space_type::element_type element_vector_type;
-        //typedef typename tensor2_p0_space_type::element_type element_tensor2_type;
-        //typedef typename tensor2symm_p0_space_type::element_type element_tensor2symm_type;
         typedef typename scalar_p1_space_type::element_type nodal_scalar_type;
-        //typedef typename vector_p1_space_type::element_type nodal_vector_type;
-        //typedef typename tensor2_p1_space_type::element_type nodal_tensor2_type;
-        //typedef typename tensor2symm_p1_space_type::element_type nodal_tensor2symm_type;
 
         typedef std::shared_ptr<nodal_scalar_type> nodal_scalar_ptrtype;
         typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+        typedef std::pair<FunctionSpaceType,std::vector<std::vector<nodal_scalar_ptrtype>>> nodal_field_type;
+        typedef std::pair<FunctionSpaceType,std::vector<std::vector<element_scalar_ptrtype>>> element_field_type;
 
         typedef std::map<std::string, std::pair<scalar_type,bool> > map_scalar_type;
         typedef std::map<std::string, std::pair<complex_type,bool> > map_complex_type;
-        typedef std::map<std::string, std::pair<FunctionSpaceType,std::vector<std::vector<nodal_scalar_ptrtype>>> > map_nodal_type;
-        typedef std::map<std::string, std::pair<FunctionSpaceType,std::vector<std::vector<element_scalar_ptrtype>>> > map_element_type;
+        typedef std::map<std::string, nodal_field_type> map_nodal_type;
+        typedef std::map<std::string, element_field_type> map_element_type;
 
         typedef typename map_scalar_type::iterator scalar_iterator;
         typedef typename map_scalar_type::const_iterator scalar_const_iterator;
@@ -333,141 +299,27 @@ public:
 
 
         /**
-         * get the nodal scalar field with name n
-         * @param __n name of the nodal scalar field
-         * @return the nodal scalar field
+         * get the nodal field with name n
+         * @param __n name of the nodal field
+         * @return the nodal field
          */
-        nodal_scalar_type const& nodalScalar( std::string const& __n ) const
+        nodal_field_type const& nodal( std::string const& __n ) const
         {
-            if ( M_nodal.find( sanitize(__n) ) == M_nodal.end() )
-            {
-                std::ostringstream __err;
-                __err << "invalid nodal scalar field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
-            }
-
-            return *M_nodal.find( sanitize(__n) )->second.second[0][0];
+            auto itFindNodalField =  M_nodal.find( sanitize(__n) );
+            CHECK( itFindNodalField != M_nodal.end() ) << "invalid nodal field name " << sanitize(__n);
+            return itFindNodalField->second;
         }
-#if 0 // TODO
         /**
-         * get the nodal vector field with name n
-         * @param __n name of the field
-         * @return the nodal vector field
+         * get the element field with name n
+         * @param __n name of the element field
+         * @return the element field
          */
-        std::vector<nodal_scalar_type> const& nodalVector( std::string const& __n ) const
+        element_field_type const& element( std::string const& __n ) const
         {
-            if ( M_nodal_vector.find( sanitize(__n) ) == M_nodal_vector.end() )
-            {
-                std::ostringstream __err;
-                __err << "invalid nodal vector field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
-            }
-
-            return M_nodal_vector.find( sanitize(__n) )->second.second[0];
+            auto itFindElementField =  M_element.find( sanitize(__n) );
+            CHECK( itFindElementField != M_element.end() ) << "invalid nodal field name " << sanitize(__n);
+            return itFindElementField->second;
         }
-
-        /**
-         * get the nodal tensor2 field with name n
-         * @param __n name of the field
-         * @return the nodal tensor2 field
-         */
-        nodal_tensor2_type nodalTensor2( std::string const& __n ) const
-        {
-            if ( M_nodal_tensor2.find( sanitize(__n) ) == M_nodal_tensor2.end() )
-            {
-                std::ostringstream __err;
-                __err << "invalid nodal tensor2 field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
-            }
-
-            return M_nodal_tensor2.find( sanitize(__n) )->second.second;
-        }
-
-        /**
-         * get the nodal tensor2 field with name n
-         * @param __n name of the field
-         * @return the nodal tensor2 field
-         */
-        nodal_tensor2symm_type nodalTensor2Symm( std::string const& __n ) const
-            {
-                if ( M_nodal_tensor2symm.find( sanitize(__n) ) == M_nodal_tensor2symm.end() )
-                {
-                    std::ostringstream __err;
-                    __err << "invalid nodal tensor2 field name " << sanitize(__n);
-                    throw std::logic_error( __err.str() );
-                }
-
-                return M_nodal_tensor2symm.find( sanitize(__n) )->second.second;
-            }
-#endif
-        /**
-         * get the element scalar field with name n
-         * @param __n name of the element scalar field
-         * @return the element scalar field
-         */
-        element_scalar_type const& elementScalar( std::string const& __n ) const
-        {
-            if ( M_element.find( sanitize(__n) ) == M_element.end() )
-            {
-                std::ostringstream __err;
-                __err << "invalid element scalar field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
-            }
-
-            return M_element.find( sanitize(__n) )->second.second;
-        }
-#if 0 // TODO
-        /**
-         * get the element tensor2 field with name n
-         * @param __n name of the field
-         * @return the element tensor2 field
-         */
-        element_tensor2_type elementTensor2( std::string const& __n ) const
-            {
-                if ( M_element_tensor2.find( sanitize(__n) ) == M_element_tensor2.end() )
-                {
-                    std::ostringstream __err;
-                    __err << "invalid element tensor2 field name " << sanitize(__n);
-                    throw std::logic_error( __err.str() );
-                }
-
-                return M_element_tensor2.find( sanitize(__n) )->second.second;
-            }
-
-        /**
-         * get the element vector field with name n
-         * @param __n name of the field
-         * @return the element vector field
-         */
-        element_vector_type elementVector( std::string const& __n ) const
-        {
-            if ( M_element_vector.find( sanitize(__n) ) == M_element_vector.end() )
-            {
-                std::ostringstream __err;
-                __err << "invalid element vector field name " << sanitize(__n);
-                throw std::logic_error( __err.str() );
-            }
-
-            return M_element_vector.find( sanitize(__n) )->second.second;
-        }
-
-        /**
-         * get the element tensor2symm field with name n
-         * @param __n name of the field
-         * @return the element tensor2symm field
-         */
-        element_tensor2symm_type elementTensor2Symm( std::string const& __n ) const
-            {
-                if ( M_element_tensor2symm.find( sanitize(__n) ) == M_element_tensor2symm.end() )
-                {
-                    std::ostringstream __err;
-                    __err << "invalid element tensor2symm field name " << sanitize(__n);
-                    throw std::logic_error( __err.str() );
-                }
-
-                return M_element_tensor2symm.find( sanitize(__n) )->second.second;
-            }
-#endif
 
         //@}
 
@@ -478,7 +330,6 @@ public:
         void setState( size_type __st )
         {
             M_state.set( __st );
-            //executeState( __st );
             showMe( "Step::setState" );
         }
         void setMesh( mesh_ptrtype const& __m )
@@ -512,21 +363,7 @@ public:
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
-#if 0 // TODO
-        void addNodal( nodal_scalar_type const& __s )
-        {
-            M_nodal_scalar[sanitize(__s.name())] =  __s;
-            M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
-            M_state.clear( STEP_ON_DISK );
-        }
 
-        void addNodal( nodal_vector_type const& __s )
-        {
-            M_nodal_vector[sanitize(__s.name())] =  __s;
-            M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
-            M_state.clear( STEP_ON_DISK );
-        }
-#endif
         /**
          * @brief add regions to timeset
          * @details some regions can be automatically generated such as the
@@ -560,18 +397,9 @@ public:
         void add( std::initializer_list<std::string>  __n, FunctionType const& func,
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
-            //std::vector<std::string> str( sanitize( __n ) );
-            //add_( str, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
             std::vector<std::string> str( __n );
             add( str, func );
         }
-
-        /*template<typename FunctionType>
-        void add( std::vector<std::string> const& __n, FunctionType const& func,
-                  typename std::enable_if<is_functionspace_element_v<FunctionType>>::type* = nullptr )
-        {
-            add_( __n, func, mpl::bool_<(FunctionType::functionspace_type::nSpaces>1)>() );
-         }*/
 
 
         template<typename TSet>
@@ -594,8 +422,6 @@ public:
         void add( std::variant<std::string,std::vector<std::string>> const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
-            //tic();
-
             std::vector<std::string> names;
             if( auto  nameStringPtr = std::get_if<std::string>(&__n))
             {
@@ -624,39 +450,8 @@ public:
             {
                 add( names[0], names[0], func, reps );
             }
-            //toc((boost::format("Timeset::add %1%")%__n).str(),FLAGS_v>0);
         }
 
-#if 0
-        template<typename FunctionType>
-        FEELPP_NO_EXPORT void add_( std::vector<std::string> const& __n, FunctionType const& func, mpl::bool_<true> )
-        {
-            std::vector<std::string> s = __n;
-            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
-            // implement elements() which returns a fusion vector of the components
-            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
-        }
-        template<typename FunctionType>
-        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps, mpl::bool_<true> )
-        {
-            std::vector<std::string> s;
-            // s.push_back(__n);
-            for(int i=0; i<FunctionType::functionspace_type::nSpaces; i++)
-                {
-                    std::ostringstream i_str;
-                    i_str << "_" << i;
-                    s.push_back(__n + i_str.str());
-                }
-            FEELPP_ASSERT( s.size() == FunctionType::functionspace_type::nSpaces );
-            // implement elements() which returns a fusion vector of the components
-            fusion::for_each( subelements(func,s), AddFunctionProduct<step_type>( *this ) );
-        }
-        template<typename FunctionType>
-        FEELPP_NO_EXPORT void add_( std::string const& __n, FunctionType const& func, variant_representation_arg_type const& reps, mpl::bool_<false> )
-        {
-            add( __n,__n,unwrap_ptr(func), reps );
-        }
-#endif
         template<typename FunctionType>
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
@@ -804,19 +599,19 @@ public:
 
         template<typename ExprT>
         void add( std::string const& __n, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 this->add( __n, __n, expr, rep );
             }
         template<typename ExprT>
         void add( std::string const& __n, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 this->add( __n, __n, expr, rangElt, rep );
             }
         template<typename ExprT>
         void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "",
-                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 CHECK( this->hasMesh() ) << "no mesh provided";
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
@@ -824,7 +619,7 @@ public:
 
         template<typename ExprT>
         void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& _rep = "",
-                  typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+                  typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 std::set<std::string> reps = representationType( _rep , "nodal" );
 
@@ -1053,7 +848,7 @@ public:
         template<class Archive>
         FEELPP_NO_EXPORT void save( Archive & ar, const unsigned int /*version*/ ) const
         {
-#if 0 // TODO
+#if 0
             size_type s;
 
             // values
@@ -1174,7 +969,7 @@ public:
         template<class Archive>
         FEELPP_NO_EXPORT void load( Archive & ar, const unsigned int /*version*/ )
         {
-#if 0 // TODO
+#if 0
             // loading
             size_type s( 0 );
 
@@ -1402,12 +1197,6 @@ public:
             boost::serialization::split_member( ar, *this, file_version );
         }
 
-        /**
-         * execute the steps needed to have a coherent state
-         * @param state new state to execute
-         */
-        FEELPP_NO_EXPORT void executeState( size_type state );
-
         static
         std::set<std::string>
         representationType( variant_representation_arg_type const& _rep, std::string const& valueIfEmpty = "" )
@@ -1455,17 +1244,8 @@ public:
 
         Context M_state;
 
-
         scalar_p0_space_ptrtype M_scalar_p0;
-        //vector_p0_space_ptrtype M_vector_p0;
-        //tensor2_p0_space_ptrtype M_tensor2_p0;
-        //tensor2symm_p0_space_ptrtype M_tensor2symm_p0;
         scalar_p1_space_ptrtype M_scalar_p1;
-        //vector_p1_space_ptrtype M_vector_p1;
-        //tensor2_p1_space_ptrtype M_tensor2_p1;
-        //tensor2symm_p1_space_ptrtype M_tensor2symm_p1;
-
-
     };
 
     struct ltstep
@@ -1772,9 +1552,6 @@ private:
         }
     }
 
-    //! cleanup steps states
-    //FEELPP_NO_EXPORT void cleanup();
-
     //! delete all time next this __time (after a restart by exemple)
     FEELPP_NO_EXPORT void resetPreviousTime( Real __time );
 
@@ -1793,13 +1570,7 @@ public:
 
 
     scalar_p0_space_ptrtype M_scalar_p0;
-    //vector_p0_space_ptrtype M_vector_p0;
-    //tensor2_p0_space_ptrtype M_tensor2_p0;
-    //tensor2symm_p0_space_ptrtype M_tensor2symm_p0;
     scalar_p1_space_ptrtype M_scalar_p1;
-    //vector_p1_space_ptrtype M_vector_p1;
-    //tensor2_p1_space_ptrtype M_tensor2_p1;
-    //tensor2symm_p1_space_ptrtype M_tensor2symm_p1;
 private:
 
     /**
@@ -1844,25 +1615,7 @@ TimeSet<MeshType, N>::TimeSet( std::string __name, bool init )
     M_index( _S_current_index++ ),
     M_time_increment( 0.1 ),
     M_keep_steps( 1 )
-{
-#if 0
-    std::ostringstream __str;
-    __str << M_name << ".ts";
-
-    if ( fs::exists( __str.str() ) && !init )
-    {
-        std::ifstream ifs( __str.str().c_str() );
-        boost::archive::binary_iarchive ia( ifs );
-
-        ia >> *this;
-
-        ifs.close();
-    }
-
-    else if ( fs::exists( __str.str() ) )
-        fs::remove( __str.str() );
-#endif
-}
+{}
 
 template<typename MeshType, int N>
 TimeSet<MeshType, N>::TimeSet( TimeSet const& __ts )
@@ -1877,69 +1630,8 @@ TimeSet<MeshType, N>::TimeSet( TimeSet const& __ts )
 template<typename MeshType, int N>
 TimeSet<MeshType, N>::~TimeSet()
 {
-#if 0
-    step_iterator __it = M_step_set.begin();
-    step_iterator __en = M_step_set.end();
-
-    for ( ; __it != __en; ++__it )
-    {
-        ( *__it )->setState( STEP_ON_DISK );
-    }
-
-
-    // FIXME: saving the timeset is disabled for now
-
-    std::ostringstream __str;
-    __str << M_name << ".ts";
-
-    std::ofstream ofs( __str.str().c_str() );
-
-    if ( !ofs.fail() )
-    {
-        boost::archive::binary_oarchive oa( ofs );
-
-        oa << const_cast<TimeSet<MeshType, N>const&>( *this );
-
-        ofs.close();
-    }
-
-#endif
-
     --_S_current_index;
-
-
 }
-#if 0
-template<typename MeshType, int N>
-TimeSet<MeshType, N>&
-TimeSet<MeshType, N>::operator=( TimeSet const& __ts )
-{
-    if ( this != &__ts )
-    {
-        M_name = __ts.M_name;
-        M_index = __ts.M_index;
-        M_time_increment = __ts.M_time_increment;
-    }
-
-    return *this;
-}
-#endif
-#if 0
-template<typename MeshType, int N>
-void
-TimeSet<MeshType, N>::cleanup()
-{
-    step_iterator __it = M_step_set.begin();
-    step_iterator __en = M_step_set.end();
-
-    for ( ; __it != __en; ++__it )
-    {
-        if ( ( *__it )->index() <= M_step_set.size() - M_keep_steps )
-            ( *__it )->setState( STEP_ON_DISK );
-    }
-
-}
-#endif
 
 template<typename MeshType, int N>
 void
@@ -2040,16 +1732,6 @@ TimeSet<MeshType, N>::Step::Step( TimeSet* ts, Real __t, size_type __index, size
 {
     showMe( "Step::Step()" );
 }
-#if 0
-template<typename MeshType, int N>
-TimeSet<MeshType, N>::Step::Step( Step const& __step )
-    :
-    M_time( __step.M_time ),
-    M_index( __step.M_index ),
-    M_state( __step.M_state )
-{
-}
-#endif
 template<typename MeshType, int N>
 TimeSet<MeshType, N>::Step::~Step()
 {
@@ -2057,80 +1739,6 @@ TimeSet<MeshType, N>::Step::~Step()
     showMe( "Step::~Step()" );
 }
 
-template<typename MeshType, int N>
-void
-TimeSet<MeshType, N>::Step::executeState( size_type __st )
-{
-    Context __state( __st );
-    DVLOG(2) << "executeState: isOnDisk() :  " << __state.test( STEP_ON_DISK ) << "\n";
-    DVLOG(2) << "executeState: isInMemory() :  " << __state.test( STEP_IN_MEMORY ) << "\n";
-
-    if ( hasData() && isInMemory()  && __state.test( STEP_ON_DISK ) )
-    {
-#if 0
-        DVLOG(2) << "saving step " << this->index() << " at time " << this->time() << " on disk\n";
-        std::ostringstream __str;
-        __str << "step-" << this->index();
-
-        if ( !fs::exists( __str.str() ) || M_state.test( STEP_OVERWRITE ) )
-        {
-            std::ofstream ofs( __str.str().c_str() );
-            boost::archive::binary_oarchive oa( ofs );
-
-            oa << const_cast<typename TimeSet<MeshType, N>::Step const&>( *this );
-
-            ofs.close();
-        }
-
-#endif
-
-        if ( hasData() )
-        {
-            std::cout << "releasing step " << M_index << " at time " << M_time << " allocated memory for this step\n";
-            DVLOG(2) << "releasing step " << M_index << " at time " << M_time << " allocated memory for this step\n";
-            auto clear = []( auto& c ) {
-                for ( auto & c1 : c.second.second )
-                    for ( auto & c2 : c1 )
-                        c2->clear(); //????
-            };
-            {
-                std::for_each( M_nodal.begin(),
-                               M_nodal.end(),
-                               clear );
-            }
-            {
-                std::for_each( M_element.begin(),
-                               M_element.end(),
-                               clear );
-            }
-            M_state.clear( STEP_IN_MEMORY );
-        }
-
-        M_state.set( STEP_ON_DISK );
-    }
-
-    if ( hasData() && isOnDisk()  && __state.test( STEP_IN_MEMORY ) )
-    {
-        DVLOG(2) << "loading step " << this->index() << " at time " << this->time() << " in memory\n";
-#if 0
-        std::ostringstream __str;
-        __str << "step-" << this->index();
-
-        if ( fs::exists( __str.str() ) )
-        {
-            std::ifstream ifs( __str.str().c_str() );
-            boost::archive::binary_iarchive ia( ifs );
-
-            ia >> *this;
-
-            ifs.close();
-        }
-
-#endif
-        M_state.set( STEP_IN_MEMORY|STEP_HAS_DATA );
-        M_state.clear( STEP_ON_DISK );
-    }
-}
 }
 }
 #endif /* __TimeSet_H */

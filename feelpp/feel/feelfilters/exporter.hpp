@@ -407,7 +407,7 @@ public:
     template<typename ExprT>
     void
     add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
     {
         this->step( 0 )->add( name, expr, reps );
     }
@@ -415,7 +415,7 @@ public:
     template<typename ExprT>
     void
     add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if<std::is_base_of<ExprBase,ExprT>::value >::type* = nullptr )
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
     {
         this->step( 0 )->add( name, expr, rangeElt, reps );
     }

@@ -753,9 +753,9 @@ public:
             f.setId( M_elements.size() );
         auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
-        auto & newElement = ret.first->second;
         if ( ret.second )
         {
+            auto & newElement = ret.first->second;
             if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
                 M_needToOrderElements = true;
             M_orderedElements.push_back( boost::ref( newElement ) );

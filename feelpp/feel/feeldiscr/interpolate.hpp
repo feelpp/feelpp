@@ -37,25 +37,6 @@ namespace Feel
 enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
 
 
-template <class T>
-struct is_std_vector : mpl::false_ {};
-template <class T>
-struct is_std_vector<std::vector<T> > : mpl::true_ {};
-template<class T>
-constexpr bool is_std_vector_v = is_std_vector<T>::value;
-template <class T>
-struct remove_std_vector
-{
-    typedef T type;
-};
-template <class T>
-struct remove_std_vector<std::vector<T> >
-{
-    typedef T type;
-};
-template<typename T>
-using remove_std_vector_t = typename remove_std_vector<T>::type;
-
 template<typename SpaceType, typename FunctionType>
 bool
 interpolate_copy( std::shared_ptr<SpaceType> const& space,
@@ -243,8 +224,6 @@ interpolate( std::shared_ptr<SpaceType> const& space,
                             for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
                             {
                                 uint16_type newLocalDofId = ldof.first.localDof()+(c2+f_fe_type::nComponents2*c1)*f_fe_type::nLocalDof;
-                                if constexpr ( f_fe_type::is_tensor2symm )
-                                      newLocalDofId = f.functionSpace()->fe()->unsymmToSymm( newLocalDofId );
                                 DCHECK( newLocalDofId <  f_indices.size() ) << "something wrong " << newLocalDofId << " vs " << f_indices.size();
                                 index_type f_index = f_indices[newLocalDofId];
                                 unwrap_ptr(interp[c1][c2])( index ) = f(f_index);
