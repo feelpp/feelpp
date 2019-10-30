@@ -654,8 +654,39 @@ public:
                             fieldsMap[__fname].second[0][0] = scalarSpace->elementPtr( __n );
                         fieldsMap[__fname].second[0][0]->on(_range=rangeElt,_expr=expr);
                     }
+                else if constexpr ( ExprShapeType::is_vectorial )
+                {
+                    fieldsMap[ __fname].first = FunctionSpaceType::VECTORIAL;
+                    constexpr uint16_type nCompExpr = ( ExprShapeType::is_transposed )? ExprShapeType::N : ExprShapeType::M;
+                    fieldsMap[ __fname].second.resize( nCompExpr );
+                    for ( int c1 = 0; c1 < nCompExpr ;++c1 )
+                    {
+                        fieldsMap[ __fname].second[c1] = { scalarSpace->elementPtr( __n ) };
+                        if constexpr ( ExprShapeType::is_transposed )
+                            fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(0,c1)); // TODO : optimize
+                        else
+                            fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(c1,0) ); // TODO : optimize
+                    }
+
+                }
+                else if constexpr ( ExprShapeType::is_tensor2 )
+                {
+                    fieldsMap[ __fname].first = FunctionSpaceType::TENSOR2;
+                    fieldsMap[ __fname].second.resize( ExprShapeType::M );
+                    for ( int c1 = 0; c1 < ExprShapeType::M ;++c1 )
+                    {
+                        fieldsMap[ __fname].second[c1].resize( ExprShapeType::N );
+                        for ( int c2 = 0; c2 < ExprShapeType::N ;++c2 )
+                        {
+                            fieldsMap[ __fname].second[c1][c2] = scalarSpace->elementPtr( __n );
+                            fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(c1,c2));  // TODO : optimize
+                        }
+                    }
+                }
                 else
+                {
                     CHECK( false ) << "expression shape not supported";
+                }
 
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
