@@ -1258,7 +1258,7 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
         std::string partName = mp.name( part );
         if( partName.empty() )
             partName = (boost::format("marker_%1%")%part).str();
-        partName.resize( 80, std::min((int)partName.size(),(int)80) );
+        partName.resize( std::min((int)partName.size(),(int)80) );
         strcpy( buffer2, partName.c_str() );
             //sprintf(buffer2, "Marker %d (%s)", (int)(markerid), mesh->markerName(markerid).substr(0, 32).c_str());
         strcpy( &buffer2[80], "coordinates" );
