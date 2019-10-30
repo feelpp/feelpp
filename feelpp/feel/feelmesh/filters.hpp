@@ -33,6 +33,7 @@
 
 #include <utility>
 #include <unordered_set>
+#include <any>
 #if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #else
@@ -466,13 +467,12 @@ marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  */
 template<typename MeshType>
 std::map<int,markedelements_t<MeshType> >
-collectionOfMarkedelements( MeshType const& mesh, boost::any const& collectionOfMarkersFlag )
+collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
 {
     std::map<int,std::set<flag_type>> collectionOfMarkerFlagSet;
-    if ( boost::any_cast<std::map<int,int> >( &collectionOfMarkersFlag ) )
+    if ( auto argCasted = std::any_cast<std::map<int,int>>( &collectionOfMarkersFlag) )
     {
-        auto argCasted = boost::any_cast<std::map<int,int>>( collectionOfMarkersFlag);
-        for ( auto const& [part,markersFlag] : argCasted )
+        for ( auto const& [part,markersFlag] : *argCasted )
             collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr( mesh ).markersId( markersFlag );
     }
     else
