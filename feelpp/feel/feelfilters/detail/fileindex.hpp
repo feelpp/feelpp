@@ -24,7 +24,7 @@
 #ifndef FEELPP_INDEX_HPP
 #define FEELPP_INDEX_HPP 1
 
-#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 
 namespace Feel {
 
@@ -35,17 +35,22 @@ namespace detail {
  * @author Christophe Prud'homme
  * @see
  */
-class FileIndex
+class FileIndex : public CommObject
 {
 public:
-    FileIndex() : n_steps( 0 ), fileblock_n_steps( -1 ) {}
+    explicit FileIndex( worldcomm_ptr_t const& w );
     void read( MPI_File fh );
-    void write( MPI_File fh );
-    void add( int64_type tellp ) { ++n_steps ; fileblocks.push_back( tellp ); }
-    bool defined() const { return n_steps != 0; }
-    int64_type n_steps;
-    std::vector<int64_type> fileblocks;
-    int64_type fileblock_n_steps;
+    void write( MPI_File fh,  MPI_Offset & offset );
+    void add( int64_type tellp ) { M_fileblocks.push_back( tellp ); }
+    bool defined() const { return !M_fileblocks.empty(); }
+
+    std::vector<int64_type> const& fileBlocks() const { return M_fileblocks; }
+    int64_type numberOfBlock() const { return M_fileblocks.size(); }
+    int64_type nextFreePosFile() const { return M_nextFreePosFile; }
+private :
+    std::vector<int64_type> M_fileblocks;
+    int64_type M_nextFreePosFile;
+    int M_sizeOfInt32_t, M_sizeOfInt64_t;
 };
 } // detail
 } // Feel

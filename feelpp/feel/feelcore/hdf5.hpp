@@ -209,7 +209,7 @@ public:
                 hid_t& memDataType,
                 hsize_t currentCount[],
                 hsize_t currentOffset[],
-                void* buffer,
+                const void* buffer,
                 unsigned int nbDims = 2 );
 
     //! Read

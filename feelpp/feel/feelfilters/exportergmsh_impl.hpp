@@ -84,25 +84,13 @@ ExporterGmsh<MeshType,N>::~ExporterGmsh()
 
 template<typename MeshType, int N>
 void
-ExporterGmsh<MeshType,N>::save() const
+ExporterGmsh<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    DVLOG(2) << "[ExporterGmsh] checking if frequency is ok\n";
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
-
-    DVLOG(2) << "[ExporterGmsh] frequency is ok\n";
-
     DVLOG(2) << "[ExporterGmsh] save()...\n";
 
     gmshSaveAscii();
 
     DVLOG(2) << "[ExporterGmsh] saving done\n";
-
-    this->saveTimeSet();
 }
 
 template<typename MeshType, int N>
@@ -124,26 +112,24 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
     {
         timeset_ptrtype __ts = *__ts_it;
 
-        std::ostringstream __fname;
+        std::ostringstream fname;
 
         /* If we want only one file, specify the same filename for each process */
-        if(boption(_name="exporter.gmsh.merge") == true)
+        if ( boption(_name="exporter.gmsh.merge") )
         {
-            __fname << this->prefix() //<< this->prefix() //this->path()
-                    << "-" << this->worldComm().size()
-                    << ".msh";
+            fname << this->prefix() //<< this->prefix() //this->path()
+                  << "-" << this->worldComm().size()
+                  << ".msh";
         }
         else
         {
-            __fname << this->prefix()  //<< this->prefix() //this->path()
-                    << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
-                    << ".msh";
+            fname << this->prefix()  //<< this->prefix() //this->path()
+                  << "-" << this->worldComm().size() << "_" << this->worldComm().rank()
+                  << ".msh";
         }
 
-        /*std::string filename =  this->prefix()
-          + __ts->name()
-          + "-" + this->worldComm().size() + "_" + this->worldComm().rank()
-          + ".msh";*/
+        std::string outputPath = (fs::path( this->path() )/fname.str()).string();
+
         std::ofstream out;
 
         typename timeset_type::step_const_iterator __stepIt = __ts->beginStep();
@@ -168,24 +154,20 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                 {
                     if ( __step->index()==1 )
                     {
-                        out.open( __fname.str().c_str(), std::ios::out );
+                        out.open( outputPath.c_str(), std::ios::out );
                     }
 
                     else
                     {
-                        out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                        out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                     }
 
-                    if ( out.fail() )
-                    {
-                        DVLOG(2) << "cannot open " << __fname.str().c_str() << "\n";
-                        exit( 0 );
-                    }
+                    CHECK ( !out.fail() ) << "cannot open " << outputPath;
 
                     DVLOG(2) << "[ExporterGmsh] saving model "
                                   << this->prefix() << " at time step "
                                   << __ts->index() << " in "
-                                  << __fname.str() << "\n";
+                                  << outputPath << "\n";
 
                     // save mesh only at first iteration
                     if ( __stepIt == __ts->beginStep() )
@@ -216,7 +198,10 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     }
 
                     //gmshSaveNodeData( out, __step);
-                    gmshSaveElementNodeData( out, __step, indexElementStart);
+                    //gmshSaveElementNodeData( out, __step, indexElementStart);
+                    std::cout << "hola\n";
+                    saveFields<true>(  __step, __step->beginNodal(), __step->endNodal(), out );
+                    saveFields<false>(  __step, __step->beginElement(), __step->endElement(), out );
                 }
                 /* saving data to one file */
                 else
@@ -224,7 +209,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     DVLOG(2) << "[ExporterGmsh] saving model "
                                   << this->prefix() << " at time step "
                                   << __ts->index() << " in "
-                                  << __fname.str() << "\n";
+                                  << outputPath << "\n";
 
                     // save mesh only at first iteration
                     if ( __stepIt == __ts->beginStep() )
@@ -232,7 +217,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         this->worldComm().barrier();
                         if(this->worldComm().isMasterRank())
                         {
-                            out.open( __fname.str().c_str(), std::ios::out );
+                            out.open( outputPath.c_str(), std::ios::out );
                             gmshSaveFormat( out );
                             gmshSavePhysicalNames( out, __step->mesh() );
                         }
@@ -251,7 +236,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         {
                             if(i == this->worldComm().rank())
                             {
-                                out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                                out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                                 gmshSaveNodes( out,__step->mesh() );
                                 out.close();
                             }
@@ -260,7 +245,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                         if(this->worldComm().isMasterRank())
                         {
-                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                             gmshSaveNodesEnd( out, __step->mesh() );
                             gmshSaveElementsStart( out, nGlobElement );
                             out.close();
@@ -271,7 +256,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                         {
                             if(i == this->worldComm().rank())
                             {
-                                out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                                out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                                 gmshSaveElements( out, __step->mesh(), indexElementStart );
                                 out.close();
                             }
@@ -280,7 +265,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
 
                         if(this->worldComm().isMasterRank())
                         {
-                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                             gmshSaveElementsEnd( out );
                             out.close();
                         }
@@ -291,7 +276,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     {
                         if(i == this->worldComm().rank())
                         {
-                            out.open( __fname.str().c_str(), std::ios::out | std::ios::app );
+                            out.open( outputPath.c_str(), std::ios::out | std::ios::app );
                             //gmshSaveNodeData( out, __step);
                             gmshSaveElementNodeData( out, __step, indexElementStart);
                             out.close();
@@ -328,7 +313,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                             __mshfname << this->prefix()  //<< this->prefix() //this->path()
                                 << "-" << this->worldComm().size()
                                 << ".msh";
-                            geoout << "Merge \"" << __fname.str() << "\";" << std::endl; 
+                            geoout << "Merge \"" << outputPath << "\";" << std::endl; 
                         }
                         else
                         {
@@ -392,7 +377,7 @@ ExporterGmsh<MeshType,N>::gmshSaveAscii() const
                     /* If onelab is enabled, we register the msh file to be loaded */
                     if(ioption(_name="onelab.enable" ) == 2)
                     {
-                        Environment::olLoadInGmsh(__fname.str());
+                        Environment::olLoadInGmsh( outputPath );
                     }
                 }
 
@@ -881,64 +866,185 @@ ExporterGmsh<MeshType,N>::gmshSaveElements( std::ostream& out, mesh_ptrtype mesh
 
 }
 
-
-
 template<typename MeshType, int N>
+template<bool IsNodal,typename Iterator>
 void
-ExporterGmsh<MeshType,N>::gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const
+ExporterGmsh<MeshType,N>::saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, std::ostream& out ) const
 {
-#if 0
-    //!!!Not functionnal for curve element!!!
+    std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
 
-    typedef typename step_type::nodal_scalar_type nodal_scalar_type;
-    typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+    std::optional<std::vector<size_type>> M_mapNodalArrayToDofId, M_mapElementArrayToDofId;
 
-    //on parcourt le temp
-    step_const_iterator __it = timeset->beginStep();
-    step_const_iterator __end = timeset->endStep();
-
-    for ( ; __it != __end ; ++__it )
+    for ( ; __var != en; ++__var )
     {
-        nodal_scalar_const_iterator __var = ( *__it )->beginNodalScalar();
-        nodal_scalar_const_iterator __varen = ( *__it )->endNodalScalar();
+        auto const& fieldData =  __var->second;
+        auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
+        auto const& d = field00.functionSpace()->dof().get();
+        //int reorder_tensor2symm[6] = { 0,3,5,1,4,2 };
+        index_type nValuesPerComponent = invalid_v<index_type>;
 
-        out << "$NodeData\n";
+        Eigen::VectorXf __field;
 
-        nodal_scalar_type const& __u = __var->second;
-        //mesh_ptrtype mesh =__u.mesh();
-        mesh_ptrtype mesh = ( *__it )->mesh();
-
-        out << "1\n";//number of string tag
-        out << "a scalar node\n";
-        out << "1\n";//number of real tag
-        out << "0.0\n";
-        out << "3\n";//number of integer tags:
-        out << "0\n";//the time step (0; time steps always start at 0)
-        out << "1\n";//n-component (1 is scalar) field
-        out << mesh->numPoints() << "\n";//number associated nodal values
-
-        point_const_iterator pt_it = mesh->beginPoint();
-        point_const_iterator pt_en = mesh->endPoint();
-
-        for ( ; pt_it!=pt_en ; ++pt_it )
+        uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
+        bool isTensor2Symm = false;
+        if ( fieldData.first == FunctionSpaceType::SCALAR )
         {
-            out << pt_it->id()+1
-                <<" ";
-            out << std::setw( 17 ) << std::setprecision( 16 ) <<__u( pt_it->id() );
-            //__u(pt_it->node());
-            out << "\n";
+            nComponents = 1;
+            nComponents1 = 1;
+            nComponents2 = 1;
+        }
+        else if ( fieldData.first == FunctionSpaceType::VECTORIAL )
+        {
+            nComponents = 3;
+            nComponents1 = 3;
+            nComponents2 = 1;
+        }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2 )
+        {
+            nComponents = 9;
+            nComponents1 = 3;
+            nComponents2 = 3;
+        }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM )
+        {
+            nComponents = 6;
+            nComponents1 = 3;
+            nComponents2 = 3;
+            isTensor2Symm = true;
         }
 
-        out << "$EndNodeData\n";
-    }
+        auto r = elements( step->mesh() );
+        auto elt_it = r.template get<1>();
+        auto elt_en = r.template get<2>();
 
-#endif
+        if constexpr ( IsNodal )
+            {
+
+                if (!M_mapNodalArrayToDofId )
+                {
+                    M_cache_mp.try_emplace(  0 /*dummy value*/,step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true, true, 1 );
+                    auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
+
+                    nValuesPerComponent = mp.ids.size();
+                    __field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+
+                    M_mapNodalArrayToDofId = std::make_optional<std::vector<size_type>>( nValuesPerComponent,invalid_size_type_value );
+                    auto & mapArrayToDofId = *M_mapNodalArrayToDofId;
+
+                    /* loop on the elements */
+                    for ( ; elt_it != elt_en; ++elt_it )
+                    {
+                        auto const& elt = unwrap_ref( *elt_it );
+                        auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                        for ( uint16_type p = 0; p < step->mesh()->numLocalVertices(); ++p )
+                        {
+                            //size_type ptid = mp.old2new[elt.point( p ).id()];
+                            size_type ptid = elt.point( p ).id()-1;
+                            size_type dof_id = locglob_ind(d->localDofId(p,0));
+                            mapArrayToDofId[ptid] = dof_id;
+                            for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                            {
+                                for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                                {
+                                    auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                    uint16_type cMap = c2*nComponents1+c1;
+                                    //if ( isTensor2Symm )
+                                    // cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                    size_type global_node_id = nComponents * ptid + cMap;
+                                    __field[global_node_id] = fieldComp.globalValue( dof_id );
+                                }
+                            }
+                        }
+                    }
+                }
+            } // isNodal
+        else
+        {
+            if (!M_mapElementArrayToDofId )
+            {
+                nValuesPerComponent = std::distance(elt_it,elt_en);
+                __field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                M_mapElementArrayToDofId = std::make_optional<std::vector<size_type>>( nValuesPerComponent,invalid_size_type_value );
+                auto & mapArrayToDofId = *M_mapElementArrayToDofId;
+
+                for ( index_type e=0 ; elt_it != elt_en; ++elt_it,++e )
+                {
+                    auto const& elt = unwrap_ref( *elt_it );
+                    auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                    size_type dof_id = locglob_ind(d->localDofId(0,0));
+                    mapArrayToDofId[e] = dof_id;
+                    for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                    {
+                        for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                        {
+                            auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                            uint16_type cMap = c2*nComponents1+c1;
+                            //if ( isTensor2Symm )
+                            //   cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                            size_type global_node_id = nComponents * e + cMap;
+                            __field(global_node_id) = fieldComp.globalValue( dof_id );
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( nValuesPerComponent == invalid_v<index_type> )
+        {
+            auto const& mapArrayToDofId = (IsNodal)? *M_mapNodalArrayToDofId : *M_mapElementArrayToDofId;
+            nValuesPerComponent = mapArrayToDofId.size();
+            __field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+            for ( size_type k=0;k<nValuesPerComponent;++k )
+            {
+                size_type dof_id = mapArrayToDofId[k];
+                for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                {
+                    for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                    {
+                        auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                        uint16_type cMap = c2*nComponents1+c1;
+                        size_type global_node_id = nComponents*k + cMap;
+                        __field[global_node_id] = fieldComp.globalValue( dof_id );
+                    }
+                }
+
+            }
+        }
+
+        out << (IsNodal? "$NodeData\n" : "ElementData\n");
+        out << "1\n";//number of string tag
+        out << "\"" << field00.name() << "\"\n";
+        out << "1\n";//number of real tag
+        out << "0.0\n"; // time value
+        out << "3\n";//number of integer tags:
+        out << "0\n";//the time step (0; time steps always start at 0)
+        out << nComponents <<"\n";//n-component (1 is scalar,3 vector,9 tensor) field
+        out << nValuesPerComponent << "\n";//number associated nodal values
+
+        for(int i = 0; i < nValuesPerComponent; i++)
+        {
+            if ( IsNodal )
+                out << i+2;
+            else
+                out << i+1;
+            for ( uint16_type c = 0; c < nComponents; ++c )
+                out << " " << *( __field.data() + i * nComponents + c);
+            out << "\n";
+        }
+        out << (IsNodal? "$EndNodeData\n" : "$EndElementData\n");
+
+
+    } // for ( __var...
 }
+
+
+
 
 template<typename MeshType, int N>
 void
 ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const
 {
+#if 0 // TODO
     typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
@@ -1092,6 +1198,9 @@ ExporterGmsh<MeshType,N>::computeMinMax(step_ptrtype __step, std::map<std::strin
         }
 #endif
     }
+#else
+    CHECK( false ) << "TODO";
+#endif
 
 }
 
@@ -1101,13 +1210,14 @@ void
 ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         step_ptrtype __step, size_type indexEltStart) const
 {
+
     typedef typename mesh_type::element_const_iterator element_mesh_const_iterator;
 
     typedef typename step_type::nodal_scalar_type nodal_scalar_type;
-    typedef typename step_type::nodal_scalar_const_iterator nodal_scalar_const_iterator;
+    typedef typename step_type::nodal_const_iterator nodal_const_iterator;
 
-    typedef typename step_type::nodal_vector_type nodal_vectorial_type;
-    typedef typename step_type::nodal_vector_const_iterator nodal_vectorial_const_iterator;
+    //typedef typename step_type::nodal_vector_type nodal_vectorial_type;
+    //typedef typename step_type::nodal_vector_const_iterator nodal_vectorial_const_iterator;
 
     typedef typename step_type::element_scalar_type element_scalar_type;
 
@@ -1144,14 +1254,16 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         std::for_each( elt_it, elt_en, [&pid,&elt_pids]( typename MeshType::element_type const& e ){ elt_pids[e.id()]=pid++; });
     //}
 
-    nodal_scalar_const_iterator __varScal = __step->beginNodalScalar();
-    nodal_scalar_const_iterator __varScal_end = __step->endNodalScalar();
+    nodal_const_iterator __varScal = __step->beginNodal();
+    nodal_const_iterator __varScal_end = __step->endNodal();
 
     for ( ; __varScal!=__varScal_end ; ++__varScal )
     {
         out << "\n$ElementNodeData\n";
 
-        nodal_scalar_type const& __u = __varScal->second;
+        //nodal_scalar_type const& __u = __varScal->second;
+        auto const& fieldData =  __varScal->second;
+        auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
 
         //uint __nbCompFieldGMSH;
         //    if (nodal_scalar_type::functionspace_type::is_scalar)         { __nbCompFieldGMSH=1; }
@@ -1176,12 +1288,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
         out << std::distance(elt_it, elt_en) << "\n";
 
-        if ( !__u.areGlobalValuesUpdated() )
-            __u.updateGlobalValues();
-
         for ( ; elt_it!=elt_en ; ++elt_it )
         {
-            auto const& elt = boost::unwrap_ref( *elt_it );
+            auto const& elt = unwrap_ref( *elt_it );
             // either use the relinearized version for one file dataset or classic for one file per process
             /*
             if(boption(_name="exporter.gmsh.merge") == true)
@@ -1203,24 +1312,9 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
             for ( uint16_type l = 0; l < nLocalDof; ++l )
             {
                 uint16_type gmsh_l = ordering.fromGmshId( l );
-                globaldof = __u.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ).index(); //l,c
+                globaldof = field00.functionSpace()->dof()->localToGlobal( elt.id(), gmsh_l, 0 ).index(); //l,c
 
-                // verify that the dof points and mesh points coincide
-#if !defined(NDEBUG)
-#if 0
-                if ( ublas::norm_2( boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) )-elt.point( ordering.fromGmshId( l ) ).node() ) > 1e-10 )
-                {
-                    std::cout << "------------------------------------------------------------\n";
-                    std::cout << "invalid dof/mesh points\n";
-                    std::cout << "dof global id:" << globaldof << " | local id:" << gmsh_l << "\n";
-                    std::cout << "point global id:" <<  elt.point( ordering.fromGmshId( l ) ).id() << " | local id:" << gmsh_l << "\n";
-                    std::cout << "node dof:  " << boost::get<0>( __u.functionSpace()->dof()->dofPoint( globaldof ) ) << "\n";
-                    std::cout << "node element:  " << elt.point( ordering.fromGmshId( l ) ).node() << "\n";
-                }
-#endif
-#endif // NDEBUG
-                //out << " " << __u( globaldof);
-                out << " " <<__u.container()( globaldof );
+                out << " " << field00.globalValue( globaldof );
             }
 
             out << "\n";
@@ -1229,6 +1323,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
         out << "$EndElementNodeData\n";
     }
 
+#if 0 // TODO
     nodal_vectorial_const_iterator __varVec = __step->beginNodalVector();
     nodal_vectorial_const_iterator __varVec_end = __step->endNodalVector();
 
@@ -1357,7 +1452,7 @@ ExporterGmsh<MeshType,N>::gmshSaveElementNodeData( std::ostream& out,
 
         out << "$EndElementData\n";
     }
-
+#endif
 }
 
 
