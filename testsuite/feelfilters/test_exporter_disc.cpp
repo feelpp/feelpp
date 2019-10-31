@@ -26,20 +26,6 @@ BOOST_AUTO_TEST_SUITE( exporter_disc )
 BOOST_AUTO_TEST_CASE( test_1 )
 {
     auto mesh = unitSquare();
-#if 0
-    auto Xh = Pdhv<1>(mesh);
-    auto Vh = Pdh<1>(mesh);
-    auto u = Xh->element();
-    auto v = Vh->element();
-    auto e = exporter(_mesh=mesh,
-                      _path=(fs::path(Environment::exportsRepository())/fs::path("test_1")/fs::path(soption("exporter.format"))).string() );
-    e->step(0)->add( "u", u );
-    e->step(0)->add( "v", v );
-    e->save();
-    e->step(1)->add( "u", u );
-    e->step(1)->add( "v", v );
-    e->save();
-#endif
 
     auto e = exporter(_mesh=mesh,
                       _path=(fs::path(Environment::exportsRepository())/fs::path("test_1")/fs::path(soption("exporter.format"))).string() );
@@ -101,7 +87,7 @@ BOOST_AUTO_TEST_CASE( test_1 )
 
 }
 
-typedef boost::mpl::list<boost::mpl::int_<2>/*,boost::mpl::int_<3>*/ > dim_types;
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
 {
     static const uint16_type nDim = T::value;
@@ -110,9 +96,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
     //auto mesh = loadMesh( _mesh=new mesh_type);
 
     mesh_ptrtype mesh;
+    double meshSize = doption(_name="gmsh.hsize");
+    bool keepInterface = true;
     if constexpr ( nDim == 2 )
     {
-        double meshSize = doption(_name="gmsh.hsize");
         GeoTool::Node x1a( 0,0 );
         GeoTool::Node x2a( 0.5,1 );
         GeoTool::Rectangle Ra( meshSize,"Omega1",x1a,x2a );
@@ -134,12 +121,41 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
         Rc.setMarker(_type="line",_name="InternalInterface",_marker4=true);
         Rc.setMarker(_type="surface",_name="Omega3",_markerAll=true);
 
-        bool keepInterface = true;
         mesh = (Ra+Rb+Rc).
             fusion(Ra,2,Rb,4,keepInterface).
             fusion(Rb,2,Rc,4,keepInterface).
             createMesh(_mesh=new mesh_type,
                        _name="test_2_domain2d" );
+    }
+    else
+    {
+        GeoTool::Node x1a(0,0,0);
+        GeoTool::Node x2a(0.5,1,0.5);
+        GeoTool::Cube Ca( meshSize,"Cube1",x1a,x2a);
+        Ca.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true,_marker6=true );
+        Ca.setMarker(_type="surface",_name="InternalInterface_1_2",_marker4=true);
+        Ca.setMarker(_type="volume",_name="Omega1",_markerAll=true);
+
+        GeoTool::Node x1b(0.5,0,0);
+        GeoTool::Node x2b(1.5,1,0.5);
+        GeoTool::Cube Cb( meshSize,"Cube2",x1b,x2b);
+        Cb.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true );
+        Cb.setMarker(_type="surface",_name="InternalInterface_2_3",_marker4=true);
+        Cb.setMarker(_type="surface",_name="InternalInterface_1_2",_marker6=true);
+        Cb.setMarker(_type="volume",_name="Omega2",_markerAll=true);
+
+        GeoTool::Node x1c(1.5,0,0);
+        GeoTool::Node x2c(2,1,0.5);
+        GeoTool::Cube Cc( meshSize,"Cube3",x1c,x2c);
+        Cc.setMarker(_type="surface",_name="Boundary1",_marker1=true,_marker2=true,_marker3=true,_marker5=true,_marker4=true );
+        Cc.setMarker(_type="surface",_name="InternalInterface_2_3",_marker6=true);
+        Cc.setMarker(_type="volume",_name="Omega3",_markerAll=true);
+
+        mesh = (Ca+Cb+Cc).
+            fusion(Ca,4,Cb,6,keepInterface).
+            fusion(Cb,4,Cc,6,keepInterface).
+            createMesh(_mesh=new mesh_type,
+                       _name="test_2_domain3d" );
     }
 
     auto VhScalar = Pch<2>( mesh );
