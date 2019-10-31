@@ -67,7 +67,7 @@
 ## - GFLAGS_INCLUDE_DIR
 ## - GFLAGS_LIBRARY_INSTALL_DIR or LIB_INSTALL_DIR or LIB_SUFFIX
 ## - GFLAGS_INSTALL_HEADERS
-## - GFLAGS_INSTALL_SHARED_LIBS
+## - GFLAGS_INSTALLSHARED_LIBS
 ## - GFLAGS_INSTALL_STATIC_LIBS
 
 cmake_minimum_required (VERSION 2.8.12 FATAL_ERROR)
@@ -407,9 +407,10 @@ else ()
   # package maintainers. Also package maintainers of other distribution
   # packages need to be able to specify the name of the library directory.
   if (NOT GFLAGS_LIBRARY_INSTALL_DIR AND LIB_INSTALL_DIR)
-    set (GFLAGS_LIBRARY_INSTALL_DIR "${LIB_INSTALL_DIR}")
+    set (GFLAGS_LIBRARY_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}")
   endif ()
-  gflags_define (PATH LIBRARY_INSTALL_DIR "Directory of installed libraries, e.g., \"lib64\"" "lib${LIB_SUFFIX}")
+  #  gflags_define (PATH LIBRARY_INSTALL_DIR "Directory of installed libraries, e.g., \"lib64\"" "lib${LIB_SUFFIX}")
+  gflags_define (PATH LIBRARY_INSTALL_DIR "Directory of installed libraries, e.g., \"lib64\"" ${CMAKE_INSTALL_LIBDIR})
   gflags_property (LIBRARY_INSTALL_DIR ADVANCED TRUE)
   set (INCLUDE_INSTALL_DIR include/feelpp)
   set (CONFIG_INSTALL_DIR  share/feelpp/${PACKAGE_NAME}/cmake)

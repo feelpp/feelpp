@@ -112,21 +112,8 @@ ExporterEnsight<MeshType,N>::init()
 }
 template<typename MeshType, int N>
 void
-ExporterEnsight<MeshType,N>::save() const
+ExporterEnsight<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    if ( !this->worldComm().isActive() ) return;
-
-    //static int freq = 0;
-
-    DVLOG(2) << "[ExporterEnsight::save] checking if frequency is ok\n";
-
-
-    if ( this->cptOfSave() % this->freq()  )
-    {
-        this->saveTimeSet();
-        return;
-    }
-
     boost::timer ti;
     DVLOG(2) << "[ExporterEnsight::save] export in ensight format\n";
 
@@ -148,11 +135,6 @@ ExporterEnsight<MeshType,N>::save() const
     DVLOG(2) << "[ExporterEnsight::save] export variable file\n";
     _F_writeVariableFiles();
     DVLOG(2) << "[ExporterEnsight::save] export variable files ok, time " << ti.elapsed() << "\n";
-
-    ti.restart();
-    DVLOG(2) << "[ExporterEnsight::save] export time set\n";
-    this->saveTimeSet();
-    DVLOG(2) << "[ExporterEnsight::save] export time set ok, time " << ti.elapsed() << "\n";
 }
 
 template<typename MeshType, int N>
@@ -285,74 +267,44 @@ ExporterEnsight<MeshType,N>::_F_writeCaseFile() const
         {
             auto __tstp_it = boost::prior(__tstp_en);
 
-            typename timeset_type::step_type::nodal_scalar_const_iterator __it = ( *__tstp_it )->beginNodalScalar();
-            typename timeset_type::step_type::nodal_scalar_const_iterator __end = ( *__tstp_it )->endNodalScalar();
-
+            typename timeset_type::step_type::nodal_const_iterator __it = ( *__tstp_it )->beginNodal();
+            typename timeset_type::step_type::nodal_const_iterator __end = ( *__tstp_it )->endNodal();
             while ( __it != __end )
             {
-                __out << "scalar per node: "
+                auto const& nodalData =  __it->second;
+                switch ( nodalData.first )
+                {
+                case FunctionSpaceType::SCALAR :  __out << "scalar";break;
+                case FunctionSpaceType::VECTORIAL :  __out << "vector";break;
+                case FunctionSpaceType::TENSOR2 :  __out << "tensor asym";break;
+                case FunctionSpaceType::TENSOR2_SYMM : __out << "tensor symm";break;
+                }
+                auto const& nodalField = unwrap_ptr( nodalData.second[0][0] );
+                __out << " per node: "
                     << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __it->second.name() << " " << this->prefix() << "." << __it->first << "-" << this->worldComm().globalSize() << "_" << __it->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                    << nodalField.name() << " " << this->prefix() << "." << __it->first << "-" << this->worldComm().globalSize() << "_" << nodalField.worldComm().localRank() << ".***" << "\n";// important localRank !!
                 ++__it;
             }
 
-            typename timeset_type::step_type::nodal_vector_const_iterator __itv = ( *__tstp_it )->beginNodalVector();
-            typename timeset_type::step_type::nodal_vector_const_iterator __env = ( *__tstp_it )->endNodalVector();
-
-            while ( __itv != __env )
-            {
-                __out << "vector per node: "
-                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __itv->second.name() << " " << this->prefix() << "." << __itv->first << "-" << this->worldComm().globalSize() << "_" << __itv->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
-                ++__itv;
-            }
-
-            typename timeset_type::step_type::nodal_tensor2_const_iterator __itt = ( *__tstp_it )->beginNodalTensor2();
-            typename timeset_type::step_type::nodal_tensor2_const_iterator __ent = ( *__tstp_it )->endNodalTensor2();
-
-            while ( __itt != __ent )
-            {
-                std::cout << "tensor asym per node: "
-                          << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                          << __itt->second.name() << " " << this->prefix() << "." << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << std::endl; // important localRank !!
-                __out << "tensor asym per node: "
-                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __itt->second.name() << " " << this->prefix() << "." << __itt->first << "-" << this->worldComm().globalSize() << "_" << __itt->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-                ++__itt;
-            }
-
-            typename timeset_type::step_type::element_scalar_const_iterator __it_el = ( *__tstp_it )->beginElementScalar();
-            typename timeset_type::step_type::element_scalar_const_iterator __end_el = ( *__tstp_it )->endElementScalar();
-
+            typename timeset_type::step_type::element_const_iterator __it_el = ( *__tstp_it )->beginElement();
+            typename timeset_type::step_type::element_const_iterator __end_el = ( *__tstp_it )->endElement();
             while ( __it_el != __end_el )
             {
-                __out << "scalar per element: "
+                auto const& elementData =  __it_el->second;
+                switch ( elementData.first )
+                {
+                case FunctionSpaceType::SCALAR :  __out << "scalar";break;
+                case FunctionSpaceType::VECTORIAL :  __out << "vector";break;
+                case FunctionSpaceType::TENSOR2 :  __out << "tensor asym";break;
+                case FunctionSpaceType::TENSOR2_SYMM :  __out << "tensor symm";break;
+                }
+                auto const& elementField = unwrap_ptr( elementData.second[0][0] );
+                __out << " per element: "
                     << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __it_el->second.name() << " " << this->prefix() << "." << __it_el->first << "-" << this->worldComm().globalSize() << "_" << __it_el->second.worldComm().localRank() << ".***" << "\n";// important localRank !!
+                    << elementField.name() << " " << this->prefix() << "." << __it_el->first << "-" << this->worldComm().globalSize() << "_" << elementField.worldComm().localRank() << ".***" << "\n";// important localRank !!
                 ++__it_el;
             }
 
-            typename timeset_type::step_type::element_vector_const_iterator __itv_el = ( *__tstp_it )->beginElementVector();
-            typename timeset_type::step_type::element_vector_const_iterator __env_el = ( *__tstp_it )->endElementVector();
-
-            while ( __itv_el != __env_el )
-            {
-                __out << "vector per element: "
-                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __itv_el->second.name() << " " << this->prefix() << "." << __itv_el->first << "-" << this->worldComm().globalSize() << "_" << __itv_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-                ++__itv_el;
-            }
-
-            typename timeset_type::step_type::element_tensor2_const_iterator __itt_el = ( *__tstp_it )->beginElementTensor2();
-            typename timeset_type::step_type::element_tensor2_const_iterator __ent_el = ( *__tstp_it )->endElementTensor2();
-
-            while ( __itt_el != __ent_el )
-            {
-                __out << "tensor per element: "
-                    << __ts->index() << " " // << *__ts_it->beginStep() << " "
-                    << __itt_el->second.name() << " " << this->prefix() << "." << __itt_el->first << "-" << this->worldComm().globalSize() << "_" << __itt_el->second.worldComm().localRank() << ".***" << "\n"; // important localRank !!
-                ++__itt_el;
-            }
         }
 
         ++__ts_it;
@@ -475,7 +427,7 @@ ExporterEnsight<MeshType,N>::_F_writeGeoFiles() const
                 << this->prefix()
                 << "-" << this->worldComm().globalSize() << "_" << this->worldComm().globalRank()
                 << ".geo" << std::setfill( '0' ) << std::setw( 3 ) << timeIndex;
-            
+
             //__writegeo( __step->mesh(), __ts->name(), __geofname.str() );
             //, __ts->name(), __geofname.str() );
             M_filename =  __geofname.str();
@@ -513,14 +465,8 @@ ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 
                 if ( __step->isInMemory() )
                 {
-                    saveNodal( __step, __step->beginNodalScalar(), __step->endNodalScalar() );
-                    saveNodal( __step, __step->beginNodalVector(), __step->endNodalVector() );
-                    saveNodal( __step, __step->beginNodalTensor2(), __step->endNodalTensor2() );
-
-                    saveElement( __step, __step->beginElementScalar(), __step->endElementScalar() );
-                    saveElement( __step, __step->beginElementVector(), __step->endElementVector() );
-                    saveElement( __step, __step->beginElementTensor2(), __step->endElementTensor2() );
-
+                    saveFields<true>( __step, __step->beginNodal(), __step->endNodal() );
+                    saveFields<false>( __step, __step->beginElement(), __step->endElement() );
                 }
 
                 ++__it;
@@ -533,34 +479,58 @@ ExporterEnsight<MeshType,N>::_F_writeVariableFiles() const
 
 
 template<typename MeshType, int N>
-template<typename Iterator>
+template<bool IsNodal,typename Iterator>
 void
-ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
+ExporterEnsight<MeshType,N>::saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const
 {
-    auto mit = elements(__step->mesh());
-    Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
+    //auto mit = elements(__step->mesh());
+    //Feel::detail::MeshPoints<float> mp( __step->mesh().get(), this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
     while ( __var != en )
     {
-        if ( !__var->second.worldComm().isActive() ) return;
+        auto const& fieldData =  __var->second;
+        auto const& field00 = unwrap_ptr( fieldData.second[0][0] );
+
+        if ( !field00.worldComm().isActive() ) return;
 
         std::ostringstream __varfname;
 
         __varfname << this->path() << "/" << this->prefix() << "." << __var->first
-                   << "-" << this->worldComm().globalSize() << "_" << __var->second.worldComm().localRank() // important localRank
+                   << "-" << this->worldComm().globalSize() << "_" << field00.worldComm().localRank() // important localRank
                    << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "...\n";
+        DVLOG(2) << "[ExporterEnsight::saveFields] saving " << __varfname.str() << "...\n";
         std::fstream __out( __varfname.str().c_str(), std::ios::out | std::ios::binary );
 
         char buffer[ 80 ];
-        strcpy( buffer, __var->second.name().c_str() );
+        strcpy( buffer, field00.name().c_str() );
         __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
-        uint16_type nComponents = __var->second.nComponents;
-
-        if ( __var->second.is_vectorial )
+        uint16_type nComponents = invalid_uint16_type_value, nComponents1 = invalid_uint16_type_value, nComponents2 = invalid_uint16_type_value;
+        bool isTensor2Symm = false;
+        if ( fieldData.first == FunctionSpaceType::SCALAR )
+        {
+            nComponents = 1;
+            nComponents1 = 1;
+            nComponents2 = 1;
+        }
+        else if ( fieldData.first == FunctionSpaceType::VECTORIAL )
+        {
             nComponents = 3;
-        if ( __var->second.is_tensor2 )
+            nComponents1 = 3;
+            nComponents2 = 1;
+        }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2 )
+        {
             nComponents = 9;
+            nComponents1 = 3;
+            nComponents2 = 3;
+        }
+        else if ( fieldData.first == FunctionSpaceType::TENSOR2_SYMM )
+        {
+            nComponents = 6;
+            nComponents1 = 3;
+            nComponents2 = 3;
+            isTensor2Symm = true;
+        }
 
         /**
          * BE CAREFUL HERE some points in the mesh may not be present in the
@@ -569,162 +539,147 @@ ExporterEnsight<MeshType,N>::saveNodal( typename timeset_type::step_ptrtype __st
          * in the connectivity and not an array of the dimension of the function
          * space which has the "right" size.
          */
-        std::vector<float> m_field( nComponents*mp.ids.size() );
-        CHECK( m_field.size()/nComponents == __var->second.localSize()/__var->second.nComponents ) << "Invalid size : " << m_field.size() << "!=" << __var->second.localSize();
+        Eigen::VectorXf m_field;
+        auto const& d = field00.functionSpace()->dof().get();
+        int reorder_tensor2symm[6] = { 0,3,4,1,5,2 };
 
-        //__field.clear();
-        auto rangeElements = __step->mesh()->elementsWithProcessId();
-        auto elt_it = std::get<0>( rangeElements );
-        auto elt_en = std::get<1>( rangeElements );
-
-        size_type e = 0;
-
-        if ( !__var->second.areGlobalValuesUpdated() )
-            __var->second.updateGlobalValues();
-
-        for ( ; elt_it != elt_en; ++elt_it )
-        {
-            auto const& elt = boost::unwrap_ref( *elt_it );
-            for ( uint16_type c = 0; c < nComponents; ++c )
+        if constexpr ( IsNodal )
             {
-                for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p, ++e )
+                if (!M_mapNodalArrayToDofId )
                 {
-                    size_type ptid = mp.old2new[elt.point( p ).id()]-1;
-                    size_type global_node_id = nComponents * ptid + c ;
-#if 0
-                    DCHECK( ptid < __step->mesh()->numPoints() ) << "Invalid point id " << ptid << " element: " << elt.id()
-                                                                 << " local pt:" << p
-                                                                 << " mesh numPoints: " << __step->mesh()->numPoints();
-                    //DCHECK( global_node_id < __field_size ) << "Invalid dof id : " << global_node_id << " max size : " << __field_size;
-#endif
-                    if ( c < __var->second.nComponents )
-                    {
-                        size_type dof_id = __var->second.functionSpace()->dof()->localToGlobal( elt.id(),p, c ).index();
+                    auto rangeElements = __step->mesh()->elementsWithProcessId();
+                    auto elt_it = std::get<0>( rangeElements );
+                    auto elt_en = std::get<1>( rangeElements );
 
-                        m_field[global_node_id] = __var->second.globalValue( dof_id );
+                    M_cache_mp.try_emplace(  0 /*dummy value*/, __step->mesh().get(), this->worldComm(), elt_it, elt_en, false, true );
+                    auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
+
+                    index_type nValuesPerComponent = mp.ids.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+
+                    M_mapNodalArrayToDofId = std::make_optional<std::vector<size_type>>( nValuesPerComponent,invalid_size_type_value );
+                    auto & mapArrayToDofId = *M_mapNodalArrayToDofId;
+
+                    for ( ; elt_it != elt_en; ++elt_it )
+                    {
+                        auto const& elt = unwrap_ref( *elt_it );
+                        auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                        for ( uint16_type p = 0; p < __step->mesh()->numLocalVertices(); ++p )
+                        {
+                            size_type ptid = mp.old2new[elt.point( p ).id()]-1;
+                            size_type dof_id = locglob_ind(d->localDofId(p,0));
+                            mapArrayToDofId[ptid] = dof_id;
+                            for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                            {
+                                for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                                {
+                                    auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                    uint16_type cMap = c2*nComponents1+c1;
+                                    if ( isTensor2Symm )
+                                        cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                    size_type global_node_id = nComponents * ptid + cMap;
+                                    m_field[global_node_id] = fieldComp.globalValue( dof_id );
+                                }
+                            }
+                        }
                     }
-                    else
-                        m_field[global_node_id] = 0;
                 }
+                else
+                {
+                    auto const& mapArrayToDofId = *M_mapNodalArrayToDofId;
+                    index_type nValuesPerComponent = mapArrayToDofId.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    for ( size_type k=0;k<nValuesPerComponent;++k )
+                    {
+                        size_type dof_id = mapArrayToDofId[k];
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents*k + cMap;
+                                m_field[global_node_id] = fieldComp.globalValue( dof_id );
+                            }
+                        }
+                    }
+                }
+                __out.write( ( char * ) m_field.data(), m_field.size() * sizeof( float ) );
+            }
+        else
+        {
+            typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
+            typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
+            for ( ; p_it != p_en; ++p_it )
+            {
+                sprintf( buffer, "part %d",p_it->first );
+                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+                DVLOG(2) << "part " << buffer << "\n";
+                strcpy( buffer, this->elementType().c_str() );
+                __out.write( ( char * ) & buffer, sizeof( buffer ) );
+                DVLOG(2) << "element type " << buffer << "\n";
+
+                auto itFindMapElementArrayToDofId = M_mapElementArrayToDofId.find(p_it->first);
+                if ( itFindMapElementArrayToDofId == M_mapElementArrayToDofId.end() )
+                {
+                    auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
+                    auto elt_m_it = std::get<0>( rangeMarkedElements );
+                    auto const elt_m_en = std::get<1>( rangeMarkedElements );
+                    index_type nValuesPerComponent = std::distance( elt_m_it, elt_m_en );
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    auto & mapArrayToDofId =  M_mapElementArrayToDofId[p_it->first];
+                    mapArrayToDofId.resize( nValuesPerComponent,invalid_size_type_value );
+
+                    for ( index_type e=0; elt_m_it != elt_m_en; ++elt_m_it,++e )
+                    {
+                        auto const& elt = unwrap_ref( *elt_m_it );
+                        auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                        size_type dof_id = locglob_ind(d->localDofId(0,0));
+                        mapArrayToDofId[e] = dof_id;
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents * e + cMap;
+                                m_field(global_node_id) = fieldComp.globalValue( dof_id );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    auto const& mapArrayToDofId = itFindMapElementArrayToDofId->second;
+                    index_type nValuesPerComponent = mapArrayToDofId.size();
+                    m_field = Eigen::VectorXf::Zero( nComponents*nValuesPerComponent );
+                    for ( size_type k=0;k<nValuesPerComponent;++k )
+                    {
+                        size_type dof_id = mapArrayToDofId[k];
+                        for ( uint16_type c1 = 0; c1 < fieldData.second.size(); ++c1 )
+                        {
+                            for ( uint16_type c2 = 0; c2 < fieldData.second[c1].size(); ++c2 )
+                            {
+                                auto const& fieldComp = unwrap_ptr( fieldData.second[c1][c2] );
+                                uint16_type cMap = c2*nComponents1+c1;
+                                if ( isTensor2Symm )
+                                    cMap = reorder_tensor2symm[Feel::detail::symmetricIndex( c1,c2, nComponents1 )];
+                                size_type global_node_id = nComponents*k + cMap;
+                                m_field[global_node_id] = fieldComp.globalValue( dof_id );
+                            }
+                        }
+                    }
+                }
+                __out.write( ( char * ) m_field.data(), m_field.size() * sizeof( float ) );
             }
         }
 
-        //std::vector<float> field;
-        //std::for_each( m_field.begin(), m_field.end(), [&field]( std::pair<size_type, float> const& p ) { field.push_back( p.second ); });
-        __out.write( ( char * ) m_field.data(), m_field.size() * sizeof( float ) );
-
-        DVLOG(2) << "[ExporterEnsight::saveNodal] saving " << __varfname.str() << "done\n";
+        DVLOG(2) << "[ExporterEnsight::saveFields] saving " << __varfname.str() << "done\n";
         ++__var;
-    }
-}
-template<typename MeshType, int N>
-template<typename Iterator>
-void
-ExporterEnsight<MeshType,N>::saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const
-{
-    while ( __evar != __evaren )
-    {
-        if ( !__evar->second.worldComm().isActive() ) return;
-
-        std::ostringstream __evarfname;
-
-        __evarfname << this->path() << "/" << this->prefix() << "." << __evar->first
-                    << "-" << this->worldComm().globalSize() << "_" << __evar->second.worldComm().localRank() // important localRank
-                    << "." << std::setfill( '0' ) << std::setw( 3 ) << __step->index();
-        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "...\n";
-        std::fstream __out( __evarfname.str().c_str(), std::ios::out | std::ios::binary );
-
-        char buffer[ 80 ];
-        strcpy( buffer, __evar->second.name().c_str() );
-        __out.write( ( char * ) & buffer, sizeof( buffer ) );
-
-        typename mesh_type::parts_const_iterator_type p_it = __step->mesh()->beginParts();
-        typename mesh_type::parts_const_iterator_type p_en = __step->mesh()->endParts();
-
-        for ( ; p_it != p_en; ++p_it )
-        {
-            sprintf( buffer, "part %d",p_it->first );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
-            DVLOG(2) << "part " << buffer << "\n";
-            strcpy( buffer, this->elementType().c_str() );
-            __out.write( ( char * ) & buffer, sizeof( buffer ) );
-            DVLOG(2) << "element type " << buffer << "\n";
-
-            uint16_type nComponents = __evar->second.nComponents;
-
-            if ( __evar->second.is_vectorial )
-                nComponents = 3;
-
-            size_type __field_size = nComponents*__evar->second.size()/__evar->second.nComponents;
-            ublas::vector<float> __field( __field_size );
-            __field.clear();
-            auto rangeMarkedElements = __step->mesh()->elementsWithMarker( p_it->first,__step->mesh()->worldComm().localRank() );
-            auto elt_it = std::get<0>( rangeMarkedElements );
-            auto const elt_en = std::get<1>( rangeMarkedElements );
-
-
-            if ( !__evar->second.areGlobalValuesUpdated() )
-                __evar->second.updateGlobalValues();
-
-            DVLOG(2) << "[saveElement] firstLocalIndex = " << __evar->second.firstLocalIndex() << "\n";
-            DVLOG(2) << "[saveElement] lastLocalIndex = " << __evar->second.lastLocalIndex() << "\n";
-            DVLOG(2) << "[saveElement] field.size = " << __field_size << "\n";
-            size_type e = 0;
-
-            for ( ; elt_it != elt_en; ++elt_it, ++e )
-            {
-                auto const& elt = boost::unwrap_ref( *elt_it );
-                DVLOG(2) << "pid : " << this->worldComm().globalRank()
-                              << " elt_it :  " << elt.id()
-                              << " e : " << e << "\n";
-
-                for ( int c = 0; c < nComponents; ++c )
-                {
-                    size_type global_node_id = nComponents * e + c ;
-
-                    if ( c < __evar->second.nComponents )
-                    {
-                        size_type dof_id = __evar->second.functionSpace()->dof()->localToGlobal( elt.id(),0, c ).index();
-
-                        DVLOG(2) << "c : " << c
-                                      << " gdofid: " << global_node_id
-                                      << " dofid : " << dof_id
-                                      << " f.size : " <<  __field.size()
-                                      << " e.size : " <<  __evar->second.size()
-                                      << "\n";
-
-                        __field[global_node_id] = __evar->second.globalValue( dof_id );
-#if 0
-
-                        if ( dof_id >= __evar->second.firstLocalIndex() &&
-                                dof_id < __evar->second.lastLocalIndex()  )
-                            __field[global_node_id] = __evar->second( dof_id );
-
-                        else
-                            __field[global_node_id] = 0;
-
-#endif
-
-#if 1
-                        //__field[global_node_id] = __evar->second.globalValue(dof_id);
-                        DVLOG(2) << "c : " << c
-                                      << " gdofid: " << global_node_id
-                                      << " dofid : " << dof_id
-                                      << " field :  " << __field[global_node_id]
-                                      << " evar: " << __evar->second.globalValue( dof_id ) << "\n";
-#endif
-                    }
-
-                    else
-                        __field[global_node_id] = 0;
-                }
-            }
-
-            __out.write( ( char * ) __field.data().begin(), nComponents * e * sizeof( float ) );
-        }
-
-        DVLOG(2) << "[ExporterEnsight::saveElement] saving " << __evarfname.str() << "done\n";
-        ++__evar;
     }
 }
 
@@ -756,7 +711,8 @@ ExporterEnsight<MeshType,N>::visit( mesh_type* __mesh )
     __out.write( ( char * ) & buffer, sizeof( buffer ) );
 
     auto mit = elements(__mesh);
-    Feel::detail::MeshPoints<float> mp( __mesh, this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
+    M_cache_mp.try_emplace( 0 /*dummy value*/,  __mesh, this->worldComm(), mit.template get<1>(), mit.template get<2>(), false, true );
+    auto& mp = M_cache_mp.at(  0 /*dummy value*/ );
     size_type __nv = mp.ids.size();
     __out.write( ( char * ) &__nv, sizeof( int ) );
     LOG(INFO) << "n pts = " << __nv << " numppoints=" << __mesh->numPoints();

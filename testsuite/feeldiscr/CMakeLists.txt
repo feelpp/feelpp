@@ -68,7 +68,6 @@ feelpp_add_test( wire_basket CLI "--gmsh.hsize=0.075" )
 feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
 feelpp_add_test( mortar2 NO_MPI_TEST)
 
-feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
 
 feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)

@@ -379,6 +379,7 @@ public:
     typedef typename expression_type::evaluate_type evaluate_type;
     typedef Expr<ExprT> this_type;
     typedef std::shared_ptr<this_type> this_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -691,6 +692,27 @@ public:
 
     template<typename Geo_t>
     tensorPermutation<Geo_t> evaluatorWithPermutation( Geo_t geo ) const { return tensorPermutation<Geo_t>( *this, geo ); }
+
+
+private :
+    template<typename ElementType>
+    struct EvaluatorTraits
+    {
+    private :
+        typedef ElementType element_type;
+        typedef typename element_type::gm_type gm_type;
+        typedef typename gm_type::template Context<this_type::context, element_type> gmc_type;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef typename this_type::template tensor<map_gmc_type> eval_expr_type;
+        //typedef typename eval_expr_type::shape shape;
+    public :
+        typedef eval_expr_type type;
+    };
+
+public :
+    template<typename ElementType>
+    using evaluator_t = typename EvaluatorTraits<ElementType>::type;
 
 #if 0
     class Diff

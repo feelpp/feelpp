@@ -152,7 +152,7 @@ BOOST_PARAMETER_FUNCTION(
                 _meshSeq->components().reset();
                 _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_UPDATE_FACES|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
                 _meshSeq->updateForUse();
-
+#if defined(FEELPP_HAS_HDF5)
                 using io_t = PartitionIO<_mesh_type>;
                 std::string fnamePartitioned = rebuild_partitions_filename;
                 if ( fnamePartitioned.empty() )
@@ -162,6 +162,7 @@ BOOST_PARAMETER_FUNCTION(
                 io_t io( fname );
                 std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
                 io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+#endif
             }
             else
             {
@@ -172,13 +173,13 @@ BOOST_PARAMETER_FUNCTION(
                 _mesh->updateForUse();
             }
         }
-
+#if defined(FEELPP_HAS_HDF5)
         if ( partitions > 1 )
         {
             mpi::broadcast( worldcomm->globalComm(), fname, worldcomm->masterRank() );
             _mesh->loadHDF5( fname, update, scale );
         }
-
+#endif
         if ( straighten && _mesh_type::nOrder > 1 )
             return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
     }

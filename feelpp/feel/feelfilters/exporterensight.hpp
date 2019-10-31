@@ -27,8 +27,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2006-11-26
  */
-#ifndef __ExporterEnsight_H
-#define __ExporterEnsight_H 1
+#ifndef FEELPP_FILTERS_EXPORTERENSIGHT_HPP
+#define FEELPP_FILTERS_EXPORTERENSIGHT_HPP 1
 
 #include <iostream>
 #include <fstream>
@@ -39,6 +39,7 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
@@ -71,6 +72,9 @@ public:
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
+protected :
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+public :
 
     //@}
 
@@ -158,20 +162,6 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
 
     //@}
 
@@ -179,18 +169,19 @@ public:
      */
     //@{
 
-    /**
-       save the timeset
-    */
-    void save() const;
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     //@}
 
 
 
 protected:
+
+    /**
+       save the timeset
+    */
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
 private:
 
@@ -219,16 +210,17 @@ private:
     */
     void _F_writeVariableFiles() const;
 
-    template<typename Iterator>
-    void saveNodal( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype __step, Iterator __var, Iterator en ) const;
 
-    template<typename Iterator>
-    void saveElement( typename timeset_type::step_ptrtype __step, Iterator __evar, Iterator __evaren ) const;
 
 private:
 
     mutable std::string M_filename;
     std::string M_element_type;
+    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
+    mutable std::optional<std::vector<size_type>> M_mapNodalArrayToDofId;
+    mutable std::map<int,std::vector<size_type>> M_mapElementArrayToDofId;
 };
 
 

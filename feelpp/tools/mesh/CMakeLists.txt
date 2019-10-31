@@ -24,6 +24,8 @@
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 
+
+
 if(NOT FEELPP_MINIMAL_BUILD)
 
 feelpp_add_application( mesh3d SRCS mesh.cpp INCLUDE_IN_ALL DEFS FEELPP_DIM=3 CONVEX=Simplex)
@@ -37,8 +39,14 @@ feelpp_add_application( submesh SRCS submesh.cpp INCLUDE_IN_ALL PROJECT mesh )
 
 endif(NOT FEELPP_MINIMAL_BUILD)
 
+project(mesh)
+
+message(STATUS "compiling feelpp_mesh_exporter...")
+feelpp_add_application( exporter SRCS mesh_exporter.cpp  INSTALL  )
+
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_HDF5)
 if (FEELPP_HAS_HDF5)
   message(STATUS "compiling feelpp_mesh_partitioner...")
   feelpp_add_application( partitioner SRCS mesh_partitioner.cpp mesh_partitioner_simplex.cpp mesh_partitioner_hypercube.cpp INCLUDE_IN_ALL PROJECT mesh INSTALL MAN partitioner )
 endif (FEELPP_HAS_HDF5)
+

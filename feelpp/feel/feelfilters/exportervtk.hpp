@@ -27,8 +27,8 @@
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2014-11-13
  */
-#ifndef __ExporterVTK_H
-#define __ExporterVTK_H 1
+#ifndef FEELPP_FILTERS_EXPORTERVTK_HPP
+#define FEELPP_FILTERS_EXPORTERVTK_HPP 1
 
 #if defined(FEELPP_HAS_VTK)
 
@@ -110,6 +110,9 @@
 #pragma clang diagnostic pop
 #endif
 
+
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
+
 namespace Feel
 {
 /**
@@ -142,6 +145,11 @@ public:
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
     typedef typename timeset_type::step_const_iterator step_const_iterator;
+protected :
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+    using mesh_contiguous_numbering_mapping_type = Feel::detail::MeshContiguousNumberingMapping<mesh_type,float>;
+    using mesh_contiguous_numbering_mapping_ptrtype = std::shared_ptr<mesh_contiguous_numbering_mapping_type>;
+public :
 
     /* Use the vtkUnstructuredGrid type to store data */
     /* as it handles all the element type needed */
@@ -206,8 +214,8 @@ public:
 
     explicit ExporterVTK( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterVTK( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
-    ExporterVTK( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterVTK( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
+    explicit ExporterVTK( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
     ExporterVTK( ExporterVTK const & __ex );
 
@@ -235,19 +243,6 @@ public:
 
     void init();
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
     //@}
 
     /** @name  Methods
@@ -257,26 +252,21 @@ public:
     /**
        save the timeset
      */
-    void save() const;
-
-    /**
-     * Returns a VTK structure representing the last timestep
-     */
-    vtkSmartPointer<vtkUnstructuredGrid> getOutput() const;
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
     /**
      * export mesh
      */
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
+private :
     /**
      * save the \p mesh to the file \p filename
      */
-    void saveMesh( mesh_ptrtype mesh, vtkSmartPointer<vtkout_type> out ) const;
-    template<typename Iterator>
-    void saveNodeData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
-    template<typename Iterator>
-    void saveElementData( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
+    void saveMesh( timeset_ptrtype __ts, mesh_ptrtype mesh, std::map<std::string,vtkSmartPointer<vtkout_type>> & outs ) const;
+    void saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype step, std::map<std::string,vtkSmartPointer<vtkout_type>> & outs ) const;
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype step, mesh_contiguous_numbering_mapping_type const& mp, int part, Iterator __var, Iterator en, vtkSmartPointer<vtkout_type> out ) const;
 
 #ifdef FEELPP_HAS_LIBXML2
     /**
@@ -293,13 +283,17 @@ public:
      * on the different processes.
      */
     vtkSmartPointer<vtkMultiBlockDataSet>
-        buildMultiBlockDataSet( double time, vtkSmartPointer<vtkout_type> out ) const;
+    buildMultiBlockDataSet( double time, std::map<std::string,vtkSmartPointer<vtkout_type>> const& outs ) const;
 
     /**
      * Actual write of the dataset into a file
      */
     void write( int stepIndex, std::string filename, vtkSmartPointer<vtkMultiBlockDataSet> out) const;
 
+
+    void saveData( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
+
+    void updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
     //@}
 
 private:
@@ -315,7 +309,7 @@ private:
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
 #endif
 #endif
-
+    mutable std::map<std::string, mesh_contiguous_numbering_mapping_ptrtype > M_cache_mp;
 };
 
 } // Feel

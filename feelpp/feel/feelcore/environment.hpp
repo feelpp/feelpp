@@ -656,8 +656,8 @@ public:
         ( required
           ( name,( std::string ) ) )
         ( optional
-          ( sub,( std::string ),"" )
-          ( prefix,( std::string ),"" )
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
           ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
