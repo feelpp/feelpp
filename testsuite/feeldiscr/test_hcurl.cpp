@@ -73,10 +73,15 @@ makeOptions()
 {
     po::options_description testhcurloptions( "test h_curl options" );
     testhcurloptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-    ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
-    ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
-    ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
+        ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
+        ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        ( "tol", po::value<double>()->default_value( 2.5e-1 ), "tolerance for the solution" )
+        ( "u_exact_2d", po::value<std::string>()->default_value("{1-y^2,1-x^2}:x:y"), "exact solution" )
+        ( "f_exact_2d", po::value<std::string>()->default_value("{3-y^2,3-x^2}:x:y"), "exact rhs" )
+        ( "u_exact_3d", po::value<std::string>()->default_value("{(1-y^2)*(1-z^2),(1-x^2)*(1-z^2),(1-x^2)*(1-y^2)}:x:y:z"), "exact solution" )
+        ( "f_exact_3d", po::value<std::string>()->default_value("{y^2*z^2-3*y^2-3*z^2+5,x^2*z^2-3*x^2-3*z^2+5,x^2*y^2-3*x^2-3*y^2+5}:x:y:z"), "exact rhs" )
     ;
     return testhcurloptions.add( Feel::feel_options() );
 }
@@ -184,8 +189,6 @@ public:
     //void eightElementsMesh();
     void testProjector();
     void exampleProblem1();
-    void assembleF();
-    double computeError(element_type const& u);
 
 private:
     mesh_ptrtype mesh;
@@ -202,52 +205,6 @@ private:
     double M_penaldir;
 
 }; //TestHCurl
-
-template<>
-void TestHCurl<2>::assembleF()
-{
-    auto l = form1( _test=M_Xh, _vector=M_f );
-    auto phi = M_Xh->element();
-    auto u_exact = vec( 1-Py()*Py(), 1-Px()*Px() );
-    auto f = vec( 3-Py()*Py(), 3-Px()*Px() ); //f = curl(curl(u_exact)) + u_exact
-
-    l = integrate( _range=elements(mesh), _expr=inner(f,id(phi)) );
-    //Dirichlet bc on weak form
-    l += integrate(boundaryfaces(mesh), - inner(curl(phi),cross(u_exact,N()))
-                   + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
-}
-
-template<>
-void TestHCurl<3>::assembleF()
-{
-    auto l = form1( _test=M_Xh, _vector=M_f );
-    auto phi = M_Xh->element();
-    auto u_exact = vec( (1-Py()*Py())*(1-Pz()*Pz()), (1-Px()*Px())*(1-Pz()*Pz()), (1-Px()*Px())*(1-Py()*Py()) );
-    //f = curl(curl( u_exact ))+u_exact;
-    auto f = vec( 2*(Py()*Py()-Pz()*Pz())+(1-Py()*Py())*(1-Pz()*Pz()),
-                  2*(Pz()*Pz()-Px()*Px())+(1-Px()*Px())*(1-Pz()*Pz()),
-                  2*(Px()*Px()-Py()*Py())+(1-Px()*Px())*(1-Py()*Py()) );
-    l = integrate( _range=elements(mesh), _expr=inner(f,id(phi)) );
-    //Dirichlet bc on weak form
-    l += integrate(boundaryfaces(mesh), - inner(curl(phi),cross(u_exact,N()))
-                   + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
-}
-
-template<>
-double TestHCurl<2>::computeError(element_type const& u)
-{
-    auto u_exact = vec( 1-Py()*Py(), 1-Px()*Px() );
-    double e = normL2(_range=elements(mesh), _expr= idv(u)-u_exact);
-    return e;
-}
-
-template<>
-double TestHCurl<3>::computeError(element_type const& u)
-{
-    auto u_exact = vec( (1-Py()*Py())*(1-Pz()*Pz()), (1-Px()*Px())*(1-Pz()*Pz()), (1-Px()*Px())*(1-Py()*Py()) );
-    double e = normL2(_range=elements(mesh), _expr= idv(u)-u_exact);
-    return e;
-}
 
 // Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
 template<int Dim>
@@ -266,7 +223,15 @@ TestHCurl<Dim>::exampleProblem1()
     auto l = form1( _test=M_Xh, _vector=M_f );
     //variationnal formulation : curl(curl(u)) + u = f
 
-    this->assembleF();
+    std::string u_opt = "u_exact_"+std::to_string(Dim)+"d";
+    std::string f_opt = "f_exact_"+std::to_string(Dim)+"d";
+    auto u_exact = expr<Dim,1>( soption(u_opt) );
+    auto f = expr<Dim,1>( soption(f_opt) );
+
+    l = integrate( _range=elements(mesh), _expr=inner(f,id(phi)) );
+    //Dirichlet bc on weak form
+    l += integrate(boundaryfaces(mesh), - inner(curl(phi),cross(u_exact,N()))
+                   + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
 
     a = integrate(elements(mesh), inner(curlt(u),curl(phi)) + inner(idt(u),id(phi)) );
     //a += on( _range=boundaryfaces( mesh ),_element=u, _rhs=l, _expr=cst(0.) );
@@ -288,11 +253,11 @@ TestHCurl<Dim>::exampleProblem1()
     f_L2proj = integrate( _range=elements(mesh), _expr = trans(idv(u))*id(phi_L2proj) );
     a_L2proj.solve( _solution=u_L2proj, _rhs=f_L2proj, _rebuild=true);
 
-    double errorU = this->computeError(u);
+    double errorU = normL2(_range=elements(mesh), _expr= idv(u)-u_exact);
     auto errorProj = normL2(_range=elements(mesh), _expr=idv(u)-idv(u_L2proj) );
 
     BOOST_CHECK_SMALL( errorProj, 1e-13 );
-    BOOST_CHECK_SMALL( errorU, 1e-1 );
+    BOOST_CHECK_SMALL( errorU, doption("tol") );
 
 #if 0
     auto l2proj = opProjection( _domainSpace=M_Xh, _imageSpace=M_Xh, _type=L2 );
