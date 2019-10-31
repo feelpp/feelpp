@@ -96,11 +96,18 @@ public:
     typedef typename timeset_set_type::const_iterator timeset_const_iterator;
     typedef typename timeset_type::step_type step_type;
     typedef typename timeset_type::step_ptrtype step_ptrtype;
+    typedef typename timeset_type::step_set_type step_set_type;
 
+    typedef typename mesh_type::index_type index_type;
     struct Factory
     {
         typedef Feel::Singleton< Feel::Factory< Exporter<MeshType,N>, std::string > > type;
     };
+
+  protected :
+    typedef std::vector<std::pair<timeset_ptrtype,step_set_type>> steps_write_on_disk_type;
+  public :
+
     //@}
 
     /** @name Constructors, destructor
@@ -220,15 +227,6 @@ public:
         return M_freq;
     }
 
-
-    /**
-     * \return the frequency at which the results are saved
-     */
-    int cptOfSave() const
-    {
-        return M_cptOfSave;
-    }
-
     /**
      * \return the file type format (ASCII or BINARY)
      */
@@ -264,12 +262,6 @@ public:
      * exp_prefix
      */
     virtual Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" );
-
-    /**
-     * set the options from the \p variables_map \p vm as well as the prefix \p
-     * exp_prefix
-     */
-    virtual Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED { return setOptions( exp_prefix ); }
 
 
     /**
@@ -362,10 +354,12 @@ public:
 
     timeset_ptrtype defaultTimeSet()
     {
+        CHECK( !M_ts_set.empty() ) << "time set is empty";
         return M_ts_set.front();
     }
     timeset_ptrtype timeSet( int ts )
         {
+            CHECK( 0 <= ts && ts < M_ts_set.size() ) << "invalid time set index " << ts;
             return M_ts_set[ts];
         }
 
@@ -404,11 +398,27 @@ public:
      */
     template<typename F>
     void
-    add( std::string const& name, F const& u,
+    add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
          typename std::enable_if<is_functionspace_element_v<F>>::type* = nullptr )
         {
-            this->step( 0 )->add( name, u );
+            this->step( 0 )->add( name, u, reps );
         }
+
+    template<typename ExprT>
+    void
+    add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    {
+        this->step( 0 )->add( name, expr, reps );
+    }
+
+    template<typename ExprT>
+    void
+    add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    {
+        this->step( 0 )->add( name, expr, rangeElt, reps );
+    }
 
     void
     addRegions()
@@ -421,19 +431,15 @@ public:
      */
     step_ptrtype step( double time )
     {
-        if ( this->cptOfSave() % this->freq()  )
-            return M_ts_set.back()->step( time, true );
-
-        else
-            return M_ts_set.back()->step( time, false );
+        CHECK( !M_ts_set.empty() ) << "timeset is empty";
+        return this->step( time, M_ts_set.size() -1 );
     }
     step_ptrtype step( double time, int s )
     {
-        if ( M_cptOfSave % this->freq()  )
-            return M_ts_set[s]->step( time, true );
-
-        else
-            return M_ts_set[s]->step( time, false );
+        CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
+        timeset_ptrtype __ts = M_ts_set[s];
+        bool stepIsIgnored = (( __ts->numberOfSteps() % this->freq()  ) > 0);
+        return __ts->step( time, stepIsIgnored );
     }
 
     //@}
@@ -445,46 +451,63 @@ public:
     /**
      * add the timeset \p __ts to the Exporter
      */
-    void addTimeSet( timeset_ptrtype const& __ts )
+    uint16_type addTimeSet( timeset_ptrtype const& __ts )
     {
         if ( __ts )
+        {
             M_ts_set.push_back( __ts );
+            return M_ts_set.size()-1;
+        }
+        return invalid_v<uint16_type>;
+    }
+    //! add the timeset with name \p __tsname to the Exporter
+    //! if the name is empty, use the prefix exporter
+    uint16_type addTimeSet( std::string const& tsname = "" )
+    {
+        std::string tsnameUsed = tsname.empty()? this->prefix() : tsname;
+        return this->addTimeSet( timeset_ptrtype( new timeset_type( tsnameUsed ) ) );
     }
 
+    //! save timeset in memory on disk
+    void save() const
+    {
+        if ( !this->worldComm().isActive() )
+            return;
 
-    /**
-     * this p save function is defined by the Exporter subclasses and implement
-     * saving the data to files
-     */
-    virtual void save() const = 0;
+        bool hasStepToWrite = false;
+        steps_write_on_disk_type stepsToWriteOnDisk;
+        timeset_const_iterator __ts_it = this->beginTimeSet();
+        timeset_const_iterator __ts_en = this->endTimeSet();
+        for ( ; __ts_it != __ts_en ; ++__ts_it )
+        {
+            timeset_ptrtype __ts = *__ts_it;
+            auto steps = __ts->stepsToWriteOnDisk();
+            stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
+            if ( !steps.empty() || __ts->hasMesh() )
+                hasStepToWrite = true;
+        }
+
+        if ( !hasStepToWrite )
+            return;
+
+        this->save( stepsToWriteOnDisk );
+
+        for ( auto & [__ts, steps ] : stepsToWriteOnDisk )
+        {
+            for ( auto & step : steps )
+            {
+                step->setState( STEP_ON_DISK );
+                step->cleanup();
+            }
+            std::string filename = this->path()+"/"+prefix()+".timeset";
+            __ts->save( filename, this->worldComm() );
+        }
+    }
 
     //!
     //! serve results though a webserver
     //!
     virtual void serve() const;
-    
-    /**
-     * save in a file set of time which are been exported
-     */
-    void saveTimeSet() const
-    {
-        if ( ! this->worldComm().isMasterRank() )
-            {
-                ++M_cptOfSave;
-                return;
-            }
-
-        auto __ts_it = this->beginTimeSet();
-        auto __ts_en = this->endTimeSet();
-
-        for ( ; __ts_it != __ts_en ; ++__ts_it )
-        {
-            auto filename = this->path()+"/"+prefix()+".timeset";
-            ( *__ts_it )->save( filename );
-        }
-
-        ++M_cptOfSave;
-    }
 
     /**
      * reload from file set of time which are been exported
@@ -500,8 +523,6 @@ public:
             if ( !fs::exists( filename ) )
                 return;
             ( *__ts_it )->load( filename,__time );
-
-            M_cptOfSave = ( *__ts_it )->numberOfTotalSteps()+1;
         }
     }
 
@@ -509,12 +530,18 @@ public:
     //@}
 protected:
 
+    /**
+     * this p save function is defined by the Exporter subclasses and implement
+     * saving the data to files
+     */
+    virtual void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const = 0;
+
+
     bool M_do_export;
     bool M_use_single_transient_file;
     std::string M_type;
     std::string M_prefix;
     int M_freq;
-    mutable int M_cptOfSave;
     FileType M_ft;
     std::string M_path;
     ExporterGeometry M_ex_geometry;
@@ -558,7 +585,7 @@ BOOST_PARAMETER_FUNCTION( ( typename Feel::detail::compute_exporter_return<Args>
                             ( order, *, mpl::int_<1>() )
                             ( name,  *, Environment::about().appName() )
                             ( geo,   *, soption(_name="exporter.geometry") )
-                            ( path, *( boost::is_convertible<mpl::_,std::string> ), Environment::exportsRepository()+"/"+soption("exporter.format")+"/"+name )
+                            ( path, *( boost::is_convertible<mpl::_,std::string> ), (fs::path(Environment::exportsRepository())/fs::path(soption("exporter.format"))/name).string() )
                           ) )
 {
     typedef typename Feel::detail::compute_exporter_return<Args>::type exporter_type;
