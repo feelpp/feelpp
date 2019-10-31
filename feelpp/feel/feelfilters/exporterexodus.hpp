@@ -69,6 +69,9 @@ public:
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
+protected :
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+public :
 
     //@}
 
@@ -156,39 +159,23 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    /**
-       save the timeset
-    */
-    void save() const;
 
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     //@}
 
-
-
 protected:
+
+    /**
+     save the timeset
+     */
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
 private:
 
@@ -277,9 +264,8 @@ ExporterExodus<MeshType,N>::init()
 }
 template<typename MeshType, int N>
 void
-ExporterExodus<MeshType,N>::save() const
+ExporterExodus<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const
 {
-    if ( !this->worldComm().isActive() ) return;
 
 }
 
