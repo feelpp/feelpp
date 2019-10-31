@@ -32,7 +32,6 @@ geo/Cylref.mesh
 geo/ReferenceTriangle.geo
 geo/aneurism/aneurysm.geo
 geo/aneurism/aneurysm.stl
-geo/aorta/.gitignore
 geo/aorta/aorta2.stl
 geo/aorta/aorta_centerlines.geo
 geo/bean.geo

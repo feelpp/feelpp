@@ -1540,7 +1540,9 @@ using Component = ComponentType;
 enum FunctionSpaceType
 {
     SCALAR = 0,
-    VECTORIAL = 1
+    VECTORIAL = 1,
+    TENSOR2,
+    TENSOR2_SYMM
 };
 
 template<uint16_type PN,
@@ -4655,7 +4657,7 @@ public:
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
-                                 worldscomm_ptr_t & worldscomm = Environment::worldsComm(nSpaces),
+                                 worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )

@@ -49,8 +49,8 @@
 #include <feel/feelfilters/exportervtk.hpp>
 #endif
 
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-#include <feel/feelfilters/exporterhdf5.hpp>
+#if defined(FEELPP_HAS_HDF5)
+#include <feel/feelfilters/exporterxdmf.hpp>
 #endif
 
 #include <feel/feelfilters/exporterexodus.hpp>
@@ -68,8 +68,8 @@ template<typename MeshType, int N> class ExporterEnsightGold;
 #ifdef FEELPP_HAS_GMSH
 template<typename MeshType, int N> class ExporterGmsh;
 #endif
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-template<typename MeshType, int N> class Exporterhdf5;
+#if defined(FEELPP_HAS_HDF5)
+//template<typename MeshType, int N> class ExporterXDMF;
 #endif
 
 template<typename MeshType, int N>
@@ -83,7 +83,6 @@ Exporter<MeshType, N>::Exporter( worldcomm_ptr_t const& worldComm )
     M_type(),
     M_prefix( Environment::about().appName() ),
     M_freq( 1 ),
-    M_cptOfSave( 0 ),
     M_ft( ASCII ),
     M_path( "." ),
     M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
@@ -102,7 +101,6 @@ Exporter<MeshType, N>::Exporter( std::string const& __type, std::string const& _
     M_type( __type ),
     M_prefix( __prefix ),
     M_freq( __freq ),
-    M_cptOfSave( 0 ),
     M_ft( ASCII ),
     M_path( "." ),
     M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
@@ -121,7 +119,6 @@ Exporter<MeshType, N>::Exporter( po::variables_map const& vm, std::string const&
     M_type(),
     M_prefix( exp_prefix ),
     M_freq( 1 ),
-    M_cptOfSave( 0 ),
     M_ft( ASCII ),
     M_path( "." ),
     M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
@@ -140,7 +137,6 @@ Exporter<MeshType, N>::Exporter( std::string const& exp_prefix, worldcomm_ptr_t 
     M_type(),
     M_prefix( exp_prefix ),
     M_freq( 1 ),
-    M_cptOfSave( 0 ),
     M_ft( ASCII ),
     M_path( "." ),
     M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
@@ -159,7 +155,6 @@ Exporter<MeshType, N>::Exporter( Exporter const & __ex )
     M_type( __ex.M_type ),
     M_prefix( __ex.M_prefix ),
     M_freq( __ex.M_freq ),
-    M_cptOfSave( __ex.M_cptOfSave ),
     M_ft( __ex.M_ft ),
     M_path( __ex.M_path ),
     M_ex_geometry( EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY )
@@ -185,9 +180,9 @@ Exporter<MeshType, N>::New( std::string const& exportername, std::string prefix,
 #endif
     else if ( N == 1 && ( exportername == "exodus"  ) )
         exporter = new ExporterExodus<MeshType, N>( worldComm );
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-    else if ( N == 1 && ( exportername == "hdf5" ))
-        exporter = new Exporterhdf5<MeshType, N> ( worldComm ) ;
+#if defined(FEELPP_HAS_HDF5)
+    else if ( N == 1 && ( exportername == "xdmf" ))
+        exporter = new ExporterXDMF<MeshType, N> ( worldComm ) ;
 #endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( exportername == "vtk"  ) )
@@ -234,9 +229,9 @@ Exporter<MeshType, N>::New( std::string prefix, worldcomm_ptr_t const& worldComm
 #endif
     else if ( N == 1 && ( estr == "exodus"   ) )
         exporter = std::make_shared<ExporterExodus<MeshType, N>>( prefix, worldComm );
-#if defined(FEELPP_HAS_HDF5) && defined(FEELPP_HAS_MPIIO)
-    else if ( N == 1 && ( estr == "hdf5" ) )
-        exporter = std::make_shared<Exporterhdf5<MeshType, N>> ( prefix, worldComm ) ;
+#if defined(FEELPP_HAS_HDF5)
+    else if ( N == 1 && ( estr == "xdmf" ) )
+        exporter = std::make_shared<ExporterXDMF<MeshType, N>> ( prefix, worldComm ) ;
 #endif
 #if defined(FEELPP_HAS_VTK)
     else if ( N == 1 && ( estr == "vtk"  ) )

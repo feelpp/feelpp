@@ -502,14 +502,19 @@ class Mesh
 
         if ( MeshBase<>::worldComm().localSize() > 1 )
         {
+            std::vector<int> parts;
+            for ( auto const& [partId,n] : this->parts() )
+                parts.push_back( partId );
+
             std::vector<boost::tuple<boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>,
-                                     boost::tuple<size_type, size_type, size_type>, size_type>>
+                                     boost::tuple<size_type, size_type, size_type>, size_type, std::vector<int>>>
                 dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple( boost::make_tuple( ne, neall ), boost::make_tuple( nf, nfmarkedall ), boost::make_tuple( ned, nedmarkedall ),
-                                                          boost::make_tuple( np, npall, npmarkedall ), nv );
+                                                          boost::make_tuple( np, npall, npmarkedall ), nv, parts );
             mpi::all_gather( MeshBase<>::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
+            std::set<int> allParts;
             for ( rank_type p = 0; p < nProc; ++p )
             {
                 auto const& dataOnProc = dataRecvFromAllGather[p];
@@ -518,7 +523,9 @@ class Mesh
                 M_statEdges[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ) );
                 M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<3>( dataOnProc ) ), boost::get<1>( boost::get<3>( dataOnProc ) ), boost::get<2>( boost::get<3>( dataOnProc ) ) );
                 M_statVertices[p] = boost::get<4>( dataOnProc );
+                allParts.insert(  boost::get<5>( dataOnProc ).begin(), boost::get<5>( dataOnProc ).end() );
             }
+            this->addParts( allParts );
 
             size_type numFaceGlobalCounter = nf, numEdgeGlobalCounter = ned, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
@@ -647,14 +654,20 @@ class Mesh
 
         if ( nProc > 1 )
         {
+            std::vector<int> parts;
+            for ( auto const& [partId,n] : this->parts() )
+                parts.push_back( partId );
+
             std::vector<boost::tuple<boost::tuple<size_type, size_type>, boost::tuple<size_type, size_type>,
-                                     boost::tuple<size_type, size_type, size_type>, size_type>>
+                                     boost::tuple<size_type, size_type, size_type>, size_type, std::vector<int>>>
                 dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple( boost::make_tuple( ne, neall ), boost::make_tuple( nf, nfmarkedall ),
-                                                          boost::make_tuple( np, npall, npmarkedall ), nv );
+                                                          boost::make_tuple( np, npall, npmarkedall ), nv, parts );
             mpi::all_gather( MeshBase<>::worldComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
+
+            std::set<int> allParts;
             for ( rank_type p = 0; p < nProc; ++p )
             {
                 auto const& dataOnProc = dataRecvFromAllGather[p];
@@ -662,7 +675,9 @@ class Mesh
                 M_statFaces[p] = std::make_tuple( boost::get<0>( boost::get<1>( dataOnProc ) ), boost::get<1>( boost::get<1>( dataOnProc ) ) );
                 M_statPoints[p] = std::make_tuple( boost::get<0>( boost::get<2>( dataOnProc ) ), boost::get<1>( boost::get<2>( dataOnProc ) ), boost::get<2>( boost::get<2>( dataOnProc ) ) );
                 M_statVertices[p] = boost::get<3>( dataOnProc );
+                allParts.insert(  boost::get<4>( dataOnProc ).begin(), boost::get<4>( dataOnProc ).end() );
             }
+            this->addParts( allParts );
 
             size_type numFaceGlobalCounter = nf, numPointGlobalCounter = np, numVerticeGlobalCounter = 0;
 
@@ -1118,7 +1133,6 @@ public:
     template <typename IteratorRange>
     void updateMarker2WithRange( IteratorRange const& range, flag_type flag, mpl::int_<MESH_ELEMENTS> /**/ )
     {
-        const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
         this->updateMarker2WithRangeElements( range, flag );
     }
 
@@ -2018,8 +2032,9 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
             {
                 new_node_numbers[old_point.id()] = n_new_nodes;
                 DVLOG( 2 ) << "[Mesh<Shape,T>::createP1mesh] insert point " << old_point << "\n";
-                typename P1_mesh_type::point_type pt( old_point );
-                pt.setId( n_new_nodes );
+                //typename P1_mesh_type::point_type pt( old_point );
+                //pt.setId( n_new_nodes );
+                typename P1_mesh_type::point_type pt( n_new_nodes, old_point, false, false );
                 pt.setProcessId( old_point.processId() );
                 pt.clearElementsGhost();
 
@@ -2438,290 +2453,6 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
     }
 }
 
-namespace detail
-{
-template <typename T>
-struct MeshPoints
-{
-    template <typename MeshType, typename IteratorType>
-    MeshPoints( MeshType* mesh, const WorldComm&, IteratorType it, IteratorType en, const bool outer = false, const bool renumber = false, const bool fill = false, const int startIndex = 1 );
-
-    int translatePointIds( std::vector<int32_t>& ids );
-    int translateElementIds( std::vector<int32_t>& ids );
-
-    int globalNumberOfPoints() const { return global_npts; }
-    int globalNumberOfElements() const { return global_nelts; }
-
-    std::vector<int> numberOfPoints, numberOfElements;
-    int global_nelts{0}, global_npts{0};
-    std::vector<int32_t> ids;
-    std::unordered_map<int32_t, int32_t> new2old;
-    std::unordered_map<int32_t, int32_t> old2new;
-    std::unordered_map<int32_t, int32_t> nodemap;
-    std::vector<T> coords;
-    std::vector<int32_t> elemids;
-    std::vector<int32_t> elem;
-    size_type offsets_pts, global_offsets_pts;
-    size_type offsets_elts, global_offsets_elts;
-};
-
-//!
-//!  Builds information around faces/elements for exporting data
-//!  @param mesh The mesh from which data is extracted
-//!  @param it Starting iterator over the faces/elements
-//!  @param en Endoing iterator over the faces/elements
-//!  @param outer If false, the vertices are place in an x1 y1 z1 ... xn yn zn order, otherwise in the x1 ... xn y1 ... yn z1 ... zn
-//!  @param renumber If true, the vertices will be renumbered with maps to keep the correspondance between the twoi, otherwise the original ids are kept
-//!  @param fill It true, the method will generate points coordinates that are 3D, even if the point is specified with 1D or 2D coordinates (filled with 0)
-//!  @param Specify the startIndex of the renumbered points (typically set to 0 or 1, but no restriction). This is only used when renumber is true, otherwise it is not used.
-//!
-template <typename T>
-template <typename MeshType, typename IteratorType>
-MeshPoints<T>::MeshPoints( MeshType* mesh, const WorldComm& worldComm, IteratorType it, IteratorType en, const bool outer, const bool renumber, const bool fill, const int startIndex )
-{
-    std::set<int> nodeset;
-    size_type p = 0;
-    auto elt_it = it;
-
-    //!  Gather all the vertices of which the elements are made up with into a std::set */
-    //!  build up correspondance arrays between index in nodeset and previous id */
-    for ( auto eit = it; eit != en; ++eit )
-    {
-        auto const& elt = boost::unwrap_ref( *eit );
-        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
-        {
-            int pid = elt.point( j ).id();
-            auto ins = nodeset.insert( pid );
-            if ( ins.second )
-            {
-                if ( renumber )
-                {
-                    ids.push_back( p + startIndex );
-                }
-                else
-                {
-                    ids.push_back( pid );
-                }
-                //!  old id -> new id */
-                old2new[pid] = ids[p];
-                //!  old id -> new id */
-                new2old[ids[p]] = pid;
-                //!  old id -> index of the new id */
-                nodemap[pid] = p;
-                ++p;
-            }
-        }
-    }
-    CHECK( p == ids.size() ) << "Invalid number of points " << ids.size() << "!=" << p;
-    int nv = ids.size();
-
-    coords.resize( 3 * nv, 0 );
-
-    auto pit = ids.begin();
-    auto pen = ids.end();
-    //! for( auto i = 0; i < nv; ++i )
-
-    //!  put coords of each point into the coords array */
-    //!  if outer is true, the coords are placed like: x1 x2 ... xn y1 y2 ... yn z1 z2 ... zn */
-    //!  otherwise, the coords are placed like: x1 y1 z1 x2 y2 z2 ... xn yn zn */
-    for ( int i = 0; pit != pen; ++pit, ++i )
-    {
-        //! CHECK( *pit > 0 ) << "invalid id " << *pit;
-        //! LOG(INFO) << "p " << i << "/" << nv << " =" << *pit;
-        //! int pid = (renumber)?nodemap[*pit]+1:*pit;
-        int pid = *pit;
-
-        auto const& p = mesh->point( new2old[*pit] );
-        if ( outer )
-        {
-            coords[i] = (T)p.node()[0];
-        }
-        else
-        {
-            coords[3 * i] = (T)p.node()[0];
-        }
-
-        if ( MeshType::nRealDim >= 2 )
-        {
-            if ( outer )
-            {
-                coords[nv + i] = ( T )( p.node()[1] );
-            }
-            else
-            {
-                coords[3 * i + 1] = ( T )( p.node()[1] );
-            }
-        }
-        //!  Fill 2nd components with 0 if told to do so */
-        else
-        {
-            if ( fill )
-            {
-                if ( outer )
-                {
-                    coords[nv + i] = (T)0;
-                }
-                else
-                {
-                    coords[3 * i + 1] = (T)0;
-                }
-            }
-        }
-
-        if ( MeshType::nRealDim >= 3 )
-        {
-            if ( outer )
-            {
-                coords[2 * nv + i] = ( T )( p.node()[2] );
-            }
-            else
-            {
-                coords[3 * i + 2] = ( T )( p.node()[2] );
-            }
-        }
-        //!  Fill 3nd components with 0 if told to do so */
-        else
-        {
-            if ( fill )
-            {
-                if ( outer )
-                {
-                    coords[2 * nv + i] = (T)0;
-                }
-                else
-                {
-                    coords[3 * i + 2] = (T)0;
-                }
-            }
-        }
-    }
-
-    //!  number of local elements */
-    int __ne = std::distance( it, en );
-
-    //!  only do this resize if we have at least one element in the iterator */
-    //!  otherwise it will segfault */
-    if ( it != en )
-    {
-        elem.resize( __ne * MeshType::element_type::numPoints );
-        //! elem.resize( __ne*mesh->numLocalVertices() );
-        elemids.resize( __ne );
-    }
-
-    int tcount = 0;
-
-    //!  build the array containing the id of each vertex for each element */
-    elt_it = it;
-    size_type e = 0;
-    for ( ; elt_it != en; ++elt_it, ++e )
-    {
-        auto const& elt = boost::unwrap_ref( *elt_it );
-        elemids[e] = elt.id() + 1;
-        //! std::cout << "LocalV = " << elt.numLocalVertices << std::endl;
-        //! for ( size_type j = 0; j < mesh->numLocalVertices(); j++ )
-        for ( size_type j = 0; j < MeshType::element_type::numPoints; j++ )
-        {
-            //! std::cout << "LocalVId = " << j << " " << e*elt.numLocalVertices+j << std::endl;
-            //! std::cout << elt.point( j ).id() << std::endl;
-            //!  ensight id start at 1
-            elem[e * MeshType::element_type::numPoints + j] = old2new[elt.point( j ).id()];
-#if 0
-            DCHECK( (elem[e*mesh->numLocalVertices()+j] > 0) && (elem[e*mesh->numLocalVertices()+j] <= nv ) )
-                << "Invalid entry : " << elem[e*mesh->numLocalVertices()+j]
-                << " at index : " << e*mesh->numLocalVertices()+j
-                << " element :  " << e
-                << " vertex :  " << j;
-#endif
-        }
-    }
-#if 0
-    CHECK( e==__ne) << "Invalid number of elements, e= " << e << "  should be " << __ne;
-    std::for_each( elem.begin(), elem.end(), [=]( int e )
-                   { CHECK( ( e > 0) && e <= __nv ) << "invalid entry e = " << e << " nv = " << nv; } );
-#endif
-
-    //! size_type offset_pts = ids.size()*sizeof(int)+ coords.size()*sizeof(float);
-    //! size_type offset_elts = elemids.size()*sizeof(int)+ elem.size()*sizeof(int);
-#if 0
-    size_type offset_pts = coords.size()*sizeof(float);
-    size_type offset_elts = elem.size()*sizeof(int);
-#else
-    size_type offset_pts = nv;
-    size_type offset_elts = __ne;
-#endif
-
-    //!  gather the number of points and elements fo each process */
-    std::vector<int> ost{nv, __ne};
-    std::vector<std::vector<int>> ospe;
-
-    mpi::all_gather( worldComm.comm(), ost, ospe );
-
-    //!  copy information about number of points/elements
-    //!  per process in a local array */
-    for ( size_type i = 0; i < ospe.size(); i++ )
-    {
-        numberOfPoints.push_back( ospe[i][0] );
-        numberOfElements.push_back( ospe[i][1] );
-    }
-
-    //!  compute offsets to shift the point and element ids */
-    //!  regarding to the processor rank */
-    offsets_pts = 0;
-    global_offsets_pts = 0;
-    offsets_elts = 0;
-    global_offsets_elts = 0;
-    for ( size_type i = 0; i < ospe.size(); i++ )
-    {
-        if ( i < worldComm.localRank() )
-        {
-            offsets_pts += ospe[i][0];
-            offsets_elts += ospe[i][1];
-        }
-        global_offsets_pts += ospe[i][0];
-        global_offsets_elts += ospe[i][1];
-    }
-    global_npts = global_offsets_pts;
-    global_nelts = global_offsets_elts;
-
-    //!
-    //! std::cout << "local offset pts : " << offsets_pts << std::endl;
-    //! std::cout << "local offset elts : " << offsets_elts << std::endl;
-    //! std::cout << "global offset pts : " << global_offsets_pts << std::endl;
-    //! std::cout << "global offset elts : " << global_offsets_elts << std::endl;
-    //! std::cout << "done with offsets" << std::endl;
-}
-
-//!
-//!  Translate the list of points ids to the new global layout
-//!  @param ids Array of local point ids to be translated
-//!
-template <typename T>
-int MeshPoints<T>::translatePointIds( std::vector<int32_t>& ptids )
-{
-    for ( int i = 0; i < ptids.size(); i++ )
-    {
-        ptids[i] = offsets_pts + old2new[ptids[i]];
-    }
-
-    return 0;
-}
-
-//!
-//!  Translate the list of element ids to the new global layout
-//!  @param ids Array of local point ids to be translated
-//!
-template <typename T>
-int MeshPoints<T>::translateElementIds( std::vector<int32_t>& elids )
-{
-    for ( int i = 0; i < elids.size(); i++ )
-    {
-        elids[i] = offsets_elts + elids[i];
-    }
-
-    return 0;
-}
-
-} // namespace detail
 
 //!
 //! @return the topogical dimension of the mesh \p m

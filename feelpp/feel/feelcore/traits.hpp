@@ -119,6 +119,7 @@ decltype(auto) remove_shared_ptr_f( T&& e )
 
 }
 
+
 template <typename T, typename = void>
 struct is_iterable : std::false_type {};
 template <typename T>
@@ -126,6 +127,25 @@ struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),decltype(s
     : std::true_type {};
 template <typename T>
 constexpr bool is_iterable_v = is_iterable<T>::value;
+
+template <class T>
+struct is_std_vector : mpl::false_ {};
+template <class T>
+struct is_std_vector<std::vector<T> > : mpl::true_ {};
+template<class T>
+constexpr bool is_std_vector_v = is_std_vector<T>::value;
+template <class T>
+struct remove_std_vector
+{
+    typedef T type;
+};
+template <class T>
+struct remove_std_vector<std::vector<T> >
+{
+    typedef T type;
+};
+template<typename T>
+using remove_std_vector_t = typename remove_std_vector<T>::type;
 
 } // namespace Feel
 #endif
