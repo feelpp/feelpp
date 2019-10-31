@@ -365,7 +365,7 @@ public:
     typedef GraphCSR graph_type;
     typedef std::shared_ptr<graph_type> graph_ptrtype;
     typedef Stencil<X1,X2,RangeIteratorTestType,RangeExtendedIteratorType,QuadSetType> self_type;
-
+    using size_type = typename graph_type::size_type;
     typedef RangeIteratorTestType rangeiterator_test_type;
     typedef RangeExtendedIteratorType rangeiterator_extended_type;
     typedef QuadSetType nonstandard_quadset_type;
@@ -466,7 +466,7 @@ public:
 
     void mergeGraph( int row, int col, graph_ptrtype g );
     void mergeGraphMPI( size_type test_index, size_type trial_index,
-                        DataMap const& mapOnTest, DataMap const& mapOnTrial,
+                        DataMap<> const& mapOnTest, DataMap<> const& mapOnTrial,
                         graph_ptrtype g);
 public:
     test_space_ptrtype testSpace() const
@@ -1039,7 +1039,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraph( int 
 template<typename X1,  typename X2, typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 void
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraphMPI( size_type test_index, size_type trial_index,
-                               DataMap const& mapOnTest, DataMap const& mapOnTrial,
+                                                                               DataMap<size_type> const& mapOnTest, DataMap<size_type> const& mapOnTrial,
                                graph_ptrtype g )
 {
     const int myrank = this->testSpace()->worldComm().globalRank();
