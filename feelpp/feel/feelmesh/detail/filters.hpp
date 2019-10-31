@@ -329,6 +329,7 @@ allpoints( MeshType const& mesh )
         auto const& pt = unwrap_ref( *it );
         mypoints->push_back(boost::cref(pt));
     }
+    mypoints->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_POINTS>(),
                               mypoints->begin(), mypoints->end(),
                               mypoints );
