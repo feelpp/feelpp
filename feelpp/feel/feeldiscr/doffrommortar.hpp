@@ -63,7 +63,7 @@ public:
     typedef typename doftable_type::dof_relation dof_relation;
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
-
+    using size_type = typename mesh_type::size_type;
     static const uint16_type nOrder = mortar_fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;

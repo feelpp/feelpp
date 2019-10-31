@@ -61,7 +61,7 @@ public:
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     
     using global_dof_from_entity_type = typename doftable_type::global_dof_from_entity_type;
-
+    using size_type = typename mesh_type::size_type;
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;

@@ -31,7 +31,7 @@
 namespace Feel
 {
 namespace mpi=boost::mpi;
-template<typename T> class Vector;
+template<typename T, typename SizeT> class Vector;
 template<typename T> class MatrixSparse;
 
 /**
@@ -42,7 +42,7 @@ template<typename T> class MatrixSparse;
  * @author Benjamin Kirk, 2003
  * @author Christophe Prud'homme, 2005
  */
-template <typename T>
+template <typename T,typename SizeT = uint32_type>
 class SolverLinear : public CommObject
 {
 
@@ -51,7 +51,7 @@ public:
     using super = CommObject;
     typedef SolverLinear<T> self_type;
     typedef std::shared_ptr<SolverLinear<T> >  self_ptrtype;
-
+    using size_type = SizeT;
     typedef T value_type;
     typedef typename type_traits<T>::real_type real_type;
 
@@ -325,8 +325,8 @@ public:
     virtual
     solve_return_type
     solve ( MatrixSparse<T> const& mat,
-            Vector<T>& x,
-            Vector<T> const& b,
+            Vector<T,size_type>& x,
+            Vector<T,size_type> const& b,
             const double tolerance,
             const unsigned int maxit,
             bool transpose
@@ -352,8 +352,8 @@ public:
     solve_return_type
     solve ( MatrixSparse<T> const& mat,
             MatrixSparse<T> const& prec,
-            Vector<T>& x,
-            Vector<T> const& b,
+            Vector<T,size_type>& x,
+            Vector<T,size_type> const& b,
             const double tolerance,
             const unsigned int maxit,
             bool transpose
@@ -432,9 +432,9 @@ protected:
 
 
 /*----------------------- inline functions ----------------------------------*/
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverLinear<T>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
+SolverLinear<T,SizeT>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
     M_rtolerance( 1e-8 ),
     M_dtolerance( 1e5 ),
@@ -450,9 +450,9 @@ SolverLinear<T>::SolverLinear ( worldcomm_ptr_t const& worldComm ) :
 {
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
+SolverLinear<T,SizeT>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t const& worldComm ) :
     super( worldComm ),
     M_vm( vm ),
     M_rtolerance( 1e-8 ),
@@ -470,9 +470,9 @@ SolverLinear<T>::SolverLinear ( po::variables_map const& vm, worldcomm_ptr_t con
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverLinear<T>::~SolverLinear ()
+SolverLinear<T,SizeT>::~SolverLinear ()
 {
     this->clear ();
 }

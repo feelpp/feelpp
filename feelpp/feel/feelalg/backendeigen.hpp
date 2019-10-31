@@ -59,15 +59,16 @@ namespace po = boost::program_options;
  *
  * this class provides an interface to the EIGEN linear algebra library
  */
-template<typename T, int _Options = 0>
-class BackendEigen : public Backend<T>
+template<typename T, int _Options = 0, typename SizeT = uint32_type>
+class BackendEigen : public Backend<T,SizeT>
 {
-    typedef Backend<T> super;
+    typedef Backend<T,SizeT> super;
 public:
 
     // -- TYPEDEFS --
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
+    using size_type = typename super::size_type;
 
     static const bool IsDense = (_Options == 1);
     static const bool IsSparse = (_Options == 0);
@@ -265,8 +266,8 @@ private:
 }; // class BackendEigen
 
 // -- CONSTRUCTOR --
-template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t const& _worldComm )
+template<typename T, int _Options, typename SizeT>
+BackendEigen<T,_Options,SizeT>::BackendEigen( worldcomm_ptr_t const& _worldComm )
     :
     super(_worldComm)
 {
@@ -276,8 +277,8 @@ BackendEigen<T,_Options>::BackendEigen( worldcomm_ptr_t const& _worldComm )
         this->M_backend = BackendType::BACKEND_EIGEN_DENSE;
 }
 
-template<typename T, int _Options>
-BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& _worldComm  )
+template<typename T, int _Options, typename SizeT>
+BackendEigen<T,_Options,SizeT>::BackendEigen( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& _worldComm  )
     :
     super( vm, prefix, _worldComm )
 {
@@ -294,9 +295,9 @@ BackendEigen<T,_Options>::BackendEigen( po::variables_map const& vm, std::string
 
 
 
-template<typename T, int _Options>
-typename BackendEigen<T,_Options>::solve_return_type
-BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
+template<typename T, int _Options, typename SizeT>
+typename BackendEigen<T,_Options,SizeT>::solve_return_type
+BackendEigen<T,_Options,SizeT>::solve( sparse_matrix_type const& _A,
                                  vector_type& _x,
                                  const vector_type& _b,
                                  mpl::bool_<true>)
@@ -311,9 +312,9 @@ BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
     return solve_return_type( boost::make_tuple(true,1,1e-10) );
 } // BackendEigen::solve
 
-template<typename T, int _Options>
-typename BackendEigen<T,_Options>::solve_return_type
-BackendEigen<T,_Options>::solve( sparse_matrix_type const& _A,
+template<typename T, int _Options, typename SizeT>
+typename BackendEigen<T,_Options,SizeT>::solve_return_type
+BackendEigen<T,_Options,SizeT>::solve( sparse_matrix_type const& _A,
                                  vector_type& _x,
                                  const vector_type& _b,
                                  mpl::bool_<false>)

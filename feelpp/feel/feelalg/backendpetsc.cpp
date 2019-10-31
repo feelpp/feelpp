@@ -87,14 +87,14 @@ PetscErrorCode feel_petsc_pre_solve(KSP ksp,Vec x,Vec y,void* ctx)
     return 0;
 }
 
-template<typename T>
-BackendPetsc<T>::~BackendPetsc()
+template <typename T, typename SizeT>
+BackendPetsc<T,SizeT>::~BackendPetsc()
 {
     this->clear();
 }
-template<typename T>
+template <typename T, typename SizeT>
 void
-BackendPetsc<T>::clear()
+BackendPetsc<T,SizeT>::clear()
 {
     LOG(INFO) << "Deleting linear solver petsc";
     M_solver_petsc.clear();
@@ -106,9 +106,9 @@ BackendPetsc<T>::clear()
 
 }
 
-template<typename T>
-typename BackendPetsc<T>::vector_ptrtype
-BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
+template <typename T, typename SizeT>
+typename BackendPetsc<T,SizeT>::vector_ptrtype
+BackendPetsc<T,SizeT>::toBackendVectorPtr( vector_type const& v  )
 {
     petsc_vector_type * vecPetsc = const_cast<petsc_vector_type *>( dynamic_cast<petsc_vector_type const*>( &v ) );
     if ( vecPetsc )
@@ -189,9 +189,9 @@ BackendPetsc<T>::toBackendVectorPtr( vector_type const& v  )
     return super::toBackendVectorPtr( v );
 }
 
-template<typename T>
-typename BackendPetsc<T>::vector_ptrtype
-BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
+template <typename T, typename SizeT>
+typename BackendPetsc<T,SizeT>::vector_ptrtype
+BackendPetsc<T,SizeT>::toBackendVectorPtr( vector_ptrtype const& v )
 {
     if ( this->comm().globalSize()>1 )
     {
@@ -268,9 +268,9 @@ BackendPetsc<T>::toBackendVectorPtr( vector_ptrtype const& v )
 
 }
 
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
+template <typename T, typename SizeT>
+typename BackendPetsc<T,SizeT>::solve_return_type
+BackendPetsc<T,SizeT>::solve( sparse_matrix_ptrtype const& A,
                         sparse_matrix_ptrtype const& B,
                         vector_ptrtype& x,
                         vector_ptrtype const& b )
@@ -318,9 +318,9 @@ BackendPetsc<T>::solve( sparse_matrix_ptrtype const& A,
 } // BackendPetsc::solve
 
 
-template<typename T>
-typename BackendPetsc<T>::solve_return_type
-BackendPetsc<T>::solve( sparse_matrix_type const& A,
+template <typename T, typename SizeT>
+typename BackendPetsc<T,SizeT>::solve_return_type
+BackendPetsc<T,SizeT>::solve( sparse_matrix_type const& A,
                         vector_type& x,
                         vector_type const& b )
 {
@@ -365,9 +365,9 @@ BackendPetsc<T>::solve( sparse_matrix_type const& A,
     return res;
 } // BackendPetsc::solve
 
-template <typename T>
+template <typename T, typename SizeT>
 int
-BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
+BackendPetsc<T,SizeT>::PtAP( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
@@ -376,9 +376,9 @@ BackendPetsc<T>::PtAP( sparse_matrix_ptrtype const& A_,
 }
 
 
-template <typename T>
+template <typename T, typename SizeT>
 int
-BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
+BackendPetsc<T,SizeT>::PAPt( sparse_matrix_ptrtype const& A_,
                        sparse_matrix_ptrtype const& P_,
                        sparse_matrix_ptrtype & C_ ) const
 {
@@ -386,27 +386,27 @@ BackendPetsc<T>::PAPt( sparse_matrix_ptrtype const& A_,
     return 1;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BackendPetsc<T>::prod( sparse_matrix_type const& A,
+BackendPetsc<T,SizeT>::prod( sparse_matrix_type const& A,
                        vector_type const& x,
                        vector_type& b, bool transpose ) const
 {
     A.multVector( x, b, transpose );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 int
-BackendPetsc<T>::diag( sparse_matrix_type const& A_,
+BackendPetsc<T,SizeT>::diag( sparse_matrix_type const& A_,
                        vector_type& d_ ) const
 {
     A_.diagonal( d_ );
     return 1;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 int
-BackendPetsc<T>::diag( vector_type const & d_,
+BackendPetsc<T,SizeT>::diag( vector_type const & d_,
                        sparse_matrix_type& A_ ) const
 {
     A_.setDiagonal( d_ );
@@ -448,7 +448,7 @@ po::options_description backendpetsc_options( std::string const& prefix )
 /*
  * Explicit instantiations
  */
-template class BackendPetsc<double>;
+template class BackendPetsc<double,uint32_type>;
 //template class BackendPetsc<std::complex<double>>;
 
 

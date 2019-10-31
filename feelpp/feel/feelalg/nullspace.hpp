@@ -35,16 +35,17 @@
 
 namespace Feel
 {
-template<typename T> class Backend;
+template<typename T,typename SizeT> class Backend;
 
-template <typename T=double>
+template <typename T=double, typename SizeT = uint32_type>
 class FEELPP_EXPORT NullSpace
 {
 public :
     typedef T value_type;
-    typedef Vector<value_type> vector_type;
+    using size_type = SizeT;
+    typedef Vector<value_type,size_type> vector_type;
     typedef std::shared_ptr<vector_type> vector_ptrtype;
-    typedef Backend<value_type> backend_type;
+    typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     NullSpace() {}
@@ -146,7 +147,7 @@ private :
 };
 
 template<typename SpaceType, typename ExprType>
-void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e )
+void nullspace( NullSpace<double,typename SpaceType::size_type>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e )
 {
     auto u = Xh->elementPtr(e);
     K.push_back( u );
@@ -154,7 +155,7 @@ void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& 
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+void nullspace( NullSpace<double,typename SpaceType::size_type>& K, std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
     auto u = Xh->elementPtr(e);
     K.push_back( u );
@@ -162,25 +163,26 @@ void nullspace( NullSpace<double>& K, std::shared_ptr<SpaceType> Xh, ExprType&& 
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-NullSpace<double> nullspace( std::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
+NullSpace<double,typename SpaceType::size_type> nullspace( std::shared_ptr<SpaceType> Xh, ExprType&& e,  Args... args )
 {
-    NullSpace<double> K;
+    NullSpace<double,typename SpaceType::size_type> K;
     nullspace( K, Xh, e, args...);
     return K;
 }
 
 template<typename SpaceType, typename ExprType, typename... Args>
-std::shared_ptr<NullSpace<double>>  nullspace_ptr( std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
+std::shared_ptr<NullSpace<double,typename SpaceType::size_type>>  nullspace_ptr( std::shared_ptr<SpaceType> Xh, ExprType&& e, Args... args )
 {
-    std::shared_ptr<NullSpace<double>> K( std::make_shared<NullSpace<double>>() );
+    std::shared_ptr<NullSpace<double,typename SpaceType::size_type>> K( std::make_shared<NullSpace<double,typename SpaceType::size_type>>() );
     nullspace( *K, Xh, e, args...);
     return K;
 }
 
-inline std::shared_ptr<NullSpace<double>>
-toBackend( std::shared_ptr<Backend<double>> const& b, std::shared_ptr<NullSpace<double>> const& Kspace, bool redoOrtho = false )
+template<typename SizeT>
+inline std::shared_ptr<NullSpace<double,SizeT>>
+toBackend( std::shared_ptr<Backend<double,SizeT>> const& b, std::shared_ptr<NullSpace<double,SizeT>> const& Kspace, bool redoOrtho = false )
 {
-    return std::make_shared<NullSpace<double>>( b, Kspace, redoOrtho );
+    return std::make_shared<NullSpace<double,SizeT>>( b, Kspace, redoOrtho );
 }
 
 } // namespace Feel

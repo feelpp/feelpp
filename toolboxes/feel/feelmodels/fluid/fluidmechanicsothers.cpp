@@ -2232,7 +2232,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();

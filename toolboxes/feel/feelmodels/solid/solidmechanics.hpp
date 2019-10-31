@@ -66,7 +66,7 @@ class SolidMechanics : public ModelNumerical,
 {
 public:
     typedef ModelNumerical super_type;
-
+    using size_type = typename super_type::size_type;
     typedef SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 

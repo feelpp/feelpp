@@ -34,7 +34,7 @@
 namespace Feel
 {
 
-template<typename T> class Preconditioner;
+template<typename T, typename SizeT> class Preconditioner;
 
 /**
  * Base class for Operators
@@ -45,9 +45,10 @@ class OperatorBase
   public:
     typedef T value_type;
     typedef typename Backend<value_type>::solve_return_type solve_return_type;
-    typedef DataMap datamap_type;
-    typedef std::shared_ptr<DataMap> datamap_ptrtype;
-    typedef std::shared_ptr<Preconditioner<T>> pc_ptrtype;
+    typedef DataMap<> datamap_type;
+    using size_type = typename datamap_type::size_type;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
+    typedef std::shared_ptr<Preconditioner<T,size_type>> pc_ptrtype;
 
 
     OperatorBase() 
@@ -133,7 +134,7 @@ class OperatorBase
     /**
      * domain map
      */
-    DataMap const& domainMap() const { return *M_domain_map; }
+    datamap_type const& domainMap() const { return *M_domain_map; }
 
     /**
      * domain map
@@ -148,7 +149,7 @@ class OperatorBase
     /**
      * image map
      */
-    DataMap const& imageMap() const { return *M_image_map; }
+    datamap_type const& imageMap() const { return *M_image_map; }
 
     /**
      * image map
