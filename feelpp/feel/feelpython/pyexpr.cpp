@@ -34,6 +34,16 @@
 
 namespace Feel {
 
+std::vector<std::string> lookups_ =
+{
+    "$cfgdir/../../python/",
+    "$cfgdir/../python/",
+    "$datadir/testcases/python/",
+    "$datadir/python/",
+    "$top_srcdir/feelpp/quickstart/python/",
+    "$top_srcdir/feelpp/feel/feelpython/"
+};
+
 void
 //pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& vars, std::map<std::string,std::string> const& _locals )
 pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std::string,std::string>> & _locals )
@@ -46,11 +56,14 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
     if ( Environment::isMasterRank() )
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-        py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
+        std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
+        //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
+        py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
         //py::print(py::module::import("sys").attr("path"));
         py::dict locals = py::cast(_locals);
         py::print(locals);
-        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+        //std::cout << "eval_f = " << Environment::findFile( pyfilename.c_str(), lookups_ ) << std::endl;
+        py::eval_file( Environment::findFile( pyfilename.c_str(), lookups_ ), py::globals(), locals );
         
 #if 1
         for( auto l : _locals )
@@ -84,11 +97,14 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string>
     if ( Environment::isMasterRank() )
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-        py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
+        std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
+        //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
+        py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
         //py::print(py::module::import("sys").attr("path"));
         py::dict locals = py::cast(_locals);
         py::print(locals);
-        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+        //std::cout << "eval_f = " << Environment::findFile( pyfilename.c_str(), lookups_ ) << std::endl;
+        py::eval_file( Environment::findFile( pyfilename.c_str(), lookups_ ), py::globals(), locals );
 
 #if 0
         for( auto const& [key,value] : _locals )
