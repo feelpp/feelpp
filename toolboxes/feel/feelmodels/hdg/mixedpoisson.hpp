@@ -295,10 +295,10 @@ public:
     virtual void solve();
 
     void assemblePostProcessCstPart();
-    void assemblePostProcessNonCstPart();
+    void assemblePostProcessNonCstPart( bool isNL = false );
     template<typename ExprT> void assemblePostProcessRhs( Expr<ExprT> expr, std::string marker = "");
     void solvePostProcess();
-    virtual void postProcess();
+    virtual void postProcess( bool isNL = false );
 
 };
 
