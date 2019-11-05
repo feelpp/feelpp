@@ -419,6 +419,8 @@ public:
         return M_parts.end();
     }
 
+    parts_map_type const& parts() const { return M_parts; }
+
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * with marker \p m on processor \p p
@@ -474,6 +476,7 @@ public:
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
+            myelements->shrink_to_fit();
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
         }
     /**
@@ -500,6 +503,7 @@ public:
                     continue;
                 myelements->push_back(boost::cref(elt));
             }
+            myelements->shrink_to_fit();
             return std::make_tuple( myelements->begin(), myelements->end(), myelements );
         }
     /**
@@ -543,6 +547,49 @@ public:
         {
             return this->elementsWithMarkerByType( 3, m, p );
         }
+
+
+        /**
+     * \return the range of iterator \c (begin,end) over the elements
+     * with \c Marker1 \p markerFlags on processor \p p
+     */
+    std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> >
+    collectionOfElementsWithMarkerByType( uint16_type markerType,  std::map<int,std::set<flag_type>> const& collectionOfMarkerFlagSet, rank_type p = invalid_rank_type_value ) const
+        {
+            const rank_type part = (p==invalid_rank_type_value)? this->worldCommElements().localRank() : p;
+
+            std::map<int,elements_reference_wrapper_ptrtype> collectionOfElements;
+            for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+                collectionOfElements[part].reset( new elements_reference_wrapper_type );
+            auto it = this->beginOrderedElement();
+            auto en = this->endOrderedElement();
+            for ( ; it!=en;++it )
+            {
+                auto const& elt = unwrap_ref( *it );
+                if ( elt.processId() != part )
+                    continue;
+                if ( !elt.hasMarker( markerType ) )
+                    continue;
+                if ( elt.marker( markerType ).isOff() )
+                    continue;
+                for ( auto const& [part,markersFlag] : collectionOfMarkerFlagSet )
+                {
+                    if ( markersFlag.find( elt.marker( markerType ).value() ) == markersFlag.end() )
+                        continue;
+                    collectionOfElements[part]->push_back(boost::cref(elt));
+                    break;
+                }
+            }
+
+            std::map<int, std::tuple<element_reference_wrapper_const_iterator,element_reference_wrapper_const_iterator,elements_reference_wrapper_ptrtype> > collectionOfRangeElement;
+            for ( auto & [part,myelements] : collectionOfElements )
+            {
+                myelements->shrink_to_fit();
+                collectionOfRangeElement[part] = std::make_tuple( myelements->begin(), myelements->end(), myelements );
+            }
+            return collectionOfRangeElement;
+        }
+
     /**
      * \return the range of iterator \c (begin,end) over the elements
      * on processor \p p
@@ -561,6 +608,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -607,6 +655,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -641,6 +690,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -662,6 +712,7 @@ public:
                 continue;
             myelements->push_back(boost::cref(elt));
         }
+        myelements->shrink_to_fit();
         return std::make_tuple( myelements->begin(), myelements->end(), myelements );
     }
 
@@ -702,9 +753,9 @@ public:
             f.setId( M_elements.size() );
         auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
-        auto & newElement = ret.first->second;
         if ( ret.second )
         {
+            auto & newElement = ret.first->second;
             if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
                 M_needToOrderElements = true;
             M_orderedElements.push_back( boost::ref( newElement ) );
@@ -723,9 +774,9 @@ public:
             //return *M_elements.insert( f );
             auto ret = M_elements.emplace( std::make_pair( f.id(), f ) );
 
-            auto & newElement = ret.first->second;
             if ( ret.second )
             {
+                auto & newElement = ret.first->second;
                 if ( !M_needToOrderElements && !M_orderedElements.empty() && unwrap_ref( M_orderedElements.back() ).id() > newElement.id() )
                     M_needToOrderElements = true;
                 M_orderedElements.push_back( boost::ref( newElement ) );
@@ -850,6 +901,13 @@ public:
         }
 
     //@}
+protected :
+
+    void addParts( std::set<int> const& someParts )
+        {
+            for ( int p : someParts )
+                M_parts.try_emplace( p, 0 );
+        }
 
 private:
 

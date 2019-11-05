@@ -1,0 +1,25 @@
+#! /bin/bash
+
+set -eo pipefail
+set -x
+
+
+# default values
+FEELPP_BRANCH=develop
+
+
+mkdir build
+cd build && ../configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=ON -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
+make package_source
+git clone https://github.com/feelpp/feelpp.pkg.git
+main_version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1/g' )
+version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1~\2/g' )
+rename_archive=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/feelpp_\1~\2.orig.tar.gz/g' )
+cp feelpp-*.tar.gz feelpp.pkg/feelpp/$rename_archive
+cd feelpp.pkg/feelpp/bionic && tar xzvf $rename_archive --strip 1
+
+dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
+dpkg-source -b .
+pbuilder-dist bionic build ../feelpp_${version}-1.dsc
+../upload_bintray.sh $main_version $HOME/pbuilder/bionic_result ubuntu bionic
+

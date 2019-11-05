@@ -39,7 +39,7 @@ makeOptions()
 {
     po::options_description hdgoptions( "test qs_hdg_elasticity options" );
     hdgoptions.add_options()
-        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/feelpp/quickstart/elasticity.py"), "python file to evaluate" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value("$cfgdir/../python/elasticity.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
