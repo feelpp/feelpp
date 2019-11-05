@@ -39,6 +39,7 @@
 #include <feel/feelcore/debug.hpp>
 
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
@@ -78,6 +79,9 @@ public:
     typedef typename timeset_type::step_const_iterator step_const_iterator;
 
     typedef typename matrix_node<value_type>::type matrix_node_type;
+protected :
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+public :
     //@}
 
     /** @name Constructors, destructor
@@ -86,7 +90,7 @@ public:
 
     explicit ExporterGmsh( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterGmsh( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterGmsh( po::variables_map const& vm, std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterGmsh( std::string const& __p = "default", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     
     ExporterGmsh( ExporterGmsh const & __ex );
@@ -113,34 +117,19 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    /**
-       save the timeset
-     */
-    void save() const;
+    //!  save the timeset
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
 
     /**
      * export mesh
      */
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     /**
      * save the \p mesh to the file \p filename
@@ -161,10 +150,11 @@ public:
     void gmshSaveElements( std::ostream& out, mesh_ptrtype __mesh, size_type indexEltStart ) const;
     void gmshSaveElementsEnd( std::ostream& out ) const;
 
-    void gmshSaveNodeData( std::ostream& out, step_ptrtype __step ) const;
-
     void computeMinMax(step_ptrtype __step, std::map<std::string, std::vector<double> > & minMaxValues) const;
     void gmshSaveElementNodeData( std::ostream& out, step_ptrtype __step, size_type indexEltStart) const;
+
+    template<bool IsNodal,typename Iterator>
+    void saveFields( typename timeset_type::step_ptrtype step, Iterator __var, Iterator en, std::ostream& out ) const;
 
     template<typename ConvexType=typename mesh_type::shape_type>
     void gmshSaveOneElementAsMesh( std::string const& filename,

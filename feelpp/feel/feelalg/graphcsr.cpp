@@ -1078,7 +1078,7 @@ GraphCSR::showMe( std::ostream& __out ) const
 void
 GraphCSR::printPython( std::string const& nameFile ) const
 {
-
+#if 0
 #if 0
     std::cout << "first_row_entry_on_proc " << this->firstRowEntryOnProc() << std::endl;
     std::cout << "last_row_entry_on_proc " << this->lastRowEntryOnProc() << std::endl;
@@ -1203,7 +1203,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
     }
 
-
+#endif
 } // printPython
 
 void

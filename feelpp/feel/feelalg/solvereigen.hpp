@@ -540,7 +540,7 @@ protected:
  *
  * \return eigen modes
  */
-BOOST_PARAMETER_MEMBER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
+BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
                                  eigs,
                                  tag,
                                  ( required
@@ -617,7 +617,7 @@ struct compute_eigs_return_type
     typedef std::vector<std::pair<value_type,typename A_type::element_2_type> > type;
 };
 
-BOOST_PARAMETER_MEMBER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
+BOOST_PARAMETER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
                                  veigs,
                                  tag,
                                  ( required

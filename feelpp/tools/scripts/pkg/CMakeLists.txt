@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 24 Jul 2018
+#       Date: 03 Nov 2019
 #
-#  Copyright (C) 2018 Feel++ Consortium
+#  Copyright (C) 2019 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,16 +22,5 @@
 #
 #
 
-
-if (FEELPP_ENABLE_PYTHON_WRAPPING )
-
-
-set( SRC  pyexpr.cpp  )
-
-
-file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
-feel_append_src(feelpython "${SRC};${HDR}")
-
-install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/sympy2ginac.py   DESTINATION share/feelpp/data/python COMPONENT Bin)
-
-endif()
+configure_file(feelpp_pkg.sh.in ${CMAKE_CURRENT_BINARY_DIR}/feelpp_pkg.sh @ONLY)
+install(PROGRAMS  ${CMAKE_CURRENT_BINARY_DIR}/feelpp_pkg.sh   DESTINATION bin COMPONENT Bin)
