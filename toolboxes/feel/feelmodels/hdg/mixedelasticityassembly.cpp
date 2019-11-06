@@ -187,7 +187,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::solve()
 
     tic();
     tic();
-    bbf.solve(_solution=U, _rhs=blf, _rebuild=false, _condense=M_useSC, _name= this->prefix());
+    bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name= this->prefix());
     M_timers["solver"].push_back(toc("solver", this->verbose() || FLAGS_v > 0));
     toc(solver_string, this->verbose() || FLAGS_v > 0);
 
