@@ -716,7 +716,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessCstPart()
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessNonCstPart()
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessNonCstPart( bool isNL)
 {
     auto pps = product( M_Whp );
     auto ell = blockform1( pps, M_Fpp);
@@ -724,9 +724,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessNonCstPart()
     {
         auto marker = pairMat.first;
         auto material = pairMat.second;
-        auto cond = material.getScalar(M_conductivityKey, M_paramValues);
-        ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
-                               _expr=-grad(M_ppp)*idv(M_up)/cond);
+        if ( !isNL )
+        {
+            auto cond = material.getScalar(M_conductivityKey, M_paramValues);
+            ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+                                   _expr=-grad(M_ppp)*idv(M_up)/cond);
+        }
+        else
+        {
+            auto cond = material.getScalar(M_nlConductivityKey,
+                                           {"p"}, {idv(M_pp)}, M_paramValues);
+            ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+                                   _expr=-grad(M_ppp)*idv(M_up)/cond);
+        }
     }
 }
 
@@ -747,10 +757,10 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
-MIXEDPOISSON_CLASS_TEMPLATE_TYPE::postProcess()
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::postProcess( bool isNL )
 {
     this->assemblePostProcessCstPart();
-    this->assemblePostProcessNonCstPart();
+    this->assemblePostProcessNonCstPart(isNL);
     this->solvePostProcess();
 }
 
