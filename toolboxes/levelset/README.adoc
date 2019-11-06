@@ -17,6 +17,17 @@ To run the benchmark, do the following
 ./feelpp_toolbox_levelset_2d --config-file cases/benchmark/zalesak/2d/slotteddisk.cfg
 ----
 
+To see the crash:
+- compile the levelset toolbox of this branch,
+- edit `crash_cmd.sh` to change the toolbox binary, config-file and mesh paths,
+- then run `crash_cmd.sh`:
+
+----
+. cases/benchmark/zalesak/2d/crash_cmd.sh
+----
+
+You should get a segfault.
+
 === Injector
 
 The injector case tests the injection of bodies into computational domain
