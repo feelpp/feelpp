@@ -1,6 +1,6 @@
 #!/bin/bash
 #LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/build_develop/toolboxes/levelset/feelpp_toolbox_levelset_2d
-LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
+LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
 #LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Debug_install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
 NARGS=3
 NCORE=1
