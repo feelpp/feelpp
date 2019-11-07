@@ -23,7 +23,7 @@
 	    {
 		    "Omega":
 		    {
-		        "expr":" max( min( slotwidth+(x-centerx), min( slotwidth-(x-centerx), min( slotwidth+(z-centerz), min( slotwidth-(z-centerz), slotlength-(y-centery+radius) ) ) ) ), sqrt(pow(x-centerx,2)+pow(y-centery,2)+pow(z-centerz,2)) - radius ) :x:y:z:centerx:centery:centerz:radius:slotwidth:slotlength"
+		        "expr":" max( min( x-(centerx-slotwidth), min( (centerx+slotwidth)-x, min( z-(centerz-slotwidth), min( (centerz+slotwidth)-z, (centery-radius+slotlength)-y ) ) ) ), sqrt(pow(x-centerx,2)+pow(y-centery,2)+pow(z-centerz,2)) - radius ) :x:y:z:centerx:centery:centerz:radius:slotwidth:slotlength"
 		    }
 	    }
 	}
@@ -33,42 +33,7 @@
 	    "PhysicalQuantities": ["volume, perimeter, velocity_com"],
         "Exports":
         {
-            "fields":["advection-velocity", "pid"]
-        },
-        "Measures":
-        {
-            "Statistics":
-            {
-                "TestStat":
-                {
-                    "type":["min", "max", "mean"],
-                    "field":"advection-velocity",
-                    "marker":"Omega"
-                }
-            },
-            "Norm":
-            {
-                "VelocityNorm":
-                {
-                    "type":"L2",
-                    "field":"velocity"
-                },
-                "AvectionVelocityNorm":
-                {
-                    "type":"L2",
-                    "field":"advection-velocity"
-                },
-                "HeavisideNorm":
-                {
-                    "type":"L2",
-                    "field":"heaviside"
-                },
-                "DiracNorm":
-                {
-                    "type":"L2",
-                    "field":"dirac"
-                }
-            }
+            "fields":[""]
         }
     }  
 }
