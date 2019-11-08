@@ -289,6 +289,7 @@ public:
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
     // u.n + g1.p = g2
     template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
+    template<typename ExprT1, typename ExprT2> void updateRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
     void assembleIBC(int i, std::string marker = "");
     virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
@@ -493,6 +494,40 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     // <-tau phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=-tau_constant * idt(phat) * id(l) );
+    // <g_R^1 phat, mu>_Gamma_R
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                 _expr=expr1*idt(phat) * id(l) );
+    // <g_R^2,mu>_Gamma_R
+    blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+                           _expr=id(l)*expr2);
+    toc("assembleRobin", this->verbose() || FLAGS_v > 0);
+}
+
+template<int Dim, int Order, int G_Order, int E_Order>
+template<typename ExprT1, typename ExprT2>
+void
+MixedPoisson<Dim, Order, G_Order, E_Order>::updateRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker)
+{
+    tic();
+    auto bbf = blockform2( *M_ps, M_A_cst);
+
+    auto blf = blockform1( *M_ps, M_F );
+    auto u = M_Vh->element( "u" );
+    auto p = M_Wh->element( "p" );
+    auto phat = M_Mh->element( "phat" );
+    auto l = M_Mh->element( "lambda" );
+    // auto H = M_M0h->element( "H" );
+    // if ( ioption(prefixvm(prefix(), "hface") ) == 0 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMax()) );
+    // else if ( ioption(prefixvm(prefix(), "hface") ) == 1 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hMin()) );
+    // else if ( ioption(prefixvm(prefix(), "hface") ) == 2 )
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=cst(M_Vh->mesh()->hAverage()) );
+    // else
+    //     H.on( _range=elements(M_M0h->mesh()), _expr=h() );
+    // stabilisation parameter
+    auto tau_constant = cst(M_tauCst);
+
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
