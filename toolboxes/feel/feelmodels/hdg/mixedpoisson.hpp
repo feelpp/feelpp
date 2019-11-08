@@ -289,6 +289,7 @@ public:
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
     // u.n + g1.p = g2
     template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
+    template<typename ExprT1, typename ExprT2> void updateRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
     void assembleIBC(int i, std::string marker = "");
     virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
