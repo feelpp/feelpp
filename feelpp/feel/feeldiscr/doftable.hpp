@@ -1393,7 +1393,7 @@ private:
 
             std::vector<size_type> bad_dof;
 
-            for ( uint16_type gDof = 0; gDof < nDof(); ++gDof )
+            for ( uint16_type gDof = 0; gDof < this->nDof(); ++gDof )
             {
                 uint16_type _numEntities = M_dof2elt[gDof].size();
                 uint16_type _ent = M_dof2elt[gDof].begin()->template get<3>();
@@ -2931,16 +2931,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
         M_hasBuiltDofPoints = true;
 #if !defined( NDEBUG )
         if ( !buildDofTableMPIExtended() )
-            for ( size_type dof_id = 0; dof_id < nLocalDofWithGhost() ; ++dof_id )
+            for ( size_type dof_id = 0; dof_id < this->nLocalDofWithGhost() ; ++dof_id )
             {
                 CHECK( M_dof_points.find(dof_id ) != M_dof_points.end() )
                     << "invalid dof point"
-                    << dof_id << ", " <<  nLocalDofWithGhost() << ", " <<  firstDof() << ", "
-                    <<  lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
-                CHECK( boost::get<1>( M_dof_points[dof_id] ) >= firstDof() &&
-                       boost::get<1>( M_dof_points[dof_id] ) <= lastDof() )
+                    << dof_id << ", " <<  this->nLocalDofWithGhost() << ", " <<  this->firstDof() << ", "
+                    <<  this->lastDof() << ", " <<  fe_type::nDim << ", " <<  fe_type::nLocalDof;
+                CHECK( boost::get<1>( M_dof_points[dof_id] ) >= this->firstDof() &&
+                       boost::get<1>( M_dof_points[dof_id] ) <= this->lastDof() )
                     <<  "invalid dof point "
-                    <<  dof_id << ", " <<  firstDof() << ", " <<  lastDof() << ", " <<  nLocalDofWithGhost()
+                    <<  dof_id << ", " <<  this->firstDof() << ", " <<  this->lastDof() << ", " <<  this->nLocalDofWithGhost()
                     << ", " << boost::get<1>( M_dof_points[dof_id] )
                     << ", " <<  boost::get<0>( M_dof_points[dof_id] ) ;
             }
