@@ -34,6 +34,7 @@
 #include <feel/feelcrb/eim.hpp>
 #include <feel/feelcrb/deim.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcrb/sensors.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -416,6 +417,10 @@ public :
     void setOnlineModel() { M_isOnlineModel = true; }
     bool isOnlineModel() const { return M_isOnlineModel; }
 
+    virtual bool pbdwEnabled() const { return M_pbdw_enabled; }
+    void setPBDWEnabled( bool enabled )  { M_pbdw_enabled = enabled; }
+    virtual SensorMap<functionspace_type> const& sensorMap() { return M_sensormap;  }
+    void setSensorMap( SensorMap<functionspace_type> const& sm ) { M_sensormap = sm; }
     //!
     //! unique id for CRB Model
     //!
@@ -2237,6 +2242,8 @@ protected :
     bool M_crbUseNewton;
 
     bool M_isOnlineModel;
+    bool M_pbdw_enabled;
+    SensorMap<functionspace_type> M_sensormap;
 private :
     std::map<std::string,std::string > M_additionalModelFiles;
 };

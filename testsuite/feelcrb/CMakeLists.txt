@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2012-05-23
 #
-#  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2012 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -36,6 +36,9 @@ feelpp_add_test( db CFG test_db.cfg GEO test_db.geo CLI "-st_pc_factor_mat_solve
 feelpp_add_test( parameterspace )
 feelpp_add_test( reducedglobaldof )
 
+
 if (FEELPP_HAS_GLPK)
   feelpp_add_test( empiricalquadrature )
 endif()
+
+feelpp_add_test( sensor CFG test_sensor.cfg MESH sensordesc.csv sensordesc_35_37.csv rooms.msh)

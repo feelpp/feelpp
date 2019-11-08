@@ -35,7 +35,6 @@ class ImporterCSV
     typedef boost::tokenizer< boost::escaped_list_separator<char> > tokenizer_type;
 public :
     ImporterCSV( std::string const& filename, bool readOnlyHeader = false );
-    ImporterCSV( ImporterCSV const& ) = default;
     ImporterCSV( ImporterCSV && ) = default;
 
     //! read the next line in csv file, arg clearData is used to clean previous data read

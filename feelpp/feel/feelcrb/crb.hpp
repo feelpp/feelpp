@@ -265,7 +265,7 @@ public:
 
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> > map_dense_matrix_type;
     typedef Eigen::Map< Eigen::Matrix<double, Eigen::Dynamic, 1> > map_dense_vector_type;
-
+    
     typedef boost::tuple< std::vector<vectorN_type> , std::vector<vectorN_type> , std::vector<vectorN_type>, std::vector<vectorN_type> > solutions_tuple;
     typedef boost::tuple< std::vector<double>,double,double , std::vector< std::vector< double > > , std::vector< std::vector< double > > > upper_bounds_tuple;
     typedef boost::tuple< double,double > matrix_info_tuple; //conditioning, determinant
@@ -1287,6 +1287,13 @@ public:
             return *M_Xi;
         }
 
+    //!
+    //! pbdw
+    //!
+    bool pbdwEnabled() const { return M_model->pbdwEnabled(); } 
+    void offlinePBDW();
+    std::tuple<double,vectorN_type,vectorN_type> onlinePBDW( vectorN_type const& Yobs );
+    std::vector<vector_ptrtype> const& pbdwUpdateBasis() { return M_pbdw_q; }
     /**
      * \return a equidistributed sampling
      */
@@ -1665,6 +1672,12 @@ protected:
     //initial guess
     std::vector < std::vector<vectorN_type> > M_InitialGuessV_pr;
 
+
+    std::vector<vector_ptrtype> M_pbdw_q;
+    matrixN_type M_pbdw_K;
+    vectorN_type M_pbdw_lq;
+    vectorN_type M_pbdw_lrb;
+    
     //std::vector<int> M_index;
     int M_mode_number;
 
@@ -3028,11 +3041,12 @@ CRB<TruthModelType>::offline()
         toc("Total Time");
         Feel::cout << "============================================================\n";
         LOG(INFO) <<"========================================"<<"\n";
-    }
+    } // while ( max_error )
 
     if( this->worldComm().isMasterRank() )
         std::cout<<"number of elements in the reduced basis : "<<M_N<<" ( nb proc : "<<worldComm().globalSize()<<")"<<std::endl;
 
+    offlinePBDW();
 
     if ( boption(_prefix=M_prefix,_name="crb.check.residual") )
         this->testResidual();
@@ -10652,7 +10666,17 @@ CRB<TruthModelType>::save( Archive & ar, const unsigned int version ) const
     }
 
 #endif
-
+    bool pbdw_enabled = this->pbdwEnabled();
+    ar & BOOST_SERIALIZATION_NVP( pbdw_enabled );
+    Feel::cout << "pbdw: " << pbdw_enabled << std::endl;
+    if ( pbdw_enabled )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_K );
+        Feel::cout << "K: " << M_pbdw_K << std::endl;
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_lq );
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_lrb );
+        //ar & BOOST_SERIALIZATION_NVP( M_pbdw_q );
+    }
 }
 
 
@@ -10859,6 +10883,21 @@ CRB<TruthModelType>::load( Archive & ar, const unsigned int version )
     }
 
 #endif
+    bool pbdw_enabled;
+    ar & BOOST_SERIALIZATION_NVP( pbdw_enabled );
+    //M_model->setPBDWEnabled( pbdw_enabled );
+    Feel::cout << "pbdw: " << pbdw_enabled << std::endl;
+    if ( pbdw_enabled )
+    {
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_K );
+        Feel::cout << "K: " << M_pbdw_K << std::endl;
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_lq );
+        Feel::cout << "lq: " << M_pbdw_lq << std::endl;
+        ar & BOOST_SERIALIZATION_NVP( M_pbdw_lrb );
+        Feel::cout << "lrb: " << M_pbdw_lrb << std::endl;
+        //ar & BOOST_SERIALIZATION_NVP( M_pbdw_q );
+    }
+
     LOG(INFO) << "[CRB::load] end of load function" << std::endl;
 }
 
@@ -11740,6 +11779,93 @@ CRB<TruthModelType>::setupOfflineFromDB()
 
 }
 
+template<typename TruthModelType>
+void
+CRB<TruthModelType>::offlinePBDW()
+{
+    if ( this->pbdwEnabled() )
+    {
+        auto const& sm = M_model->sensorMap();
+        M_pbdw_q.resize( sm.size() );
+        int k = 0;
+        for( auto const& [name,sensor] : sm )
+        {
+            Feel::cout << "building Riesz for sensor " << name << std::endl;
+            M_pbdw_q[k] = backend()->newVector( M_model->functionSpace() ); 
+            M_model->l2solve( M_pbdw_q[k], sensor->containerPtr() );
+            k++;
+        }
+        int M = sm.size();
+        auto& rbPrimal = this->model()->rBFunctionSpace()->primalRB();
+        int N = rbPrimal.size();
+        M_pbdw_K.resize( M+N, M+N );
+
+        Feel::cout << "scalar products" << std::endl;
+        for( int k = 0; k < sm.size(); ++k )
+        {
+            Feel::cout << "scalar product A" << std::endl;
+            for( int l = 0; l < k; ++l )
+            {
+                Feel::cout << "scalar products (" << k << "," << l << ")"  << std::endl;
+                M_pbdw_K.block(0,0,M, M )( k,l ) = M_model->scalarProduct( M_pbdw_q[k], M_pbdw_q[l] );
+                M_pbdw_K.block(0,0,M, M )( l,k ) = M_pbdw_K.block(0,0,M, M )( k,l );
+            }
+            Feel::cout << "scalar products (" << k << "," << k << ")"  << std::endl;
+            M_pbdw_K.block(0,0,M, M )( k,k ) = M_model->scalarProduct( M_pbdw_q[k], M_pbdw_q[k] );
+            Feel::cout << "scalar product B" << std::endl;
+
+            for( int l = 0; l < N; ++l )
+            {
+                Feel::cout << "scalar products B (" << k << "," << l << ")"  << std::endl;
+                M_pbdw_K.block(0,M,M, N )( k,l ) = M_model->scalarProduct( M_pbdw_q[k], rbPrimal[l] );
+                M_pbdw_K.block(M,0,N, M )( l,k ) = M_pbdw_K.block(0,M,M, N )( k,l );
+            }
+        }
+        // compute output
+        bool broadcast=false;
+        auto mu = M_Dmu->element( broadcast );
+        M_pbdw_lq.resize( M );
+        for( int k = 0; k < sm.size(); ++k )
+        {
+            auto e = M_model->functionSpace()->elementPtr();
+            *e = *M_pbdw_q[k];
+            
+            M_pbdw_lq[k] = M_model->output( M_output_index, mu, *e, false );
+        }
+        Feel::cout << "lq:=" << M_pbdw_lq << std::endl;
+        M_pbdw_lrb.resize( N );
+        for( int k = 0; k < N; ++k )
+        {
+            M_pbdw_lrb[k] = M_model->output( M_output_index, mu, *rbPrimal[k], false );
+        }
+        Feel::cout << "lrb:=" << M_pbdw_lrb << std::endl;
+        this->saveDB();
+        //this->saveRB();
+    }
+}
+template<typename TruthModelType>
+std::tuple<double,vectorN_type,vectorN_type>
+CRB<TruthModelType>::onlinePBDW( vectorN_type const& Yobs )
+{
+    int M = Yobs.size();
+    auto const& rbPrimal = this->model()->rBFunctionSpace()->primalRB();
+    int N = rbPrimal.size();
+    vectorN_type Y( M_pbdw_K.rows() );
+    std::cout << "K=" << M_pbdw_K << std::endl;
+    Y.segment( 0, M ) = Yobs;
+        
+    auto KNlu = M_pbdw_K.lu();
+    vectorN_type U = KNlu.solve(Y); 
+    std::cout << "U=" << U << std::endl;
+    vectorN_type eta = U.segment(0,M);
+    std::cout << "eta=" << eta << std::endl;
+    vectorN_type z = U.segment(M,N);
+    std::cout << "z=" << z << std::endl;
+
+    double output = eta.dot(M_pbdw_lq) + z.dot(M_pbdw_lrb);
+    return std::tuple{output,eta,z};
+}
+    
 } // Feel
 
 namespace boost
