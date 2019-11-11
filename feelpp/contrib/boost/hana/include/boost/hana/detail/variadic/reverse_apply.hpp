@@ -2,7 +2,7 @@
 @file
 Defines `boost::hana::detail::variadic::reverse_apply`.
 
-@copyright Louis Dionne 2013-2016
+@copyright Louis Dionne 2013-2017
 Distributed under the Boost Software License, Version 1.0.
 (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
  */
@@ -18,8 +18,8 @@ BOOST_HANA_NAMESPACE_BEGIN namespace detail { namespace variadic {
     BOOST_HANA_CONSTEXPR_LAMBDA auto reverse_apply =
         [](auto&& f, auto&& ...x) -> decltype(auto) {
             return detail::variadic::reverse_apply_unrolled(
-                static_cast<decltype(f)&&>(f),
-                static_cast<decltype(x)&&>(x)...
+                static_cast<decltype(f)>(f),
+                static_cast<decltype(x)>(x)...
             );
         };
 }} BOOST_HANA_NAMESPACE_END
