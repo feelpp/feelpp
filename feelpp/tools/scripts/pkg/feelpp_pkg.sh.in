@@ -16,7 +16,7 @@ main_version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1/g' )
 version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1~\2/g' )
 rename_archive=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/feelpp_\1~\2.orig.tar.gz/g' )
 cp feelpp-*.tar.gz feelpp.pkg/feelpp/$rename_archive
-cd feelpp.pkg/feelpp/bionic && tar xzvf $rename_archive --strip 1
+cd feelpp.pkg/feelpp/bionic && tar xzvf ../$rename_archive --strip 1
 
 dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
 dpkg-source -b .
