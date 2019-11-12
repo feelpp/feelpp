@@ -587,7 +587,7 @@ public:
      * If \p filename is not found, then the empty string is returned.
      * \return the string containing the filename path
      */
-    static std::string findFile( std::string const& filename );
+    static std::string findFile( std::string const& filename, std::vector<std::string> paths = {} );
 
     /**
      * \return the list of paths where Feel++ looks into to find a Gmsh Geo file
