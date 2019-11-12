@@ -1,4 +1,4 @@
-// Copyright Louis Dionne 2013-2016
+// Copyright Louis Dionne 2013-2017
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
@@ -23,6 +23,7 @@
 namespace hana = boost::hana;
 
 
+namespace support {
 template <typename T, typename = std::enable_if_t<
   !hana::Constant<T>::value
 >>
@@ -44,6 +45,7 @@ template <typename T, typename = std::enable_if_t<
 constexpr auto sqrt(T const&) {
   return hana::integral_c<typename T::value_type, sqrt(T::value)>;
 }
+} // end namespace support
 
 
 namespace then {
@@ -51,7 +53,7 @@ namespace mpl = boost::mpl;
 
 template <typename N>
 struct sqrt
-  : mpl::integral_c<typename N::value_type, ::sqrt(N::value)>
+  : mpl::integral_c<typename N::value_type, support::sqrt(N::value)>
 { };
 
 template <typename X, typename Y>
@@ -95,6 +97,8 @@ struct _point {
 };
 template <typename X, typename Y>
 constexpr _point<X, Y> point(X x, Y y) { return {x, y}; }
+
+using support::sqrt; // avoid conflicts with ::sqrt
 
 //! [distance-hana]
 template <typename P1, typename P2>

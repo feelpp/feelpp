@@ -1,257 +1,246 @@
-# Copyright Louis Dionne 2013-2016
+# Copyright Louis Dionne 2013-2017
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
-language: c++
-compiler: clang
-os: linux
+language: cpp
+os: linux # Jobs are on Linux unless specified otherwise
+dist: trusty # Jobs are on Trusty unless specified otherwise
 sudo: false
-
-# Do not build branches of the form "pr/*". By prefixing pull requests coming
-# from branches inside the repository with pr/, this avoids building both the
-# branch push _and_ the pull request.
-branches:
-  except: /pr\/.*/
 
 env:
   global:
     # GitHub token for pushing the documentation, logging in with the
     # Travis command line utility and so on. The token is stored in the
     # ${GITHUB_TOKEN} environment variable.
-    - secure: "gikHKTxWGN9FnJ9m+F53Y5j7jWGAOKlL2ylcFM2o0KoXOkoNAK9bJpilNppRwWhgwpC3yTJDN0k7xh9I6Ec8L0G46Q2QZdtJ/NFvWbafpzQcrAg6+872yKlP8h3GHexwEDdAdxCv8g2HeavFrDcqynssI8IoIHyZmsR6Dwym+eo="
-
-  # Workaround for https://github.com/travis-ci/travis-ci/issues/4681
-  matrix:
-    - TRAVIS_EMPTY_JOB_WORKAROUND=true
-
-
-addons:
-  apt:
-    packages:
-      - valgrind
-      - clang-3.6
-      - clang-3.7
-      - clang-3.8
-      - g++-5
-    sources: &sources
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-precise-3.5
-      - llvm-toolchain-precise-3.6
-      - llvm-toolchain-precise-3.7
-      - llvm-toolchain-precise-3.8
-      - llvm-toolchain-precise
-
+    - secure: "gB1wvjk565j3O4UBGjyN44Vd8IGqcNHzkbvRdFNHp7C+C+JG2vhAeLlpiK0Zd483gdTjq9gPjIDwpwyG2UJ+yjT1kMTJvD1YNWpGcK6vOHYl1yMOwv/LBdnKn+J7i/FnoeULGRCCI2Fpp1qILhxeZgLxTxsdQaYXlAkkR0i8cgQ="
 
 matrix:
-  exclude:
-    - env: TRAVIS_EMPTY_JOB_WORKAROUND=true
-
   include:
-    ##########################################################################
-    # Check for code formatting errors
-    ##########################################################################
-    - os: osx
-      env: CHECK_FORMATTING=true COMPILER=clang++
-      osx_image: xcode7
-
     ##########################################################################
     # Build with the main configuration on all the supported compilers
     #
     # Note that we only use the memory checker on the main configuration to
     # speed up Travis builds.
     ##########################################################################
-    # Clang 3.5 (installed here instead of above, because it is incompatible with other Clangs)
-    - env: UNIT_TESTS=true COMPILER=clang++-3.5 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_MEMCHECK=ON"
-      addons: &clang35
-        apt:
-          packages: ["clang-3.5", "valgrind"]
-          sources: *sources
+    # Clang 3.5
+    - env: UNIT_TESTS=true COMPILER=clang++-3.5 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-3.5", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-precise-3.5"] } }
 
     # Clang 3.6
-    - env: UNIT_TESTS=true COMPILER=clang++-3.6 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_MEMCHECK=ON"
+    - env: UNIT_TESTS=true COMPILER=clang++-3.6 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-3.6", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-precise-3.6"] } }
 
     # Clang 3.7
-    - env: UNIT_TESTS=true COMPILER=clang++-3.7 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_MEMCHECK=ON"
+    - env: UNIT_TESTS=true COMPILER=clang++-3.7 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-3.7", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-precise-3.7"] } }
 
     # Clang 3.8
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_MEMCHECK=ON"
+    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-3.8", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-precise-3.8"] } }
 
-    # Xcode 6.3
-    - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: beta-xcode6.3
+    # Clang 3.9
+    - env: UNIT_TESTS=true COMPILER=clang++-3.9 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-3.9", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-trusty-3.9"] } }
 
-    # Xcode 6.4
-    - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: xcode6.4
+    # Clang 4.0
+    - env: UNIT_TESTS=true COMPILER=clang++-4.0 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-4.0", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-trusty-4.0"] } }
 
-    # Xcode 7
-    - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: xcode7
+    # Clang 5.0
+    - env: UNIT_TESTS=true COMPILER=clang++-5.0 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-5.0", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-trusty-5.0"] } }
 
-    # Xcode 7.1
-    - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: xcode7.1
+    # Clang 6.0
+    - env: UNIT_TESTS=true COMPILER=clang++-6.0 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["clang-6.0", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-trusty-6.0"] } }
 
-    # Xcode 7.2
+    # Clang 7.0
+    - env: UNIT_TESTS=true COMPILER=clang++-7 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: &defaults { apt: { packages: ["clang-7", "valgrind"], sources: ["ubuntu-toolchain-r-test", "llvm-toolchain-trusty-7"] } }
+
+    # GCC 6
+    - env: UNIT_TESTS=true COMPILER=g++-6 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["g++-6", "valgrind"], sources: ["ubuntu-toolchain-r-test"] } }
+
+    # GCC 7
+    - env: UNIT_TESTS=true COMPILER=g++-7 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["g++-7", "valgrind"], sources: ["ubuntu-toolchain-r-test"] } }
+
+    # GCC 8
+    - env: UNIT_TESTS=true COMPILER=g++-8 BOOST_VERSION=default ENABLE_MEMCHECK=true
+      addons: { apt: { packages: ["g++-8", "valgrind"], sources: ["ubuntu-toolchain-r-test"] } }
+
+    # Xcode 8.3
     - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: xcode7.2
+      env: UNIT_TESTS=true BOOST_VERSION=default
+      osx_image: xcode8.3
+
+    # Xcode 9.1
+    - os: osx
+      env: UNIT_TESTS=true BOOST_VERSION=default
+      osx_image: xcode9.1
 
     ##########################################################################
     # Build with variations in the configuration
     ##########################################################################
+    # With C++17, on Clang
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+      addons: *defaults
+
+    # With C++17, on GCC
+    - env: UNIT_TESTS=true COMPILER=g++-6     BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+      addons: { apt: { packages: ["g++-6", "valgrind"], sources: ["ubuntu-toolchain-r-test"] } }
+
     # Without concept checks
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_CONCEPT_CHECKS=OFF"
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_CONCEPT_CHECKS=OFF"
+      addons: *defaults
 
     # With debug mode
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_DEBUG_MODE=ON"
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_DEBUG_MODE=ON"
+      addons: *defaults
 
     # Without exceptions
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_EXCEPTIONS=OFF"
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_EXCEPTIONS=OFF"
+      addons: *defaults
 
-    # Build with libstdc++ instead of libc++
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default STDLIB=libstdc++
+    # Without exceptions on OS X
+    - os: osx
+      env: UNIT_TESTS=true BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_EXCEPTIONS=OFF"
+      osx_image: xcode9.1
 
-    # With Boost 1.59
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=1.59.0
+    # With Boost 1.64
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=1.64.0
+      addons: *defaults
+
+    # With Boost 1.65.1
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=1.65.1
+      addons: *defaults
 
     # Without Boost (make sure we don't depend on it)
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8
+    - env: UNIT_TESTS=true COMPILER=default
+      addons: *defaults
 
     # With Boost.Build instead of CMake (on Linux)
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default BOOST_BUILD=true
+    - env: BOOST_BUILD=true COMPILER=default BOOST_VERSION=default
+      addons: *defaults
 
     # With Boost.Build instead of CMake (on OS X)
     - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default BOOST_BUILD=true
-      osx_image: xcode7
-
+      env: BOOST_BUILD=true BOOST_VERSION=default
+      osx_image: xcode9.1
 
     ##########################################################################
     # Generate the documentation
     ##########################################################################
-    - env: DOCUMENTATION=true COMPILER=clang++-3.7 BOOST_VERSION=default
-    - env: DOCUMENTATION=true COMPILER=clang++-3.7 BOOST_VERSION=default BOOST_BUILD=true
-
+    - env: DOCUMENTATION=true COMPILER=default BOOST_VERSION=default
+      dist: xenial
+      addons: *defaults
 
     ##########################################################################
     # Benchmarks
     ##########################################################################
-    - env: BENCHMARKS=true COMPILER=clang++-3.6 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Release"
-    - env: BENCHMARKS=true COMPILER=clang++-3.6 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Debug"
-
-    - env: BENCHMARKS=true COMPILER=clang++-3.7 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Release"
-    - env: BENCHMARKS=true COMPILER=clang++-3.7 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Debug"
-
-    - env: BENCHMARKS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Release"
-    - env: BENCHMARKS=true COMPILER=clang++-3.8 BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Debug"
-
+    - env: BENCHMARKS=true COMPILER=default BOOST_VERSION=default CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Release"
+      addons: *defaults
 
     ##########################################################################
     # Jobs that are allowed to fail
     ##########################################################################
-    # Clang trunk
-    # TODO: Update to actual Clang trunk when whitelisted in Travis
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default
-      addons:
-        apt:
-          packages: ["clang-3.8"]
-          sources: *sources
-
     # Boost trunk
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=trunk
-
-    # Xcode 7.3 (still beta as of March 2016)
-    - os: osx
-      env: UNIT_TESTS=true COMPILER=clang++ BOOST_VERSION=default
-      osx_image: xcode7.3
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=trunk
+      addons: *defaults
 
 
   allow_failures:
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=default
-    - env: UNIT_TESTS=true COMPILER=clang++-3.8 BOOST_VERSION=trunk
-    - osx_image: xcode7.3
+    - env: UNIT_TESTS=true COMPILER=default BOOST_VERSION=trunk
 
 
 install:
   ############################################################################
-  # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
+  # All the dependencies are installed in ${HOME}/deps/
   ############################################################################
-  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-  - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
+  - DEPS_DIR="${HOME}/deps"
+  - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
+
+  ############################################################################
+  # Setup default versions and override CXX set by Travis if needed
+  ############################################################################
+  - if [[ "${COMPILER}" == "default" ]]; then COMPILER=clang++-7; fi
+  - if [[ "${BOOST_VERSION}" == "default" ]]; then BOOST_VERSION=1.66.0; fi
+
+  - if [[ "${COMPILER}" != "" ]]; then export CXX=${COMPILER}; fi
+  - ${CXX} --version
 
   ############################################################################
   # Install Boost headers
   ############################################################################
-  - if [[ "${BOOST_VERSION}" == "default" ]]; then BOOST_VERSION="1.60.0"; fi
-  - if [[ "${BOOST_VERSION}" == "1.59.0" ]]; then BOOST_URL="http://sourceforge.net/projects/boost/files/boost/1.59.0/boost_1_59_0.tar.gz"; fi
-  - if [[ "${BOOST_VERSION}" == "1.60.0" ]]; then BOOST_URL="http://sourceforge.net/projects/boost/files/boost/1.60.0/boost_1_60_0.tar.gz"; fi
-  - if [[ "${BOOST_URL}" != "" ]]; then mkdir boost && travis_retry wget --quiet -O - ${BOOST_URL} | tar --strip-components=1 -xz -C boost; fi
-
   - |
-    if [[ "${BOOST_VERSION}" == "trunk" ]]; then
-      BOOST_URL="http://github.com/boostorg/boost.git"
-      travis_retry git clone --depth 1 --recursive --quiet ${BOOST_URL}
-      (cd boost && ./bootstrap.sh && ./b2 headers)
-    fi
+    if [[ "${BOOST_VERSION}" != "" ]]; then
+      BOOST_DIR=${DEPS_DIR}/boost-${BOOST_VERSION}
+      if [[ "${BOOST_VERSION}" == "trunk" ]]; then
+        BOOST_URL="http://github.com/boostorg/boost.git"
+        travis_retry git clone --depth 1 --recursive ${BOOST_URL} ${BOOST_DIR} || exit 1
+        (cd ${BOOST_DIR} && ./bootstrap.sh && ./b2 headers) || exit 1
+      else
+        BOOST_URL="https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/boost_${BOOST_VERSION//\./_}.tar.gz"
+        mkdir -p ${BOOST_DIR}
+        { travis_retry wget -O - ${BOOST_URL} | tar --strip-components=1 -xz -C ${BOOST_DIR}; } || exit 1
+      fi
+      # Make sure we don't conflict with the Hana shipped with Boost
+      rm -r ${BOOST_DIR}/boost/{hana,hana.hpp} || exit 1
 
-  - if [[ -d ${DEPS_DIR}/boost ]]; then CMAKE_OPTIONS+=" -DBOOST_ROOT=${DEPS_DIR}/boost"; fi
+      CMAKE_OPTIONS+=" -DBOOST_ROOT=${BOOST_DIR}"
+    fi
 
   ############################################################################
   # Install a recent CMake
   ############################################################################
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="http://www.cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz"
+      CMAKE_URL="https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz"
       mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
       export PATH=${DEPS_DIR}/cmake/bin:${PATH}
     else
-      brew install cmake
+      brew install cmake || brew upgrade cmake
     fi
+  - cmake --version
 
   ############################################################################
   # Install Boost.Build
   ############################################################################
   - |
     if [[ "${BOOST_BUILD}" == "true" ]]; then
-      (cd boost/tools/build && ./bootstrap.sh && ./b2 install --prefix=${DEPS_DIR}/b2)
+      (cd ${BOOST_DIR}/tools/build && ./bootstrap.sh && ./b2 install --prefix=${DEPS_DIR}/b2)
       export PATH=${DEPS_DIR}/b2/bin:${PATH}
+      b2 --version || true # b2 --version returns 1
     fi
 
   ############################################################################
-  # Install libc++ and libc++abi (on Linux only; Xcode uses libc++ by default)
+  # Install libc++ and libc++abi if needed
   ############################################################################
   - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" && "${STDLIB}" != "libstdc++" ]]; then
-      if   [[ "${COMPILER}" == "clang++-3.5" ]]; then LLVM_VERSION="3.5.2"
-      elif [[ "${COMPILER}" == "clang++-3.6" ]]; then LLVM_VERSION="3.6.2";
-      elif [[ "${COMPILER}" == "clang++-3.7" ]]; then LLVM_VERSION="3.7.1";
-      elif [[ "${COMPILER}" == "clang++-3.8" ]]; then LLVM_VERSION="3.8.0";
-      else                                            LLVM_VERSION="trunk"; fi
-
-      if [[ "${LLVM_VERSION}" != "trunk" ]]; then
-        LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"
-        LIBCXX_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxx-${LLVM_VERSION}.src.tar.xz"
-        LIBCXXABI_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxxabi-${LLVM_VERSION}.src.tar.xz"
-        TAR_FLAGS="-xJ"
-      else
-        LLVM_URL="https://github.com/llvm-mirror/llvm/archive/master.tar.gz"
-        LIBCXX_URL="https://github.com/llvm-mirror/libcxx/archive/master.tar.gz"
-        LIBCXXABI_URL="https://github.com/llvm-mirror/libcxxabi/archive/master.tar.gz"
-        TAR_FLAGS="-xz"
+    if [[ "${CXX%%+*}" == "clang" ]]; then
+      if   [[ "${CXX}" == "clang++-3.5" ]]; then LLVM_VERSION="3.5.2";
+      elif [[ "${CXX}" == "clang++-3.6" ]]; then LLVM_VERSION="3.6.2";
+      elif [[ "${CXX}" == "clang++-3.7" ]]; then LLVM_VERSION="3.7.1";
+      elif [[ "${CXX}" == "clang++-3.8" ]]; then LLVM_VERSION="3.8.1";
+      elif [[ "${CXX}" == "clang++-3.9" ]]; then LLVM_VERSION="3.9.1";
+      elif [[ "${CXX}" == "clang++-4.0" ]]; then LLVM_VERSION="4.0.1";
+      elif [[ "${CXX}" == "clang++-5.0" ]]; then LLVM_VERSION="5.0.2";
+      elif [[ "${CXX}" == "clang++-6.0" ]]; then LLVM_VERSION="6.0.1";
+      elif [[ "${CXX}" == "clang++-7" ]];   then LLVM_VERSION="7.0.1";
       fi
 
+      LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"
+      LIBCXX_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxx-${LLVM_VERSION}.src.tar.xz"
+      LIBCXXABI_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxxabi-${LLVM_VERSION}.src.tar.xz"
+
       mkdir -p llvm llvm/build llvm/projects/libcxx llvm/projects/libcxxabi
-      travis_retry wget --quiet -O - ${LLVM_URL} | tar --strip-components=1 ${TAR_FLAGS} -C llvm
-      travis_retry wget --quiet -O - ${LIBCXX_URL} | tar --strip-components=1 ${TAR_FLAGS} -C llvm/projects/libcxx
-      travis_retry wget --quiet -O - ${LIBCXXABI_URL} | tar --strip-components=1 ${TAR_FLAGS} -C llvm/projects/libcxxabi
-      (cd llvm/build && cmake .. -DCMAKE_INSTALL_PREFIX=${DEPS_DIR}/llvm/install -DCMAKE_CXX_COMPILER=clang++)
-      (cd llvm/build/projects/libcxx && make install -j2)
-      (cd llvm/build/projects/libcxxabi && make install -j2)
+      travis_retry wget -O - ${LLVM_URL} | tar --strip-components=1 -xJ -C llvm || exit 1
+      travis_retry wget -O - ${LIBCXX_URL} | tar --strip-components=1 -xJ -C llvm/projects/libcxx || exit 1
+      travis_retry wget -O - ${LIBCXXABI_URL} | tar --strip-components=1 -xJ -C llvm/projects/libcxxabi || exit 1
+      (cd llvm/build && cmake .. -DCMAKE_INSTALL_PREFIX=${DEPS_DIR}/llvm/install) || exit 1
+      (cd llvm/build/projects/libcxx && make install -j2) || exit 1
+      (cd llvm/build/projects/libcxxabi && make install -j2) || exit 1
 
       export CXXFLAGS="-isystem ${DEPS_DIR}/llvm/install/include/c++/v1"
       export LDFLAGS="-L ${DEPS_DIR}/llvm/install/lib -l c++ -l c++abi"
@@ -263,61 +252,64 @@ install:
   ############################################################################
   - |
     if [[ "${DOCUMENTATION}" == "true" ]]; then
-      DOXYGEN_URL="http://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.10.linux.bin.tar.gz"
+      DOXYGEN_URL="http://doxygen.nl/files/doxygen-1.8.15.linux.bin.tar.gz"
       mkdir doxygen && travis_retry wget --quiet -O - ${DOXYGEN_URL} | tar --strip-components=1 -xz -C doxygen
       export PATH=${DEPS_DIR}/doxygen/bin:${PATH}
+      doxygen --version
     fi
 
   ############################################################################
   # Install and use a more recent Ruby and install the gems for the benchmarks
   ############################################################################
-  - rvm use 2.1 --install --binary --fuzzy
-  - gem install ruby-progressbar tilt
-
-  ############################################################################
-  # Install tools to check for code formatting errors (run on OS X only)
-  ############################################################################
-  - if [[ "${CHECK_FORMATTING}" == "true" ]]; then brew install pcre vera++; fi
+  - |
+    if [[ "${BENCHMARKS}" == "true" ]]; then
+      rvm use 2.1 --install --binary --fuzzy
+      gem install ruby-progressbar tilt
+    fi
 
 
 before_script:
   ############################################################################
+  # When running with Boost.Build, put Hana in the Boost tree and make that
+  # the root of the project
+  ############################################################################
+  - |
+    if [[ "${BOOST_BUILD}" == "true" ]]; then
+      rm -rf "${BOOST_DIR}/libs/hana"
+      mv "${TRAVIS_BUILD_DIR}" "${BOOST_DIR}/libs/hana"
+      export TRAVIS_BUILD_DIR="${BOOST_DIR}/libs/hana"
+    fi
+
+  ############################################################################
   # Set the git identity (for pushing the documentation and the benchmarks)
   ############################################################################
   - git config --global user.name "Travis bot"
+  - git config --global user.email "<>"
 
   ############################################################################
   # Go back to the root of the project and setup the build directory
   ############################################################################
-  - cd ${TRAVIS_BUILD_DIR}
-  - (mkdir build && cd build && cmake .. -DCMAKE_CXX_COMPILER=${COMPILER} -DBOOST_HANA_ENABLE_WERROR=ON ${CMAKE_OPTIONS})
+  - cd "${TRAVIS_BUILD_DIR}"
+  - (mkdir build && cd build && cmake .. ${CMAKE_OPTIONS})
 
 
 script:
   ############################################################################
   # Check for common formatting errors.
   ############################################################################
-  - |
-    if [[ "${CHECK_FORMATTING}" == "true" ]]; then
-      # Find non-ASCII characters in headers
-      hpps=$(find include doc -name \*\.hpp)
-      cpps=$(find test example experimental -name \*\.cpp)
-      pcregrep --color='auto' -n "[\x80-\xFF]" ${hpps} ${cpps}
-      if [[ $? -ne 1 ]]; then exit 1; fi
-
-      # F001: Source files should not use the '\r' (CR) character
-      # L001: No trailing whitespace at the end of lines
-      # L002: Don't use tab characters
-      find include -name \*\.hpp | vera++ --rule F001 --rule L001 --rule L002 --error
-    fi
+  - sources=($(find include doc test example -name "*.hpp" -or -name "*.cpp"))
+  - LANG=POSIX grep '[^[:print:][:cntrl:]]' "${sources[@]}"; [[ $? == 1 ]] || exit 1 # Non-ASCII character
+  - LANG=POSIX grep $'\r'                   "${sources[@]}"; [[ $? == 1 ]] || exit 1 # '\r' (CR) character
+  - LANG=POSIX grep $'\t'                   "${sources[@]}"; [[ $? == 1 ]] || exit 1 # Tab character
+  - LANG=POSIX grep '[[:blank:]]$'          "${sources[@]}"; [[ $? == 1 ]] || exit 1 # Trailing whitespace
 
   ############################################################################
   # Only push the documentation when we're on master, otherwise just make sure
   # it builds properly.
   ############################################################################
   - |
-    if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" != "true" ]]; then
-      (cd build && make doc) || exit 1
+    if [[ "${DOCUMENTATION}" == "true" ]]; then
+      (cd build && ! make doc 2>&1 | grep -E "warning|error") || exit 1
 
       if [[ "${TRAVIS_PULL_REQUEST}" == "false" && "${TRAVIS_BRANCH}" == "master" ]]; then
         # Suppress output to avoid leaking the token when the command fails
@@ -328,17 +320,11 @@ script:
 
         pushd doc/html
         git add --all .
-        git commit --allow-empty -m "Update to ${TRAVIS_COMMIT:0:7}"
+        git commit --allow-empty -m "Update documentation to ${TRAVIS_COMMIT:0:7}"
         # Suppress output to avoid leaking the token
         travis_retry git push origin gh-pages &>/dev/null
         popd
       fi
-    fi
-
-  - |
-    if [[ "${DOCUMENTATION}" == "true" && "${BOOST_BUILD}" == "true" ]]; then
-      touch Jamroot
-      (cd doc && b2)
     fi
 
   ############################################################################
@@ -380,19 +366,30 @@ script:
   # Build and run the unit tests and examples.
   ############################################################################
   - |
-    if [[ "${UNIT_TESTS}" == "true" && "${BOOST_BUILD}" != "true" ]]; then
-      export CTEST_PARALLEL_LEVEL=2 # Run unit tests on two cores
-      (cd build && make check -j2 -k)
+    if [[ "${UNIT_TESTS}" == "true" ]]; then
+      (cd build && make tests examples -j2 -k) &&
+      if [[ "${ENABLE_MEMCHECK}" == "true" ]]; then
+        (cd build && ctest --output-on-failure -j2 -D ExperimentalMemCheck)
+      else
+        (cd build && ctest --output-on-failure -j2)
+      fi
     fi
 
+  ############################################################################
+  # Special Boost.Build job
+  ############################################################################
   - |
-    if [[ "${UNIT_TESTS}" == "true" && "${BOOST_BUILD}" == "true" ]]; then
-      touch Jamroot
-      echo "using clang : : ${COMPILER} ;" > project-config.jam
+    if [[ "${BOOST_BUILD}" == "true" ]]; then
+      # Build documentation
+      (cd doc && b2) || exit 1
+      if [[ ! -d doc/html ]]; then exit 1; fi
+
+      # Build tests
+      echo "using clang : : ${CXX} ;" > project-config.jam
       if [[ "${LDFLAGS}" == "" ]]; then
-        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" include="${DEPS_DIR}/boost")
+        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" include="${BOOST_DIR}") || exit 1
       else
-        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" linkflags="${LDFLAGS}" include="${DEPS_DIR}/boost")
+        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" include="${BOOST_DIR}" linkflags="${LDFLAGS}") || exit 1
       fi
     fi
 
