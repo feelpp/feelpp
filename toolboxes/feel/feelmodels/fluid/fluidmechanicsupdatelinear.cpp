@@ -139,7 +139,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
             {
                 // case with steady Stokes
                 CHECK( dynamicViscosity.isNewtonianLaw() ) << "not allow with non newtonian law";
-                auto myViscosity = Feel::FeelModels::fluidMecViscosity( zero<nDim,nDim>(),*this->materialProperties(),matName);
+                auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
