@@ -32,14 +32,20 @@
 
 #include <boost/mpl/equal.hpp>
 
-#include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/modelcore/markermanagement.hpp>
-#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/ned1h.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
+#include <feel/feelfilters/exporter.hpp>
+
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/maxwell/maxwellpropertiesdescription.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -73,7 +79,11 @@ public:
 
     // function space magnetic-potential
     // typedef BasisPotentialType basis_magneticpotential_type;
+#if MAXWELL_H1
+    using basis_magneticpotential_type = Lagrange<1, Vectorial, Continuous>;
+#else
     using basis_magneticpotential_type = Nedelec<0, NedelecKind::NED1>;
+#endif
     static const uint16_type nOrderPolyMagneticPotential = basis_magneticpotential_type::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_magneticpotential_type> > space_magneticpotential_type;
     typedef std::shared_ptr<space_magneticpotential_type> space_magneticpotential_ptrtype;
@@ -82,15 +92,9 @@ public:
     typedef typename space_magneticpotential_type::element_external_storage_type element_magneticpotential_external_storage_type;
 
     // function space magnetic-field
-    // typedef Lagrange<nOrderPolyMagneticPotential-1, Vectorial,Discontinuous/*Continuous*/,PointSetFekete> basis_magneticfield_type;
-// #if FEELPP_DIM==3
     using basis_magneticfield_type = typename mpl::if_<mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
                                                        RaviartThomas<0>,
                                                        Lagrange<0, Scalar, Discontinuous> >::type;
-    // using basis_magneticfield_type = RaviartThomas<0>;
-// #else
-//     using basis_magneticfield_type = Lagrange<0, Scalar, Discontinuous>;
-// #endif
     typedef FunctionSpace<mesh_type, bases<basis_magneticfield_type> > space_magneticfield_type;
     typedef std::shared_ptr<space_magneticfield_type> space_magneticfield_ptrtype;
     typedef typename space_magneticfield_type::element_type element_magneticfield_type;
@@ -111,9 +115,12 @@ public:
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
-    // context for evaluation
-    typedef typename space_magneticpotential_type::Context context_magneticpotential_type;
-    typedef std::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_magneticpotential_type,space_magneticfield_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
+    // // context for evaluation
+    // typedef typename space_magneticpotential_type::Context context_magneticpotential_type;
+    // typedef std::shared_ptr<context_magneticpotential_type> context_magneticpotential_ptrtype;
 
     using map_dirichlet_field = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<3> >,
                                                    map_vector_field<nDim>,
@@ -123,39 +130,82 @@ public:
     //___________________________________________________________________________________//
     // constructor
     Maxwell( std::string const& prefix,
-             bool buildMesh = true,
+             std::string const& keyword = "maxwell",
              worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
              std::string const& subPrefix = "",
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"MaxwellMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) override;
+
 private :
     void loadParameterFromOptionsVm();
-    void createMesh();
+    void initMesh();
     void initBoundaryConditions();
     template<typename convex = convex_type>
     void initDirichlet(std::enable_if_t<convex::nDim==2>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getScalarFields<nDim>( "magnetic-potential", "Dirichlet" ); }
     template<typename convex = convex_type>
     void initDirichlet(std::enable_if_t<convex::nDim==3>* = nullptr) { this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "magnetic-potential", "Dirichlet" ); }
-    void initPostProcess();
+    void initPostProcess() override;
+
+    template <typename FieldMagneticPotentialType>
+    constexpr auto symbolsExprField( FieldMagneticPotentialType const& v ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr("magnetic_A",idv(v) ) );
+        }
+
+    template <typename SymbExprType>
+    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
+
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     void initAlgebraicFactory();
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    void exportFields( double time );
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    void exportMeasures( double time );
-    //void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
-    bool hasPostProcessFieldExported( std::string const& key ) const { return M_postProcessFieldExported.find( key ) != M_postProcessFieldExported.end(); }
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    template <typename TupleFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    measure_points_evaluation_ptrtype& measurePointsEvaluation() { return M_measurePointsEvaluation; }
 
     void updateParameterValues();
+
+    auto allFields() const
+        {
+            return hana::make_tuple( std::make_pair( "magnetic-potential",this->fieldMagneticPotentialPtr() ),
+                                     std::make_pair( "magnetic-field",this->fieldMagneticFieldPtr() ),
+                                     std::make_pair( "magnetic-permeability",M_maxwellProperties->fieldMagneticPermeabilityPtr() )
+                                     );
+        }
+
+    template <typename FieldMagneticPotentialType>
+    /*constexpr*/auto symbolsExpr( FieldMagneticPotentialType const& v ) const
+        {
+            auto seField = this->symbolsExprField( v );
+            auto seFit = this->symbolsExprFit( seField );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+        }
+    auto symbolsExpr() const { return this->symbolsExpr( this->fieldMagneticPotential() ); }
+
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( this->fieldMagneticPotential() ); }
+
+    template <typename SymbExprType>
+    auto symbolsExprMaterial( SymbExprType const& se ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_type;
+            std::vector<std::pair<std::string,_expr_type>> matPropSymbs;
+            for ( auto const& [_matname, _expr] : this->maxwellProperties()->magneticPermeabilityByMaterial() )
+            {
+                matPropSymbs.push_back( std::make_pair( (boost::format("magnetic_%1%_mu")%_matname).str(), expr( _expr.expr(), se ) ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbs ) );
+        }
 
     //___________________________________________________________________________________//
 
@@ -182,26 +232,37 @@ public :
     // apply assembly and solver
     void solve();
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
-    void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename SymbolsExpr>
+    void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
+    // void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename SymbolsExpr>
+    void updateLinearPDEWeakBC( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr, hana::int_<3> ) const;
+    template <typename SymbolsExpr>
+    void updateLinearPDEWeakBC( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr, hana::int_<2> ) const;
+    // void updateLinearPDEStrongDirichletBC( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
 
     //___________________________________________________________________________________//
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            this->maxwellProperties()->updateFields( symbolsExpr );
+            this->updateMagneticField();
+        }
     void updateMagneticField();
-
-    //___________________________________________________________________________________//
-    // template<typename T, typename convex = convex_type>
-    // auto vcurl(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curl(f)) { return curl(f); }
-    // template<typename T, typename convex = convex_type>
-    // auto vcurlt(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlt(f)) { return curlt(f); }
-    // template<typename T, typename convex = convex_type>
-    // auto vcurlv(T f, std::enable_if_t<convex::nDim==3>* = nullptr) const -> decltype(curlv(f)) { return curlv(f); }
-    // template<typename T, typename convex = convex_type>
-    // auto vcurl(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlx(f)) { return curlx(f); }
-    // template<typename T, typename convex = convex_type>
-    // auto vcurlt(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxt(f)) { return curlxt(f); }
-    // template<typename T, typename convex = convex_type>
-    // auto vcurlv(T f, std::enable_if_t<convex::nDim==2>* = nullptr) const -> decltype(curlxv(f)) { return curlxv(f); }
+    template<typename SymbolsExpr>
+    void updateMagneticField( SymbolsExpr const& symbolsExpr )
+        {
+            auto const& v = this->fieldMagneticPotential();
+            for ( auto const& rangeData : this->maxwellProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& range = rangeData.second;
+                auto const& magneticPermeability = this->maxwellProperties()->magneticPermeability( matName );
+                auto muExpr = expr( magneticPermeability.expr(), symbolsExpr );
+                M_fieldMagneticField->on(_range=range, _expr=curlv(v)/muExpr);
+            }
+        }
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -228,18 +289,72 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
-    // start dof index fields in matrix (temperature,maxwell-potential,...)
-    std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
+    // std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
+    // // start dof index fields in matrix (temperature,maxwell-potential,...)
+    // std::map<std::string,size_type> M_startBlockIndexFieldsInMatrix;
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessUserFieldExported;
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
+    // std::set<std::string> M_postProcessFieldExported;
+    // std::set<std::string> M_postProcessUserFieldExported;
 
 }; // class Maxwell
 
+template< typename ConvexType>
+template <typename SymbolsExpr>
+void
+Maxwell<ConvexType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("Maxwell","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    auto fields = this->allFields();
+    this->executePostProcessExports( M_exporter, time, fields );
+    this->executePostProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessSave( invalid_uint32_type_value, fields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Maxwell","exportResults", "finish");
+}
+
+
+template< typename ConvexType>
+template <typename TupleFieldsType,typename SymbolsExpr>
+void
+Maxwell<ConvexType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
+
+
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/maxwell/maxwellassembly.hpp>
 
 #endif // FEELPP_TOOLBOXES_MAXWELL_HPP

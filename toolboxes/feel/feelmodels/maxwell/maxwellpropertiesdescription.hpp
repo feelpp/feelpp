@@ -91,6 +91,11 @@ public :
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial(matName) ) << "no material with name " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
@@ -136,11 +141,14 @@ public :
             *ostr << "\n     -- number of materials : " << matNames.size();
             for ( std::string const& matName : matNames)
             {
-                *ostr << "\n     -- [" << matName << "] magnetic permeability : ";
-                if ( this->magneticPermeability(matName).isConstant() )
-                    *ostr << this->magneticPermeability(matName).value();
-                else
-                    *ostr << str( this->magneticPermeability(matName).expr().expression() );
+                if ( this->magneticPermeability( matName ).hasExpr() )
+                {
+                    *ostr << "\n     -- [" << matName << "] magnetic permeability : ";
+                    if ( this->magneticPermeability(matName).isConstant() )
+                        *ostr << this->magneticPermeability(matName).value();
+                    else
+                        *ostr << str( this->magneticPermeability(matName).expr().expression() );
+                }
             }
             return ostr;
         }
@@ -162,6 +170,36 @@ public :
         {
             for ( auto & prop : M_magneticPermeabilityByMaterial )
                 prop.second.setParameterValues( mp );
+        }
+
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            this->updateMagneticPermeabilityField( symbolsExpr );
+        }
+
+    template <typename SymbolsExpr>
+    void updateMagneticPermeabilityField( SymbolsExpr const& symbolsExpr )
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                this->updateMagneticPermeabilityField( matName, symbolsExpr );
+            }
+        }
+
+    template <typename SymbolsExpr>
+    void updateMagneticPermeabilityField( std::string const& matName, SymbolsExpr const& symbolsExpr )
+        {
+            if  ( !M_fieldMagneticPermeability )
+                return;
+            if ( !this->hasMaterial( matName ) )
+                return;
+            auto const& range = this->rangeMeshElementsByMaterial( matName );
+            auto const& magneticPermeability = this->magneticPermeability( matName );
+
+            auto sigmaExpr = expr( magneticPermeability.expr(), symbolsExpr );
+            M_fieldMagneticPermeability->on(_range=range,_expr=sigmaExpr );
         }
 
 

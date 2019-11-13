@@ -1,23 +1,18 @@
-// -*- mode: javascript -*-
 {
     "Name":"testMaxwell",
     "ShortName":"testMaxwell",
+    "Models":
+    {
+        "equations":"regularized",
+        "a_expr":"{(1-y^2),(1-x^2)}:x:y",
+        "b_expr":"-2*x+2*y:x:y"
+    },
     "Materials":
     {
         "omega":
         {
-            "mu":"1"
-        }
-    },
-    "Functions":
-    {
-        "A_exact":
-        {
-            "expr": "{(1-y^2),(1-x^2)}:x:y"
-        },
-        "B_exact":
-        {
-            "expr": "-2*x+2*y:x:y"
+            "mu":"1",
+            "physics":"magnetostatic"
         }
     },
     "BoundaryConditions":
@@ -33,21 +28,15 @@
             },
             "Dirichlet":
             {
-                "side1":
+                "infinity":
                 {
-                    "expr":"0"
-                },
-                "side2":
-                {
-                    "expr":"0"
-                },
-                "side3":
-                {
-                    "expr":"0"
-                },
-                "side4":
-                {
-                    "expr":"0"
+                    "markers":
+                    {
+                        "name":"side%1%",
+                        "index1":"1:5"
+                    },
+                    "expr":"0",
+                    "material":"omega"
                 }
             }
         }
