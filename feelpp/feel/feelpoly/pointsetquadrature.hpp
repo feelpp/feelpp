@@ -162,6 +162,7 @@ public :
         {
             if ( this == &q )
                 return *this;
+            super::operator=( q );
             M_order = q.M_order;
             M_name = q.M_name;
             M_quad = *IMFactory<T>::instance().createObject( M_name );
@@ -171,6 +172,8 @@ public :
             this->M_w.resize( M_quad.numberOfPoints() );
             this->M_points = q.M_points;
             this->M_w = q.M_w;
+            M_prod.resize( M_quad.numberOfPoints() );
+            M_exprq.resize( M_quad.numberOfPoints() );
             M_w_sum = q.M_w_sum;
 
             return *this;
