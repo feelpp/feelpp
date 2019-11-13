@@ -179,13 +179,13 @@ protected:
 public:
 
     // constructor
-    MixedPoisson( std::string const& prefix = "mixedpoisson",
+    MixedPoisson( std::string const& prefix = "hdg.poisson",
                   worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
                   ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
-    static self_ptrtype New( std::string const& prefix = "mixedpoisson",
+    static self_ptrtype New( std::string const& prefix = "hdg.poisson",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
@@ -320,7 +320,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleFluxRHS( Expr<ExprT> ex
     else
         blf(0_c) += integrate( _range=markedelements(M_mesh,marker),
                               _expr=inner(expr,id(v)) );
-    toc("assembleFluxRhs");
+    toc("assembleFluxRhs", this->verbose() || FLAGS_v > 0);
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -334,14 +334,14 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
     if ( marker.empty() )
     {
         blf(1_c) += integrate( _range=elements(M_mesh),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
     else
     {
         blf(1_c) += integrate( _range=markedelements(M_mesh,marker),
-                              _expr=-inner(expr,id(w)) );
+                              _expr=inner(expr,id(w)) );
     }
-    toc("assemblePotentialRhs");
+    toc("assemblePotentialRhs", this->verbose() || FLAGS_v > 0);
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -356,7 +356,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> ex
     // <g_D, mu>_Gamma_D
     blf(2_c) += integrate(_range=markedfaces(M_mesh,marker),
                           _expr=id(l)*expr);
-    toc("assembleRhsDirichlet");
+    toc("assembleRhsDirichlet", this->verbose() || FLAGS_v > 0);
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -371,7 +371,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr
     // <g_N,mu>_Gamma_N
     blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
                           _expr=id(l)*expr);
-    toc("assembleRhsNeumann");
+    toc("assembleRhsNeumann", this->verbose() || FLAGS_v > 0);
 }
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -386,7 +386,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
     // <g_interface,mu>_Gamma_N
     blf(2_c) += integrate( _range=markedelements(M_Mh->mesh(), marker),
                           _expr=id(l)*expr);
-    toc("assembleRhsInterface");
+    toc("assembleRhsInterface", this->verbose() || FLAGS_v > 0);
 }
 
 /*
@@ -474,7 +474,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     // <g_R^2,mu>_Gamma_R
     blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
                            _expr=id(l)*expr2);
-    toc("assembleRobin");
+    toc("assembleRobin", this->verbose() || FLAGS_v > 0);
 }
 
 } // Namespace FeelModels

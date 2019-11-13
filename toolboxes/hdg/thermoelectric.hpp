@@ -69,8 +69,8 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::ThermoElectricHDG( std::string prefix,
                                                            std::string prefixElectro )
     :
     M_prefix(prefix),
-    M_prefixThermo(prefixThermo),
-    M_prefixElectro(prefixElectro)
+    M_prefixThermo("hdg.poisson."+prefixThermo),
+    M_prefixElectro("hdg.poisson."+prefixElectro)
 {
     tic();
     M_thermo = thermo_type::New(M_prefixThermo);
@@ -88,6 +88,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     auto electroMat = M_electro->modelProperties().materials();
     auto thermoMat = M_thermo->modelProperties().materials();
 
+    auto joule = M_electro->potentialSpace()->element();
+
+    M_electro->setCstMatrixToZero();
+    M_electro->setVectorToZero();
+    M_thermo->setCstMatrixToZero();
+    M_thermo->setVectorToZero();
+
     tic();
     M_electro->assembleCstPart();
     toc("assembleCstElectro");
@@ -97,6 +104,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
 
     // first iteration
 #ifndef USE_SAME_MAT
+    Feel::cout << tc::red << "WARNING copy cst part called !!!" << tc::reset << std::endl;
     M_electro->copyCstPart();
 #endif
     M_electro->updateConductivityTerm( false );
@@ -106,7 +114,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
 
+
 #ifndef USE_SAME_MAT
+    Feel::cout << tc::red << "WARNING copy cst part called !!!" << tc::reset << std::endl;
     M_thermo->copyCstPart();
 #endif
     M_thermo->updateConductivityTerm( false );
@@ -116,7 +126,10 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         std::string marker = pairMat.first;
         auto mat = pairMat.second;
         auto cond = mat.getScalar(soption(prefixvm(M_prefixElectro,"conductivity_json")));
-        auto rhs = inner(idv(M_current))/cond;
+        auto rhs = inner(idv(M_current),idv(M_current))/cond;
+        joule += vf::project( _space=M_electro->potentialSpace(),
+                              _range=markedelements(M_mesh,marker),
+                              _expr=rhs );
         M_thermo->assemblePotentialRHS( rhs, marker);
     }
     M_thermo->solve();
@@ -234,10 +247,13 @@ ThermoElectricHDG<Dim, OrderT, OrderV>::run()
         toc("loop");
     } // Picard loop
 
+    M_electro->exportResults();
+    M_thermo->exportResults();
     auto e = exporter( M_mesh );
     e->add("potential", M_potential);
     e->add("current", M_current);
     e->add("temperature", M_temperature);
     e->add("tempflux", M_tempflux);
+    e->add("joule", joule);
     e->save();
 }

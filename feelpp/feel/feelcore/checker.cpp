@@ -21,6 +21,7 @@
 //! @date 24 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelmath/polyfit.hpp>
@@ -103,8 +104,11 @@ hp::hp( double h, int p )
 }
 
 Checks
-hp::operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol, double etol )
+hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, double otol, double etol )
 {
+    std::string solution = sol;
+    boost::trim_right_if(solution,boost::is_any_of(":"));
+    boost::erase_all(solution, " ");   
     // check that we have some data on solution for the specific order
     if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {

@@ -69,7 +69,7 @@ range( T && beg, T && end, T && step )
     T n{beg};
     std::generate(v.begin(), v.end(), [&n,&step]{ n+=step; return n-step; }); 
 
-    return std::move(v);
+    return v;
 }
 //!
 //! @ingroup Core

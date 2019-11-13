@@ -29,9 +29,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solve()
     tic();
     Feel::cout << "Start solving" << std::endl;
     bbf.solve(_solution=U, _rhs=blf, _condense=M_useSC, _name=prefix());
-    toc("MixedPoisson : static condensation");
+    toc("MixedPoisson : static condensation", FLAGS_v > 0);
 
-    toc("solve");
+    toc("solve", FLAGS_v > 0);
 
 
 
@@ -59,10 +59,10 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleAll()
     M_F->zero();
     tic();
     this->assembleCstPart();
-    toc("assembleCstPart");
+    toc("assembleCstPart", FLAGS_v > 0);
     tic();
     this->assembleNonCstPart();
-    toc("MixedPoisson::assembleAll");
+    toc("MixedPoisson::assembleAll", FLAGS_v > 0);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -134,7 +134,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
 
     // -(p,div(v))_Omega
-    bbf( 0_c, 1_c ) = integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
+    bbf( 0_c, 1_c ) += integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
 
     // <phat,v.n>_Gamma\Gamma_I
     bbf( 0_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
@@ -143,25 +143,25 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
                                  _expr=idt(phat)*normal(v));
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=- (id(w)*divt(u)));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=id(w)*divt(u));
 
 
     // <tau p, w>_Gamma
     bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=-tau_constant *
+                                 _expr=tau_constant *
                                  ( leftfacet( idt(p))*leftface(id(w)) +
                                    rightfacet( idt(p))*rightface(id(w) )));
     bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
-                                 _expr=-(tau_constant * id(w)*idt(p)));
+                                 _expr=tau_constant * id(w)*idt(p));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
     bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
-                                 _expr=tau_constant * idt(phat) *
+                                 _expr=-tau_constant * idt(phat) *
                                  ( leftface( id(w) )+
                                    rightface( id(w) )));
     bbf( 1_c, 2_c ) += integrate(_range=gammaMinusIntegral,
-                                 _expr=tau_constant * idt(phat) * id(w) );
+                                 _expr=-tau_constant * idt(phat) * id(w) );
 
 
     // <j.n,mu>_Omega/Gamma
@@ -186,19 +186,19 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleNonCstPart()
 {
     tic();
     this->copyCstPart();
-    toc("copyCstPart");
+    toc("copyCstPart", FLAGS_v > 0);
 
     modelProperties().parameters().updateParameterValues();
 
     tic();
     this->updateConductivityTerm();
-    toc("updateConductivityTerm");
+    toc("updateConductivityTerm", FLAGS_v > 0);
     tic();
     this->assembleRHS();
-    toc("assembleRHS");
+    toc("assembleRHS", FLAGS_v > 0);
     tic();
     this->assembleRhsBoundaryCond();
-    toc("assembleRhsBoundarycond");
+    toc("assembleRhsBoundarycond", FLAGS_v > 0);
 
 }
 
@@ -582,7 +582,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string marker
 
     // <I_target,m>_Gamma_I
     blf(3_c,i) += integrate( _range=markedfaces(M_mesh,marker), _expr=g*id(nu)/meas );
-    toc("assembleRhsIbc");
+    toc("assembleRhsIbc", FLAGS_v > 0);
 
 }
 
@@ -600,7 +600,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleDirichlet( std::string marker)
     // <phat, mu>_Gamma_D
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=idt(phat) * id(l) );
-    toc("assembleDirichlet");
+    toc("assembleDirichlet", FLAGS_v > 0);
 }
 
 
@@ -638,7 +638,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleNeumann( std::string marker)
     // <-tau phat, mu>_Gamma_N
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=-tau_constant * idt(phat) * id(l) );
-    toc("assembleNeumann");
+    toc("assembleNeumann", FLAGS_v > 0);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -689,9 +689,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr= idt(uI) * normal(u) );
 
-    // <lambda, tau w>_Gamma_I
+    // -<lambda, tau w>_Gamma_I
     bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
-                                        _expr=tau_constant * idt(uI) * id(w) );
+                                        _expr=-tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
     bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=normalt(u) * id(nu) );
@@ -705,7 +705,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
     bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
                                         _expr=-tau_constant * id(nu) *idt(uI) );
 
-    toc("assembleIbx");
+    toc("assembleIbc",FLAGS_v>0);
 }
 
 

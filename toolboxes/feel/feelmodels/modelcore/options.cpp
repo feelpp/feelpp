@@ -87,7 +87,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
     Feel::po::options_description appliBaseOptions("Application Base options");
     appliBaseOptions.add_options()
         (prefixvm(prefix,"filename").c_str(), Feel::po::value<std::string>()->default_value( "" ), "json file describing model properties" )
-        (prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
+        //(prefixvm(prefix,"mesh.filename").c_str(), Feel::po::value< std::string >(), "input mesh or geo file")
         (prefixvm(prefix,"geomap").c_str(), Feel::po::value< std::string >()->default_value("opt"), "geomap strategy : ho, opt ")
 
         ( prefixvm( prefix, "ts.order" ).c_str(), Feel::po::value<int>()->default_value( 1 ), "time order" )
@@ -96,6 +96,7 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         ;
 
     return appliBaseOptions
+        .add( mesh_options( prefix ) )
         .add( gmsh_options( prefix ) )
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) )
@@ -372,6 +373,7 @@ thermoElectric_options(std::string const& prefix)
     Feel::po::options_description thermoElectricOptions("ThermoElectric options");
 
     thermoElectricOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "thermoelectric solver : automatic, Newton, Picard")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-thermo-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-thermo-electric")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-heat").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-heat")
         (prefixvm(prefix,"solver-newton.initial-guess.use-linear-electric").c_str(), Feel::po::value<bool>()->default_value( false ), "solver-newton.initial-guess.use-linear-electric")

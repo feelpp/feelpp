@@ -58,7 +58,7 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.scale") )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale") )
       ( straighten,          *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.straighten") )
       ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
       ( update,          *( boost::is_integral<mpl::_> ), 0 )
@@ -139,9 +139,7 @@ BOOST_PARAMETER_FUNCTION(
         // need to replace physical_region by elementary_region while reading
         if ( physical_are_elementary_regions )
             import.setElementRegionAsPhysicalRegion( physical_are_elementary_regions );
-        import.setScaling( scale );
         import.setRespectPartition( respect_partition );
-
         if ( rebuild_partitions && partitions > 1 )
         {
             _mesh_ptrtype _meshSeq = std::make_shared<_mesh_type>( Environment::worldCommSeqPtr() );
@@ -149,7 +147,7 @@ BOOST_PARAMETER_FUNCTION(
             _meshSeq->components().reset();
             _meshSeq->components().set( size_type(MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED) );
             _meshSeq->updateForUse();
-
+#if defined(FEELPP_HAS_HDF5)
             using io_t = PartitionIO<_mesh_type>;
             if ( fnamePartitioned.empty() )
                 fnamePartitioned = (fs::current_path() / fs::path( filename_with_path ).filename().replace_extension( ".json" )).string();
@@ -159,10 +157,12 @@ BOOST_PARAMETER_FUNCTION(
             io_t io( fnamePartitioned );
             std::vector<elements_reference_wrapper_t<_mesh_type>> partitionByRange;
             io.write( partitionMesh( _meshSeq, partitions, partitionByRange ) );
+#endif
         }
         else
         {
             tic();
+            import.setScaling( scale );
             _mesh->accept( import );
             toc("loadGMSHMesh.readmesh", FLAGS_v>0);
 
@@ -173,13 +173,13 @@ BOOST_PARAMETER_FUNCTION(
             toc("loadGMSHMesh.update", FLAGS_v>0);
         }
     }
-
+#if defined(FEELPP_HAS_HDF5)
     if ( rebuild_partitions && partitions > 1 )
     {
         mpi::broadcast( worldcomm->globalComm(), fnamePartitioned, worldcomm->masterRank() );
-        _mesh->loadHDF5( fnamePartitioned, update );
+        _mesh->loadHDF5( fnamePartitioned, update, scale );
     }
-
+#endif
     if ( straighten && _mesh_type::nOrder > 1 )
         return straightenMesh( _mesh, worldcomm->subWorldCommPtr() );
 

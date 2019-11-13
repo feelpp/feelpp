@@ -208,6 +208,10 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        void setFunctionLinearAssembly( function_assembly_linear_type const& func ) { M_functionLinearAssembly = func; }
+        void setFunctionJacobianAssembly( function_assembly_jacobian_type const& func ) { M_functionJacobianAssembly = func; }
+        void setFunctionResidualAssembly( function_assembly_residual_type const& func ) { M_functionResidualAssembly = func; }
+
         void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
         void addFunctionLinearDofElimination( function_assembly_linear_type const& func, std::string const& key = "" );
         void addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
@@ -257,6 +261,10 @@ namespace FeelModels
         bool M_hasBuildLinearSystemCst;
 
         ModelAlgebraic::DataUpdateBase M_dataInfos;
+
+        function_assembly_linear_type M_functionLinearAssembly;
+        function_assembly_jacobian_type M_functionJacobianAssembly;
+        function_assembly_residual_type M_functionResidualAssembly;
 
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearDofElimination;

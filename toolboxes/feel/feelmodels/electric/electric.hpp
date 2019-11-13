@@ -119,21 +119,23 @@ private :
     void initBoundaryConditions();
     void initPostProcess() override;
 
-    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
+    template <typename FieldElectricPotentialType>
+    constexpr auto symbolsExprField( FieldElectricPotentialType const& v, hana::int_<2> /**/ ) const
         {
-            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(v) ),
+                                          symbolExpr("electric_dxP",dxv(v) ),
+                                          symbolExpr("electric_dyP",dyv(v) ),
+                                          symbolExpr("electric_dnP",dnv(v) )
                                           );
         }
-    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
+    template <typename FieldElectricPotentialType>
+    constexpr auto symbolsExprField( FieldElectricPotentialType const& v, hana::int_<3> /**/ ) const
         {
-            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dxP",dxv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dyP",dyv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dzP",dzv(this->fieldElectricPotential()) ),
-                                          symbolExpr("electric_dnP",dnv(this->fieldElectricPotential()) )
+            return Feel::vf::symbolsExpr( symbolExpr("electric_P",idv(v) ),
+                                          symbolExpr("electric_dxP",dxv(v) ),
+                                          symbolExpr("electric_dyP",dyv(v) ),
+                                          symbolExpr("electric_dzP",dzv(v) ),
+                                          symbolExpr("electric_dnP",dnv(v) )
                                           );
         }
     //auto symbolsExprFit() const { return symbolsExprFit( this->symbolsExprField() ); }
@@ -169,16 +171,19 @@ public :
                                      );
         }
 
-    template <typename SymbExprType>
-    /*constexpr*/auto symbolsExpr( SymbExprType const& se ) const
+    template <typename FieldElectricPotentialType>
+    /*constexpr*/auto symbolsExpr( FieldElectricPotentialType const& v ) const
         {
-            auto seFit = this->symbolsExprFit( se );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( se, seFit ) );
-            return Feel::vf::symbolsExpr( se, seFit, seMat );
+            auto seField = this->symbolsExprField( v );
+            auto seFit = this->symbolsExprFit( seField );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
-    auto symbolsExpr() const { return this->symbolsExpr( this->symbolsExprField() ); }
+    auto symbolsExpr() const { return this->symbolsExpr( this->fieldElectricPotential() ); }
 
-    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( this->fieldElectricPotential() ); }
+    template <typename FieldElectricPotentialType>
+    constexpr auto symbolsExprField( FieldElectricPotentialType const& v ) const { return this->symbolsExprField( v, hana::int_<nDim>() ); }
 
     template <typename SymbExprType>
     auto symbolsExprMaterial( SymbExprType const& se ) const
@@ -222,12 +227,18 @@ public :
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename SymbolsExpr>
+    void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
+    template <typename SymbolsExpr>
+    void updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;
+    template <typename SymbolsExpr>
+    void updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 
@@ -270,10 +281,6 @@ private :
                 M_fieldJoulesLosses->on(_range=range, _expr=sigmaExpr*inner(gradv(v)) );
             }
         }
-
-    void updateLinearPDEWeakBC( sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart ) const;
-    void updateJacobianWeakBC( element_electricpotential_external_storage_type const& v, sparse_matrix_ptrtype& J, bool buildCstPart ) const;
-    void updateResidualWeakBC( element_electricpotential_external_storage_type const& v, vector_ptrtype& R, bool buildCstPart ) const;
 
 private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
@@ -359,5 +366,7 @@ Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time
 
 } // namespace FeelModels
 } // namespace Feel
+
+#include <feel/feelmodels/electric/electricassembly.hpp>
 
 #endif // FEELPP_TOOLBOXES_ELECTRIC_HPP

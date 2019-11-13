@@ -28,6 +28,10 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()
 
+if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
+  feelpp_add_fmu( test3d0d_nonlinearR CLASS test3d0d_nonlinearR SRCS test3d0d_nonlinearR/test3d0d_nonlinearR.mo  test3d0d_nonlinearR/nonlinearResistor.mo  test3d0d_nonlinearR/voltage_nonlinearTest3d0d.mo )
+endif()
+
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
@@ -45,19 +49,14 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL
   )
 
-feelpp_add_application( hdg_poroelastic
-  SRCS poroelastic_main.cpp
-  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-  INSTALL
-  )
-
-#feelpp_add_application(
-#  hdg_thermoelectricelasticity
-#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
-#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
-#  )
-
+if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
+feelpp_add_application( hdg_coupledpoisson
+  SRCS coupledmixedpoisson_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
+  INSTALL )
+endif()
 
 feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(thermoelectric PREFIX hdg CATEGORY HDG)
+feelpp_add_testcase(test3d0d_nonlinearR )

@@ -84,6 +84,11 @@
                         "type":"integrate",
                         "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
                         "markers":"V1"
+                    },
+                    "temp":
+                    {
+                        "type":["max","mean","min"],
+                        "field":"temperature"
                     }
                 },
                 "Points":
