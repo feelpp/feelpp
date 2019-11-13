@@ -106,9 +106,9 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
+    std::map<std::string,ModelBoundaryCondition> boundaryConditions(std::string field, std::string type) const;
 private:
     void setup();
-
     pt::ptree M_pt;
 };
 
