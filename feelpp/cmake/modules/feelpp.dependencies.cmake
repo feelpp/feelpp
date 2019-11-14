@@ -1063,8 +1063,10 @@ if ( FEELPP_ENABLE_VTK )
         PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
 
     if(ParaView_FOUND)
+      if ( PARAVIEW_USE_FILE )
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
+      endif()
         # trying to load a minimal vtk
         IF (TARGET vtkParallelMPI)
         FIND_PACKAGE(ParaView QUIET COMPONENTS vtkParallelMPI NO_MODULE

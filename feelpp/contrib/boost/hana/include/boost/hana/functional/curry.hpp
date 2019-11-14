@@ -2,7 +2,7 @@
 @file
 Defines `boost::hana::curry`.
 
-@copyright Louis Dionne 2013-2016
+@copyright Louis Dionne 2013-2017
 Distributed under the Boost Software License, Version 1.0.
 (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
  */
@@ -11,6 +11,7 @@ Distributed under the Boost Software License, Version 1.0.
 #define BOOST_HANA_FUNCTIONAL_CURRY_HPP
 
 #include <boost/hana/config.hpp>
+#include <boost/hana/detail/decay.hpp>
 #include <boost/hana/functional/apply.hpp>
 #include <boost/hana/functional/partial.hpp>
 
@@ -103,20 +104,20 @@ BOOST_HANA_NAMESPACE_BEGIN
     template <std::size_t n>
     struct make_curry_t {
         template <typename F>
-        constexpr curry_t<n, typename std::decay<F>::type>
+        constexpr curry_t<n, typename detail::decay<F>::type>
         operator()(F&& f) const { return {static_cast<F&&>(f)}; }
     };
 
     template <std::size_t n>
     constexpr make_curry_t<n> curry{};
 
-    namespace curry_detail {
+    namespace curry_detail { namespace {
         template <std::size_t n>
         constexpr make_curry_t<n> curry_or_call{};
 
         template <>
-        static constexpr auto curry_or_call<0> = apply;
-    }
+        constexpr auto curry_or_call<0> = apply;
+    }}
 
     template <std::size_t n, typename F>
     struct curry_t {

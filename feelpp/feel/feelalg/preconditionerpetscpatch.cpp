@@ -535,6 +535,9 @@ static PetscErrorCode PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(PC pc, Mat G)
 #endif // PETSC_HAVE_HYPRE
 
 
+
+// PCFieldSplit PATCH can be removed from 3.10
+#if PETSC_VERSION_LESS_THAN(3,10,0)
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
 
 typedef struct _PC_FieldSplitLink *PC_FieldSplitLink;
@@ -702,6 +705,7 @@ static PetscErrorCode PCFieldSplit_UpdateMatPrecondSchurComplement( PC pc, Mat s
 
 } // namespace PetscImpl
 
+#endif // PETSc Version
 #endif // PETSc Version
 
 typedef struct {

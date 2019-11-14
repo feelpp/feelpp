@@ -741,7 +741,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
     }
     else if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
     {
-        auto uconv = zero<nRealDim,1>();
+        auto uconv = vf::zero<nRealDim,1>();
         if ( this->stabilizationGLSType() == "pspg" || ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
             FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::Stokes,0>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
         else if ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" )
