@@ -158,6 +158,9 @@ public :
             }
         }
 
+#if 1
+    self_type& operator=( self_type const& q ) = default;
+#else
     self_type& operator=( self_type const& q )
         {
             if ( this == &q )
@@ -165,8 +168,12 @@ public :
             super::operator=( q );
             M_order = q.M_order;
             M_name = q.M_name;
-            M_quad = *IMFactory<T>::instance().createObject( M_name );
-            
+
+            if ( nDim > 0 )
+                M_quad = *IMFactory<T>::instance().createObject( M_name );
+            else
+                M_quad = q.M_quad;
+
             this->M_npoints = M_quad.numberOfPoints();
             this->M_points.resize( nDim, M_quad.numberOfPoints() );
             this->M_w.resize( M_quad.numberOfPoints() );
@@ -175,10 +182,9 @@ public :
             M_prod.resize( M_quad.numberOfPoints() );
             M_exprq.resize( M_quad.numberOfPoints() );
             M_w_sum = q.M_w_sum;
-
             return *this;
         }
-
+#endif
     /** Face Quadrature Discussion **/
 
     std::vector<std::map<uint16_type,weights_type> > const& allfweights() const
