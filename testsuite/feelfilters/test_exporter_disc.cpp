@@ -13,7 +13,11 @@
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/pdhm.hpp>
 #include <feel/feelmesh/meshmover.hpp>
+
+#if __has_include(<vtkEnSightGoldBinaryReader.h>)
+# define have_vtk_ensightgoldbinaryreader_h
 #include <vtkEnSightGoldBinaryReader.h>
+#endif
 
 /** use Feel namespace */
 using namespace Feel;
@@ -235,7 +239,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
     e->save();
 
 
-#if defined(FEELPP_HAS_VTK)
+#if defined(FEELPP_HAS_VTK) && defined(have_vtk_ensightgoldbinaryreader_h)
     Environment::worldComm().barrier();
     if ( Environment::isMasterRank() )
     {

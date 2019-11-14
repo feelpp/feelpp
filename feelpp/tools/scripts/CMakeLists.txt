@@ -21,6 +21,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+add_subdirectory(pkg)
 add_subdirectory(ParaView)
 add_subdirectory(buildkite)
 add_subdirectory(docker)

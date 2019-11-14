@@ -1555,7 +1555,7 @@ Environment::rootRepository()
     return std::string();
 }
 std::string
-Environment::findFile( std::string const& filename )
+Environment::findFile( std::string const& filename, std::vector<std::string> paths )
 {
     fs::path cp = fs::current_path();
 
@@ -1577,7 +1577,16 @@ Environment::findFile( std::string const& filename )
     }
 
 #endif
-
+    
+    auto filename_ = fs::path(filename).filename().string();
+    for( auto const& ps : paths )
+    {
+        
+        fs::path p( Environment::expand(ps) );
+        if ( fs::exists( p / filename_ ) )
+            
+            return ( p / filename_ ).string();
+    }
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool

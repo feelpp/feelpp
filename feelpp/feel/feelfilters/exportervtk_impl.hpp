@@ -124,6 +124,8 @@ ExporterVTK<MeshType,N>::init()
         }
     }
 
+    M_inSituEnable = false;
+    M_inSituSave = false;
 #if VTK_MAJOR_VERSION >= 6 && defined(VTK_HAS_PARALLEL)
     /* before version 5.10, we cannot initialize a MPIController with an external MPI_Comm */
     this->lComm = this->worldComm().comm();
@@ -132,6 +134,9 @@ ExporterVTK<MeshType,N>::init()
 
 #if defined(FEELPP_VTK_INSITU_ENABLED)
     /* initialize in-situ visualization if needed */
+    M_inSituEnable = boption( _name="exporter.vtk.insitu.enable" );
+    M_inSituSave = boption( _name="exporter.vtk.insitu.save" );
+
     if(boption( _name="exporter.vtk.insitu.enable" ))
     {
         if(inSituProcessor == NULL)
@@ -374,11 +379,12 @@ ExporterVTK<MeshType,N>::save( steps_write_on_disk_type const& stepsToWriteOnDis
                 /* Build a multi block dataset based on gathered data */
                 vtkSmartPointer<vtkMultiBlockDataSet> mbds = this->buildMultiBlockDataSet( time, outs );
 
-                if(boption( _name="exporter.vtk.insitu.enable" ) && inSituProcessor->GetNumberOfPipelines() > 0)
+#if defined(FEELPP_VTK_INSITU_ENABLED)
+                if( M_inSituEnable && inSituProcessor->GetNumberOfPipelines() > 0)
                     this->updateInSituProcessor( mbds, stepIndex, time );
+#endif
 
-                if(!(boption( _name="exporter.vtk.insitu.enable" )) || inSituProcessor->GetNumberOfPipelines() == 0
-                   || (boption( _name="exporter.vtk.insitu.enable" ) && boption( _name="exporter.vtk.insitu.save" ) ) )
+                if ( !M_inSituEnable || M_inSituSave )
                     this->saveData( mbds, stepIndex, time );
 
             }
@@ -693,6 +699,7 @@ ExporterVTK<MeshType,N>::visit( mesh_type* )
 {
 }
 
+#if defined(FEELPP_VTK_INSITU_ENABLED) 
 template<typename MeshType, int N>
 void
 ExporterVTK<MeshType,N>::updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const
@@ -724,8 +731,8 @@ ExporterVTK<MeshType,N>::updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDat
         //std::cout << "CoProcess " << inSituProcessor->CoProcess(dataDescription.GetPointer())<< std::endl;
         inSituProcessor->CoProcess(dataDescription.GetPointer());
     }
-
 }
+#endif
 
 #if 0
 #if defined( FEELPP_INSTANTIATION_MODE )

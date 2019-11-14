@@ -77,6 +77,11 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
+    case MATSOLVER_MKL_CPARDISO :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERMKL_CPARDISO );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
     case MATSOLVER_PASTIX :
         ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERPASTIX );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );

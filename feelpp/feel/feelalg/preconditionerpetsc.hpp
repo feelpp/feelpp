@@ -573,6 +573,7 @@ public :
 
 private :
     void run( PC& pc );
+    void runSchur( PC& pc );
 
 
     class ConfigureSubKSP : public ConfigurePCBase

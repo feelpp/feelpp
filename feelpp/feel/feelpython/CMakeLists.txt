@@ -32,19 +32,6 @@ set( SRC  pyexpr.cpp  )
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp)
 feel_append_src(feelpython "${SRC};${HDR}")
 
-#add_library(PyFeelpp SHARED libPyFeelpp.cpp)
-#target_link_libraries(PyFeelpp feelpp ${FEELPP_LIBRARIES} )
-
-#add_library(PyFeelpp2 SHARED libPyFeelpp2.cpp)
-#target_link_libraries(PyFeelpp2 feelpp ${FEELPP_LIBRARIES})
-
-#add_library(PyInteg SHARED libPyInteg.cpp)
-#target_link_libraries(PyInteg feelpp ${FEELPP_LIBRARIES} PyFeelpp)
-
-#add_library(PyLapla SHARED libPyLapla.cpp)
-#target_link_libraries(PyLapla feelpp ${FEELPP_LIBRARIES} PyFeelpp)
-
-#add_library(libtest SHARED libtest.cpp)
-#target_link_libraries(libtest feelpp ${FEELPP_LIBRARIES})
+install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/sympy2ginac.py   DESTINATION share/feelpp/data/python COMPONENT Bin)
 
 endif()
