@@ -532,7 +532,7 @@ private :
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
-                size_type pattern = Pattern::COUPLED,
+                uint32_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
@@ -608,7 +608,7 @@ csrGraphBlocks( PS&& ps,
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
-                size_type pattern = Pattern::COUPLED,
+                uint32_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
