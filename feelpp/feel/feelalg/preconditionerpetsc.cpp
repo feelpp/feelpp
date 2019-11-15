@@ -396,7 +396,8 @@ SetPCType( PC& pc, const PreconditionerType & preconditioner_type, const MatSolv
         // do be changed in parallel
         if ( worldComm->globalSize() == 1 ||
              matSolverPackage_type == MATSOLVER_MUMPS ||
-             matSolverPackage_type == MATSOLVER_PASTIX )
+             matSolverPackage_type == MATSOLVER_PASTIX ||
+             matSolverPackage_type == MATSOLVER_MKL_CPARDISO )
         {
             ierr = PCSetType ( pc, ( char* ) PCLU );
             CHKERRABORT( worldComm->globalComm(),ierr );
