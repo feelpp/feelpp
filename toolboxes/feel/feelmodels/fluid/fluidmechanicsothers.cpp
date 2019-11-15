@@ -1141,7 +1141,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             }
             else
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, zero<nDim,1>(), false );
+                myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
             }
         }
         else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
