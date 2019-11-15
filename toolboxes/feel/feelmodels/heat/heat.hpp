@@ -89,7 +89,7 @@ class Heat : public ModelNumerical,
         typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
         typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
         typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-        typedef ThermalPropertiesDescription<space_scalar_P0_type> thermalproperties_type;
+        typedef ThermalPropertiesDescription<mesh_type> thermalproperties_type;
         typedef std::shared_ptr<thermalproperties_type> thermalproperties_ptrtype;
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
@@ -226,16 +226,31 @@ class Heat : public ModelNumerical,
         template <typename SymbolsExpr>
         void updateFields( SymbolsExpr const& symbolsExpr )
             {
-                this->thermalProperties()->updateFields( symbolsExpr );
+                //this->thermalProperties()->updateFields( symbolsExpr );
             }
 
         auto allFields( std::string const& prefix = "" ) const
             {
                 return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() ),
-                                         std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() ),
-                                         std::make_pair( prefixvm( prefix,"thermal-conductivity" ),this->thermalProperties()->fieldThermalConductivityPtr() ),
-                                         std::make_pair( prefixvm( prefix,"density" ), this->thermalProperties()->fieldRhoPtr() )
+                                         std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() )
                                          );
+            }
+
+        auto exportExpr()
+            {
+                std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExpr;
+                for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
+                {
+                    std::string const& _matName = rangeData.first;
+                    auto const& range = rangeData.second;
+                    auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
+                    mapExpr["thermal-conductivity"].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
+
+                    ModelExpression density;
+                    density.setExprScalar( this->thermalProperties()->rho( _matName ).expr() );
+                    mapExpr["density"].push_back( std::make_tuple( density, range, "element" ) );
+                }
+                return hana::make_tuple( mapExpr );
             }
 
         template <typename FieldTemperatureType>
@@ -393,7 +408,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fields = this->allFields();
-    this->executePostProcessExports( M_exporter, time, fields );
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, this->exportExpr() );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
@@ -417,6 +432,8 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
     {
+        CHECK(false) << "TODO";
+#if 0
         CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
         auto const& u = this->fieldTemperature();
         auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
@@ -425,6 +442,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
         std::string name = ppForces.name();
         this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
         hasMeasure = true;
+#endif
     }
 
     bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );

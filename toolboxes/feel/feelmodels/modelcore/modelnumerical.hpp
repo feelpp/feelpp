@@ -160,12 +160,15 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
-        template <typename ExporterType,typename TupleFieldsType>
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields );
-        template <typename ExporterType,typename TupleFieldsType>
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields ) { this->executePostProcessExports(exporter,"",time,tupleFields); }
-        template <typename ExporterType,typename TupleFieldsType>
-        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType = hana::tuple<> >
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType = hana::tuple<> >
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
+            {
+                this->executePostProcessExports(exporter,"",time,tupleFields,symbolsExpr,tupleExprOnRange);
+            }
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType>
+        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange );
 
         template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
         bool executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
@@ -337,12 +340,12 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         *dataToUpdate[k] = *dataToUpdate[0];
 }
 
-template <typename ExporterType,typename TupleFieldsType>
+template <typename ExporterType,typename TupleFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
 void
-ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields )
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
 {
     std::set<std::string> const& fieldsNamesToExport = this->postProcessExportsFields( tag );
-    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields );
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields, symbolsExpr, tupleExprOnRange );
     if ( exporter && exporter->doExport() )
     {
         std::string const& pidName = this->postProcessExportsPidName( tag );
@@ -359,9 +362,9 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
     }
 }
 
-template <typename ExporterType,typename TupleFieldsType>
+template <typename ExporterType,typename TupleFieldsType,typename SymbolsExpr,typename TupleExprOnRangeType>
 bool
-ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, TupleFieldsType const& tupleFields )
+ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
 {
     if ( !exporter ) return false;
     if ( !exporter->doExport() ) return false;
@@ -403,6 +406,43 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                  hasFieldToExport = true;
                                              }
                                          }
+                        }
+                    });
+
+    hana::for_each( tupleExprOnRange, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport,&symbolsExpr]( auto const& e )
+                    {
+                        for ( auto const& [fieldName,exprDatas] : e )
+                        {
+                            if ( fieldsNamesToExport.find( fieldName ) == fieldsNamesToExport.end() )
+                                continue;
+                            for ( auto const&[theexpr,range,reprs] : exprDatas )
+                            {
+                                if ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
+                                {
+                                    auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
+                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
+                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<1>)
+                                                                       /*hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
+                                                                        hana::make_tuple(hana::int_c<3>,hana::int_c<3>)*/ // remove tensor2 not supporterd by ParaView
+                                                                       );
+                                    auto const& fieldNameBIS = fieldName;
+                                    auto const& theexprBIS = theexpr;
+                                    auto const& rangeBIS = range;
+                                    auto const& reprsBIS = reprs;
+                                    hana::for_each( exprShape, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
+                                                    {
+                                                        constexpr int i = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                                        constexpr int j = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                                        if ( theexprBIS.template hasExpr<i,j>() )
+                                                        {
+                                                            exporter->step( time )->add( prefixvm(this->prefix(),fieldNameBIS),
+                                                                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldNameBIS)),
+                                                                                         expr(theexprBIS.template expr<i,j>(),symbolsExpr),rangeBIS,reprsBIS );
+                                                            hasFieldToExport = true;
+                                                        }
+                                                    });
+                                } // is ModelExpression
+                            }
                         }
                     });
 
