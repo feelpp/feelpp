@@ -404,7 +404,9 @@ CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::initSpaces(){
 		solve::strategy s = boption(prefixvm(this->prefix(), "use-sc"))?solve::strategy::static_condensation:solve::strategy::monolithic;
 
 		this->M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*(this->getPS())), *(this->get_backend()) );
+#ifndef USE_SAME_MAT        
 		this->M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*(this->getPS())), *(this->get_backend()) );
+#endif
 		this->M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*(this->getPS())), *(this->get_backend()), false);
 	
 		M_bdf_buffer.resize( M_0dCondition );
@@ -623,13 +625,13 @@ CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     auto bbf = blockform2(*(this->getPS()), this->M_A_cst);
 #else
     auto bbf = blockform2(*(this->getPS()), this->M_A);
+    this->M_A->printMatlab("A-"+std::to_string( this->currentTime() )+".m");
 #endif
     
     auto blf = blockform1(*(this->getPS()), this->M_F);
     
     auto U = this->getPS()->element();
 
-	this->M_A->printMatlab("A-"+std::to_string( this->currentTime() )+".m");
 	this->M_F->printMatlab("F-"+std::to_string( this->currentTime() )+".m");
     
     tic();
