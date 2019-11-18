@@ -58,38 +58,25 @@ runLevelsetApplication()
 	Feel::cout << "error: LS->modGradPhi() is NULL ! " << std::endl;
       }
 
-
-    
     // Errors measures :
     // LS is initialized, we save the phi, heaviside and dirac functions' initial values
-    Feel::cout << "auto phi_0 = LS->functionSpace()->element();" << std::endl;
     auto phi_0 = LS->functionSpace()->element();
-    Feel::cout << "TESTING phi_0 = *LS->phi();" << std::endl;
-    Feel::cout << "" << std::endl;
     if ( LS->phi() )
       {
-	Feel::cout << "LS->phi()->size()... " << std::endl;
-	Feel::cout << "LS->phi()->size() = " << LS->phi()->size() << std::endl;
 	phi_0 = *LS->phi();
       }
     else
       {
 	Feel::cout << "error: LS->phi()=NULL !" << endl;
       }
-    Feel::cout << "auto H_0 = LS->functionSpace()->element();" << std::endl;
     auto H_0 = LS->functionSpace()->element();
-    Feel::cout << "H_0 = *LS->heaviside();" << std::endl;
     H_0 = *LS->heaviside();
-    Feel::cout << "auto dirac_0 = LS->functionSpace()->element();" << std::endl;
     auto dirac_0 = LS->functionSpace()->element();
-    Feel::cout << "dirac_0 = *LS->dirac();" << std::endl;
     dirac_0 = *LS->dirac();
 
     // Quadrature order used for integrals computed in errors measures:
-    Feel::cout << "int error_quad_order = ioption( _name=\"levelset.quad.order\" );" << std::endl;
     int error_quad_order = ioption( _name="levelset.quad.order" );
     Feel::cout << "Error quadrature order = " << error_quad_order << std::endl;
-
     
     bool exportDistToBoundary = boption( _name="export-dist-to-boundary" );
 
@@ -124,9 +111,7 @@ runLevelsetApplication()
 
             LS->solve();
 
-	    Feel::cout << "min_modGradPhi = LS->modGradPhi()->min();" << std::endl;
 	    min_modGradPhi = LS->modGradPhi()->min();
-	    Feel::cout << "max_modGradPhi = LS->modGradPhi()->max();" << std::endl;
 	    max_modGradPhi = LS->modGradPhi()->max();
 	    Feel::cout << "modGradphi : min = " << min_modGradPhi << ", max = " << max_modGradPhi << std::endl;
 	    
@@ -149,26 +134,23 @@ runLevelsetApplication()
 	// Error measures :
 	// we compute the L2 norm error integrals :
 
-	Feel::cout << "auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );" << std::endl;
 	auto  chi_of_dirac0_positive = chi( idv(dirac_0) > 0 );
-	Feel::cout << "double first_integral = integrate(" << std::endl;
 	double first_integral = integrate(
 					  _range=elements(LS->mesh()),
 					  _expr=chi_of_dirac0_positive
 					  ).evaluate()(0,0);
-	Feel::cout << "" << std::endl;
 	double second_integral = integrate(
 					   _range=elements(LS->mesh()),
 					   _expr=( pow( idv(phi_0)-idv(LS->phi()), 2.0 ) * chi_of_dirac0_positive ),
 					   _quad=error_quad_order
 					   ).evaluate()(0,0);
-	Feel::cout << "" << std::endl;
 	double l2_norm_error = std::sqrt( 1/first_integral * second_integral );
 	
 	//Feel::cout << "First integral = " << first_integral << std::endl;
 	//Feel::cout << "Second integral = " << second_integral << std::endl;
 	Feel::cout << "L2 norm error = " << l2_norm_error << std::endl;
 	toc("L2 error:");
+	tic();
 	// Sign change error :
 	double e_sc_integral = integrate(
 					 _range=elements(LS->mesh()),
@@ -184,6 +166,7 @@ runLevelsetApplication()
 	
 	Feel::cout << "Sign change error (h) = " << sign_change_error_h << std::endl;
 	toc("Sign change error (h):");
+	tic();
 	
 	double sign_change_error_chi = std::sqrt( integrate(
 							    _range=elements(LS->mesh()),
@@ -191,7 +174,8 @@ runLevelsetApplication()
 							    _quad=error_quad_order
 							    ).evaluate()(0,0) );
 	Feel::cout << "Sign change error (chi) = " << sign_change_error_chi << std::endl;
-	toc("Sign change error (h):");
+	toc("Sign change error (chi):");
+	tic();
 	
 	// Mass error
 	auto chi_of_phi0_negative = chi(  idv(phi_0) < 0 );
@@ -208,7 +192,7 @@ runLevelsetApplication()
 					   _quad=error_quad_order
 					   ).evaluate()(0,0);
 	double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
-	toc("Mass error (h):");
+	toc("Mass error :");
 	
 	//Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
 	//Feel::cout << "phi integral = " << em_phi_integral << std::endl;
