@@ -18,3 +18,4 @@ feelpp_add_application( levelset_3d SRCS main_ls.cpp
 
 feelpp_add_testcase(cases PREFIX feelpp_levelset CATEGORY levelset )
 
+add_subdirectory( cases/benchmark/redistanciation )
