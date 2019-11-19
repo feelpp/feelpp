@@ -45,7 +45,6 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
-
 namespace Feel
 {
 namespace FeelModels
@@ -53,10 +52,10 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-                     public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
-                     public MarkerManagementDirichletBC,
-                     public MarkerManagementNeumannBC,
-                     public MarkerManagementRobinBC
+             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
+             public MarkerManagementDirichletBC,
+             public MarkerManagementNeumannBC,
+             public MarkerManagementRobinBC
     {
     public:
         typedef ModelNumerical super_type;
@@ -236,21 +235,45 @@ class Heat : public ModelNumerical,
                                          );
             }
 
-        auto exportExpr()
+        template <typename SymbExprType>
+        auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExpr;
+                //std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExpr;
+                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)) _expr_scalar_type;
+                std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
+
                 for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
                 {
                     std::string const& _matName = rangeData.first;
                     auto const& range = rangeData.second;
-                    auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
-                    mapExpr["thermal-conductivity"].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
+                    if ( this->thermalProperties()->hasThermalConductivity( _matName ) )
+                    {
+                        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
+                        if ( thermalConductivity.isMatrix() )
+                        {
+#if 0
+                            // tensor2 asym is not supported with ParaView -> export each components in wating
+                            auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se));
+                            for ( int i=0;i<nDim;++i )
+                                for ( int j=0;j<nDim;++j )
+                                    mapExprScalar[prefixvm(prefix,(boost::format("thermal-conductivity_%1%_%2%")%i%j).str())].push_back( std::make_tuple( thermalConductivityExpr(i,j), range, "element" ) );
+#endif
+                        }
+                        else
+                        {
+                            auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), se );
+                            mapExprScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
+                        }
+                    }
+                    //mapExpr[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
 
-                    ModelExpression density;
-                    density.setExprScalar( this->thermalProperties()->rho( _matName ).expr() );
-                    mapExpr["density"].push_back( std::make_tuple( density, range, "element" ) );
+                    if ( this->thermalProperties()->hasRho( _matName ) )
+                    {
+                        auto densityExpr = expr( this->thermalProperties()->rho( _matName ).expr(), se );
+                        mapExprScalar[prefixvm(prefix,"density")].push_back( std::make_tuple( densityExpr, range, "element" ) );
+                    }
                 }
-                return hana::make_tuple( mapExpr );
+                return hana::make_tuple( mapExprScalar );
             }
 
         template <typename FieldTemperatureType>
@@ -389,8 +412,7 @@ class Heat : public ModelNumerical,
 
         // post-process
         export_ptrtype M_exporter;
-        bool M_doExportAll, M_doExportVelocityConvection;
-        std::vector< ModelMeasuresForces > M_postProcessMeasuresForces;
+        std::map<std::string,ModelMeasuresNormalFluxGeneric> M_postProcessMeasuresNormalHeatFlux;
         measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     };
 
@@ -408,7 +430,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fields = this->allFields();
-    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, this->exportExpr() );
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
@@ -430,19 +452,15 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     bool hasMeasure = false;
 
     // compute measures
-    for ( auto const& ppForces : M_postProcessMeasuresForces )
+    for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        CHECK(false) << "TODO";
-#if 0
-        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
         auto const& u = this->fieldTemperature();
-        auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppForces.meshMarkers() ),
-                                    _expr=kappa*gradv(u)*N() ).evaluate()(0,0);
-        std::string name = ppForces.name();
-        this->postProcessMeasuresIO().setMeasure("NormalHeatFlux_"+name,heatFlux);
+        double signFlux = (ppFlux.isOutward())? -1.0 : 1.0;
+        auto kappa = this->thermalProperties()->thermalConductivityExpr( symbolsExpr );
+        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
+                                    _expr=signFlux*kappa*gradv(u)*N() ).evaluate()(0,0);
+        this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
         hasMeasure = true;
-#endif
     }
 
     bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );

@@ -165,11 +165,38 @@ public :
         {
             return hana::make_tuple( std::make_pair( prefixvm(prefix,"electric-potential"),this->fieldElectricPotentialPtr() ),
                                      std::make_pair( prefixvm(prefix,"electric-field"),this->fieldElectricFieldPtr() ),
-                                     std::make_pair( prefixvm(prefix,"electric-conductivity"),M_electricProperties->fieldElectricConductivityPtr() ),
-                                     std::make_pair( prefixvm(prefix,"current-density"),this->fieldCurrentDensityPtr() ),
+                                     //std::make_pair( prefixvm(prefix,"electric-conductivity"),M_electricProperties->fieldElectricConductivityPtr() ),
+                                     //std::make_pair( prefixvm(prefix,"current-density"),this->fieldCurrentDensityPtr() ),
                                      std::make_pair( prefixvm(prefix,"joules-losses"),this->fieldJoulesLossesPtr() )
                                      );
         }
+
+    template <typename SymbExprType>
+    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        {
+            typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)) _expr_scalar_type;
+            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
+
+            auto const& v = this->fieldElectricPotential();
+            typedef std::decay_t<decltype(-_expr_scalar_type{}*trans(gradv(v)))> expr_current_density_type;
+            std::map<std::string,std::vector<std::tuple< expr_current_density_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprCurrentDensity;
+            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& range = rangeData.second;
+                if ( this->electricProperties()->hasElectricConductivity( _matName ) )
+                {
+                    auto const& electricConductivity = this->electricProperties()->electricConductivity( _matName );
+                    auto electricConductivityExpr = expr( electricConductivity.expr(), se );
+                    mapExprScalar[prefixvm(prefix,"electric-conductivity")].push_back( std::make_tuple( electricConductivityExpr, range, "element" ) );
+
+                    auto currentDensityExpr = -electricConductivityExpr*trans(gradv(v)) ;
+                    mapExprCurrentDensity[prefixvm(prefix,"current-density")].push_back( std::make_tuple( currentDensityExpr, range, "element" ) );
+                }
+            }
+            return hana::make_tuple( mapExprScalar, mapExprCurrentDensity );
+        }
+
 
     template <typename FieldElectricPotentialType>
     /*constexpr*/auto symbolsExpr( FieldElectricPotentialType const& v ) const
@@ -247,7 +274,7 @@ public :
     template <typename SymbolsExpr>
     void updateFields( SymbolsExpr const& symbolsExpr )
         {
-            this->electricProperties()->updateFields( symbolsExpr );
+            //this->electricProperties()->updateFields( symbolsExpr );
             this->updateElectricField();
             this->updateCurrentDensity( symbolsExpr );
             this->updateJoulesLosses( symbolsExpr );
@@ -328,7 +355,7 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fields = this->allFields();
-    this->executePostProcessExports( M_exporter, time, fields );
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( invalid_uint32_type_value, fields );
 

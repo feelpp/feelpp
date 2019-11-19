@@ -5,6 +5,7 @@
 
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelvf/exprselectorbymeshelement.hpp>
 
 namespace Feel
 {
@@ -143,6 +144,9 @@ public :
                 }
 #endif
             }
+
+            M_exprSelectorByMeshElementMapping = std::make_shared<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>>();
+            M_exprSelectorByMeshElementMapping->template updateForUse<mesh_type>( this->rangeMeshElementsByMaterial() );
         }
 
     std::set<std::string> const& markers() const { return M_markers; }
@@ -158,6 +162,8 @@ public :
 
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
+    std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> exprSelectorByMeshElementMapping() const { return M_exprSelectorByMeshElementMapping; }
+
     // thermal conductivity
     bool hasThermalConductivity( std::string const& matName ) const
         {
@@ -168,6 +174,26 @@ public :
             CHECK( this->hasThermalConductivity( matName ) ) << "material name not registered : " << matName;
             return M_thermalConductivityByMaterial.find( matName )->second;
         }
+
+    template <typename SymbolsExpr>
+    auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_k;
+
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& thermalConductivity = this->thermalConductivity( _matName );
+                auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
+                exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
+            }
+            auto kappa = expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_k );
+            return kappa;
+
+        }
+
+
     // rho
     bool hasRho( std::string const& matName ) const
         {
@@ -333,6 +359,7 @@ private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> M_exprSelectorByMeshElementMapping;
 
     std::map<std::string, ModelExpressionScalar> /*M_thermalConductivityByMaterial,*/ M_heatCapacityByMaterial, M_rhoByMaterial, M_thermalExpansionByMaterial, M_rhoHeatCapacityByMaterial;
     std::map<std::string, ModelExpression> M_thermalConductivityByMaterial;

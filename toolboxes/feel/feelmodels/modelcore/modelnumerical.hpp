@@ -417,7 +417,15 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 continue;
                             for ( auto const&[theexpr,range,reprs] : exprDatas )
                             {
-                                if ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
+                                if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
+                                {
+                                    exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                                 prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                                 theexpr,range,reprs );
+                                    hasFieldToExport = true;
+                                }
+#if 0
+                                if constexpr ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
                                 {
                                     auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
                                                                        hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
@@ -442,6 +450,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                         }
                                                     });
                                 } // is ModelExpression
+#endif
                             }
                         }
                     });
