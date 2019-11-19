@@ -64,9 +64,9 @@ interpolate_copy( std::shared_ptr<SpaceType> const& space,
     return false;
 }
 
-template<typename InterpType>
+template<typename InterpType, typename SizeT>
 void
-interpolate_sync( InterpType & interp, bool hasMeshSupportPartialDomain, std::set<size_type> const& dofUsedWithPartialMeshSupport )
+interpolate_sync( InterpType & interp, bool hasMeshSupportPartialDomain, std::set<SizeT> const& dofUsedWithPartialMeshSupport )
 {
     static const bool interp_is_vector = is_std_vector_v<InterpType>;
     if constexpr ( !interp_is_vector )

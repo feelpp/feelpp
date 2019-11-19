@@ -212,6 +212,7 @@ public:
             const auto& c = sig->connect( slo );
             S_links[link].push_back( c );
         }
+        return S_links[link].back();
     }
 
     //! Connect a slot to a static signal.
