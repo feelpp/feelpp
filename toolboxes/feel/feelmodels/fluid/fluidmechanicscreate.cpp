@@ -1639,7 +1639,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;

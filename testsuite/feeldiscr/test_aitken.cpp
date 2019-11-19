@@ -20,36 +20,20 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
-   \file test_aitken.cpp
-   \author Abdoulaye Samake <abdoulaye.samake1@ujf-grenoble.fr>
-   \date 2011-05-13
-*/
 
-// Boost::Assign
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
+#define BOOST_TEST_MODULE test_element_component
+#include <feel/feelcore/testsuite.hpp>
 
-/** include predefined feel command line options */
-#include <feel/options.hpp>
-
-/** include linear algebra backend */
-#include <feel/feelalg/backend.hpp>
-
-#include <feel/feelalg/aitken.hpp>
-
-#include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/region.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/creategmshmesh.hpp>
 #include <feel/feelfilters/domain.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
-#include <feel/feelfilters/geotool.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelalg/aitken.hpp>
 
-/** use Feel namespace */
 using namespace Feel;
-using namespace Feel::vf;
 
 /**
  * This routine returns the list of options using the
@@ -64,10 +48,8 @@ makeOptions()
 {
     po::options_description laplacianoptions( "Aitken testsuite options" );
     laplacianoptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-    ( "shape", Feel::po::value<std::string>()->default_value( "hypercube" ), "shape of the domain (either simplex or hypercube)" )
     ( "relaxmethod", po::value<int>()->default_value( 0 ), "use DD (=0) or DN (=1) method" )
-    ( "additive", po::value<int>()->default_value( 0 ), "use relax_aik additive method" )
+    ( "additive", po::value<bool>()->default_value( false ), "use relax_aik additive method" )
     ( "x1max", Feel::po::value<double>()->default_value( 1.25 ),  " x1max for first subdomain" )
     ( "x2min", Feel::po::value<double>()->default_value( 1.25 ), " x2min for second subdomain" )
     ( "tol", Feel::po::value<double>()->default_value( 1e-06 ),  " tolerance " )
@@ -75,29 +57,6 @@ makeOptions()
     ( "theta", Feel::po::value<double>()->default_value( 1. ), " relaxation parameter" )
     ;
     return laplacianoptions.add( Feel::feel_options() );
-}
-
-/**
- * This routine defines some information about the application like
- * authors, version, or name of the application. The data returned is
- * typically used as an argument of a Feel::Application subclass.
- *
- * \return some data about the application.
- */
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_aitken" ,
-                     "test_aitken" ,
-                     "0.2",
-                     "nD(n=1,2,3) Aitken relaxation",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2011 Universite Joseph Fourier" );
-
-    about.addAuthor( "Abdoulaye Samake", "developer", "abdoulaye.samake@ujf-grenoble.fr", "" );
-    return about;
-
 }
 
 enum DDMethod
@@ -108,105 +67,109 @@ enum DDMethod
     DN = 1
 };
 
-/**
- * \class TestAitken
- *
- * Relax_Aik Solver using continuous approximation spaces
- * solve \f$ -\Delta u = f\f$ on \f$\Omega\f$ and \f$u= g\f$ on \f$\Gamma\f$
- *
- * \tparam Dim the geometric dimension of the problem (e.g. Dim=1, 2 or 3)
- */
-template<int Dim>
-class TestAitken
-    :
-public Simget
+
+template<typename SpaceType>
+class LocalProblem
 {
-    typedef Simget super;
-public:
-
-    //! Polynomial order \f$P_2\f$
-    static const uint16_type Order = 2;
-
-    //! numerical type is double
-    typedef double value_type;
-
-    //! linear algebra backend factory
-    typedef Backend<value_type> backend_type;
-    //! linear algebra backend factory shared_ptr<> type
-    typedef std::shared_ptr<backend_type> backend_ptrtype;
-
-
-    //! sparse matrix type associated with backend
-    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
-    //! vector type associated with backend
-    typedef typename backend_type::vector_type vector_type;
-
-    //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order 1
-    typedef Simplex<Dim> convex_type;
-    //! mesh type
-    typedef Mesh<convex_type> mesh_type;
-    //! mesh shared_ptr<> type
-    typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
-    //! function space that holds piecewise constant (\f$P_0\f$) functions (e.g. to store material properties or partitioning
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar, Discontinuous> > > p0_space_type;
-    //! an element type of the \f$P_0\f$ discontinuous function space
-    typedef typename p0_space_type::element_type p0_element_type;
-
-    //! the basis type of our approximation space
-    typedef bases<Lagrange<Order,Scalar> > basis_type;
-
-    //! the approximation function space type
-    typedef FunctionSpace<mesh_type, basis_type> space_type;
-
-    typedef std::shared_ptr<space_type> space_ptrtype;
-
-    //! an element type of the approximation function space
-    typedef typename space_type::element_type element_type;
-
-    //! the exporter factory type
-    typedef Exporter<mesh_type> export_type;
-    //! the exporter factory (shared_ptr<> type)
-    typedef std::shared_ptr<export_type> export_ptrtype;
-
-    /**
-     * Constructor
-     */
-    TestAitken( )
+public :
+    using space_ptrtype = std::shared_ptr<SpaceType>;
+    LocalProblem( space_ptrtype Xh )
         :
-        super(  ),
-        M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        meshSize( this->vm()["hsize"].template as<double>() ),
-        shape( this->vm()["shape"].template as<std::string>() ),
-        timers()
-    {
-    }
+        M_backend(  backend_type::build( soption( _name="backend" ) ) ),
+        M_A( M_backend->newMatrix( _test=Xh, _trial=Xh ) ),
+        M_B( M_backend->newVector( Xh ) )
+        {}
+    template<typename ElementType, typename RhsExpr, typename DirichletExpr, typename InterfaceExpr>
+    void
+    solve( ElementType& u,
+           std::vector<int> const& dirichletFlags, DirichletExpr const& gD,
+           RhsExpr const& f,
+           std::vector<int> const& interfaceFlags, InterfaceExpr const& w,
+           DDMethod choice )
+        {
+            auto Xh = u.functionSpace();
+            auto mesh = Xh->mesh();
+            auto const& v = u;
 
-    template<typename DirichletExpr,
-             typename RhsExpr,
-             typename InterfaceExpr>
-    void localProblem( element_type& u,
-                       std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                       RhsExpr f,
-                       std::vector<int> const& interfaceFlags, InterfaceExpr w,
-                       DDMethod choice );
-    void run();
+            form1( _test=Xh,_vector=M_B ) =
+                integrate( _range=elements( mesh ), _expr=f*id( v ) );
 
-    void run( const double* X, unsigned long P, double* Y, unsigned long N );
+            if ( choice == DDMethod::DN )
+            {
+                form1( _test=Xh,_vector=M_B ) +=
+                    integrate( _range=markedfaces( mesh, interfaceFlags ), _expr=w*id( v ) );
+            }
 
-private:
+            form2( _test=Xh, _trial=Xh, _matrix=M_A ) =
+                integrate( _range=elements( mesh ), _expr=gradt( u )*trans( grad( v ) ) );
 
-    //! linear algebra backend
+            form2( _test=Xh, _trial=Xh, _matrix=M_A ) +=
+                on( _range=markedfaces( mesh, dirichletFlags ), _element=u, _rhs=M_B, _expr=gD );
+
+            if ( choice == DDMethod::DD )
+            {
+                form2( _test=Xh, _trial=Xh, _matrix=M_A ) +=
+                    on( _range=markedfaces( mesh, interfaceFlags ) , _element=u, _rhs=M_B, _expr=w );
+            }
+
+            M_backend->solve( _matrix=M_A, _solution=u, _rhs=M_B );
+
+        }
+private :
+    typedef Backend<double> backend_type;
+    typedef std::shared_ptr<backend_type> backend_ptrtype;
     backend_ptrtype M_backend;
+    backend_type::sparse_matrix_ptrtype M_A;
+    backend_type::vector_ptrtype M_B;
+};
 
-    //! mesh characteristic size
-    double meshSize;
+template<typename MeshType>
+void
+runTestAitken()
+{
+    using mesh_type = MeshType;
+    using mesh_ptrtype = std::shared_ptr<MeshType>;
+    constexpr uint16_type Dim = mesh_type::nDim;
+    std::string shape = "hypercube";
 
-    //! shape of the domain
-    std::string shape;
+    uint32_type k0 = 0;
+    uint32_type k1 = 1;
 
-    std::map<std::string, std::pair<boost::timer, double> > timers;
-    std::map<std::string,double> stats;
+    double x1max = doption(_name="x1max");
+    double x2min =  doption(_name="x2min");
+    double tol =  doption(_name="tol");
+    double imax =  doption(_name="imax");
+    double theta =  doption(_name="theta");
+
+    mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
+                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k0 ).str() ,
+                                                       _addmidpoint=false,
+                                                       _usenames=false,
+                                                       _shape=shape,
+                                                       _dim=Dim,
+                                                       //_h=X[0],
+                                                       _xmin=0.,
+                                                       _xmax=x1max,
+                                                       _ymin=0.,
+                                                       _ymax=2.,
+                                                       _zmin=0.,
+                                                       _zmax=2.
+                                                       ) );
+
+    mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
+                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k1 ).str() ,
+                                                       _addmidpoint=false,
+                                                       _usenames=false,
+                                                       _shape=shape,
+                                                       _dim=Dim,
+                                                       //_h=X[0],
+                                                       _xmin=x2min,
+                                                       _xmax=2.,
+                                                       _ymin=0.,
+                                                       _ymax=2.,
+                                                       _zmin=0.,
+                                                       _zmax=2.
+                                                       ) );
 
     // flags for dirichlet boundary conditions
     std::vector<int> dirichletFlags1;
@@ -216,199 +179,50 @@ private:
     std::vector<int> interfaceFlags1;
     std::vector<int> interfaceFlags2;
 
-}; // TestAitken
-
-template<int Dim> const uint16_type TestAitken<Dim>::Order;
-
-template< int Dim>
-template<typename DirichletExpr,
-         typename RhsExpr,
-         typename InterfaceExpr>
-void
-TestAitken<Dim>::localProblem( element_type& u,
-                               std::vector<int> const& dirichletFlags, DirichletExpr gD,
-                               RhsExpr f,
-                               std::vector<int> const& interfaceFlags, InterfaceExpr w,
-                               DDMethod choice )
-
-
-{
-
-    auto Xh=u.functionSpace();
-    auto mesh=Xh->mesh();
-    element_type v( Xh,"v" );
-
-    auto B = M_backend->newVector( Xh );
-
-    form1( _test=Xh,_vector=B, _init=true ) =
-        integrate( elements( mesh ), f*id( v ) );
-
-    if ( choice == DDMethod::DN )
-    {
-        BOOST_FOREACH( int marker, interfaceFlags )
-        {
-            form1( _test=Xh,_vector=B ) +=
-                integrate( markedfaces( mesh, marker ), w*id( v ) );
-        }
-    }
-
-    B->close();
-
-    auto A = M_backend->newMatrix( Xh, Xh );
-
-    timers["assembly"].first.restart();
-
-    form2( _test=Xh, _trial=Xh, _matrix=A, _init=true ) =
-        integrate( elements( mesh ), gradt( u )*trans( grad( v ) ) );
-
-    A->close();
-
-    BOOST_FOREACH( int marker, dirichletFlags )
-    {
-        form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-            on( markedfaces( mesh, marker ) ,	u, B, gD );
-    }
-
-    if ( choice == DDMethod::DD )
-    {
-        BOOST_FOREACH( int marker, interfaceFlags )
-        {
-            form2( _test=Xh, _trial=Xh, _matrix=A ) +=
-                on( markedfaces( mesh, marker ) ,	u, B, w );
-        }
-    }
-
-    backend_type::build( soption( _name="backend" ) )->solve( _matrix=A, _solution=u, _rhs=B );
-
-}
-
-template<int Dim>
-void
-TestAitken<Dim>::run()
-{
-    std::cout << "------------------------------------------------------------\n";
-    std::cout << "Execute TestAitken<" << Dim << ">\n";
-    std::vector<double> X( 2 );
-    X[0] = meshSize;
-
-    if ( shape == "hypercube" )
-        X[1] = 1;
-
-    else // default is simplex
-        X[1] = 0;
-
-    std::vector<double> Y( 3 );
-    run( X.data(), X.size(), Y.data(), Y.size() );
-}
-template<int Dim>
-void
-TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long N )
-{
-    if ( X[1] == 0 ) shape = "simplex";
-
-    if ( X[1] == 1 ) shape = "hypercube";
-
-    if ( !this->vm().count( "nochdir" ) )
-        Environment::changeRepository( boost::format( "testsuite/feeldiscr/%1%/%2%-%3%/P%4%/h_%5%/" )
-                                       % this->about().appName()
-                                       % shape
-                                       % Dim
-                                       % Order
-                                       % meshSize );
-
-
-    uint32_type k0 = 0;
-    uint32_type k1 = 1;
-
-    value_type x1max = this->vm()["x1max"].template as<double>();
-    value_type x2min = this->vm()["x2min"].template as<double>();
-    value_type tol = this->vm()["tol"].template as<double>();
-    value_type imax = this->vm()["imax"].template as<double>();
-    value_type theta = this->vm()["theta"].template as<double>();
-
-
-    mesh_ptrtype mesh1 = createGMSHMesh( _mesh=new mesh_type,
-                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k0 ).str() ,
-                                                 _addmidpoint=false,
-                                                 _usenames=false,
-                                                 _shape=shape,
-                                                 _dim=Dim,
-                                                 _h=X[0],
-                                                 _xmin=0.,
-                                                 _xmax=x1max,
-                                                 _ymin=0.,
-                                                 _ymax=2.,
-                                                 _zmin=0.,
-                                                 _zmax=2.
-                                                     ) );
-
-    mesh_ptrtype mesh2 = createGMSHMesh( _mesh=new mesh_type,
-                                         _update=MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES|MESH_RENUMBER,
-                                         _desc=domain( _name=( boost::format( "%1%-%2%-%3%-%4%" ) % shape % Dim % 1 % k1 ).str() ,
-                                                 _addmidpoint=false,
-                                                 _usenames=false,
-                                                 _shape=shape,
-                                                 _dim=Dim,
-                                                 _h=X[0],
-                                                 _xmin=x2min,
-                                                 _xmax=2.,
-                                                 _ymin=0.,
-                                                 _ymax=2.,
-                                                 _zmin=0.,
-                                                 _zmax=2.
-                                                     ) );
-
-
 
     if ( Dim == 1 )
     {
-        using namespace boost::assign;
-        dirichletFlags1 += 1;
-        dirichletFlags2 += 3;
-        interfaceFlags1 += 3;
-        interfaceFlags2 += 1;
+        dirichletFlags1 = { 1 };
+        dirichletFlags2 = { 3 };
+        interfaceFlags1 = { 3 };
+        interfaceFlags2 = { 1 };
     }
-
     else if ( Dim == 2 )
     {
-        using namespace boost::assign;
-        dirichletFlags1+= 1,2,4;
-        dirichletFlags2+= 2,3,4;
-        interfaceFlags1+= 3;
-        interfaceFlags2+= 1;
+        dirichletFlags1 = { 1,2,4 };
+        dirichletFlags2 = { 2,3,4 };
+        interfaceFlags1 = { 3 };
+        interfaceFlags2 = { 1 };
     }
-
     else if ( Dim == 3 )
     {
-        using namespace boost::assign;
-        dirichletFlags1+= 6,15,19,23,28;
-        dirichletFlags2+= 6,15,23,27,28;
-        interfaceFlags1+= 27;
-        interfaceFlags2+= 19;
+        dirichletFlags1 = { 6,15,19,23,28 };
+        dirichletFlags2 = { 6,15,23,27,28 };
+        interfaceFlags1 = { 27 };
+        interfaceFlags2 = { 19 };
     }
 
-    /**
-     * The function space and some associated elements(functions) are then defined
-     */
-    /** \code */
-    auto Xh1 = space_type::New( mesh1 );
-    auto Xh2 = space_type::New( mesh2 );
-    element_type u1( Xh1, "u1" );
-    element_type u2( Xh2, "u2" );
-    element_type u1old( Xh1, "u1old" );
+    // The function space and some associated elements(functions) are then defined
+    auto Xh1 = Pch<2>( mesh1 );
+    auto Xh2 = Pch<2>( mesh2 );
+    auto u1 = Xh1->element();
+    auto u2 = Xh2->element();
+    auto u1old = Xh1->element();
     auto uu = Xh1->element();
     auto lambda = Xh2->element();
     auto residual = Xh2->element();
 
-    AitkenType relaxmethod = ( AitkenType )this->vm()["relaxmethod"].template as<int>();
+    LocalProblem<decay_type<decltype(Xh1)>> lp1( Xh1 );
+    LocalProblem<decay_type<decltype(Xh2)>> lp2( Xh2 );
+
+    AitkenType relaxmethod = ( AitkenType ) ioption(_name="relaxmethod");
     auto aitkenRelax =  aitken( _space= Xh2,
                                 _type=( relaxmethod == 0 ) ? "standard" : "method1",
                                 _initial_theta=theta,
                                 _tolerance=tol );
     aitkenRelax.initialize( residual, lambda );
 
-    value_type pi = M_PI;
+    double pi = M_PI;
 
     auto g = sin( pi*Px() )*cos( pi*Py() )*cos( pi*Pz() );
     auto f = pi*pi*Dim*g;
@@ -418,7 +232,7 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
                         -pi*sin( pi*Px() )*cos( pi*Py() )*sin( pi*Pz() )*unitZ() );
 
 
-    bool additive = this->vm()["additive"].template as<int>();
+    bool additive = boption(_name="additive");
 
     double err1 = 1.;
     double err2 = 1.;
@@ -433,50 +247,43 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
     while ( !aitkenRelax.isFinished() &&  aitkenRelax.nIterations() <= imax )
     {
-
-
-        LOG(INFO) << "============================================================\n";
-        LOG(INFO) << "iteration  : " << aitkenRelax.nIterations() << "\n";
-        LOG(INFO) << "L2erroru1  : " << err1  << "\n";
-        LOG(INFO) << "L2erroru2  : " << err2  << "\n";
-        LOG(INFO) << "H1erroru1  : " << error1  << "\n";
-        LOG(INFO) << "H1erroru2  : " << error2  << "\n";
-
+        BOOST_TEST_MESSAGE( "============================================================" );
+        BOOST_TEST_MESSAGE( "iteration  : " + std::to_string( aitkenRelax.nIterations() ) );
+        BOOST_TEST_MESSAGE( "L2erroru1  : " + std::to_string( err1 ) );
+        BOOST_TEST_MESSAGE( "L2erroru2  : " + std::to_string( err2 ) );
+        BOOST_TEST_MESSAGE( "H1erroru1  : " + std::to_string( error1 ) );
+        BOOST_TEST_MESSAGE( "H1erroru2  : " + std::to_string( error2 ) );
 
         u1old = u1;
-
-
         if ( additive )
         {
-
-            if ( aitkenRelax.nIterations()==1 ) LOG(INFO) << "test_aitken additive method" << "\n";
+            if ( aitkenRelax.nIterations()==1 )
+                BOOST_TEST_MESSAGE( "test_aitken additive method" );
         }
-
         else
         {
-            if ( aitkenRelax.nIterations()==1 ) LOG(INFO) << "test_aiken multiplicative method" << "\n";
+            if ( aitkenRelax.nIterations()==1 )
+                BOOST_TEST_MESSAGE( "test_aiken multiplicative method" );
         }
-
 
         Ih21->apply( u2, uu );
 
-        localProblem( u1,
-                      dirichletFlags1, /*dirichlet*/g,
-                      /*rhs*/f,
-                      /**/interfaceFlags1,idv( uu ),
-                      DDMethod::DD );
+        lp1.solve( u1,
+                   dirichletFlags1, /*dirichlet*/g,
+                   /*rhs*/f,
+                   /**/interfaceFlags1,idv( uu ),
+                   DDMethod::DD );
 
         if ( !additive )
             u1old = u1;
 
         lambda = u2;
 
-        localProblem( u2,
-                      dirichletFlags2, /*dirichlet*/g,
-                      /*rhs*/f,
-                      /**/ interfaceFlags2,gradv( u1old )*vf::N(),
-                      DDMethod::DN );
-
+        lp2.solve( u2,
+                   dirichletFlags2, /*dirichlet*/g,
+                   /*rhs*/f,
+                   /**/ interfaceFlags2,gradv( u1old )*vf::N(),
+                   DDMethod::DN );
 
         residual = u2-lambda;
 
@@ -484,28 +291,36 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
 
         aitkenRelax.printInfo();
 
-        aitkenRelax.saveConvergenceHistory( std::string( "history.dat" ) );
+        aitkenRelax.saveConvergenceHistory( (boost::format( "history_%1%d.dat" )%Dim).str() );
 
         ++aitkenRelax;
 
-        double L2error1 =integrate( elements( mesh1 ), ( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
+        double L2error1 = integrate( _range=elements( mesh1 ),
+                                    _expr=( idv( u1 )-g )*( idv( u1 )-g ) ).evaluate()( 0,0 );
         err1 = math::sqrt( L2error1 );
 
-        double  L2error2 =integrate( elements( mesh2 ), ( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
+        double  L2error2 = integrate( _range=elements( mesh2 ),
+                                      _expr=( idv( u2 )-g )*( idv( u2 )-g ) ).evaluate()( 0,0 );
         err2 = math::sqrt( L2error2 );
 
         double semi_H1error1 = 2.;
         double semi_H1error2 = 2.;
 
 
-        semi_H1error1 =integrate( elements( mesh1 ), ( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
-        semi_H1error2 =integrate( elements( mesh2 ), ( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
+        semi_H1error1 =integrate( _range=elements( mesh1 ),
+                                  _expr=( gradv( u1 )-gradg )*trans( ( gradv( u1 )-gradg ) ) ).evaluate()( 0,0 );
+        semi_H1error2 =integrate( _range=elements( mesh2 ),
+                                  _expr=( gradv( u2 )-gradg )*trans( ( gradv( u2 )-gradg ) ) ).evaluate()( 0,0 );
 
         error1 = math::sqrt( L2error1 + semi_H1error1 );
         error2 = math::sqrt( L2error2 + semi_H1error2 );
 
     }; // iteration loop
 
+
+    BOOST_CHECK( aitkenRelax.nIterations() > 2 );
+    BOOST_CHECK( aitkenRelax.nIterations() < imax );
+#if 0
     auto exporter1 = exporter( _mesh=mesh1, _name=( boost::format( "%1%-%2%-%3%-%4%" )
                                                    % this->about().appName() % shape
                                                    % k0 % Dim ).str() );
@@ -519,54 +334,24 @@ TestAitken<Dim>::run( const double* X, unsigned long P, double* Y, unsigned long
         exporter1->save();
         exporter2->step( 1 )->add( "u2", u2 );
         exporter2->save();
-
-
         LOG(INFO) << "exportResults done\n";
     }
+#endif
 
-    /** \endcode */
-} // TestAitken::run
-
-/**
- * main function: entry point of the program
- */
-int
-main( int argc, char** argv )
-{
-    Environment env( _argc=argc, _argv=argv, _desc=makeOptions(), _about=makeAbout() );
-    /**
-     * create an application
-     */
-    /** \code */
-    Application app;
-
-    if ( app.vm().count( "help" ) )
-    {
-        std::cout << app.optionsDescription() << "\n";
-        return 0;
-    }
-
-    /** \endcode */
-    using namespace Feel::vf;
-
-    /**
-     * register the simgets
-     */
-    /** \code */
-    app.add( new TestAitken<1>() );
-    app.add( new TestAitken<2>() );
-    // app.add( new TestAitken<3>( app.vm(), app.about() ) );
-    /** \endcode */
-
-    /**
-     * run the application
-     */
-    /** \code */
-    app.run();
-    /** \endcode */
 }
 
 
+FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAboutDefault("test_aitken"), makeOptions() )
 
+BOOST_AUTO_TEST_SUITE( test_aitken )
 
+BOOST_AUTO_TEST_CASE( test_1d )
+{
+    runTestAitken<Mesh<Simplex<1>>>();
+ }
+BOOST_AUTO_TEST_CASE( test_2d )
+{
+    runTestAitken<Mesh<Simplex<2>>>();
+}
 
+BOOST_AUTO_TEST_SUITE_END()

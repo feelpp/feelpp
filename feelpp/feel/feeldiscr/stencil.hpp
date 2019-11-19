@@ -45,9 +45,10 @@ using namespace hana::literals; // contains the _c suffix
 
 namespace detail
 {
-template<typename BFType, typename Space1Type>
+template<typename BFType, typename Space1Type, typename SizeT = uint32_type>
 struct compute_graph3
 {
+    using size_type = SizeT;
     compute_graph3( BFType* bf, std::shared_ptr<Space1Type> const& space1, size_type trial_index, size_type hints  )
         :
         M_stencil( bf ),
@@ -110,9 +111,10 @@ struct compute_graph3
 };
 
 
-template<typename BFType, typename Space1Type>
+template<typename BFType, typename Space1Type, typename SizeT=uint32_type>
 struct compute_graph2
 {
+    using size_type = SizeT;
     compute_graph2( BFType* bf, std::shared_ptr<Space1Type> const& space1, size_type test_index, size_type hints  )
         :
         M_stencil( bf ),
@@ -178,9 +180,10 @@ struct compute_graph2
 };
 
 
-template<typename BFType>
+template<typename BFType, typename SizeT = uint32_type>
 struct compute_graph1
 {
+    using size_type = SizeT;
     compute_graph1( BFType* bf, size_type hints )
         :
         M_stencil( bf ),
@@ -215,23 +218,18 @@ struct stencilrangetype
 
 template <int I,int J,typename IteratorRange>
 fusion::pair< fusion::pair<mpl::int_<I>,mpl::int_<J> >,typename stencilrangetype<IteratorRange>::list_type >
-stencilRange( IteratorRange const& r, mpl::true_ /**/ )
-{
-    return fusion::make_pair< fusion::pair<mpl::int_<I>,mpl::int_<J> > >( r);
-}
-template <int I,int J,typename IteratorRange>
-fusion::pair< fusion::pair<mpl::int_<I>,mpl::int_<J> >,typename stencilrangetype<IteratorRange>::list_type >
-stencilRange( IteratorRange const& r, mpl::false_ /**/)
-{
-    typename stencilrangetype<IteratorRange>::list_type res;
-    res.push_back( r );
-    return fusion::make_pair< fusion::pair<mpl::int_<I>,mpl::int_<J> > >( res );
-}
-template <int I,int J,typename IteratorRange>
-fusion::pair< fusion::pair<mpl::int_<I>,mpl::int_<J> >,typename stencilrangetype<IteratorRange>::list_type >
 stencilRange( IteratorRange const& r)
 {
-    return stencilRange<I,J,IteratorRange>(r, mpl::bool_< boost::is_std_list<IteratorRange>::value >() );
+    if constexpr ( boost::is_std_list<IteratorRange>::value )
+    {
+        return fusion::make_pair< fusion::pair<mpl::int_<I>,mpl::int_<J> > >( r);
+    }
+    else
+    {
+        typename stencilrangetype<IteratorRange>::list_type res;
+        res.push_back( r );
+        return fusion::make_pair< fusion::pair<mpl::int_<I>,mpl::int_<J> > >( res );
+    }
 }
 
 
@@ -785,8 +783,8 @@ template<class T, class U> inline bool operator<(std::weak_ptr<T> const & a, std
 class StencilManagerImpl:
     public std::map<boost::tuple<std::weak_ptr<FunctionSpaceBase>,
     std::weak_ptr<FunctionSpaceBase>,
-    size_type,
-    std::vector<size_type>,
+    uint32_type,
+    std::vector<uint32_type>,
     bool >, std::shared_ptr<GraphCSR> >,
 public boost::noncopyable
 {
@@ -794,8 +792,8 @@ public:
     typedef std::shared_ptr<GraphCSR> graph_ptrtype;
     typedef boost::tuple<std::weak_ptr<FunctionSpaceBase>,
             std::weak_ptr<FunctionSpaceBase>,
-            size_type,
-            std::vector<size_type>,
+            uint32_type,
+            std::vector<uint32_type>,
             bool > key_type;
     typedef std::map<key_type, graph_ptrtype> graph_manager_type;
 
@@ -823,7 +821,7 @@ BOOST_PARAMETER_FUNCTION(
       ( trial,            *( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
     )
     ( optional                                  //    four optional parameters, with defaults
-      ( pattern,          ( size_type ), Pattern::COUPLED )
+      ( pattern,          ( uint32_type ), Pattern::COUPLED )
       ( pattern_block,    *, default_block_pattern )
       ( diag_is_nonzero,  ( bool ), false )
       ( collect_garbage,  ( bool ), true )
@@ -834,6 +832,7 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
+    using size_type = uint32_type;
     if ( collect_garbage )
     {
         // cleanup memory before doing anything
@@ -846,7 +845,8 @@ BOOST_PARAMETER_FUNCTION(
     typedef typename Feel::detail::compute_stencil_type<Args>::type stencil_type;
 
     // we look into the spaces dictionary for existing graph
-    auto git = StencilManager::instance().find( boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) );
+    auto git = StencilManager::instance().find(
+        boost::make_tuple( test, trial, pattern, pattern_block.getSetOfBlocks(), diag_is_nonzero ) );
 
     if ( git != StencilManager::instance().end() && range.isNullRange() && range_extended.isNullRange() )
     {

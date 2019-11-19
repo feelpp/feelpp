@@ -288,7 +288,8 @@ public:
     template<typename ExprT> void assembleRhsNeumann( Expr<ExprT> expr, std::string marker);
     template<typename ExprT> void assembleRhsInterfaceCondition( Expr<ExprT> expr, std::string marker);
     // u.n + g1.p = g2
-    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker);
+    template<typename ExprT1, typename ExprT2> void assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker, bool update_only = false );
+
     void assembleIBC(int i, std::string marker = "");
     virtual void assembleRhsIBC(int i, std::string marker = "", double intjn = 0);
 
@@ -462,7 +463,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT1, typename ExprT2>
 void
-MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker)
+MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& expr1, Expr<ExprT2> const& expr2, std::string const& marker, bool update_only )
 {
     tic();
     auto bbf = blockform2( *M_ps, M_A_cst);
@@ -484,15 +485,18 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     // stabilisation parameter
     auto tau_constant = cst(M_tauCst);
 
-    // <j.n,mu>_Gamma_R
-    bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=id(l)*normalt(u) );
-    // <tau p, mu>_Gamma_R
-    bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=tau_constant * id(l) * idt(p)  );
-    // <-tau phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
-                                 _expr=-tau_constant * idt(phat) * id(l) );
+    if ( !update_only )
+    {
+        // <j.n,mu>_Gamma_R
+        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                     _expr=id(l)*normalt(u) );
+        // <tau p, mu>_Gamma_R
+        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                     _expr=tau_constant * id(l) * idt(p)  );
+        // <-tau phat, mu>_Gamma_R
+        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+                                     _expr=-tau_constant * idt(phat) * id(l) );
+    }
     // <g_R^1 phat, mu>_Gamma_R
     bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
                                  _expr=expr1*idt(phat) * id(l) );
@@ -501,6 +505,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
                            _expr=id(l)*expr2);
     toc("assembleRobin", this->verbose() || FLAGS_v > 0);
 }
+
 
 template<int Dim, int Order, int G_Order, int E_Order>
 template<typename ExprT>
