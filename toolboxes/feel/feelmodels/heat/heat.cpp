@@ -53,9 +53,6 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
     M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
 
-    M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
-    M_doExportVelocityConvection = boption(_name="do_export_velocity-convection",_prefix=this->prefix());
-
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
 
@@ -355,32 +352,19 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
         for( auto const& ptreeLevel1 : ptreeLevel0.second )
         {
             std::string ptreeLevel1Name = ptreeLevel1.first;
+
             if ( ptreeLevel1Name == "Normal-Heat-Flux" )
             {
-                // get list of marker
-                std::set<std::string> markerSet;
-                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
-                if ( markerUnique.empty() )
+                for( auto const& ptreeNormalHeatFlux : ptreeLevel1.second )
                 {
-                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    auto indexesAllCases = ModelIndexes::generateAllCases( ptreeNormalHeatFlux.second );
+                    for ( auto const& indexes : indexesAllCases )
                     {
-                        std::string marker = ptreeMarker.second.template get_value<std::string>();
-                        markerSet.insert( marker );
+                        ModelMeasuresNormalFluxGeneric ppFlux;
+                        ppFlux.setup( ptreeNormalHeatFlux.second, indexes.replace( ptreeNormalHeatFlux.first ), indexes );
+                        if ( !ppFlux.markers().empty() )
+                            M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
                     }
-                }
-                else
-                {
-                    markerSet.insert( markerUnique );
-                }
-                // save forces measure for each marker
-                for ( std::string const& marker : markerSet )
-                {
-                    ModelMeasuresForces myPpForces;
-                    myPpForces.addMarker( marker );
-                    myPpForces.setName( marker );
-                    //std::cout << "add ppHeatFlux with name " << marker<<"\n";
-                    std::string name = myPpForces.name();
-                    M_postProcessMeasuresForces.push_back( myPpForces );
                 }
             }
         }

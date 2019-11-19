@@ -413,7 +413,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_electricModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
-    this->executePostProcessExports( M_exporter, time, fields );
+    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) );
+    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
