@@ -293,10 +293,14 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto symbolsExprMaterial( SymbExprType const& se ) const
         {
+            std::string prefix_symbol = "heat_";
+
             typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
             std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
             typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)(0,0)) _expr_matrix_comp_type;
             std::vector<std::pair<std::string,_expr_matrix_comp_type>> matPropSymbsMatrixComp;
+
+            // generate symbols heat_matName_k ...
             for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
             {
                 std::string const& _matName = rangeData.first;
@@ -307,13 +311,23 @@ class Heat : public ModelNumerical,
                     // generate compilation error because need to fix/improve the return type of expr.evaluate(bool, worldcomm_ptr_t)
                     for ( int i=0;i<nDim;++i )
                         for ( int j=0;j<nDim;++j )
-                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("heat_%1%_%2%%3%")%_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
+                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("%1%%2%_%3%%4%")%prefix_symbol %_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
 #endif
                 }
                 else
-                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("heat_%1%_k")% _matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
+                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
             }
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar )/*, symbolExpr( matPropSymbsMatrixComp )*/ );
+
+
+            typedef decltype( this->thermalProperties()->thermalConductivityScalarExpr( se ) ) _expr_scalar_selector_type;
+            std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
+            // generate the symbol heat_k if the all conductivities are scalar
+            if ( this->thermalProperties()->allThermalConductivitiesAreScalar() )
+            {
+                auto expr_k = this->thermalProperties()->thermalConductivityScalarExpr( se );
+                matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%k")% prefix_symbol).str(), expr_k ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar )/*, symbolExpr( matPropSymbsMatrixComp )*//*, symbolExpr(matPropSymbsScalarSelector)*/ );
         }
 
         //___________________________________________________________________________________//
@@ -457,8 +471,13 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
         auto const& u = this->fieldTemperature();
         double signFlux = (ppFlux.isOutward())? -1.0 : 1.0;
         auto kappa = this->thermalProperties()->thermalConductivityExpr( symbolsExpr );
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
-                                    _expr=signFlux*kappa*gradv(u)*N() ).evaluate()(0,0);
+        double heatFlux = 0;
+        if constexpr ( std::decay_t<decltype(kappa)>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
+                         heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
+                                              _expr=signFlux*kappa*gradv(u)*N() ).evaluate()(0,0);
+        else
+            heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
+                                 _expr=signFlux*inner(kappa*trans(gradv(u)),N()) ).evaluate()(0,0);
         this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
         hasMeasure = true;
     }

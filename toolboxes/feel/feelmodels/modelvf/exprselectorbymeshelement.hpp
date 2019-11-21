@@ -68,40 +68,52 @@ private :
     std::map<std::string,tag_type> M_nameToTag;
 };
 
-template <typename IndexType, typename ExprType>
+template <typename IndexType, typename TupleVectorExprType>
 class ExprSelectorByMeshElement
 {
 public :
-    using this_type = ExprSelectorByMeshElement<IndexType,ExprType>;
+    using this_type = ExprSelectorByMeshElement<IndexType,TupleVectorExprType>;
     using mapping_type = ExprSelectorByMeshElementMapping<IndexType>;
     using mapping_ptrtype = std::shared_ptr<mapping_type>;
     using mapping_tag_type = typename mapping_type::tag_type;
-    using expression_type = ExprType;
 
-    static const size_type context = expression_type::context;
+    using tuple_vector_expr_type = TupleVectorExprType;
+
+    using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_vector_expr_type{} ))>::value_type::second_type;
+
+    static const size_type context = std::decay_t<decltype( hana::fold( tuple_vector_expr_type{}, hana::integral_constant<size_type,0>{}, typename GinacExVF<>::FunctorsVariadicExpr::Context{} ) )>::value;
     static const bool is_terminal = false;
+
     template<typename Func>
     struct HasTestFunction
     {
-        static const bool result = expression_type::template HasTestFunction<Func>::result;
+        static const bool result = std::decay_t<decltype( hana::fold( tuple_vector_expr_type{},
+                                                                      hana::integral_constant<bool,false>{},
+                                                                      typename GinacExVF<>::FunctorsVariadicExpr::template HasTestFunction<Func>{} ) )>::value;
     };
 
     template<typename Func>
     struct HasTrialFunction
     {
-        static const bool result = expression_type::template HasTrialFunction<Func>::result;
+        static const bool result =  std::decay_t<decltype( hana::fold( tuple_vector_expr_type{},
+                                                                       hana::integral_constant<bool,false>{},
+                                                                       typename GinacExVF<>::FunctorsVariadicExpr::template HasTrialFunction<Func>{} ) )>::value;
     };
 
-    template<typename Func>
-    static const bool has_test_basis = expression_type::template has_test_basis<Func>;
-    template<typename Func>
-    static const bool has_trial_basis = expression_type::template has_trial_basis<Func>;
-    using test_basis = typename expression_type::test_basis;
-    using trial_basis = typename expression_type::trial_basis;
-    typedef typename expression_type::value_type value_type;
-    typedef typename expression_type::evaluate_type evaluate_type;
+    template<typename Funct>
+    static const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_vector_expr_type{},
+                                                                          hana::integral_constant<bool,false>{},
+                                                                          typename GinacExVF<>::FunctorsVariadicExpr::template HasTestBasis<Funct>{} ) )>::value;
+    template<typename Funct>
+    static const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_vector_expr_type{},
+                                                                           hana::integral_constant<bool,false>{},
+                                                                           typename GinacExVF<>::FunctorsVariadicExpr::template HasTrialBasis<Funct>{} ) )>::value;
+    using test_basis = std::nullptr_t;//TODO//typename expression_type::test_basis;
+    using trial_basis = std::nullptr_t;//TODO//typename expression_type::trial_basis;
+    typedef typename first_expression_type::value_type value_type;
+    typedef typename first_expression_type::evaluate_type evaluate_type;
 
-    ExprSelectorByMeshElement( mapping_ptrtype mapping, std::vector<std::pair<std::string,ExprType>> const& exprs )
+    ExprSelectorByMeshElement( mapping_ptrtype mapping, tuple_vector_expr_type const& exprs )
         :
         M_mapping( mapping ),
         M_exprs( exprs )
@@ -113,8 +125,11 @@ public :
     uint16_type polynomialOrder() const
         {
             uint16_type res = 0;
-            for ( auto const& [name,expr] : M_exprs )
-                res = std::max( res, expr.polynomialOrder() );
+            hana::for_each( M_exprs, [&res]( auto const& e )
+                            {
+                                for ( auto const& [name,expr] : e )
+                                    res = std::max( res, expr.polynomialOrder() );
+                            });
             return res;
         }
 
@@ -122,54 +137,104 @@ public :
     bool isPolynomial() const
         {
             bool res = true;
-            for ( auto const& [name,expr] : M_exprs )
-                res = res && expr.isPolynomial();
+            hana::for_each( M_exprs, [&res]( auto const& e )
+                            {
+                                for ( auto const& [name,expr] : e )
+                                    res = res && expr.isPolynomial();
+                            });
             return res;
         }
 
     mapping_type const& mapping() const { return *M_mapping; }
-    std::vector<std::pair<std::string,ExprType>> const& expressions() const { return M_exprs; }
+    tuple_vector_expr_type const& tupleExpressions() const { return M_exprs; }
+
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {
-        typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
-        typedef typename tensor_expr_type::value_type value_type;
-        typedef typename tensor_expr_type::shape expr_shape;
+        struct TransformExprToTensor
+        {
+            TransformExprToTensor( mapping_type const& mapping ) : M_mapping( mapping ) {}
+
+            template <typename T>
+            struct apply {
+                using type = typename T::value_type::second_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+            };
+
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::map<uint16_type,_tensor_type> res;
+                    for ( auto const&  [name,theexpr]  : t )
+                        res.emplace( M_mapping.nameToTag( name ), _tensor_type( theexpr,Geo_t{} ) );
+                    _tensor_type * res2 = nullptr;
+                    return std::make_pair(res,res2);
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::map<uint16_type,_tensor_type> res;
+                    for ( auto const&  [name,theexpr]  : t )
+                        res.emplace( M_mapping.nameToTag( name ), _tensor_type( theexpr,geom,fev,feu  ) );
+                    _tensor_type * res2 = nullptr;
+                    return std::make_pair(res,res2);
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::map<uint16_type,_tensor_type> res;
+                    for ( auto const&  [name,theexpr]  : t )
+                        res.emplace( M_mapping.nameToTag( name ), _tensor_type( theexpr,geom,fev ) );
+                    _tensor_type * res2 = nullptr;
+                    return std::make_pair(res,res2);
+                }
+            template <typename T>
+            constexpr auto operator()(T const& t, Geo_t const& geom ) const
+                {
+                    using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
+                    std::map<uint16_type,_tensor_type> res;
+                    for ( auto const&  [name,theexpr]  : t )
+                        res.emplace( M_mapping.nameToTag( name ), _tensor_type( theexpr,geom ) );
+                    _tensor_type * res2 = nullptr;
+                    return std::make_pair(res,res2);
+                }
+
+            mapping_type const& M_mapping;
+        };
+
+        using tuple_tensor_expr_type = std::decay_t<decltype( hana::transform( tuple_vector_expr_type{}, TransformExprToTensor{mapping_type{}} ) ) >;
+
+        typedef typename first_expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> first_tensor_expr_type;
+        typedef typename first_tensor_expr_type::value_type value_type;
+        typedef typename first_tensor_expr_type::shape expr_shape;
         typedef expr_shape shape;
 
         struct is_zero
         {
-            static const bool value = tensor_expr_type::is_zero::value;
+            static const bool value = false;//tensor_expr_type::is_zero::value;
         };
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             M_mapping( expr.mapping() ),
-            M_currentTensorExpr( nullptr )
-            {
-                for ( auto const& [name,theexpr] : expr.expressions() )
-                    M_tensorExprs.emplace( M_mapping.nameToTag( name ), tensor_expr_type( theexpr, geom, fev, feu ) );
-            }
+            M_tupleTensorExprs( hana::transform( expr.tupleExpressions(), [this,&geom,&fev,&feu](auto const& t) { return TransformExprToTensor{M_mapping}(t,geom,fev,feu); } ) )
+            {}
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             :
             M_mapping( expr.mapping() ),
-            M_currentTensorExpr( nullptr )
-            {
-                for ( auto const& [name,theexpr] : expr.expressions() )
-                    M_tensorExprs.emplace( M_mapping.nameToTag( name ), tensor_expr_type( theexpr, geom, fev ) );
-            }
+            M_tupleTensorExprs( hana::transform( expr.tupleExpressions(), [this,&geom,&fev](auto const& t) { return TransformExprToTensor{M_mapping}(t,geom,fev); } ) )
+            {}
         tensor( this_type const& expr,
                 Geo_t const& geom )
             :
             M_mapping( expr.mapping() ),
-            M_currentTensorExpr( nullptr )
-            {
-                for ( auto const& [name,theexpr] : expr.expressions() )
-                    M_tensorExprs.emplace( M_mapping.nameToTag( name ), tensor_expr_type( theexpr, geom ) );
-            }
+            M_tupleTensorExprs( hana::transform( expr.tupleExpressions(), [this,&geom](auto const& t) { return TransformExprToTensor{M_mapping}(t,geom); } ) )
+            {}
 
         template<typename IM>
         void init( IM const& im )
@@ -179,90 +244,114 @@ public :
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             this->selectSubTensor( geom );
-            if ( M_currentTensorExpr )
-                M_currentTensorExpr->update( geom, fev, feu );
+            hana::for_each( M_tupleTensorExprs, [&geom,&fev,&feu]( auto & e )
+                            {
+                                if ( e.second )
+                                    e.second->update( geom, fev, feu );
+                            });
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             this->selectSubTensor( geom );
-            if ( M_currentTensorExpr )
-                M_currentTensorExpr->update( geom, fev );
+            hana::for_each( M_tupleTensorExprs, [&geom,&fev]( auto & e )
+                            {
+                                if ( e.second )
+                                    e.second->update( geom, fev );
+                            });
         }
         void update( Geo_t const& geom )
         {
             this->selectSubTensor( geom );
-            if ( M_currentTensorExpr )
-                M_currentTensorExpr->update( geom );
+            hana::for_each( M_tupleTensorExprs, [&geom]( auto & e )
+                            {
+                                if ( e.second )
+                                    e.second->update( geom );
+                            });
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             this->selectSubTensor( geom );
-            if ( M_currentTensorExpr )
-                M_currentTensorExpr->update( geom, face );
+            hana::for_each( M_tupleTensorExprs, [&geom,&face]( auto & e )
+                            {
+                                if ( e.second )
+                                    e.second->update( geom, face );
+                            });
         }
 
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            if ( M_currentTensorExpr )
-                return M_currentTensorExpr->evalijq( i, j, c1, c2, q );
-            else
-                return value_type(0);
+            value_type res(0);
+            hana::for_each( M_tupleTensorExprs, [&i,&j,&c1,&c2,&q,&res]( auto const& e )
+                            {
+                                if ( e.second )
+                                    res = e.second->evalijq( i, j, c1, c2, q );
+                            });
+            return res;
         }
 
         value_type
         evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            if ( M_currentTensorExpr )
-                return M_currentTensorExpr->evaliq( i, c1, c2, q );
-            else
-                return value_type(0);
+            value_type res(0);
+            hana::for_each( M_tupleTensorExprs, [&i,&c1,&c2,&q,&res]( auto const& e )
+                            {
+                                if ( e.second )
+                                    res = e.second->evaliq( i, c1, c2, q );
+                            });
+            return res;
         }
 
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            if ( M_currentTensorExpr )
-                return M_currentTensorExpr->evalq( c1, c2, q );
-            else
-                return value_type(0);
+            value_type res(0);
+            hana::for_each( M_tupleTensorExprs, [&c1,&c2,&q,&res]( auto const& e )
+                            {
+                                if ( e.second )
+                                    res = e.second->evalq( c1, c2, q );
+                            });
+            return res;
         }
 
     private :
         void selectSubTensor( Geo_t const& geom )
             {
+                // first, reset all current tensors
+                hana::for_each( M_tupleTensorExprs, []( auto & e ) { e.second = nullptr; } );
+
                 IndexType eid = vf::detail::ExtractGm<Geo_t>::get( geom )->id();
                 mapping_tag_type tag = M_mapping.idToTag( eid );
                 if ( tag != invalid_v<mapping_tag_type> )
                 {
-                    auto itFindTensorExpr = M_tensorExprs.find( tag );
-                    if ( itFindTensorExpr !=  M_tensorExprs.end() )
-                    {
-                        M_currentTensorExpr = &itFindTensorExpr->second;
-                        return;
-                    }
+                    hana::for_each( M_tupleTensorExprs, [&tag]( auto & e )
+                                    {
+                                        //e.second = nullptr;
+                                        auto & tensorExprs = e.first;
+                                        auto itFindTensorExpr = tensorExprs.find( tag );
+                                        if ( itFindTensorExpr !=  tensorExprs.end() )
+                                            e.second = &itFindTensorExpr->second;
+                                    });
                 }
-                M_currentTensorExpr = nullptr;
             }
     private :
         mapping_type const& M_mapping;
-        std::map<uint16_type,tensor_expr_type> M_tensorExprs;
-        tensor_expr_type* M_currentTensorExpr;
+        tuple_tensor_expr_type M_tupleTensorExprs;
     };
 
 private :
     mapping_ptrtype M_mapping;
-    std::vector<std::pair<std::string,ExprType>> M_exprs;
+    TupleVectorExprType M_exprs;
 };
 
 
-template <typename IndexType, typename ExprType>
+template <typename IndexType, typename VectorExpr1Type, typename ... VectorExprOtherType>
 inline
-Expr<ExprSelectorByMeshElement<IndexType,ExprType>>
-    expr( typename ExprSelectorByMeshElement<IndexType,ExprType>::mapping_ptrtype mapping, std::vector<std::pair<std::string,ExprType>> const& exprs )
+Expr<ExprSelectorByMeshElement<IndexType,hana::tuple<VectorExpr1Type,VectorExprOtherType...>>>
+    expr( typename ExprSelectorByMeshElement<IndexType,hana::tuple<VectorExpr1Type, VectorExprOtherType...>>::mapping_ptrtype mapping, VectorExpr1Type const& exprs1, VectorExprOtherType ... exprsOther )
 {
-    typedef ExprSelectorByMeshElement<IndexType,ExprType> esbme_t;
-    return Expr< esbme_t >( esbme_t( mapping,exprs ) );
+    typedef ExprSelectorByMeshElement<IndexType,hana::tuple<VectorExpr1Type, VectorExprOtherType...>> esbme_t;
+    return Expr< esbme_t >( esbme_t( mapping, hana::make_tuple( exprs1, exprsOther... ) ) );
 }
 
 } // namespace vf
