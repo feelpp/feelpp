@@ -175,23 +175,65 @@ public :
             return M_thermalConductivityByMaterial.find( matName )->second;
         }
 
+    bool allThermalConductivitiesAreScalar() const
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& thermalConductivity = this->thermalConductivity( _matName );
+                if ( !thermalConductivity.isScalar() )
+                    return false;
+            }
+            return true;
+        }
+
     template <typename SymbolsExpr>
     auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
+            auto Id = eye<nDim,nDim>();
+            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)*Id) _expr_scalar_type;
             std::vector<std::pair<std::string,_expr_scalar_type>> exprs_k;
+            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},symbolsExpr)) _expr_matrix_type;
+            std::vector<std::pair<std::string,_expr_matrix_type>> exprs_k_matrix;
 
             for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
             {
                 std::string const& _matName = rangeData.first;
                 auto const& thermalConductivity = this->thermalConductivity( _matName );
-                auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
-                exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
+                if ( thermalConductivity.isMatrix() )
+                {
+                    auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+                    exprs_k_matrix.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
+                }
+                else
+                {
+                    auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
+                    exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr*Id ) );
+                }
+            }
+            auto kappa = expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_k, exprs_k_matrix );
+            return kappa;
+        }
+
+    template <typename SymbolsExpr>
+    auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_k;
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& thermalConductivity = this->thermalConductivity( _matName );
+                if ( thermalConductivity.isScalar() )
+                {
+                    auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
+                    exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
+                }
             }
             auto kappa = expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_k );
             return kappa;
-
         }
+
 
 
     // rho
