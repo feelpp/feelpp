@@ -123,6 +123,13 @@ else()
     )
 endif()
 
+if ( MKL_FOUND )
+  target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
+  target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
+  #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
+  target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
 target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE eigen )
 
