@@ -12,10 +12,14 @@ namespace FeelModels
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
+                                                MixedPoissonPhysics const& physic,
                                                 worldcomm_ptr_t const& worldComm,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
     : super_type( prefix, worldComm, subPrefix, modelRep ),
+      M_physic(physic),
+      M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
+      M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
       M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_hFace(ioption( prefixvm(this->prefix(), "hface") )),
@@ -53,10 +57,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
+                                               MixedPoissonPhysics const& physic,
                                                worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                                ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
+    return std::make_shared<self_type> ( prefix,physic,worldComm,subPrefix,modelRep );
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -117,7 +122,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
     this->modelProperties().postProcess().setParameterValues( M_paramValues );
 
     // initialize marker lists for each boundary condition type
-    auto itField = modelProperties().boundaryConditions().find( "potential");
+    auto itField = modelProperties().boundaryConditions().find( M_potentialKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -185,7 +190,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
     if ( !M_useUserIBC )
     {
         M_IBCList.clear();
-        itField = modelProperties().boundaryConditions().find( "flux");
+        itField = modelProperties().boundaryConditions().find( M_fluxKey);
         if ( itField != modelProperties().boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
@@ -237,8 +242,35 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 {
+    std::set<std::string> markers;
+    for( auto const& m : this->modelProperties().materials() )
+    {
+        auto const& mat = m.second;
+        if( mat.hasPhysics() )
+        {
+            switch(M_physic)
+            {
+            case MixedPoissonPhysics::None:
+                break;
+            case MixedPoissonPhysics::Electric:
+                if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
+                    continue;
+                break;
+            case MixedPoissonPhysics::Heat:
+                if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
+                    continue;
+                break;
+            }
+        }
+        for ( std::string const& matmarker : mat.meshMarkers() )
+            markers.insert( matmarker );
+    }
+    M_Vh = Pdhv<Order>( M_mesh, markedelements(M_mesh, markers) );
+    M_Wh = Pdh<Order>( M_mesh, markedelements(M_mesh, markers) );
+    M_Whp = Pdh<Order+1>( M_mesh, markedelements(M_mesh, markers) );
+
     // Mh only on the faces whitout integral condition
-    auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& ewrap ) {
+    auto complement_integral_bdy = complement(faces(support(M_Wh)),[this]( auto const& ewrap ) {
                                                                 auto const& e = unwrap_ref( ewrap );
                                                                 for( auto exAtMarker : this->M_IBCList)
                                                                 {
@@ -250,9 +282,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
 
-    M_Vh = Pdhv<Order>( M_mesh, true);
-    M_Wh = Pdh<Order>( M_mesh, true );
-    M_Whp = Pdh<Order+1>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
