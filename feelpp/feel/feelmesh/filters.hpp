@@ -395,7 +395,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh )
 {
@@ -408,13 +408,13 @@ markedelements( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker \p flag
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 1, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -426,13 +426,13 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& m
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 2, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -444,13 +444,13 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -514,7 +514,7 @@ idedelements( MeshType const& mesh, flag_type flag )
  *
  * @return a pair of face iterators (begin,end)
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 faces_pid_t<MeshType>
 faces( MeshType const& mesh )
 {
