@@ -116,7 +116,7 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
     auto sc_param = M_useSC ? 0.5 : 1.0;
 
 
-    auto gammaMinusIntegral = complement(boundaryfaces(M_mesh),
+    auto gammaMinusIntegral = complement(boundaryfaces(support(M_Wh)),
                                          [this]( auto const& ewrap ) {
                                              auto const& e = unwrap_ref( ewrap );
                                              for( auto exAtMarker : this->M_IBCList)
@@ -129,29 +129,29 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
 
     // -(p,div(v))_Omega
-    bbf( 0_c, 1_c ) += integrate(_range=elements(M_mesh),_expr=-(idt(p)*div(v)));
+    bbf( 0_c, 1_c ) += integrate(_range=elements(support(M_Wh)),_expr=-(idt(p)*div(v)));
 
     // <phat,v.n>_Gamma\Gamma_I
-    bbf( 0_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 0_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=( idt(phat)*(leftface(normal(v))+rightface(normal(v)))) );
     bbf( 0_c, 2_c ) += integrate(_range=gammaMinusIntegral,
                                  _expr=idt(phat)*normal(v));
 
     // (div(j),q)_Omega
-    bbf( 1_c, 0_c ) += integrate(_range=elements(M_mesh), _expr=id(w)*divt(u));
+    bbf( 1_c, 0_c ) += integrate(_range=elements(support(M_Wh)), _expr=id(w)*divt(u));
 
 
     // <tau p, w>_Gamma
-    bbf( 1_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 1_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=tau_constant *
                                  ( leftfacet( idt(p))*leftface(id(w)) +
                                    rightfacet( idt(p))*rightface(id(w) )));
-    bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(M_mesh),
+    bbf( 1_c, 1_c ) += integrate(_range=boundaryfaces(support(M_Wh)),
                                  _expr=tau_constant * id(w)*idt(p));
 
 
     // <-tau phat, w>_Gamma\Gamma_I
-    bbf( 1_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 1_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=-tau_constant * idt(phat) *
                                  ( leftface( id(w) )+
                                    rightface( id(w) )));
@@ -160,17 +160,17 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleCstPart()
 
 
     // <j.n,mu>_Omega/Gamma
-    bbf( 2_c, 0_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 0_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=( id(l)*(leftfacet(normalt(u))+
                                                 rightfacet(normalt(u))) ) );
 
     // <tau p, mu>_Omega/Gamma
-    bbf( 2_c, 1_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 1_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=tau_constant * id(l) * ( leftfacet( idt(p) )+
                                                                 rightfacet( idt(p) )));
 
     // <-tau phat, mu>_Omega/Gamma
-    bbf( 2_c, 2_c ) += integrate(_range=internalfaces(M_mesh),
+    bbf( 2_c, 2_c ) += integrate(_range=internalfaces(support(M_Wh)),
                                  _expr=-sc_param*tau_constant * idt(phat) * id(l) );
 
     this->assembleBoundaryCond();
@@ -214,13 +214,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateConductivityTerm( bool isNL)
 
     for( auto const& pairMat : modelProperties().materials() )
     {
-        auto marker = pairMat.first;
         auto material = pairMat.second;
+        auto marker = material.meshMarkers();
         if ( !isNL )
         {
             auto cond = material.getScalar(M_conductivityKey, M_paramValues);
             // (sigma^-1 j, v)
-            bbf(0_c,0_c) += integrate(_range=markedelements(M_mesh,marker),
+            bbf(0_c,0_c) += integrate(_range=markedelements(support(M_Wh),marker),
                                       _expr=(trans(idt(u))*id(v))/cond );
         }
         else
@@ -228,14 +228,14 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::updateConductivityTerm( bool isNL)
             auto cond = material.getScalar(M_nlConductivityKey,
                                            {"p"}, {idv(M_pp)}, M_paramValues);
             // (sigma(p)^-1 j, v)
-            bbf(0_c,0_c) += integrate(_range=markedelements(M_mesh,marker),
+            bbf(0_c,0_c) += integrate(_range=markedelements(support(M_Wh),marker),
                                       _expr=(trans(idt(u))*id(v))/cond );
         }
     }
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
-        bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+        bbf( 1_c, 1_c ) += integrate(_range=elements(support(M_Wh)),
                                      _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
 
@@ -253,7 +253,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRHS()
         this->assemblePotentialRHS( idv(bdf_poly) , "");
     }
 
-    auto itField = modelProperties().boundaryConditions().find( "potential");
+    auto itField = modelProperties().boundaryConditions().find( M_potentialKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -272,7 +272,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRHS()
         }
     }
 
-    itField = modelProperties().boundaryConditions().find( "flux");
+    itField = modelProperties().boundaryConditions().find( M_fluxKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -295,7 +295,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleBoundaryCond()
 {
-    auto itField = modelProperties().boundaryConditions().find( "potential");
+    auto itField = modelProperties().boundaryConditions().find( M_potentialKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -363,7 +363,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
 {
 
 
-    auto itField = modelProperties().boundaryConditions().find( "potential");
+    auto itField = modelProperties().boundaryConditions().find( M_potentialKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -426,7 +426,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
                      auto blf = blockform1( *M_ps, M_F );
                      auto l = M_Mh->element( "lambda" );
                      // <g_N,mu>_Gamma_N
-                     blf(2_c) += integrate(_range=markedfaces(M_mesh, marker), _expr=trans(g)*N() * id(l));
+                     blf(2_c) += integrate(_range=markedfaces(support(M_Wh), marker), _expr=trans(g)*N() * id(l));
                      */
                     auto gn = inner(g,N());
                     this->assembleRhsNeumann( gn, marker);
@@ -480,7 +480,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsBoundaryCond()
     }
 
 
-    itField = modelProperties().boundaryConditions().find( "flux");
+    itField = modelProperties().boundaryConditions().find( M_fluxKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -574,10 +574,10 @@ void MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleRhsIBC( int i, std::string marker
         }
     }
 
-    double meas = integrate(  _range=markedfaces(M_mesh,marker), _expr=cst(1.0)).evaluate()(0,0);
+    double meas = integrate(  _range=markedfaces(support(M_Wh),marker), _expr=cst(1.0)).evaluate()(0,0);
 
     // <I_target,m>_Gamma_I
-    blf(3_c,i) += integrate( _range=markedfaces(M_mesh,marker), _expr=g*id(nu)/meas );
+    blf(3_c,i) += integrate( _range=markedfaces(support(M_Wh),marker), _expr=g*id(nu)/meas );
     toc("assembleRhsIbc", FLAGS_v > 0);
 
 }
@@ -594,7 +594,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleDirichlet( std::string marker)
     auto l = M_Mh->element( "lambda" );
 
     // <phat, mu>_Gamma_D
-    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                  _expr=idt(phat) * id(l) );
     toc("assembleDirichlet", FLAGS_v > 0);
 }
@@ -626,13 +626,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleNeumann( std::string marker)
     auto tau_constant = cst(M_tauCst);
 
     // <j.n,mu>_Gamma_N
-    bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+    bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                  _expr=id(l)*normalt(u) );
     // <tau p, mu>_Gamma_N
-    bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+    bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                  _expr=tau_constant * id(l) * idt(p) );
     // <-tau phat, mu>_Gamma_N
-    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                  _expr=-tau_constant * idt(phat) * id(l) );
     toc("assembleNeumann", FLAGS_v > 0);
 }
@@ -682,23 +682,23 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assembleIBC( int i, std::string markerOpt )
 
 
     // <lambda, v.n>_Gamma_I
-    bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 0_c, 3_c, 0, i ) += integrate( _range=markedfaces(support(M_Wh),marker),
                                         _expr= idt(uI) * normal(u) );
 
     // -<lambda, tau w>_Gamma_I
-    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 1_c, 3_c, 1, i ) += integrate( _range=markedfaces(support(M_Wh),marker),
                                         _expr=-tau_constant * idt(uI) * id(w) );
 
     // <j.n, m>_Gamma_I
-    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(M_mesh,marker), _expr=normalt(u) * id(nu) );
+    bbf( 3_c, 0_c, i, 0 ) += integrate( _range=markedfaces(support(M_Wh),marker), _expr=normalt(u) * id(nu) );
 
 
     // <tau p, m>_Gamma_I
-    bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 3_c, 1_c, i, 1 ) += integrate( _range=markedfaces(support(M_Wh),marker),
                                         _expr=tau_constant *idt(p)  * id(nu) );
 
     // -<lambda2, m>_Gamma_I
-    bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(M_mesh,marker),
+    bbf( 3_c, 3_c, i, i ) += integrate( _range=markedfaces(support(M_Wh),marker),
                                         _expr=-tau_constant * id(nu) *idt(uI) );
 
     toc("assembleIbc",FLAGS_v>0);
@@ -710,7 +710,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessCstPart()
 {
     auto pps = product( M_Whp );
     auto b = blockform2( pps, M_App);
-    b( 0_c, 0_c ) = integrate( _range=elements(M_mesh),
+    b( 0_c, 0_c ) = integrate( _range=elements(support(M_Wh)),
                                _expr=inner(gradt(M_ppp),grad(M_ppp)));
 }
 
@@ -722,19 +722,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::assemblePostProcessNonCstPart( bool isNL)
     auto ell = blockform1( pps, M_Fpp);
     for( auto const& pairMat : modelProperties().materials() )
     {
-        auto marker = pairMat.first;
         auto material = pairMat.second;
+        auto marker = material.meshMarkers();
         if ( !isNL )
         {
             auto cond = material.getScalar(M_conductivityKey, M_paramValues);
-            ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+            ell(0_c) += integrate( _range=markedelements(support(M_Wh),marker),
                                    _expr=-grad(M_ppp)*idv(M_up)/cond);
         }
         else
         {
             auto cond = material.getScalar(M_nlConductivityKey,
                                            {"p"}, {idv(M_pp)}, M_paramValues);
-            ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+            ell(0_c) += integrate( _range=markedelements(support(M_Wh),marker),
                                    _expr=-grad(M_ppp)*idv(M_up)/cond);
         }
     }
@@ -750,7 +750,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::solvePostProcess()
     auto ell = blockform1( pps, M_Fpp);
     b.solve( _solution=PP, _rhs=ell, _name="sc.post", _local=true);
     M_ppp=PP(0_c);
-    auto P0dh = Pdh<0>(M_mesh);
+    auto P0dh = Pdh<0>(M_mesh, M_Wh->template rangeElements<0>());
     M_ppp -= M_ppp.ewiseMean(P0dh);
     M_ppp += M_pp.ewiseMean(P0dh);
 }
@@ -773,7 +773,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
     if (!this->doRestart())
     {
         // start time step
-        auto itField = modelProperties().boundaryConditions().find("potential");
+        auto itField = modelProperties().boundaryConditions().find(M_potentialKey);
         if ( itField != modelProperties().boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
@@ -799,13 +799,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initTimeStep()
                         auto gradp_init = grad<Dim>(p_init) ;
                         auto u_init = cst(-K)*trans(gradp_init);
 
-                        M_pp = project( _space=M_Wh, _range=markedelements(M_mesh,marker), _expr=p_init );
-                        M_up = project( _space=M_Vh, _range=markedelements(M_mesh,marker), _expr=u_init );
+                        M_pp = project( _space=M_Wh, _range=markedelements(support(M_Wh),marker), _expr=p_init );
+                        M_up = project( _space=M_Vh, _range=markedelements(support(M_Wh),marker), _expr=u_init );
 
                         if (M_integralCondition)
                         {
-                            auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-                            auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                            auto mup = integrate( _range = markedfaces(support(M_Wh),M_IBCList[0].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                            auto meas = integrate( _range = markedfaces(support(M_Wh),M_IBCList[0].marker()), _expr=cst(1.0) ).evaluate()(0,0);
 
                             Feel::cout << "Initial integral value of potential on "
                                        << M_IBCList[0].marker() << " : \t " << mup/meas << std::endl;
@@ -922,11 +922,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
     {
         for ( auto const& field : modelProperties().postProcess().exports().fields() )
         {
-            if ( field == "flux" )
+            if ( field == M_fluxKey )
             {
                 LOG(INFO) << "exporting flux at time " << time;
 
-                M_exporter->step( time )->add(prefixvm(prefix(), "flux"), Idhv?(*Idhv)( M_up):M_up );
+                M_exporter->step( time )->add(prefixvm(prefix(), M_fluxKey), Idhv?(*Idhv)( M_up):M_up );
                 if (M_integralCondition)
                 {
                     double meas = 0.0;
@@ -937,9 +937,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                         auto marker = exAtMarker.marker();
                         LOG(INFO) << "exporting integral flux at time "
                                   << time << " on marker " << marker;
-                        j_integral = integrate(_range=markedfaces(M_mesh,marker),
+                        j_integral = integrate(_range=markedfaces(support(M_Wh),marker),
                                                _expr=trans(idv(M_up))*N()).evaluate()(0,0);
-                        meas = integrate(_range=markedfaces(M_mesh,marker),
+                        meas = integrate(_range=markedfaces(support(M_Wh),marker),
                                          _expr=cst(1.0)).evaluate()(0,0);
                         Feel::cout << "Integral flux on " << marker << ": " << j_integral << std::endl;
                     }
@@ -953,20 +953,20 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                 auto scaled_flux = M_Vh->element("scaled_flux");
                 for( auto const& pairMat : modelProperties().materials() )
                 {
-                    auto marker = pairMat.first;
                     auto material = pairMat.second;
+                    auto marker = material.meshMarkers();
                     auto kk = material.getScalar( "scale_flux" );
 
-                    scaled_flux.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_up));
+                    scaled_flux.on( _range=markedelements(support(M_Wh),marker) , _expr= kk*idv(M_up));
 
                 }
 
                 M_exporter->step( time )->add(prefixvm(prefix(), "scaled_flux"), Idhv?(*Idhv)( scaled_flux ):scaled_flux );
             }
-            else if ( field == "potential" )
+            else if ( field == M_potentialKey )
             {
                 LOG(INFO) << "exporting potential at time " << time;
-                M_exporter->step( time )->add(prefixvm(prefix(), "potential"),
+                M_exporter->step( time )->add(prefixvm(prefix(), M_potentialKey),
                                               Idh?(*Idh)(M_pp):M_pp);
 
                 for( int i = 0; i < M_integralCondition; i++ )
@@ -981,8 +981,8 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                     Feel::cout << "Integral value of potential(mup) on "
                                << M_IBCList[i].marker() << " : \t " << export_mup << std::endl;
 
-                    // auto mup = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
-                    // auto meas = integrate( _range = markedfaces(M_mesh,M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
+                    // auto mup = integrate( _range = markedfaces(support(M_Wh),M_IBCList[i].marker()), _expr=idv(M_pp) ).evaluate()(0,0);
+                    // auto meas = integrate( _range = markedfaces(support(M_Wh),M_IBCList[i].marker()), _expr=cst(1.0) ).evaluate()(0,0);
                     //Feel::cout << "Integral value of potential(from pp) on " << M_IBCList[i].marker() << " : \t " << mup/meas << std::endl;
 
                 }
@@ -1004,11 +1004,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 if ( !this->isStationary() )
                                     u_exact.setParameterValues( { {"t", time } } );
                                 u_exact.setParameterValues( M_paramValues );
-                                auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+                                auto u_exactExport = project( _space=M_Vh, _range=elements(support(M_Wh)), _expr=u_exact );
                                 M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
-                                l2err_u = normL2( _range=elements(M_mesh), _expr=u_exact - idv(M_up), _quad=M_quadError );
-                                l2norm_uex = normL2( _range=elements(M_mesh), _expr=u_exact, _quad=M_quadError );
+                                l2err_u = normL2( _range=elements(support(M_Wh)), _expr=u_exact - idv(M_up), _quad=M_quadError );
+                                l2norm_uex = normL2( _range=elements(support(M_Wh)), _expr=u_exact, _quad=M_quadError );
                                 if (l2norm_uex < 1)
                                     l2norm_uex = 1.0;
                             }
@@ -1025,11 +1025,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 if ( !this->isStationary() )
                                     p_exact.setParameterValues( { {"t", time } } );
                                 p_exact.setParameterValues( M_paramValues );
-                                auto p_exactExport = project( _space=M_Wh, _range=elements(M_mesh), _expr=p_exact );
+                                auto p_exactExport = project( _space=M_Wh, _range=elements(support(M_Wh)), _expr=p_exact );
                                 M_exporter->step( time )->add(prefixvm(prefix(), "p_exact"), p_exactExport );
 
-                                l2err_p = normL2( _range=elements(M_mesh), _expr=p_exact - idv(M_pp), _quad=M_quadError );
-                                l2norm_pex = normL2( _range=elements(M_mesh), _expr=p_exact, _quad=M_quadError );
+                                l2err_p = normL2( _range=elements(support(M_Wh)), _expr=p_exact - idv(M_pp), _quad=M_quadError );
+                                l2norm_pex = normL2( _range=elements(support(M_Wh)), _expr=p_exact, _quad=M_quadError );
                                 if (l2norm_pex < 1)
                                     l2norm_pex = 1.0;
 
@@ -1047,13 +1047,13 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                     gradp_exact.setParameterValues( M_paramValues );
                                     auto u_exact = cst(-K)*trans(gradp_exact);//expr(-K* trans(gradp_exact)) ;
 
-                                    auto u_exactExport = project( _space=M_Vh, _range=elements(M_mesh), _expr=u_exact );
+                                    auto u_exactExport = project( _space=M_Vh, _range=elements(support(M_Wh)), _expr=u_exact );
 
                                     M_exporter->step( time )->add(prefixvm(prefix(), "u_exact"), u_exactExport );
 
-                                    // auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - u_exact );
-                                    auto l2err_u = normL2( _range=elements(M_mesh), _expr= idv(M_up) - idv(u_exactExport), _quad=M_quadError );
-                                    auto l2norm_uex = normL2( _range=elements(M_mesh), _expr= u_exact, _quad=M_quadError );
+                                    // auto l2err_u = normL2( _range=elements(support(M_Wh)), _expr= idv(M_up) - u_exact );
+                                    auto l2err_u = normL2( _range=elements(support(M_Wh)), _expr= idv(M_up) - idv(u_exactExport), _quad=M_quadError );
+                                    auto l2norm_uex = normL2( _range=elements(support(M_Wh)), _expr= u_exact, _quad=M_quadError );
 
                                     if (l2norm_uex < 1)
                                         l2norm_uex = 1.0;
@@ -1096,11 +1096,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                 auto scaled_potential = M_Wh->element("scaled_potential");
                 for( auto const& pairMat : modelProperties().materials() )
                 {
-                    auto marker = pairMat.first;
                     auto material = pairMat.second;
+                    auto marker = material.meshMarkers();
                     auto kk = material.getScalar( "scale_potential" );
 
-                    scaled_potential.on( _range=markedelements(M_mesh,marker) , _expr= kk*idv(M_pp));
+                    scaled_potential.on( _range=markedelements(support(M_Wh),marker) , _expr= kk*idv(M_pp));
 
                 }
 
