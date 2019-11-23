@@ -368,9 +368,11 @@ typedef struct {
   PetscBool    useparallelmat;
   PetscSubcomm psubcomm;
   PetscInt     nsubcomm;           /* num of data structure PetscSubcomm */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+    PetscBool          shifttypeset;
+    MatFactorShiftType shifttype;
+#endif
 } PC_Redundant;
-
-
 
 
 
@@ -383,6 +385,128 @@ namespace PetscImpl
 #undef __FUNCT__
 #endif
 #define __FUNCT__ "PCSetUp_Redundant"
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,12,0 )
+static PetscErrorCode PCSetUp_Redundant(PC pc)
+{
+    PC_Redundant   *red = (PC_Redundant*)pc->data;
+    PetscErrorCode ierr;
+    PetscInt       mstart,mend,mlocal,M;
+    PetscMPIInt    size;
+    MPI_Comm       comm,subcomm;
+    Vec            x;
+
+    PetscFunctionBegin;
+    ierr = PetscObjectGetComm((PetscObject)pc,&comm);CHKERRQ(ierr);
+
+    /* if pmatrix set by user is sequential then we do not need to gather the parallel matrix */
+    ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
+    if (size == 1) red->useparallelmat = PETSC_FALSE;
+
+    if (!pc->setupcalled) {
+        PetscInt mloc_sub;
+        if (!red->psubcomm) { /* create red->psubcomm, new ksp and pc over subcomm */
+            KSP ksp;
+            ierr = PCRedundantGetKSP(pc,&ksp);CHKERRQ(ierr);
+        }
+        subcomm = PetscSubcommChild(red->psubcomm);
+
+        if (red->useparallelmat) {
+            /* grab the parallel matrix and put it into processors of a subcomminicator */
+            ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+
+            ierr = MPI_Comm_size(subcomm,&size);CHKERRQ(ierr);
+            if (size > 1) {
+                PetscBool foundpack,issbaij;
+                ierr = PetscObjectTypeCompare((PetscObject)red->pmats,MATMPISBAIJ,&issbaij);CHKERRQ(ierr);
+                if (!issbaij) {
+                    ierr = MatGetFactorAvailable(red->pmats,NULL,MAT_FACTOR_LU,&foundpack);CHKERRQ(ierr);
+                } else {
+                    ierr = MatGetFactorAvailable(red->pmats,NULL,MAT_FACTOR_CHOLESKY,&foundpack);CHKERRQ(ierr);
+                }
+                if (!foundpack) { /* reset default ksp and pc */
+                    ierr = KSPSetType(red->ksp,KSPGMRES);CHKERRQ(ierr);
+                    ierr = PCSetType(red->pc,PCBJACOBI);CHKERRQ(ierr);
+                } else {
+                    ierr = PCFactorSetMatSolverType(red->pc,NULL);CHKERRQ(ierr);
+                }
+            }
+
+            ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+
+            /* get working vectors xsub and ysub */
+            ierr = MatCreateVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+
+            /* create working vectors xdup and ydup.
+       xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
+       ydup concatenates all ysub and has empty local arrays because ysub's arrays will be place into it.
+             Note: we use communicator dupcomm, not PetscObjectComm((PetscObject)pc)! */
+            ierr = MatGetLocalSize(red->pmats,&mloc_sub,NULL);CHKERRQ(ierr);
+            ierr = VecCreateMPI(PetscSubcommContiguousParent(red->psubcomm),mloc_sub,PETSC_DECIDE,&red->xdup);CHKERRQ(ierr);
+            ierr = VecCreateMPIWithArray(PetscSubcommContiguousParent(red->psubcomm),1,mloc_sub,PETSC_DECIDE,NULL,&red->ydup);CHKERRQ(ierr);
+
+            /* create vecscatters */
+            if (!red->scatterin) { /* efficiency of scatterin is independent from psubcomm_type! */
+                IS       is1,is2;
+                PetscInt *idx1,*idx2,i,j,k;
+
+                ierr = MatCreateVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+                ierr = VecGetSize(x,&M);CHKERRQ(ierr);
+                ierr = VecGetOwnershipRange(x,&mstart,&mend);CHKERRQ(ierr);
+                mlocal = mend - mstart;
+                ierr = PetscMalloc2(red->psubcomm->n*mlocal,&idx1,red->psubcomm->n*mlocal,&idx2);CHKERRQ(ierr);
+                j    = 0;
+                for (k=0; k<red->psubcomm->n; k++) {
+                    for (i=mstart; i<mend; i++) {
+                        idx1[j]   = i;
+                        idx2[j++] = i + M*k;
+                    }
+                }
+                ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx1,PETSC_COPY_VALUES,&is1);CHKERRQ(ierr);
+                ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx2,PETSC_COPY_VALUES,&is2);CHKERRQ(ierr);
+                ierr = VecScatterCreate(x,is1,red->xdup,is2,&red->scatterin);CHKERRQ(ierr);
+                ierr = ISDestroy(&is1);CHKERRQ(ierr);
+                ierr = ISDestroy(&is2);CHKERRQ(ierr);
+
+                /* Impl below is good for PETSC_SUBCOMM_INTERLACED (no inter-process communication) and PETSC_SUBCOMM_CONTIGUOUS (communication within subcomm) */
+                ierr = ISCreateStride(comm,mlocal,mstart+ red->psubcomm->color*M,1,&is1);CHKERRQ(ierr);
+                ierr = ISCreateStride(comm,mlocal,mstart,1,&is2);CHKERRQ(ierr);
+                ierr = VecScatterCreate(red->xdup,is1,x,is2,&red->scatterout);CHKERRQ(ierr);
+                ierr = ISDestroy(&is1);CHKERRQ(ierr);
+                ierr = ISDestroy(&is2);CHKERRQ(ierr);
+                ierr = PetscFree2(idx1,idx2);CHKERRQ(ierr);
+                ierr = VecDestroy(&x);CHKERRQ(ierr);
+            }
+        } else { /* !red->useparallelmat */
+            ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+        }
+    } else { /* pc->setupcalled */
+        if (red->useparallelmat) {
+            MatReuse       reuse;
+            /* grab the parallel matrix and put it into processors of a subcomminicator */
+            /*--------------------------------------------------------------------------*/
+            if (pc->flag == DIFFERENT_NONZERO_PATTERN) {
+                /* destroy old matrices */
+                ierr  = MatDestroy(&red->pmats);CHKERRQ(ierr);
+                reuse = MAT_INITIAL_MATRIX;
+            } else {
+                reuse = MAT_REUSE_MATRIX;
+            }
+            ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,PetscSubcommChild(red->psubcomm),reuse,&red->pmats);CHKERRQ(ierr);
+            ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+        } else { /* !red->useparallelmat */
+            ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+        }
+    }
+
+    if (pc->setfromoptionscalled) {
+        ierr = KSPSetFromOptions(red->ksp);CHKERRQ(ierr);
+    }
+#if 0 // feelpp modif
+    ierr = KSPSetUp(red->ksp);CHKERRQ(ierr);
+#endif
+    PetscFunctionReturn(0);
+}
+#else
 static PetscErrorCode PCSetUp_Redundant(PC pc)
 {
   PC_Redundant   *red = (PC_Redundant*)pc->data;
@@ -529,6 +653,7 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
 #endif
   PetscFunctionReturn(0);
 }
+#endif // PETSC_VERSION
 #undef __FUNCT__
 static PetscErrorCode PCRedundantChangeSetup(PC pc)
 {

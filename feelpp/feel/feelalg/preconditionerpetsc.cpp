@@ -3173,6 +3173,7 @@ void
 ConfigurePCRedundant::run( PC& pc )
 {
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,5,0 )
+
     // redifine PCSetUp for PCREDUNDANT because originaly KSPSetUp for innerksp is called in this function
     this->check( PetscImpl::PCRedundantChangeSetup(pc) );
     // build operators
