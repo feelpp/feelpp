@@ -183,356 +183,6 @@ static PetscErrorCode PCMLSetOldHierarchy( PC pc, PetscBool OldHierarchy )
 
 #endif // PETSC_HAVE_ML
 
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,3,0 )
-
-#include <HYPRE_struct_mv.h>
-#include <HYPRE_struct_ls.h>
-#include <_hypre_struct_mv.h>
-#include <HYPRE_sstruct_mv.h>
-#include <HYPRE_sstruct_ls.h>
-#include <_hypre_sstruct_mv.h>
-
-/*
-   Private context (data structure) for the  preconditioner.
-*/
-#if defined(PETSC_HAVE_HYPRE)
-#if PETSC_VERSION_LESS_THAN( 3,6,0 )
-typedef struct {
-  HYPRE_Solver   hsolver;
-  HYPRE_IJMatrix ij;
-  HYPRE_IJVector b,x;
-
-  HYPRE_Int (*destroy)(HYPRE_Solver);
-  HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
-  HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
-
-  MPI_Comm comm_hypre;
-  char     *hypre_type;
-
-  /* options for Pilut and BoomerAMG*/
-  PetscInt maxiter;
-  double   tol;
-
-  /* options for Pilut */
-  PetscInt factorrowsize;
-
-  /* options for ParaSails */
-  PetscInt nlevels;
-  double   threshhold;
-  double   filter;
-  PetscInt sym;
-  double   loadbal;
-  PetscInt logging;
-  PetscInt ruse;
-  PetscInt symt;
-
-  /* options for Euclid */
-  PetscBool bjilu;
-  PetscInt  levels;
-
-  /* options for Euclid and BoomerAMG */
-  PetscBool printstatistics;
-
-  /* options for BoomerAMG */
-  PetscInt  cycletype;
-  PetscInt  maxlevels;
-  double    strongthreshold;
-  double    maxrowsum;
-  PetscInt  gridsweeps[3];
-  PetscInt  coarsentype;
-  PetscInt  measuretype;
-  PetscInt  relaxtype[3];
-  double    relaxweight;
-  double    outerrelaxweight;
-  PetscInt  relaxorder;
-  double    truncfactor;
-  PetscBool applyrichardson;
-  PetscInt  pmax;
-  PetscInt  interptype;
-  PetscInt  agg_nl;
-  PetscInt  agg_num_paths;
-  PetscInt  nodal_coarsen;
-  PetscBool nodal_relax;
-  PetscInt  nodal_relax_levels;
-} PC_HYPRE;
-#else //PETSC_VERSION_LESS_THAN(3,6,0)
-typedef struct {
-  HYPRE_Solver   hsolver;
-  HYPRE_IJMatrix ij;
-  HYPRE_IJVector b,x;
-
-  HYPRE_Int (*destroy)(HYPRE_Solver);
-  HYPRE_Int (*solve)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
-  HYPRE_Int (*setup)(HYPRE_Solver,HYPRE_ParCSRMatrix,HYPRE_ParVector,HYPRE_ParVector);
-  HYPRE_Int (*setdgrad)(HYPRE_Solver,HYPRE_ParCSRMatrix);
-  HYPRE_Int (*setdcurl)(HYPRE_Solver,HYPRE_ParCSRMatrix);
-  HYPRE_Int (*setcoord)(HYPRE_Solver,HYPRE_ParVector,HYPRE_ParVector,HYPRE_ParVector);
-  HYPRE_Int (*setdim)(HYPRE_Solver,HYPRE_Int);
-
-  MPI_Comm comm_hypre;
-  char     *hypre_type;
-
-  /* options for Pilut and BoomerAMG*/
-  PetscInt maxiter;
-  double   tol;
-
-  /* options for Pilut */
-  PetscInt factorrowsize;
-
-  /* options for ParaSails */
-  PetscInt nlevels;
-  double   threshhold;
-  double   filter;
-  PetscInt sym;
-  double   loadbal;
-  PetscInt logging;
-  PetscInt ruse;
-  PetscInt symt;
-
-  /* options for BoomerAMG */
-  PetscBool printstatistics;
-
-  /* options for BoomerAMG */
-  PetscInt  cycletype;
-  PetscInt  maxlevels;
-  double    strongthreshold;
-  double    maxrowsum;
-  PetscInt  gridsweeps[3];
-  PetscInt  coarsentype;
-  PetscInt  measuretype;
-  PetscInt  relaxtype[3];
-  double    relaxweight;
-  double    outerrelaxweight;
-  PetscInt  relaxorder;
-  double    truncfactor;
-  PetscBool applyrichardson;
-  PetscInt  pmax;
-  PetscInt  interptype;
-  PetscInt  agg_nl;
-  PetscInt  agg_num_paths;
-  PetscInt  nodal_coarsen;
-  PetscBool nodal_relax;
-  PetscInt  nodal_relax_levels;
-
-  /* options for AS (Auxiliary Space preconditioners) */
-  PetscInt  as_print;
-  PetscInt  as_max_iter;
-  PetscReal as_tol;
-  PetscInt  as_relax_type;
-  PetscInt  as_relax_times;
-  PetscReal as_relax_weight;
-  PetscReal as_omega;
-  PetscInt  as_amg_alpha_opts[5]; /* AMG coarsen type, agg_levels, relax_type, interp_type, Pmax for vector Poisson (AMS) or Curl problem (ADS) */
-  PetscReal as_amg_alpha_theta;   /* AMG strength for vector Poisson (AMS) or Curl problem (ADS) */
-  PetscInt  as_amg_beta_opts[5];  /* AMG coarsen type, agg_levels, relax_type, interp_type, Pmax for scalar Poisson (AMS) or vector Poisson (ADS) */
-  PetscReal as_amg_beta_theta;    /* AMG strength for scalar Poisson (AMS) or vector Poisson (ADS)  */
-  PetscInt  ams_cycle_type;
-  PetscInt  ads_cycle_type;
-
-  /* additional data */
-  HYPRE_IJVector coords[3];
-  HYPRE_IJVector constants[3];
-  HYPRE_IJMatrix G;
-  HYPRE_IJMatrix C;
-  HYPRE_IJMatrix alpha_Poisson;
-  HYPRE_IJMatrix beta_Poisson;
-  PetscBool      ams_beta_is_zero;
-} PC_HYPRE;
-#endif //PETSC_VERSION_LESS_THAN( 3,6,0 )
-#endif //defined(PETSC_HAVE_HYPRE)
-
-
-namespace PetscImpl
-{
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_LESS_THAN( 3,6,0 )
-static PetscErrorCode PCHYPRE_EUCLIDSetLevels( PC pc, PetscInt levels  )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    PetscErrorCode ierr;
-
-    jac->levels = levels;
-
-    ierr = HYPRE_EuclidSetLevel( jac->hsolver,levels );
-    //ierr = HYPRE_EuclidSetSparseA( jac->hsolver,2.22045e-14 );
-    //ierr = HYPRE_EuclidSetILUT( jac->hsolver,2.22045e-14 );
-    //ierr = HYPRE_EuclidSetStats( jac->hsolver,1);
-    //ierr = HYPRE_EuclidSetMem( jac->hsolver,1);
-    //ierr = HYPRE_EuclidDestroy( jac->hsolver );
-    PetscFunctionReturn(0);
-}
-#endif
-
-static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxIter( PC pc, PetscInt maxIter  )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->maxiter = maxIter;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxIter( jac->hsolver, jac->maxiter);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetTol( PC pc, double tol )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->tol=tol;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetTol( jac->hsolver, jac->tol);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetCycleType( PC pc, int cycleType ) 
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->cycletype = cycleType;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetCycleType( jac->hsolver, jac->cycletype);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetMaxLevels( PC pc, int maxLevels )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->maxlevels=maxLevels;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetMaxLevels( jac->hsolver, jac->maxlevels);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetCoarsenType( PC pc, int coarsenType )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->coarsentype=coarsenType;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetCoarsenType( jac->hsolver, jac->coarsentype);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetStrongThreshold( PC pc, double strongT )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->strongthreshold = strongT;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetStrongThreshold( jac->hsolver, jac->strongthreshold);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetAggNumLevels( PC pc, int aggNl )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->agg_nl = aggNl;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetAggNumLevels( jac->hsolver, jac->agg_nl);
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetRelaxTypeAll( PC pc, int relaxTypeAll )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->relaxtype[0] = jac->relaxtype[1]  = relaxTypeAll;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetRelaxType( jac->hsolver, relaxTypeAll);
-    jac->relaxtype[2] = 9;
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_BOOMERAMGSetInterpolationType( PC pc, int interpolationType )
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->interptype = interpolationType;
-    PetscErrorCode ierr;
-    ierr = HYPRE_BoomerAMGSetInterpType( jac->hsolver, interpolationType);
-    PetscFunctionReturn(0);
-}
-
-
-#if defined(PETSC_HAVE_HYPRE) && PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,6,0 )
-static PetscErrorCode PCHYPRE_AMSSetPrintLevel(PC pc, PetscInt printLevel)
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->as_print=printLevel;
-    PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetPrintLevel(jac->hsolver,jac->as_print);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetMaxIter(PC pc, PetscInt maxIter)
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->as_max_iter=maxIter;
-    PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetMaxIter(jac->hsolver,jac->as_max_iter);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetCycleType(PC pc, PetscInt cycleType)
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->ams_cycle_type=cycleType;
-    PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetCycleType(jac->hsolver,jac->ams_cycle_type);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetTol(PC pc, double tol)
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    jac->as_tol=tol;
-    PetscErrorCode ierr;
-    ierr = HYPRE_AMSSetTol(jac->hsolver,jac->as_tol);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetSmoothingOptions(PC pc, PetscInt relaxType, PetscInt relaxTimes, double relaxWeight, double omega)
-{
-    PC_HYPRE       *jac = (PC_HYPRE*)pc->data;
-    PetscErrorCode ierr;
-    jac->as_relax_type=relaxType;
-    jac->as_relax_times=relaxTimes;
-    jac->as_relax_weight=relaxWeight;
-    jac->as_omega=omega;
-    ierr = HYPRE_AMSSetSmoothingOptions(jac->hsolver,jac->as_relax_type,
-            jac->as_relax_times,
-            jac->as_relax_weight,
-            jac->as_omega);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetCoordinateVectors(PC pc,Vec x, Vec y, Vec z)
-{
-    PetscErrorCode ierr;
-    PetscScalar *x_v;
-    PetscScalar *y_v;
-    PetscScalar *z_v;
-    ierr = VecGetArray(x, &x_v); CHKERRQ(ierr);
-    ierr = VecGetArray(y, &y_v); CHKERRQ(ierr);
-    ierr = VecGetArray(z, &z_v); CHKERRQ(ierr);
-    PetscReal *coord;
-    PetscInt nloc;
-    ierr = VecGetLocalSize(x, &nloc);
-    CHKERRQ(ierr);
-    coord = new PetscReal[3*nloc];
-    for(int i = 0; i < 3*nloc; i++)
-    {
-      coord[i+0] = x_v[i];
-      coord[i+1] = y_v[i];
-      coord[i+2] = z_v[i];
-    }
-    ierr = PCSetCoordinates(pc,3, nloc, coord); CHKERRQ(ierr);
-    ierr = VecRestoreArray(x, &x_v); CHKERRQ(ierr);
-    ierr = VecRestoreArray(y, &y_v); CHKERRQ(ierr);
-    ierr = VecRestoreArray(z, &z_v); CHKERRQ(ierr);
-    delete [] coord;
-    PetscFunctionReturn(0);
-}
-static PetscErrorCode PCHYPRE_AMSSetAlphaPoissonMatrix_HYPRE(PC pc, Mat G)
-{
-    PetscErrorCode ierr;
-    ierr = PCHYPRESetAlphaPoissonMatrix(pc, G);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-static PetscErrorCode PCHYPRE_AMSSetBetaPoissonMatrix_HYPRE(PC pc, Mat G)
-{
-    PetscErrorCode ierr;
-    ierr =  PCHYPRESetBetaPoissonMatrix(pc, G);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0.);
-}
-#endif // PETSC_HAVE_HYPRE && PETSC >= 3.6
-} // namespace PetscImpl
-#endif // PETSC_HAVE_HYPRE
 
 
 
@@ -718,9 +368,11 @@ typedef struct {
   PetscBool    useparallelmat;
   PetscSubcomm psubcomm;
   PetscInt     nsubcomm;           /* num of data structure PetscSubcomm */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,7,0 )
+    PetscBool          shifttypeset;
+    MatFactorShiftType shifttype;
+#endif
 } PC_Redundant;
-
-
 
 
 
@@ -733,6 +385,128 @@ namespace PetscImpl
 #undef __FUNCT__
 #endif
 #define __FUNCT__ "PCSetUp_Redundant"
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,12,0 )
+static PetscErrorCode PCSetUp_Redundant(PC pc)
+{
+    PC_Redundant   *red = (PC_Redundant*)pc->data;
+    PetscErrorCode ierr;
+    PetscInt       mstart,mend,mlocal,M;
+    PetscMPIInt    size;
+    MPI_Comm       comm,subcomm;
+    Vec            x;
+
+    PetscFunctionBegin;
+    ierr = PetscObjectGetComm((PetscObject)pc,&comm);CHKERRQ(ierr);
+
+    /* if pmatrix set by user is sequential then we do not need to gather the parallel matrix */
+    ierr = MPI_Comm_size(comm,&size);CHKERRQ(ierr);
+    if (size == 1) red->useparallelmat = PETSC_FALSE;
+
+    if (!pc->setupcalled) {
+        PetscInt mloc_sub;
+        if (!red->psubcomm) { /* create red->psubcomm, new ksp and pc over subcomm */
+            KSP ksp;
+            ierr = PCRedundantGetKSP(pc,&ksp);CHKERRQ(ierr);
+        }
+        subcomm = PetscSubcommChild(red->psubcomm);
+
+        if (red->useparallelmat) {
+            /* grab the parallel matrix and put it into processors of a subcomminicator */
+            ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,subcomm,MAT_INITIAL_MATRIX,&red->pmats);CHKERRQ(ierr);
+
+            ierr = MPI_Comm_size(subcomm,&size);CHKERRQ(ierr);
+            if (size > 1) {
+                PetscBool foundpack,issbaij;
+                ierr = PetscObjectTypeCompare((PetscObject)red->pmats,MATMPISBAIJ,&issbaij);CHKERRQ(ierr);
+                if (!issbaij) {
+                    ierr = MatGetFactorAvailable(red->pmats,NULL,MAT_FACTOR_LU,&foundpack);CHKERRQ(ierr);
+                } else {
+                    ierr = MatGetFactorAvailable(red->pmats,NULL,MAT_FACTOR_CHOLESKY,&foundpack);CHKERRQ(ierr);
+                }
+                if (!foundpack) { /* reset default ksp and pc */
+                    ierr = KSPSetType(red->ksp,KSPGMRES);CHKERRQ(ierr);
+                    ierr = PCSetType(red->pc,PCBJACOBI);CHKERRQ(ierr);
+                } else {
+                    ierr = PCFactorSetMatSolverType(red->pc,NULL);CHKERRQ(ierr);
+                }
+            }
+
+            ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+
+            /* get working vectors xsub and ysub */
+            ierr = MatCreateVecs(red->pmats,&red->xsub,&red->ysub);CHKERRQ(ierr);
+
+            /* create working vectors xdup and ydup.
+       xdup concatenates all xsub's contigously to form a mpi vector over dupcomm  (see PetscSubcommCreate_interlaced())
+       ydup concatenates all ysub and has empty local arrays because ysub's arrays will be place into it.
+             Note: we use communicator dupcomm, not PetscObjectComm((PetscObject)pc)! */
+            ierr = MatGetLocalSize(red->pmats,&mloc_sub,NULL);CHKERRQ(ierr);
+            ierr = VecCreateMPI(PetscSubcommContiguousParent(red->psubcomm),mloc_sub,PETSC_DECIDE,&red->xdup);CHKERRQ(ierr);
+            ierr = VecCreateMPIWithArray(PetscSubcommContiguousParent(red->psubcomm),1,mloc_sub,PETSC_DECIDE,NULL,&red->ydup);CHKERRQ(ierr);
+
+            /* create vecscatters */
+            if (!red->scatterin) { /* efficiency of scatterin is independent from psubcomm_type! */
+                IS       is1,is2;
+                PetscInt *idx1,*idx2,i,j,k;
+
+                ierr = MatCreateVecs(pc->pmat,&x,0);CHKERRQ(ierr);
+                ierr = VecGetSize(x,&M);CHKERRQ(ierr);
+                ierr = VecGetOwnershipRange(x,&mstart,&mend);CHKERRQ(ierr);
+                mlocal = mend - mstart;
+                ierr = PetscMalloc2(red->psubcomm->n*mlocal,&idx1,red->psubcomm->n*mlocal,&idx2);CHKERRQ(ierr);
+                j    = 0;
+                for (k=0; k<red->psubcomm->n; k++) {
+                    for (i=mstart; i<mend; i++) {
+                        idx1[j]   = i;
+                        idx2[j++] = i + M*k;
+                    }
+                }
+                ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx1,PETSC_COPY_VALUES,&is1);CHKERRQ(ierr);
+                ierr = ISCreateGeneral(comm,red->psubcomm->n*mlocal,idx2,PETSC_COPY_VALUES,&is2);CHKERRQ(ierr);
+                ierr = VecScatterCreate(x,is1,red->xdup,is2,&red->scatterin);CHKERRQ(ierr);
+                ierr = ISDestroy(&is1);CHKERRQ(ierr);
+                ierr = ISDestroy(&is2);CHKERRQ(ierr);
+
+                /* Impl below is good for PETSC_SUBCOMM_INTERLACED (no inter-process communication) and PETSC_SUBCOMM_CONTIGUOUS (communication within subcomm) */
+                ierr = ISCreateStride(comm,mlocal,mstart+ red->psubcomm->color*M,1,&is1);CHKERRQ(ierr);
+                ierr = ISCreateStride(comm,mlocal,mstart,1,&is2);CHKERRQ(ierr);
+                ierr = VecScatterCreate(red->xdup,is1,x,is2,&red->scatterout);CHKERRQ(ierr);
+                ierr = ISDestroy(&is1);CHKERRQ(ierr);
+                ierr = ISDestroy(&is2);CHKERRQ(ierr);
+                ierr = PetscFree2(idx1,idx2);CHKERRQ(ierr);
+                ierr = VecDestroy(&x);CHKERRQ(ierr);
+            }
+        } else { /* !red->useparallelmat */
+            ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+        }
+    } else { /* pc->setupcalled */
+        if (red->useparallelmat) {
+            MatReuse       reuse;
+            /* grab the parallel matrix and put it into processors of a subcomminicator */
+            /*--------------------------------------------------------------------------*/
+            if (pc->flag == DIFFERENT_NONZERO_PATTERN) {
+                /* destroy old matrices */
+                ierr  = MatDestroy(&red->pmats);CHKERRQ(ierr);
+                reuse = MAT_INITIAL_MATRIX;
+            } else {
+                reuse = MAT_REUSE_MATRIX;
+            }
+            ierr = MatCreateRedundantMatrix(pc->pmat,red->psubcomm->n,PetscSubcommChild(red->psubcomm),reuse,&red->pmats);CHKERRQ(ierr);
+            ierr = KSPSetOperators(red->ksp,red->pmats,red->pmats);CHKERRQ(ierr);
+        } else { /* !red->useparallelmat */
+            ierr = KSPSetOperators(red->ksp,pc->mat,pc->pmat);CHKERRQ(ierr);
+        }
+    }
+
+    if (pc->setfromoptionscalled) {
+        ierr = KSPSetFromOptions(red->ksp);CHKERRQ(ierr);
+    }
+#if 0 // feelpp modif
+    ierr = KSPSetUp(red->ksp);CHKERRQ(ierr);
+#endif
+    PetscFunctionReturn(0);
+}
+#else
 static PetscErrorCode PCSetUp_Redundant(PC pc)
 {
   PC_Redundant   *red = (PC_Redundant*)pc->data;
@@ -879,6 +653,7 @@ static PetscErrorCode PCSetUp_Redundant(PC pc)
 #endif
   PetscFunctionReturn(0);
 }
+#endif // PETSC_VERSION
 #undef __FUNCT__
 static PetscErrorCode PCRedundantChangeSetup(PC pc)
 {

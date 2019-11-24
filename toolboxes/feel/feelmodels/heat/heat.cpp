@@ -301,6 +301,10 @@ HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
             icTemperatureFields = { this->fieldTemperaturePtr() };
         else
             icTemperatureFields = M_bdfTemperature->unknowns();
+
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+
         this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
 
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )

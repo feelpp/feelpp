@@ -80,6 +80,7 @@ public:
     ModelMaterials & materials() {  return M_mat; }
     BoundaryConditions & boundaryConditions()  { return M_bc; }
     ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    ModelInitialConditions & initialConditions() { return M_ic; }
 
 
     ModelPostprocess& postProcess() { return M_postproc; }

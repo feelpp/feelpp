@@ -370,41 +370,38 @@ endif()
 #
 # Intel MKL
 #
-OPTION( FEELPP_ENABLE_MKL "Enable the Intel MKL library" OFF )
+if (NOT DEFINED FEELPP_ENABLE_MKL ) # not necessary with cmake >= 3.13
+  OPTION( FEELPP_ENABLE_MKL "Enable the Intel MKL library" OFF )
+endif()
 if ( FEELPP_ENABLE_MKL )
   find_package(MKL)
   if ( MKL_FOUND )
 
     message(STATUS "[feelpp] MKL Includes: ${MKL_INCLUDE_DIRS}")
     message(STATUS "[feelpp] MKL Libraries: ${MKL_LIBRARIES}")
-    set(FEELPP_HAS_MKL 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Intel(MKL)" )
-    INCLUDE_DIRECTORIES( ${MKL_INCLUDE_DIRS} )
-    SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
-    #  enable MKL wherever possible for eigen3
-    add_definitions(-DEIGEN_USE_MKL_ALL=1)
-  else( MKL_FOUND )
-    #
-    # Blas and Lapack
-    #
-    if (APPLE)
-      # FIND_LIBRARY(ATLAS_LIBRARY
-      #   NAMES
-      #   atlas
-      #   PATHS
-      #   /opt/local/lib/lib
-      #   NO_DEFAULT_PATH
-      #   )
-      # message(STATUS "[feelpp] ATLAS: ${ATLAS_LIBRARY}" )
-      # IF( ATLAS_LIBRARY )
-      #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
-      # ENDIF()
-      FIND_PACKAGE(LAPACK)
-    else (APPLE)
-      FIND_PACKAGE(LAPACK)
-    endif (APPLE)
-    SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
-  endif(MKL_FOUND)
+ #  else( MKL_FOUND )
+#     #
+#     # Blas and Lapack
+#     #
+#     if (APPLE)
+#       # FIND_LIBRARY(ATLAS_LIBRARY
+#       #   NAMES
+#       #   atlas
+#       #   PATHS
+#       #   /opt/local/lib/lib
+#       #   NO_DEFAULT_PATH
+#       #   )
+#       # message(STATUS "[feelpp] ATLAS: ${ATLAS_LIBRARY}" )
+#       # IF( ATLAS_LIBRARY )
+#       #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
+#       # ENDIF()
+#       FIND_PACKAGE(LAPACK)
+#     else (APPLE)
+#       FIND_PACKAGE(LAPACK)
+#     endif (APPLE)
+#     SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+   endif(MKL_FOUND) 
 endif(FEELPP_ENABLE_MKL)
 
 # HDF5
