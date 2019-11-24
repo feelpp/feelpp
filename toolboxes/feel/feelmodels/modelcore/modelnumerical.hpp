@@ -344,17 +344,42 @@ template <typename ExporterType,typename TupleFieldsType,typename SymbolsExpr,ty
 void
 ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange )
 {
-    std::set<std::string> const& fieldsNamesToExport = this->postProcessExportsFields( tag );
-    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields, symbolsExpr, tupleExprOnRange );
-    if ( exporter && exporter->doExport() )
+    if ( !exporter ) return;
+    if ( !exporter->doExport() ) return;
+
+    std::set<std::string> /*const&*/ fieldsNamesToExport = this->postProcessExportsFields( tag );
+#if 1
+    std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<typename ExporterType::mesh_type>, std::set<std::string> > > > mapExportsExpr;
+    if ( this->hasModelProperties() )
     {
-        std::string const& pidName = this->postProcessExportsPidName( tag );
-        if ( !pidName.empty() && fieldsNamesToExport.find( pidName ) != fieldsNamesToExport.end() )
+        auto mesh = exporter->defaultTimeSet()->mesh();
+        auto defaultRange = elements(mesh);
+        for ( auto const& [_name,_expr,_markers,_rep,_tag] : this->modelProperties().postProcess().exports( this->keyword() ).expressions() )
         {
-            exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-            hasFieldToExport = true;
+            if ( !_tag.empty() && _tag.find( tag ) == _tag.end() )
+                continue;
+            if ( _tag.empty() && tag != "" )
+                continue;
+            std::set<std::string> themarker = _markers;
+            auto therange =  (themarker.empty())?defaultRange: markedelements(mesh,themarker);
+            std::cout << "Add Expr EXPORT " << _name << std::endl;
+            std::string nameUsed = prefixvm( "expr", _name );
+            mapExportsExpr[nameUsed].push_back( std::make_tuple( _expr, therange, _rep ) );
+            fieldsNamesToExport.insert( nameUsed );
         }
     }
+#endif
+
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, fieldsNamesToExport, time, tupleFields, symbolsExpr,
+                                                            hana::concat( hana::make_tuple(mapExportsExpr),tupleExprOnRange) );
+
+    std::string const& pidName = this->postProcessExportsPidName( tag );
+    if ( !pidName.empty() && fieldsNamesToExport.find( pidName ) != fieldsNamesToExport.end() )
+    {
+        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+
     if ( hasFieldToExport )
     {
         exporter->save();
@@ -424,8 +449,8 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                                  theexpr,range,reprs );
                                     hasFieldToExport = true;
                                 }
-#if 0
-                                if constexpr ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
+#if 1
+                                else if constexpr ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
                                 {
                                     auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
                                                                        hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
