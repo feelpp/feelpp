@@ -379,12 +379,11 @@ public:
             //this->step( 0 )->setMesh( mesh );
         }
 
-    /**
-     * export a scalar quantity \p u with name \p name
-     * \param name name of the scalar quantity
-     * \param u scalar quantity to be exported
-     * \param cst true if the scalar is constant over time, false otherwise
-     */
+
+    //! export a scalar quantity \p u with name \p name
+    //! \param name name of the scalar quantity
+    //! \param u scalar quantity to be exported
+    //! \param cst true if the scalar is constant over time, false otherwise
     template<typename T>
     void
     add( std::string const& name, T const& u, bool cst = false,
@@ -393,9 +392,11 @@ public:
             this->step( 0 )->add( name, u, cst );
         }
 
-    /**
-     * export field \p u with name \p name
-     */
+    //! export field \p u with name \p name. If both nodal and element representations are present
+    //! in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param u the field (element of function space)
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename F>
     void
     add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
@@ -404,6 +405,11 @@ public:
             this->step( 0 )->add( name, u, reps );
         }
 
+    //! export expression \p expr with name \p name. If both nodal and element representations are present
+    //! in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename ExprT>
     void
     add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
@@ -412,6 +418,12 @@ public:
         this->step( 0 )->add( name, expr, reps );
     }
 
+    //! export expression \p expr with name \p name which is defined on \p rangeElt. If both nodal and element
+    //! representations are present in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
+    //! \param rangeElt collection of mesh element
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename ExprT>
     void
     add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
@@ -420,6 +432,7 @@ public:
         this->step( 0 )->add( name, expr, rangeElt, reps );
     }
 
+    //! export the mesh partitioning
     void
     addRegions()
         {

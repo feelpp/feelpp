@@ -22,6 +22,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <boost/algorithm/string.hpp>
 #include <feel/feelfilters/importercsv.hpp>
 
 namespace Feel
@@ -35,11 +36,13 @@ ImporterCSV::ImporterCSV( std::string const& filename, bool readOnlyHeader )
     std::string lineHeader;
     std::getline( M_ifs, lineHeader );
 
+    boost::trim(lineHeader);
     tokenizer_type tok( lineHeader );
     M_dataIndexToName.assign( tok.begin(), tok.end() );
     for ( int k=0;k<M_dataIndexToName.size();++k )
+    {
         M_dataNameToIndex[ M_dataIndexToName[k] ] = k;
-
+    }
     if ( !readOnlyHeader )
     {
         while ( !this->readIsFinished() )
@@ -57,7 +60,9 @@ ImporterCSV::readLine( bool clearData )
 
     std::string line;
     std::getline( M_ifs, line );
+    boost::trim(line);
     tokenizer_type tok( line );
+    
     std::vector<std::string> vec;
     vec.assign( tok.begin(), tok.end() );
     if ( vec.empty() && this->readIsFinished() )
