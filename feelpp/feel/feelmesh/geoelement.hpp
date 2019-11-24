@@ -1763,9 +1763,52 @@ private:
   GeoElement3D
   --------------------------------------------------------------------------*/
 
+
+/**
+ * Checks whether T is a GeoElement<n>D type. 
+ * Provides the member constant value that is equal to true, if T is the type GeoElement<n>D. 
+ * Otherwise, value is equal to false.
+ */
+template <typename T> struct is_geoelement: std::false_type {};
+template <uint16_type Dim, typename SubFace, typename T, typename IndexT>
+struct is_geoelement<GeoElement0D<Dim,SubFace,T,IndexT>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool PointTypeIsSubFaceOf,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement1D<Dim,GEOSHAPE,SubFace,T,IndexT,PointTypeIsSubFaceOf,UseMeasuresStorage>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement2D<Dim,GEOSHAPE,SubFace,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+/**
+ * Helper variable template
+ * \return true is T is a GeoElement<n>D at compilation time, false otherwise
+ */
+template <typename... T>
+inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
+
+/**
+ * \return true if the element \p e has a face with \p flag, false otherwise
+ */
 template<typename EltType>
 bool
-hasFaceWithMarker( EltType const& e, boost::any const& flag )
+hasFaceWithMarker( EltType const& e, boost::any const& flag,
+                   std::enable_if_t<(dimension_v<EltType> > 0) && is_geoelement_v<EltType>>* = nullptr )
 {
     flag_type theflag = e.mesh()->markerId( flag );
     // for( auto const& f : e.faces() )
@@ -1781,5 +1824,20 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag )
     return false;
 }
 
+/**
+ * get the map of markers of a face of an geoelement
+ * \param e element id to get face markers from
+ * \param f face id in the element
+ * \return an optional map of markers for the face \p f of the element \p e
+ */
+template<typename ElementT>
+inline
+std::optional<std::map<uint16_type,Marker1>> faceMarkers( ElementT const& e, uint16_type f )
+{
+    if constexpr ( dimension_v<ElementT> >= 1  && is_geoelement_v<ElementT> ) 
+        if (f!=invalid_v<uint16_type>)
+            return e.face(f).markers();
+    return std::nullopt;
+}
 } // Feel
 #endif
