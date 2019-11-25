@@ -379,7 +379,7 @@
             mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
                                   mpl::identity<VF_VALUE_TYPE(L)>,      \
                                   mpl::identity<VF_VALUE_TYPE(R)> >::type::type value_type; \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
             :                                                           \
@@ -655,10 +655,30 @@
             l_type M_left;                                             \
             r_type M_right;                                            \
         }; /* tensor */                                                 \
-        auto/*double*/                                                  \
+        evaluate_type                                                   \
             evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  noexcept \
         {                                                               \
-            return M_left.evaluate(p,worldcomm) VF_OP_SYMBOL( O ) M_right.evaluate(p,worldcomm); \
+            auto leval = M_left.evaluate(p,worldcomm);                  \
+            auto reval = M_right.evaluate(p,worldcomm);                 \
+            if ( leval.rows() == 1 && leval.cols() == 1 )               \
+            {                                                           \
+                if ( reval.rows() == 1 && reval.cols() == 1 )           \
+                    return Eigen::Matrix<value_type,1,1>::Constant( leval(0,0) VF_OP_SYMBOL( O ) reval(0,0) ); \
+                else                                                    \
+                    return leval(0,0) VF_OP_SYMBOL( O ) reval;          \
+            }                                                           \
+            else if ( reval.rows() == 1 && reval.cols() == 1 )          \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval(0,0);              \
+            }                                                           \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
+                               R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) \
+                                 return leval VF_OP_SYMBOL( O ) reval;  \
+            else                                                        \
+            {                                                           \
+                CHECK( false ) << "todo : get shape_op and implement cases"; \
+                return Eigen::Matrix<value_type,1,1>::Constant( 0 );    \
+            }                                                           \
         }                                                               \
                                                                         \
         std::string expressionStr() const                               \

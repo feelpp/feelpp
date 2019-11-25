@@ -707,7 +707,7 @@ private :
                                 if ( idx == invalid_uint16_type_value )
                                     continue;
                                 auto const& theexpr = e.second;
-                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                                x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
                             }
                         });
 
