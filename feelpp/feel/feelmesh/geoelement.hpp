@@ -1834,8 +1834,8 @@ template<typename ElementT>
 inline
 std::optional<std::map<uint16_type,Marker1>> faceMarkers( ElementT const& e, uint16_type f )
 {
-    if constexpr ( dimension_v<ElementT> >= 1  && is_geoelement_v<ElementT> ) 
-        if (f!=invalid_v<uint16_type>)
+    if constexpr ( dimension_v<ElementT> >= 1  && is_geoelement_v<ElementT> )
+        if ( f != invalid_v<uint16_type> && e.hasFace(f) )
             return e.face(f).markers();
     return std::nullopt;
 }
