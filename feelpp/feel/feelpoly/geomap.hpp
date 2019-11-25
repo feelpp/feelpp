@@ -869,7 +869,6 @@ class GeoMap
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
-              M_f_markers( faceMarkers( __e, __f ) ),
               M_elem_id_1( invalid_v<size_type> ),          // __e.ad_first() ),
               M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
               M_elem_id_2( invalid_v<size_type> ),          //__e.ad_second() ),
@@ -883,7 +882,8 @@ class GeoMap
               M_perm(),
               M_dynamic_context( dynctx )
         {
-
+            if ( this->isOnFace() )
+                M_f_markers = faceMarkers( __e, __f );
             if ( is_linear )
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
@@ -997,7 +997,8 @@ class GeoMap
             M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
             M_id = __e.id();
             M_e_markers = __e.markers();
-            M_f_markers = faceMarkers( __e, __f );
+            if ( this->isOnFace() )
+                M_f_markers = faceMarkers( __e, __f );
             M_xrefq = M_pc->nodes();
 
             FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
@@ -1135,8 +1136,9 @@ class GeoMap
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
                 M_e_markers = __e.markers();
-                M_f_markers = faceMarkers( __e, __f );
                 M_face_id = __f;
+                if ( this->isOnFace() )
+                    M_f_markers = faceMarkers( __e, __f );
                 if ( this->isOnSubEntity() && updatePC )
                 {
                     M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
@@ -1723,6 +1725,8 @@ class GeoMap
          */
         Marker1 faceMarker( uint16_type k ) const
             {
+                if ( !M_f_markers )
+                    return Marker1();
                 auto itFindMarker = M_f_markers->find( k );
                 if ( itFindMarker!= M_f_markers->end() )
                     return itFindMarker->second;
@@ -1736,6 +1740,8 @@ class GeoMap
          */
         Marker1 faceMarker() const
             {
+                if ( !M_f_markers )
+                    return Marker1();
                 auto itFindMarker = M_f_markers->find( 1 );
                 if ( itFindMarker!= M_f_markers->end() )
                     return itFindMarker->second;
