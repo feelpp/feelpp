@@ -131,7 +131,7 @@ public:
     typedef GiNaC::ex ginac_expression_type;
     typedef GinacExVF<Order,SymbolsExprType> this_type;
     typedef double value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
@@ -391,7 +391,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         tensor( this_type const& expr,
@@ -407,7 +407,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x(  expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         tensor( this_type const& expr, Geo_t const& geom )
@@ -422,7 +422,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         template<typename IM>
@@ -581,7 +581,7 @@ public:
         int M_nsyms;
         vec_type M_y;
         vec_type M_x;
-        const evaluate_type M_yConstant;
+        const value_type M_yConstant;
     };
 
     evaluate_type
@@ -654,7 +654,7 @@ private :
     evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
     {
         if ( M_isNumericExpression )
-            return M_numericValue;
+            return evaluate_type::Constant( M_numericValue );
         int no = 1;
         int ni = M_syms.size();
 
@@ -669,13 +669,14 @@ private :
                                 if ( idx == invalid_uint16_type_value )
                                     continue;
                                 auto const& theexpr = e.second;
-                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                                x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
                             }
                         });
 
         value_type res;
-        (*M_cfun)(&ni,x.data(),&no,&res);
-        return res;
+        (*M_cfun)(&ni,x.data(),&no,&res );
+
+        return evaluate_type::Constant( res );
     }
 
 private:
@@ -687,7 +688,7 @@ private:
     bool M_isPolynomial;
     uint16_type M_polynomialOrder;
     bool M_isNumericExpression;
-    evaluate_type M_numericValue;
+    value_type M_numericValue;
 };
 
 template<int Order,typename SymbolsExprType>
