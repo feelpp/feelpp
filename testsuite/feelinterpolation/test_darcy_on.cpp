@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
     auto err = normL2( _range=elements(mesh), _expr=idv(u)- trans(h) );
     if ( Environment::isMasterRank() )
     {
-        auto est = e.evaluate({{"x",doption("gmsh.hsize")}});
+        auto est = e.evaluate({{"x",doption("gmsh.hsize")}})(0,0);
         BOOST_CHECK_SMALL( err, est );
         std::cout << "||u-h||_L2 =" << err << " I1=" << err1 << " I2=" << err2 << "\n";
     }
