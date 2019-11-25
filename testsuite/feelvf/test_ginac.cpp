@@ -554,7 +554,7 @@ void runTest4()
     BOOST_CHECK( exprCst.expression().isConstant() );
     BOOST_CHECK( exprCst.isPolynomial() );
     BOOST_CHECK( exprCst.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprCst.evaluate(), cstValue, 1e-12 );
+    BOOST_CHECK_CLOSE( exprCst.evaluate()(0,0), cstValue, 1e-12 );
     double intCst1 = integrate(_range=elements(mesh),_expr=cst(cstValue)).evaluate()(0,0);
     double intCst2 = integrate(_range=elements(mesh),_expr=exprCst).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intCst1, intCst2, 1e-12 );
@@ -565,7 +565,7 @@ void runTest4()
     BOOST_CHECK( exprA.expression().isConstant() );
     BOOST_CHECK( exprA.isPolynomial() );
     BOOST_CHECK( exprA.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprA.evaluate(), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( exprA.evaluate()(0,0), 2*2*4.5, 1e-12 );
     double intA1 = integrate(_range=elements(mesh),_expr=cst(2*2*4.5)).evaluate()(0,0);
     double intA2 = integrate(_range=elements(mesh),_expr=exprA).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intA1, intA2, 1e-12 );
@@ -574,7 +574,7 @@ void runTest4()
     BOOST_CHECK( exprAu.expression().isConstant() );
     BOOST_CHECK( exprAu.isPolynomial() );
     BOOST_CHECK( exprAu.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprAu.evaluate(), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( exprAu.evaluate()(0,0), 2*2*4.5, 1e-12 );
     double intAu2 = integrate(_range=elements(mesh),_expr=exprAu).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intA1, intAu2, 1e-12 );
 
@@ -609,7 +609,7 @@ void runTest4()
     BOOST_CHECK( exprF.isPolynomial() );
     BOOST_CHECK( exprF.polynomialOrder() == 0 );
     double evalFvalue = 4*std::sin(3*M_PI/2.)*std::exp(3.);
-    BOOST_CHECK_CLOSE( exprF.evaluate(), evalFvalue, 1e-12 );
+    BOOST_CHECK_CLOSE( exprF.evaluate()(0,0), evalFvalue, 1e-12 );
     double intF1 = integrate(_range=elements(mesh),_expr=cst(evalFvalue)).evaluate()(0,0);
     double intF2 = integrate(_range=elements(mesh),_expr=exprF).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intF1, intF2, 1e-12 );
@@ -617,7 +617,7 @@ void runTest4()
     BOOST_CHECK( exprFu.expression().isConstant() );
     BOOST_CHECK( exprFu.isPolynomial() );
     BOOST_CHECK( exprFu.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprFu.evaluate(), evalFvalue, 1e-12 );
+    BOOST_CHECK_CLOSE( exprFu.evaluate()(0,0), evalFvalue, 1e-12 );
 
     // vectorial
     auto exprVA = expr<2,1>("{2*a*b,a+b}:a:b");
