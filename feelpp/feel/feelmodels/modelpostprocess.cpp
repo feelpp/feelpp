@@ -61,7 +61,6 @@ ModelPostprocessExports::setup( pt::ptree const& p )
 
     if ( auto exprTree = p.get_child_optional("expr") )
     {
-        std::cout << "exprTree\n";
         for ( auto const& item : *exprTree )
         {
             std::string exprName = item.first;
