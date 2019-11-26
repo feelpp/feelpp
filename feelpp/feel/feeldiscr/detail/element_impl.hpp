@@ -2857,14 +2857,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
         if ( eid == invalid_v<index_type> )
             continue;
-        std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
-                  << eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
+        //std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
+        //<< eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
         auto const& elt = mesh->element( eid );
         ctx->update( elt, eid_in_element );
         
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
-        std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
+        //std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
         if ( accumulate )
             this->plus_assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
         else

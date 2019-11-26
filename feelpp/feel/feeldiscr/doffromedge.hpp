@@ -134,116 +134,103 @@ private:
 
 private:
 
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::vector<global_dof_from_entity_type>& d ) const
+    template<typename Container>
+    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::back_insert_iterator<Container> d ) const
     {
-        addVertexEdgeDof( el_id, edge_id, lc, d, mpl::bool_<(fe_type::nDofPerVertex>0)>(), mpl::int_<nDim>() );
-    }
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<1> ) const {}
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<2> ) const {}
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& /*lc*/, mpl::bool_<false>, mpl::int_<3> ) const {}
-
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::vector<global_dof_from_entity_type>& edof,
-                           mpl::bool_<true>, mpl::int_<1>  ) const
-    {
-        BOOST_STATIC_ASSERT( edge_type::numVertices );
-
-        // Loop number of Dof per vertex
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
+        if constexpr (fe_type::nDofPerVertex>0)
         {
-            for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
+            if constexpr ( nDim == 1 )
             {
-                uint16_type ldinelt = edge_id * fe_type::nDofPerVertex + l;
-                auto const& temp= M_doftable->localToGlobal( el_id, ldinelt, c );
-                edof.push_back( global_dof_from_entity_type( temp, lc, ldinelt ) );
-            }
-        }
-    }
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc,
-                           std::vector<global_dof_from_entity_type>& edof, mpl::bool_<true>, mpl::int_<2>  ) const
-    {
-        BOOST_STATIC_ASSERT( edge_type::numVertices );
-
-        size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
-                            edge_type::numEdges * fe_type::nDofPerEdge );
-                            
-        // loop on edge vertices
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
-        {
-            for ( uint16_type iVeFa = 0; iVeFa < edge_type::numVertices; ++iVeFa )
-            {
-                // local vertex number (in element)
-                uint16_type iVeEl = element_type::eToP( edge_id, iVeFa );
-
-                DCHECK( iVeEl != invalid_uint16_type_value ) <<  "invalid local dof";
+                BOOST_STATIC_ASSERT( edge_type::numVertices );
 
                 // Loop number of Dof per vertex
-                for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc )
+                const int ncdof = is_product?nComponents:1;
+
+                for ( int c = 0; c < ncdof; ++c )
                 {
-                    uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
-                    auto const& temp = M_doftable->localToGlobal( el_id, ldinelt, c );
-                    edof.push_back( global_dof_from_entity_type( temp, lc, ldinelt ) );
+                    for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc, ++d )
+                    {
+                        uint16_type ldinelt = edge_id * fe_type::nDofPerVertex + l;
+                        auto const& temp= M_doftable->localToGlobal( el_id, ldinelt, c );
+                        *d = std::move(global_dof_from_entity_type( temp, lc, ldinelt ));
+                    }
+                }
+            }
+            if constexpr ( nDim > 1 )
+            {
+                BOOST_STATIC_ASSERT( edge_type::numVertices );
+
+                size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
+                                    edge_type::numEdges * fe_type::nDofPerEdge );
+                
+                // loop on edge vertices
+                const int ncdof = is_product?nComponents:1;
+
+                for ( int c = 0; c < ncdof; ++c )
+                {
+                    for ( uint16_type iVeFa = 0; iVeFa < edge_type::numVertices; ++iVeFa )
+                    {
+                        // local vertex number (in element)
+                        uint16_type iVeEl = element_type::eToP( edge_id, iVeFa );
+
+                        DCHECK( iVeEl != invalid_uint16_type_value ) <<  "invalid local dof";
+
+                        // Loop number of Dof per vertex
+                        for ( uint16_type l = 0; l < fe_type::nDofPerVertex; ++l, ++lc, ++d )
+                        {
+                            uint16_type ldinelt = iVeEl * fe_type::nDofPerVertex + l;
+                            auto const& temp = M_doftable->localToGlobal( el_id, ldinelt, c );
+                            *d = std::move(global_dof_from_entity_type( temp, lc, ldinelt ));
+                        }
+                    }
                 }
             }
         }
     }
-    
-    void addVertexEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc,
-                           std::vector<global_dof_from_entity_type>& edof, mpl::bool_<true>, mpl::int_<3>  ) const
+    template<typename Container>
+    void addEdgeEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::back_insert_iterator<Container> d ) const
     {
-        addVertexEdgeDof( el_id, edge_id, lc, edof, mpl::bool_<true>(), mpl::int_<2>() );
-    }
-    
-    void addEdgeEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc, std::vector<global_dof_from_entity_type>& edof ) const
-    {
-        static const bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
-        addEdgeEdgeDof( el_id, edge_id, lc, edof, mpl::bool_<cond>() );
-    }
-    void addEdgeEdgeDof( size_type el_id, uint16_type edge_id,  uint16_type& lc,
-                         std::vector<global_dof_from_entity_type>& edof, mpl::bool_<false> ) const
-        {}
-    
-    void addEdgeEdgeDof( size_type el_id, uint16_type edge_id, uint16_type& lc,
-                         std::vector<global_dof_from_entity_type>& edof, mpl::bool_<true> ) const
-    {
-        size_type nVerticesF = edge_type::numVertices * fe_type::nDofPerVertex;
-        size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
-                            edge_type::numEdges * fe_type::nDofPerEdge );
-
-        const int ncdof = is_product?nComponents:1;
-
-        for ( int c = 0; c < ncdof; ++c )
+        constexpr bool cond = fe_type::nDofPerEdge*face_type::numEdges > 0;
+        if constexpr ( cond )
         {
-            uint16_type lcc=nVerticesF+c*ndofF;
+            size_type nVerticesF = edge_type::numVertices * fe_type::nDofPerVertex;
+            size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
+                                edge_type::numEdges * fe_type::nDofPerEdge );
 
-            // Loop number of Dof per edge
-            for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc, ++lc )
+            const int ncdof = is_product?nComponents:1;
+
+            for ( int c = 0; c < ncdof; ++c )
             {
-                uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
-                    edge_id * fe_type::nDofPerEdge + l ;
-                auto const& temp = M_doftable->localToGlobal( el_id,ldinelt, c );
-                edof.push_back( global_dof_from_entity_type( temp, lcc, ldinelt ) );
+                uint16_type lcc=nVerticesF+c*ndofF;
+
+                // Loop number of Dof per edge
+                for ( uint16_type l = 0; l < fe_type::nDofPerEdge; ++l, ++lcc, ++lc, ++d )
+                {
+                    uint16_type ldinelt = element_type::numVertices*fe_type::nDofPerVertex +
+                        edge_id * fe_type::nDofPerEdge + l ;
+                    auto const& temp = M_doftable->localToGlobal( el_id,ldinelt, c );
+                    *d = std::move( global_dof_from_entity_type( temp, lcc, ldinelt ) );
+                }
             }
         }
     }
-
-};
+}; // class
 
 template <typename DofTableType, typename FEType>
 std::vector<typename DofFromEdge<DofTableType,FEType>::global_dof_from_entity_type> 
 DofFromEdge<DofTableType,FEType>::operator()( size_type elid, uint16_type edge_id ) const
 {
     std::vector<global_dof_from_entity_type> edge_dof;
+    size_type ndofF = ( edge_type::numVertices * fe_type::nDofPerVertex +
+                        edge_type::numEdges * fe_type::nDofPerEdge );
+    edge_dof.reserve( ndofF );
     
     uint16_type lcVertex = 0;
     uint16_type lcEdge = 0;
 
-    addVertexEdgeDof( elid, edge_id, lcVertex, edge_dof);
+    addVertexEdgeDof( elid, edge_id, lcVertex, std::back_inserter( edge_dof ) );
     DVLOG(3) << "n local dof vertex for edge (" << elid << "," << edge_id << ")=" << lcVertex;
-    addEdgeEdgeDof( elid, edge_id, lcEdge, edge_dof );
+    addEdgeEdgeDof( elid, edge_id, lcEdge, std::back_inserter(edge_dof) );
     DVLOG(3) << "n local dof edge for edge (" << elid << "," << edge_id << ")=" << lcVertex;
     return edge_dof;
 }
