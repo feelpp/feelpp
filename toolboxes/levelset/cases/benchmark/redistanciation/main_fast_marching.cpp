@@ -1,4 +1,3 @@
-
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 namespace Feel
@@ -8,6 +7,7 @@ template <uint16_type OrderLevelset, uint16_type OrderLevelsetPN = LEVELSET_PN_O
 void
 runLevelsetApplication()
 {
+  tic();
     using namespace Feel;
 
     typedef Simplex<FEELPP_DIM,1> convex_type;
@@ -24,38 +24,56 @@ runLevelsetApplication()
         > model_type;
     
     auto LS = model_type::New("levelset");
-
+    
     Feel::cout << "============================================================\n";
     Feel::cout << "Level set benchmark : redistanciation\n";
     Feel::cout << "============================================================\n";
+
+    toc("Before init: ");
+    tic();
     LS->init();
+    toc("init(): ");
+    tic();
     LS->printAndSaveInfo();
+    toc("print(AndSaveInfo(): ");
     if( !LS->doRestart() )
-        LS->exportResults(0.);
+      {
+        tic();
+	LS->exportResults(0.);
+	toc("exportResults(0.): ");
+      }
 
     std::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
 
-    double hsize = doption( _name="levelset.gmsh.hsize" );    
+    double hSize = doption( _name="levelset.gmsh.hsize" );
+    int nDof = LS->functionSpace()->nDof();
+    int nElements = LS->mesh()->numGlobalElements();
     double redistTime;
+    std::string timeFileName( soption( _name="levelset.redistanciation-timer-file" ) );
 
-    Feel::cout << "Redistanciation started." << std::endl;
+    Feel::cout << "Redistanciation started. Will write results to " << timeFileName << std::endl;
     tic();
     LS->redistanciate();
     redistTime = toc();
     Feel::cout << "Redistanciation time : " << redistTime << std::endl;
-    Feel::cout << "h size is : " << hsize << std::endl;
+    Feel::cout << "h size is : " << hSize << std::endl;
 
+    tic();
     if ( Environment::isMasterRank() )
       {
 	std::ofstream timerFile;
-	std::string timeFileName( soption( _name="levelset.redistanciation-timer-file" ) );
 	timerFile.open( timeFileName, std::ofstream::app );
-	timerFile << Environment::worldComm().globalSize() << ", " << redistTime << std::endl;
+	// write the number of MPI processes, the hsize, the number of dof, the number of elements, and the redistanciation time
+	timerFile << Environment::worldComm().globalSize() << ", " << hSize << ", " << nDof << ", " << nElements << ", " << redistTime << std::endl;
+	Feel::cout << "Timing results written to " << timeFileName <<  std::endl;
 	timerFile.close();
 	// TODO handle errors :
-	//Feel::cout << "Could not wrie to file : " << timeFileName <<  std::endl;
+	//Feel::cout << "Could not write to file : " << timeFileName <<  std::endl;
       }
-    LS->exportResults();			 
+    toc("Write to file block :");
+    tic();
+    LS->exportResults();
+    toc("Final LS->exportResults() :");
 }
 
 }  // namespace Feel
@@ -69,7 +87,7 @@ int main( int argc, char** argv )
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
         ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
-        ("levelset.redistanciation-timer-file", Feel::po::value<std::string>()->default_value( "redistanciation_timer.csv" ), "Path to a file to write the redistanciation time" )
+        ("levelset.redistanciation-timer-file", Feel::po::value<std::string>()->default_value( "redistanciation_d_timer.csv" ), "Path to a file to write the redistanciation time" )
         ;
 
     Environment env( 
@@ -79,7 +97,6 @@ int main( int argc, char** argv )
                 _author="Feel++ Consortium",
                 _email="feelpp-devel@feelpp.org")
             );
-
     std::string feapprox = soption(_name="fe-approximation");
     if ( feapprox == "P2" )
         runLevelsetApplication<2>();
