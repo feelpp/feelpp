@@ -49,7 +49,7 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL
   )
 
-if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
+if ( FEELPP_HAS_FMILIB )
 feelpp_add_application( hdg_coupledpoisson
   SRCS coupledmixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
