@@ -550,11 +550,12 @@ struct InitializeSpace
     typedef typename SpaceType::mesh_ptrtype MeshPtrType;
     typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
     typedef typename SpaceType::periodicity_type PeriodicityType;
+    using globaldof_type = Dof<typename SpaceType::mesh_type::size_type>;
     InitializeSpace( functionspace_vector_type & functionspaces,
                      MeshPtrType const& mesh,
                      mesh_support_vector_type const& meshSupport,
                      PeriodicityType const& periodicity,
-                     std::vector<Dof> const& dofindices,
+                     std::vector<globaldof_type> const& dofindices,
                      worldscomm_ptr_t const & worldsComm,
                      std::vector<bool> extendedDofTable )
         :
@@ -614,7 +615,7 @@ struct InitializeSpace
     worldscomm_ptr_t M_worldsComm;
     MeshPtrType M_mesh;
     mesh_support_vector_type const& M_meshSupport;
-    std::vector<Dof> const& M_dofindices;
+    std::vector<globaldof_type> const& M_dofindices;
     PeriodicityType M_periodicity;
     std::vector<bool> M_extendedDofTable;
 };
@@ -748,7 +749,7 @@ struct updateDataMapProcessStandard
     worldcomm_ptr_t M_worldComm;
     mutable uint16_type M_cursor;
     uint16_type M_lastCursor;
-    mutable std::vector<datamap_ptrtype> M_subdm;
+    mutable std::vector<datamap_ptrtype<>> M_subdm;
 };
 
 
@@ -1540,7 +1541,9 @@ using Component = ComponentType;
 enum FunctionSpaceType
 {
     SCALAR = 0,
-    VECTORIAL = 1
+    VECTORIAL = 1,
+    TENSOR2,
+    TENSOR2_SYMM
 };
 
 template<uint16_type PN,
@@ -1730,7 +1733,7 @@ public:
     typedef meshes_list MeshesListType;
     typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
     using index_type = typename mesh_0_type::index_type;
-    //using size_type = typename mesh_0_type::size_type;
+    using size_type = typename mesh_0_type::size_type;
     typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<meshes_list>,
                               mpl::identity<mesh_0_type> >::type::type mesh_type;
@@ -1951,7 +1954,7 @@ public:
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef std::shared_ptr<dof_type> dof_ptrtype;
-    typedef std::shared_ptr<DataMap> datamap_ptrtype;
+    typedef std::shared_ptr<DataMap<>> datamap_ptrtype;
     typedef std::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
@@ -2823,7 +2826,7 @@ public:
                 return d;
 
             }
-        std::vector<int> dofs( std::vector<index_type> const& e, DataMap const& dm, int block  ) const
+        std::vector<int> dofs( std::vector<index_type> const& e, DataMap<size_type> const& dm, int block  ) const
             {
                 std::vector<int> d;
                 int N = M_functionspace->dof()->nRealLocalDof();
@@ -4588,7 +4591,7 @@ public:
     // Constructor
     FunctionSpace( mesh_ptrtype const& mesh,
                    mesh_support_vector_type const& meshSupport,
-                   std::vector<Dof > const& dofindices,
+                   std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
@@ -4629,7 +4632,7 @@ public:
     }
 #endif // 0
 
-    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof > const& dofindices )
+    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof<typename mesh_type::size_type> > const& dofindices )
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
@@ -4655,7 +4658,7 @@ public:
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
-                                 worldscomm_ptr_t & worldscomm = Environment::worldsComm(nSpaces),
+                                 worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
@@ -4719,14 +4722,14 @@ public:
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, meshSupport, mesh_components, periodicity, std::vector<Dof >(), mpl::bool_<is_composite>() );
+        this->init( mesh, meshSupport, mesh_components, periodicity, std::vector<Dof<typename mesh_type::size_type> >(), mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
     void init( mesh_ptrtype const& mesh,
                mesh_support_vector_type const& meshSupport,
                size_type mesh_components,
-               std::vector<Dof > const& dofindices,
+               std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                periodicity_type periodicity = periodicity_type() )
     {
 
@@ -5093,7 +5096,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& map() const
+    DataMap<size_type> const& map() const
     {
         return *M_dof;
     }
@@ -5108,7 +5111,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& mapOn() const
+    DataMap<size_type> const& mapOn() const
     {
         return *M_dof;
     }
@@ -5116,7 +5119,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& mapOnOff() const
+    DataMap<size_type> const& mapOnOff() const
     {
         return *M_dofOnOff;
     }
@@ -5561,13 +5564,13 @@ private:
                                 mesh_support_vector_type const& meshSupport,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
-                                std::vector<Dof > const& dofindices,
+                                std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                                 mpl::bool_<false> );
     FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
                                 mesh_support_vector_type const& meshSupport,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
-                                std::vector<Dof > const& dofindices,
+                                std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                                 mpl::bool_<true> );
     template<typename FSpaceHead, typename... FSpaceTail>
     FEELPP_NO_EXPORT void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
@@ -5951,7 +5954,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
-                                         std::vector<Dof> const& dofindices,
+                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
                                          mpl::bool_<false> )
 {
     DVLOG(2) << "calling init(<space>) begin\n";
@@ -6029,7 +6032,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
-                                         std::vector<Dof> const& dofindices,
+                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
                                          mpl::bool_<true> )
 {
     DVLOG(2) << "calling init(<composite>) begin\n";
@@ -6129,7 +6132,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList( FSpaceHead& head, FSpaceTail... tai
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nDof(<composite>) begin\n";
@@ -6139,14 +6142,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<false> ) const
 {
     return M_dof->nDof();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -6156,7 +6159,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 {
     //return M_dof->nLocalDof();
@@ -6164,7 +6167,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -6174,14 +6177,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -6191,14 +6194,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithGhost(proc);
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -6208,14 +6211,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) con
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithoutGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -6225,7 +6228,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, 
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithoutGhost(proc);

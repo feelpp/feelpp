@@ -43,6 +43,8 @@ if ( NOT TARGET quickstart )
   add_custom_target(quickstart)
 endif()
 
+add_subdirectory( python )
+
 #
 # Laplacian
 #

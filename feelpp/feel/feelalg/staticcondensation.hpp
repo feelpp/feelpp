@@ -75,11 +75,11 @@ private:
     scstate M_state;
 };
 
-template<typename local_vector_t>
-class LocalVector: public std::unordered_map<size_type,local_vector_t>
+template<typename local_vector_t, typename SizeT = uint32_type>
+class LocalVector: public std::unordered_map<SizeT,local_vector_t>
 {
 public:
-    using super = std::unordered_map<size_type,local_vector_t>;
+    using super = std::unordered_map<SizeT,local_vector_t>;
 
     LocalVector() : super(), M_state( scstate::none ) {}
     LocalVector( LocalVector const& lm ) : super(lm), M_state( lm.M_state )  {}

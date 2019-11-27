@@ -110,7 +110,7 @@ public:
     //!
     //! @return the doftable with datamap
     //!
-    virtual std::pair<std::vector<std::shared_ptr<DofTableBase>>,std::shared_ptr<DataMap>> doftables() const = 0;
+    virtual std::pair<std::vector<std::shared_ptr<DofTableBase<>>>,std::shared_ptr<DataMap<>>> doftables() const = 0;
 
     //!
     //! @return an element of the fe space

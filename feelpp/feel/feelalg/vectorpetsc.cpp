@@ -1712,7 +1712,7 @@ VectorPetscMPI<T>::reciprocal()
 
 
 template <typename T>
-size_type
+typename VectorPetscMPI<T>::size_type
 VectorPetscMPI<T>::firstLocalIndex() const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
@@ -1725,7 +1725,7 @@ VectorPetscMPI<T>::firstLocalIndex() const
 //----------------------------------------------------------------------------------------------------//
 
 template <typename T>
-size_type
+typename VectorPetscMPI<T>::size_type
 VectorPetscMPI<T>::lastLocalIndex() const
 {
     DCHECK( this->isInitialized() ) << "VectorPetsc<> not initialized";
@@ -1806,8 +1806,8 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
         auto it_dof = memory_dofCluster.begin();
         for (int k=0;k<dofClusterMissing.size();++k,++it_dof)
         {
-            dofClusterMissing[k]=it_dof->get<0>();
-            originaldofClusterMissing[k]=it_dof->get<1>();
+            dofClusterMissing[k]=it_dof->template get<0>();
+            originaldofClusterMissing[k]=it_dof->template get<1>();
         }
     }
 
@@ -1957,7 +1957,7 @@ VectorPetscMPI<T>::duplicateFromOtherPartition_run( Vector<T> const& vecInput)
 
 
 template <typename T>
-size_type
+typename VectorPetscMPI<T>::size_type
 VectorPetscMPI<T>::localSize() const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "VectorPetsc not initialized" );
@@ -2596,8 +2596,9 @@ VectorPetscMPIRange<T>::localize()
 
 
 #if BOOST_VERSION < 105900
+template<typename SizeT>
 vector_ptrtype
-vec( Vec v, datamap_ptrtype datamap )
+vec( Vec v, datamap_ptrtype<SizeT> datamap )
 {
     if ( datamap->worldComm().localSize() > 1 )
         return std::make_shared<Feel::VectorPetscMPI<double>>( v, datamap );
@@ -2605,8 +2606,9 @@ vec( Vec v, datamap_ptrtype datamap )
         return std::make_shared<Feel::VectorPetsc<double>>( v, datamap );
 }
 #else
+template<typename SizeT>
 vector_uptrtype
-vec( Vec v, datamap_ptrtype datamap )
+vec( Vec v, datamap_ptrtype<SizeT> datamap )
 {
     if ( datamap->worldComm().localSize() > 1 )
         return std::make_unique<Feel::VectorPetscMPI<double>>( v, datamap );
@@ -2616,7 +2618,7 @@ vec( Vec v, datamap_ptrtype datamap )
 }
 #endif
 
-
+template vector_uptrtype vec<uint32_type>( Vec v, datamap_ptrtype<uint32_type> datamap );
 template class VectorPetsc<double>;
 template class VectorPetscMPI<double>;
 template class VectorPetscMPIRange<double>;
