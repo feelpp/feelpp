@@ -31,6 +31,86 @@
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/pair.hpp>
 
+template<typename MeshT>
+void printMeshInfo( std::shared_ptr<MeshT> const& mesh )
+{
+    using namespace Feel;
+    std::cout << "========================================" << std::endl;
+    std::cout << "Information about the mesh:";
+    std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
+    std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
+    if ( dimension_v<MeshT> == 3 )
+        std::cout << "      number of edges in memory : " << mesh->numGlobalEdges() << std::endl;
+    std::cout << "      number of points  in memory : " << mesh->numGlobalPoints() << std::endl;
+    for( auto marker: mesh->markerNames() )
+    {
+        auto [name,data] = marker;
+
+        if ( data[1] == mesh->dimension() )
+        {
+            size_type nelts = nelements( markedelements(mesh, name ), true );
+            std::cout << "      number of marked elements " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+        }
+    }
+    for( auto marker: mesh->markerNames() )
+    {
+        auto name = marker.first;
+        auto data = marker.second;
+        
+        if ( data[1] == mesh->dimension()-1 )
+        {
+            size_type nelts = nelements( markedfaces(mesh, name ), true );
+            std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+        }
+    }
+    std::cout << "========================================" << std::endl;
+}
+
+template<typename mesh_t>
+void
+doExport()
+{
+    using namespace Feel;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+    printMeshInfo( mesh );
+    auto ex = exporter( _mesh=mesh );
+
+    auto getfns = [=]( std::string const& sexpr ) {
+                      std::vector<std::string> fields;
+                      boost::split( fields, sexpr, boost::is_any_of("|"), boost::token_compress_on );
+                      CHECK( fields.size()  > 1 ) << "bad expression format";
+                      std::set<std::string> reps;
+                      for( auto it=fields.begin()+2; it!=fields.end(); ++it )
+                          reps.insert( *it );
+                      return std::tuple{ fields[0], fields[1], reps };
+                  };
+    
+    for( auto const& sexpr : vsoption( _name="scalar_expr" ) )
+    {
+        auto const& [strname,strexpr, reps ] = getfns( sexpr );
+        ex->add( strname, expr( strexpr ), reps );
+    }
+    for( auto const& sexpr : vsoption( _name="vectorial_expr" ) )
+    {
+        auto const& [strname,strexpr, reps ] = getfns( sexpr );
+        ex->add( strname, expr<3,1>( strexpr ), reps );
+    } 
+    ex->add( "P", P(), "nodal" );
+    ex->add( "facesmarker", semarker(), faces(mesh), "nodal" );
+    if constexpr ( dimension_v<mesh_t> > 2 )
+        ex->add( "edgesmarker", semarker(), edges(mesh), "nodal" );
+    ex->add( "pointmarker", semarker(), points(mesh), "nodal" );
+
+    using namespace std::string_literals;
+    auto exprs = hana::make_tuple( hana::pair{ "detJ"s, detJ() }, hana::pair{ "marker"s, emarker() }, hana::pair{ "pid"s, epid() }, hana::pair{ "h"s, h() }  );
+    hana::for_each( exprs,
+                    [&](const auto& x) { ex->add( hana::first(x), hana::second(x), "element" ); } );
+
+    
+    ex->save();
+
+}
+
 int main( int argc, char** argv )
 {
     using namespace Feel;
@@ -41,6 +121,7 @@ int main( int argc, char** argv )
         ( "shape", po::value<std::string>()->default_value( "simplex" ), "mesh dimension" )
         ( "order", po::value<int>()->default_value( 1 ), "mesh geometric order" )
         ( "scalar_expr", po::value<std::vector<std::string>>()->default_value( {"g|sin(x):x|nodal|element"} ), "list of scalar expressions with name and representations" )
+        ( "vectorial_expr", po::value<std::vector<std::string>>()->default_value( {"gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element"} ), "list of vectorial  expressions with name and representations" )
 
         ;
     Environment env( _argc=argc, _argv=argv,
@@ -49,34 +130,14 @@ int main( int argc, char** argv )
                                    _author="Feel++ Consortium",
                                    _email="feelpp-devel@feelpp.org" )
                      );
-    
-    using mesh_t = Mesh<Simplex<3, 1>>;
-    auto mesh = loadMesh( _mesh = new mesh_t );
-    auto ex = exporter( _mesh=mesh );
 
-    for( auto const& sexpr : vsoption( _name="scalar_expr" ) )
-    {
-        std::vector<std::string> fields;
-        boost::split( fields, sexpr, boost::is_any_of("|"), boost::token_compress_on );
-        int fsize = fields.size();
-        CHECK( fsize  > 0 ) << "bad expression format";
-        std::string strname( fields[0] );
-        std::string strexpr( fields[1] );
-        std::set<std::string> reps;
-        for( auto it=fields.begin()+2; it!=fields.end(); ++it )
-            reps.insert( *it );
-        ex->add( strname, expr( strexpr ), reps );
-    }
-    ex->add( "P", P(), "nodal" );
-    ex->add( "bdymarker", fmarker(), boundaryfaces(mesh), "nodal" );
 
-    using namespace std::string_literals;
-    auto exprs = hana::make_tuple( hana::pair{ "detJ"s, detJ() }, hana::pair{ "marker"s, emarker() }, hana::pair{ "pid"s, epid() }, hana::pair{ "h"s, h() }  );
-    hana::for_each( exprs,
-                    [&](const auto& x) { ex->add( hana::first(x), hana::second(x), "element" ); } );
-
-    
-    ex->save();
+    if ( ioption( "dim" ) == 1 )
+        doExport<Mesh<Simplex<1, 1>>>();
+    if ( ioption( "dim" ) == 2 )
+        doExport<Mesh<Simplex<2, 1>>>();
+    if ( ioption( "dim" ) == 3 )
+        doExport<Mesh<Simplex<3, 1>>>();
     return 0;
 
 }
