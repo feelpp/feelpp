@@ -180,14 +180,29 @@ void
 ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setExpr( property,p,this->worldComm(),M_directoryLibExpr );
+    try
+    {
+        M_materialProperties[property].setExpr( property,p,this->worldComm(),M_directoryLibExpr );
+    } catch (std::exception &p) {
+        LOG(WARNING) << p.what() << std::endl;
+        M_materialProperties.erase(property);
+        return;
+    }
 }
 
 void
 ModelMaterial::setProperty( std::string const& property, std::string const& e )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setExpr( e,this->worldComm(),M_directoryLibExpr );
+    try
+    {
+        M_materialProperties[property].setExpr( e,this->worldComm(),M_directoryLibExpr );
+    } catch (std::exception &p) {
+        LOG(WARNING) << p.what() << std::endl;
+        M_materialProperties.erase(property);
+        return;
+    }
+
 }
 
 void

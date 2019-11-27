@@ -102,6 +102,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
       auto b_alpha = form1(_test=XhLv);
       a_alpha = integrate(_range=elements(XhLv->mesh()), _expr=cst(1.)/doption("mu")*inner(gradt(u), grad(u)));
       a_alpha += on(_range=boundaryfaces(XhLv->mesh()),_element=u, _expr=expr<3,1>(soption("functions.u")), _rhs=b_alpha, _type="elimination_symmetric");
+      a_alpha.matrixPtr()->close();
       prec->attachAuxiliarySparseMatrix("a_alpha",a_alpha.matrixPtr());
 
       auto uu = XhL->element();
@@ -110,6 +111,7 @@ BOOST_AUTO_TEST_CASE( test_0 )
       a_beta = integrate(_range=elements(XhL->mesh()), _expr=doption("regul")*inner(grad(uu),gradt(uu)));
       
       a_beta += on(_range=boundaryfaces(XhL->mesh()),_element=uu, _expr=cst(0.), _rhs=b_beta, _type="elimination_symmetric");
+      a_beta.matrixPtr()->close();
       prec->attachAuxiliarySparseMatrix("a_beta",a_beta.matrixPtr());
     }
     if(doption("regul") == 0)

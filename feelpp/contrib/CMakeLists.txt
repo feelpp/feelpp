@@ -123,6 +123,13 @@ else()
     )
 endif()
 
+if ( MKL_FOUND )
+  target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
+  target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
+  #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
+  target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
 target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE eigen )
 
@@ -298,6 +305,30 @@ if ( FEELPP_ENABLE_KWSYS )
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/kwsys/include>
     $<INSTALL_INTERFACE:include/feelpp/feelpp_kwsys> )
     set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} KWSys/Contrib")
+  endif()
+endif()
+
+
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
+# FMILib configure
+# install rules.
+set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_INCLUDE_DIR include/feelpp/fmilib CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_RUNTIME Runtime CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_DEVELOPMENT Development CACHE INTERNAL "")
+set(FMILIB_INSTALL_EXPORT_NAME feelpp-contrib-export-targets CACHE INTERNAL "")
+if ( FEELPP_ENABLE_FMILIB )
+  feelppContribPrepare( fmilib )
+  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    add_subdirectory(fmilib)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMILIB )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_fmilib )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/fmilib/>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/contrib/fmilib/>
+      $<INSTALL_INTERFACE:include/feelpp/fmilib> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} FmiLib/Contrib")
   endif()
 endif()
 

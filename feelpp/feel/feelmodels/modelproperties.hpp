@@ -82,6 +82,7 @@ public:
     ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
     ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
 
+    ModelInitialConditions & initialConditions() { return M_ic; }
     ModelInitialConditions const& initialConditions() const { return M_ic; }
     FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
 

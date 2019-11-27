@@ -601,8 +601,8 @@ public:
             {
                 this->add( __n, __n, expr, rep );
             }
-        template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& rep = "",
+        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 this->add( __n, __n, expr, rangElt, rep );
@@ -615,8 +615,8 @@ public:
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
 
-        template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& _rep = "",
+        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 std::set<std::string> reps = representationType( _rep , "nodal" );
@@ -633,8 +633,8 @@ public:
                         this->addExpr<true>( nameUsed,fnameUsed,expr,rangElt );
                 }
             }
-        template<bool IsNodal,typename ExprT>
-        FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt )
+        template<bool IsNodal,typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangeElt )
             {
                 tic();
                 auto scalarSpace = this->scalarFunctionSpace<IsNodal>();

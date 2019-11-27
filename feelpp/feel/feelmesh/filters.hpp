@@ -49,6 +49,12 @@
 
 namespace Feel
 {
+template <typename T> struct is_filter: std::false_type {};
+
+template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+template <typename... T>
+constexpr bool is_filter_v = is_filter<T...>::value;
+
 /**
  * a RangeType can be one or more filter/range objects of the same type, we
  * extract the underlying type by first casting everything to a list and then
