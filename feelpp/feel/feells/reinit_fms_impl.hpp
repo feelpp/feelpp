@@ -329,6 +329,16 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
 }
 
 
+template <typename HeapEntryType, typename TheSizeType>
+struct MinNewEntryForAllReduce
+{
+    typedef std::pair<HeapEntryType,TheSizeType> cont_type;
+    cont_type operator()( cont_type const& a, cont_type const& b ) const
+    {
+        return std::abs(a.first.first) < std::abs(b.first.first) ? a : b;
+    }
+};
+
 
 template<typename FunctionSpaceType, typename periodicity_type>
 typename ReinitializerFMS<FunctionSpaceType, periodicity_type>::element_type
@@ -436,14 +446,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     checkHeap( "before reduce close points" );
     reduceClosePoints( theHeap, status );
     checkHeap( "after reduce close points" );
-
+#if 0 // Not work from boost >= 1.69, see #1296
     typedef std::pair<heap_entry_type, size_type> pair_heap_dofid_type;
     std::function<pair_heap_dofid_type( pair_heap_dofid_type const&, pair_heap_dofid_type const& )>
         minNewEntry = []( pair_heap_dofid_type const& a,
                           pair_heap_dofid_type const& b)
       { // return the entry having the minimum abs(phi) value
         return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; };
-
+#endif
 
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone - M_nbDofTag1;
 
@@ -461,7 +471,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         // the real new accepted value is the min of all the phi computed in the heaps
         newAccepted = mpi::all_reduce(Environment::worldComm().globalComm(),
                                       newAccepted,
-                                      minNewEntry);
+                                      MinNewEntryForAllReduce<heap_entry_type, size_type>()  /*minNewEntry*/);
 
         size_type newIdOnCluster = newAccepted.second;
 
