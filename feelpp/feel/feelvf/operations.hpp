@@ -656,7 +656,7 @@
             r_type M_right;                                            \
         }; /* tensor */                                                 \
         evaluate_type                                                   \
-            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  noexcept \
+            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
         {                                                               \
             auto leval = M_left.evaluate(p,worldcomm);                  \
             auto reval = M_right.evaluate(p,worldcomm);                 \
@@ -674,9 +674,13 @@
             else if constexpr( L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
                                R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) \
                                  return leval VF_OP_SYMBOL( O ) reval;  \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime > 1 && R_type::evaluate_type::SizeAtCompileTime > 1 ) \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval;                   \
+            }                                                           \
             else                                                        \
             {                                                           \
-                CHECK( false ) << "todo : get shape_op and implement cases"; \
+                CHECK( false ) << "should notx go here";                 \
                 return Eigen::Matrix<value_type,1,1>::Constant( 0 );    \
             }                                                           \
         }                                                               \
