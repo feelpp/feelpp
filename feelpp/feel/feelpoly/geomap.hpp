@@ -54,6 +54,8 @@
 #include <feel/feelalg/svd.hpp>
 
 #include <feel/feelmesh/marker.hpp>
+#include <feel/feelmesh/traits.hpp>
+#include <feel/feelmesh/entitymarkers.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
 #include <feel/feelpoly/fekete.hpp>
@@ -75,7 +77,6 @@ enum class GeomapStrategyType
     GEOMAP_O1 = 1,
     GEOMAP_HO = 2
 };
-
 namespace detail
 {
 template <typename RangeType>
@@ -869,7 +870,6 @@ class GeoMap
               M_B3( boost::extents[NDim][NDim][PDim][PDim] ),
               M_id( __e.id() ),
               M_e_markers( __e.markers() ),
-              M_f_markers( faceMarkers( __e, __f ) ),
               M_elem_id_1( invalid_v<size_type> ),          // __e.ad_first() ),
               M_pos_in_elem_id_1( invalid_uint16_type_value ), //__e.pos_first() ),
               M_elem_id_2( invalid_v<size_type> ),          //__e.ad_second() ),
@@ -883,7 +883,8 @@ class GeoMap
               M_perm(),
               M_dynamic_context( dynctx )
         {
-
+            if ( this->isOnSubEntity() )
+                M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
             if ( is_linear )
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
@@ -997,7 +998,8 @@ class GeoMap
             M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
             M_id = __e.id();
             M_e_markers = __e.markers();
-            M_f_markers = faceMarkers( __e, __f );
+            if ( this->isOnSubEntity() )
+                M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
             M_xrefq = M_pc->nodes();
 
             FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
@@ -1135,8 +1137,9 @@ class GeoMap
                 M_element = boost::addressof( __e );
                 M_id = __e.id();
                 M_e_markers = __e.markers();
-                M_f_markers = faceMarkers( __e, __f );
                 M_face_id = __f;
+                if ( this->isOnSubEntity() )
+                    M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
                 if ( this->isOnSubEntity() && updatePC )
                 {
                     M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
@@ -1721,22 +1724,11 @@ class GeoMap
          *
          * @return the marker of the face of the  element
          */
-        Marker1 faceMarker( uint16_type k ) const
+        Marker1 entityMarker( uint16_type k = 1 ) const
             {
-                auto itFindMarker = M_f_markers->find( k );
-                if ( itFindMarker!= M_f_markers->end() )
-                    return itFindMarker->second;
-                else
+                if ( !isOnSubEntity() || !M_f_markers )
                     return Marker1();
-            }
-        /**
-         * get the marker of the element
-         *
-         * @return the marker of the element
-         */
-        Marker1 faceMarker() const
-            {
-                auto itFindMarker = M_f_markers->find( 1 );
+                auto itFindMarker = M_f_markers->find( k );
                 if ( itFindMarker!= M_f_markers->end() )
                     return itFindMarker->second;
                 else

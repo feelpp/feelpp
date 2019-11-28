@@ -25,3 +25,6 @@
 [submodule "benchmarks/benchmark"]
 	path = benchmarks/benchmark
 	url = https://github.com/feelpp/benchmark
+[submodule "feelpp/contrib/fmilib"]
+	path = feelpp/contrib/fmilib
+	url = https://github.com/feelpp/fmi-library.git
