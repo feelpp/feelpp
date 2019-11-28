@@ -74,8 +74,8 @@ class Trans : public ExprDynamicBase
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
     using evaluate_type = Eigen::Matrix<value_type,
-                                        ( expression_type::evaluate_type::ColsAtCompileTime == Eigen::Dynamic ) ?  Eigen::Dynamic : expression_type::evaluate_type::ColsAtCompileTime,
-                                        ( expression_type::evaluate_type::RowsAtCompileTime == Eigen::Dynamic ) ?  Eigen::Dynamic : expression_type::evaluate_type::RowsAtCompileTime >;
+                                        expression_type::evaluate_type::ColsAtCompileTime,
+                                        expression_type::evaluate_type::RowsAtCompileTime >;
     typedef Trans<ExprT> this_type;
 
     //@}
