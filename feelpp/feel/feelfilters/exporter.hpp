@@ -424,10 +424,10 @@ public:
     //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
     //! \param rangeElt collection of mesh element
     //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
-    template<typename ExprT>
+    template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
     void
-    add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> >* = nullptr )
     {
         this->step( 0 )->add( name, expr, rangeElt, reps );
     }

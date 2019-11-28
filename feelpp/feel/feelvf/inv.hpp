@@ -74,7 +74,7 @@ class Inv : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef Inv<ExprT> this_type;
 
     //@}
@@ -128,6 +128,14 @@ class Inv : public ExprDynamicBase
     {
         return M_expr;
     }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            auto eval = M_expr.evaluate(p,worldcomm);
+            CHECK( eval.rows() == eval.cols() ) << "only square matrix";
+            return eval.inverse();
+       }
 
     //@}
 

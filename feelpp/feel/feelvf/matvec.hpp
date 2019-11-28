@@ -694,6 +694,28 @@ struct initialize_lambda_expression
 
     std::tuple<TheExpr...> M_e;
 };
+
+template<typename EvaluateType>
+struct evaluate_expression
+{
+    static const uint16_type nRow = EvaluateType::RowsAtCompileTime;
+    static const uint16_type nCol = EvaluateType::ColsAtCompileTime;
+
+    evaluate_expression(EvaluateType & eval ) : M_eval( eval ), M_current( 0 ) {}
+
+    template <typename ExprT>
+    void operator()( ExprT const& expr ) const
+    {
+        uint16_type i = M_current / nCol;
+        uint16_type j = M_current % nCol;
+        M_eval( i,j ) = expr.evaluate()(0,0);
+        ++M_current;
+    }
+
+    EvaluateType & M_eval;
+    mutable int M_current;
+};
+
 /**
  * \class Vec
  * \brief class that represents a matrix in the language
@@ -736,10 +758,10 @@ public:
     typedef VectorExpr expression_vector_type;
     typedef Vec<expression_vector_type> this_type;
 
-    typedef double value_type;
-    typedef value_type evaluate_type;
-
     static const uint16_type vector_size =  fusion::result_of::size<expression_vector_type>::type::value;
+
+    typedef double value_type;
+    using evaluate_type = Eigen::Matrix<value_type,vector_size,1>;
 
     template<typename... TheExpr>
     struct Lambda
@@ -820,6 +842,13 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+        {
+            evaluate_type res;
+            fusion::for_each( M_expr,vf::detail::evaluate_expression<evaluate_type>( res ) );
+            return res;
+        }
 
     //@}
 
@@ -1023,12 +1052,12 @@ public:
     typedef MatrixExpr expression_matrix_type;
     typedef Mat<M, N, expression_matrix_type> this_type;
 
-    typedef double value_type;
-    typedef value_type evaluate_type;
-
     static const uint16_type matrix_size1 = M;
     static const uint16_type matrix_size2 = N;
     static const uint16_type matrix_size  = M*N;
+
+    typedef double value_type;
+    using evaluate_type = Eigen::Matrix<value_type,matrix_size1,matrix_size2>;
 
 #if 0
     BOOST_MPL_ASSERT_MSG( ( M*N == fusion::result_of::size<expression_matrix_type>::type::value ),
@@ -1119,6 +1148,14 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return fusion::accumulate( M_expr, true, GetIsPolynomial{} ); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
+        {
+            evaluate_type res;
+            fusion::for_each( M_expr,vf::detail::evaluate_expression<evaluate_type>( res ) );
+            return res;
+        }
 
     //@}
 

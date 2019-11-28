@@ -308,6 +308,30 @@ if ( FEELPP_ENABLE_KWSYS )
   endif()
 endif()
 
+
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
+# FMILib configure
+# install rules.
+set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_INCLUDE_DIR include/feelpp/fmilib CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_RUNTIME Runtime CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_DEVELOPMENT Development CACHE INTERNAL "")
+set(FMILIB_INSTALL_EXPORT_NAME feelpp-contrib-export-targets CACHE INTERNAL "")
+if ( FEELPP_ENABLE_FMILIB )
+  feelppContribPrepare( fmilib )
+  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    add_subdirectory(fmilib)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMILIB )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_fmilib )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/fmilib/>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/contrib/fmilib/>
+      $<INSTALL_INTERFACE:include/feelpp/fmilib> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} FmiLib/Contrib")
+  endif()
+endif()
+
 if ( FEELPP_HAS_GMSH )
   add_subdirectory(gmsh)
 endif()

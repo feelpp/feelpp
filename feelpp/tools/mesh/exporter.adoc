@@ -1,0 +1,55 @@
+:feelpp: Feel++
+= feelpp_mesh_exporter(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_mesh_exporter
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - a tool to export data on a mesh for visualisation {feelpp}
+
+
+== SYNOPSIS
+
+{manmanual} 
+
+== DESCRIPTION
+
+{manmanual} is an application which can ...
+
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===                                                                                                                                                                              
+| Name | Description | Default value
+
+| dim | dimension of the mesh | 3                                                                                              
+| shape| shape of the mesh elements | Simplex
+|===  
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
+We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.                                                                                                       
+[source,shell]
+.Starting the docker `feelpp/feelpp-toolboxes:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+----
+
+=== Generating a single mesh partitioning
+
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+
+== COPYING
+
+Copyright \(C) 2017-2019 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+
