@@ -122,7 +122,7 @@ const size_type mctx = vm::MEASURE;
             ( measFace, GDHMeasFace,0, mctx , Scalar   , M_gmc->measFace()            , 0), \
             ( eid     , GDEid     , 0, 0    , Scalar   , M_gmc->id()                  , 0), \
             ( emarker , GDEmarker , 0, 0    , Scalar   , M_gmc->marker().value()      , 0), \
-            ( fmarker , GDFmarker , 0, 0    , Scalar   , M_gmc->faceMarker().value()      , 0), \
+            ( semarker, GDFmarker , 0, 0    , Scalar   , M_gmc->entityMarker().value() , 0), \
             ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0), \
             ( epid    , GDEPid    , 0, 0    , Scalar   , M_gmc->element().processId() , 0) \
             )                                                           \
