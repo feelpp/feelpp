@@ -73,7 +73,9 @@ class Trans : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef typename expression_type::evaluate_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,
+                                        ( expression_type::evaluate_type::ColsAtCompileTime == Eigen::Dynamic ) ?  Eigen::Dynamic : expression_type::evaluate_type::ColsAtCompileTime,
+                                        ( expression_type::evaluate_type::RowsAtCompileTime == Eigen::Dynamic ) ?  Eigen::Dynamic : expression_type::evaluate_type::RowsAtCompileTime >;
     typedef Trans<ExprT> this_type;
 
     //@}
@@ -97,6 +99,11 @@ class Trans : public ExprDynamicBase
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm).transpose();
+        }
     /** @name Operator overloads
      */
     //@{
