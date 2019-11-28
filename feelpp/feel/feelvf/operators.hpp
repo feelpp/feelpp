@@ -270,7 +270,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
-            typedef value_type evaluate_type;                           \
                                                                         \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
@@ -340,11 +339,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
                                                                         \
-            evaluate_type                                               \
-                evaluate( bool, worldcomm_ptr_t const& ) const          \
-            {                                                           \
-                return 0;                                               \
-            }                                                           \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \

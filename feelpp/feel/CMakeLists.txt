@@ -69,6 +69,10 @@ endif()
 set_property(TARGET feelpp PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP} )
 
 set_property(TARGET feelpp PROPERTY LABELS feel++)
+
+# put at the beginning in order to have the include ordered
+target_link_libraries( feelpp PUBLIC feelpp_contrib )
+
 target_include_directories(feelpp PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
@@ -142,7 +146,13 @@ if ( Boost_FOUND )
     endif()
   endif()
 
+if ( TARGET Boost::headers ) # from cmake >3.15
+  target_link_libraries( feelpp PUBLIC Boost::headers )
+elseif( TARGET Boost::boost )
+  target_link_libraries( feelpp PUBLIC Boost::boost )
+else()
   target_include_directories( feelpp PUBLIC ${Boost_INCLUDE_DIR} )
+endif()
   target_link_libraries( feelpp PUBLIC ${Boost_LIBRARIES} )
   
 endif()
@@ -247,17 +257,11 @@ if (OMC_FOUND)
   target_include_directories( feelpp PUBLIC ${OMC_INCLUDE_DIR} )
   target_link_libraries( feelpp PUBLIC ${OMC_LIBRARIES} )
 endif()
-if (FMILIB_FOUND)
-  target_compile_definitions( feelpp PUBLIC FEELPP_HAS_FMILIB )
-  target_include_directories( feelpp PUBLIC ${FMILIB_INCLUDE_DIR} )
-  target_link_libraries( feelpp PUBLIC ${FMILIB_LIBRARIES} )
-endif()
 if ( OPENTURNS_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_OPENTURNS )
   target_include_directories( feelpp PUBLIC ${OpenTURNS_INCLUDE_DIRS} )
   target_link_libraries( feelpp PUBLIC ${OpenTURNS_LIBRARIES} )
 endif()
-target_link_libraries( feelpp PUBLIC feelpp_contrib )
 
 get_property(INC_DIR_LIST TARGET feelpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "[feelpp]: include_dir ${INC_DIR_LIST}")

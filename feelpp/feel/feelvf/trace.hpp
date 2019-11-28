@@ -75,7 +75,7 @@ class Trace : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
     typedef Trace<ExprT> this_type;
 
     template <typename... TheExpr>
@@ -140,6 +140,12 @@ class Trace : public ExprDynamicBase
     {
         return M_expr;
     }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return evaluate_type::Constant( M_expr.evaluate(p,worldcomm).trace() );
+        }
 
     //@}
 
