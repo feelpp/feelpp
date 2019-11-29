@@ -69,7 +69,6 @@ public:
     using trial_basis = std::nullptr_t;
 
     typedef double value_type;
-    typedef value_type evaluate_type;
 
     template<typename TheExpr1, typename TheExpr2 = boost::none_t, typename TheExpr3 = boost::none_t>
     struct Lambda
