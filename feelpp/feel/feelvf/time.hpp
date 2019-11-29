@@ -68,7 +68,6 @@ public:
 
     typedef TimeExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
     typedef TimeExpr<TimeExprT> this_type;
 
     //@}

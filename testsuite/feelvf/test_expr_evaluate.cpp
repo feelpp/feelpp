@@ -174,5 +174,31 @@ BOOST_AUTO_TEST_CASE( test1 )
         }
     }
 
+    // cross 2d
+    auto ex16 = cross( vec(cst(1.),cst(2.)), vec(cst(3.),cst(4.)) );
+    auto eval16 = ex16.evaluate();
+    BOOST_CHECK( eval16.rows() == 1 && eval16.cols() == 1 );
+    BOOST_CHECK_CLOSE( eval16(0,0), -2.0, tolerance );
+
+    // cross 3d
+    auto ex17 = cross( vec(cst(1.),cst(2.),cst(3.)), vec(cst(4.),cst(5.),cst(6.)) );
+    auto eval17 = ex17.evaluate();
+    BOOST_CHECK( eval17.rows() == 3 && eval17.cols() == 1 );
+    BOOST_CHECK_CLOSE( eval17(0,0), 2.0*6.0-3.0*5.0, tolerance );
+    BOOST_CHECK_CLOSE( eval17(1,0), 3.0*4.0-1.0*6.0, tolerance );
+    BOOST_CHECK_CLOSE( eval17(2,0), 1.0*5.0-2.0*4.0, tolerance );
+
+    // math function
+    auto ex18 = sin( cst(1.5) );
+    auto eval18 = ex18.evaluate();
+    BOOST_CHECK( eval18.rows() == 1 && eval18.cols() == 1 );
+    BOOST_CHECK_CLOSE( eval18(0,0), std::sin(1.5), tolerance );
+
+    // pow
+    auto ex19 = pow( cst(4.), cst(3.) );
+    auto eval19 = ex19.evaluate();
+    BOOST_CHECK( eval19.rows() == 1 && eval19.cols() == 1 );
+    BOOST_CHECK_CLOSE( eval19(0,0), std::pow(4,3), tolerance );
+
 }
 BOOST_AUTO_TEST_SUITE_END()

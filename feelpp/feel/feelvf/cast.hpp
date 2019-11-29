@@ -60,8 +60,8 @@ public:
     using trial_basis = std::nullptr_t;
 
     using value_type = T;
-    using evaluate_type = value_type;
     using expression_type = ExprT;
+    using evaluate_type = Eigen::Matrix<value_type,expression_type::evaluate_type::RowsAtCompileTime, expression_type::evaluate_type::ColsAtCompileTime>;
     using this_type = Cast<T,ExprT>;
 
     Cast() = delete;
@@ -88,19 +88,14 @@ public:
     expression_type const& expression() const { return M_expr; }
     expression_type & expression()  { return M_expr; }
 
-    constexpr value_type evaluate() const
+    constexpr value_type evaluate( bool p, worldcomm_ptr_t const& worldcomm) const
     {
-        return (value_type)M_expr.evaluate();
-    }
-
-    constexpr value_type evaluate( bool ) const
-    {
-        return (value_type)M_expr.evaluate();
-    }
-
-    constexpr value_type evaluate( bool, worldcomm_ptr_t const& ) const
-    {
-        return (value_type)M_expr.evaluate();
+        auto eval = M_expr.evaluate(p,worldcomm);
+        evaluate_type res(eval.rows(),eval.cols());
+        for ( uint16_type i=0;i< eval.rows();++i )
+            for ( uint16_type j=0;j< eval.cols();++j )
+                res(i,j) = (value_type) eval(i,j);
+        return res;
     }
 
     template<typename... TheExpr>
