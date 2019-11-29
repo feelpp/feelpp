@@ -45,6 +45,17 @@ if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 AND ${CMAKE_VERSION} VERSION_LESS 3.6 
     message(STATUS "[feelpp] use old policy CMP0053" )
     cmake_policy(SET CMP0053 OLD)
 endif()
+
+if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
+  message(STATUS "[feelpp] use new policy CMP0079" )
+  cmake_policy(SET CMP0079 NEW)
+endif()
+
+if (POLICY CMP0045)
+# error on non-existent target in get_target_property
+cmake_policy(SET CMP0045 NEW)
+endif()
+
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable

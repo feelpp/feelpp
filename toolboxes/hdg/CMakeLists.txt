@@ -54,7 +54,6 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL
   )
 
-
 feelpp_add_application( hdg_cvg_thermoelectric
   SRCS thermoelectric.hpp cvg_thermoelectric.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
@@ -73,8 +72,8 @@ feelpp_add_application( hdg_poroelastic
 #  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
 #  )
 
-if ( FEELPP_HAS_OMC AND FEELPP_HAS_FMILIB )
-  feelpp_add_application( hdg_coupledpoisson
+if ( FEELPP_HAS_FMILIB )
+feelpp_add_application( hdg_coupledpoisson
   SRCS coupledmixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
   INSTALL )

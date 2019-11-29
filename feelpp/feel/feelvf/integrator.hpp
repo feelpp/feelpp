@@ -3738,7 +3738,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             if ( faceCur.isGhostFace() )
             {
-                LOG(INFO) << "face id : " << faceCur.id() << " is a ghost face";
+                VLOG(3) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
 

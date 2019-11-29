@@ -38,8 +38,25 @@
 
 include(FindPackageHandleStandardArgs)
 
-set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
-set(MKL_ROOT ${INTEL_ROOT}/mkl CACHE PATH "Folder contains MKL")
+if ( NOT DEFINED INTEL_ROOT )
+  if ( DEFINED ENV{INTEL_ROOT} )
+    set(INTEL_ROOT $ENV{INTEL_ROOT} CACHE PATH "Folder contains intel libs")
+  else()
+    set(INTEL_ROOT "/opt/intel" CACHE PATH "Folder contains intel libs")
+  endif()
+endif()
+
+if ( NOT DEFINED MKL_ROOT )
+  if ( DEFINED ENV{MKL_ROOT} )
+    set(MKL_ROOT $ENV{MKL_ROOT} CACHE PATH "Folder contains MKL")
+  else()
+    set(MKL_ROOT ${INTEL_ROOT}/mkl CACHE PATH "Folder contains MKL")
+  endif()
+endif()
+
+message(STATUS "INTEL_ROOT: ${INTEL_ROOT}")
+message(STATUS "MKL_ROOT: ${MKL_ROOT}")
+
 
 # Find include dir
 find_path(MKL_INCLUDE_DIR mkl.h
@@ -89,7 +106,8 @@ else()
     if(WIN32)
         set(MKL_INTERFACE_LIBNAME mkl_intel_c)
     else()
-        set(MKL_INTERFACE_LIBNAME mkl_intel)
+      #set(MKL_INTERFACE_LIBNAME mkl_intel)
+      set(MKL_INTERFACE_LIBNAME mkl_intel_lp64)
     endif()
 
     find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
@@ -118,7 +136,8 @@ else()
         set(MKL_RTL_LIBNAME iomp5)
     endif()
     find_library(MKL_RTL_LIBRARY ${MKL_RTL_LIBNAME}
-      PATHS ${INTEL_ROOT}/lib ${INTEL_ROOT}/lib/intel64 ${INTEL_ROOT}/compiler/lib/intel64/)
+      PATHS ${INTEL_ROOT}/lib ${INTEL_ROOT}/lib/intel64 ${INTEL_ROOT}/compiler/lib/intel64/
+      NO_DEFAULT_PATH)
     message(STATUS "MKL_RTL_LIBRARY ${MKL_RTL_LIBRARY}")
 
     # Added check that we have all the components of the MKL library
