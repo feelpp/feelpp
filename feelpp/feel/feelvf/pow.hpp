@@ -65,7 +65,7 @@ public:
     typedef typename expression_1_type::value_type value_1_type;
     typedef typename expression_2_type::value_type value_2_type;
     typedef value_1_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_1_type::evaluate_type;
 
     // verify that all returning types are integral or floating types
     BOOST_STATIC_ASSERT( ::boost::is_arithmetic<value_1_type>::value  &&
@@ -110,6 +110,17 @@ public:
     {
         return M_expr_2;
     }
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            auto eval1 = M_expr_1.evaluate(p,worldcomm);
+            auto eval2 = M_expr_2.evaluate(p,worldcomm);
+            evaluate_type res(eval1.rows(),eval1.cols());
+            for ( uint16_type i=0;i< eval1.rows();++i )
+                for ( uint16_type j=0;j< eval1.cols();++j )
+                    res(i,j) = std::pow( eval1(i,j), eval2(0,0) );
+            return res;
+        }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
