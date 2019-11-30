@@ -160,15 +160,18 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
-        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType = hana::tuple<> >
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
-        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType = hana::tuple<> >
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = SymbolsExpr<>, typename TupleExprOnRangeType = hana::tuple<> >
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields,
+                                        SymbolsExprType const& symbolsExpr = SymbolsExpr<>(), TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = SymbolsExpr<>, typename TupleExprOnRangeType = hana::tuple<> >
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields,
+                                        SymbolsExprType const& symbolsExpr = SymbolsExpr<>(), TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
             {
                 this->executePostProcessExports(exporter,"",time,tupleFields,symbolsExpr,tupleExprOnRange);
             }
-        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExpr, typename TupleExprOnRangeType>
-        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange );
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType, typename TupleExprOnRangeType>
+        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields,
+                                       SymbolsExprType const& symbolsExpr, TupleExprOnRangeType const& tupleExprOnRange );
 
         template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
         bool executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
@@ -362,7 +365,6 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
                 continue;
             std::set<std::string> themarker = _markers;
             auto therange =  (themarker.empty())?defaultRange: markedelements(mesh,themarker);
-            std::cout << "Add Expr EXPORT " << _name << std::endl;
             std::string nameUsed = prefixvm( "expr", _name );
             mapExportsExpr[nameUsed].push_back( std::make_tuple( _expr, therange, _rep ) );
             fieldsNamesToExport.insert( nameUsed );
@@ -444,9 +446,24 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                             {
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
-                                    exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
-                                                                 prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
-                                                                 theexpr,range,reprs );
+                                    using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
+                                    if constexpr ( _expr_shape::is_tensor2 && _expr_shape::M > 1 && _expr_shape::N > 1 ) // tensor2 asym is not supported with ParaView -> export each components in wating
+                                        {
+                                            for ( int i=0;i<_expr_shape::M;++i )
+                                                for ( int j=0;j<_expr_shape::N;++j )
+                                                {
+                                                    std::string fieldName2 = (boost::format("%1%_%2%%3%") %fieldName %i %j).str();
+                                                    exporter->step( time )->add( prefixvm(this->prefix(),fieldName2),
+                                                                                 prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName2)),
+                                                                                 theexpr(i,j),range,reprs );
+                                                }
+                                        }
+                                    else
+                                    {
+                                        exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                                     theexpr,range,reprs );
+                                    }
                                     hasFieldToExport = true;
                                 }
 #if 1
@@ -454,9 +471,9 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 {
                                     auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
                                                                        hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<1>)
-                                                                       /*hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
-                                                                        hana::make_tuple(hana::int_c<3>,hana::int_c<3>)*/ // remove tensor2 not supporterd by ParaView
+                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<1>),
+                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
+                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<3>)
                                                                        );
                                     auto const& fieldNameBIS = fieldName;
                                     auto const& theexprBIS = theexpr;
@@ -464,13 +481,27 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                     auto const& reprsBIS = reprs;
                                     hana::for_each( exprShape, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
                                                     {
-                                                        constexpr int i = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
-                                                        constexpr int j = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
-                                                        if ( theexprBIS.template hasExpr<i,j>() )
+                                                        constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                                        constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                                        if ( theexprBIS.template hasExpr<ni,nj>() )
                                                         {
-                                                            exporter->step( time )->add( prefixvm(this->prefix(),fieldNameBIS),
-                                                                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldNameBIS)),
-                                                                                         expr(theexprBIS.template expr<i,j>(),symbolsExpr),rangeBIS,reprsBIS );
+                                                            if constexpr ( ni == nj && ni > 1 )  // tensor2 asym is not supported with ParaView -> export each components in wating 
+                                                            {
+                                                                for ( int i=0;i<ni;++i )
+                                                                    for ( int j=0;j<nj;++j )
+                                                                    {
+                                                                        std::string fieldNameBIS2 = (boost::format("%1%_%2%%3%") %fieldNameBIS %i %j).str();
+                                                                        exporter->step( time )->add( prefixvm(this->prefix(),fieldNameBIS2),
+                                                                                                     prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldNameBIS2)),
+                                                                                                     expr(theexprBIS.template expr<ni,nj>(),symbolsExpr),rangeBIS,reprsBIS );
+                                                                    }
+                                                            }
+                                                            else
+                                                            {
+                                                                exporter->step( time )->add( prefixvm(this->prefix(),fieldNameBIS),
+                                                                                             prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldNameBIS)),
+                                                                                             expr(theexprBIS.template expr<ni,nj>(),symbolsExpr),rangeBIS,reprsBIS );
+                                                            }
                                                             hasFieldToExport = true;
                                                         }
                                                     });

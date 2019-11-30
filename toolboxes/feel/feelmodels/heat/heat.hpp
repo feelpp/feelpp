@@ -239,9 +239,18 @@ class Heat : public ModelNumerical,
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
                 //std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExpr;
-                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)) _expr_scalar_type;
+                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se) ) _expr_scalar_type;
                 std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
 
+                typedef decltype(expr(ModelExpression{}.template expr<nDim,nDim>(),se)) _expr_tensor2_type;
+                std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2;
+
+                auto Id = eye<nDim,nDim>();
+                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
+                std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
+
+                bool onlyScalarThermalConductivity = this->thermalProperties()->allThermalConductivitiesAreScalar();
+                
                 for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
                 {
                     std::string const& _matName = rangeData.first;
@@ -251,18 +260,26 @@ class Heat : public ModelNumerical,
                         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
                         if ( thermalConductivity.isMatrix() )
                         {
-#if 0
+#if 1
                             // tensor2 asym is not supported with ParaView -> export each components in wating
-                            auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se));
-                            for ( int i=0;i<nDim;++i )
-                                for ( int j=0;j<nDim;++j )
-                                    mapExprScalar[prefixvm(prefix,(boost::format("thermal-conductivity_%1%_%2%")%i%j).str())].push_back( std::make_tuple( thermalConductivityExpr(i,j), range, "element" ) );
+                            auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se);
+                            mapExprTensor2[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
+                            //for ( int i=0;i<nDim;++i )
+                            //for ( int j=0;j<nDim;++j )
+                            //mapExprCompTensor2[prefixvm(prefix,(boost::format("thermal-conductivity_%1%%2%")%i%j).str())].push_back( std::make_tuple( thermalConductivityExpr(i,j), range, "element" ) );
 #endif
                         }
                         else
                         {
                             auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), se );
-                            mapExprScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
+                            if ( onlyScalarThermalConductivity )
+                            {
+                                mapExprScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
+                            }
+                            else
+                            {
+                                mapExprTensor2FromScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr*Id, range, "element" ) );
+                            }
                         }
                     }
                     //mapExpr[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
@@ -273,7 +290,7 @@ class Heat : public ModelNumerical,
                         mapExprScalar[prefixvm(prefix,"density")].push_back( std::make_tuple( densityExpr, range, "element" ) );
                     }
                 }
-                return hana::make_tuple( mapExprScalar );
+                return hana::make_tuple( mapExprScalar,mapExprTensor2,mapExprTensor2FromScalar );
             }
 
         template <typename FieldTemperatureType>
@@ -307,12 +324,9 @@ class Heat : public ModelNumerical,
                 auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
                 if ( thermalConductivity.isMatrix() )
                 {
-#if 0
-                    // generate compilation error because need to fix/improve the return type of expr.evaluate(bool, worldcomm_ptr_t)
                     for ( int i=0;i<nDim;++i )
                         for ( int j=0;j<nDim;++j )
-                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("%1%%2%_%3%%4%")%prefix_symbol %_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
-#endif
+                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("%1%%2%_k%3%%4%")%prefix_symbol %_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
                 }
                 else
                     matPropSymbsScalar.push_back( std::make_pair( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
@@ -327,7 +341,7 @@ class Heat : public ModelNumerical,
                 auto expr_k = this->thermalProperties()->thermalConductivityScalarExpr( se );
                 matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%k")% prefix_symbol).str(), expr_k ) );
             }
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar )/*, symbolExpr( matPropSymbsMatrixComp )*//*, symbolExpr(matPropSymbsScalarSelector)*/ );
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrixComp ), symbolExpr(matPropSymbsScalarSelector) );
         }
 
         //___________________________________________________________________________________//
