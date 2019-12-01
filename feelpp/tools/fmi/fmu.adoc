@@ -12,7 +12,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wa
 
 == SYNOPSIS
 
-{manmanual} 
+{manmanual}
 
 == DESCRIPTION
 
@@ -24,29 +24,37 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wa
 {manmanual} requires some options.
 
 .Table of command-line {manmanual} options
-|===                                                                                                                                                                              
-| Name | Description | Default value
+|===
+| Prefix | Name | Description | Type | Default value
 
-| |  |
-|===  
-
+| `fmu` |  `filename` | name of the FMU file with absolute path | `std::string` | `""`
+| `fmu` |  `display-variables-info` | Display the list of variables and description after loading FMU  | boolean | `false`
+| `fmu` |  `verbose` | Run with verbosity | boolean | `true`
+| `fmu` |  `solver.time-step` | Time step for FMU Solver  | double | `0.1`
+| `fmu` |  `solver.rtol` | Relative tolerance for FMU Solver | double | `1e-4`
+| `fmu` |  `time-initial` | inital time for the simulation. Default is taken from the model | double | `-1`
+| `fmu` |  `time-final` | Final time for the simulation. Default is taken from the model  | double | `-1`
+| `fmu` |  `exported-variables` | List of variables which have to be exported  | `std::vector<std::string>` | empty
+| `fmu` |  `export-directory` | Location of the exported data. Default is the app directory | `std::string`| `""`
+|===
 == EXAMPLES
 
-We are now using the `feelpp/feelpp:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
-We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.                                                                                                       
+We are now using the `feelpp/feelpp:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.
 [source,shell]
 .Starting the docker `feelpp/feelpp:latest`
 ----
 docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp
 ----
+=== Running  a FMU
 
+There is a FMU available
 
 == SEE ALSO
 
-*{feelpp} Book:* http://book.feelpp.org
+*{feelpp} Docs:* http://docs.feelpp.org/user/{page-version}/using/
 
 == COPYING
 
 Copyright \(C) 2017-2019 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
-
