@@ -60,7 +60,7 @@ int FMU::load( std::string _path )
                                                 << std::endl;
 
     if ( version == fmi_version_2_0_enu )
-        M_model = fmumodel_ptrtype( new FmuModel2( M_context, M_tmp_dir, M_callbacks ) );
+        M_model = std::make_shared<FmuModel2>( M_context, M_tmp_dir, M_callbacks );
     else
     {
         Feel::cerr << "Error only version 2.0 FMU is supported for now\n";
