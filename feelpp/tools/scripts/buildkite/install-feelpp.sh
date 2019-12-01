@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
-
+#set -x
 component=${1:-base}
 
 source $(dirname $0)/common.sh

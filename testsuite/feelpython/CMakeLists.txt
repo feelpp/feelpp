@@ -26,8 +26,8 @@ if ( FEELPP_ENABLE_PYTHON_WRAPPING )
 set_directory_properties(PROPERTIES LABEL testpython )
 foreach(TEST python_basic python_embed python1)
 
-  feelpp_add_test( ${TEST} )
+  feelpp_add_test( ${TEST} LINK_LIBRARIES ${PYTHON_LIBRARIES})
 
 endforeach()
-#target_link_libraries(feelpp_test_python1 PRIVATE pybind11::embed)
+#target_link_libraries(feelpp_test_python_embed PRIVATE pybind11::embed)
 endif()

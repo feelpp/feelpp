@@ -949,7 +949,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {
                                     auto material = pairMat.second;
-                                    K = material.getScalar( "k" ).evaluate(M_paramValues);
+                                    K = material.getScalar( "k" ).evaluate(M_paramValues)(0,0);
                                 }
                                 auto gradp_exact = grad<Dim>(p_exact) ;
                                 if ( !this->isStationary() )
@@ -1012,7 +1012,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
-                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate();
+                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate()(0,0);
                         scaled_ibc = scaled_ibc * kk_ibc;
                     }
 
