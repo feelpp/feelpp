@@ -77,7 +77,7 @@ public:
     //typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>/*, Periodicity<periodicity_type>*/ > space_vectorial_type;
     typedef std::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
     typedef typename space_vectorial_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
