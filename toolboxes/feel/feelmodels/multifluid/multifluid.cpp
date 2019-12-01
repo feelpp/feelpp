@@ -361,16 +361,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         this->log("MultiFluid","buildBlockMatrixGraph", "start build inextensibility lagrange-multiplier" );
         int startIndexBlockInextensibility = indexBlock;
         // Matrix stencil
-        BlocksStencilPattern patCouplingLM(1, fluid_model_type::space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
+        //BlocksStencilPattern patCouplingLM(1, fluid_model_type::space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        //patCouplingLM(0,0) = size_type(Pattern::COUPLED);
 
         myBlockGraph(startIndexBlockInextensibility,startIndexBlockFluid) = stencil(
-                _test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpaceVelocityPressure(),
-                _pattern_block=patCouplingLM,
+                _test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpaceVelocity(),
+                //_pattern_block=patCouplingLM,
                 _diag_is_nonzero=false,_close=false)->graph();
         myBlockGraph(startIndexBlockFluid,startIndexBlockInextensibility) = stencil(
-                _test=this->functionSpaceVelocityPressure(), _trial=this->functionSpaceInextensibilityLM(),
-                _pattern_block=patCouplingLM.transpose(),
+                _test=this->functionSpaceVelocity(), _trial=this->functionSpaceInextensibilityLM(),
+                //_pattern_block=patCouplingLM.transpose(),
                 _diag_is_nonzero=false,_close=false)->graph();
         myBlockGraph(startIndexBlockInextensibility,startIndexBlockInextensibility) = stencil(
                 _test=this->functionSpaceInextensibilityLM(), _trial=this->functionSpaceInextensibilityLM(),
@@ -457,7 +457,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateInextensibilityLM()
     auto en_elt = this->mesh()->endOrderedElement();
 
     const rank_type pid = this->mesh()->worldCommElements().localRank();
-    const int ndofv = fluid_model_type::space_fluid_pressure_type::fe_type::nDof;
+    const int ndofv = fluid_model_type::space_pressure_type::fe_type::nDof;
     elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
 
     for (; it_elt!=en_elt; it_elt++)
@@ -726,15 +726,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhVP = this->functionSpaceVelocityPressure();
+            auto XhV = this->functionSpaceVelocity();
 
-            auto const& U = this->fieldVelocityPressure();
-            auto u = U.template element<0>();
-            auto v = U.template element<0>();
+            auto const& u = this->fieldVelocity();
+            auto const& v = u;
             auto Id = vf::Id<nDim, nDim>();
 
-            auto myBfVP = form2( 
-                    _test=XhVP, _trial=XhVP, _matrix=A,
+            auto myBfV = form2( 
+                    _test=XhV, _trial=XhV, _matrix=A,
                     _rowstart=this->fluidModel()->rowStartInMatrix(),
                     _colstart=this->fluidModel()->colStartInMatrix()
                     );
@@ -750,7 +749,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
 
                     this->timerTool("Solve").start();
 
-                    myBfVP += integrate(
+                    myBfV += integrate(
                             _range=elements(mesh),
                             _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                             _geomap=this->geomap()
@@ -781,7 +780,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 
-                form2( _trial=this->functionSpaceInextensibilityLM(), _test=XhVP, 
+                form2( _trial=this->functionSpaceInextensibilityLM(), _test=XhV, 
                         _matrix=A,
                         _rowstart=this->fluidModel()->rowStartInMatrix(),
                         _colstart=startBlockIndexInextensibilityLM ) +=
@@ -789,7 +788,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEInextensibility( DataUpdateLinear
                             _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                             _geomap=this->geomap()
                             );
-                form2( _trial=XhVP, _test=this->functionSpaceInextensibilityLM(), 
+                form2( _trial=XhV, _test=this->functionSpaceInextensibilityLM(), 
                         _matrix=A,
                         _rowstart=startBlockIndexInextensibilityLM,
                         _colstart=this->fluidModel()->colStartInMatrix() ) +=
@@ -895,18 +894,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhVP = this->functionSpaceVelocityPressure();
+            auto XhV = this->functionSpaceVelocity();
 
-            auto myBfVP = form2(
-                    _test=XhVP,_trial=XhVP,_matrix=J,
+            auto myBfV = form2(
+                    _test=XhV,_trial=XhV,_matrix=J,
                     //_pattern=size_type(Pattern::COUPLED),
                     _rowstart=this->fluidModel()->rowStartInMatrix(),
                     _colstart=this->fluidModel()->colStartInMatrix()
                     );
 
-            auto U = XhVP->element(XVec, this->fluidModel()->rowStartInVector());
-            auto u = U.template element<0>();
-            auto v = U.template element<0>();
+            auto u = XhV->element(XVec, this->fluidModel()->rowStartInVector());
+            auto const& v = this->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
             for( auto const& ls: M_levelsets )
@@ -922,7 +920,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
 
                     if( BuildNonCstPart )
                     {
-                        myBfVP += integrate(
+                        myBfV += integrate(
                                 _range=elements(mesh),
                                 _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradt(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
@@ -954,7 +952,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 
-                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpaceVelocityPressure(), 
+                form2( _trial=this->functionSpaceInextensibilityLM(), _test=this->functionSpaceVelocity(), 
                         _matrix=J,
                         _rowstart=this->fluidModel()->rowStartInMatrix(),
                         _colstart=startBlockIndexInextensibilityLM ) +=
@@ -962,7 +960,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateJacobianInextensibility( DataUpdateJacobia
                             _expr=idt(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
                             _geomap=this->geomap()
                             );
-                form2( _trial=this->functionSpaceVelocityPressure(), _test=this->functionSpaceInextensibilityLM(), 
+                form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceInextensibilityLM(), 
                         _matrix=J,
                         _rowstart=startBlockIndexInextensibilityLM,
                         _colstart=this->fluidModel()->colStartInMatrix() ) +=
@@ -1069,17 +1067,16 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
         if( BuildNonCstPart )
         {
             auto mesh = this->mesh();
-            auto XhVP = this->functionSpaceVelocityPressure();
+            auto XhV = this->functionSpaceVelocity();
 
-            auto myLVP = form1( 
-                    _test=XhVP,_vector=R,
+            auto myLV = form1( 
+                    _test=XhV,_vector=R,
                     //_pattern=size_type(Pattern::COUPLED),
                     _rowstart=this->fluidModel()->rowStartInVector()
                     );
 
-            auto U = XhVP->element(XVec, this->fluidModel()->rowStartInVector());
-            auto u = U.template element<0>();
-            auto v = U.template element<0>();
+            auto u = XhV->element(XVec, this->fluidModel()->rowStartInVector());
+            auto const& v = this->fieldVelocity();
             auto Id = vf::Id<nDim, nDim>();
 
             for( auto const& ls: M_levelsets )
@@ -1095,7 +1092,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
 
                     if( !UseJacobianLinearTerms )
                     {
-                        myLVP += integrate(
+                        myLV += integrate(
                                 _range=elements(mesh),
                                 _expr=this->M_inextensibilityGamma.at(lsName)*trace((Id-NxN)*gradv(u))*trace((Id-NxN)*grad(v))*idv(D)/h(),
                                 _geomap=this->geomap()
@@ -1127,7 +1124,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateResidualInextensibility( DataUpdateResidua
                 auto N = trans(gradv(inextensibleLevelsets)) / sqrt( gradv(inextensibleLevelsets)*trans(gradv(inextensibleLevelsets)) );
                 auto NxN = N*trans(N);
 
-                form1( _test=this->functionSpaceVelocityPressure(), _vector=R,
+                form1( _test=this->functionSpaceVelocity(), _vector=R,
                         _rowstart=this->fluidModel()->rowStartInVector() ) +=
                     integrate( _range=this->M_rangeInextensibilityLM,
                             _expr=idv(lambda)*trace((Id-NxN)*grad(v))*inextensibleLevelsetsDeltaExpr,
@@ -1286,9 +1283,8 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::force_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) const
 {
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto p = solFluid->template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
     std::string matName = this->fluidModel()->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
     auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->fluidModel()->materialProperties(),matName,true,2*fluid_model_type::nOrderVelocity,true);
 
