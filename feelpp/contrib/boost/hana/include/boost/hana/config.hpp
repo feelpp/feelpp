@@ -2,7 +2,7 @@
 @file
 Defines configuration macros used throughout the library.
 
-@copyright Louis Dionne 2013-2016
+@copyright Louis Dionne 2013-2017
 Distributed under the Boost Software License, Version 1.0.
 (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
  */
@@ -20,7 +20,29 @@ Distributed under the Boost Software License, Version 1.0.
 #if defined(_MSC_VER) && !defined(__clang__) // MSVC
     // This must be checked first, because otherwise it produces a fatal
     // error due to unrecognized #warning directives used below.
-#   pragma message("Warning: the native Microsoft compiler is not supported due to lack of proper C++14 support.")
+
+#   if _MSC_VER < 1915
+#       pragma message("Warning: the native Microsoft compiler is not supported due to lack of proper C++14 support.")
+#   else
+        // 1. Active issues
+        // Multiple copy/move ctors
+#       define BOOST_HANA_WORKAROUND_MSVC_MULTIPLECTOR_106654
+
+        // 2. Issues fixed in the development branch of MSVC
+        // Forward declaration of class template member function returning decltype(auto)
+#       define BOOST_HANA_WORKAROUND_MSVC_DECLTYPEAUTO_RETURNTYPE_662735
+
+        // 3. Issues fixed conditionally
+        // Requires __declspec(empty_bases)
+        // Empty base optimization
+#       define BOOST_HANA_WORKAROUND_MSVC_EMPTYBASE
+
+        // Requires /experimental:preprocessor
+        // Variadic macro expansion
+#       if !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL
+#           define BOOST_HANA_WORKAROUND_MSVC_PREPROCESSOR_616033
+#       endif
+#   endif
 
 #elif defined(__clang__) && defined(_MSC_VER) // Clang-cl (Clang for Windows)
 
@@ -40,7 +62,7 @@ Distributed under the Boost Software License, Version 1.0.
 #   if __apple_build_version__ >= 6020049
 #       define BOOST_HANA_CONFIG_CLANG BOOST_HANA_CONFIG_VERSION(3, 6, 0)
 #   else
-#       warning "Versions of Apple's Clang prior to the one shipped with Xcode 6.3 are not supported by Hana."
+#       warning "Versions of Apple's Clang prior to the one shipped with Xcode 6.3 are known not to be able to compile Hana."
 #   endif
 
 #elif defined(__clang__) // genuine Clang
@@ -71,7 +93,13 @@ Distributed under the Boost Software License, Version 1.0.
 // Check the compiler for general C++14 capabilities
 //////////////////////////////////////////////////////////////////////////////
 #if (__cplusplus < 201400)
-#   warning "Your compiler doesn't provide C++14 or higher capabilities. Try adding the compiler flag '-std=c++14' or '-std=c++1y'."
+#   if defined(_MSC_VER)
+#       if _MSC_VER < 1915
+#           pragma message("Warning: Your compiler doesn't provide C++14 or higher capabilities. Try adding the compiler flag '-std=c++14' or '-std=c++1y'.")
+#       endif
+#   else
+#       warning "Your compiler doesn't provide C++14 or higher capabilities. Try adding the compiler flag '-std=c++14' or '-std=c++1y'."
+#   endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -120,24 +148,24 @@ Distributed under the Boost Software License, Version 1.0.
 // Caveats and other compiler-dependent options
 //////////////////////////////////////////////////////////////////////////////
 
-// BOOST_HANA_CONFIG_HAS_CONSTEXPR_LAMBDA enables some constructs requiring
-// `constexpr` lambdas, which are not in the language (yet).
-// Currently always disabled.
+// `BOOST_HANA_CONFIG_HAS_CONSTEXPR_LAMBDA` enables some constructs requiring
+// `constexpr` lambdas, which are in the language starting with C++17.
 //
-// BOOST_HANA_CONSTEXPR_LAMBDA expands to `constexpr` if constexpr lambdas
+// Always disabled for now because Clang only has partial support for them
+// (captureless lambdas only).
+#if defined(__cplusplus) && __cplusplus > 201402L
+#   define BOOST_HANA_CONSTEXPR_STATELESS_LAMBDA constexpr
+// #   define BOOST_HANA_CONFIG_HAS_CONSTEXPR_LAMBDA
+#else
+#   define BOOST_HANA_CONSTEXPR_STATELESS_LAMBDA /* nothing */
+#endif
+
+// `BOOST_HANA_CONSTEXPR_LAMBDA` expands to `constexpr` if constexpr lambdas
 // are supported and to nothing otherwise.
-#if 0
-#   define BOOST_HANA_CONFIG_HAS_CONSTEXPR_LAMBDA
+#if defined(BOOST_HANA_CONFIG_HAS_CONSTEXPR_LAMBDA)
 #   define BOOST_HANA_CONSTEXPR_LAMBDA constexpr
 #else
 #   define BOOST_HANA_CONSTEXPR_LAMBDA /* nothing */
-#endif
-
-// The std::tuple adapter is broken on libc++ prior to the one shipped
-// with Clang 3.7.0.
-#if defined(BOOST_HANA_CONFIG_LIBCPP) &&                                    \
-        BOOST_HANA_CONFIG_LIBCPP < BOOST_HANA_CONFIG_VERSION(1, 0, 101)
-#   define BOOST_HANA_CONFIG_HAS_NO_STD_TUPLE_ADAPTER
 #endif
 
 // There's a bug in std::tuple_cat in libc++ right now.

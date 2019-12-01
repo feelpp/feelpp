@@ -293,7 +293,9 @@ private :
 
     void saveData( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
 
+#if defined(FEELPP_VTK_INSITU_ENABLED)
     void updateInSituProcessor( vtkSmartPointer<vtkMultiBlockDataSet> mbds, int stepIndex, double time ) const;
+#endif
     //@}
 
 private:
@@ -309,6 +311,7 @@ private:
     mutable vtkSmartPointer<vtkCPProcessor> inSituProcessor;
 #endif
 #endif
+    bool M_inSituEnable, M_inSituSave;
     mutable std::map<std::string, mesh_contiguous_numbering_mapping_ptrtype > M_cache_mp;
 };
 

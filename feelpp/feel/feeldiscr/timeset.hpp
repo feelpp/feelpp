@@ -7,7 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2012 Universite Joseph Fourier
-
+ 
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -28,18 +28,16 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-12
  */
-
-#ifndef __timeSet_H
-#define __timeSet_H 1
+#ifndef FEELPP_DISCR_TIMESET_HPP
+#define FEELPP_DISCR_TIMESET_HPP 1
 
 #include <set>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <variant>
+#include <optional>
 
-
-#include <boost/shared_ptr.hpp>
-#include <boost/optional.hpp>
 #include <boost/operators.hpp>
 
 #include <boost/filesystem/operations.hpp>
@@ -259,7 +257,7 @@ public:
         */
         bool hasMesh() const
         {
-            return M_mesh != boost::none;
+            return M_mesh != std::nullopt;
         }
 
         /**
@@ -267,7 +265,7 @@ public:
         */
         mesh_ptrtype mesh()
         {
-            return M_mesh.get();
+            return M_mesh.value();
         }
 
         /**
@@ -381,9 +379,9 @@ public:
         {
             VLOG(1) << "[timeset] Adding regions...\n";
 #if 0
-            worldcomm_ptr_t meshComm = (M_mesh.get()->worldComm().numberOfSubWorlds() > 1)?
-                M_mesh.get()->worldComm().subWorld(M_mesh.get()->worldComm().numberOfSubWorlds()) :
-                M_mesh.get()->worldCommPtr();
+            worldcomm_ptr_t meshComm = (M_mesh.value()->worldComm().numberOfSubWorlds() > 1)?
+                M_mesh.value()->worldComm().subWorld(M_mesh.value()->worldComm().numberOfSubWorlds()) :
+                M_mesh.value()->worldCommPtr();
             this->updateScalarP0( makeWorldsComm(1,meshComm) );
 #endif
 
@@ -603,8 +601,8 @@ public:
             {
                 this->add( __n, __n, expr, rep );
             }
-        template<typename ExprT>
-        void add( std::string const& __n, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& rep = "",
+        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        void add( std::string const& __n, ExprT const& expr,  EltWrapperT const& rangElt, variant_representation_arg_type const& rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 this->add( __n, __n, expr, rangElt, rep );
@@ -617,8 +615,8 @@ public:
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
 
-        template<typename ExprT>
-        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangElt, variant_representation_arg_type const& _rep = "",
+        template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
                 std::set<std::string> reps = representationType( _rep , "nodal" );
@@ -635,8 +633,8 @@ public:
                         this->addExpr<true>( nameUsed,fnameUsed,expr,rangElt );
                 }
             }
-        template<bool IsNodal,typename ExprT>
-        FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt )
+        template<bool IsNodal,typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
+        FEELPP_NO_EXPORT void addExpr( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangeElt )
             {
                 tic();
                 auto scalarSpace = this->scalarFunctionSpace<IsNodal>();
@@ -826,18 +824,18 @@ public:
                                 }
                         }
                     if ( !M_ts->M_scalar_p1 )
-                        M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get() );
+                        M_ts->M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.value() );
                     M_scalar_p1 = M_ts->M_scalar_p1;
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
-                else if ( M_mesh.get() == M_ts->M_scalar_p1->mesh() )
+                else if ( M_mesh.value() == M_ts->M_scalar_p1->mesh() )
                 {
                     M_scalar_p1 = M_ts->M_scalar_p1;
                 }
 
-                if ( M_mesh.get() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
+                if ( M_mesh.value() != M_ts->M_scalar_p1->mesh() && !M_scalar_p1 )
                 {
-                    M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.get() );
+                    M_scalar_p1 = scalar_p1_space_type::New(_mesh=M_mesh.value() );
                     DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p1 created\n";
                 }
                 return M_scalar_p1;
@@ -856,18 +854,18 @@ public:
                         }
                     }
                 if ( !M_ts->M_scalar_p0 )
-                    M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get() );
+                    M_ts->M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.value() );
                 M_scalar_p0 = M_ts->M_scalar_p0;
                 DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
             }
-            else if ( M_mesh.get()->isSameMesh( M_ts->M_scalar_p0->mesh() ) )
+            else if ( M_mesh.value()->isSameMesh( M_ts->M_scalar_p0->mesh() ) )
             {
                 M_scalar_p0 = M_ts->M_scalar_p0;
             }
 
-            if ( !M_mesh.get()->isSameMesh( M_ts->M_scalar_p0->mesh() ) && !M_scalar_p0 )
+            if ( !M_mesh.value()->isSameMesh( M_ts->M_scalar_p0->mesh() ) && !M_scalar_p0 )
             {
-                M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.get() );
+                M_scalar_p0 = scalar_p0_space_type::New(_mesh=M_mesh.value() );
                 DVLOG(2) << "[TimeSet::setMesh] setMesh space scalar p0 created\n";
             }
             return M_scalar_p0;
@@ -1266,7 +1264,7 @@ public:
         */
         size_type M_index;
 
-        boost::optional<mesh_ptrtype> M_mesh;
+        std::optional<mesh_ptrtype> M_mesh;
 
         map_scalar_type M_scalar;
         map_complex_type M_complex;
@@ -1588,16 +1586,16 @@ private:
 
 public:
     void setMesh( mesh_ptrtype m ) { M_mesh = m; }
-    bool hasMesh() const { return M_mesh != boost::none; }
+    bool hasMesh() const { return M_mesh != std::nullopt; }
     mesh_ptrtype mesh() const
         {
             DLOG_IF( WARNING, hasMesh() ) << "Time Set has no mesh data structure associated\n";
-            return M_mesh.get();
+            return M_mesh.value();
         }
 
 
 public:
-    boost::optional<mesh_ptrtype> M_mesh;
+    std::optional<mesh_ptrtype> M_mesh;
 
 
     scalar_p0_space_ptrtype M_scalar_p0;
