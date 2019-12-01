@@ -62,8 +62,8 @@ template<
     typename FunctionSpaceType,
     typename FunctionSpaceAdvectionVelocityType = FunctionSpace< 
         typename FunctionSpaceType::mesh_type, 
-        bases<Lagrange<FunctionSpaceType::basis_type::nOrder, Vectorial, Continuous, PointSetFekete>>, 
-        typename FunctionSpaceType::periodicity_type >,
+        bases<Lagrange<FunctionSpaceType::basis_type::nOrder, Vectorial, Continuous, PointSetFekete>>/*, 
+                                                                                                      typename FunctionSpaceType::periodicity_type*/ >,
     typename BasisDiffusionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>,
     typename BasisReactionCoeffType = Lagrange<FunctionSpaceType::basis_type::nOrder, Scalar, Continuous, PointSetFekete>
         >
