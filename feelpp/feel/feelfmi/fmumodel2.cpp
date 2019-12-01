@@ -94,7 +94,7 @@ FmuModel2::FmuModel2( fmi_import_context_t* context, std::string tmp_dir,
     for ( int n=0; n<N; n++ )
     {
         auto v = fmi2_import_get_variable( v_list, n );
-        auto var = variable_ptrtype( new variable_type(v) );
+        auto var = std::make_shared<variable_type>(v);
         M_v_map[var->name] = var;
     }
 
@@ -163,7 +163,7 @@ void FmuModel2::setupExperiment( double const& t_init, double const& t_final, do
     CHECK( status1!=jm_status_error ) << "FMUModel2 : fmi2_import_instantiate failed\n";
     M_allocated_fmu=true;
 
-    auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, true, t_final );
+    auto status = fmi2_import_setup_experiment( M_fmu, fmi2_true, tol, t_init, false, t_final );
     CHECK( status==fmi2_status_ok )<< "FMUModel2 : fmi2_import_setup_experiment failed\n";
     M_setup=true;
 }
