@@ -24,4 +24,4 @@
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi  INSTALL MAN partitioner )
+feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi  INSTALL MAN fmu )
