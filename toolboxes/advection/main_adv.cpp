@@ -13,8 +13,7 @@ runScalarAdvectionApplication()
     typedef FeelModels::AdvDiffReac< 
         FunctionSpace< 
             Mesh<Simplex<FEELPP_DIM,1>>, 
-            bases<Lagrange<OrderAdvection, Scalar,Continuous,PointSetFekete>>, 
-            Periodicity<NoPeriodicity> 
+            bases<Lagrange<OrderAdvection, Scalar,Continuous,PointSetFekete>>
             >
         > model_type;
     
@@ -54,8 +53,7 @@ runVectorialAdvectionApplication()
     typedef FeelModels::AdvDiffReac< 
         FunctionSpace< 
             Mesh<Simplex<FEELPP_DIM,1>>, 
-            bases<Lagrange<OrderAdvection, Vectorial,Continuous,PointSetFekete>>, 
-            Periodicity<NoPeriodicity>
+            bases<Lagrange<OrderAdvection, Vectorial,Continuous,PointSetFekete>>
             >
         > model_type;
     
