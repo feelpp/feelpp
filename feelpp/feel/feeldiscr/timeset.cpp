@@ -26,13 +26,7 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2005-01-12
  */
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/tuple/tuple.hpp>
-
 #include <feel/feelcore/feel.hpp>
-#include <feel/feelcore/debug.hpp>
-
 #include <feel/feelfilters/timeset.hpp>
 
 namespace Feel

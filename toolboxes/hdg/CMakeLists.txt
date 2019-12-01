@@ -49,11 +49,12 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL
   )
 
+if ( FEELPP_HAS_FMILIB )
 feelpp_add_application( hdg_coupledpoisson
   SRCS coupledmixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
   INSTALL )
-
+endif()
 
 feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
 feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )

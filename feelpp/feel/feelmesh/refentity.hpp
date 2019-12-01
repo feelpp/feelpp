@@ -63,6 +63,7 @@ makeReferenceConvex()
     return Reference<Geo,Geo::nDim, 1,  Geo::nRealDim,T>();
 }
 
+
 template<typename Geo, uint16_type Dim, uint16_type Order, uint16_type RDim, typename T>
 std::ostream&
 operator<<( std::ostream& os,
@@ -162,4 +163,25 @@ void toPython( RefEntity const& e, std::string str = "simplex" )
 
 #include <feel/feelmesh/refsimplex.hpp>
 #include <feel/feelmesh/refhypercube.hpp>
+
+namespace Feel {
+
+/**
+ * Checks whether T is a \p Reference convex type. 
+ * Provides the member constant value that is equal to true, if T is the type \p Reference convex. 
+ * Otherwise, value is equal to false.
+ */
+template <typename T> struct is_reference_convex: std::false_type {};
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Simplex<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
+template <uint16_type Dim, uint16_type Order, uint16_type RDim, typename T> struct is_reference_convex<Reference<Hypercube<Dim,Order,RDim>,Dim,Order,RDim,T>>: std::true_type {};
+/**
+ * Helper variable template
+ * \return true is T is a \p Reference convex at compilation time, false otherwise
+ */
+template <typename... T>
+constexpr bool is_reference_convex_v = is_reference_convex<T...>::value;
+
+
+}
+
 #endif /* __RefEntity_H */

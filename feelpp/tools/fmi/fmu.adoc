@@ -1,0 +1,52 @@
+:feelpp: Feel++
+= feelpp_fmi_fmu(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wahl>
+:manmanual: feelpp_fmi_fmu
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - a tool to load and run fmu in {feelpp}
+
+
+== SYNOPSIS
+
+{manmanual} 
+
+== DESCRIPTION
+
+{manmanual} is an application which can ...
+
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===                                                                                                                                                                              
+| Name | Description | Default value
+
+| |  |
+|===  
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
+We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.                                                                                                       
+[source,shell]
+.Starting the docker `feelpp/feelpp:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp
+----
+
+
+== SEE ALSO
+
+*{feelpp} Book:* http://book.feelpp.org
+
+== COPYING
+
+Copyright \(C) 2017-2019 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+
