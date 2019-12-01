@@ -24,8 +24,4 @@
 
 INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-if(NOT FEELPP_MINIMAL_BUILD)
-
-feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi )
-
-endif(NOT FEELPP_MINIMAL_BUILD)
+feelpp_add_application( fmu SRCS fmu.cpp INCLUDE_IN_ALL PROJECT fmi  INSTALL MAN fmu )
