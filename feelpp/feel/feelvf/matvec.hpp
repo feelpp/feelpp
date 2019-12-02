@@ -701,7 +701,7 @@ struct evaluate_expression
     static const uint16_type nRow = EvaluateType::RowsAtCompileTime;
     static const uint16_type nCol = EvaluateType::ColsAtCompileTime;
 
-    evaluate_expression(EvaluateType & eval ) : M_eval( eval ), M_current( 0 ) {}
+    explicit evaluate_expression( EvaluateType & eval ) : M_eval( eval ), M_current( 0 ) {}
 
     template <typename ExprT>
     void operator()( ExprT const& expr ) const
