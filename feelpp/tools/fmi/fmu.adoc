@@ -12,7 +12,12 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wa
 
 == SYNOPSIS
 
-{manmanual}
+----
+{manmanual} --config-file <file>.cfg<1>
+            --fmu.<option>=<value><2>
+----
+<1>:: gather command line opptions in a .cfg file
+<2>:: set `fmu` option
 
 == DESCRIPTION
 
