@@ -1,7 +1,31 @@
-#ifndef SOLVERBASE_HPP
-#define SOLVERBASE_HPP
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
 
-#include "feel/feelfmi/fmumodelbase.hpp"
+ This file is part of the Feel++ library
+
+ Author(s): Jean-Baptiste Wahl
+            Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+ Date: 01 Dec 2019
+
+ Copyright (C) 2018-2019 Feel++ Consortium
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+#ifndef FEELPP_SOLVERBASE_HPP
+#define FEELPP_SOLVERBASE_HPP 1
+
+#include <feel/feelfmi/fmumodelbase.hpp>
 
 namespace Feel
 {
@@ -36,7 +60,7 @@ public :
         M_tol = tol;
     }
 
-    double currentTime()
+    double currentTime() const
     {
         return M_tcur;
     }
@@ -49,7 +73,7 @@ protected :
     fmumodel_ptrtype M_model;
     double M_step, M_tol, M_tcur, M_tfinal;
 
-}; //classe SovlerBase
+}; //class SovlerBase
 
 
 } // namespace Feel

@@ -56,26 +56,26 @@ public :
     void terminate() override;
     void doStep( double t_cur, double step, bool newStep ) override;
 
-    void printVariablesInfo() override;
-    void printInfo() override;
-    void exportValues() override;
+    void printVariablesInfo() const override;
+    void printInfo() const override;
+    void exportValues() const override;
 
-    double defaultStartTime() override;
-    double defaultFinalTime() override;
-    double defaultTolerance() override;
+    double defaultStartTime() const override;
+    double defaultFinalTime() const override;
+    double defaultTolerance() const override;
 
     void setValue( std::string name, double value ) override;
     void setValue( std::string name, int value ) override;
     void setValue( std::string name, std::string value ) override;
     void setValue( std::string name, bool value ) override;
 
-    void getValue( std::string name, double& value ) override;
-    void getValue( std::string name, int& value ) override;
-    void getValue( std::string name, std::string& value ) override;
-    void getValue( std::string name, bool& value ) override;
+    void getValue( std::string name, double& value ) const override;
+    void getValue( std::string name, int& value ) const override;
+    void getValue( std::string name, std::string& value ) const override;
+    void getValue( std::string name, bool& value ) const override;
 
     template <typename VariableType>
-    VariableType getValue( std::string name )
+    VariableType getValue( std::string const& name ) const
     {
         VariableType value;
         getValue( name, value );
@@ -87,7 +87,7 @@ private :
                            fmi2_status_t status, fmi2_string_t category, fmi2_string_t message, ...);
     static void stepFinished(fmi2_component_environment_t env, fmi2_status_t status);
 
-    std::string strValue( std::string var );
+    std::string strValue( std::string const& var );
 
 private :
     fmi2_import_t* M_fmu;
@@ -99,8 +99,6 @@ private :
 };
 
 
-}
-
-
+} // Feel
 
 #endif
