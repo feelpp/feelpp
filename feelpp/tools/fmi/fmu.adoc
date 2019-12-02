@@ -16,7 +16,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wa
 {manmanual} --config-file <file>.cfg  <1>
             --fmu.<option>=<value>    <2>
 ----
-<1>:: gather command line opptions in a .cfg file
+<1>:: gather command line options in a .cfg file
 <2>:: set `fmu` options, see below
 
 == DESCRIPTION
