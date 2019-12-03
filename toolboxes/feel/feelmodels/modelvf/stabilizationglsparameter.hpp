@@ -8,6 +8,31 @@ namespace Feel
 namespace FeelModels
 {
 
+namespace detail
+{
+template <typename ExprTensorDiffusion>
+typename ExprTensorDiffusion::value_type
+tensorStabGLSParameter_evaluateCoeffDiffusion( ExprTensorDiffusion const& tensorDiffusion, uint16_type q,
+                                               typename std::enable_if_t< ExprTensorDiffusion::shape::is_scalar >* = nullptr  )
+{
+    return tensorDiffusion.evalq(0,0,q);
+}
+
+template <typename ExprTensorDiffusion>
+typename ExprTensorDiffusion::value_type
+tensorStabGLSParameter_evaluateCoeffDiffusion( ExprTensorDiffusion const& tensorDiffusion, uint16_type q,
+                                               typename std::enable_if_t< ExprTensorDiffusion::shape::is_tensor2 >* = nullptr  )
+{
+    // take the min of diag (TODO biblio, maybe min of eigen value or a norm)
+    typename ExprTensorDiffusion::value_type res = tensorDiffusion.evalq(0,0,q);
+    for ( int c1 = 1; c1 < ExprTensorDiffusion::shape::M ;++c1 )
+        return res = std::min( res, tensorDiffusion.evalq(c1,c1,q) );
+    return res;
+}
+
+} // namespace detail
+
+
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ShapeType, typename ExprType, bool HasConvectionExpr, bool HasCoeffDiffusionExpr >
 struct tensorStabGLSParameterEigenValue : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,ShapeType,typename ExprType::value_type >
 {
@@ -73,7 +98,8 @@ private :
 #endif
 
                 value_type norm_u = math::sqrt( norm_u_square );
-                value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                //value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                value_type evalCoeffDiffusion = Feel::FeelModels::detail::tensorStabGLSParameter_evaluateCoeffDiffusion( M_tensorCoeffDiffusion, q );
                 value_type Re = mK*norm_u*hSize/(2*evalCoeffDiffusion);
                 if ( Re < 1. )
                     M_localMatrixInGeoContext[q](0,0) = math::pow(hSize,2)*mK/(4*evalCoeffDiffusion);
@@ -91,7 +117,8 @@ private :
             value_type mK = M_expr.stabGLSParameter().mK( eltId );
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                //value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                value_type evalCoeffDiffusion = Feel::FeelModels::detail::tensorStabGLSParameter_evaluateCoeffDiffusion( M_tensorCoeffDiffusion, q );
                 M_localMatrixInGeoContext[q](0,0) = math::pow(hSize,2)*mK/(4*evalCoeffDiffusion);
             }
         }
@@ -180,7 +207,8 @@ private :
                 for (uint16_type c=0;c<tensor_convection_type::shape::M;++c)
                     norm_u_square += math::pow(M_tensorConvection.evalq( c,0,q),2);
                 value_type norm_u = math::sqrt( norm_u_square );
-                value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                //value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                value_type evalCoeffDiffusion = Feel::FeelModels::detail::tensorStabGLSParameter_evaluateCoeffDiffusion( M_tensorCoeffDiffusion, q );
 #if 0
                 value_type xi_Re = std::min(1.,(1./3.)*hSize*norm_u/(2*evalCoeffDiffusion));
                 M_localMatrixInGeoContext[q](0,0) = hSize*xi_Re/( std::max( 1e-10, 2*norm_u) );
@@ -203,7 +231,8 @@ private :
             value_type mK = (1./3.);
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                //value_type evalCoeffDiffusion = M_tensorCoeffDiffusion.evalq(0,0,q);
+                value_type evalCoeffDiffusion = Feel::FeelModels::detail::tensorStabGLSParameter_evaluateCoeffDiffusion( M_tensorCoeffDiffusion, q );
                 M_localMatrixInGeoContext[q](0,0) = math::pow(hSize,2)*mK/(4*evalCoeffDiffusion);
             }
         }
@@ -255,7 +284,6 @@ public:
     static const size_type context = ExprConvectionType::context|ExprCoeffDiffusionType::context;
     static const bool is_terminal = true;
     typedef double value_type;
-    typedef value_type evaluate_type;
 
     template<typename Func>
     struct HasTestFunction
@@ -315,7 +343,7 @@ public:
         //typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
         typedef typename gmc_type::value_type value_type;
-        typedef  value_type evaluate_type;
+        //typedef  value_type evaluate_type;
         typedef Shape<gmc_type::NDim, Scalar, false,false> shape;
         struct is_zero { static const bool value = false; };
 
