@@ -114,9 +114,16 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
             // update stabilization gls
             if ( M_stabilizationGLS && buildNonCstPart && this->fieldVelocityConvectionIsUsedAndOperational() )
             {
-                CHECK( !thermalConductivity.isMatrix() ) << "NotImplemented";
-                auto const& kappa = expr( thermalConductivity.expr(), symbolsExpr );
-                this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+                if ( thermalConductivity.isMatrix() )
+                {
+                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+                    this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+                }
+                else
+                {
+                    auto const& kappa = expr( thermalConductivity.expr(), symbolsExpr );
+                    this->updateLinearPDEStabilizationGLS(  rhoHeatCapacityExpr, kappa, idv(this->fieldVelocityConvection()), range, data );
+                }
             }
         }
     }

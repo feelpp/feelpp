@@ -250,7 +250,7 @@ class Heat : public ModelNumerical,
                 std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
 
                 bool onlyScalarThermalConductivity = this->thermalProperties()->allThermalConductivitiesAreScalar();
-                
+
                 for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
                 {
                     std::string const& _matName = rangeData.first;
@@ -260,14 +260,8 @@ class Heat : public ModelNumerical,
                         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
                         if ( thermalConductivity.isMatrix() )
                         {
-#if 1
-                            // tensor2 asym is not supported with ParaView -> export each components in wating
                             auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se);
                             mapExprTensor2[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
-                            //for ( int i=0;i<nDim;++i )
-                            //for ( int j=0;j<nDim;++j )
-                            //mapExprCompTensor2[prefixvm(prefix,(boost::format("thermal-conductivity_%1%%2%")%i%j).str())].push_back( std::make_tuple( thermalConductivityExpr(i,j), range, "element" ) );
-#endif
                         }
                         else
                         {
