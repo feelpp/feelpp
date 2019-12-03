@@ -131,6 +131,13 @@ ModelPostprocessExports::setup( pt::ptree const& p )
 }
 
 void
+ModelPostprocessExports::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & edata : M_exprs )
+        std::get<1>( edata ).setParameterValues( mp );
+}
+
+void
 ModelPostprocessSave::setup( pt::ptree const& p )
 {
     if ( auto fieldsPtree = p.get_child_optional("Fields") )
@@ -524,6 +531,10 @@ ModelPostprocess::saveMD(std::ostream &os)
 void
 ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
 {
+
+    for (auto & [name,p] : M_exports )
+        p.setParameterValues( mp );
+
     for( auto & p : M_measuresPoint )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );

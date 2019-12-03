@@ -54,6 +54,7 @@ class FEELPP_EXPORT ModelPostprocessExports : public CommObject
     void setup( pt::ptree const& p );
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
   private :
     std::string M_directoryLibExpr;
     std::set<std::string> M_fields;
