@@ -114,6 +114,19 @@ public :
     void updateTimeStep();
 
     //___________________________________________________________________________________//
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); }
+
+    template <typename FieldTemperatureType,typename FieldVelocityType, typename FieldPressureType>
+    auto symbolsExpr( FieldTemperatureType const& t, FieldVelocityType const& u, FieldPressureType const& p ) const
+        {
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_fluidModel->symbolsExprField( u,p ) );
+            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                             M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        }
+
+    //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
 
