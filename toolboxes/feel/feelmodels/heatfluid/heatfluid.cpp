@@ -430,11 +430,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    M_heatModel->exportResults( time );
-    M_fluidModel->exportResults( time );
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    auto symbolExpr = this->symbolsExpr();
+    M_heatModel->exportResults( time, symbolExpr );
+    M_fluidModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    this->executePostProcessExports( M_exporter, time, fields );
+    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) );
+    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
