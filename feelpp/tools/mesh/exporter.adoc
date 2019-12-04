@@ -12,44 +12,75 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == SYNOPSIS
 
-{manmanual} 
+{manmanual}
 
 == DESCRIPTION
 
-{manmanual} is an application which can ...
+{manmanual} is an application which can
 
+* load a  mesh
+* export the mesh into a visualisation format
+* export fields associated to the mesh such as
+** `h`: the minimum edge size
+** `|J|`: the determinant of the jacobian of the geometric transformation  which accounts for the measure scaling of the element
+** `emarker`: the element marker
+** `epid`: the element process id
+** `P`: the field corresponding to the dof points coordinates
+** `facemarker`: the face markers
+** `edgemarker`: the edge markers in 3D
+** `pointmarker`: the point markers
+* export scalar and vectorial fields from expressions to be visualised
+* print some global information about the mesh
 
 === Options
 
 {manmanual} requires some options.
 
 .Table of command-line {manmanual} options
-|===                                                                                                                                                                              
+|===
 | Name | Description | Default value
 
-| dim | dimension of the mesh | 3                                                                                              
+| dim | dimension of the mesh | 3
 | shape| shape of the mesh elements | Simplex
-|===  
+| `scalar_expr` | scalar expression | `g|sin(x):x|nodal|element`
+| `vectorial_expr` | vectorial expression | `gv|{sin(2*pi*x),sin(2*pi*x),sin(2*pi*x)}:x|nodal|element`
+|===
+
+Scalar and vectorial expressions are built using `|` as a separator to defined
+
+* the name of the expression
+* the expression itself
+* a list of representation, possible values are `nodal`, `element` or `nodal|element`
+
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.               
-We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.                                                                                                       
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://book.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We use the meshes in `src/feelpp/data/gmsh/primitives` in the docker image.
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
 ----
 docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
 ----
 
-=== Generating a single mesh partitioning
-
+.Example of a command line to export a mesh and some fields to visualise
+----
+./feelpp_mesh_exporter
+  --scalar_expr="g1|sin(2*pi*x)*sin(2*pi*y)*cos(2*pi*z):x:y:z|nodal" <1>
+  --scalar_expr="g2|sin(3*pi*x)*sin(4*pi*y)*cos(5*pi*z):x:y:z|nodal" <2>
+  --gmsh.hsize 0.2 <3>
+  --gmsh.filename="github:{repo:feelpp,path:feelpp/quickstart/laplacian/tetrahedron/tetrahedron.geo}" <4>
+----
+<1> scalar expression to be visualised with nodal representation
+<2> scalar expression to be visualised with nodal representation
+<3> mesh characteristic size
+<4> mesh filename
 
 == SEE ALSO
 
-*{feelpp} Book:* http://book.feelpp.org
+*{feelpp} Book:* http://docs.feelpp.org
 
 == COPYING
 
 Copyright \(C) 2017-2019 {feelpp} Consortium. +
 Free use of this software is granted under the terms of the GPLv3 License.
-
