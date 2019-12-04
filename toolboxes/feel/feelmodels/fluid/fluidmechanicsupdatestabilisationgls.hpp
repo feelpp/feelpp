@@ -186,7 +186,7 @@ updateLinearPDEStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebr
                                  _pattern=size_type(Pattern::COUPLED),
                                  _rowstart=fluidmec.rowStartInMatrix(),
                                  _colstart=fluidmec.colStartInMatrix()+1 );
-    auto bilinearFormPV = form2( _test=XhV,_trial=XhP,_matrix=A,
+    auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=A,
                                  _pattern=size_type(Pattern::COUPLED),
                                  _rowstart=fluidmec.rowStartInMatrix()+1,
                                  _colstart=fluidmec.colStartInMatrix()+0 );
