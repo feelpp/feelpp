@@ -13,15 +13,15 @@ if ( WGET )
   if ( NOT FEELPP_HAS_GMSH_API )
     add_custom_command(
       TARGET gmsh_get_files
-      COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/Mesh/Field.h -O Field.h 
-      COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/Numeric/BasisFactory.h -O BasisFactory.h
-      COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/Common/OpenFile.h -O OpenFile.h )
+      COMMAND ${WGET} -r -nc -q --timeout=5 ${gmsh_gitlab_url}/Mesh/Field.h -O Field.h 
+      COMMAND ${WGET} -r -nc -q --timeout=5 ${gmsh_gitlab_url}/Numeric/BasisFactory.h -O BasisFactory.h
+      COMMAND ${WGET} -r -nc -q --timeout=5 ${gmsh_gitlab_url}/Common/OpenFile.h -O OpenFile.h )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/BasisFactory.h ${CMAKE_CURRENT_BINARY_DIR}/Field.h ${CMAKE_CURRENT_BINARY_DIR}/OpenFile.h DESTINATION include/feelpp/gmsh COMPONENT Devel )
   else()
     #file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command(
       TARGET gmsh_get_files
-      COMMAND ${WGET} -N -q --timeout=5 ${gmsh_gitlab_url}/api/gmsh.h -O gmsh.h )
+      COMMAND ${WGET} -r -nc -q --timeout=5 ${gmsh_gitlab_url}/api/gmsh.h -O gmsh.h )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmsh.h DESTINATION include/feelpp/gmsh COMPONENT Devel )
   endif()
 endif()
