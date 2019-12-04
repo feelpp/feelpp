@@ -12,14 +12,19 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Jean-Baptiste Wa
 
 == SYNOPSIS
 
-{manmanual}
+----
+{manmanual} --config-file <file>.cfg  <1>
+            --fmu.<option>=<value>    <2>
+----
+<1> gather command line options in a .cfg file
+<2> set `fmu` options, see below
 
 == DESCRIPTION
 
 {manmanual} is an application which can
 
 * load an Functional Mockup Unit(FMU) using the Functional Mockup Interface(FMI)
-* print sme information about the model and the variables
+* print same information about the model and the variables
 * simulate the FMU over a span of time
 
 
