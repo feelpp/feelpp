@@ -180,14 +180,14 @@ void FmuModel2::doStep( double t_cur, double step, bool newStep )
     }
 }
 
-void FmuModel2::printInfo()
+void FmuModel2::printInfo() const
 {
     Feel::cout << "FMU Model loaded : name=" << M_name <<", guid=" << M_guid
                << ", kind="<< M_kind << ", id=" << M_id <<std::endl
                << "Version returned from FMU = " << fmi2_import_get_version(M_fmu) << std::endl;
 }
 
-void FmuModel2::printVariablesInfo()
+void FmuModel2::printVariablesInfo() const
 {
     Feel::cout << "=================================================================\n"
                << "FMU Model "<< name() << " : list of variables\n"
@@ -200,7 +200,7 @@ void FmuModel2::printVariablesInfo()
 }
 
 
-void FmuModel2::exportValues()
+void FmuModel2::exportValues()  const
 {
     if ( Environment::isMasterRank() && M_export_list )
     {
@@ -212,14 +212,14 @@ void FmuModel2::exportValues()
             data << "," << var;
         data << std::endl;
 
-        auto n_step = M_values["t"].size();
+        auto n_step = M_values.at("t").size();
         for ( int i=0; i<n_step; i++ )
         {
-            data << M_values["t"][i];
+            data << M_values.at("t")[i];
             for( auto const& var : *M_export_list )
             {
-                if ( M_values[var].size()>i )
-                    data<<","<<M_values[var][i];
+                if ( M_values.at(var).size()>i )
+                    data<<","<<M_values.at(var)[i];
                 else
                     data <<",NA";
             }
@@ -230,17 +230,17 @@ void FmuModel2::exportValues()
 
 }
 
-double FmuModel2::defaultStartTime()
+double FmuModel2::defaultStartTime() const
 {
     return fmi2_import_get_default_experiment_start( M_fmu );
 }
 
-double FmuModel2::defaultFinalTime()
+double FmuModel2::defaultFinalTime() const
 {
     return fmi2_import_get_default_experiment_stop(M_fmu);
 }
 
-double FmuModel2::defaultTolerance()
+double FmuModel2::defaultTolerance() const
 {
     return fmi2_import_get_default_experiment_tolerance(M_fmu);
 }
@@ -272,29 +272,29 @@ void FmuModel2::setValue( std::string name, bool value )
     auto status = fmi2_import_set_boolean( M_fmu, &ref, 1, &b );
 }
 
-void FmuModel2::getValue( std::string name, double& value )
+void FmuModel2::getValue( std::string name, double& value ) const
 {
-    auto ref = M_v_map[name]->ref;
+    auto ref = M_v_map.at(name)->ref;
     auto status = fmi2_import_get_real( M_fmu, &ref, 1, &value );
 }
 
-void FmuModel2::getValue( std::string name, int& value )
+void FmuModel2::getValue( std::string name, int& value ) const
 {
-    auto ref = M_v_map[name]->ref;
+    auto ref = M_v_map.at(name)->ref;
     auto status = fmi2_import_get_integer( M_fmu, &ref, 1, &value );
 }
 
-void FmuModel2::getValue( std::string name, std::string& value )
+void FmuModel2::getValue( std::string name, std::string& value ) const
 {
-    auto ref = M_v_map[name]->ref;
+    auto ref = M_v_map.at(name)->ref;
     fmi2_string_t str;
     auto status = fmi2_import_get_string( M_fmu, &ref, 1, &str );
     value = str;
 }
 
-void FmuModel2::getValue( std::string name, bool& value )
+void FmuModel2::getValue( std::string name, bool& value ) const
 {
-    auto ref = M_v_map[name]->ref;
+    auto ref = M_v_map.at(name)->ref;
     fmi2_boolean_t b;
     auto status = fmi2_import_get_boolean( M_fmu, &ref, 1, &b );
     value = b;
@@ -319,7 +319,7 @@ void FmuModel2::stepFinished(fmi2_component_environment_t env, fmi2_status_t sta
     LOG(INFO) << "FMUModel2 : stepFinished called with fmiStatus : "<< fmi2_status_to_string(status) << std::endl;
 }
 
-std::string FmuModel2::strValue( std::string var )
+std::string FmuModel2::strValue( std::string const& var )
 {
     std::stringstream ss;
     auto it = M_v_map.find(var);
