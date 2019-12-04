@@ -11,7 +11,7 @@ makeAbout()
                      "0.1",
                      "Mixed-Poisson-Model",
                      AboutData::License_GPL,
-                     "Copyright (c) 2016 Feel++ Consortium" );
+                     "Copyright (c) 2016-2019 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Romain Hild", "developer", "", "" );
     about.addAuthor( "Lorenzo Sala", "developer", "", "" );
