@@ -1344,6 +1344,22 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 }
 
 
+std::string
+Environment::findFileRemotely( std::string const& fname, std::string const& subdir )
+{
+    RemoteData rdTool( fname, worldCommPtr());
+    if ( rdTool.canDownload() )
+    {
+        auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
+        for( auto dl : downloadedFolder )
+            std::cout << dl << std::endl;
+
+        //CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+        return downloadedFolder[0];
+    }
+    return fname;
+}
+
 
 void
 Environment::doOptions( int argc, char** argv,

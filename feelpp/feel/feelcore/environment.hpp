@@ -797,6 +797,13 @@ public:
      */
     static std::string expand( std::string const& expr );
 
+    /**
+     * try find remotely the file \p fname 
+     * \param fname filename 
+     * \param subdir ubdirectory to store the file that may be downloaded
+     * @return the filename
+     */ 
+    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" ); 
     //@}
 
 private:

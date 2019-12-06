@@ -212,15 +212,15 @@ endif()
 
 
 # on APPLE enfore the use of macports openmpi version
-if ( APPLE )
-  if ( EXISTS /opt/local/lib/openmpi/bin/mpic++ )
-    set(MPI_COMPILER /opt/local/lib/openmpi/bin/mpic++)
-  endif()
+ if ( APPLE )
+   if ( EXISTS /usr/local/bin/mpic++ )
+     set(MPI_COMPILER /usr/local/bin/mpic++)
+   endif()
 
-  #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
-  MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
+#   #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+   MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
 
-endif( APPLE )
+ endif( APPLE )
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")

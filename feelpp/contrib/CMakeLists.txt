@@ -334,6 +334,9 @@ endif()
 
 if ( FEELPP_HAS_GMSH )
   add_subdirectory(gmsh)
+  if( FEELPP_HAS_GMSH_LIBRARY AND ( NOT FEELPP_HAS_GMSH_API OR FEELPP_GMSH_API_MISSING_HEADERS ) )
+    add_dependencies( feelpp_contrib gmsh_get_files )
+  endif()
 endif()
 
 add_subdirectory( boost )
