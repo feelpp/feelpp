@@ -252,6 +252,9 @@ public:
             return M_index;
         }
 
+        //! \return the active index of the time set
+        size_type activeIndex() const { return M_activeIndex; }
+
         /**
            \return true if the mesh is available
         */
@@ -342,6 +345,8 @@ public:
 
         FEELPP_DEPRECATED void addScalar( std::string const& name, scalar_type const& __s, bool cst = false )
         {
+            if ( this->isIgnored() )
+                return;
             M_scalar[sanitize(name)] =  std::make_pair( __s, cst );
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
@@ -350,6 +355,8 @@ public:
         void add( std::string const& name, T const& __s, bool cst = false,
                   typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr )
             {
+                if ( this->isIgnored() )
+                    return;
                 M_scalar[sanitize(name)] =  std::make_pair( __s, cst );
                 M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
                 M_state.clear( STEP_ON_DISK );
@@ -357,6 +364,8 @@ public:
 
         void addComplex( std::string const& name, complex_type const& __s )
         {
+            if ( this->isIgnored() )
+                return;
             M_complex[sanitize(name)] =  __s;
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
@@ -372,11 +381,16 @@ public:
         void
         addRegions( std::string const& prefix = "" )
         {
+            if ( this->isIgnored() )
+                return;
             this->addRegions( prefix,prefix );
         }
         void
         addRegions( std::string const& prefix, std::string const& prefixfname )
         {
+            if ( this->isIgnored() )
+                return;
+
             VLOG(1) << "[timeset] Adding regions...\n";
 #if 0
             worldcomm_ptr_t meshComm = (M_mesh.value()->worldComm().numberOfSubWorlds() > 1)?
@@ -395,6 +409,9 @@ public:
         void add( std::initializer_list<std::string>  __n, FunctionType const& func,
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
+            if ( this->isIgnored() )
+                return;
+
             std::vector<std::string> str( __n );
             add( str, func );
         }
@@ -420,6 +437,9 @@ public:
         void add( std::variant<std::string,std::vector<std::string>> const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
+            if ( this->isIgnored() )
+                return;
+
             std::vector<std::string> names;
             if( auto  nameStringPtr = std::get_if<std::string>(&__n))
             {
@@ -454,6 +474,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, FunctionType const& func, variant_representation_arg_type const& _reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
         {
+            if ( this->isIgnored() )
+                return;
+
             using FunctionDecayType = decay_type<FunctionType>;
             constexpr bool funcIsNodal = ( FunctionDecayType::is_continuous || FunctionDecayType::functionspace_type::continuity_type::is_discontinuous_locally ) && (!FunctionDecayType::is_hcurl_conforming) && (!FunctionDecayType::is_hdiv_conforming);
 
@@ -611,6 +634,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, ExprT const& expr, variant_representation_arg_type const& rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
+                if ( this->isIgnored() )
+                    return;
+
                 CHECK( this->hasMesh() ) << "no mesh provided";
                 this->add( __n, __fname, expr, elements(this->mesh()), rep );
             }
@@ -619,6 +645,9 @@ public:
         void add( std::string const& __n, std::string const& __fname, ExprT const& expr, EltWrapperT const& rangElt, variant_representation_arg_type const& _rep = "",
                   typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
             {
+                if ( this->isIgnored() )
+                    return;
+
                 std::set<std::string> reps = representationType( _rep , "nodal" );
 
                 std::map<std::string,std::string> repToSuffix = { { "nodal", "_n" }, { "element", "_e" } };
@@ -780,7 +809,7 @@ public:
            \param index index of the step
            * \param state the state of the step
            */
-        FEELPP_NO_EXPORT Step( TimeSet* ts, Real time, size_type index, size_type __state = STEP_NEW|STEP_OVERWRITE );
+        FEELPP_NO_EXPORT Step( TimeSet* ts, Real time, size_type index, size_type activeIndex, size_type __state = STEP_NEW|STEP_OVERWRITE );
 
 
         /**
@@ -1263,6 +1292,8 @@ public:
            keep track of the step index
         */
         size_type M_index;
+        //! active index
+        size_type M_activeIndex;
 
         std::optional<mesh_ptrtype> M_mesh;
 
@@ -1364,6 +1395,35 @@ public:
         return M_step_set.size();
     }
 
+    //! \return the number of active steps
+    size_type numberOfActiveSteps() const
+    {
+        size_type res = 0;
+        auto __it = this->beginStep();
+        auto __end = this->endStep();
+        for ( ; __it != __end ; ++__it )
+        {
+            step_ptrtype __step = *__it;
+            if ( !__step->isIgnored() )
+                ++res;
+        }
+        return res;
+    }
+
+    //! return the first active step
+    step_ptrtype firstActiveStep() const
+        {
+            auto __it = this->beginStep();
+            auto __end = this->endStep();
+            for ( ; __it != __end ; ++__it )
+            {
+                step_ptrtype __step = *__it;
+                if ( !__step->isIgnored() )
+                    return __step;
+            }
+            step_ptrtype __step;
+            return __step;
+        }
 
     /**
        \return the time increment between two steps
@@ -1415,10 +1475,10 @@ public:
 
     /**
      * \param __time time at which we want to get the step
-     *        __ignoreStep : exporter don't save
+     * \param freq active step by frequence
      * \return a step defined at time \c __time if not found then generate a new one
      */
-    step_ptrtype step( Real __time, bool __ignoreStep=false );
+    step_ptrtype step( Real __time, int freq = 1 );
 
 
     step_iterator beginStep()
@@ -1537,14 +1597,6 @@ private:
 
             for ( ; __it != __en; ++__it )
             {
-                if ( !( *__it )->isOnDisk() )
-                {
-                    DVLOG(2) << "not including step " << ( *__it )->index()
-                                  << " at time " << ( *__it )->time() << "\n";
-                    ( *__it )->showMe( "TimeSet::serialize" );
-                    continue;
-                }
-
                 double t = ( *__it )->time();
                 ar & boost::serialization::make_nvp( "time", t );
                 size_type ind = ( *__it )->index();
@@ -1558,6 +1610,8 @@ private:
         if ( Archive::is_loading::value )
         {
             size_type s( 0 );
+            size_type nActiveIndex = 0;
+            size_type activeIndex = invalid_v<size_type>;
             ar & boost::serialization::make_nvp( "number_of_steps", s );
 
             for ( size_type __i = 0; __i < s; ++__i )
@@ -1570,10 +1624,18 @@ private:
 
                 size_type __state = 0;
                 ar & boost::serialization::make_nvp( "state", __state );
+                Context ctxState(__state);
+                if ( !ctxState.test( STEP_IGNORED ) )
+                {
+                    ++nActiveIndex;
+                    activeIndex = nActiveIndex;
+                }
+                else
+                    activeIndex = invalid_v<size_type>;
 
                 step_iterator __sit;
                 bool __inserted;
-                boost::tie( __sit, __inserted ) = M_step_set.insert( step_ptrtype( new Step( this, t, ind, __state ) ) );
+                boost::tie( __sit, __inserted ) = M_step_set.insert( step_ptrtype( new Step( this, t, ind, activeIndex, __state ) ) );
 
                 CHECK( __inserted ) <<  "insertion failed at t="<< t << " and ind="<< ind;
             }
@@ -1672,23 +1734,12 @@ TimeSet<MeshType, N>::resetPreviousTime( Real __time )
 
     while ( !find &&  __it != __en )
     {
-        if ( !( *__it )->isOnDisk() )
-        {
-            DVLOG(2) << "not including step " << ( *__it )->index()
-                          << " at time " << ( *__it )->time() << "\n";
-            ( *__it )->showMe( "TimeSet::resetPreviousTime" );
+        double t = ( *__it )->time();
+        double eps = 1e-10;
+        if ( ( t-eps ) <= __time )
             ++__it;
-        }
-
         else
-        {
-            double t = ( *__it )->time();
-            double eps = 1e-10;
-
-            if ( ( t-eps ) <= __time ) ++__it;
-
-            else find=true;
-        }
+            find=true;
     }
 
     if ( find ) M_step_set.erase( __it,__en );
@@ -1698,24 +1749,29 @@ TimeSet<MeshType, N>::resetPreviousTime( Real __time )
 
 template<typename MeshType, int N>
 typename TimeSet<MeshType, N>::step_ptrtype
-TimeSet<MeshType, N>::step( Real __time,  bool __ignoreStep )
+TimeSet<MeshType, N>::step( Real __time,  int freq )
 {
+    size_type nStepBefore = 0, nActiveStepBefore = 0;
     step_iterator __sit = beginStep();
-
     for ( ; __sit != endStep(); ++__sit )
     {
         if ( math::abs( ( *__sit )->time() - __time ) < 1e-10 )
             break;
+        ++nStepBefore;
+        if ( !( *__sit )->isIgnored() )
+            ++nActiveStepBefore;
     }
+
+    bool __ignoreStep = (nStepBefore % freq) > 0;
 
     if ( __sit == endStep() )
     {
         bool __inserted;
-
         DVLOG(2) << "[TimeSet<MeshType, N>::step] Inserting new step at time " << __time << " with index " << numberOfSteps();
 
         size_type theState = __ignoreStep? STEP_NEW|STEP_OVERWRITE|STEP_IGNORED : STEP_NEW|STEP_OVERWRITE;
-        step_ptrtype thestep( new Step( this, __time, numberOfSteps() + 1, theState ) );
+        size_type activeIndex = __ignoreStep? invalid_v<size_type> : nActiveStepBefore+1;
+        step_ptrtype thestep( new Step( this, __time, nStepBefore/*numberOfSteps()*/ + 1, activeIndex, theState ) );
         if ( this->hasMesh() && !__ignoreStep )
             thestep->setMesh( this->mesh() );
         boost::tie( __sit, __inserted ) = insertStep( thestep );
@@ -1747,16 +1803,18 @@ TimeSet<MeshType, N>::Step::Step()
     :
     M_time( 0 ),
     M_index( 0 ),
+    M_activeIndex( 0 ),
     M_state( STEP_NEW|STEP_OVERWRITE )
 {
 }
 
 template<typename MeshType, int N>
-TimeSet<MeshType, N>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_type __state )
+TimeSet<MeshType, N>::Step::Step( TimeSet* ts, Real __t, size_type __index, size_type activeIndex, size_type __state )
     :
     M_ts( ts ),
     M_time( __t ),
     M_index( __index ),
+    M_activeIndex( activeIndex ),
     M_state( __state )
 {
     showMe( "Step::Step()" );

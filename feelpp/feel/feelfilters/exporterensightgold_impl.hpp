@@ -135,7 +135,7 @@ ExporterEnsightGold<MeshType,N>::save( steps_write_on_disk_type const& stepsToWr
             for ( auto const&  __step : steps )
             {
                 mesh_ptrtype mesh = __step->mesh();
-                int stepIndex = __step->index();
+                int stepIndex = __step->activeIndex();
                 bool isFirstStep = ( stepIndex == (*__ts->beginStep())->index() );
                 tic();
                 writeGeoFiles( __ts, mesh,stepIndex,isFirstStep );
@@ -328,7 +328,6 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             auto __tstp_st = __ts->beginStep();
             auto __tstp_en = __ts->endStep();
-
             /* protect this portion of code */
             /* if we don't have time steps */
             /* happens when we only have the mesh */
@@ -386,14 +385,11 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
 
             __out << "TIME:\n";
 
-            typename timeset_type::step_const_iterator __its = __ts->beginStep();
-            typename timeset_type::step_const_iterator __ens = __ts->endStep();
-
-            if(__its != __ens)
+            if ( auto __firstActiveStep =  __ts->firstActiveStep() )
             {
                 __out << "time set:        " << __ts->index() << "\n"
-                    << "number of steps: " << __ts->numberOfSteps() << "\n"
-                    << "filename start number: " << ( *__its )->index() << "\n"
+                    << "number of steps: " << __ts->numberOfActiveSteps() << "\n"
+                    << "filename start number: " << __firstActiveStep->activeIndex() << "\n"
                     << "filename increment: " << 1 << "\n"
                     << "time values: ";
             }
@@ -407,16 +403,16 @@ ExporterEnsightGold<MeshType,N>::writeCaseFile() const
             }
 
             uint16_type __l = 1;
-
-            while ( __its != __ens )
+            typename timeset_type::step_const_iterator __its = __ts->beginStep();
+            typename timeset_type::step_const_iterator __ens = __ts->endStep();
+            for ( ; __its != __ens ; ++__its )
             {
-
+                if ( (*__its)->isIgnored() )
+                    continue;
                 __out << std::scientific << std::setprecision( 6 ) << ( *__its )->time() << " ";
 
                 if ( __l++ % 10 == 0 )
                     __out << "\n";
-
-                ++__its;
             }
             __out << "\n";
 
@@ -1357,7 +1353,8 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     LOG(INFO) << "ExporterEnsightGold::writeVariableFiles Element: " << nElementFields;
 
     // prepare some common informations
-    bool isFirstStep = (__step->index() == (*__ts->beginStep())->index());
+    auto __firstActiveStep = __ts->firstActiveStep();
+    bool isFirstStep = (__step->activeIndex() == __firstActiveStep->activeIndex());
     std::ostringstream ossFilenameStepIndex;
     bool writeNewFile = true;
     if( M_mergeTimeSteps )
@@ -1373,7 +1370,7 @@ ExporterEnsightGold<MeshType,N>::writeVariableFiles( timeset_ptrtype __ts, step_
     }
     else
     {
-        ossFilenameStepIndex << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->index();
+        ossFilenameStepIndex << std::setfill( '0' ) << std::setw( M_timeExponent ) << __step->activeIndex();
     }
     std::string filenameStepIndex = ossFilenameStepIndex.str();
 
