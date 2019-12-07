@@ -451,8 +451,7 @@ public:
     {
         CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
         timeset_ptrtype __ts = M_ts_set[s];
-        bool stepIsIgnored = (( __ts->numberOfSteps() % this->freq()  ) > 0);
-        return __ts->step( time, stepIsIgnored );
+        return __ts->step( time, this->freq() );
     }
 
     //@}
@@ -496,14 +495,12 @@ public:
             timeset_ptrtype __ts = *__ts_it;
             auto steps = __ts->stepsToWriteOnDisk();
             stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
-            if ( !steps.empty() || __ts->hasMesh() )
+            if ( !steps.empty() || (__ts->numberOfSteps() == 0 && __ts->hasMesh() ) )
                 hasStepToWrite = true;
         }
 
-        if ( !hasStepToWrite )
-            return;
-
-        this->save( stepsToWriteOnDisk );
+        if ( hasStepToWrite )
+            this->save( stepsToWriteOnDisk );
 
         for ( auto & [__ts, steps ] : stepsToWriteOnDisk )
         {
@@ -512,7 +509,8 @@ public:
                 step->setState( STEP_ON_DISK );
                 step->cleanup();
             }
-            std::string filename = this->path()+"/"+prefix()+".timeset";
+            // save metadata file (sould be done even the if step is not write on the disk
+            std::string filename = (fs::path(this->path()) / (prefix()+".timeset")).string();
             __ts->save( filename, this->worldComm() );
         }
     }
