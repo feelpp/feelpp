@@ -24,7 +24,6 @@
 project(Feelpp)
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
-add_subdirectory(cmake)
 
 include(feelpp.dirs)
 # set the Feel++ version
@@ -218,6 +217,9 @@ endif()
 include(feelpp.module.pyfeelpp)
 add_subdirectory(pyfeelpp)
 
+
+#instal cmake files
+add_subdirectory(cmake)
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
 # The add_subdirectory is way too soon to get those values
