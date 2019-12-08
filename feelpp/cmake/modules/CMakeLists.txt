@@ -43,6 +43,10 @@ if ( FEELPP_HAS_ANN )
   set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindANN.cmake )
 endif()
 
+if ( FEELPP_HAS_GLPK )
+  set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindGLPK.cmake )
+endif()
+
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindEigen3.cmake )
 endif()
