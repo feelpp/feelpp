@@ -100,16 +100,6 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   FIND_PACKAGE(Eigen3 REQUIRED)
   MESSAGE(STATUS "Eigen3 system found:")
-  if ( NOT EXISTS ${EIGEN3_INCLUDE_DIR}/unsupported )
-    message(FATAL_ERROR "Eigen should have unsupported headers" )
-  endif()
-  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/System" )
-
-  add_library(eigen INTERFACE IMPORTED)
-  set_target_properties(eigen PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${EIGEN3_INCLUDE_DIR}")
 else()
 
   add_subdirectory(eigen)
