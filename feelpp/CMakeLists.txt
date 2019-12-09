@@ -205,6 +205,9 @@ ADD_SUBDIRECTORY ( feel )
 # get feel++ environment of cmake variable (FEELPP_HAS_...)
 feelpp_get_environment()
 
+#install cmake files
+add_subdirectory(cmake)
+
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
 
@@ -217,9 +220,6 @@ endif()
 include(feelpp.module.pyfeelpp)
 add_subdirectory(pyfeelpp)
 
-
-#instal cmake files
-add_subdirectory(cmake)
 
 # The configuration File needs to be done at the very end otherwise we won't have the correct values for headers and libraries
 # The add_subdirectory is way too soon to get those values
