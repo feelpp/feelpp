@@ -321,8 +321,8 @@ mean( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>*
 }
 
 /**
- * \brief compute the sum of element array expression \p ExprT
- * \return the prod of the elements of expression v along the first array dimension whose size does not equal 1.
+ * \brief compute the productpf  element array expression \p ExprT
+ * \return the product of the elements of expression v along the first array dimension whose size does not equal 1.
  */
 template <typename ExprT, typename T = typename  ExprT::value_type>
 inline auto

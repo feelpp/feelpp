@@ -31,7 +31,7 @@
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/sum.hpp>
+#include <feel/feelvf/redux.hpp>
 #include <feel/feelvf/eig.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
@@ -151,14 +151,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( interp_matrixfield, T, dim_types )
                                BOOST_TEST_MESSAGE( "l2error trans = " << l2error_trans  );
                                BOOST_CHECK_SMALL( l2error_trans, 1e-13 );
                                double int_u = integrate( _range=elements( mesh ), _expr= idv(u)  ).evaluate()( 0, 0 );
-                               double int_exp = integrate( _range=elements( mesh ), _expr= expected_res  ).evaluate()( 0, 0 );
+                               odouble int_exp = integrate( _range=elements( mesh ), _expr= expected_res  ).evaluate()( 0, 0 );
                                BOOST_CHECK_CLOSE( int_u, int_exp, 1e-13 );
 
                            };
     if constexpr ( T::value == 2 )
     {
         check_sum_trace( mat<2,2>( cst(1.), cst(0.), cst(0.), cst(4.) ), cst(5.) );
-        check_sum_trace( mat<2,2>( Px(), cst(0.), cst(0.), Py()  ), Px()+Py() );
+        check_sum_trace( mat<2,2>( Px(), cst(0.), cst(0.), Py()  ), sum(P()) );
     }
     else
     {
@@ -166,7 +166,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( interp_matrixfield, T, dim_types )
         check_sum_trace( mat<3,3>( Px(), cst(0.), cst(2.),
                                    cst(0.),  Py(), cst(0.),
                                    cst(2.),  cst(0.), Pz()
-                                   ), Px()+Py()+Pz() );
+                                   ), sum(P()) );
     }   
 }
 BOOST_AUTO_TEST_SUITE_END()
