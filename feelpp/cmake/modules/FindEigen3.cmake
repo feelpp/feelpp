@@ -95,3 +95,12 @@ else (EIGEN3_INCLUDE_DIR)
 
 endif(EIGEN3_INCLUDE_DIR)
 
+if ( EIGEN3_FOUND )
+  if ( NOT EXISTS ${EIGEN3_INCLUDE_DIR}/unsupported )
+    message(FATAL_ERROR "Eigen should have unsupported headers" )
+  endif()
+  set( EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
+  add_library(eigen INTERFACE IMPORTED)
+  set_target_properties(eigen PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${EIGEN3_INCLUDE_DIRS}")
+endif()
