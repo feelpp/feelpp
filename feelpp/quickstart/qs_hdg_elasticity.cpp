@@ -28,6 +28,8 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/vonmises.hpp>
+#include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include "nullspace-rigidbody.hpp"
 
@@ -352,6 +354,10 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
     e->setMesh( mesh );
     e->add( sigmaName, sigmap, "nodal" );
     e->add( uName, up, "nodal" );
+    std::set<std::string> reps({ "nodal", "element" });
+    e->add( "vonmises", vonmises(idv(sigmap)), reps );
+    e->add( "principal_stress", eig(idv(sigmap)), reps );
+    e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
     
     if ( boption("exact" ) )
     {
