@@ -192,7 +192,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, rang
 {
     if constexpr( UseRedistP1Space )
     {
-        auto phi_reinit = this->functionSpace()->element();
+        auto phi_redist = this->functionSpace()->element();
         auto phi_FM = this->functionSpaceFM()->element();
 
         // Project onto P1 space
@@ -211,14 +211,14 @@ LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, rang
         // Project back onto function-space
         if( functionSpaceOrder > 1 )
         {
-            M_opInterpolationFromP1->apply( phi_FM, phi_reinit );
+            M_opInterpolationFromP1->apply( phi_FM, phi_redist );
         }
         else
         {
-            phi_reinit = vf::project( this->functionSpace(), elements(this->mesh()), idv(phi_FM) );
+            phi_redist = vf::project( this->functionSpace(), elements(this->mesh()), idv(phi_FM) );
         }
 
-        return phi_reinit;
+        return phi_redist;
     }
     else
     {

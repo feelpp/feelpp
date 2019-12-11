@@ -126,7 +126,7 @@ public:
 
     functionspace_P0_ptrtype functionSpaceP0() const { return M_functionSpaceP0; }
     //--------------------------------------------------------------------//
-    // Run reinitialization
+    // Run redistantiation
     element_type run( element_type const& phi ) const;
 
 private:
@@ -229,16 +229,16 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
     //for(int i = 0; i < this->maxIterations(); ++i)
     for( int i = 0; !M_advectionHJ->timeStepBase()->isFinished(); M_advectionHJ->updateTimeStep(), ++i )
     {
-        LOG(INFO) << "iter reinit : " << i << std::endl;
+        LOG(INFO) << "iter redist : " << i << std::endl;
 
-        auto const& phi_reinit = M_advectionHJ->fieldSolutionPtr();
-        auto const& phi_reinito = M_advectionHJ->timeStepBDF()->unknowns()[1];
+        auto const& phi_redist = M_advectionHJ->fieldSolutionPtr();
+        auto const& phi_redisto = M_advectionHJ->timeStepBDF()->unknowns()[1];
 
-        auto gradPhiReinit = M_projectorL2Vec->project( _expr=trans(gradv(phi_reinit)) );
+        auto gradPhiReinit = M_projectorL2Vec->project( _expr=trans(gradv(phi_redist)) );
 #if 1
-        //auto phi_sign = idv(phi_reinit) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
-        auto phi_sign = idv(phi_reinit) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-        auto H_reinit = vf::project(
+        //auto phi_sign = idv(phi_redist) / vf::max( vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist))), 0.92 );
+        auto phi_sign = idv(phi_redist) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
+        auto H_redist = vf::project(
                 space,
                 elements(mesh),
                 vf::abs(
@@ -249,7 +249,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
                     +
                     ( phi_sign > M_thicknessHeaviside )*vf::constant(1.0) )
                 );
-        auto Sign = 2*( idv(H_reinit)-0.5 );
+        auto Sign = 2*( idv(H_redist)-0.5 );
 #else
         auto gradPhi = M_projectorL2Vec->project( _expr=trans(gradv(phi)) );
         //auto psi = idv(phi) / vf::sqrt(gradv(phi)*trans(gradv(phi)));
@@ -268,7 +268,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
         // Update advection source
         M_advectionHJ->updateSourceAdded( Sign );
         // Update advection velocity
-        //auto beta = Sign * trans(gradv(phi_reinit)) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
+        //auto beta = Sign * trans(gradv(phi_redist)) / vf::max( vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist))), 0.92 );
         if( this->M_useVolumeConstraint )
         {
             auto it_elt = mesh->beginOrderedElement();
@@ -290,7 +290,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
                 bool mark_elt = true;
                 for (int j=0; j<ndofv; j++)
                 {
-                    if ( std::abs( phi_reinit->localToGlobal(elt.id(), j, 0) ) > thickness )
+                    if ( std::abs( phi_redist->localToGlobal(elt.id(), j, 0) ) > thickness )
                     {
                         mark_elt = false;
                         break; //don't need to do the others dof
@@ -306,9 +306,9 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
                     interfaceElts
                     );
 
-            //auto modGradPhiReinit = vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
+            //auto modGradPhiReinit = vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
-            auto Delta = Feel::FeelModels::levelsetDelta( *phi_reinit, M_thicknessHeaviside );
+            auto Delta = Feel::FeelModels::levelsetDelta( *phi_redist, M_thicknessHeaviside );
             auto spaceP0 = this->functionSpaceP0();
             auto LambdaNum = integrate(
                     _range=elements(mesh),
@@ -326,7 +326,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
         }
         else
         {
-            //auto beta = Sign * trans(gradv(phi_reinit)) / vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit)));
+            //auto beta = Sign * trans(gradv(phi_redist)) / vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist)));
             auto beta = Sign * idv(gradPhiReinit) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
             M_advectionHJ->updateAdvectionVelocity( beta );
         }
@@ -338,14 +338,14 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
         // Test convergence
         err_dist = integrate(
                 elements(this->mesh()),
-                vf::abs( sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))) - 1.0 )
+                vf::abs( sqrt(gradv(phi_redist)*trans(gradv(phi_redist))) - 1.0 )
                 ).evaluate()(0,0);
         double delta_err = std::abs(err_disto - err_dist) / err_disto;
         LOG(INFO)<<"delta err = "<<delta_err<<"\n";
 
         rateChangePhiL2 = std::sqrt( integrate(
                 elements(mesh),
-                (idv(phi_reinit) - idv(phi_reinito))*(idv(phi_reinit) - idv(phi_reinito))
+                (idv(phi_redist) - idv(phi_redisto))*(idv(phi_redist) - idv(phi_redisto))
                 ).evaluate()(0,0) );
         relativeRateChangePhiL2 = std::abs( rateChangePhiL2 - rateChangePhiL2o) / rateChangePhiL2o;
 
@@ -363,7 +363,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
         rateChangePhiL2o = rateChangePhiL2;
     }
 
-    //Feel::cout << "reinit done in " << __iter - start_iter << " iter\n";
+    //Feel::cout << "redist done in " << __iter - start_iter << " iter\n";
     Feel::cout << "final relative rate of change = " << relativeRateChangePhiL2 << std::endl;
 
     return M_advectionHJ->fieldSolution();
