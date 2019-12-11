@@ -411,13 +411,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciation()
                 this->createRedistanciationHJ();
             
             double thickness_heaviside;
-            if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj")).defaulted() )
+            if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj")).defaulted() )
             {
                 thickness_heaviside =  M_thicknessInterface;
             }
             else
             {
-                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "reinit-hj") );
+                thickness_heaviside =  doption( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj") );
             }
             M_redistanciationHJ->setThicknessHeaviside( thickness_heaviside );
         }
@@ -436,7 +436,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationFM()
 {
     M_redistanciationFM.reset( 
             new LevelSetRedistanciationFM<space_levelset_type>( 
-                this->functionSpace(), prefixvm(this->prefix(), "reinit-fm") 
+                this->functionSpace(), prefixvm(this->prefix(), "redist-fm") 
                 ) 
             );
 }
@@ -446,7 +446,7 @@ void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationHJ()
 {
     M_redistanciationHJ.reset( 
-            new LevelSetRedistanciationHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "reinit-hj") ) 
+            new LevelSetRedistanciationHJ<space_levelset_type>( this->functionSpace(), prefixvm(this->prefix(), "redist-hj") ) 
             );
 }
 
@@ -655,7 +655,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
     M_useHeavisideDiracNodalProj = boption(_name=prefixvm(this->prefix(),"h-d-nodal-proj"));
 
-    std::string redistmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    std::string redistmethod = soption( _name="redist-method", _prefix=this->prefix() );
     CHECK( LevelSetDistanceMethodIdMap.count( redistmethod ) ) << redistmethod << " is not in the list of possible redistanciation methods\n";
     M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
@@ -1964,7 +1964,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
 
     std::string redistMethod;
-    std::string redistmethod = soption( _name="reinit-method", _prefix=this->prefix() );
+    std::string redistmethod = soption( _name="redist-method", _prefix=this->prefix() );
     if( redistmethod == "fm" )
     {
         redistMethod = "Fast-Marching";
