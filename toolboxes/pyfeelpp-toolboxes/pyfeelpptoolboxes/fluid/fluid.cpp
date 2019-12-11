@@ -45,9 +45,9 @@ void defFM(py::module &m)
                                  Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > ;
     std::string pyclass_name = std::string("Fluid_") + std::to_string(fm_t::mesh_type::nDim) + std::string("D") + std::string("P") + std::to_string(OrderVelocity) + std::string("P") + std::to_string(OrderPressure) + std::string("G") + std::to_string(OrderGeo);
     py::class_<fm_t,std::shared_ptr<fm_t>,ModelNumerical>(m,pyclass_name.c_str())
-        .def(py::init<std::string const&,bool,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
+        .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("buildmesh")=true,
+             py::arg("keyword")=std::string("fluid"),
              py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
@@ -69,8 +69,8 @@ void defFM(py::module &m)
         // normal stress
         .def("createFunctionSpacesNormalStress",&fm_t::createFunctionSpacesNormalStress, "create a normal stress function space")
         //.def("functionSpaceNormalStress",&fm_t::functionSpaceNormalStress, "get the normal stress function space")
-        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_stress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
-        .def("fieldNormalStress",static_cast<typename fm_t::element_stress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
+        .def("fieldNormalStressPtr",static_cast<typename fm_t::element_normalstress_ptrtype& (fm_t::*)()>(&fm_t::fieldNormalStressPtr), "get the normal stress field")
+        .def("fieldNormalStress",static_cast<typename fm_t::element_normalstress_type const& (fm_t::*)() const>(&fm_t::fieldNormalStress), "get the normal stress field")
         
         // vorticity
         .def("createFunctionSpacesVorticity",&fm_t::createFunctionSpacesVorticity, "create a vorticity function space")

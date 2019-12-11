@@ -24,7 +24,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ), M_isUpdatedForUse( false ),
+    M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
     this->log("SolidMechanics","constructor", "start" );
@@ -138,15 +138,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
     else
         this->createMesh();
     //-----------------------------------------------------------------------------//
-    // functionSpaces and elements
-    this->createFunctionSpaces();
-    //-----------------------------------------------------------------------------//
-    // time schema
-    this->createTimeDiscretisation();
-    //-----------------------------------------------------------------------------//
-    // exporters
-    this->createExporters();
-    //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh = true;
     this->log("SolidMechanics","buildStandardModel", "finish" );
 }
@@ -187,12 +178,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype 
     else
         this->createMesh1dReduced();
     //-----------------------------------------------------------------------------//
-    this->createFunctionSpaces1dReduced();
-    //-----------------------------------------------------------------------------//
-    this->createTimeDiscretisation1dReduced();
-    //-----------------------------------------------------------------------------//
-    this->createExporters1dReduced();
-    //-----------------------------------------------------------------------------//
     M_hasBuildFromMesh1dReduced = true;
     this->log("SolidMechanics","build1dReducedModel", "finish" );
 }
@@ -226,57 +211,30 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
 
-    // overwrite export field options in json if given in cfg
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_displacement").c_str()) )
-        if ( boption(_name="do_export_displacement",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocity").c_str()) )
-        if ( boption(_name="do_export_velocity",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_acceleration").c_str()) )
-        if ( boption(_name="do_export_acceleration",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_normalstress").c_str()) )
-        if ( boption(_name="do_export_normalstress",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_pressure").c_str()) )
-        if ( boption(_name="do_export_pressure",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_material_properties").c_str()) )
-        if ( boption(_name="do_export_material_properties",_prefix=this->prefix()) )
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_velocityinterfacefromfluid").c_str()) )
-    //    M_doExportVelocityInterfaceFromFluid = boption(_name="do_export_velocityinterfacefromfluid",_prefix=this->prefix());
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_all").c_str()) )
-        if ( boption(_name="do_export_all",_prefix=this->prefix()) )
-        {
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
-            this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
-        }
-
     //time schema parameters
-    std::string timeSchema = soption(_name="time-schema",_prefix=this->prefix());
-    if (timeSchema == "Newmark")
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeSteppingUseMixedFormulation = false;
+    M_genAlpha_alpha_m=1.0;
+    M_genAlpha_alpha_f=1.0;
+    if ( M_timeStepping == "Newmark" )
     {
         M_genAlpha_alpha_m=1.0;
         M_genAlpha_alpha_f=1.0;
     }
-    else if (timeSchema == "Generalized-Alpha")
+    else if ( M_timeStepping == "Generalized-Alpha" )
     {
+#if 0
         M_genAlpha_rho=doption(_name="time-rho",_prefix=this->prefix());
         M_genAlpha_alpha_m=(2.- M_genAlpha_rho)/(1.+M_genAlpha_rho);
         M_genAlpha_alpha_f=1./(1.+M_genAlpha_rho);
+#endif
     }
-    else CHECK( false ) << "time scheme not supported : " << timeSchema << "\n";
+    else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+    {
+        M_timeSteppingUseMixedFormulation = true;
+        M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    }
+    else CHECK( false ) << "time stepping not supported : " << M_timeStepping << "\n";
 
     M_genAlpha_gamma=0.5+M_genAlpha_alpha_m-M_genAlpha_alpha_f;
     M_genAlpha_beta=0.25*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f)*(1+M_genAlpha_alpha_m-M_genAlpha_alpha_f);
@@ -493,11 +451,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
 
+
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    this->log("SolidMechanics","createFunctionSpaces", "start" );
+    if ( this->is1dReducedModel() )
+    {
+        this->initFunctionSpaces1dReduced();
+        return;
+    }
+
+    this->log("SolidMechanics","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -529,8 +494,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
                                                      _range=M_rangeMeshElements );
         M_fieldPressure.reset( new element_pressure_type( M_XhPressure, "pressure" ) );
     }
-    //subfunctionspace vectorial
-    //M_XhVectorial = M_Xh;
+    if ( M_timeSteppingUseMixedFormulation )
+        M_fieldVelocity.reset( new element_displacement_type( M_XhDisplacement, "velocity" ));
 
     //--------------------------------------------------------//
     // pre-stress ( not functional )
@@ -542,16 +507,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_XhDisplacement->worldCommPtr() );
 
     this->timerTool("Constructor").stop("createSpaces");
-    this->log("SolidMechanics","createFunctionSpaces", "finish" );
+    this->log("SolidMechanics","initFunctionSpaces", "finish" );
+
 }
-
-//---------------------------------------------------------------------------------------------------//
-
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces1dReduced()
 {
-    this->log("SolidMechanics","createFunctionSpaces1dReduced", "start" );
+    this->log("SolidMechanics","initFunctionSpaces1dReduced", "start" );
 
     // function space and elements
     M_Xh_vect_1dReduced = space_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
@@ -568,7 +531,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces1dReduced()
     // backend : use worldComm of Xh_1dReduced
     M_backend_1dReduced = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh_1dReduced->worldCommPtr() );
 
-    this->log("SolidMechanics","createFunctionSpaces1dReduced", "finish" );
+    this->log("SolidMechanics","initFunctionSpaces1dReduced", "finish" );
 }
 
 
@@ -602,147 +565,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesStressTensor()
     for (int d=0;d<M_fieldsPrincipalStresses.size();++d)
         if( !M_fieldsPrincipalStresses[d] )
             M_fieldsPrincipalStresses[d].reset( new element_stress_scal_type( M_XhStressTensor->compSpace() ) );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI()
-{
-    if ( this->isStandardModel() )
-        this->createAdditionalFunctionSpacesFSIStandard();
-    else
-        this->createAdditionalFunctionSpacesFSI1dReduced();
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSIStandard()
-{
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "start" );
-
-    //--------------------------------------------------------//
-    // function space for normal stress
-    if ( !M_XhNormalStress )
-        this->createAdditionalFunctionSpacesNormalStress();
-    if ( !M_fieldNormalStressFromFluid )
-        M_fieldNormalStressFromFluid.reset(new element_normal_stress_type( M_XhNormalStress, "normalStressBoundaryFromFluid" ));
-
-    //--------------------------------------------------------//
-    if ( !M_fieldVelocityInterfaceFromFluid && ( this->couplingFSIcondition() == "robin-neumann" ||
-                                                 this->couplingFSIcondition() == "robin-robin" ||
-                                                 this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                                 this->couplingFSIcondition() == "nitsche" ) )
-        M_fieldVelocityInterfaceFromFluid.reset( new element_vectorial_type( M_XhDisplacement, "velocityInterfaceFromFluid" ));
-
-
-    if ( !M_XhSubMeshDispFSI && ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                  this->couplingFSIcondition() == "nitsche" ) )
-    {
-        auto subfsimesh = createSubmesh(this->mesh(),markedfaces(this->mesh(),this->markerNameFSI()) );
-        M_XhSubMeshDispFSI = space_tracemesh_disp_type::New( _mesh=subfsimesh, _worldscomm=this->localNonCompositeWorldsComm() );
-        M_fieldSubMeshDispFSI.reset( new element_tracemesh_disp_type(M_XhSubMeshDispFSI) );
-    }
-
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSIStandard", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesFSI1dReduced()
-{
-    if ( M_XhStressVect_1dReduced ) return;
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "start" );
-
-    // normal stress as source term
-    M_XhStressVect_1dReduced = space_stress_vect_1dreduced_type::New(_mesh=M_mesh_1dReduced,
-                                                                       _worldscomm=makeWorldsComm(1,M_mesh_1dReduced->worldCommPtr()));
-    M_stress_1dReduced.reset( new element_stress_scal_1dreduced_type( M_XhStressVect_1dReduced->compSpace(), "structure stress" ));
-    M_stress_vect_1dReduced.reset(new element_stress_vect_1dreduced_type( M_XhStressVect_1dReduced, "stress 1d vect displacement" ));
-
-    this->log("SolidMechanics","createAdditionalFunctionSpacesFSI1dReduced", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation()
-{
-    this->log("SolidMechanics","createTimeDiscretisation", "start" );
-    this->timerTool("Constructor").start();
-
-    double ti = this->timeInitial();
-    double tf = this->timeFinal();
-    double dt = this->timeStep();
-
-    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_timeStepNewmark = newmark( _vm=Environment::vm(), _space=M_XhDisplacement,
-                                      _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"newmark"+suffixName)),
-                                      _prefix=this->prefix(),
-                                      _initial_time=ti, _final_time=tf, _time_step=dt,
-                                      _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                      _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-    M_timeStepNewmark->setfileFormat( myFileFormat );
-    M_timeStepNewmark->setPathSave( (fs::path(this->rootRepository()) /
-                                          fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
-
-    if ( M_useDisplacementPressureFormulation )
-    {
-        M_savetsPressure = bdf( _vm=Environment::vm(), _space=this->functionSpacePressure(),
-                                _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure"+suffixName)),
-                                _prefix=this->prefix(),
-                                _initial_time=ti, _final_time=tf, _time_step=dt,
-                                _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-        M_savetsPressure->setfileFormat( myFileFormat );
-        M_savetsPressure->setPathSave( (fs::path(this->rootRepository()) /
-                                        fs::path( prefixvm(this->prefix(),"save-pressure" ) ) ).string() );
-    }
-
-
-    this->timerTool("Constructor").stop("createTimeDiscr");
-    this->log("SolidMechanics","createTimeDiscretisation", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createTimeDiscretisation1dReduced()
-{
-    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "start" );
-
-    double ti = this->timeInitial();
-    double tf = this->timeFinal();
-    double dt = this->timeStep();
-
-    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_newmark_displ_1dReduced = newmark( _vm=Environment::vm(),
-                                          _space=M_Xh_1dReduced,
-                                          _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"structure-1dreduced."+suffixName)),
-                                          _prefix=this->prefix(),
-                                          _initial_time=ti, _final_time=tf, _time_step=dt,
-                                          _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
-                                          _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
-    M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
-    M_newmark_displ_1dReduced->setPathSave( (fs::path(this->rootRepository()) /
-                                             fs::path( prefixvm(this->prefix(), (boost::format("newmark_dt_%1%")%dt).str() ) ) ).string() );
-
-    this->log("SolidMechanics","createTimeDiscretisation1dReduced", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -813,6 +635,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                             _backend=M_backend,
                                             _type=InterpolationNonConforme(false) );
 
+#if 0
         if ( this->hasPostProcessFieldExported( SolidMechanicsPostProcessFieldExported::NormalStress ) )
         {
             this->createAdditionalFunctionSpacesNormalStress();
@@ -823,7 +646,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                                 _backend=M_backend,
                                                 _type=InterpolationNonConforme(false) );
         }
-
+#endif
         if ( M_useDisplacementPressureFormulation )
         {
             //M_XhScalarVisuHO = space_scalar_visu_ho_type::New(_mesh=opLagP1->mesh(), _worldscomm=this->localNonCompositeWorldsComm());
@@ -912,9 +735,17 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
     std::vector< typename NullSpace<double>::vector_ptrtype > myvecbasis(ns.size());
     for ( int k=0;k< ns.size();++k )
     {
+        // TODO : use method in vectorblock.hpp : BlocksBaseVector<T>::setVector (can be static)
         myvecbasis[k] = mybackend->newVector(dm);
+        auto const& subvec = ns.basisVector(k);
+        auto const& basisGpToContainerGpSubVec = subvec.map().dofIdToContainerId( 0 ); //only one
+        auto const& basisGpToContainerGpVec = dm->dofIdToContainerId( 0 ); // space index of disp
+        for ( int i=0;i<basisGpToContainerGpSubVec.size();++i )
+            myvecbasis[k]->set( basisGpToContainerGpVec[i], subvec( basisGpToContainerGpSubVec[i] ) );
+#if 0
         for( int i = 0 ; i < ns.basisVector(k).map().nLocalDofWithGhost() ; ++i )
             myvecbasis[k]->set(i, ns.basisVector(k)(i) );
+#endif
         myvecbasis[k]->close();
     }
     NullSpace<double> userNullSpace( myvecbasis, mybackend );
@@ -926,7 +757,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
-    if ( M_isUpdatedForUse ) return;
+    if ( this->isUpdatedForUse() ) return;
 
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
@@ -935,10 +766,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
          (this->is1dReducedModel() && !M_hasBuildFromMesh1dReduced ) )
         this->build();
 
-    if ( this->markerNameFSI().size()>0 )
-        this->createAdditionalFunctionSpacesFSI();
+    this->initFunctionSpaces();
 
-    //-------------------------------------------------//
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
@@ -960,19 +789,27 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         this->setStartSubBlockSpaceIndex( "displacement", currentStartIndex++ );
         if ( M_useDisplacementPressureFormulation )
             this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
+        if ( M_timeSteppingUseMixedFormulation )
+            this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
 
         // prepare block vector
         int nBlock = this->nBlockMatrixGraph();
         M_blockVectorSolution.resize( nBlock );
-        M_blockVectorSolution(0) = this->fieldDisplacementPtr();
-
+        int cptBlock = 0;
+        M_blockVectorSolution(cptBlock++) = this->fieldDisplacementPtr();
         if ( M_useDisplacementPressureFormulation )
-        {
-            int cptBlock=1;
-            M_blockVectorSolution(cptBlock) = M_fieldPressure;
-        }
-        // init vector associated to the block
-        M_blockVectorSolution.buildVector( this->backend() );
+            M_blockVectorSolution(cptBlock++) = M_fieldPressure;
+        if ( M_timeSteppingUseMixedFormulation )
+            M_blockVectorSolution(cptBlock++) = M_fieldVelocity;
+    }
+    else if ( this->is1dReducedModel() )
+    {
+        size_type currentStartIndex = 0;
+        this->setStartSubBlockSpaceIndex( "displacement-1dreduced", currentStartIndex++ );
+        int nBlock = this->nBlockMatrixGraph();
+        M_blockVectorSolution_1dReduced.resize( nBlock );
+        int cptBlock = 0;
+        M_blockVectorSolution_1dReduced(cptBlock++) = this->fieldDisplacementScal1dReducedPtr();
     }
 
     // update algebraic model
@@ -980,6 +817,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     {
         if (this->isStandardModel())
         {
+            // init vector representing all blocs
+            M_blockVectorSolution.buildVector( this->backend() );
+
             M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 
             if ( this->nBlockMatrixGraph() == 1 )
@@ -1001,15 +841,36 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
                 }
             }
 
+#if 0
+            if ( true )
+            {
+                auto massbf = form2( _trial=this->functionSpaceDisplacement(), _test=this->functionSpaceDisplacement());
+                auto const& u = this->fieldDisplacement();
+                auto const& rho = this->mechanicalProperties()->fieldRho();
+                massbf += integrate( _range=elements( this->mesh() ),
+                                     _expr=idv(rho)*inner( idt(u),id(u) ) );
+                massbf.close();
+                M_algebraicFactory->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+            }
+#endif
+
+            if ( M_timeStepping == "Theta" )
+            {
+                M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+                M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+                M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+            }
         }
         else if (this->is1dReducedModel())
         {
+            // init vector representing all blocs
+            M_blockVectorSolution_1dReduced.buildVector( this->backend1dReduced() );
+
             M_algebraicFactory_1dReduced.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend1dReduced()) );
-            M_algebraicFactory_1dReduced->initFromFunctionSpace( this->functionSpace1dReduced() );
         }
     }
 
-    M_isUpdatedForUse = true;
+    this->setIsUpdatedForUse( true );
 
     this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -1022,10 +883,100 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    // update timediscr and exporters
-    if (!this->doRestart())
+    this->log("SolidMechanics","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
+
+    double ti = this->timeInitial();
+    double tf = this->timeFinal();
+    double dt = this->timeStep();
+
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+    if ( this->isStandardModel() )
     {
-        if (this->isStandardModel())
+        if ( M_timeStepping == "Newmark" )
+        {
+            M_timeStepNewmark = newmark( _space=M_XhDisplacement,
+                                         _name="displacement"+suffixName,
+                                         _prefix=this->prefix(),
+                                         _initial_time=ti, _final_time=tf, _time_step=dt,
+                                         _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_timeStepNewmark->setfileFormat( myFileFormat );
+            M_timeStepNewmark->setPathSave( ( saveTsDir/"displacement" ).string() );
+            M_fieldVelocity = M_timeStepNewmark->currentVelocityPtr();
+            M_fieldAcceleration = M_timeStepNewmark->currentAccelerationPtr();
+        }
+        else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
+        {
+            int bdfOrder = 1;
+            if ( M_timeStepping == "BDF" )
+                bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+            int nConsecutiveSave = std::max( 2, bdfOrder ); // at least 2 is required by fsi when restart
+            M_timeStepBdfDisplacement = bdf( _space=M_XhDisplacement,
+                                             _name="displacement"+suffixName,
+                                             _prefix=this->prefix(),
+                                             _order=bdfOrder,
+                                             _initial_time=ti, _final_time=tf, _time_step=dt,
+                                             _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                             _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                                             _n_consecutive_save=nConsecutiveSave );
+            M_timeStepBdfDisplacement->setfileFormat( myFileFormat );
+            M_timeStepBdfDisplacement->setPathSave( ( saveTsDir/"displacement" ).string() );
+            M_timeStepBdfVelocity = bdf( _space=M_XhDisplacement,
+                                         _name="velocity"+suffixName,
+                                         _prefix=this->prefix(),
+                                         _order=bdfOrder,
+                                         _initial_time=ti, _final_time=tf, _time_step=dt,
+                                         _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                         _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                                         _n_consecutive_save=nConsecutiveSave );
+            M_timeStepBdfVelocity->setfileFormat( myFileFormat );
+            M_timeStepBdfVelocity->setPathSave(  ( saveTsDir/"velocity" ).string() );
+        }
+
+        if ( M_useDisplacementPressureFormulation )
+        {
+            M_savetsPressure = bdf( _space=this->functionSpacePressure(),
+                                    _name="pressure"+suffixName,
+                                    _prefix=this->prefix(),
+                                    _order=1,
+                                    _initial_time=ti, _final_time=tf, _time_step=dt,
+                                    _restart=this->doRestart(), _restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                    _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_savetsPressure->setfileFormat( myFileFormat );
+            M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
+        }
+    }
+    else if ( this->is1dReducedModel() )
+    {
+        if ( M_timeStepping == "Newmark" )
+        {
+            M_newmark_displ_1dReduced = newmark( _space=M_Xh_1dReduced,
+                                                 _name="displacement"+suffixName,
+                                                 _prefix=this->prefix(),
+                                                 _initial_time=ti, _final_time=tf, _time_step=dt,
+                                                 _restart=this->doRestart(),_restart_path=this->restartPath(),_restart_at_last_save=this->restartAtLastSave(),
+                                                 _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+            M_newmark_displ_1dReduced->setfileFormat( myFileFormat );
+            M_newmark_displ_1dReduced->setPathSave( ( saveTsDir/"displacement-1dreduced" ).string() );
+        }
+        else
+        {
+            CHECK( false ) << "invalid timeStepping : " << M_timeStepping;
+        }
+    }
+
+    this->log("SolidMechanics","initTimeStep", "create time stepping object done" );
+
+    // update current time, initial solution and restart
+    if ( this->isStandardModel() )
+    {
+        if ( !this->doRestart() )
         {
             if ( Environment::vm().count(prefixvm(this->prefix(),"time-initial.displacement.files.directory").c_str()) )
             {
@@ -1033,54 +984,69 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                 std::string saveType = soption( _name="time-initial.displacement.files.format",_prefix=this->prefix() );
                 M_fieldDisplacement->load(_path=initialDispFilename, _type=saveType );
             }
-
-            // start time step
-            M_timeStepNewmark->start(*M_fieldDisplacement);
-            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->start( M_XhPressure );
-            // up current time
-            this->updateTime( M_timeStepNewmark->time() );
+            if ( M_timeStepping == "Newmark" )
+                this->updateTime( M_timeStepNewmark->timeInitial() );
+            else
+                this->updateTime( M_timeStepBdfDisplacement->timeInitial() );
         }
-        else if (this->is1dReducedModel())
+        else // do a restart
         {
-            // start time step
-            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
+            if ( M_timeStepping == "Newmark" )
+            {
+                // restart time step
+                double tir = M_timeStepNewmark->restart();
+
+                // load a previous solution as current solution
+                *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
+                // up initial time
+                this->setTimeInitial( tir );
+                // up current time
+                this->updateTime( tir );
+            }
+            else
+            {
+                double tir = M_timeStepBdfDisplacement->restart();
+                *M_fieldDisplacement = M_timeStepBdfDisplacement->unknown(0);
+                M_timeStepBdfVelocity->restart();
+                *M_fieldVelocity = M_timeStepBdfVelocity->unknown(0);
+                this->setTimeInitial( tir );
+                this->updateTime( tir );
+            }
+            if ( M_useDisplacementPressureFormulation )
+            {
+                M_savetsPressure->restart();
+                *M_fieldPressure = M_savetsPressure->unknown(0);
+            }
         }
+
     }
-    else // do a restart
+    else if (this->is1dReducedModel())
     {
-        if (this->isStandardModel())
+        if ( !this->doRestart() )
         {
-            // restart time step
-            M_timeStepNewmark->restart();
-            if ( M_useDisplacementPressureFormulation ) M_savetsPressure->restart();
-            // load a previous solution as current solution
-            *M_fieldDisplacement = M_timeStepNewmark->previousUnknown();
-            if ( M_useDisplacementPressureFormulation ) *M_fieldPressure = M_savetsPressure->unknown(0);
-            // up initial time
-            this->setTimeInitial( M_timeStepNewmark->timeInitial() );
             // up current time
-            this->updateTime( M_timeStepNewmark->time() );
-
+            if ( M_timeStepping == "Newmark" )
+                this->updateTime( M_newmark_displ_1dReduced->time() );
         }
-        else  if (this->is1dReducedModel())
+        else
         {
-            // restart time step
-            M_newmark_displ_1dReduced->restart();
-            // load a previous solution as current solution
-            *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
-            this->updateInterfaceDispFrom1dDisp();
-            // up initial time
-            this->setTimeInitial(M_newmark_displ_1dReduced->timeInitial());
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
+            if ( M_timeStepping == "Newmark" )
+            {
+                // restart time step
+                double tir = M_newmark_displ_1dReduced->restart();
+                // load a previous solution as current solution
+                *M_disp_1dReduced = M_newmark_displ_1dReduced->previousUnknown();
+                this->updateInterfaceDispFrom1dDisp();
+                // up initial time
+                this->setTimeInitial( tir );
+                // up current time
+                this->updateTime( tir ) ;
+            }
         }
     }
 
-    this->log("SolidMechanics","init", "start/restart timeStep scheme done" );
-
-
+    this->timerTool("Constructor").stop("initTimeStep");
+    this->log("SolidMechanics","initTimeStep", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
@@ -1161,6 +1127,43 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : ifields )
+    {
+        if ( o == prefixvm(prefix,"displacement") || o == prefixvm(prefix,"all") )
+            res.insert( "displacement" );
+        if ( o == prefixvm(prefix,"velocity") || o == prefixvm(prefix,"all") )
+            res.insert( "velocity" );
+        if ( o == prefixvm(prefix,"acceleration") || o == prefixvm(prefix,"all") )
+            res.insert( "acceleration" );
+        if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
+            res.insert( "normal-stress" );
+        if ( o == prefixvm(prefix,"pid") || o == prefixvm(prefix,"all") )
+            res.insert( "pid" );
+        if ( o == prefixvm(prefix,"pressure") || o == prefixvm(prefix,"all") )
+            res.insert( "pressure" );
+        if ( o == prefixvm(prefix,"material-properties") || o == prefixvm(prefix,"all") )
+            res.insert( "material-properties" );
+        if ( o == prefixvm(prefix,"Von-Mises") || o == prefixvm(prefix,"all") )
+            res.insert( "Von-Mises" );
+        if ( o == prefixvm(prefix,"Tresca") || o == prefixvm(prefix,"all") )
+            res.insert( "Tresca" );
+        if ( o == prefixvm(prefix,"principal-stresses") || o == prefixvm(prefix,"all") )
+            res.insert( "principal-stresses" );
+
+        // add user functions
+        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
+            res.insert( o );
+    }
+    return res;
+}
+
+//---------------------------------------------------------------------------------------------------//
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
@@ -1171,43 +1174,25 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    for ( auto const& o : this->modelProperties().postProcess().exports( modelName ).fields() )
-    {
-        if ( o == "displacement" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Displacement );
-        if ( o == "velocity" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Velocity );
-        if ( o == "acceleration" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Acceleration );
-        if ( o == "stress" || o == "normal-stress" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::NormalStress );
-        if ( o == "pressure" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pressure );
-        if ( o == "material-properties" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::MaterialProperties );
-        if ( o == "pid" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Pid );
-        if ( o == "fsi" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::FSI );
-        if ( o == "Von-Mises" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::VonMises );
-        if ( o == "Tresca" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::Tresca );
-        if ( o == "principal-stresses" || o == "all" ) this->M_postProcessFieldExported.insert( SolidMechanicsPostProcessFieldExported::PrincipalStresses );
-
-        // add user functions
-        if ( this->hasFieldUserScalar( o ) || this->hasFieldUserVectorial( o ) )
-            M_postProcessUserFieldExported.insert( o );
-    }
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
     // clean doExport with fields not available
     if ( !M_useDisplacementPressureFormulation )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::Pressure );
+        M_postProcessFieldExported.erase( "pressure" );
     if ( this->is1dReducedModel() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::NormalStress );
-#if 0
-    if ( !this->fieldVelocityInterfaceFromFluidPtr() )
-        M_postProcessFieldExported.erase( SolidMechanicsPostProcessFieldExported::FSI );
-#endif
+        M_postProcessFieldExported.erase( "normal-stress" );
 
-    if (this->isStandardModel())
-        this->createExporters();
-    else  if (this->is1dReducedModel())
-        this->createExporters1dReduced();
+    // init exporter
+    if ( !M_postProcessFieldExported.empty() )
+    {
+        if (this->isStandardModel())
+            this->createExporters();
+        else  if (this->is1dReducedModel())
+            this->createExporters1dReduced();
 
-    // restart exporter
-    if (this->doRestart())
-        this->restartExporters( this->timeInitial() );
-
+        // restart exporter
+        if (this->doRestart())
+            this->restartExporters( this->timeInitial() );
+    }
 
     auto const& ptree = this->modelProperties().postProcess().pTree( modelName );
 
@@ -1292,6 +1277,37 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
 }
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::restartExporters( double time )
+{
+    // restart exporter
+    if (this->doRestart() && this->restartPath().empty())
+    {
+        if ( this->isStandardModel() )
+        {
+            if (!M_isHOVisu)
+            {
+                if ( M_exporter && M_exporter->doExport() )
+                    M_exporter->restart(this->timeInitial());
+            }
+            else
+            {
+#if 1 // defined(FEELPP_HAS_VTK)
+                if ( M_exporter_ho && M_exporter_ho->doExport() )
+                    M_exporter_ho->restart(this->timeInitial());
+                #endif
+            }
+        }
+        else
+        {
+            if ( M_exporter_1dReduced && M_exporter_1dReduced->doExport() )
+                M_exporter_1dReduced->restart(this->timeInitial());
+        }
+    }
+}
+
 
 } //FeelModels
 

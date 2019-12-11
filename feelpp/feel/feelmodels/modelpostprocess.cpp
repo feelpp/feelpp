@@ -226,6 +226,36 @@ ModelPostprocessStatistics::setParameterValues( std::map<std::string,double> con
 }
 
 
+void
+ModelPostprocessCheckerMeasure::setup( std::string const& name )
+{
+    M_name = name;
+
+    if ( auto itValue = M_p.get_optional<double>("value") )
+        M_value = *itValue;
+    else
+        CHECK( false ) << "ModelPostprocessCheckerMeasure : require value entry";
+
+    if ( auto itTol = M_p.get_optional<double>("tolerance") )
+        M_tolerance = *itTol;
+}
+std::tuple<bool,double>
+ModelPostprocessCheckerMeasure::run( double val ) const
+{
+    if ( std::abs(val) < 1e-10 || std::abs(M_value) < 1e-10 )
+    {
+        double diff = std::abs(val-M_value);
+        return std::make_tuple( std::abs(val-M_value) <= M_tolerance, diff );
+    }
+    else
+    {
+        double diffAbs = std::abs(val-M_value);
+        double maxDiffRel = std::max(diffAbs/std::abs(val),diffAbs/std::abs(M_value));
+        return std::make_tuple( diffAbs/std::abs(val) <= M_tolerance && diffAbs/std::abs(M_value) <= M_tolerance, maxDiffRel );
+    }
+}
+
+
 ModelPostprocess::ModelPostprocess( WorldComm const& world )
     :
     M_worldComm( world ),
@@ -326,7 +356,19 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
                     M_measuresStatistics[name].push_back( ppStatistics );
             }
         }
+    }
 
+    if ( auto checkers = p.get_child_optional("Checkers") )
+    {
+        if ( auto measures = checkers->get_child_optional("Measures") )
+        {
+            for( auto const& ptreeCheckerMeasure : *measures )
+            {
+                ModelPostprocessCheckerMeasure ppCheckerMeasure;
+                ppCheckerMeasure.setPTree( ptreeCheckerMeasure.second, ptreeCheckerMeasure.first );
+                M_checkersMeasure[name].push_back( ppCheckerMeasure );
+            }
+        }
     }
 }
 
@@ -386,6 +428,13 @@ ModelPostprocess::hasMeasuresStatistics( std::string const& name ) const
     std::string nameUsed = (M_useModelName)? name : "";
     return M_measuresStatistics.find( nameUsed ) != M_measuresStatistics.end();
 }
+bool
+ModelPostprocess::hasCheckersMeasure( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_checkersMeasure.find( nameUsed ) != M_checkersMeasure.end();
+}
+
 ModelPostprocessExports const&
 ModelPostprocess::exports( std::string const& name ) const
 {
@@ -425,6 +474,15 @@ ModelPostprocess::measuresStatistics( std::string const& name ) const
         return M_measuresStatistics.find( nameUsed )->second;
     else
         return M_emptyMeasuresStatistics;
+}
+std::vector<ModelPostprocessCheckerMeasure> const&
+ModelPostprocess::checkersMeasure( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    if ( this->hasCheckersMeasure( nameUsed ) )
+        return M_checkersMeasure.find( nameUsed )->second;
+    else
+        return M_emptyCheckersMeasure;
 }
 
 

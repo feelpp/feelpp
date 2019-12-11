@@ -21,12 +21,12 @@ namespace FeelModels
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
-                                bool buildMesh,
+                                std::string const& keyword,
                                 worldcomm_ptr_t const& worldComm,
                                 std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );
@@ -43,10 +43,6 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->initMesh();
     //-----------------------------------------------------------------------------//
     this->log("Heat","constructor", "finish");
 
@@ -204,8 +200,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     auto initialSolution = this->modelProperties().initialConditions().getScalarFields( "temperature", "" );
     for( auto const& d : initialSolution )
     {
+        auto theExpr = expression( d,this->symbolsExpr() );
         auto rangeElt = (markers(d).empty())? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-        this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=expression(d),_geomap=this->geomap());
+        this->fieldTemperaturePtr()->on(_range=rangeElt,_expr=theExpr,_geomap=this->geomap());
     }
     if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
     {
@@ -232,7 +229,11 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
 
-    // vector solution
+    // subspaces index
+    size_type currentStartIndex = 0;
+    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+
+     // vector solution
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
     // init petsc vector associated to the block
@@ -256,9 +257,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("Heat","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
-    std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+    std::string suffixName = "";
+    if ( myFileFormat == "binary" )
+        std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
-                            _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"temperature"+suffixName)),
+                            _name="temperature"+suffixName,
                             _prefix=this->prefix(),
                             // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                             _initial_time=this->timeInitial(),
@@ -267,29 +273,24 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _restart=this->doRestart(),
                             _restart_path=this->restartPath(),
                             _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq() );
+    M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
 
-    M_bdfTemperature->setPathSave( (fs::path(this->rootRepository()) /
-                                    fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%this->timeStep() %M_bdfTemperature->bdfOrder()).str() ) ) ).string() );
-
-    // start or restart time step scheme
     if (!this->doRestart())
     {
-        // start time step
-        M_bdfTemperature->start(this->fieldTemperature());
         // up current time
-        this->updateTime( M_bdfTemperature->time() );
+        this->updateTime( M_bdfTemperature->timeInitial() );
     }
     else
     {
         // start time step
-        M_bdfTemperature->restart();
+        double tir = M_bdfTemperature->restart();
         // load a previous solution as current solution
         *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
         // up initial time
-        this->setTimeInitial( M_bdfTemperature->timeInitial() );
+        this->setTimeInitial( tir );
         // up current time
-        this->updateTime( M_bdfTemperature->time() );
+        this->updateTime( tir );
     }
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
@@ -324,8 +325,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "heat";
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
 
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -340,7 +340,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     //  heat flux measures
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
@@ -382,7 +382,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);
@@ -543,6 +543,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().parameters().setParameterValues( paramValues );
 
     this->thermalProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
@@ -588,12 +589,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
     // on topological faces
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    for ( auto const& faceWrap : markedfaces(mesh,listMarkedFacesTemperature ) )
+    if ( !listMarkedFacesTemperature.empty() )
     {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = XhTemperature->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            dofsWithValueImposedTemperature.insert( it->index() );
+        auto therange = markedfaces(mesh,listMarkedFacesTemperature );
+        auto dofsToAdd = XhTemperature->dofs( therange );
+        dofsWithValueImposedTemperature.insert( dofsToAdd.begin(), dofsToAdd.end() );
+        auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
     }
 }
 
@@ -711,7 +713,6 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
 {
     bool hasMeasure = false;
-    std::string modelName = "heat";
 
     // compute measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
@@ -730,7 +731,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         if ( !ptPos.hasExpression() )
@@ -765,7 +766,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
     auto fieldTuple = hana::make_tuple( std::make_pair( "temperature",this->fieldTemperaturePtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
+    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
         measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
@@ -776,7 +777,7 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
         }
     }
 
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
+    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
         measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
@@ -796,12 +797,26 @@ HEAT_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 }
 
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("Heat","startTimeStep", "start");
+
+    // start time step
+    if (!this->doRestart())
+        M_bdfTemperature->start(this->fieldTemperature());
+     // up current time
+    this->updateTime( M_bdfTemperature->time() );
+
+    this->log("Heat","startTimeStep", "finish");
+}
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
+HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
-    this->log("Heat","updateBdf", "start");
+    this->log("Heat","updateTimeStep", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
 
@@ -829,9 +844,9 @@ HEAT_CLASS_TEMPLATE_TYPE::updateBdf()
         }
     }
 
-    this->timerTool("TimeStepping").stop("updateBdf");
+    this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
-    this->log("Heat","updateBdf", "finish");
+    this->log("Heat","updateTimeStep", "finish");
 }
 
 } // end namespace FeelModels

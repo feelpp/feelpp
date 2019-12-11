@@ -28,10 +28,11 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
-#include <feel/feeldiscr/projector.hpp>
+//#include <feel/feeldiscr/projector.hpp>
 //#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/projectors.hpp>
-#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/operators.hpp>
+//#include <feel/feelfilters/exporter.hpp>
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
@@ -48,7 +49,6 @@ class Winslow : public ModelAlgebraic,
 public :
     typedef Winslow<MeshType,Order> self_type;
     typedef ModelAlgebraic super_type;
-
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
@@ -59,8 +59,8 @@ public :
     typedef typename super_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
     typedef typename super_type::vector_ptrtype vector_ptrtype;
 
-    typedef Preconditioner<double> preconditioner_type;
-    typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
+    //typedef Preconditioner<double> preconditioner_type;
+    //typedef std::shared_ptr<preconditioner_type> preconditioner_ptrtype;
 
 
     typedef bases<Lagrange<Order,Vectorial> > basis_type;
@@ -68,32 +68,37 @@ public :
     typedef std::shared_ptr<space_type> space_ptrtype;
     typedef typename space_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
-
+#if 0
     typedef bases<Lagrange<Order-1,Scalar> > basis_scal_m1_type;
     typedef FunctionSpace<mesh_type,basis_scal_m1_type> space_scal_m1_type;
     typedef std::shared_ptr<space_scal_m1_type> space_scal_m1_ptrtype;
     typedef typename space_scal_m1_type::element_type element_scal_m1_type;
-
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Scalar,Discontinuous> > > space_p0_type;
+#endif
+#if 0
+    typedef FunctionSpace<mesh_type, bases<Lagrange<1/*0*/,Scalar,Discontinuous> > > space_p0_type;
     typedef std::shared_ptr<space_p0_type> space_p0_ptrtype;
     typedef typename space_p0_type::element_type element_p0_type;
     typedef std::shared_ptr<element_p0_type> element_p0_ptrtype;
-
-    typedef FunctionSpace<mesh_type, bases<Lagrange<0,Tensor2,Discontinuous> > > space_p0_tensor2_type;
+#else
+    typedef typename  space_type::component_functionspace_type space_scalar_type;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
+#endif
+#if 0
+    typedef FunctionSpace<mesh_type, bases<Lagrange<1/*0*/,Tensor2,Discontinuous> > > space_p0_tensor2_type;
     typedef std::shared_ptr<space_p0_tensor2_type> space_p0_tensor2_ptrtype;
     typedef typename space_p0_tensor2_type::element_type element_p0_tensor2_type;
     typedef std::shared_ptr<element_p0_tensor2_type> element_p0_tensor2_ptrtype;
 
     typedef Projector<space_scal_m1_type,space_scal_m1_type> projector_scal_m1_type;
     typedef std::shared_ptr<projector_scal_m1_type> projector_scal_m1_ptrtype;
-
+#endif
     typedef std::map< std::string, std::vector<flag_type> > flagSet_type;
 
-    typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
-    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
+    //typedef Exporter<mesh_type,mesh_type::nOrder> exporter_type;
+    //typedef std::shared_ptr<exporter_type> exporter_ptrtype;
 
     Winslow( mesh_ptrtype mesh, std::string const& prefix="",
-             worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr(), bool useGhostEltFromExtendedStencil=false,
              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     Winslow( space_ptrtype const& space, std::string const& prefix="",
@@ -101,7 +106,7 @@ public :
 
     void init();
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
 
     backend_ptrtype const& backend() const { return M_backend; }
@@ -109,7 +114,7 @@ public :
     element_ptrtype const& displacement() const { return M_displacement; }
     element_ptrtype const& dispImposedOnBoundary() const { return M_dispImposedOnBoundary; }
     element_ptrtype const& identity() const { return M_identity; }
-    space_scal_m1_ptrtype const& functionSpaceScalM1() const { return M_XhScalM1; }
+    //space_scal_m1_ptrtype const& functionSpaceScalM1() const { return M_XhScalM1; }
 
     flagSet_type const& flagSet() const { return M_flagSet; }
     bool hasFlagSet( std::string const& key ) const { return ( M_flagSet.find(key) != M_flagSet.end() ); }
@@ -120,7 +125,7 @@ public :
         }
     void setflagSet( flagSet_type const & fl ) { M_flagSet=fl; }
 
-    projector_scal_m1_ptrtype /*const&*/ l2projector() const { return M_l2projector; }
+    //projector_scal_m1_ptrtype /*const&*/ l2projector() const { return M_l2projector; }
 
     template < typename elem_type, typename elem2_type >
     void generateALEMap( elem_type const & elem, elem2_type const & elem2 );
@@ -128,30 +133,27 @@ public :
 
     void solve();
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
-    void updateNewtonInitialGuess( vector_ptrtype& U ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
-private :
-    void updateMeshAdaptation();
-
-    void updateLinearPDE( DataUpdateLinear & data, mpl::int_<2> /**/ ) const;
-    void updateLinearPDE( DataUpdateLinear & data, mpl::int_<3> /**/ ) const;
-    void updateJacobian( DataUpdateJacobian & data, mpl::int_<2> /**/ ) const;
-    void updateJacobian( DataUpdateJacobian & data, mpl::int_<3> /**/ ) const;
-    void updateResidual( DataUpdateResidual & data, mpl::int_<2> /**/ ) const;
-    void updateResidual( DataUpdateResidual & data, mpl::int_<3> /**/ ) const;
-
+    template <typename MetricElementType>
+    void setMetricMeshAdaptation( MetricElementType const& m )
+        {
+            M_weightFunctionScalar->on(_range=elements(M_mesh),_expr=idv(m));
+        }
 
 private :
 
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
+    model_algebraic_factory_ptrtype M_algebraicFactoryMixedFormulation;
+    BlocksBaseVector<double> M_blockVectorSolution;
     vector_ptrtype M_vectorSolution;
     std::set<size_type> M_dofsWithValueImposed;
 
@@ -166,22 +168,22 @@ private :
     element_ptrtype M_dispImposedOnBoundary;
     element_ptrtype M_identity;
 
-    space_scal_m1_ptrtype M_XhScalM1;
-    space_p0_ptrtype M_XhScalP0Disc;
-
-    space_p0_tensor2_ptrtype M_XhTensor2P0Disc;
-
-    projector_scal_m1_ptrtype M_l2projector;
+    //space_scal_m1_ptrtype M_XhScalM1;
+    //space_p0_ptrtype M_XhScalP0Disc;
+    //projector_scal_m1_ptrtype M_l2projector;
 
     backend_ptrtype M_backendMetricDerivative;
     sparse_matrix_ptrtype M_matrixMetricDerivative;
     vector_ptrtype M_vectorMetricDerivative;
     element_ptrtype M_fieldMetricDerivative;
 
+    element_scalar_ptrtype M_weightFunctionScalar;
+#if 0
+    space_p0_tensor2_ptrtype M_XhTensor2P0Disc;
     bool M_useMeshAdapation, M_useMeshAdapationScalar;
-    element_p0_ptrtype M_weightFunctionScalar;
     element_p0_tensor2_ptrtype M_weightFunctionTensor2;
-    element_p0_ptrtype M_hMinRadius;
+    //element_p0_ptrtype M_hMinRadius;
+#endif
 
 
 }; // class Winslow
@@ -197,17 +199,14 @@ template < typename elem_type,typename elem2_type >
 void
 Winslow<MeshType,Order>::generateALEMap( elem_type const & elem,elem2_type const & elem2 )
 {
-    bool useGhostEltFromExtendedStencil = M_displacement->functionSpace()->dof()->buildDofTableMPIExtended() && M_displacement->mesh()->worldComm().localSize()>1;
-    EntityProcessType entityProcess = (useGhostEltFromExtendedStencil)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
-    M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh(),entityProcess),
+    M_dispImposedOnBoundary->on( _range=elements(M_displacement->mesh()),
                                  _expr=idv(elem) );
-
 
     // initial value with a previous solution (before solve)
     *M_displacement = *M_identity;
-    *M_displacement += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh(),entityProcess),vf::idv(elem2) );
+    *M_displacement += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh()),vf::idv(elem2) );
     *M_displacementOld = *M_identity;
-    *M_displacementOld += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh(),entityProcess),vf::idv(elem2) );
+    *M_displacementOld += vf::project(M_displacement->functionSpace(),elements(M_displacement->mesh()),vf::idv(elem2) );
 
     // solve winslow model
     this->solve();

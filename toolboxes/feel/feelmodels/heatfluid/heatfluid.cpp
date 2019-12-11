@@ -39,12 +39,12 @@ namespace FeelModels
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
-                                          bool buildMesh,
+                                          std::string const& keyword,
                                           worldcomm_ptr_t const& worldComm,
                                           std::string const& subPrefix,
                                           ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("HeatFluid","constructor", "start" );
 
@@ -60,10 +60,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // build mesh
-    if ( buildMesh )
-        this->initMesh();
     //-----------------------------------------------------------------------------//
     this->log("HeatFluid","constructor", "finish");
 }
@@ -166,14 +162,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
-    M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), false, this->worldCommPtr(),
+    if ( !M_mesh )
+        this->initMesh();
+
+    M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                                     this->subPrefix(), this->repository() );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->init( false );
 
-    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), false, this->worldCommPtr(),
+    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
                                                        this->subPrefix(), this->repository() );
     if ( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
@@ -222,8 +221,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int nBlock = nBlockFluid + nBlockHeat;
     M_blockVectorSolution.resize( nBlock );
     int indexBlock=0;
+    int numberOfBlockSpaceFluid = 0;
     for ( int k=0;k<nBlockFluid ;++k )
+    {
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionFluid(k);
+        numberOfBlockSpaceFluid += blockVectorSolutionFluid(k)->map().numberOfDofIdToContainerId();
+    }
     indexBlock += nBlockFluid;
     for ( int k=0;k<nBlockHeat ;++k )
         M_blockVectorSolution(indexBlock+k) = blockVectorSolutionHeat(k);
@@ -233,7 +236,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     size_type currentStartBlockSpaceIndex = 0;
     this->setStartSubBlockSpaceIndex( "fluid", currentStartBlockSpaceIndex );
-    currentStartBlockSpaceIndex += blockVectorSolutionFluid.vectorMonolithic()->map().numberOfDofIdToContainerId();
+    currentStartBlockSpaceIndex += numberOfBlockSpaceFluid;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
 
     // algebraic solver
@@ -258,10 +261,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("HeatFluid","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::string modelName = "heat-fluid";
-    auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
-    M_postProcessFieldExportedHeatt = M_heatModel->postProcessFieldExported( exportsFields, "heat" );
-    M_postProcessFieldExportedFluid = M_fluidModel->postProcessFieldExported( exportsFields, "fluid" );
+    auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
+    M_postProcessFieldExportedHeatt = M_heatModel->postProcessFieldExported( exportsFields, M_heatModel->keyword() );
+    M_postProcessFieldExportedFluid = M_fluidModel->postProcessFieldExported( exportsFields, M_fluidModel->keyword() );
 
     if ( !M_postProcessFieldExportedHeatt.empty() || !M_postProcessFieldExportedFluid.empty() )
     {
@@ -337,11 +339,20 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
+HEATFLUID_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->heatModel()->startTimeStep();
+    this->fluidModel()->startTimeStep();
+    this->updateTime( this->fluidModel()->time() );
+}
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
-    this->updateTime( this->timeStepBase()->time() );
+    this->updateTime( this->fluidModel()->time() );
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -558,11 +569,11 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( vector_ptrtype& U ) const
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("HeatFluid","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( U );
-    M_fluidModel->updateNewtonInitialGuess( U );
+    M_heatModel->updateNewtonInitialGuess( data );
+    M_fluidModel->updateNewtonInitialGuess( data );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -638,6 +649,42 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     M_heatModel->updateJacobianStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(u),range,data );
                 else
                     CHECK( false ) << "TODO";
+
+                auto rhocp = cst(rhoHeatCapacity.value());
+                auto tau = idv( M_heatModel->stabilizationGLSParameter()->fieldTauPtr() );
+#if 0
+                if ( true ) // order==1 or supg
+                {
+                    auto stab_test = rhocp*grad(t)*idv(u);
+                    auto stab_residual_bilinear = rhocp*gradv(t)*idt(u);
+                    form2( _test=XhT,_trial=XhVP,_matrix=J,
+                           _rowstart=M_heatModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                         integrate( _range=range,
+                                    _expr=tau*stab_residual_bilinear*stab_test,
+                                    _geomap=this->geomap() );
+                    
+                    auto stab_test2 = rhocp*gradv(t)*idt(u);
+                    form2( _test=XhVP,_trial=XhVP,_matrix=J,
+                           _rowstart=M_fluidModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr=tau*stab_residual_bilinear*stab_test2,
+                                   _geomap=this->geomap() );
+                    auto stab_residual_bilinear2 = rhocp*(idt(t)*M_heatModel->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(t)*idv(u) );
+                    form2( _test=XhVP,_trial=XhT,_matrix=J,
+                           _rowstart=M_fluidModel->rowStartInMatrix(),
+                           _colstart=M_heatModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr=tau*stab_residual_bilinear2*stab_test2,
+                                   _geomap=this->geomap() );
+                    
+                }
+                else
+                {
+
+                }
+#endif
             }
 
             if ( M_fluidModel->stabilizationGLS() )

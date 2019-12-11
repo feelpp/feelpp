@@ -573,19 +573,17 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
                   << "face_type::numFaces = " << face_type::numFaces << ", fe_type::nDofPerFace = " << fe_type::nDofPerFace << "\n";
-
+#if 0
         size_type nbFaceDof = invalid_size_type_value;
-
         if ( !fe_type::is_modal )
             nbFaceDof = ( face_type::numVertices * fe_type::nDofPerVertex +
                           face_type::numEdges * fe_type::nDofPerEdge +
                           face_type::numFaces * fe_type::nDofPerFace );
         else
             nbFaceDof = face_type::numVertices * fe_type::nDofPerVertex;
-
         DVLOG(2)  << "nbFaceDof = " << nbFaceDof << "\n";
         //const size_type nbFaceDof = __fe->boundaryFE()->points().size2();
-
+#endif
         int compDofShift = (is_comp_space)? ((int)M_u.component()) : 0;
         auto const& trialDofIdToContainerId = __form.dofIdToContainerIdTrial();
 
@@ -623,7 +621,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                 continue;
             }
 
-            uint16_type __face_id = theface.pos_first();
+            __face_id = theface.pos_first();
             uint16_type faceConnectionId = 0;
             if ( hasMeshSupportPartial )
             {
@@ -656,11 +654,12 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             t_expr_type expr( M_expr, mapgmc );
             expr.update( mapgmc );
 
+#if 0
             std::pair<size_type,size_type> range_dof( std::make_pair( M_u.start(),
                                                                       M_u.functionSpace()->nDof() ) );
             DVLOG(2)  << "[integratoron] dof start = " << range_dof.first << "\n";
             DVLOG(2)  << "[integratoron] dof range = " << range_dof.second << "\n";
-
+#endif
             //use interpolant
             __fe->faceInterpolate( expr, IhLoc );
 
@@ -775,10 +774,26 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         size_type eid = edgeForInit.elements().begin()->first;
         uint16_type edgeid_in_element = edgeForInit.elements().begin()->second;
         auto const& elt = mesh->element( eid );
+#if 0
         //auto geopc = gm->preComputeOnEdges([&__fe]( int f ){ return __fe->edgePoints(f); } );
         auto geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
         // TODO: create context for edge associated to element
         auto ctx =  gm->template context<context>( elt, geopc);
+#else
+        typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+        typedef typename geoelement_type::template PermutationSubEntity<2>::type permutation_type;
+        typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
+        std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numEdges );
+        for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
+        {
+            for ( permutation_type __p( permutation_type::IDENTITY ); __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                geopc[__f][__p] = gm->preCompute( __fe->edgePoints(__f) );
+            }
+        }
+        auto ctx = gm->template context<context,2>( elt, geopc, edgeid_in_element );
+#endif
+
         auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
         auto IhLoc = __fe->edgeLocalInterpolant();
 
@@ -819,10 +834,10 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     continue;
 
                 auto const& elt = mesh->element( eid );
-                geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
+                //geopc = gm->preCompute( __fe->edgePoints(edgeid_in_element) );
                 ////geopc = gm->preComputeAtEdges( __fe->edgePoints(ptid_in_element) );
                 //ctx->update( elt, edgeid_in_element, geopc );
-                ctx->update( elt, geopc );
+                ctx->update( elt, edgeid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->edgeInterpolate( expr_evaluator, IhLoc );
 
@@ -957,8 +972,21 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         uint16_type ptid_in_element = thept.elements().begin()->second;
 
         auto const& elt = mesh->element( eid );
-        auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
-        auto ctx = gm->template context<context>( elt, geopc );
+        //auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+        //auto ctx = gm->template context<context>( elt, geopc );
+        typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
+        typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim>::type permutation_type;
+        typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
+        std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numVertices );
+        for ( uint16_type __f = 0; __f < geoelement_type::numVertices; ++__f )
+        {
+            for ( permutation_type __p( permutation_type::IDENTITY ); __p < permutation_type( permutation_type::N_PERMUTATIONS ); ++__p )
+            {
+                geopc[__f][__p] = gm->preCompute( __fe->vertexPoints(__f) );
+            }
+        }
+        auto ctx = gm->template context<context,geoelement_type::nDim>( elt, geopc, ptid_in_element );
+
         auto expr_evaluator = M_expr.evaluator( mapgmc(ctx) );
         auto IhLoc = __fe->vertexLocalInterpolant();
 
@@ -995,8 +1023,9 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
                     continue;
 
                 auto const& elt = mesh->element( eid );
-                geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
-                ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                //geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
+                //ctx->update( elt, ptid_in_element, geopc, mpl::int_<0>() );
+                ctx->update( elt, ptid_in_element );
                 expr_evaluator.update( mapgmc( ctx ) );
                 __fe->vertexInterpolate( expr_evaluator, IhLoc );
 

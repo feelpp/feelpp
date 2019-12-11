@@ -272,6 +272,55 @@ StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::stri
 #endif
 }
 
+
+#if 0 // allow to print progress
+
+#define TIME_IN_US 1  
+#define TIMETYPE curl_off_t
+#define TIMEOPT CURLINFO_TOTAL_TIME_T
+#define MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL     3000000
+#define STOP_DOWNLOAD_AFTER_THIS_MANY_BYTES         6000
+struct myprogress {
+  TIMETYPE lastruntime; /* type depends on version, see above */ 
+  CURL *curl;
+};
+ 
+/* this is how the CURLOPT_XFERINFOFUNCTION callback works */ 
+static int xferinfo(void *p,
+                    curl_off_t dltotal, curl_off_t dlnow,
+                    curl_off_t ultotal, curl_off_t ulnow)
+{
+  struct myprogress *myp = (struct myprogress *)p;
+  CURL *curl = myp->curl;
+  TIMETYPE curtime = 0;
+ 
+  curl_easy_getinfo(curl, TIMEOPT, &curtime);
+ 
+  /* under certain circumstances it may be desirable for certain functionality
+     to only run every N seconds, in order to do this the transaction time can
+     be used */ 
+  if((curtime - myp->lastruntime) >= MINIMAL_PROGRESS_FUNCTIONALITY_INTERVAL) {
+    myp->lastruntime = curtime;
+#ifdef TIME_IN_US
+    fprintf(stderr, "TOTAL TIME: %" CURL_FORMAT_CURL_OFF_T ".%06ld\r\n",
+            (curtime / 1000000), (long)(curtime % 1000000));
+#else
+    fprintf(stderr, "TOTAL TIME: %f \r\n", curtime);
+#endif
+  }
+ 
+  fprintf(stderr, "UP: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T
+          "  DOWN: %" CURL_FORMAT_CURL_OFF_T " of %" CURL_FORMAT_CURL_OFF_T
+          "\r\n",
+          ulnow, ultotal, dlnow, dltotal);
+ 
+  if(dlnow > STOP_DOWNLOAD_AFTER_THIS_MANY_BYTES)
+    return 1;
+  return 0;
+}
+
+#endif
+
 StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::string> const& headers, std::istream & ifile, long fsize, std::ostream & ofile )
 {
 #if defined(FEELPP_HAS_LIBCURL)
@@ -308,7 +357,22 @@ StatusRequestHTTP requestHTTPPOST( std::string const& url, std::vector<std::stri
         list = curl_slist_append(list, header.c_str() );
     res = curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, list);
     if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
-
+#if 0
+    res = curl_easy_setopt(curl_handle, CURLOPT_TIMEOUT, 500);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+    res = curl_easy_setopt(curl_handle, CURLOPT_CONNECTTIMEOUT, 500);
+    if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
+#endif
+#if 0
+    struct myprogress prog;
+    prog.lastruntime = 0;
+    prog.curl = curl_handle;
+    curl_easy_setopt(curl_handle, CURLOPT_XFERINFOFUNCTION, xferinfo);
+    curl_easy_setopt(curl_handle, CURLOPT_XFERINFODATA, &prog);
+    //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, older_progress);
+    curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 0L);
+    curl_easy_setopt(curl_handle, CURLOPT_INFILESIZE_LARGE, fsize);
+#endif
     /* send all data to this function  */
     res = curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
     if ( res != CURLE_OK ) return StatusRequestHTTP( false, curl_easy_strerror( res ) );
@@ -1448,8 +1512,12 @@ RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string con
     CHECK( !token.empty() ) << "a token is required for upload";
     headersFileInfo.push_back( "Girder-Token: "+token );
 
+    long limitFileSizePosted = 67108864;
+    long fsizePosted = std::min( fsize, limitFileSizePosted );
+    headersFileInfo.push_back( (boost::format("Content-Length: %1%")%fsizePosted ).str() );
+
     std::ostringstream omemfile;
-    StatusRequestHTTP status = requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsize, omemfile );
+    StatusRequestHTTP status = requestHTTPPOST( urlFileUpload, headersFileInfo, imemfile, fsizePosted, omemfile );
     if ( !status.success() )
     {
         std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
@@ -1467,6 +1535,55 @@ RemoteData::Girder::uploadFileImpl( std::string const& filepath, std::string con
     std::string fileIdCreated;
     if ( auto it = pt.get_optional<std::string>("_id") )
         fileIdCreated = *it;
+
+
+    long fileSizeStayToUpload = fsize - fsizePosted;
+    if ( fileSizeStayToUpload > 0 )
+    {
+        std::vector<std::pair<long,long>> chunkDivisions;
+        while ( fileSizeStayToUpload > 0 )
+        {
+            long fsizeToPostInChunk = std::min( fileSizeStayToUpload,limitFileSizePosted );
+            chunkDivisions.push_back( std::make_pair(fsizePosted,fsizeToPostInChunk) );
+            fileSizeStayToUpload -= fsizeToPostInChunk;
+            fsizePosted += fsizeToPostInChunk;
+        }
+
+        for ( auto const& chunkDivision : chunkDivisions )
+        {
+            long fileOffset = chunkDivision.first;
+            std::string fileOffsetStr = (boost::format("%1%")%fileOffset).str();
+            long fsizeToPostInChunk = chunkDivision.second;
+            std::string urlFileChunk = M_url+"/api/v1/file/chunk?uploadId="+fileIdCreated+"&offset=" + fileOffsetStr;
+
+            imemfile.seekg(fileOffset, imemfile.beg);
+
+            std::vector<std::string> headersFileChunk;
+            headersFileChunk.push_back("Accept: application/json");
+            headersFileChunk.push_back("Content-Type: application/form-data");
+            headersFileChunk.push_back( "Girder-Token: "+token );
+            headersFileChunk.push_back( (boost::format("Content-Length: %1%")%fsizeToPostInChunk ).str() );
+
+            std::ostringstream omemfileChunk;
+            status = requestHTTPPOST( urlFileChunk, headersFileChunk, imemfile, fsizeToPostInChunk, omemfileChunk );
+            if ( !status.success() )
+            {
+                std::cout << "Girder error in requestHTTPPOST : " << status.msg() << "\n";
+                return {};
+            }
+            // convert to property tree
+            std::istringstream istrChunk( omemfileChunk.str() );
+            pt::ptree ptChunk;
+            pt::read_json(istrChunk, ptChunk);
+            if ( status.code() != 200 )
+            {
+                std::cout << Girder::errorMessage( ptChunk,"upload file fails", status.code() ) << "\n";
+                return {};
+            }
+        }
+    }
+
+
     return fileIdCreated;
 }
 

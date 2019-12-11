@@ -56,10 +56,37 @@ public :
 
     typedef typename fluid_type::mesh_type mesh_fluid_type;
     typedef typename solid_type::mesh_type mesh_solid_type;
+    typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
     typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
+
+    //___________________________________________________________________________________//
+    // normal stress from fluid into solid model
+    static const uint16_type nOrder_solid_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    typedef bases<Lagrange< nOrder_solid_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid_normalstressfromfluid_type;
+    //typedef FunctionSpace<mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
+    typedef FunctionSpace<trace_mesh_solid_type,basis_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_type;
+    //typedef typename solid_type::space_normal_stress_type space_solid_normalstressfromfluid_type;
+    typedef std::shared_ptr<space_solid_normalstressfromfluid_type> space_solid_normalstressfromfluid_ptrtype;
+    typedef typename space_solid_normalstressfromfluid_type::element_type element_solid_normalstressfromfluid_type;
+    typedef std::shared_ptr<element_solid_normalstressfromfluid_type> element_solid_normalstressfromfluid_ptrtype;
+    //___________________________________________________________________________________//
+    // normal stress from fluid into solid 1dreduced model
+    static const uint16_type nOrder_solid1dReduced_normalStressFromFluid = fluid_type::space_normalstress_type::basis_type::nOrder;
+    typedef bases<Lagrange< nOrder_solid1dReduced_normalStressFromFluid, Vectorial,Discontinuous,PointSetFekete>> basis_solid1dreduced_normalstressfromfluid_vect_type;
+    typedef FunctionSpace<mesh_solid_1dreduced_type, basis_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_type;
+    typedef std::shared_ptr<space_solid1dreduced_normalstressfromfluid_vect_type> space_solid1dreduced_normalstressfromfluid_vect_ptrtype;
+    typedef typename space_solid1dreduced_normalstressfromfluid_vect_type::element_type element_solid1dreduced_normalstressfromfluid_vect_type;
+    typedef std::shared_ptr<element_solid1dreduced_normalstressfromfluid_vect_type> element_solid1dreduced_normalstressfromfluid_vect_ptrtype;
+
+    typedef typename space_solid1dreduced_normalstressfromfluid_vect_type::component_functionspace_type space_solid1dreduced_normalstressfromfluid_scal_type;
+    typedef typename space_solid1dreduced_normalstressfromfluid_vect_type::component_functionspace_ptrtype space_solid1dreduced_normalstressfromfluid_scal_ptrtype;
+    typedef typename space_solid1dreduced_normalstressfromfluid_scal_type::element_type element_solid1dreduced_normalstressfromfluid_scal_type;
+    typedef std::shared_ptr<element_solid1dreduced_normalstressfromfluid_scal_type> element_solid1dreduced_normalstressfromfluid_scal_ptrtype;
+    //___________________________________________________________________________________//
 
     typedef faces_reference_wrapper_t<mesh_fluid_type> range_fluid_face_type;
     typedef faces_reference_wrapper_t<mesh_solid_type> range_solid_face_type;
+    typedef elements_reference_wrapper_t<trace_mesh_solid_type> range_solid_trace_elt_type;
     typedef elements_reference_wrapper_t<mesh_solid_1dreduced_type> range_solid_elt_1dreduced_type;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -132,18 +159,18 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element stress with interaction 2d/2d or 3d/3d
-    typedef typename fluid_type::space_stress_type space_fluid_stress_type;
-    typedef typename fluid_type::element_stress_type element_fluid_stress_type;
+    typedef typename fluid_type::space_normalstress_type space_fluid_stress_type;
+    typedef typename fluid_type::element_normalstress_type element_fluid_stress_type;
 
     typedef typename solid_type::space_normal_stress_type space_struct_stress_type;
-    typedef typename solid_type::element_normal_stress_type element_struct_stress_type;
+    //typedef typename solid_type::element_normal_stress_type element_struct_stress_type;
 
     //operator interpolation for this stress
-    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_type,
-                                  range_solid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_stress_type;
+    typedef OperatorInterpolation<space_fluid_stress_type, space_solid_normalstressfromfluid_type,
+                                  range_solid_trace_elt_type/*range_solid_face_type*/,InterpolationNonConforme> op_interpolation2dTo2dnonconf_stress_type;
     typedef std::shared_ptr<op_interpolation2dTo2dnonconf_stress_type> op_interpolation2dTo2dnonconf_stress_ptrtype;
-    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_type,
-                                  range_solid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_stress_type;
+    typedef OperatorInterpolation<space_fluid_stress_type, space_solid_normalstressfromfluid_type,
+                                  range_solid_trace_elt_type/*range_solid_face_type*/,InterpolationConforme> op_interpolation2dTo2dconf_stress_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_stress_type> op_interpolation2dTo2dconf_stress_ptrtype;
 
     // NEW ( robin-neumann)
@@ -158,13 +185,13 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element stress with interaction 2d/1d
-    typedef typename solid_type::space_stress_vect_1dreduced_type space_struct_stress_vect_1dreduced_type;
-    typedef typename solid_type::element_stress_vect_1dreduced_type element_struct_stress_vect_1dreduced_type;
+    //typedef typename solid_type::space_stress_vect_1dreduced_type space_struct_stress_vect_1dreduced_type;
+    //typedef typename solid_type::element_stress_vect_1dreduced_type element_struct_stress_vect_1dreduced_type;
     //operator interpolation for this stress
-    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_vect_1dreduced_type,
+    typedef OperatorInterpolation<space_fluid_stress_type, space_solid1dreduced_normalstressfromfluid_vect_type,
                                   range_solid_elt_1dreduced_type,InterpolationNonConforme> op_interpolation1dToNdnonconf_stress_type;
     typedef std::shared_ptr<op_interpolation1dToNdnonconf_stress_type> op_interpolation1dToNdnonconf_stress_ptrtype;
-    typedef OperatorInterpolation<space_fluid_stress_type, space_struct_stress_vect_1dreduced_type,
+    typedef OperatorInterpolation<space_fluid_stress_type, space_solid1dreduced_normalstressfromfluid_vect_type,
                                   range_solid_elt_1dreduced_type,InterpolationConforme> op_interpolation1dToNdconf_stress_type;
     typedef std::shared_ptr<op_interpolation1dToNdconf_stress_type> op_interpolation1dToNdconf_stress_ptrtype;
     //___________________________________________________________________________________//
@@ -210,7 +237,7 @@ public :
 
     //---------------------------------------------------------------------------------------------------------//
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //---------------------------------------------------------------------------------------------------------//
 
@@ -234,6 +261,9 @@ private :
     void transfertStress();
     void transfertVelocity( bool useExtrap=false);
     void transfertRobinNeumannGeneralizedS2F( int iterationFSI );
+    void transfertRobinNeumannGeneralizedS2F_BdfNewmark( int iterationFSI );
+    void transfertRobinNeumannGeneralizedS2F_BdfBdf( int iterationFSI );
+
 
     void transfertStressS2F();
     void transfertVelocityF2S( int iterationFSI, bool _useExtrapolation );
@@ -261,6 +291,7 @@ public :
     std::shared_ptr<TSBase> timeStepBase() const { return this->fluidTimeStepBase(); }
     std::shared_ptr<TSBase> fluidTimeStepBase() const { return this->fluidModel()->timeStepBase(); }
     std::shared_ptr<TSBase> solidTimeStepBase() const { return this->solidModel()->timeStepBase(); }
+    void startTimeStep();
     void updateTimeStep();
 
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -277,9 +308,11 @@ public :
     void updateLinearPDE_Solid( DataUpdateLinear & data ) const;
     void updateJacobian_Solid( DataUpdateJacobian & data ) const;
     void updateResidual_Solid( DataUpdateResidual & data ) const;
-    //void updateLinearPDEStrongDirichletBC_Fluid( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const;
+    void updateLinearPDEDofElimination_Fluid( DataUpdateLinear & data ) const;
+    void updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess & data ) const;
     //void updateJacobianStrongDirichletBC_Fluid( sparse_matrix_ptrtype& J,vector_ptrtype& RBis ) const;
 
+    void updateLinearPDE_Solid1dReduced( DataUpdateLinear & data ) const;
 
 private :
     void updateBackendOptimisation( int iterationFSI, double lastErrorRelative );
@@ -324,6 +357,7 @@ private :
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
     bool M_coulingRNG_usePrecomputeBC;
+    std::string M_coulingRNG_strategyTimeStepCompatibility;
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;
     op_interpolation2dTo2dconf_disp_ptrtype M_opDisp2dTo2dconf;
@@ -351,6 +385,24 @@ private :
 
     op_f2s_interpolation2dTo2dconf_velocity_ptrtype M_opVelocity2dTo2dconfF2S;
 
+
+    // normal stress of fluid at fsi interface and computed on reference domain
+    typename fluid_type::space_normalstress_ptrtype M_spaceNormalStress_fluid;
+    typename fluid_type::element_normalstress_ptrtype M_fieldNormalStressRefMesh_fluid;
+
+    // normal stress from fluid into solid model
+    space_solid_normalstressfromfluid_ptrtype M_spaceNormalStressFromFluid_solid;
+    element_solid_normalstressfromfluid_ptrtype M_fieldNormalStressFromFluid_solid;
+    typename solid_type::element_vectorial_ptrtype M_fieldVelocityInterfaceFromFluid_solid;
+    element_solid_normalstressfromfluid_ptrtype fieldNormalStressFromFluidPtr_solid() const { return M_fieldNormalStressFromFluid_solid; }
+    typename solid_type::element_vectorial_ptrtype fieldVelocityInterfaceFromFluidPtr_solid() const { return M_fieldVelocityInterfaceFromFluid_solid; }
+    element_solid_normalstressfromfluid_type const& fieldNormalStressFromFluid_solid() const { return *M_fieldNormalStressFromFluid_solid; }
+    typename solid_type::element_vectorial_type const& fieldVelocityInterfaceFromFluid_solid() const { return *M_fieldVelocityInterfaceFromFluid_solid; }
+
+    // normal stress from fluid into solid 1dreduced model
+    space_solid1dreduced_normalstressfromfluid_vect_ptrtype M_spaceNormalStressFromFluid_solid1dReduced;
+    element_solid1dreduced_normalstressfromfluid_scal_ptrtype M_fieldNormalStressFromFluidScalar_solid1dReduced;
+    element_solid1dreduced_normalstressfromfluid_vect_ptrtype  M_fieldNormalStressFromFluidVectorial_solid1dReduced;
 };
 
 } // namespace FeelModels

@@ -6,10 +6,11 @@ steps:
      ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
-   continue_on_failure: true
+   continue_on_failure: false
  - plugins:
-     junit-annotate#v1.2.0:
+     junit-annotate#v1.6.0:
        artifacts: Testing/junit-*.xml
+       fail-build-on-error: true
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
    name: ":docker: push images to the hub :rocket:"
@@ -18,7 +19,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create feelpp :singularity: containers"
+   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:
@@ -28,7 +29,7 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   branches: "develop"
+   branches: ["develop","cpp17"]
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
@@ -46,7 +47,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create feelpp :singularity: containers"
+   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:
@@ -66,7 +67,7 @@ steps:
      ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
-   label: ":package: create Feel++ :singularity: containers"
+   label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
    async: true
    build:
      env:

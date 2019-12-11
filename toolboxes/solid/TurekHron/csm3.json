@@ -38,7 +38,7 @@
             },
             "VolumicForces":
             {
-                "":
+                "beam":
                 {
                     "expr":"{0,-gravity*1e3}:gravity" 
                 }
@@ -49,7 +49,7 @@
     {
         "Exports":
         {
-            "fields":["displacement"]
+            "fields":["displacement","velocity","pid"]
         },
         "Measures":
         {

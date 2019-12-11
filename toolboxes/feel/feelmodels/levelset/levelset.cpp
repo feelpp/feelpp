@@ -1,12 +1,12 @@
 #include <feel/feelmodels/levelset/levelset.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
-#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
 
 #include <feel/feelmodels/levelset/cauchygreentensorexpr.hpp>
 #include <feel/feelmodels/levelset/cauchygreeninvariantsexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
+//#include <feel/feelmodels/levelset/levelsetcurvatureexpr.hpp>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
@@ -31,7 +31,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
-    M_iterSinceReinit(0)
+    M_iterSinceRedistanciation(0)
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -40,9 +40,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
-    // Load initial value
-    // Load boundary conditions
-    this->loadConfigBCFile();
     // Load post-process
     this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
@@ -92,6 +89,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         // Set other initial values
         this->initInitialValues();
     }
+    // Init boundary conditions
+    this->initBoundaryConditions();
     // Init advection toolbox
     M_advectionToolbox->init();
     M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
@@ -103,32 +102,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
         this->restartPostProcess();
     }
 
-    // Init iterSinceReinit
+    // Init iterSinceRedistanciation
     if( this->doRestart() )
     {
-        // Reload saved iterSinceReinit data
-        auto iterSinceReinitPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
-        if( fs::exists( iterSinceReinitPath ) )
+        // Reload saved iterSinceRedistanciation data
+        auto iterSinceRedistanciationPath = fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") );
+        if( fs::exists( iterSinceRedistanciationPath ) )
         {
-            fs::ifstream ifs( iterSinceReinitPath );
+            fs::ifstream ifs( iterSinceRedistanciationPath );
             boost::archive::text_iarchive ia( ifs );
-            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
-            M_iterSinceReinit = M_vecIterSinceReinit.back();
+            ia >> BOOST_SERIALIZATION_NVP( M_vecIterSinceRedistanciation );
+            M_iterSinceRedistanciation = M_vecIterSinceRedistanciation.back();
         }
         else
         {
-            // If iterSinceReinit not found, we assume that last step reinitialized by default
-            M_iterSinceReinit = 0;
+            // If iterSinceRedistanciation not found, we assume that last step redistanciated by default
+            M_iterSinceRedistanciation = 0;
         }
     }
     else
     {
-            M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+            M_vecIterSinceRedistanciation.push_back( M_iterSinceRedistanciation );
     }
-    // Adjust BDF order with iterSinceReinit
-    if( M_iterSinceReinit < this->timeOrder() )
+    // Adjust BDF order with iterSinceRedistanciation
+    if( M_iterSinceRedistanciation < this->timeOrder() )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 
     this->log("LevelSet", "init", "finish");
@@ -145,7 +144,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
     if( M_useGradientAugmented )
     {
         // Initialize modGradPhi
-        if( this->reinitInitialValue() )
+        if( this->redistInitialValue() )
         {
             M_modGradPhiAdvection->fieldSolutionPtr()->setConstant(1.);
         }
@@ -189,7 +188,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::restartPostProcess()
 {
     if ( this->restartPath().empty() )
     {
-        if ( M_exporter->doExport() ) this->exporter()->restart( this->timeInitial() );
+        if ( this->exporter()->doExport() ) this->exporter()->restart( this->timeInitial() );
     }
 
     this->modelProperties().parameters().updateParameterValues();
@@ -350,14 +349,56 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
+LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
     M_bcMarkersInflow.clear();
+    M_levelsetParticleInjectors.clear();
 
+    // Inflow BC
     for( std::string const& bcMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "inflow" ) )
     {
         if( std::find(M_bcMarkersInflow.begin(), M_bcMarkersInflow.end(), bcMarker) == M_bcMarkersInflow.end() )
             M_bcMarkersInflow.push_back( bcMarker );
+    }
+
+    // Particle injectors
+    for( std::string const& injectorMarker: this->modelProperties().boundaryConditions().markers( this->prefix(), "ParticleInjector" ) )
+    {
+        auto particleInjector = std::make_shared<levelsetparticleinjector_type>( this->shared_from_this(), markedelements( this->mesh(), injectorMarker) );
+
+        // Injector method
+        std::string particleInjectorMethod = "fixed_position"; // default value
+        std::pair<bool, std::string> particleInjectorMethodRead = this->modelProperties().boundaryConditions().sparam( this->prefix(), "ParticleInjector", injectorMarker, "method" );
+        if( particleInjectorMethodRead.first )
+        {
+            particleInjectorMethod = particleInjectorMethodRead.second;
+        }
+        particleInjector->setParticleInjectionMethod( particleInjectorMethod );
+
+        // Injector particles
+        auto const& injectorPTree = this->modelProperties().pTree().get_child( pt::ptree::path_type( "BoundaryConditions/"+this->prefix()+"/ParticleInjector/"+injectorMarker, '/' ) );
+        if( auto const& injectorParticlesPTree = injectorPTree.get_child_optional( "particles" ) )
+        {
+            // read all particles with form "id": { "shape":[shape], [params]... }
+            for( auto const& part: *injectorParticlesPTree )
+            {
+                std::string partId = part.first;
+                std::string partShape = part.second.template get<std::string>( "shape" );
+                parameter_map partParams = particleInjector->levelsetParticleShapes()->readShapeParams( partShape, part.second );
+                particleInjector->addParticle( partId, partShape, partParams );
+            }
+        }
+
+        // Injector particle number
+        int nParticles = 1; // default
+        std::pair<bool, int> nParticlesRead = this->modelProperties().boundaryConditions().iparam( this->prefix(), "ParticleInjector", injectorMarker, "nparticles" );
+        if( nParticlesRead.first )
+        {
+            nParticles = nParticlesRead.second;
+        }
+        particleInjector->setNParticles( nParticles );
+
+        M_levelsetParticleInjectors.push_back( particleInjector );
     }
 }
 
@@ -429,53 +470,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::markerCrossedElements() const
     return M_markerCrossedElements;
 }
 
-//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-//typename LEVELSET_CLASS_TEMPLATE_TYPE::range_elements_type
-//LEVELSET_CLASS_TEMPLATE_TYPE::interfaceElements() const
-//{
-    //if( this->M_doUpdateInterfaceElements )
-    //{
-        //mesh_ptrtype const& mesh = this->mesh();
-
-        //auto it_elt = mesh->beginOrderedElement();
-        //auto en_elt = mesh->endOrderedElement();
-
-        //const rank_type pid = mesh->worldCommElements().localRank();
-        //const int ndofv = space_levelset_type::fe_type::nDof;
-
-        //double thickness = 2*this->thicknessInterface();
-        //elements_reference_wrapper_ptrtype interfaceElts( new elements_reference_wrapper_type );
-
-        //for (; it_elt!=en_elt; it_elt++)
-        //{
-            //auto const& elt = boost::unwrap_ref( *it_elt );
-            //if ( elt.processId() != pid )
-                //continue;
-            //bool mark_elt = false;
-            //for (int j=0; j<ndofv; j++)
-            //{
-                //if ( std::abs( this->phi()->localToGlobal(elt.id(), j, 0) ) <= thickness )
-                //{
-                    //mark_elt = true;
-                    //break; //don't need to do the others dof
-                //}
-            //}
-            //if( mark_elt )
-                //interfaceElts->push_back( boost::cref(elt) );
-        //}
-
-        //M_interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                //interfaceElts->begin(),
-                //interfaceElts->end(),
-                //interfaceElts
-                //);
-
-        //M_doUpdateInterfaceElements = false;
-    //}
-
-    //return M_interfaceElements;
-//}
-
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
@@ -542,7 +536,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
 
     // Solve phi
     M_advectionToolbox->solve();
-    this->setPhi( M_advectionToolbox->fieldSolutionPtr() );
+    this->setPhi( M_advectionToolbox->fieldSolutionPtr(), false );
 
     if( M_useGradientAugmented )
     {
@@ -625,6 +619,17 @@ LEVELSET_CLASS_TEMPLATE_TYPE::solve()
         this->updateInterfaceQuantities();
     }
 
+    if( !M_levelsetParticleInjectors.empty() )
+    {
+        auto const& phi = this->phi();
+        // Inject particles
+        for( auto const& particleInjector: M_levelsetParticleInjectors )
+        {
+            *phi = particleInjector->inject( *phi );
+            this->updateInterfaceQuantities();
+        }
+    }
+
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("LevelSet","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
@@ -635,12 +640,12 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
     double current_time = this->timeStepBDF()->time();
 
-    if( this->hasReinitialized() )
-        M_iterSinceReinit = 0;
+    if( this->hasRedistanciated() )
+        M_iterSinceRedistanciation = 0;
     else
-        ++M_iterSinceReinit;
+        ++M_iterSinceRedistanciation;
 
-    M_vecIterSinceReinit.push_back( M_iterSinceReinit );
+    M_vecIterSinceRedistanciation.push_back( M_iterSinceRedistanciation );
 
     this->saveCurrent();
 
@@ -657,15 +662,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->updateTime( M_advectionToolbox->currentTime() );
 
-    if( M_iterSinceReinit < this->timeOrder() )
+    if( M_iterSinceRedistanciation < this->timeOrder() )
     {
-        this->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+        this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useGradientAugmented )
-            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useStretchAugmented )
-            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useCauchyAugmented )
-            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceReinit + 1 );
+            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 }
 
@@ -830,15 +835,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 }
 
 //----------------------------------------------------------------------------//
-// Reinitialization
+// Redistanciation
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
+LEVELSET_CLASS_TEMPLATE_TYPE::redistanciate()
 { 
-    this->log("LevelSet", "reinitialize", "start");
-    this->timerTool("Reinit").start();
+    this->log("LevelSet", "redistanciate", "start");
+    this->timerTool("Redist").start();
 
-    super_type::reinitialize();
+    super_type::redistanciate();
 
     if( M_useGradientAugmented && M_reinitGradientAugmented )
     {
@@ -856,8 +861,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
                 );
     }
 
-    double timeElapsed = this->timerTool("Reinit").stop();
-    this->log("LevelSet","reinitialize","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+    double timeElapsed = this->timerTool("Redist").stop();
+    this->log("LevelSet","redistanciate","finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 //----------------------------------------------------------------------------//
@@ -867,14 +872,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
 //std::shared_ptr<std::ostringstream>
 //LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 //{
-    //std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
-
-    //std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
-
-    //const std::string gradPhiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
-    //const std::string modGradPhiMethod = DerivationMethodMap.right.at(this->M_modGradPhiMethod);
-    //const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
-
     //std::string reinitMethod;
     //std::string reinitmethod = soption( _name="reinit-method", _prefix=this->prefix() );
     //if( reinitmethod == "fm" )
@@ -1035,6 +1032,37 @@ LEVELSET_CLASS_TEMPLATE_TYPE::reinitialize()
     //return _ostr;
 //}
 
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+std::shared_ptr<std::ostringstream>
+LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
+{
+    std::shared_ptr<std::ostringstream> _ostr = super_type::getInfo();
+
+    std::string restartMode = (this->doRestart())? "ON": "OFF";
+    std::string advectionStabilization = soption( _name="stabilization.method", _prefix=this->prefix() );
+
+    *_ostr << "\n||==============================================||"
+           << "\n||----------Info : LevelSet Advection-----------||"
+           << "\n||==============================================||"
+           << "\n   Advection"
+           << "\n     -- stabilization   : " << advectionStabilization
+           << "\n   Time Discretization"
+           << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+           << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+           << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+           << "\n     -- order        : " << this->timeOrder()
+           << "\n     -- restart mode : " << restartMode
+           << "\n     -- save on disk : " << std::boolalpha << this->timeStepBase()->saveInFile();
+    if ( this->timeStepBase()->saveFreq() )
+    *_ostr << "\n     -- freq save : " << this->timeStepBase()->saveFreq()
+           << "\n     -- file format save : " << this->timeStepBase()->fileFormat();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n";
+
+    return _ostr;
+}
+
 //----------------------------------------------------------------------------//
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -1117,6 +1145,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
         if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
         if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
         this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
         hasMeasureToExport = true;
     }
 
@@ -1160,7 +1190,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::saveCurrent() const
         fs::ofstream ofs( fs::path(this->rootRepository()) / fs::path( prefixvm(this->prefix(), "itersincereinit") ) );
 
         boost::archive::text_oarchive oa( ofs );
-        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceReinit );
+        oa << BOOST_SERIALIZATION_NVP( M_vecIterSinceRedistanciation );
     }
     this->worldComm().barrier();
 }

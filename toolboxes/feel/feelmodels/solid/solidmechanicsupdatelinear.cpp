@@ -16,23 +16,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if ( M_pdeType=="Elasticity" )
+    if ( M_pdeType=="Generalised-String" )
     {
-        this->updateLinearElasticityGeneralisedAlpha( data );
+        this->updateLinearGeneralizedString( data );
+        return;
     }
-    else if ( M_pdeType=="Generalised-String" )
-    {
-        this->updateLinearGeneralisedStringGeneralisedAlpha( data );
-    }
-}
-
-//-------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( DataUpdateLinear & data ) const
-{
-    using namespace Feel::vf;
 
     //const vector_ptrtype& X = data.
     sparse_matrix_ptrtype& A = data.matrix();
@@ -40,10 +28,16 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     bool _buildCstPart = data.buildCstPart();
     bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
-
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
     this->timerTool("Solve").start();
-    //boost::timer thetimer;
+
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationary() )
+    {
+        if ( M_timeStepping == "Theta" )
+            timeSteppingScaling = M_timeStepThetaValue;
+        data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
+    }
 
     //---------------------------------------------------------------------------------------//
 
@@ -107,12 +101,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     //#endif
     //---------------------------------------------------------------------------------------//
 
-    double rho_s=0.8;
+#if 0
+    //double rho_s=0.8;
     double alpha_f=M_genAlpha_alpha_f;
     double alpha_m=M_genAlpha_alpha_m;
     double gamma=0.5+alpha_m-alpha_f;
     double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-
+#endif
     //---------------------------------------------------------------------------------------//
     // internal force term
     if (BuildCstPart)
@@ -121,7 +116,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
         {
             form2( _test=Xh, _trial=Xh, _matrix=A )  +=
                 integrate (_range=M_rangeMeshElements,
-                           _expr= alpha_f*trace( sigmat*trans(grad(v))),
+                           _expr= timeSteppingScaling*inner(sigmat,grad(v)), // trace( sigmat*trans(grad(v))),
                            _geomap=this->geomap() );
         }
         else
@@ -157,57 +152,123 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     // discretisation acceleration term
     if ( !this->isStationary() )
     {
-        if ( BuildNonCstPart_TransientForm2Term )
+        if ( M_timeStepping == "Newmark" )
         {
-            if ( !this->useMassMatrixLumped() )
+            if ( BuildNonCstPart_TransientForm2Term )
             {
-                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
-                               _geomap=this->geomap() );
-            }
-            else
-            {
-                A->close();
-                double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
-                if ( this->massMatrixLumped()->size1() == A->size1() )
-                    A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                if ( !this->useMassMatrixLumped() )
+                {
+                    form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
                 else
                 {
-                    auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
-                    auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
-                    uAddDiagA = *M_vecDiagMassMatrixLumped;
-                    uAddDiagA.scale( thecoeff );
-                    A->addDiagonal( vecAddDiagA );
+                    A->close();
+                    double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
+                    if ( this->massMatrixLumped()->size1() == A->size1() )
+                        A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                    else
+                    {
+                        auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
+                        auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
+                        uAddDiagA = *M_vecDiagMassMatrixLumped;
+                        uAddDiagA.scale( thecoeff );
+                        A->addDiagonal( vecAddDiagA );
+                    }
+                }
+            }
+            if ( BuildNonCstPart_TransientForm1Term )
+            {
+                auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
+                if ( !this->useMassMatrixLumped() )
+                {
+                    form1( _test=Xh, _vector=F ) +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    if ( this->massMatrixLumped()->size1() == F->size() )
+                    {
+                        auto myvec = this->backend()->newVector(M_XhDisplacement);
+                        *myvec = polySecondDerivDisp;
+                        F->close();
+                        F->addVector( myvec, this->massMatrixLumped() );
+                    }
+                    else
+                    {
+                        F->close();
+                        auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
+                        auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                        uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    }
                 }
             }
         }
-        if ( BuildNonCstPart_TransientForm1Term )
+        else // if BDF
         {
-            auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
-            if ( !this->useMassMatrixLumped() )
+            CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+            size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+
+            if ( BuildNonCstPart_TransientForm2Term )
             {
-                form1( _test=Xh, _vector=F ) +=
+                if ( !this->useMassMatrixLumped() )
+                {
+                    form2( _test=Xh, _trial=Xh, _matrix=A,
+                           _rowstart=rowStartInMatrix,
+                           _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
+                    for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
+                        A->add( A->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
+                                A->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
+                                thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
+                }
+                form2( _test=Xh, _trial=Xh, _matrix=A,
+                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                       _colstart=colStartInMatrix ) +=
                     integrate( _range=M_rangeMeshElements,
-                               _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                               _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
+                               _geomap=this->geomap() );
+                form2( _test=Xh, _trial=Xh, _matrix=A,
+                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                       _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= -timeSteppingScaling*idv(rho)*inner(idt(u),id(v)),
                                _geomap=this->geomap() );
             }
-            else
+            if ( BuildNonCstPart_TransientForm1Term )
             {
-                if ( this->massMatrixLumped()->size1() == F->size() )
+                auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
+                if ( !this->useMassMatrixLumped() )
                 {
-                    auto myvec = this->backend()->newVector(M_XhDisplacement);
-                    *myvec = polySecondDerivDisp;
-                    F->close();
-                    F->addVector( myvec, this->massMatrixLumped() );
+                    form1( _test=Xh, _vector=F,
+                           _rowstart=rowStartInVector ) +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr= idv(rho)*inner(idv(rhsTimeStepVelocity),id(v)),
+                                   _geomap=this->geomap() );
                 }
                 else
                 {
                     F->close();
                     auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
                     auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                    uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
                 }
+                auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
+                form1( _test=Xh, _vector=F,
+                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= idv(rho)*inner(idv(rhsTimeStepDisplacement),id(v)),
+                               _geomap=this->geomap() );
             }
         }
     }
@@ -215,91 +276,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
     // source term
     if ( BuildNonCstPart_SourceTerm )
     {
-        this->updateSourceTermLinearPDE( F );
+        this->updateSourceTermLinearPDE( F, timeSteppingScaling );
     }
-    //---------------------------------------------------------------------------------------//
     // neumann boundary condition
     if (BuildNonCstPart_BoundaryNeumannTerm)
     {
-        this->updateBCNeumannLinearPDE( F );
+        this->updateBCNeumannLinearPDE( F, timeSteppingScaling );
     }
-    //---------------------------------------------------------------------------------------//
-#if 0
-    if (this->markerNameFSI().size()>0)
+    // robin bc
+    if ( !BuildCstPart )
     {
-        // neumann boundary condition with normal stress (fsi boundary condition)
-        if (BuildNonCstPart)
-        {
-            form1( _test=Xh, _vector=F) +=
-                integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                           _expr= -alpha_f*trans(idv(*M_fieldNormalStressFromFluid))*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-             this->couplingFSIcondition() == "nitsche" )
-        {
-
-            double gammaRobinFSI = this->gammaNitschFSI();
-            double muFluid = this->muFluidFSI();
-#if 0
-            // integrate on ref with variables change
-            auto Fa = eye<nDim,nDim>() + gradv(this->timeStepNewmark()->previousUnknown());
-            auto J = det(Fa);
-            auto B = inv(Fa);
-            auto variablechange = J*norm2( B*N() );
-            if (BuildNonCstPart )
-            {
-                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= variablechange*gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
-                               _geomap=this->geomap() );
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->velocityInterfaceFromFluid());
-                form1( _test=Xh, _vector=F) +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= variablechange*gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
-                               _geomap=this->geomap() );
-
-            }
-#else
-            if (BuildNonCstPart )//BuildCstPart)
-            {
-                MeshMover<mesh_type> mymesh_mover;
-                mesh_ptrtype mymesh = this->mesh();
-                mymesh_mover.apply( mymesh, this->timeStepNewmark()->previousUnknown() );
-
-                form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*this->timeStepNewmark()->polyFirstDerivCoefficient()*inner(idt(u),id(v))/hFace(),
-                               _geomap=this->geomap() );
-
-                auto robinFSIRhs = idv(this->timeStepNewmark()->polyFirstDeriv() ) + idv(this->fieldVelocityInterfaceFromFluid());
-                form1( _test=Xh, _vector=F) +=
-                    integrate( _range=markedfaces(mesh,this->markerNameFSI()),
-                               _expr= gammaRobinFSI*muFluid*inner( robinFSIRhs, id(v))/hFace(),
-                               _geomap=this->geomap() );
-
-                auto dispInv = this->fieldDisplacement().functionSpace()->element(-idv(this->timeStepNewmark()->previousUnknown()));
-                mymesh_mover.apply( mymesh, dispInv );
-            }
-#endif
-
-        }
-    }
-#endif
-    //---------------------------------------------------------------------------------------//
-
-    // robin condition (used in fsi blood flow as external tissue)
-    if ( !this->markerRobinBC().empty() && !BuildCstPart )
-    {
-        this->updateBCRobinLinearPDE( A, F );
-    }
-
-    //---------------------------------------------------------------------------------------//
-
-    if ( this->hasMarkerDirichletBCelimination() && BuildNonCstPart && _doBCStrongDirichlet)
-    {
-        this->updateBCDirichletStrongLinearPDE( A,F );
+        this->updateBCRobinLinearPDE( A, F, timeSteppingScaling );
     }
 
     //---------------------------------------------------------------------------------------//
@@ -315,11 +302,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearElasticityGeneralisedAlpha( Data
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+ 
     if ( this->isStandardModel() )
     {
-        if ( !this->hasDirichletBC() ) return;
+        if ( !this->hasMarkerDirichletBCelimination() ) return;
 
         auto Xh = this->functionSpace();
         auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -335,17 +325,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
             if ( !listMarkerFaces.empty() )
                 bilinearForm +=
                     on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
             if ( !listMarkerEdges.empty() )
                 bilinearForm +=
                     on( _range=markededges(this->mesh(), listMarkerEdges),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
             if ( !listMarkerPoints.empty() )
                 bilinearForm +=
                     on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                        _element=u,_rhs=F,_expr=expression(d),
+                        _element=u,_rhs=F,_expr=expression(d,this->symbolsExpr()),
                         _prefix=this->prefix() );
         }
         for ( auto const& bcDirComp : this->M_bcDirichletComponents )
@@ -360,17 +350,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
                 if ( !listMarkerFaces.empty() )
                     bilinearForm +=
                         on( _range=markedfaces(this->mesh(), listMarkerFaces),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
                 if ( !listMarkerEdges.empty() )
                     bilinearForm +=
                         on( _range=markededges(this->mesh(), listMarkerEdges),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
                 if ( !listMarkerPoints.empty() )
                     bilinearForm +=
                         on( _range=markedpoints(this->mesh(), listMarkerPoints),
-                            _element=u[comp],_rhs=F,_expr=expression(d),
+                            _element=u[comp],_rhs=F,_expr=expression(d,this->symbolsExpr()),
                             _prefix=this->prefix() );
             }
         }
@@ -395,7 +385,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCDirichletStrongLinearPDE(sparse_matr
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const
 {
     if ( this->M_bcNeumannScalar.empty() && this->M_bcNeumannVectorial.empty() && this->M_bcNeumannTensor2.empty() ) return;
 
@@ -406,23 +396,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCNeumannLinearPDE( vector_ptrtype& F 
     for( auto const& d : this->M_bcNeumannScalar )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                       _expr= expression(d)*inner( N(),id(v) ),
+                       _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                         _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannVectorial )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                       _expr= inner( expression(d),id(v) ),
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                        _geomap=this->geomap() );
     for( auto const& d : this->M_bcNeumannTensor2 )
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                       _expr= inner( expression(d)*N(),id(v) ),
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                        _geomap=this->geomap() );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const
 {
     if ( this->M_bcRobin.empty() ) return;
 
@@ -439,11 +429,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtyp
     {
         bilinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= expression1(d)(0,0)*inner( idt(u) ,id(u) ),
+                       _expr= timeSteppingScaling*expression1(d,this->symbolsExpr())(0,0)*inner( idt(u) ,id(u) ),
                        _geomap=this->geomap() );
         myLinearForm +=
             integrate( _range=markedfaces(this->mesh(),markers(d)/*this->markerRobinBC()*/),
-                       _expr= inner( expression2(d) , id(u) ),
+                       _expr= timeSteppingScaling*inner( expression2(d,this->symbolsExpr()) , id(u) ),
                        _geomap=this->geomap() );
 
     }
@@ -451,7 +441,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBCRobinLinearPDE( sparse_matrix_ptrtyp
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F ) const
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const
 {
     if ( this->M_volumicForcesProperties.empty() ) return;
 
@@ -461,20 +451,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( vector_ptrtype& F
 
     for( auto const& d : this->M_volumicForcesProperties )
     {
-        Feel::cout << "Volumic forces" << std::endl;
-        if ( markers(d).empty() )
-            myLinearForm +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
-        else
-            myLinearForm +=
-                integrate( _range=markedelements(this->mesh(),markers(d)),
-                           _expr= inner( expression(d),id(v) ),
-                           _geomap=this->geomap() );
+        auto rangeBodyForceUsed = markers(d).empty()? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
+        myLinearForm +=
+            integrate( _range=rangeBodyForceUsed,
+                       _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
+                       _geomap=this->geomap() );
     }
-    auto norm = F->l2Norm();
-    Feel::cout << "norm = " << norm << std::endl;
 }
 
 

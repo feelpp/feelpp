@@ -36,10 +36,11 @@ namespace FeelModels
 {
 
 
-ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm, std::string const& subPrefix,
+ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const& keyword,
+                                worldcomm_ptr_t const& _worldComm, std::string const& subPrefix,
                                 ModelBaseRepository const& modelRep )
         :
-        super_type( _theprefix, _worldComm, subPrefix, modelRep ),
+        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
@@ -47,16 +48,14 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         M_timeInitial( doption(_name="ts.time-initial") ),
         M_timeFinal( doption(_name="ts.time-final") ),
         M_timeStep( doption(_name="ts.time-step") ),
-        M_timeOrder( ioption(_prefix=_theprefix, _name="bdf.order") ),
+        M_timeOrder( ioption(_prefix=_theprefix, _name="ts.order") ),
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
-        M_startBlockSpaceIndexMatrixRow(0),
-        M_startBlockSpaceIndexMatrixCol(0),
-        M_startBlockSpaceIndexVector(0),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
-        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() )
+        M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() ),
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
+        M_useChecker( boption(_prefix=this->prefix(),_name="checker") )
     {
         //-----------------------------------------------------------------------//
         // move in stationary mode if we have this relation
@@ -92,7 +91,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         //-----------------------------------------------------------------------//
         std::string modelPropFilename = Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) );
         if ( !modelPropFilename.empty() )
-            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldComm() );
+            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldComm(), this->prefix() );
     }
 
    void
@@ -141,6 +140,49 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t c
         }
     }
 
+bool
+ModelNumerical::checkResults() const
+{
+    if ( !M_useChecker )
+        return true;
+
+    std::string const& modelKeyword = this->keyword();
+
+    bool hasChecker = !this->modelProperties().postProcess().checkersMeasure( modelKeyword ).empty();
+    if ( !hasChecker )
+        return true;
+
+    bool resultsAreOk = true;
+    bool isMasterRank = this->worldComm().isMasterRank();
+    if ( isMasterRank )
+        std::cout << "||==============================================||\n"
+                  << "||---------------> Checkers : " << modelKeyword << "\n"
+                  << "||==============================================||" << std::endl;
+
+    for ( auto const& checkerMeasure : this->modelProperties().postProcess().checkersMeasure( modelKeyword ) )
+    {
+        std::string measureName = checkerMeasure.name();
+        if ( !M_postProcessMeasuresIO.hasMeasure( measureName ) )
+        {
+            LOG(WARNING) << "checker : ignore check of " << measureName << " because this measure was not computed";
+            continue;
+        }
+
+        double valueMeasured = M_postProcessMeasuresIO.measure( measureName );
+        auto [checkIsOk, diffVal] = checkerMeasure.run( valueMeasured );
+        if ( isMasterRank )
+        {
+            std::cout << " - ";
+            if ( checkIsOk )
+                std::cout << tc::green << "[success]";
+            else
+                std::cout << tc::red << "[failure]";
+            std::cout << tc::reset << " check measure " << measureName <<  " : error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
+        }
+        resultsAreOk = resultsAreOk && checkIsOk;
+    }
+    return resultsAreOk;
+}
 
 } // namespace FeelModels
 

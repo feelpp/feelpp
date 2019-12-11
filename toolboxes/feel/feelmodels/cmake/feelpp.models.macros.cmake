@@ -872,3 +872,92 @@ macro( genLibMaxwell )
   endif()
 endmacro(genLibMaxwell)
 
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibMixedPoisson )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;P_ORDER;GEO_ORDER;"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(MIXEDPOISSON_DIM ${FEELMODELS_APP_DIM})
+  set(MIXEDPOISSON_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
+  set(MIXEDPOISSON_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  set(MIXEDPOISSON_LIB_VARIANTS ${MIXEDPOISSON_DIM}dP${MIXEDPOISSON_ORDERPOLY}G${MIXEDPOISSON_ORDERGEO} )
+  set(MIXEDPOISSON_LIB_NAME feelpp_toolbox_hdg_poisson_lib_${MIXEDPOISSON_LIB_VARIANTS})
+
+  if ( NOT TARGET ${MIXEDPOISSON_LIB_NAME} )
+    # configure the lib
+    set(MIXEDPOISSON_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/mixedpoisson/${MIXEDPOISSON_LIB_VARIANTS})
+    set(MIXEDPOISSON_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissoncreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonassembly_inst.cpp )
+    set(MIXEDPOISSON_CODEGEN_SOURCES
+      ${MIXEDPOISSON_LIB_DIR}/mixedpoissoncreate_inst.cpp
+      ${MIXEDPOISSON_LIB_DIR}/mixedpoissonassembly_inst.cpp )
+    set(MIXEDPOISSON_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${MIXEDPOISSON_LIB_NAME}
+      LIB_DIR ${MIXEDPOISSON_LIB_DIR}
+      LIB_DEPENDS ${MIXEDPOISSON_LIB_DEPENDS}
+      FILES_TO_COPY ${MIXEDPOISSON_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${MIXEDPOISSON_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedpoissonconfig.h.in
+      )
+  endif()
+endmacro(genLibMixedPoisson)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+macro( genLibMixedElasticity )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;P_ORDER;GEO_ORDER;"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_P_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(MIXEDELASTICITY_DIM ${FEELMODELS_APP_DIM})
+  set(MIXEDELASTICITY_ORDERPOLY ${FEELMODELS_APP_P_ORDER})
+  set(MIXEDELASTICITY_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  set(MIXEDELASTICITY_LIB_VARIANTS ${MIXEDELASTICITY_DIM}dP${MIXEDELASTICITY_ORDERPOLY}G${MIXEDELASTICITY_ORDERGEO} )
+  set(MIXEDELASTICITY_LIB_NAME feelpp_toolbox_hdg_elasticity_lib_${MIXEDELASTICITY_LIB_VARIANTS})
+
+  if ( NOT TARGET ${MIXEDELASTICITY_LIB_NAME} )
+    # configure the lib
+    set(MIXEDELASTICITY_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/hdg/mixedelasticity/${MIXEDELASTICITY_LIB_VARIANTS})
+    set(MIXEDELASTICITY_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticitycreate_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticityassembly_inst.cpp )
+    set(MIXEDELASTICITY_CODEGEN_SOURCES
+      ${MIXEDELASTICITY_LIB_DIR}/mixedelasticitycreate_inst.cpp
+      ${MIXEDELASTICITY_LIB_DIR}/mixedelasticityassembly_inst.cpp )
+    set(MIXEDELASTICITY_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${MIXEDELASTICITY_LIB_NAME}
+      LIB_DIR ${MIXEDELASTICITY_LIB_DIR}
+      LIB_DEPENDS ${MIXEDELASTICITY_LIB_DEPENDS}
+      FILES_TO_COPY ${MIXEDELASTICITY_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${MIXEDELASTICITY_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/hdg/mixedelasticityconfig.h.in
+      )
+  endif()
+endmacro(genLibMixedElasticity)

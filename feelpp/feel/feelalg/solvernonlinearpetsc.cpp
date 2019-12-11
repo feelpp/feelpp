@@ -57,6 +57,46 @@ extern "C"
     typedef int PetscInt;
 #endif
 
+    PetscErrorCode feel_petsc_update_nlsolve(SNES snes, PetscInt step)
+    {
+        Vec F, X;
+        void* ctx;
+        int ierr = SNESGetFunction( snes,&F,NULL, &ctx);
+        Feel::SolverNonLinearPetsc<double>* b =
+            static_cast<Feel::SolverNonLinearPetsc<double>*> ( ctx );
+        CHKERRABORT( b->worldComm().globalComm(), ierr );
+        ierr = SNESGetSolution( snes,&X );
+        CHKERRABORT( b->worldComm().globalComm(), ierr );
+
+        if ( !b->updateIteration() )
+            return 0;
+
+        Feel::vector_ptrtype vF( vec( F, b->mapRowPtr() ) );
+        Feel::vector_ptrtype vX( vec( X, b->mapRowPtr() ) );
+
+        SNESType snesType;
+        ierr = SNESGetType( snes, &snesType );
+        CHKERRABORT( b->worldComm().globalComm(), ierr );
+
+        Feel::SolverNonLinear<double>::UpdateIterationData data;
+        data.setNonLinearSolverType( std::string(snesType) );
+        if ( std::string(snesType) == std::string(SNESNEWTONLS) )
+        {
+            SNESLineSearch snesLineSearch;
+            ierr = SNESGetLineSearch( snes, &snesLineSearch );
+            CHKERRABORT( b->worldComm().globalComm(), ierr );
+
+            PetscReal lambda;
+            ierr = SNESLineSearchGetLambda( snesLineSearch,&lambda );
+            CHKERRABORT( b->worldComm().globalComm(), ierr );
+            data.addInfo( "linesearch.lambda", lambda );
+        }
+
+        b->updateIteration( step, vF, vX, data );
+
+        return 0;
+    }
+
     PetscErrorCode feel_petsc_post_nlsolve(KSP ksp,Vec x,Vec y,void* ctx)
     {
         Feel::SolverNonLinearPetsc<double>* b =
@@ -891,6 +931,12 @@ SolverNonLinearPetsc<T>::solve ( sparse_matrix_ptrtype&  jac_in,  // System Jaco
                               this->dtoleranceKSP(),
                               this->maxitKSP() );
     CHKERRABORT( this->worldComm().globalComm(),ierr );
+
+    if ( this->updateIteration() )
+    {
+        ierr = SNESSetUpdate( M_snes, feel_petsc_update_nlsolve );
+        CHKERRABORT( this->worldComm().globalComm(),ierr );
+    }
 
     if ( this->preSolve() )
     {

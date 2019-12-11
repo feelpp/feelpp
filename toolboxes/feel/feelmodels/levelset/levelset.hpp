@@ -39,9 +39,9 @@
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
 #include <feel/feelmodels/levelset/levelsetspacemanager.hpp>
 #include <feel/feelmodels/levelset/levelsettoolmanager.hpp>
-#include <feel/feelmodels/levelset/reinitializer.hpp>
-#include <feel/feelmodels/levelset/reinitializer_fm.hpp>
-#include <feel/feelmodels/levelset/reinitializer_hj.hpp>
+#include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
+#include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
+#include <feel/feelmodels/levelset/levelsetparticleinjector.hpp>
 
 #include <feel/feelfilters/straightenmesh.hpp>
 
@@ -65,18 +65,6 @@ namespace FeelModels {
 
 // time discretization of the advection equation
 enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
-
-//enum class LevelSetMeasuresExported
-//{
-    //Volume, Perimeter, Position_COM, Velocity_COM
-//};
-//enum class LevelSetFieldsExported
-//{
-    //GradPhi, ModGradPhi, 
-    //Distance, DistanceNormal, DistanceCurvature,
-    //AdvectionVelocity,
-    //BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
-//};
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
@@ -195,13 +183,13 @@ public:
     typedef std::shared_ptr<projector_tensor2symm_type> projector_tensor2symm_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Reinitialization
-    typedef Reinitializer<space_levelset_type> reinitializer_type;
-    typedef std::shared_ptr<reinitializer_type> reinitializer_ptrtype;
-    typedef ReinitializerFM<space_levelset_type> reinitializerFM_type;
-    typedef std::shared_ptr<reinitializerFM_type> reinitializerFM_ptrtype;
-    typedef ReinitializerHJ<space_levelset_type> reinitializerHJ_type;
-    typedef std::shared_ptr<reinitializerHJ_type> reinitializerHJ_ptrtype;
+    // Redistanciation
+    typedef LevelSetRedistanciation<space_levelset_type> redistanciation_type;
+    typedef std::shared_ptr<redistanciation_type> redistanciation_ptrtype;
+    typedef LevelSetRedistanciationFM<space_levelset_type> redistanciationFM_type;
+    typedef std::shared_ptr<redistanciationFM_type> redistanciationFM_ptrtype;
+    typedef LevelSetRedistanciationHJ<space_levelset_type> redistanciationHJ_type;
+    typedef std::shared_ptr<redistanciationHJ_type> redistanciationHJ_ptrtype;
 
     enum class FastMarchingInitializationMethod { 
         NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
@@ -210,7 +198,9 @@ public:
     typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
 
     //--------------------------------------------------------------------//
-    // Initial value
+    // Particle injector
+    typedef LevelSetParticleInjector<self_type> levelsetparticleinjector_type;
+    typedef std::shared_ptr<levelsetparticleinjector_type> levelsetparticleinjector_ptrtype;
 
     //--------------------------------------------------------------------//
     // Backend
@@ -275,13 +265,16 @@ public:
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+    std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
+    std::shared_ptr<self_type const> shared_from_this() const { return std::dynamic_pointer_cast<self_type const>( super_type::shared_from_this() ); }
+
     //--------------------------------------------------------------------//
     // Initialization
     void init();
     void initInitialValues();
     void restartPostProcess();
 
-    //std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
     // Advection data
@@ -311,14 +304,14 @@ public:
 
     void updateInterfaceQuantities() override;
 
-    int iterSinceReinit() const { return M_iterSinceReinit; }
+    int iterSinceRedistanciation() const { return M_iterSinceRedistanciation; }
 
     //--------------------------------------------------------------------//
     // Tools
     projector_tensor2symm_ptrtype const& projectorL2Tensor2Symm() const { return M_projectorL2Tensor2Symm; }
     //--------------------------------------------------------------------//
     // Reinitialization
-    void reinitialize() override;
+    void redistanciate() override;
 
     //--------------------------------------------------------------------//
     // Cauchy-Green tensor related quantities
@@ -368,12 +361,11 @@ protected:
 private:
     void loadParametersFromOptionsVm();
     void loadConfigICFile();
-    void loadConfigBCFile();
+    void initBoundaryConditions();
     void loadConfigPostProcess();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
-    void createReinitialization();
     void createTools();
     void createExporters();
 
@@ -455,12 +447,9 @@ private:
 
     //--------------------------------------------------------------------//
     // Redistantiation
-
-    //--------------------------------------------------------------------//
-    // Reinitialization
-    int M_iterSinceReinit;
-    // Vector that stores the iterSinceReinit of each time-step
-    std::vector<int> M_vecIterSinceReinit;
+    int M_iterSinceRedistanciation;
+    // Vector that stores the iterSinceRedistanciation of each time-step
+    std::vector<int> M_vecIterSinceRedistanciation;
 
     //--------------------------------------------------------------------//
     // Extension velocity
@@ -468,6 +457,10 @@ private:
     double M_extensionVelocityNitscheGamma;
     mutable sparse_matrix_ptrtype M_extensionVelocityLHSMatrix;
     mutable vector_ptrtype M_extensionVelocityRHSVector;
+
+    //--------------------------------------------------------------------//
+    // Particle injectors
+    std::vector<levelsetparticleinjector_ptrtype> M_levelsetParticleInjectors;
     
     //--------------------------------------------------------------------//
     // Export
@@ -526,7 +519,7 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
     auto linearForm = form1( _test=spaceVelocityComp, _vector=M_extensionVelocityRHSVector );
     auto Fext = spaceVelocityComp->element();
 
-    auto const& phi = this->phi();
+    //auto const& phi = this->phi();
     //auto gradPhiExpr = trans(gradv(phi));
     auto gradPhiExpr = idv(this->gradPhi());;
     auto NExpr = gradPhiExpr / sqrt(trans(gradPhiExpr)*gradPhiExpr);
