@@ -126,7 +126,7 @@ public:
 
     functionspace_P0_ptrtype functionSpaceP0() const { return M_functionSpaceP0; }
     //--------------------------------------------------------------------//
-    // Run redistantiation
+    // Run redistanciation
     element_type run( element_type const& phi ) const;
 
 private:
