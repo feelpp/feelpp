@@ -46,7 +46,7 @@ template class AdvDiffReac<
             >
     >;
 
-// Scalar iso advection (for reinitializerHJ)
+// Scalar iso advection (for HJ redistantiation)
 template class AdvDiffReac<
     typename LevelSetSpaceManager<
         Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>,
