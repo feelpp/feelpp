@@ -17,13 +17,12 @@ namespace Feel {
 namespace FeelModels {
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
-                                                    bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix,worldComm,subPrefix, modelRep ),
+    super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
     M_isUpdatedForUse(false ),
     M_materialProperties( new material_properties_type( prefix ) )
 {
@@ -43,10 +42,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
     // option in cfg files
     this->loadParameterFromOptionsVm();
     //-----------------------------------------------------------------------------//
-    // build  mesh, space,exporter,...
-    if ( buildMesh )
-        this->initMesh();
-    //-----------------------------------------------------------------------------//
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -55,11 +50,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix,
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, bool buildMesh,
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix, std::string const& keyword,
                                          worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 
 }
 
@@ -133,6 +128,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
 
+    //--------------------------------------------------------------//
+    // time stepping
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
     //--------------------------------------------------------------//
     // start solver options
     M_startBySolveNewtonian = boption(_prefix=this->prefix(),_name="start-by-solve-newtonian");
@@ -318,28 +317,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
         M_XhMeshVelocityInterface = space_meshvelocityonboundary_type::New(_mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
         M_XhMeshALEmapDisc = space_alemapdisc_type::New(_mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
 
-#if 0
-        // init
-        bool moveGhostEltFromExtendedStencil=false;
-        for ( bool hasExt : M_Xh->extendedDofTableComposite() )
-            moveGhostEltFromExtendedStencil = moveGhostEltFromExtendedStencil || hasExt;
-#else
-        bool moveGhostEltFromExtendedStencil = this->useExtendedDofTable();
-#endif
-        if ( moveGhostEltFromExtendedStencil )
-            this->log("FluidMechanics","createALE", "use moveGhostEltFromExtendedStencil" );
-
-        M_meshALE.reset(new mesh_ale_type( M_mesh,
-                                           this->prefix(),
-                                           this->localNonCompositeWorldsComm()[0],
-                                           moveGhostEltFromExtendedStencil,
-                                           this->repository() ));
-        this->log("FluidMechanics","createALE", "--1--" );
+        M_meshALE = meshale( _mesh=M_mesh,_prefix=this->prefix(),_directory=this->repository() );
+        this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
-        this->log("FluidMechanics","createALE", "--2--" );
         // mesh velocity only on moving interface
         M_meshVelocityInterface.reset(new element_meshvelocityonboundary_type( M_XhMeshVelocityInterface, "mesh_velocity_interface" ) );
+        // mesh velocity used with stab CIP terms (need extended dof table)
+        if ( this->doCIPStabConvection() )
+            M_fieldMeshVelocityUsedWithStabCIP.reset( new element_velocity_noview_type( this->functionSpaceVelocity() ) );
 
         double tElapsed = this->timerTool("Constructor").stop("createALE");
         this->log("FluidMechanics","createALE", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -392,7 +378,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
-            this->setMarkerALEMeshBC(bcTypeMeshALE,markers(d));
+            this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
         }
     }
 
@@ -656,7 +642,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                         _range=elements(M_XhScalarVisuHO->mesh()),
                                         _backend=M_backend,
                                         _type=InterpolationNonConforme(false,true,false,15) );
-
+#if 0
         if ( this->hasPostProcessFieldExported( "normal-stress" ) ||
              this->hasPostProcessFieldExported( "wall-shear-stress" ) )
         {
@@ -671,7 +657,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
                                           _backend=M_backend,
                                           _type=InterpolationNonConforme(false,true,false,15) );
         }
-
+#endif
         this->log("FluidMechanics","createPostProcessExporters", "step2 done" );
 
         if (M_isMoveDomain )
@@ -716,15 +702,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
     if ( M_XhNormalBoundaryStress ) return;
 
     if ( M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+    {
+        auto submesh = createSubmesh(M_mesh,boundaryfaces(M_mesh));
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=boundaryelements(M_mesh) );
+    }
     else
-        M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(), _range=M_rangeMeshElements );
-    M_fieldNormalStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
-    M_fieldNormalStressRefMesh.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
-#endif
-    M_fieldWallShearStress.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    {
+        this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
+        auto submesh = createSubmesh(M_mesh,this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces()); // not very nice, need to store the meshsupport
+        M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=submesh );
+        //M_XhNormalBoundaryStress = space_stress_type::New( _mesh=M_mesh, _range=M_rangeMeshElements );// TODO define boundaryelements in MeshSupport // intersect(boundaryelements(M_mesh),M_rangeMeshElements) );
+    }
+    M_fieldNormalStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    M_fieldNormalStressRefMesh.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+    //#if defined( FEELPP_MODELS_HAS_MESHALE )
+    //M_normalStressFromStruct.reset(new element_stress_type(M_XhNormalBoundaryStress));
+    //#endif
+    M_fieldWallShearStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -899,7 +894,7 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, bool buildBlockVector )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 {
     if ( M_isUpdatedForUse ) return;
 
@@ -1020,9 +1015,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, bool 
             }
         }
 
-        // space usefull to tranfert sigma*N()
-        this->createFunctionSpacesNormalStress();
-
         this->log("FluidMechanics","init", "meshALE done" );
 #endif
     }
@@ -1035,8 +1027,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory, bool 
     this->initStartBlockIndexFieldsInMatrix();
     //-------------------------------------------------//
     // build solution block vector
-    if( buildBlockVector )
-        this->buildBlockVector();
+    this->buildBlockVector();
 
     //-------------------------------------------------//
     if ( buildModelAlgebraicFactory )
@@ -1059,6 +1050,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
+    M_blockVectorSolution.buildVector( this->backend() );
+
     M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
     if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
@@ -1071,6 +1064,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
     }
     this->initInHousePreconditioner();
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1136,13 +1136,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("FluidMechanics","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->isStationaryModel() ) // force BDF with Stokes
+        M_timeStepping = "BDF";
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    M_bdf_fluid = bdf(  _space=M_Xh,
-                       _name=prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity-pressure"+suffixName)),
+    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+    M_bdf_fluid = bdf( _space=M_Xh,
+                       _name="velocity-pressure"+suffixName,
                        _prefix=this->prefix(),
+                       _order=bdfOrder,
                        // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
                        _initial_time=this->timeInitial(),
                        _final_time=this->timeFinal(),
@@ -1150,29 +1160,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                        _restart=this->doRestart(),
                        _restart_path=this->restartPath(),
                        _restart_at_last_save=this->restartAtLastSave(),
-                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq() );
+                       _save=this->tsSaveInFile(), _freq=this->tsSaveFreq(),
+                       _n_consecutive_save=nConsecutiveSave );
     M_bdf_fluid->setfileFormat( myFileFormat );
-    M_bdf_fluid->setPathSave( (fs::path(this->rootRepository()) /
-                               fs::path( prefixvm(this->prefix(), (boost::format("bdf_o_%1%_dt_%2%")%M_bdf_fluid->bdfOrder() %this->timeStep()).str() ) ) ).string() );
+    M_bdf_fluid->setPathSave( ( saveTsDir/"velocity-pressure" ).string() );
 
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
-        // start time step
-        M_bdf_fluid->start(*M_Solution);
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( M_bdf_fluid->timeInitial() );
     }
     else
     {
         // start time step
-        M_bdf_fluid->restart();
+        double tir = M_bdf_fluid->restart();
         // load a previous solution as current solution
         *M_Solution = M_bdf_fluid->unknown(0);
         // up initial time
-        this->setTimeInitial( M_bdf_fluid->timeInitial() );
+        this->setTimeInitial( tir );
         // up current time
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( tir );
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
@@ -1435,10 +1443,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
             res.insert( "pressure" );
         if ( o == prefixvm(prefix,"vorticity") || o == prefixvm(prefix,"all") )
             res.insert( "vorticity" );
+#if 0
         if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
             res.insert( "normal-stress" );
         if ( o == prefixvm(prefix,"wall-shear-stress") || o == prefixvm(prefix,"all") )
             res.insert( "wall-shear-stress" );
+#endif
         if ( o == prefixvm(prefix,"density") || o == prefixvm(prefix,"all") )
             res.insert( "density" );
         if ( o == prefixvm(prefix,"viscosity") || o == prefixvm(prefix,"all") )
@@ -1468,14 +1478,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    std::string modelName = "fluid";
-
     // update post-process expression
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
+    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
     // init exporter
     if ( !M_postProcessFieldExported.empty() )
     {
@@ -1492,7 +1500,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // forces (lift, drag) and flow rate measures
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
     {
@@ -1551,7 +1559,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // point measures
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
         node_type ptCoord(3);
@@ -1596,8 +1604,8 @@ size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
 {
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "velocity-pressure", currentStartIndex );
-    currentStartIndex += 2;
+    this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         this->setStartSubBlockSpaceIndex( "define-pressure-cst-lm", currentStartIndex );
@@ -1626,7 +1634,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
-    M_blockVectorSolution.buildVector( this->backend() );
+    //M_blockVectorSolution.buildVector( this->backend() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

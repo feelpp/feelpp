@@ -9,9 +9,16 @@
 :uri-pull: https://github.com/feelpp/feelpp/pull
 :uri-toolbox-issue: https://github.com/feelpp/toolbox/issues
 
-[[v0.106.0-2018-07-20]]
+[[v0.106.0-2019-02-05]]
+== v0.107.0
+
+=== Developers
+
+* use C++17 language features, {uri-issue}/1282[#1282]
+
+[[v0.106.0-2019-02-05]]
 == v0.106.0
-https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2018-07-28)
+https://github.com/feelpp/feelpp/tree/v0.106.0[v0.106.0] (2019-02-05)
 
 https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 
@@ -31,6 +38,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 ** toolboxes/fluid: FluidMechanics
 ** toolboxes/solid: SolidMechanics
 * [**toolbox**] refactoring of gls stabilization in the `fluid` and `heat` toolboxes : now the `heatfluid` toolbox with natural convection can use Galerkin Least Square stabilization(gls).
+* [ `toolbox` ] improve FSI toolbox, refactorize, move code from solid to fsi
 * [**toolbox**] implement Statistics post-process  {uri-toolbox-issue}/85[#85]
 * [**toolbox**] add pre/post solve interface with Linear/Picard solver
 * [**testsuite**] more than 400 tests run everyday successfully via buildkite
@@ -50,6 +58,7 @@ https://github.com/feelpp/feelpp/compare/v0.105.0...v0.106.0[Full Changelog]
 * [**all**] support up to PETSc/SLEPc 3.9 see {uri-issue}/1166[#1166] and {uri-issue}/1139[#1139]
 * [**feelpp**] Crash with nodal projection by using a mesh range on Points or Edges in 3d see {uri-issue}/1250[#1250]
 * [**feelpp/tools/scripts/Paraview**] screenshot python script runs with both python2 and python3
+* [**feelpp**] fix geomap on subentities with co-dimension greater than 1 (eg edges and points) see {uri-issue}/1254[#1254]
 
 [[v0.105.0-2018-06-20]]
 == v0.105.0
@@ -90,14 +99,15 @@ https://github.com/feelpp/feelpp/compare/v0.104.0...v0.105.0[Full Changelog]
 * [**feel/**] Fixes docker build of feelpp projects due to git-lfs {uri-issue}/1183[#1186]
 
 [[v0.104.1-2018-05-xx]]
-== v0.104.1 (unreleased)
-// https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-05-xx)
+== v0.104.1
+https://github.com/feelpp/feelpp/tree/v0.104.1[v0.104.1] (2018-06-20)
 
 https://github.com/feelpp/feelpp/compare/v0.104.0...v0.104.1[Full Changelog]
 
 === Features
 
 * [**quickstart/**] Add cantilever example for quickstart elasticity code in 2D
+* [**quickstart/**] Fix Laplacian example in 3D
 
 === Fixes
 

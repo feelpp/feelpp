@@ -70,45 +70,29 @@ struct SymbolsExprTraits
         hana::integral_constant<bool, std::is_same<Tag, typename T::feelpp_tag >::value >
     {};
 
-    template<typename... ExprT2>
-    static constexpr auto apply2( hana::integral_constant<bool,false> )
-        {
-            return hana::type_c<hana::tuple<>>;
-        }
-    template<typename T1, typename... ExprT2>
-    static constexpr auto apply2NonEmpty( hana::integral_constant<bool,true> )
-        {
-            return hana::type_c<hana::tuple<T1,ExprT2...>>;
-        }
-    template<typename T1, typename... ExprT2>
-    static constexpr auto apply2NonEmpty( hana::integral_constant<bool,false> )
-        {
-            return hana::type_c<typename T1::tuple_type>;
-        }
-    template<typename T1, typename... ExprT2>
-    static constexpr auto apply2( hana::integral_constant<bool,true> )
-        {
-            return apply2NonEmpty<T1,ExprT2...>( is_a_t<SymbolExprTag, T1 >() );
-        }
-    template<typename... ExprT>
-    static constexpr auto apply2()
-        {
-            constexpr int nExpr = decltype(hana::length( hana::tuple<ExprT...>{} ) )::value;
-            constexpr bool hasExpr = nExpr > 0;
-            return apply2<ExprT...>( hana::integral_constant<bool, hasExpr >() );
-        }
 
-
-    template<typename T1, typename... ExprT2>
-    static constexpr auto applyNonEmpty( hana::integral_constant<bool,true>, T1 const& t1, const ExprT2&... exprs )
+    template<typename T1/*, typename = typename std::enable_if< is_a_t<SymbolExprTag, T1 >::value >::type*/>
+    static constexpr auto applyOneElement( T1 const& t1, std::enable_if_t< is_a_t<SymbolExprTag, T1 >::value >* = nullptr )
         {
-            return hana::tuple<T1,ExprT2...>( t1,exprs... );
+            return hana::tuple<T1>( t1 );
         }
-    template<typename T1, typename... ExprT2>
-    static constexpr auto applyNonEmpty( hana::integral_constant<bool,false>, T1 const& t1, const ExprT2&... exprs )
+    template<typename T1/*, typename = typename std::enable_if< is_a_t<SymbolsExprTag, T1 >::value >::type*/>
+    static constexpr auto applyOneElement( T1 const& t1, std::enable_if_t< is_a_t<SymbolsExprTag, T1 >::value >* = nullptr )
         {
             return t1.tupleExpr;
         }
+
+    template<typename T1, typename... ExprT2>
+    static constexpr auto applyNonEmpty( T1 const& t1, const ExprT2&... exprs, std::enable_if_t< decltype(hana::length( hana::tuple<ExprT2...>{} ) )::value != 0 >* = nullptr )
+        {
+            return hana::insert_range( applyNonEmpty<ExprT2...>( exprs... ), 0_c,  applyOneElement<T1>( t1 ) );
+        }
+    template<typename T1>
+    static constexpr auto applyNonEmpty( T1 const& t1 )
+        {
+            return applyOneElement<T1>( t1 );
+        }
+
     template<typename... ExprT>
     static constexpr auto apply( hana::integral_constant<bool,false> )
         {
@@ -117,7 +101,7 @@ struct SymbolsExprTraits
     template<typename T1, typename... ExprT2 >
     static constexpr auto apply( hana::integral_constant<bool,true>, T1 const& t1, const ExprT2&... exprs )
         {
-            return applyNonEmpty( is_a_t<SymbolExprTag, T1 >(), t1, exprs... );
+            return applyNonEmpty<T1,ExprT2...>( t1, exprs... );
         }
     template<typename... ExprT>
     static constexpr auto apply( const ExprT&... exprs )
@@ -126,13 +110,67 @@ struct SymbolsExprTraits
             constexpr bool hasExpr = nExpr > 0;
             return apply( hana::integral_constant<bool, hasExpr >(), exprs... );
         }
+
+#if 1 // maybe the code below can be remove in the future, see comments below
+    template<typename... ExprT2>
+    static constexpr auto apply2( hana::integral_constant<bool,false> )
+        {
+            return hana::type_c<hana::tuple<>>;
+        }
+
+    template<typename T1/*, typename = typename std::enable_if< is_a_t<SymbolExprTag, T1 >::value >::type*/>
+    static constexpr auto apply2OneElement( std::enable_if_t< is_a_t<SymbolExprTag, T1 >::value >* = nullptr )
+        {
+            return hana::type_c<hana::tuple<T1>>;
+        }
+    template<typename T1/*, typename = typename std::enable_if< is_a_t<SymbolsExprTag, T1 >::value >::type*/>
+    static constexpr auto apply2OneElement( std::enable_if_t< is_a_t<SymbolsExprTag, T1 >::value >* = nullptr )
+        {
+            return hana::type_c<typename T1::tuple_type>;
+        }
+
+    template<typename T1, typename... ExprT2>
+    static constexpr auto apply2NonEmpty( std::enable_if_t< decltype(hana::length( hana::tuple<ExprT2...>{} ) )::value != 0 >* = nullptr )
+        {
+            return hana::type_c< decltype(hana::insert_range( typename decltype(apply2NonEmpty<ExprT2...>())::type{}  ,0_c, typename  decltype(apply2OneElement<T1>())::type{} ) ) >;
+        }
+    template<typename T1>
+    static constexpr auto apply2NonEmpty()
+        {
+            return apply2OneElement<T1>();
+        }
+    template<typename T1, typename... ExprT2>
+    static constexpr auto apply2( hana::integral_constant<bool,true> )
+        {
+            return apply2NonEmpty<T1,ExprT2...>();
+        }
+    template<typename... ExprT>
+    static constexpr auto apply2()
+        {
+            constexpr int nExpr = decltype(hana::length( hana::tuple<ExprT...>{} ) )::value;
+            constexpr bool hasExpr = nExpr > 0;
+            return apply2<ExprT...>( hana::integral_constant<bool, hasExpr >() );
+        }
+#endif
+
+
 };
 
 //! collect SymbolExpr object and store it an hana::tuple
 template<typename... ExprT>
 struct SymbolsExpr
 {
+#if 0
+    // NOTE : a lot of code work with this 2 lines below but some codes (as test_modelproperties) does not compile.
+    // The error is : constexpr variable cannot have non-literal type ....
+    // We have also this message at the end : lambda closure types are non-literal types before C++17
+    // So, maybe it's ok C++17
+    static constexpr auto callApply = [](const auto& ...exprs) { return SymbolsExprTraits::template apply( exprs... ); };
+    using tuple_type = decltype( hana::unpack( hana::tuple<ExprT...>{},  callApply ) );
+#else
     using tuple_type = typename decltype(SymbolsExprTraits::template apply2<ExprT...>() )::type;
+#endif
+
     using feelpp_tag = SymbolsExprTag;
 
     //SymbolsExpr() = default;
@@ -160,7 +198,7 @@ template<typename... ExprT>
 SymbolsExpr<ExprT...>
 symbolsExpr( const ExprT&... exprs ) { return SymbolsExpr<ExprT...>( exprs... ); }
 
-}
+} // namespace vf
 
 } // namespace Feel
 

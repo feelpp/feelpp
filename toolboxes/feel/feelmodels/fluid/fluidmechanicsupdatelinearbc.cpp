@@ -33,6 +33,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         build_BoundaryNeumannTerm = BuildCstPart;
     }
 
+    double timeSteppingScaling = 1.;
+    if ( !this->isStationaryModel() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+
     auto mesh = this->mesh();
     auto Xh = this->functionSpace();
 
@@ -79,8 +83,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
 
         bilinearForm_PatternCoupled +=
             integrate( _range= markedfaces(mesh,this->markerSlipBC()),
-                       _expr= val(Cn)*(trans(idt(u))*N())*(trans(id(v))*N())+
-                       val(Ctau)*trans(idt(u))*id(v),
+                       _expr= timeSteppingScaling*val(Cn)*(trans(idt(u))*N())*(trans(id(v))*N())+
+                       timeSteppingScaling*val(Ctau)*trans(idt(u))*id(v),
                        //+ trans(idt(p)*Id*N())*id(v)
                        //- trans(id(v))*N()* trans(2*idv(*M_P0Mu)*deft*N())*N()
                        _geomap=this->geomap()
@@ -117,7 +121,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
                                //_range=markedelements(this->meshDirichletLM(),PhysicalName),
-                               _expr= inner( expression(d),id(lambdaBC) ),
+                               _expr= inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
             }
 
@@ -141,8 +145,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
-                           _expr= -trans(Sigmat*N())*id(v)
-                           /**/   + this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
+                           _expr= -timeSteppingScaling*trans(Sigmat*N())*id(v)
+                           /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
                            _geomap=this->geomap() );
         }
         if ( BuildNonCstPart)
@@ -151,7 +155,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             {
                 myLinearForm +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
-                               _expr= this->dirichletBCnitscheGamma()*inner( expression(d),id(v) )/hFace(),
+                               _expr= timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
             }
 
@@ -175,17 +179,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         for( auto const& d : this->M_bcNeumannScalar )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= expression(d)*inner( N(),id(v) ),
+                           _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
-                           _expr= inner( expression(d),id(v) ),
+                           _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
             myLinearForm +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
-                           _expr= inner( expression(d)*N(),id(v) ),
+                           _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
     }
 
@@ -203,7 +207,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr=-trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
+                               _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
@@ -220,7 +224,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr=-trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
+                               _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
@@ -237,8 +241,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
-                               _expr= -trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
-                               +trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
+                               _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Ny()
+                               +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
 
                 form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
@@ -256,7 +260,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             {
                 myLinearForm +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
-                               _expr= -expression(d)*trans(N())*id(v),
+                               _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*trans(N())*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -306,7 +310,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     form1( _test=Xh, _vector=F,
                            _rowstart=rowStartInVector ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr= -M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
+                                   _expr= -timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
                                    _geomap=this->geomap() );
                 }
             }
@@ -402,7 +406,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                            _rowstart=rowStartInMatrix,
                            _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
-                                   _expr= idt(presProximal)*trans(N())*id(v),
+                                   _expr= timeSteppingScaling*idt(presProximal)*trans(N())*id(v),
                                    _geomap=this->geomap() );
 
 
@@ -416,179 +420,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0
-    if ( this->isMoveDomain() && ( this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-                                   this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-                                   this->couplingFSIcondition() == "robin-neumann-generalized" || this->couplingFSIcondition() == "nitsche" ) )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-
-        auto const& uEval = (true)? this->fieldVelocity() : this->timeStepBDF()->unknown(0).template element<0>();
-        auto const& pEval = (true)? this->fieldPressure() : this->timeStepBDF()->unknown(0).template element<1>();
-
-        // stress fluid from previous solution (use for all couplingFSIcondition here)
-        if ( BuildNonCstPart )
-        {
-            // stress tensor (eval)
-            auto defv = sym(gradv(uEval));
-            auto Sigmav = -idv(pEval)*Id + 2*idv(mu)*defv;
-            form1( _test=Xh, _vector=F,
-                   _rowstart=rowStartInVector ) +=
-                integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                           _expr= inner( Sigmav*N(),id(u)),
-                           _geomap=this->geomap() );
-        }
-
-        //---------------------------------------------------------------------------//
-        if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-robin-genuine" ||
-             this->couplingFSIcondition() == "robin-neumann" || this->couplingFSIcondition() == "robin-neumann-genuine" ||
-             this->couplingFSIcondition() == "nitsche" )
-        //---------------------------------------------------------------------------//
-        {
-            double gammaRobinFSI = this->couplingFSI_Nitsche_gamma();
-            if ( BuildNonCstPart_robinFSI )
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                               _expr= ( gammaRobinFSI*idv(mu)/hFace() )*inner(idt(u),id(u)),
-                               _geomap=this->geomap() );
-            }
-            if ( BuildNonCstPart )
-            {
-                form1( _test=Xh, _vector=F,
-                       _rowstart=rowStartInVector ) +=
-                    integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                               _expr= ( gammaRobinFSI*idv(mu)/hFace() )*inner(idv(this->meshVelocity2()),id(u)),
-                               _geomap=this->geomap() );
-            }
-            if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" ||
-                 this->couplingFSIcondition() == "nitsche" )
-            {
-                double alpha = this->couplingFSI_Nitsche_alpha();
-                double gamma0RobinFSI = this->couplingFSI_Nitsche_gamma0();
-                auto mysigma = id(q)*Id+2*alpha*idv(mu)*sym(grad(u));
-                if ( BuildNonCstPart_robinFSI )
-                {
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*idv(mu)) )*idt(p)*id(q),
-                                   _geomap=this->geomap() );
-                    if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" )
-                    {
-                        bilinearForm_PatternCoupled +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner( idt(u), vf::N() )*id(q),
-                                       _geomap=this->geomap() );
-                    }
-                    else if ( this->couplingFSIcondition() == "nitsche" )
-                    {
-                        bilinearForm_PatternCoupled +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner( idt(u), mysigma*vf::N() ),
-                                       _geomap=this->geomap() );
-                    }
-                }
-                if ( BuildNonCstPart )
-                {
-                    form1( _test=Xh, _vector=F,
-                           _rowstart=rowStartInVector ) +=
-                        integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                   _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*idv(mu)) )*idv(pEval)*id(q),
-                                   _geomap=this->geomap() );
-
-                    if ( this->couplingFSIcondition() == "robin-robin" || this->couplingFSIcondition() == "robin-neumann" )
-                    {
-                        form1( _test=Xh, _vector=F,
-                               _rowstart=rowStartInVector ) +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner(idv(this->meshVelocity2()),vf::N())*id(q),
-                                       _geomap=this->geomap() );
-                    }
-                    else if ( this->couplingFSIcondition() == "nitsche" )
-                    {
-                        form1( _test=Xh, _vector=F,
-                               _rowstart=rowStartInVector ) +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner(idv(this->meshVelocity2()),mysigma*vf::N()),
-                                       _geomap=this->geomap() );
-                    }
-                }
-            }
-        }
-        //---------------------------------------------------------------------------//
-        else if ( this->couplingFSIcondition() == "robin-neumann-generalized" )
-        //---------------------------------------------------------------------------//
-        {
-            this->timerTool("Solve").start();
-
-            bool useInterfaceOperator = this->couplingFSI_RNG_useInterfaceOperator() && !this->couplingFSI_solidIs1dReduced();
-
-            if ( !useInterfaceOperator )
-            {
-                if ( BuildNonCstPart_robinFSI )
-                {
-                    if ( this->couplingFSI_RNG_matrix() )
-                    {
-                        A->addMatrix( this->couplingFSI_RNG_coeffForm2(), this->couplingFSI_RNG_matrix() );
-                    }
-                    else
-                    {
-                        this->meshALE()->revertReferenceMesh();
-                        bilinearForm_PatternCoupled +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr=this->couplingFSI_RNG_coeffForm2()*inner(idt(u),id(u)),
-                                       _geomap=this->geomap() );
-                    }
-                }
-                if ( BuildNonCstPart )
-                {
-                    if ( this->couplingFSI_RNG_matrix() )
-                    {
-                        auto tempVec = M_backend->newVector( F->mapPtr() );
-                        auto spaceEvalForm1 = this->couplingFSI_RNG_evalForm1()->functionSpace();
-                        auto eltEvalForm1 = spaceEvalForm1->element( tempVec,rowStartInVector );
-                        eltEvalForm1.on(_range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                        _expr= -idv(this->couplingFSI_RNG_evalForm1() ) );
-                        sync( eltEvalForm1, "=", M_dofsVelocityInterfaceOnMovingBoundary);
-                        F->addVector( tempVec, this->couplingFSI_RNG_matrix() );
-                    }
-                    else
-                    {
-                        this->meshALE()->revertReferenceMesh();
-                        form1( _test=Xh, _vector=F,
-                               _rowstart=rowStartInVector ) +=
-                            integrate( _range=markedfaces(this->mesh(),this->markersNameMovingBoundary()),
-                                       _expr= -inner(idv(this->couplingFSI_RNG_evalForm1()),id(u)),
-                                       _geomap=this->geomap() );
-                    }
-                }
-                this->meshALE()->revertMovingMesh();
-            }
-            else // useInterfaceOperator
-            {
-                if ( BuildNonCstPart_robinFSI )
-                {
-                    //std::cout << "fluid assembly : use operator ---1----\n";
-                    //A->updateBlockMat();
-                    //A->addMatrix(1.0, matBCFSI );
-                    CHECK( this->couplingFSI_RNG_matrix() ) << "couplingFSI_RNG_matrix not build";
-                    auto matBCFSI=this->couplingFSI_RNG_matrix();
-                    A->addMatrix(1.0, matBCFSI );
-                    //A->addMatrix(1.0, this->couplingFSI_RNG_matrix() );
-                    //std::cout << "fluid assembly : use operator finish\n";
-                }
-
-                if ( BuildNonCstPart )
-                {
-                    this->couplingFSI_RNG_updateLinearPDE( F );
-                }
-            }
-            double timeElapsedBC = this->timerTool("Solve").stop();
-            this->log("FluidMechanics","updateLinearPDE","assembly fsi bc robin-neumann-generalized in "+(boost::format("%1% s") %timeElapsedBC ).str() );
-        }
-#endif // FEELPP_MODELS_HAS_MESHALE
-    }
-#endif
 
 #if 0
     if ( UsePeriodicity && BuildNonCstPart )

@@ -69,14 +69,14 @@ runLevelsetApplication()
             Feel::cout << "time simulation: " << LS->time() << "s \n";
             Feel::cout << "============================================================\n";
 
-            Feel::cout << "Iter since reinit: " << LS->iterSinceReinit() << std::endl;
+            Feel::cout << "Iter since reinit: " << LS->iterSinceRedistanciation() << std::endl;
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
             LS->solve();
             if( reinit_every > 0 && iter%reinit_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
-                LS->reinitialize();
+                LS->redistanciate();
                 Feel::cout << "done\n";
             }
 

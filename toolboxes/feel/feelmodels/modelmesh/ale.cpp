@@ -40,7 +40,7 @@ namespace FeelModels
 {
 
 template < class Convex, int Order >
-ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm, bool moveGhostEltFromExtendedStencil,
+ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t const& worldcomm,
                         ModelBaseRepository const& modelRep )
     :
     super_type( prefix/*prefixvm(prefix,"alemesh")*/, worldcomm,"",modelRep )
@@ -51,21 +51,13 @@ ALE<Convex,Order>::ALE( mesh_ptrtype mesh, std::string prefix, worldcomm_ptr_t c
     M_flagSet["free"].clear();
 }
 
-template < class Convex, int Order >
-ALE<Convex,Order>::ALE( ALE const& tc )
-    :
-    super_type( tc ),
-    M_flagSet( tc.M_flagSet )
-{}
-
 template< class Convex, int Order >
 typename ALE<Convex,Order>::self_ptrtype
 ALE<Convex,Order>::build( mesh_ptrtype mesh, std::string prefix,
                           worldcomm_ptr_t const& worldcomm,
-                          bool moveGhostEltFromExtendedStencil,
                           ModelBaseRepository const& modelRep)
 {
-    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,moveGhostEltFromExtendedStencil,modelRep ) );
+    return self_ptrtype( new ALE_IMPL::ALE<Convex,Order>(mesh,prefix,worldcomm,modelRep ) );
 }
 
 

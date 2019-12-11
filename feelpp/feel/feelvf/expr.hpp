@@ -545,9 +545,53 @@ public:
         tensor_expr_type M_tensor_expr;
     };
 
+    template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
+    struct tensorPermutation
+    {
+
+        typedef typename expression_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> tensor_expr_type;
+        typedef typename tensor_expr_type::value_type value_type;
+        using expr_type = typename this_type::expression_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using shape = typename tensor_expr_type::shape;
+
+        tensorPermutation( this_type const& expr, Geo_t const& geom )
+            :
+            M_geo( fusion::at_key<key_type>( geom ).get() ),
+            M_tensor_expr( expr.expression(), geom )
+            {
+            }
+
+        gmc_ptrtype geom() const { return M_geo; }
+
+        int nPoints() const { return M_geo->nPoints(); }
+
+        void setPermutation( std::vector<uint16_type> const& perm ) { M_permutation = perm; }
+
+        void update( Geo_t const& geom )
+            {
+                M_tensor_expr.update( geom );
+            }
+
+        value_type
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+            {
+                return M_tensor_expr.evalq( c1, c2, M_permutation[q] );
+            }
+    private :
+        gmc_ptrtype M_geo;
+        tensor_expr_type M_tensor_expr;
+        std::vector<uint16_type> M_permutation;
+    };
+
     template<typename Geo_t>
     tensor<Geo_t> evaluator( Geo_t geo ) const { return tensor<Geo_t>( *this, geo ); }
-    
+
+    template<typename Geo_t>
+    tensorPermutation<Geo_t> evaluatorWithPermutation( Geo_t geo ) const { return tensorPermutation<Geo_t>( *this, geo ); }
+
 #if 0
     class Diff
     {

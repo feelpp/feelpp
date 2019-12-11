@@ -19,27 +19,27 @@ template class MULTIFLUID_CLASS_INSTANTIATION;
 const bool surfacetension_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "surface-tension", 
-            &detail::createInterfaceForcesModel<SurfaceTensionForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_type> );
+            &detail::createInterfaceForcesModel<SurfaceTensionForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 const bool helfrich_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "helfrich", 
-            &detail::createInterfaceForcesModel<HelfrichForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_type> );
+            &detail::createInterfaceForcesModel<HelfrichForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 const bool inextensibility_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "inextensibility-force", 
-            &detail::createInterfaceForcesModel<InextensibilityForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_type> );
+            &detail::createInterfaceForcesModel<InextensibilityForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 const bool linearelastic_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "linear-elastic-force", 
-            &detail::createInterfaceForcesModel<LinearElasticForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_type> );
+            &detail::createInterfaceForcesModel<LinearElasticForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 const bool skalak_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
             "skalak-force", 
-            &detail::createInterfaceForcesModel<SkalakForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_type> );
+            &detail::createInterfaceForcesModel<SkalakForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 }
 }

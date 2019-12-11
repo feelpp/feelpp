@@ -3476,6 +3476,190 @@ Mesh<Shape, T, Tag>::Inverse::distribute( bool extrapolation )
 }
 
 
+namespace details
+{
+struct RemoveMarkerNameWithoutEntityForAllReduce : std::binary_function< std::vector<std::vector<size_type>>,
+                                                                         std::vector<std::vector<size_type>>,
+                                                                         std::vector<std::vector<size_type>> >
+{
+    typedef std::vector<std::vector<size_type>> cont_type;
+    cont_type operator()( cont_type const& x, cont_type const& y ) const
+    {
+        cont_type res( x.size() );
+        for ( int i=0;i<x.size();++i )
+        {
+            int nMarkerByEntity = x[i].size();
+            CHECK( y[i].size() == nMarkerByEntity ) << "size should be equal";
+            res[i].resize( nMarkerByEntity );
+            for ( int j=0;j<nMarkerByEntity;++j )
+            {
+                res[i][j] = x[i][j] + y[i][j];
+            }
+        }
+        return res;
+    }
+};
+
+}
+
+template<typename Shape, typename T, int Tag>
+template<typename TheShape>
+void
+Mesh<Shape, T, Tag>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==0>* )
+{
+    std::vector<std::vector<std::string>> markersEntity(nDim+1);
+    std::vector<std::vector<size_type>> nMarkedEntity(nDim+1);
+    std::vector<std::string> markersToRemove;
+    for ( auto const& m : this->markerNames() )
+    {
+        std::string const& markerName = m.first;
+        int markerDim = m.second[1];
+        switch ( markerDim )
+        {
+        case 0 :
+            markersEntity[0].push_back( markerName );
+            nMarkedEntity[0].push_back( nelements( markedpoints( *this,markerName ), false ) );
+            break;
+        default :
+            markersToRemove.push_back( markerName );
+            break;
+        }
+    }
+    mpi::all_reduce( this->worldComm(), mpi::inplace(nMarkedEntity),  Feel::details::RemoveMarkerNameWithoutEntityForAllReduce());
+
+    for ( int d=0;d<=nDim; ++d )
+        for ( int k=0;k<nMarkedEntity[d].size();++k )
+            if ( nMarkedEntity[d][k] == 0 )
+                markersToRemove.push_back( markersEntity[d][k] );
+
+    for ( std::string const& markerName : markersToRemove )
+        this->M_markername.erase( markerName );
+}
+template<typename Shape, typename T, int Tag>
+template<typename TheShape>
+void
+Mesh<Shape, T, Tag>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==1>* )
+{
+    std::vector<std::vector<std::string>> markersEntity(nDim+1);
+    std::vector<std::vector<size_type>> nMarkedEntity(nDim+1);
+    std::vector<std::string> markersToRemove;
+    for ( auto const& m : this->markerNames() )
+    {
+        std::string const& markerName = m.first;
+        int markerDim = m.second[1];
+        switch ( markerDim )
+        {
+        case 1 :
+            markersEntity[1].push_back( markerName );
+            nMarkedEntity[1].push_back( nelements( markedelements( *this,markerName ), false ) );
+            break;
+        case 0 :
+            markersEntity[0].push_back( markerName );
+            nMarkedEntity[0].push_back( nelements( markedpoints( *this,markerName ), false ) );
+            break;
+        default :
+            markersToRemove.push_back( markerName );
+            break;
+        }
+    }
+    mpi::all_reduce( this->worldComm(), mpi::inplace(nMarkedEntity),  Feel::details::RemoveMarkerNameWithoutEntityForAllReduce());
+
+    for ( int d=0;d<=nDim; ++d )
+        for ( int k=0;k<nMarkedEntity[d].size();++k )
+            if ( nMarkedEntity[d][k] == 0 )
+                markersToRemove.push_back( markersEntity[d][k] );
+
+    for ( std::string const& markerName : markersToRemove )
+        this->M_markername.erase( markerName );
+}
+template<typename Shape, typename T, int Tag>
+template<typename TheShape>
+void
+Mesh<Shape, T, Tag>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==2>* )
+{
+    std::vector<std::vector<std::string>> markersEntity(nDim+1);
+    std::vector<std::vector<size_type>> nMarkedEntity(nDim+1);
+    std::vector<std::string> markersToRemove;
+    for ( auto const& m : this->markerNames() )
+    {
+        std::string const& markerName = m.first;
+        int markerDim = m.second[1];
+        switch ( markerDim )
+        {
+        case 2 :
+            markersEntity[2].push_back( markerName );
+            nMarkedEntity[2].push_back( nelements( markedelements( *this,markerName ), false ) );
+            break;
+        case 1 :
+            markersEntity[1].push_back( markerName );
+            nMarkedEntity[1].push_back( nelements( markedfaces( *this,markerName ), false ) );
+            break;
+        case 0 :
+            markersEntity[0].push_back( markerName );
+            nMarkedEntity[0].push_back( nelements( markedpoints( *this,markerName ), false ) );
+            break;
+        default :
+            markersToRemove.push_back( markerName );
+            break;
+        }
+    }
+    mpi::all_reduce( this->worldComm(), mpi::inplace(nMarkedEntity),  Feel::details::RemoveMarkerNameWithoutEntityForAllReduce());
+
+    for ( int d=0;d<=nDim; ++d )
+        for ( int k=0;k<nMarkedEntity[d].size();++k )
+            if ( nMarkedEntity[d][k] == 0 )
+                markersToRemove.push_back( markersEntity[d][k] );
+
+    for ( std::string const& markerName : markersToRemove )
+        this->M_markername.erase( markerName );
+}
+template<typename Shape, typename T, int Tag>
+template<typename TheShape>
+void
+Mesh<Shape, T, Tag>::removeMarkerNameWithoutEntity( std::enable_if_t<TheShape::nDim==3>* )
+{
+    std::vector<std::vector<std::string>> markersEntity(nDim+1);
+    std::vector<std::vector<size_type>> nMarkedEntity(nDim+1);
+    std::vector<std::string> markersToRemove;
+    for ( auto const& m : this->markerNames() )
+    {
+        std::string const& markerName = m.first;
+        int markerDim = m.second[1];
+        switch ( markerDim )
+        {
+        case 3 :
+            markersEntity[3].push_back( markerName );
+            nMarkedEntity[3].push_back( nelements( markedelements( *this,markerName ), false ) );
+            break;
+        case 2 :
+            markersEntity[2].push_back( markerName );
+            nMarkedEntity[2].push_back( nelements( markedfaces( *this,markerName ), false ) );
+            break;
+        case 1 :
+            markersEntity[1].push_back( markerName );
+            nMarkedEntity[1].push_back( nelements( markededges( *this,markerName ), false ) );
+            break;
+        case 0 :
+            markersEntity[0].push_back( markerName );
+            nMarkedEntity[0].push_back( nelements( markedpoints( *this,markerName ), false ) );
+            break;
+        default :
+            markersToRemove.push_back( markerName );
+            break;
+        }
+    }
+    mpi::all_reduce( this->worldComm(), mpi::inplace(nMarkedEntity), Feel::details::RemoveMarkerNameWithoutEntityForAllReduce());
+
+    for ( int d=0;d<=nDim; ++d )
+        for ( int k=0;k<nMarkedEntity[d].size();++k )
+            if ( nMarkedEntity[d][k] == 0 )
+                markersToRemove.push_back( markersEntity[d][k] );
+
+    for ( std::string const& markerName : markersToRemove )
+        this->M_markername.erase( markerName );
+}
+
+
 } // namespace Feel
 
 

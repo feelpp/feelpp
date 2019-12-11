@@ -45,7 +45,7 @@ public:
     using trial_basis = std::nullptr_t;
 
     //--------------------------------------------------------------------//
-    GlobalLevelsetImpl( std::vector<element_levelset_ptrtype> const& levelsets )
+    explicit GlobalLevelsetImpl( std::vector<element_levelset_ptrtype> const& levelsets )
         : M_levelsets( levelsets )
     {}
 

@@ -963,6 +963,13 @@ expression( std::pair<const std::string, std::pair<scalar_field_expression<Order
 {
     return p.second.first;
 }
+template<int Order,typename SymbExpr>
+auto
+expression( std::pair<const std::string, std::pair<scalar_field_expression<Order>, std::set<std::string> >> const& p,
+            SymbExpr const& se )
+{
+    return expr( p.second.first, se );
+}
 
 template<int Order>
 std::string const&
@@ -994,6 +1001,13 @@ expression1( std::pair<const std::string, std::pair<std::vector<scalar_field_exp
 {
     return p.second.first[0];
 }
+template<int Order,typename SymbExpr>
+auto
+expression1( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::set<std::string> >> const& p,
+             SymbExpr const& se )
+{
+    return expr( p.second.first[0], se );
+}
 
 template<int Order>
 scalar_field_expression<Order> const&
@@ -1006,6 +1020,13 @@ scalar_field_expression<Order>&
 expression2( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::set<std::string> >> & p  )
 {
     return p.second.first[1];
+}
+template<int Order,typename SymbExpr>
+auto
+expression2( std::pair<const std::string, std::pair<std::vector<scalar_field_expression<Order>>, std::set<std::string> >> const& p,
+             SymbExpr const& se )
+{
+    return expr( p.second.first[1], se );
 }
 
 template<int Order>
@@ -1117,6 +1138,14 @@ expression( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>,
 {
     return p.second.first;
 }
+template<int M, int N, int Order,typename SymbExpr>
+auto
+expression( std::pair<const std::string, std::pair<Expr<GinacMatrix<M,N,Order>>, std::set<std::string> >> const& p,
+            SymbExpr const& se )
+{
+    return expr( p.second.first, se );
+}
+
 // Robin...
 template<int M, int N, int Order>
 std::string const&
@@ -1147,7 +1176,16 @@ Expr<GinacMatrix<M,N,Order>> &
 expression1( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::set<std::string>>> & p  )
 {
     return p.second.first[0];
+
 }
+template<int M, int N, int Order, typename SymbExpr>
+auto
+expression1( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::set<std::string>>> const& p,
+             SymbExpr const& se )
+{
+    return expr( p.second.first[0], se );
+}
+
 template<int M, int N, int Order>
 Expr<GinacMatrix<M,N,Order>> const&
 expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::set<std::string>>> const& p  )
@@ -1159,6 +1197,13 @@ Expr<GinacMatrix<M,N,Order>> &
 expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::set<std::string>>> & p  )
 {
     return p.second.first[1];
+}
+template<int M, int N, int Order, typename SymbExpr>
+auto
+expression2( std::pair<const std::string, std::pair<std::vector<Expr<GinacMatrix<M,N,Order>>>,std::set<std::string>>> const& p,
+             SymbExpr const& se )
+{
+    return expr( p.second.first[1], se );
 }
 
 } // vf

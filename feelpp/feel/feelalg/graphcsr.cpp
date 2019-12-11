@@ -42,10 +42,6 @@ GraphCSR::GraphCSR( size_type n,
     :
     super( worldcomm ),
     M_is_closed( false ),
-    M_first_row_entry_on_proc( this->worldComm().globalSize(), first_row_entry_on_proc ),
-    M_last_row_entry_on_proc( this->worldComm().globalSize(),last_row_entry_on_proc ),
-    M_first_col_entry_on_proc( this->worldComm().globalSize(),first_col_entry_on_proc ),
-    M_last_col_entry_on_proc( this->worldComm().globalSize(),last_col_entry_on_proc ),
     M_max_nnz( 0 ),
     M_n_total_nz( n, 0 ),
     M_n_nz( n, 0 ),
@@ -112,10 +108,6 @@ GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
     :
     super( mapRow->worldCommPtr() ),
     M_is_closed( false ),
-     M_first_row_entry_on_proc( mapRow->firstDofGlobalClusterWorld() ),
-    M_last_row_entry_on_proc( mapRow->lastDofGlobalClusterWorld() ),
-    M_first_col_entry_on_proc( mapCol->firstDofGlobalClusterWorld() ),
-    M_last_col_entry_on_proc( mapCol->lastDofGlobalClusterWorld() ),
     M_max_nnz( 0 ),
     M_n_total_nz( 0 ),
     M_n_nz( 0 ),
@@ -130,10 +122,6 @@ GraphCSR::GraphCSR( DataMap const& mapRow,
     :
     super( mapRow.worldCommPtr() ),
     M_is_closed( false ),
-    M_first_row_entry_on_proc( mapRow.firstDofGlobalClusterWorld() ),
-    M_last_row_entry_on_proc( mapRow.lastDofGlobalClusterWorld() ),
-    M_first_col_entry_on_proc( mapCol.firstDofGlobalClusterWorld() ),
-    M_last_col_entry_on_proc( mapCol.lastDofGlobalClusterWorld() ),
     M_max_nnz( 0 ),
     M_n_total_nz( 0 ),
     M_n_nz( 0 ),
@@ -151,10 +139,6 @@ GraphCSR::GraphCSR( vf::BlocksBase<self_ptrtype> const & blockSet,
     :
     super( blockSet(0,0)->worldCommPtr() ), 
     M_is_closed( false ),
-    M_first_row_entry_on_proc( this->worldComm().globalSize(),0 ),
-    M_last_row_entry_on_proc( this->worldComm().globalSize(),0 ),
-    M_first_col_entry_on_proc( this->worldComm().globalSize(),0 ),
-    M_last_col_entry_on_proc( this->worldComm().globalSize(),0 ),
     M_max_nnz( 0 ),
     M_n_total_nz( /*n*/0, 0 ),
     M_n_nz( /*n*/0, 0 ),
@@ -219,10 +203,6 @@ GraphCSR::GraphCSR( GraphCSR const & g )
     :
     super( g ),
     M_is_closed( g.M_is_closed ),
-    M_first_row_entry_on_proc( g.M_first_row_entry_on_proc ),
-    M_last_row_entry_on_proc( g.M_last_row_entry_on_proc ),
-    M_first_col_entry_on_proc( g.M_first_col_entry_on_proc ),
-    M_last_col_entry_on_proc( g.M_last_col_entry_on_proc ),
     M_max_nnz( g.M_max_nnz ),
     M_n_total_nz( g.M_n_total_nz ),
     M_n_nz( g.M_n_nz ),
@@ -245,10 +225,6 @@ GraphCSR::operator=( GraphCSR const& g )
     if ( this != &g )
     {
         super::operator=( g );
-        M_first_row_entry_on_proc = g.M_first_row_entry_on_proc;
-        M_last_row_entry_on_proc = g.M_last_row_entry_on_proc;
-        M_first_col_entry_on_proc = g.M_first_col_entry_on_proc;
-        M_last_col_entry_on_proc = g.M_last_col_entry_on_proc;
         M_max_nnz = g.M_max_nnz;
         M_n_total_nz= g.M_n_total_nz;
         M_n_nz = g.M_n_nz;
@@ -285,14 +261,6 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
             listofdmCol.push_back( blockSet(0,i)->mapColPtr() );
         M_mapRow.reset( new DataMap( listofdmRow, this->worldCommPtr() ) );
         M_mapCol.reset( new DataMap( listofdmCol, this->worldCommPtr() ) );
-    }
-
-    for (int proc = 0 ; proc < worldsize ; ++proc)
-    {
-        M_first_row_entry_on_proc[proc] = M_mapRow->firstDofGlobalCluster(proc);
-        M_first_col_entry_on_proc[proc] = M_mapCol->firstDofGlobalCluster(proc);
-        M_last_row_entry_on_proc[proc] = M_mapRow->lastDofGlobalCluster(proc);
-        M_last_col_entry_on_proc[proc] = M_mapCol->lastDofGlobalCluster(proc);
     }
 }
 
@@ -769,8 +737,8 @@ GraphCSR::close()
 
             for ( auto vecit = boost::get<2>( irow ).begin(), vecen = boost::get<2>( irow ).end(); vecit != vecen; ++vecit )
             {
-                if ( ( *vecit < firstColEntryOnProc() ) ||
-                     ( *vecit > lastColEntryOnProc() ) )
+                if ( ( M_mapCol->nLocalDofWithoutGhost() == 0 ) ||
+                     ( *vecit < firstColEntryOnProc() ) || ( *vecit > lastColEntryOnProc() ) )
                 {
                     // entry is off block-diagonal
                     ++M_n_oz[localindex];

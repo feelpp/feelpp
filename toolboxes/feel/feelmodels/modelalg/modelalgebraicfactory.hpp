@@ -71,25 +71,33 @@ namespace FeelModels
         typedef boost::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
         typedef boost::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
         typedef boost::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
-        typedef boost::function<void ( vector_ptrtype& )> function_newton_initial_guess_type;
+        typedef boost::function<void ( ModelAlgebraic::DataNewtonInitialGuess& )> function_newton_initial_guess_type;
 
         typedef typename backend_type::pre_solve_type pre_solve_type;
         typedef typename backend_type::post_solve_type post_solve_type;
+        typedef typename backend_type::update_nlsolve_type update_nlsolve_type;
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        ModelAlgebraicFactory(model_ptrtype const& __app, backend_ptrtype const& __backend);
+        ModelAlgebraicFactory( std::string const& prefix );
+        ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend );
 
-        ModelAlgebraicFactory(model_ptrtype const&__app,
-                              backend_ptrtype const& __backend,
+        ModelAlgebraicFactory(model_ptrtype const& model,
+                              backend_ptrtype const& backend,
                               graph_ptrtype const& graph,
                               indexsplit_ptrtype const& indexSplit );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
+        void init( model_ptrtype const& model, backend_ptrtype const& backend );
+        void init( model_ptrtype const& model, backend_ptrtype const& backend,
+                   graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
+        void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
+
+#if 0
         template <typename SpaceType>
         void
         initFromFunctionSpace(std::shared_ptr<SpaceType> const& space )
@@ -116,6 +124,7 @@ namespace FeelModels
             if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","initFromFunctionSpace", "finish",
                                                                 this->model()->worldComm(),this->model()->verboseAllProc());
         }
+#endif
 
         //---------------------------------------------------------------------------------------------------------------//
 
@@ -184,23 +193,33 @@ namespace FeelModels
 
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
+
+        void evaluateResidual( const vector_ptrtype& U, vector_ptrtype& R,
+                               std::vector<std::string> const& infos = std::vector<std::string>(),
+                               bool applyDofElimination = true ) const;
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
         void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
+        void addFunctionLinearDofElimination( function_assembly_linear_type const& func, std::string const& key = "" );
         void addFunctionLinearPostAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
         void addFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func, std::string const& key = "" );
         void addFunctionJacobianAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
         void addFunctionResidualAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
+        void addFunctionJacobianDofElimination( function_assembly_jacobian_type const& func, std::string const& key = "" );
+        void addFunctionResidualDofElimination( function_assembly_residual_type const& func, std::string const& key = "" );
         void addFunctionJacobianPostAssembly( function_assembly_jacobian_type const& func, std::string const& key = "" );
         void addFunctionResidualPostAssembly( function_assembly_residual_type const& func, std::string const& key = "" );
 
-    private :
+        void addVectorLinearRhsAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+        void addVectorResidualAssembly( vector_ptrtype const& vec, double scaling = 1.0, std::string const& key = "", bool cstPart = false );
+        void setActivationAddVectorLinearRhsAssembly( std::string const& key, bool b );
+        void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
-        void
-        init(graph_ptrtype const& graph,
-             indexsplit_ptrtype const& indexSplit);
+        void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
+
+    private :
 
         void
         buildMatrixVector(graph_ptrtype const& graph,
@@ -228,12 +247,28 @@ namespace FeelModels
         bool M_hasBuildLinearSystemCst;
 
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
+        std::map<std::string,function_assembly_linear_type> M_addFunctionLinearDofElimination;
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearPostAssembly;
         std::map<std::string,function_newton_initial_guess_type> M_addFunctionNewtonInitialGuess;
         std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianAssembly;
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualAssembly;
+        std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianDofElimination;
+        std::map<std::string,function_assembly_residual_type> M_addFunctionResidualDofElimination;
         std::map<std::string,function_assembly_jacobian_type> M_addFunctionJacobianPostAssembly;
         std::map<std::string,function_assembly_residual_type> M_addFunctionResidualPostAssembly;
+
+        // ( key -> ( vector,scaling, cstPart?, activated? ) )
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorLinearRhsAssembly;
+        std::map<std::string, std::tuple<vector_ptrtype,double,bool,bool>> M_addVectorResidualAssembly;
+
+        bool M_usePseudoTransientContinuation;
+        std::string M_pseudoTransientContinuationEvolutionMethod;
+        std::vector<std::pair<double,double> > M_pseudoTransientContinuationDeltaAndResidual;
+        double M_pseudoTransientContinuationDelta0, M_pseudoTransientContinuationDeltaMax;
+        std::string M_pseudoTransientContinuationSerVariant;
+        vector_ptrtype M_pseudoTransientContinuationPreviousSolution;
+        double M_pseudoTransientContinuationExpurThresholdHigh,M_pseudoTransientContinuationExpurThresholdLow;
+        double M_pseudoTransientContinuationExpurBetaHigh, M_pseudoTransientContinuationExpurBetaLow;
     };
 
 
