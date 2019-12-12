@@ -9,7 +9,8 @@
  *
  *  Journal of Graphics Tools, 8(1), 2003
  *
- * Author: Thibaut Metivet <metivet@math.unistra.fr>
+ * Author: Thibaut Metivet <thibaut.metivet@inria.fr>
+ * Copyright (C) 2019 Thibaut Metivet
  *
  */
 
