@@ -660,7 +660,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
-    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistantiation methods\n";
+    CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
 
     const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
@@ -670,8 +670,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     M_redistInitialValue = boption( _name="redist-initial-value", _prefix=this->prefix() );
 
     const std::string gradPhiMethod = soption( _name="gradphi-method", _prefix=this->prefix() );
-    CHECK(DerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible gradphi derivation methods\n";
-    M_gradPhiMethod = DerivationMethodMap.left.at(gradPhiMethod);
+    CHECK(LevelSetDerivationMethodMap.left.count(gradPhiMethod)) << gradPhiMethod <<" is not in the list of possible gradphi derivation methods\n";
+    M_gradPhiMethod = LevelSetDerivationMethodMap.left.at(gradPhiMethod);
 
     if( Environment::vm( _name="modgradphi-method", _prefix=this->prefix() ).defaulted() &&
         !Environment::vm( _name="gradphi-method", _prefix=this->prefix() ).defaulted() )
@@ -681,16 +681,16 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     else
     {
         const std::string modGradPhiMethod = soption( _name="modgradphi-method", _prefix=this->prefix() );
-        CHECK(DerivationMethodMap.left.count(modGradPhiMethod)) << modGradPhiMethod <<" is not in the list of possible modgradphi derivation methods\n";
-        M_modGradPhiMethod = DerivationMethodMap.left.at(modGradPhiMethod);
+        CHECK(LevelSetDerivationMethodMap.left.count(modGradPhiMethod)) << modGradPhiMethod <<" is not in the list of possible modgradphi derivation methods\n";
+        M_modGradPhiMethod = LevelSetDerivationMethodMap.left.at(modGradPhiMethod);
     }
 
     const std::string curvatureMethod = soption( _name="curvature-method", _prefix=this->prefix() );
-    CHECK(CurvatureMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature methods\n";
-    M_curvatureMethod = CurvatureMethodMap.left.at(curvatureMethod);
+    CHECK(LevelSetCurvatureMethodMap.left.count(curvatureMethod)) << curvatureMethod <<" is not in the list of possible curvature methods\n";
+    M_curvatureMethod = LevelSetCurvatureMethodMap.left.at(curvatureMethod);
 
-    if( M_curvatureMethod == CurvatureMethod::DIFFUSION_ORDER1 
-            || M_curvatureMethod == CurvatureMethod::DIFFUSION_ORDER2 )
+    if( M_curvatureMethod == LevelSetCurvatureMethod::DIFFUSION_ORDER1 
+            || M_curvatureMethod == LevelSetCurvatureMethod::DIFFUSION_ORDER2 )
         this->setUseCurvatureDiffusion( true );
 
     M_useSpaceIsoPN = boption( _name="use-space-iso-pn", _prefix=this->prefix() );
@@ -1032,13 +1032,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
 
     switch( M_curvatureMethod )
     {
-        case CurvatureMethod::NODAL_PROJECTION:
+        case LevelSetCurvatureMethod::NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateCurvature", "perform nodal projection");
             M_levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
         }
         break;
-        case CurvatureMethod::L2_PROJECTION:
+        case LevelSetCurvatureMethod::L2_PROJECTION:
         {
             this->log("LevelSetBase", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
@@ -1046,7 +1046,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             *M_levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
-        case CurvatureMethod::SMOOTH_PROJECTION:
+        case LevelSetCurvatureMethod::SMOOTH_PROJECTION:
         {
             this->log("LevelSetBase", "updateCurvature", "perform smooth projection");
             //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
@@ -1054,7 +1054,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
-        case CurvatureMethod::PN_NODAL_PROJECTION:
+        case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateCurvature", "perform PN-nodal projection");
             auto phiPN = this->phiPN();
@@ -1072,13 +1072,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
         }
         break;
-        case CurvatureMethod::DIFFUSION_ORDER1:
+        case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
             this->log("LevelSetBase", "updateCurvature", "perform diffusion order1");
             *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
-        case CurvatureMethod::DIFFUSION_ORDER2:
+        case LevelSetCurvatureMethod::DIFFUSION_ORDER2:
         {
             this->log("LevelSetBase", "updateCurvature", "perform diffusion order2");
             *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
@@ -1119,19 +1119,19 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
 
     switch( M_gradPhiMethod )
     {
-        case DerivationMethod::NODAL_PROJECTION:
+        case LevelSetDerivationMethod::NODAL_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform nodal projection");
             M_distanceNormal->on( _range=this->rangeMeshElements(), _expr=N_expr );
             break;
-        case DerivationMethod::L2_PROJECTION:
+        case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform L2 projection");
             *M_distanceNormal = this->projectorL2Vectorial()->project( N_expr );
             break;
-        case DerivationMethod::SMOOTH_PROJECTION:
+        case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
             *M_distanceNormal = this->smootherVectorial()->project( N_expr );
             break;
-        case DerivationMethod::PN_NODAL_PROJECTION:
+        case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
             CHECK( false ) << "TODO: updateDistanceNormal with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
@@ -1159,26 +1159,26 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
 
     switch( M_curvatureMethod )
     {
-        case CurvatureMethod::NODAL_PROJECTION:
+        case LevelSetCurvatureMethod::NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform nodal projection");
             M_distanceCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->distanceNormal()) );
         }
         break;
-        case CurvatureMethod::L2_PROJECTION:
+        case LevelSetCurvatureMethod::L2_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform L2 projection");
             //*M_distanceCurvature = this->projectorL2()->project( _expr=divv(this->distanceNormal()) );
             *M_distanceCurvature = this->projectorL2()->derivate( trans(idv(this->distanceNormal())) );
         }
         break;
-        case CurvatureMethod::SMOOTH_PROJECTION:
+        case LevelSetCurvatureMethod::SMOOTH_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform smooth projection");
             *M_distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
         }
         break;
-        case CurvatureMethod::PN_NODAL_PROJECTION:
+        case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform PN-nodal projection");
             CHECK( false ) << "TODO: updateDistanceCurvature with PN_NODAL_PROJECTION method\n";
@@ -1197,13 +1197,13 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
             //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_distanceCurvature );
         }
         break;
-        case CurvatureMethod::DIFFUSION_ORDER1:
+        case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order1");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
-        case CurvatureMethod::DIFFUSION_ORDER2:
+        case LevelSetCurvatureMethod::DIFFUSION_ORDER2:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order2");
             *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
@@ -1723,25 +1723,41 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateInterfaceQuantities()
 // Interface quantities helpers
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_vectorial_type
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, DerivationMethod method ) const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const
+{
+    this->log("LevelSetBase", "grad", "perform " + LevelSetDerivationMethodMap.right.at( method ) );
+    return this->toolManager()->grad( phi, method );
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_type
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const
+{
+    this->log("LevelSetBase", "modGrad", "perform " + LevelSetDerivationMethodMap.right.at( method ) );
+    return this->toolManager()->modGrad( phi, method );
+}
+#if 0
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_vectorial_type
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const
 {
     switch( method )
     {
-        case DerivationMethod::NODAL_PROJECTION:
+        case LevelSetDerivationMethod::NODAL_PROJECTION:
             this->log("LevelSetBase", "grad", "perform nodal projection");
             return vf::project( 
                     _space=this->functionSpaceVectorial(),
                     _range=this->rangeMeshElements(),
                     _expr=trans(gradv(phi))
                     );
-        case DerivationMethod::L2_PROJECTION:
+        case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "grad", "perform L2 projection");
             //return this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
             return this->projectorL2Vectorial()->derivate( idv(phi) );
-        case DerivationMethod::SMOOTH_PROJECTION:
+        case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "grad", "perform smooth projection");
             return this->smootherVectorial()->project( trans(gradv(phi)) );
-        case DerivationMethod::PN_NODAL_PROJECTION:
+        case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "grad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
@@ -1756,24 +1772,24 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::grad( element_levelset_type const& phi, Deriva
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_type
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, DerivationMethod method ) const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const
 {
     switch( method )
     {
-        case DerivationMethod::NODAL_PROJECTION:
+        case LevelSetDerivationMethod::NODAL_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform nodal projection");
             return vf::project( 
                     _space=this->functionSpace(),
                     _range=this->rangeMeshElements(),
                     _expr=sqrt( gradv(phi)*trans(gradv(phi)) )
                     );
-        case DerivationMethod::L2_PROJECTION:
+        case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform L2 projection");
             return this->projectorL2()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
-        case DerivationMethod::SMOOTH_PROJECTION:
+        case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform smooth projection");
             return this->smoother()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
-        case DerivationMethod::PN_NODAL_PROJECTION:
+        case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             this->log("LevelSetBase", "modGrad", "perform PN-nodal projection");
             CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
             auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
@@ -1785,6 +1801,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGrad( element_levelset_type const& phi, Der
             return this->functionSpaceManager()->opInterpolationScalarFromPN()->operator()( modGradPhiPN );
     }
 }
+#endif
 
 //----------------------------------------------------------------------------//
 // Redistanciation
@@ -1833,7 +1850,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
 
                 case FastMarchingInitializationMethod::ILP_L2 :
                 {
-                    auto const modGradPhi = this->modGrad( phi, DerivationMethod::L2_PROJECTION );
+                    auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::L2_PROJECTION );
                     //*phiRedist = phi;
                     phiRedist->on( 
                             _range=this->rangeMeshElements(), 
@@ -1844,7 +1861,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
 
                 case FastMarchingInitializationMethod::ILP_SMOOTH :
                 {
-                    auto const modGradPhi = this->modGrad( phi, DerivationMethod::SMOOTH_PROJECTION );
+                    auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::SMOOTH_PROJECTION );
                     //*phiRedist = phi;
                     phiRedist->on( 
                             _range=this->rangeMeshElements(), 
@@ -1959,9 +1976,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hdProjectionMethod = (this->M_useHeavisideDiracNodalProj)? "nodal": "L2";
 
-    const std::string gradPhiMethod = DerivationMethodMap.right.at(this->M_gradPhiMethod);
-    const std::string modGradPhiMethod = DerivationMethodMap.right.at(this->M_modGradPhiMethod);
-    const std::string curvatureMethod = CurvatureMethodMap.right.at(this->M_curvatureMethod);
+    const std::string gradPhiMethod = LevelSetDerivationMethodMap.right.at(this->M_gradPhiMethod);
+    const std::string modGradPhiMethod = LevelSetDerivationMethodMap.right.at(this->M_modGradPhiMethod);
+    const std::string curvatureMethod = LevelSetCurvatureMethodMap.right.at(this->M_curvatureMethod);
 
     std::string redistMethod;
     std::string redistmethod = soption( _name="redist-method", _prefix=this->prefix() );

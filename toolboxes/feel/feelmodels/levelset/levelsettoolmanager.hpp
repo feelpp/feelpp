@@ -34,6 +34,37 @@
 namespace Feel {
 namespace FeelModels {
 
+//--------------------------------------------------------------------//
+//--------------------------------------------------------------------//
+// Derivation methods
+enum class LevelSetDerivationMethod { 
+    NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION/*, PN_NODAL_PROJECTION*/
+};
+typedef boost::bimap<std::string, LevelSetDerivationMethod> levelsetderivationmethod_maptype;
+static const levelsetderivationmethod_maptype LevelSetDerivationMethodMap = boost::assign::list_of< levelsetderivationmethod_maptype::relation >
+    ( "nodal-projection", LevelSetDerivationMethod::NODAL_PROJECTION )
+    ( "l2-projection", LevelSetDerivationMethod::L2_PROJECTION )
+    ( "smooth-projection", LevelSetDerivationMethod::SMOOTH_PROJECTION )
+    //( "pn-nodal-projection", LevelSetDerivationMethod::PN_NODAL_PROJECTION )
+;
+
+enum class LevelSetCurvatureMethod { 
+    NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, /*PN_NODAL_PROJECTION,*/
+    DIFFUSION_ORDER1, DIFFUSION_ORDER2
+};
+typedef boost::bimap<std::string, LevelSetCurvatureMethod> levelsetcurvaturemethod_maptype;
+static const levelsetcurvaturemethod_maptype LevelSetCurvatureMethodMap = boost::assign::list_of< levelsetcurvaturemethod_maptype::relation >
+    ( "nodal-projection", LevelSetCurvatureMethod::NODAL_PROJECTION )
+    ( "l2-projection", LevelSetCurvatureMethod::L2_PROJECTION )
+    ( "smooth-projection", LevelSetCurvatureMethod::SMOOTH_PROJECTION )
+    //( "pn-nodal-projection", LevelSetCurvatureMethod::PN_NODAL_PROJECTION )
+    ( "diffusion-order1", LevelSetCurvatureMethod::DIFFUSION_ORDER1 )
+    ( "diffusion-order2", LevelSetCurvatureMethod::DIFFUSION_ORDER2 )
+;
+
+//--------------------------------------------------------------------//
+//--------------------------------------------------------------------//
+// LevelSetToolManager class
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
     typename BasisPnType = BasisType
@@ -49,14 +80,20 @@ public:
     typedef std::shared_ptr<levelset_space_manager_type> levelset_space_manager_ptrtype;
 
     typedef typename levelset_space_manager_type::value_type value_type;
-    // Default scalar and vectorial spaces
+    // Default scalar and vectorial spaces and elements
     typedef typename levelset_space_manager_type::space_scalar_type space_scalar_type;
     typedef typename levelset_space_manager_type::space_scalar_ptrtype space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef typename space_scalar_type::element_ptrtype element_scalar_ptrtype;
     typedef typename levelset_space_manager_type::space_vectorial_type space_vectorial_type;
     typedef typename levelset_space_manager_type::space_vectorial_ptrtype space_vectorial_ptrtype;
-    // Tensor2 symmetric function space
+    typedef typename space_vectorial_type::element_type element_vectorial_type;
+    typedef typename space_vectorial_type::element_ptrtype element_vectorial_ptrtype;
+    // Tensor2 symmetric function space and element
     typedef typename levelset_space_manager_type::space_tensor2symm_type space_tensor2symm_type;
     typedef typename levelset_space_manager_type::space_tensor2symm_ptrtype space_tensor2symm_ptrtype;
+    typedef typename space_tensor2symm_type::element_type element_tensor2symm_type;
+    typedef typename space_tensor2symm_type::element_ptrtype element_tensor2symm_ptrtype;
     //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
@@ -103,6 +140,11 @@ public:
     projector_vectorial_ptrtype const& projectorL2VectorialIsoPN() const { return M_projectorL2VectorialIsoPN; }
     projector_scalar_ptrtype const& projectorSMScalarIsoPN() const { return M_projectorSMScalarIsoPN; }
     projector_vectorial_ptrtype const& projectorSMVectorialIsoPN() const { return M_projectorSMVectorialIsoPN; }
+
+    element_vectorial_type grad( element_scalar_type const& phi, LevelSetDerivationMethod method ) const;
+    element_vectorial_type grad( element_scalar_ptrtype const& phi, LevelSetDerivationMethod method ) const { return this->grad( *phi, method ); }
+    element_scalar_type modGrad( element_scalar_type const& phi, LevelSetDerivationMethod method ) const;
+    element_scalar_type modGrad( element_scalar_ptrtype const& phi, LevelSetDerivationMethod method ) const { return this->modGrad( *phi, method ); }
 
     levelset_curvaturediffusion_ptrtype const& curvatureDiffusion() const { return M_curvatureDiffusion; }
 
@@ -342,6 +384,63 @@ LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::createCurvatureDiffusion()
                 this->functionSpaceManager()->functionSpaceScalar(), 
                 prefixvm( this->M_prefix, "curvature-diffusion" ) 
                 );
+    }
+}
+
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::element_vectorial_type
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::grad( element_scalar_type const& phi, LevelSetDerivationMethod method ) const
+{
+    switch( method )
+    {
+        case LevelSetDerivationMethod::NODAL_PROJECTION:
+            return vf::project( 
+                    _space=this->functionSpaceManager()->functionSpaceVectorial(),
+                    _range=this->functionSpaceManager()->rangeMeshElements(),
+                    _expr=trans(gradv(phi))
+                    );
+        case LevelSetDerivationMethod::L2_PROJECTION:
+            //return this->projectorL2Vectorial()->project( _expr=trans(gradv(phi)) );
+            return this->projectorL2Vectorial()->derivate( idv(phi) );
+        case LevelSetDerivationMethod::SMOOTH_PROJECTION:
+            return this->projectorSMVectorial()->project( trans(gradv(phi)) );
+        //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
+            //CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
+            //auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
+            //auto gradPhiPN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=trans(gradv(phiPN))
+                    //);
+            //return this->functionSpaceManager()->opInterpolationVectorialFromPN()->operator()( gradPhiPN );
+    }
+}
+
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_DECLARATIONS
+typename LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::element_scalar_type
+LEVELSETTOOLMANAGER_CLASS_TEMPLATE_TYPE::modGrad( element_scalar_type const& phi, LevelSetDerivationMethod method ) const
+{
+    switch( method )
+    {
+        case LevelSetDerivationMethod::NODAL_PROJECTION:
+            return vf::project( 
+                    _space=this->functionSpaceManager()->functionSpaceScalar(),
+                    _range=this->functionSpaceManager()->rangeMeshElements(),
+                    _expr=sqrt( gradv(phi)*trans(gradv(phi)) )
+                    );
+        case LevelSetDerivationMethod::L2_PROJECTION:
+            return this->projectorL2Scalar()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        case LevelSetDerivationMethod::SMOOTH_PROJECTION:
+            return this->projectorSMScalar()->project( sqrt( gradv(phi)*trans(gradv(phi)) ) );
+        //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
+            //CHECK( M_useSpaceIsoPN ) << "use-space-iso-pn must be enabled to use PN_NODAL_PROJECTION \n";
+            //auto phiPN = this->functionSpaceManager()->opInterpolationScalarToPN()->operator()( phi );
+            //auto modGradPhiPN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=sqrt( gradv(phiPN)*trans(gradv(phiPN)) )
+                    //);
+            //return this->functionSpaceManager()->opInterpolationScalarFromPN()->operator()( modGradPhiPN );
     }
 }
 

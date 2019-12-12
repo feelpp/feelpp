@@ -230,21 +230,6 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Derivation methods
-    enum class DerivationMethod { 
-        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_NODAL_PROJECTION
-    };
-    typedef boost::bimap<std::string, DerivationMethod> derivationmethod_maptype;
-    static const derivationmethod_maptype DerivationMethodMap;
-
-    enum class CurvatureMethod { 
-        NODAL_PROJECTION, L2_PROJECTION, SMOOTH_PROJECTION, PN_NODAL_PROJECTION,
-        DIFFUSION_ORDER1, DIFFUSION_ORDER2
-    };
-    typedef boost::bimap<std::string, CurvatureMethod> curvaturemethod_maptype;
-    static const curvaturemethod_maptype CurvatureMethodMap;
-
-    //--------------------------------------------------------------------//
     // Exporter
     typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
@@ -344,13 +329,13 @@ public:
 
     //--------------------------------------------------------------------//
     // Interface quantities helpers
-    element_vectorial_type grad( element_levelset_type const& phi, DerivationMethod method ) const;
-    element_vectorial_type grad( element_levelset_ptrtype const& phi, DerivationMethod method ) const { return this->grad( *phi, method ); }
+    element_vectorial_type grad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const;
+    element_vectorial_type grad( element_levelset_ptrtype const& phi, LevelSetDerivationMethod method ) const { return this->grad( *phi, method ); }
     element_vectorial_type grad( element_levelset_type const& phi ) const { return this->grad(phi, M_gradPhiMethod); }
     element_vectorial_type grad( element_levelset_ptrtype const& phi ) const { return this->grad(*phi); }
 
-    element_levelset_type modGrad( element_levelset_type const& phi, DerivationMethod method ) const;
-    element_levelset_type modGrad( element_levelset_ptrtype const& phi, DerivationMethod method ) const { return this->modGrad(*phi, method); }
+    element_levelset_type modGrad( element_levelset_type const& phi, LevelSetDerivationMethod method ) const;
+    element_levelset_type modGrad( element_levelset_ptrtype const& phi, LevelSetDerivationMethod method ) const { return this->modGrad(*phi, method); }
     element_levelset_type modGrad( element_levelset_type const& phi ) const { return this->modGrad(phi, M_modGradPhiMethod); }
     element_levelset_type modGrad( element_levelset_ptrtype const& phi ) const { return this->modGrad(*phi); }
 
@@ -618,9 +603,9 @@ private:
 
     //--------------------------------------------------------------------//
     // Derivation methods
-    DerivationMethod M_gradPhiMethod;
-    DerivationMethod M_modGradPhiMethod;
-    CurvatureMethod M_curvatureMethod;
+    LevelSetDerivationMethod M_gradPhiMethod;
+    LevelSetDerivationMethod M_modGradPhiMethod;
+    LevelSetCurvatureMethod M_curvatureMethod;
 
     //--------------------------------------------------------------------//
     // Curvature diffusion
@@ -697,25 +682,25 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost:
     ( "il-hj", FastMarchingInitializationMethod::IL_HJ_EQ )
 ;
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype::relation >
-    ( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
-    ( "l2-projection", DerivationMethod::L2_PROJECTION )
-    ( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
-    ( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
-;
+//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+//const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
+//LEVELSETBASE_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype::relation >
+    //( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
+    //( "l2-projection", DerivationMethod::L2_PROJECTION )
+    //( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
+    //( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
+//;
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
-    ( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
-    ( "l2-projection", CurvatureMethod::L2_PROJECTION )
-    ( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
-    ( "pn-nodal-projection", CurvatureMethod::PN_NODAL_PROJECTION )
-    ( "diffusion-order1", CurvatureMethod::DIFFUSION_ORDER1 )
-    ( "diffusion-order2", CurvatureMethod::DIFFUSION_ORDER2 )
-;
+//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+//const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
+//LEVELSETBASE_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
+    //( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
+    //( "l2-projection", CurvatureMethod::L2_PROJECTION )
+    //( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
+    //( "pn-nodal-projection", CurvatureMethod::PN_NODAL_PROJECTION )
+    //( "diffusion-order1", CurvatureMethod::DIFFUSION_ORDER1 )
+    //( "diffusion-order2", CurvatureMethod::DIFFUSION_ORDER2 )
+//;
 
 //----------------------------------------------------------------------------//
 
