@@ -116,8 +116,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     this->createFunctionSpaces();
     // Tools
     this->createInterfaceQuantities();
-    this->createRedistanciation();
     this->createTools();
+    this->createRedistanciation();
     this->createExporters();
 
     // Initial value
@@ -439,6 +439,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciationFM()
                 this->functionSpace(), prefixvm(this->prefix(), "redist-fm") 
                 ) 
             );
+    M_redistanciationFM->setProjectorL2( this->projectorL2Scalar() );
+    M_redistanciationFM->setProjectorSM( this->projectorSMScalar() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
