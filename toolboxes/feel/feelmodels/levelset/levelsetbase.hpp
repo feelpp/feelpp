@@ -338,10 +338,11 @@ public:
     levelset_tool_manager_ptrtype const& toolManager() const { return M_toolManager; }
     void setToolManager( levelset_tool_manager_ptrtype const& manager ) { M_toolManager = manager; }
 
-    projector_levelset_ptrtype const& projectorL2() const { return M_projectorL2Scalar; }
+    projector_levelset_ptrtype const& projectorL2() const { return this->projectorL2Scalar(); }
+    projector_levelset_ptrtype const& projectorL2Scalar() const { return M_projectorL2Scalar; }
     projector_levelset_vectorial_ptrtype const& projectorL2Vectorial() const { return M_projectorL2Vectorial; }
 
-    projector_levelset_ptrtype const& smoother() const { return M_projectorSMScalar; }
+    projector_levelset_ptrtype const& smoother() const { return this->projectorSMScalar(); }
     projector_levelset_ptrtype const& projectorSMScalar() const { return M_projectorSMScalar; }
     projector_levelset_vectorial_ptrtype const& smootherVectorial() const { return M_projectorSMVectorial; }
     projector_levelset_vectorial_ptrtype const& projectorSMVectorial() const { return M_projectorSMVectorial; }
