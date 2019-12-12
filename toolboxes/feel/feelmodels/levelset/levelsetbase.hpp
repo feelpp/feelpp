@@ -208,12 +208,6 @@ public:
     typedef LevelSetRedistanciationHJ<space_levelset_type> redistanciationHJ_type;
     typedef std::shared_ptr<redistanciationHJ_type> redistanciationHJ_ptrtype;
 
-    enum class FastMarchingInitializationMethod { 
-        NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
-    };
-
-    typedef boost::bimap<std::string, FastMarchingInitializationMethod> fastmarchinginitializationmethodidmap_type;
-
     //--------------------------------------------------------------------//
     // Initial value
     enum class ShapeType {
@@ -388,9 +382,6 @@ public:
     // Redistanciation
     virtual void redistanciate();
     element_levelset_type redistanciate( element_levelset_type const& phi, LevelSetDistanceMethod method ) const;
-
-    void setFastMarchingInitializationMethod( FastMarchingInitializationMethod m );
-    FastMarchingInitializationMethod fastMarchingInitializationMethod() { return M_fastMarchingInitializationMethod; }
 
     redistanciationFM_ptrtype const& redistanciationFM( bool buildOnTheFly = true ) const;
     redistanciationHJ_ptrtype const& redistanciationHJ( bool buildOnTheFly = true ) const;
@@ -624,8 +615,6 @@ private:
     bool M_redistanciationIsUpdatedForUse;
 
     LevelSetDistanceMethod M_redistanciationMethod;
-    FastMarchingInitializationMethod M_fastMarchingInitializationMethod;
-    static const fastmarchinginitializationmethodidmap_type FastMarchingInitializationMethodIdMap;
 
     bool M_redistInitialValue;
 
@@ -669,18 +658,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
     {"hj", LevelSetDistanceMethod::HAMILTONJACOBI},
     {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
 };
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::FastMarchingInitializationMethodIdMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::fastmarchinginitializationmethodidmap_type::relation >
-    ( "none", FastMarchingInitializationMethod::NONE )
-    ( "ilp", FastMarchingInitializationMethod::ILP_L2 )
-    ( "ilp-l2", FastMarchingInitializationMethod::ILP_L2 )
-    ( "ilp-smooth", FastMarchingInitializationMethod::ILP_SMOOTH )
-    ( "ilp-nodal", FastMarchingInitializationMethod::ILP_NODAL )
-    ( "hj", FastMarchingInitializationMethod::HJ_EQ )
-    ( "il-hj", FastMarchingInitializationMethod::IL_HJ_EQ )
-;
 
 //LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 //const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
