@@ -1054,23 +1054,23 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
-        case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
-        {
-            this->log("LevelSetBase", "updateCurvature", "perform PN-nodal projection");
-            auto phiPN = this->phiPN();
-            auto normalPN = vf::project(
-                    _space=this->functionSpaceManager()->functionSpaceVectorialPN(),
-                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
-                    _expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
-                    );
-            auto curvaturePN = vf::project(
-                    _space=this->functionSpaceManager()->functionSpaceScalarPN(),
-                    _range=this->functionSpaceManager()->rangeMeshPNElements(),
-                    _expr=divv(normalPN)
-                    );
+        //case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
+        //{
+            //this->log("LevelSetBase", "updateCurvature", "perform PN-nodal projection");
+            //auto phiPN = this->phiPN();
+            //auto normalPN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=trans(gradv(phiPN)) / sqrt(gradv(phiPN)*trans(gradv(phiPN)))
+                    //);
+            //auto curvaturePN = vf::project(
+                    //_space=this->functionSpaceManager()->functionSpaceScalarPN(),
+                    //_range=this->functionSpaceManager()->rangeMeshPNElements(),
+                    //_expr=divv(normalPN)
+                    //);
 
-            this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
-        }
+            //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
+        //}
         break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
@@ -1131,9 +1131,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
             this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
             *M_distanceNormal = this->smootherVectorial()->project( N_expr );
             break;
-        case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
-            this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
-            CHECK( false ) << "TODO: updateDistanceNormal with PN_NODAL_PROJECTION method\n";
+        //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
+            //this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
+            //CHECK( false ) << "TODO: updateDistanceNormal with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
             //auto gradPhiPN = vf::project(
                     //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
@@ -1141,7 +1141,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
                     //_expr=trans(gradv(phiPN))
                     //);
             //this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *M_distanceNormal );
-            break;
+            //break;
     }
 
     M_doUpdateDistanceNormal = false;
@@ -1178,10 +1178,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
             *M_distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
         }
         break;
-        case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
-        {
-            this->log("LevelSetBase", "updateDistanceCurvature", "perform PN-nodal projection");
-            CHECK( false ) << "TODO: updateDistanceCurvature with PN_NODAL_PROJECTION method\n";
+        //case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
+        //{
+            //this->log("LevelSetBase", "updateDistanceCurvature", "perform PN-nodal projection");
+            //CHECK( false ) << "TODO: updateDistanceCurvature with PN_NODAL_PROJECTION method\n";
             //auto phiPN = this->phiPN();
             //auto normalPN = vf::project(
                     //_space=this->functionSpaceManager()->functionSpaceVectorialPN(),
@@ -1195,8 +1195,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
                     //);
 
             //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_distanceCurvature );
-        }
-        break;
+        //}
+        //break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order1");

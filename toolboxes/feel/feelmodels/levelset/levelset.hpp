@@ -211,13 +211,6 @@ public:
     typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //--------------------------------------------------------------------//
-    // Derivation methods
-    using typename super_type::DerivationMethod;
-    using super_type::DerivationMethodMap;
-    using typename super_type::CurvatureMethod;
-    using super_type::CurvatureMethodMap;
-
-    //--------------------------------------------------------------------//
     // ModGradPhi advection
     typedef basis_levelset_type basis_modgradphi_advection_type;
     typedef AdvDiffReac< space_levelset_type, space_advection_velocity_type > modgradphi_advection_type;
