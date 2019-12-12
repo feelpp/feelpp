@@ -175,7 +175,6 @@ const typename LevelSetRedistanciationFM<FunctionSpaceType>::fastmarchinginitial
 LevelSetRedistanciationFM<FunctionSpaceType>::FastMarchingInitialisationMethodMap = 
 boost::assign::list_of< typename LevelSetRedistanciationFM<FunctionSpaceType>::fastmarchinginitialisationmethodidmap_type::relation >
     ( "none", FastMarchingInitialisationMethod::NONE )
-    ( "ilp", FastMarchingInitialisationMethod::ILP_L2 )
     ( "ilp-l2", FastMarchingInitialisationMethod::ILP_L2 )
     ( "ilp-smooth", FastMarchingInitialisationMethod::ILP_SMOOTH )
     ( "ilp-nodal", FastMarchingInitialisationMethod::ILP_NODAL )
