@@ -118,14 +118,12 @@ class CoupledMixedPoisson : public MixedPoisson<Dim, Order, G_Order, E_Order>
         : super_type() {}
 
     CoupledMixedPoisson( std::string const& prefix,
-                         MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                          std::string const& subPrefix = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() )
         : super_type( prefix, physic, worldComm, subPrefix, modelRep ) {}
 
     static self_ptrtype New( std::string const& prefix = "hdg.poisson",
-                             MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "" );
 
@@ -168,10 +166,10 @@ class CoupledMixedPoisson : public MixedPoisson<Dim, Order, G_Order, E_Order>
 template <int Dim, int Order, int G_Order, int E_Order>
 typename CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::self_ptrtype
 CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::New( std::string const& prefix,
-                                                        MixedPoissonPhysics const& physic,
-                                                        worldcomm_ptr_t const& worldComm, std::string const& subPrefix )
+                                                        worldcomm_ptr_t const& worldComm,
+                                                        std::string const& subPrefix )
 {
-    return std::make_shared<self_type>( prefix, physic, worldComm, subPrefix );
+    return std::make_shared<self_type>( prefix, worldComm, subPrefix );
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
@@ -237,8 +235,131 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
     }
 }
 
+<<<<<<< HEAD
 template <int Dim, int Order, int G_Order, int E_Order>
 void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::updateTimeStepBDF()
+=======
+		std::shared_ptr<FMU> circuit() { return M_circuit; }
+
+		virtual void assembleCstPart();
+		virtual void assembleNonCstPart();
+		void assemble0d( int i );
+		void assembleRhs0d( int i );
+	   
+		virtual void initModel();
+		virtual void initSpaces();
+
+		void exportResults( double time, mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr );
+		void exportResults(mesh_ptrtype mesh = nullptr, op_interp_ptrtype Idh = nullptr, opv_interp_ptrtype Idhv = nullptr) 
+		{ 
+		   this->exportResults (this->currentTime(), mesh, Idh, Idhv ); 
+		   this->exporterMP()->save(); 
+		}
+		
+		virtual void solve();
+
+		   
+		// time step scheme
+		virtual void createTimeDiscretization() ;
+		virtual void updateTimeStepBDF();
+		virtual void initTimeStep();   
+ 
+		Bdf_element_vector_t timeStepBDF_buffer() { return M_bdf_buffer; }	
+		Bdf_element_vector_t const& timeStepBDF_buffer() const { return M_bdf_buffer; }
+		// boost::shared_ptr<TSBase> timeStepBase_buffer() { return this->timeStepBDF_buffer(); }
+		// boost::shared_ptr<TSBase> timeStepBase_buffer() const { return this->timeStepBDF_buffer(); }
+	   
+		// For the second step 
+		void second_step(double final_time, int i );
+
+		// Run simulation
+		void run ( op_interp_ptrtype Idh_poi = nullptr, opv_interp_ptrtype Idhv_poi = nullptr );
+	};
+
+
+	template<int Dim, int Order, int G_Order, int E_Order>
+	typename CoupledMixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
+	CoupledMixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
+											 worldcomm_ptr_t const& worldComm, std::string const& subPrefix )
+	{
+		return std::make_shared<self_type> ( prefix,worldComm,subPrefix );
+	}
+
+	
+
+	template<int Dim, int Order, int G_Order, int E_Order> 
+	void 
+	CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::initTimeStep()
+	{
+		super_type::initTimeStep();
+		// start or restart time step scheme
+		if (!this->doRestart())
+		{
+			auto itField = this->modelProperties().boundaryConditions().find("buffer");
+			if ( itField != this->modelProperties().boundaryConditions().end() )
+			{
+				for ( int i = 0; i < M_0dList.size(); i++ )
+				{
+					auto mapField = (*itField).second;
+					auto itType = mapField.find( "InitialSolution" );
+					if (itType != mapField.end() )
+					{
+						for (auto const& exAtMarker : (*itType).second )
+						{
+                            auto marker = M_0dList[i].marker();
+                            marker += "-buffer";
+                            auto buffer = expr(exAtMarker.expression());
+                            if (exAtMarker.marker() == marker)
+                            { 
+								M_Y[i] = project ( _space = this->M_Ch, _expr = buffer );
+								Feel::cout << "Initial buffer condition value of potential on " << marker << " : \t " << buffer << std::endl;
+
+                                for( auto time : M_bdf_buffer[i]->priorTimes() )
+                                {
+                                    buffer.setParameterValues( { {"t", time.second} } );
+                                    auto buffer_e = project( _space=this->M_Ch, _expr=buffer );
+                                    M_bdf_buffer[i]->setUnknown( time.first, buffer_e );
+                                }
+							}
+						}
+					}
+				}
+			}
+
+
+			// start time step
+			for (int i = 0; i < M_0dCondition; i++)    
+				M_bdf_buffer[i] -> start();
+
+			// Feel::cout << "Pressure on buffer before 2nd step: \t " << *M_Y << std::endl;
+			// up current time
+    		this->updateTime( M_bdf_buffer[0]->time() );
+
+		}
+		else
+		{
+			for (int i = 0; i < M_0dCondition; i++)    
+			{
+				// start time step
+				M_bdf_buffer[i]->restart();
+				// load a previous solution as current solution
+				M_Y[i] = M_bdf_buffer[i]->unknown(0);
+				// up initial time
+				this->setTimeInitial( M_bdf_buffer[i]->timeInitial() );
+				// up current time
+				this->updateTime( M_bdf_buffer[0]->time() );
+			}
+			this->log("CoupledMixedPoisson","initTimeStep", "restart bdf/exporter done" );
+		}
+		
+		
+	}
+
+
+template<int Dim, int Order, int G_Order, int E_Order>
+void 
+CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::updateTimeStepBDF()
+>>>>>>> parent of c708b92ac... fix compilation due to #1374
 {
     super_type::updateTimeStepBDF();
 
