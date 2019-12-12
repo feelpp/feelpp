@@ -27,6 +27,7 @@
 
 #include <feel/feelmodels/levelset/levelsetredistanciation.hpp>
 #include <feel/feelmodels/levelset/levelsetfilters.hpp>
+#include <feel/feeldiscr/projector.hpp>
 #include <feel/feells/fastmarching.hpp>
 
 namespace Feel
@@ -44,16 +45,22 @@ class LevelSetRedistanciationFM :
         // Space
         typedef FunctionSpaceType functionspace_type;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
+        typedef typename functionspace_type::basis_type basis_type;
         static const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
         typedef typename functionspace_type::value_type value_type;
         // Element
         typedef typename functionspace_type::element_type element_type;
         typedef std::shared_ptr<element_type> element_ptrtype;
         // Mesh
+        typedef typename functionspace_type::convex_type convex_type;
         typedef typename functionspace_type::mesh_type mesh_type;
         // Periodicity
         typedef typename functionspace_type::periodicity_0_type periodicity_type;
         static const bool functionSpaceIsPeriodic = functionspace_type::is_periodic;
+
+        // Scalar projectors
+        typedef Projector<functionspace_type, functionspace_type> projector_type;
+        typedef std::shared_ptr<projector_type> projector_ptrtype;
 
         // Redist P1 space
         typedef Lagrange<1, Scalar> basis_P1_type;
@@ -90,6 +97,15 @@ class LevelSetRedistanciationFM :
                 functionspace_ptrtype const& space,
                 std::string const& prefix = "" );
 
+        // Initialisation
+        void init();
+
+        // Projectors
+        projector_ptrtype const& projectorL2() const { return M_projectorL2; }
+        void setProjectorL2( projector_ptrtype const& p ) { M_projectorL2 = p; }
+        projector_ptrtype const& projectorSM() const { return M_projectorSM; }
+        void setProjectorSM( projector_ptrtype const& p ) { M_projectorSM = p; }
+
         // Fast-marching space
         functionspace_FM_ptrtype const& functionSpaceFM() const { return M_spaceFM; }
 
@@ -104,6 +120,11 @@ class LevelSetRedistanciationFM :
         void loadParametersFromOptionsVm();
 
     private:
+        bool M_isInitialised;
+        //--------------------------------------------------------------------//
+        // Projectors
+        projector_ptrtype M_projectorL2;
+        projector_ptrtype M_projectorSM;
         //--------------------------------------------------------------------//
         //--------------------------------------------------------------------//
         // Reinit P1 operators
@@ -142,7 +163,8 @@ template<typename FunctionSpaceType>
 LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM( 
         functionspace_ptrtype const& space,
         std::string const& prefix )
-    : super_type( space, prefix )
+    : super_type( space, prefix ),
+      M_isInitialised( false )
 {
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -182,6 +204,46 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
 
 template<typename FunctionSpaceType>
 void
+LevelSetRedistanciationFM<FunctionSpaceType>::init()
+{
+    // Create projectors
+    if( !M_projectorL2 )
+    {
+        auto backendName = prefixvm( this->prefix(), "projector-l2" );
+        auto backendProjectorL2 = Backend<value_type>::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpace()->worldCommPtr()
+                );
+        M_projectorL2 = projector(
+                this->functionSpace(),
+                this->functionSpace(),
+                backendProjectorL2
+                );
+    }
+
+    if( !M_projectorSM )
+    {
+        double projectorSMCoeff = this->functionSpace()->mesh->hAverage() / functionSpaceOrder * doption( _name="smooth-coeff", _prefix=prefixvm(this->prefix(),"projector-sm") );
+        auto backendName = prefixvm( this->prefix(), "projector-sm" );
+        auto backendProjectorSM = Backend<value_type>::build(
+                soption( _prefix=backendName, _name="backend" ),
+                backendName,
+                this->functionSpace()->worldCommPtr()
+                );
+        M_projectorSM = projector(
+                this->functionSpace(),
+                this->functionSpace(),
+                backendProjectorSM,
+                DIFF, projectorSMCoeff, 30
+                );
+    }
+
+    M_isInitialised = true;
+}
+
+template<typename FunctionSpaceType>
+void
 LevelSetRedistanciationFM<FunctionSpaceType>::loadParametersFromOptionsVm()
 {
 }
@@ -190,6 +252,9 @@ template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
 LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts ) const
 {
+    if( !M_isInitialised )
+        this->init();
+
     if constexpr( UseRedistP1Space )
     {
         auto phi_redist = this->functionSpace()->element();
