@@ -89,6 +89,14 @@ class LevelSetRedistanciationFM :
         // Range
         typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
 
+        // Initialisation method
+        enum class FastMarchingInitialisationMethod { 
+            NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
+        };
+
+        typedef boost::bimap<std::string, FastMarchingInitialisationMethod> fastmarchinginitialisationmethodidmap_type;
+        static const fastmarchinginitialisationmethodidmap_type FastMarchingInitialisationMethodMap;
+
         //--------------------------------------------------------------------//
         //--------------------------------------------------------------------//
         //--------------------------------------------------------------------//
@@ -97,13 +105,10 @@ class LevelSetRedistanciationFM :
                 functionspace_ptrtype const& space,
                 std::string const& prefix = "" );
 
-        // Initialisation
-        void init();
-
         // Projectors
-        projector_ptrtype const& projectorL2() const { return M_projectorL2; }
+        projector_ptrtype const& projectorL2( bool buildOnTheFly = true ) const;
         void setProjectorL2( projector_ptrtype const& p ) { M_projectorL2 = p; }
-        projector_ptrtype const& projectorSM() const { return M_projectorSM; }
+        projector_ptrtype const& projectorSM( bool buildOnTheFly = true ) const;
         void setProjectorSM( projector_ptrtype const& p ) { M_projectorSM = p; }
 
         // Fast-marching space
@@ -112,7 +117,13 @@ class LevelSetRedistanciationFM :
         // Fast-marching
         fastmarching_ptrtype const& fastMarching() const { return M_fastMarching; }
 
+        // Fast-marching initialisation
+        FastMarchingInitialisationMethod fastMarchingInitialisationMethod() const { return M_fastMarchingInitialisationMethod; }
+        void setFastMarchingInitialisationMethod( FastMarchingInitialisationMethod m ) { M_fastMarchingInitialisationMethod = m; }
+
         // Redistanciation
+        element_type initFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const;
+        element_type runFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const;
         element_type run( element_type const& phi, range_elements_type const& rangeInitialElts ) const;
         element_type run( element_type const& phi ) const;
 
@@ -120,7 +131,6 @@ class LevelSetRedistanciationFM :
         void loadParametersFromOptionsVm();
 
     private:
-        bool M_isInitialised;
         //--------------------------------------------------------------------//
         // Projectors
         projector_ptrtype M_projectorL2;
@@ -154,17 +164,30 @@ class LevelSetRedistanciationFM :
         //--------------------------------------------------------------------//
         // Fast-marching
         fastmarching_ptrtype M_fastMarching;
+        FastMarchingInitialisationMethod M_fastMarchingInitialisationMethod;
         //--------------------------------------------------------------------//
         //--------------------------------------------------------------------//
         // Options
 };
 
 template<typename FunctionSpaceType>
+const typename LevelSetRedistanciationFM<FunctionSpaceType>::fastmarchinginitialisationmethodidmap_type
+LevelSetRedistanciationFM<FunctionSpaceType>::FastMarchingInitialisationMethodMap = 
+boost::assign::list_of< typename LevelSetRedistanciationFM<FunctionSpaceType>::fastmarchinginitialisationmethodidmap_type::relation >
+    ( "none", FastMarchingInitialisationMethod::NONE )
+    ( "ilp", FastMarchingInitialisationMethod::ILP_L2 )
+    ( "ilp-l2", FastMarchingInitialisationMethod::ILP_L2 )
+    ( "ilp-smooth", FastMarchingInitialisationMethod::ILP_SMOOTH )
+    ( "ilp-nodal", FastMarchingInitialisationMethod::ILP_NODAL )
+    ( "hj", FastMarchingInitialisationMethod::HJ_EQ )
+    ( "il-hj", FastMarchingInitialisationMethod::IL_HJ_EQ )
+;
+
+template<typename FunctionSpaceType>
 LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM( 
         functionspace_ptrtype const& space,
         std::string const& prefix )
-    : super_type( space, prefix ),
-      M_isInitialised( false )
+    : super_type( space, prefix )
 {
     // Load parameters
     this->loadParametersFromOptionsVm();
@@ -203,11 +226,10 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
 }
 
 template<typename FunctionSpaceType>
-void
-LevelSetRedistanciationFM<FunctionSpaceType>::init()
+typename LevelSetRedistanciationFM<FunctionSpaceType>::projector_ptrtype const& 
+LevelSetRedistanciationFM<FunctionSpaceType>::projectorL2( bool buildOnTheFly ) const
 {
-    // Create projectors
-    if( !M_projectorL2 )
+    if( !M_projectorL2 && buildOnTheFly )
     {
         auto backendName = prefixvm( this->prefix(), "projector-l2" );
         auto backendProjectorL2 = Backend<value_type>::build(
@@ -215,23 +237,30 @@ LevelSetRedistanciationFM<FunctionSpaceType>::init()
                 backendName,
                 this->functionSpace()->worldCommPtr()
                 );
-        M_projectorL2 = projector(
+        const_cast<self_type*>(this)->M_projectorL2 = projector(
                 this->functionSpace(),
                 this->functionSpace(),
                 backendProjectorL2
                 );
     }
 
-    if( !M_projectorSM )
+    return M_projectorL2;
+}
+
+template<typename FunctionSpaceType>
+typename LevelSetRedistanciationFM<FunctionSpaceType>::projector_ptrtype const& 
+LevelSetRedistanciationFM<FunctionSpaceType>::projectorSM( bool buildOnTheFly ) const
+{
+    if( !M_projectorSM && buildOnTheFly )
     {
-        double projectorSMCoeff = this->functionSpace()->mesh->hAverage() / functionSpaceOrder * doption( _name="smooth-coeff", _prefix=prefixvm(this->prefix(),"projector-sm") );
+        double projectorSMCoeff = this->functionSpace()->mesh()->hAverage() / functionSpaceOrder * doption( _name="smooth-coeff", _prefix=prefixvm(this->prefix(),"projector-sm") );
         auto backendName = prefixvm( this->prefix(), "projector-sm" );
         auto backendProjectorSM = Backend<value_type>::build(
                 soption( _prefix=backendName, _name="backend" ),
                 backendName,
                 this->functionSpace()->worldCommPtr()
                 );
-        M_projectorSM = projector(
+        const_cast<self_type*>(this)->M_projectorSM = projector(
                 this->functionSpace(),
                 this->functionSpace(),
                 backendProjectorSM,
@@ -239,22 +268,80 @@ LevelSetRedistanciationFM<FunctionSpaceType>::init()
                 );
     }
 
-    M_isInitialised = true;
+    return M_projectorSM;
 }
 
 template<typename FunctionSpaceType>
 void
 LevelSetRedistanciationFM<FunctionSpaceType>::loadParametersFromOptionsVm()
 {
+    const std::string fm_init_method = soption( _name="fm-init-method", _prefix=this->prefix() );
+    CHECK(FastMarchingInitialisationMethodMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialisation methods\n";
+    M_fastMarchingInitialisationMethod = FastMarchingInitialisationMethodMap.left.at(fm_init_method);
 }
 
 template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
-LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts ) const
+LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const
 {
-    if( !M_isInitialised )
-        this->init();
+    element_type phiRedist( phi );
+    switch( M_fastMarchingInitialisationMethod )
+    {
+        case FastMarchingInitialisationMethod::ILP_NODAL :
+        {
+            phiRedist.on( 
+                    _range=rangeInitialElts, 
+                    _expr=idv(phiRedist)/sqrt( inner( gradv(phiRedist), gradv(phiRedist) ) )
+                    );
+        }
+        break;
 
+        case FastMarchingInitialisationMethod::ILP_L2 :
+        {
+            auto const modGradPhi = this->projectorL2()->project( sqrt( gradv(phiRedist)*trans(gradv(phiRedist)) ) );
+            phiRedist.on( 
+                    _range=rangeInitialElts, 
+                    _expr=idv(phi)/idv(modGradPhi)
+                    );
+        }
+        break;
+
+        case FastMarchingInitialisationMethod::ILP_SMOOTH :
+        {
+            auto const modGradPhi = this->projectorSM()->project( sqrt( gradv(phiRedist)*trans(gradv(phiRedist)) ) );
+            phiRedist.on( 
+                    _range=rangeInitialElts, 
+                    _expr=idv(phi)/idv(modGradPhi) 
+                    );
+        }
+        break;
+
+        case FastMarchingInitialisationMethod::HJ_EQ :
+        {
+            CHECK(false) << "TODO\n";
+            //*phi = *explicitHJ(max_iter, dtau, tol);
+        }
+        break;
+        case FastMarchingInitialisationMethod::IL_HJ_EQ :
+        {
+            CHECK(false) << "TODO\n";
+            //*phi = *explicitHJ(max_iter, dtau, tol);
+        }
+        break;
+        case FastMarchingInitialisationMethod::NONE :
+        {
+            // Nothing to do.
+        }
+        break;
+    } 
+
+    return phiRedist;
+}
+
+template<typename FunctionSpaceType>
+typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
+LevelSetRedistanciationFM<FunctionSpaceType>::runFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const
+{
     if constexpr( UseRedistP1Space )
     {
         auto phi_redist = this->functionSpace()->element();
@@ -290,6 +377,16 @@ LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, rang
         // Directly run fast-marching
         return this->fastMarching()->run( phi, rangeInitialElts );
     }
+}
+
+template<typename FunctionSpaceType>
+typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
+LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts ) const
+{
+    return this->runFastMarching( 
+            this->initFastMarching( phi, rangeInitialElts ), 
+            rangeInitialElts 
+            );
 }
 
 template<typename FunctionSpaceType>

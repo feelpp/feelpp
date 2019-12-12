@@ -641,15 +641,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distanceCurvature() const
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::setFastMarchingInitializationMethod( FastMarchingInitializationMethod m )
-{
-    if (M_redistanciationIsUpdatedForUse)
-        LOG(INFO)<<" !!!  WARNING !!! : fastMarchingInitializationMethod set after the fast marching has been actually initialized ! \n";
-    M_fastMarchingInitializationMethod = m;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     M_useRegularPhi = boption(_name=prefixvm(this->prefix(),"use-regularized-phi"));
@@ -662,10 +653,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
     CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
-
-    const std::string fm_init_method = soption( _name="fm-initialization-method", _prefix=this->prefix() );
-    CHECK(FastMarchingInitializationMethodIdMap.left.count(fm_init_method)) << fm_init_method <<" is not in the list of possible fast-marching initialization methods\n";
-    M_fastMarchingInitializationMethod = FastMarchingInitializationMethodIdMap.left.at(fm_init_method);
 
     M_redistInitialValue = boption( _name="redist-initial-value", _prefix=this->prefix() );
 
@@ -1837,60 +1824,60 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
         break;
         case LevelSetDistanceMethod::FASTMARCHING:
         {
-            switch (M_fastMarchingInitializationMethod)
-            {
-                case FastMarchingInitializationMethod::ILP_NODAL :
-                {
-                    phiRedist->on( 
-                            _range=this->rangeMeshElements(), 
-                            _expr=idv(phi)/sqrt( inner( gradv(phi), gradv(phi) ) )
-                            );
-                }
-                break;
+            //switch (M_fastMarchingInitializationMethod)
+            //{
+                //case FastMarchingInitializationMethod::ILP_NODAL :
+                //{
+                    //phiRedist->on( 
+                            //_range=this->rangeMeshElements(), 
+                            //_expr=idv(phi)/sqrt( inner( gradv(phi), gradv(phi) ) )
+                            //);
+                //}
+                //break;
 
-                case FastMarchingInitializationMethod::ILP_L2 :
-                {
-                    auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::L2_PROJECTION );
+                //case FastMarchingInitializationMethod::ILP_L2 :
+                //{
+                    //auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::L2_PROJECTION );
+                    ///[>phiRedist = phi;
+                    //phiRedist->on( 
+                            //_range=this->rangeMeshElements(), 
+                            //_expr=idv(phi)/idv(modGradPhi) 
+                            //);
+                //}
+                //break;
+
+                //case FastMarchingInitializationMethod::ILP_SMOOTH :
+                //{
+                    //auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::SMOOTH_PROJECTION );
+                    ///[>phiRedist = phi;
+                    //phiRedist->on( 
+                            //_range=this->rangeMeshElements(), 
+                            //_expr=idv(phi)/idv(modGradPhi) 
+                            //);
+                //}
+                //break;
+
+                //case FastMarchingInitializationMethod::HJ_EQ :
+                //{
+                    //CHECK(false) << "TODO\n";
+                    ///[>phi = *explicitHJ(max_iter, dtau, tol);
+                //}
+                //break;
+                //case FastMarchingInitializationMethod::IL_HJ_EQ :
+                //{
+                    //CHECK(false) << "TODO\n";
+                    ///[>phi = *explicitHJ(max_iter, dtau, tol);
+                //}
+                //break;
+                //case FastMarchingInitializationMethod::NONE :
+                //{
                     //*phiRedist = phi;
-                    phiRedist->on( 
-                            _range=this->rangeMeshElements(), 
-                            _expr=idv(phi)/idv(modGradPhi) 
-                            );
-                }
-                break;
-
-                case FastMarchingInitializationMethod::ILP_SMOOTH :
-                {
-                    auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::SMOOTH_PROJECTION );
-                    //*phiRedist = phi;
-                    phiRedist->on( 
-                            _range=this->rangeMeshElements(), 
-                            _expr=idv(phi)/idv(modGradPhi) 
-                            );
-                }
-                break;
-
-                case FastMarchingInitializationMethod::HJ_EQ :
-                {
-                    CHECK(false) << "TODO\n";
-                    //*phi = *explicitHJ(max_iter, dtau, tol);
-                }
-                break;
-                case FastMarchingInitializationMethod::IL_HJ_EQ :
-                {
-                    CHECK(false) << "TODO\n";
-                    //*phi = *explicitHJ(max_iter, dtau, tol);
-                }
-                break;
-                case FastMarchingInitializationMethod::NONE :
-                {
-                    *phiRedist = phi;
-                }
-                break;
-            } // switch M_fastMarchingInitializationMethod
+                //}
+                //break;
+            //} // switch M_fastMarchingInitializationMethod
 
             LOG(INFO)<< "redistanciation with FM done"<<std::endl;
-            *phiRedist = this->redistanciationFM()->run( *phiRedist );
+            *phiRedist = this->redistanciationFM()->run( phi );
         } // Fast Marching
         break;
 
@@ -1985,7 +1972,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     if( redistmethod == "fm" )
     {
         redistMethod = "Fast-Marching";
-        std::string fmInitMethod = FastMarchingInitializationMethodIdMap.right.at( this->M_fastMarchingInitializationMethod );
+        std::string fmInitMethod = redistanciationFM_type::FastMarchingInitialisationMethodMap.right.at( this->redistanciationFM( false )->fastMarchingInitialisationMethod() );
         redistMethod += " (" + fmInitMethod + ")";
     }
     else if( redistmethod == "hj" )
