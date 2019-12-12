@@ -24,7 +24,6 @@
 project(Feelpp)
 
 SET( CMAKE_MODULE_PATH  ${FEELPP_HOME_DIR}/feelpp/cmake/modules ${FEELPP_HOME_DIR}/feelpp/cmake/machines )
-add_subdirectory(cmake)
 
 include(feelpp.dirs)
 # set the Feel++ version
@@ -205,6 +204,9 @@ ADD_SUBDIRECTORY ( feel )
 
 # get feel++ environment of cmake variable (FEELPP_HAS_...)
 feelpp_get_environment()
+
+#install cmake files
+add_subdirectory(cmake)
 
 OPTION(FEELPP_ENABLE_QUICKSTART "enable Feel++ quickstart" ON)
 OPTION(FEELPP_ENABLE_PYFEELPP_LIBFEELPP "enable PyFeel++" ON)
