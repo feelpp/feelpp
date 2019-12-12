@@ -416,12 +416,23 @@ advection_options(std::string const& prefix)
 }
 
 Feel::po::options_description
-redistanciation_fm_options(std::string const& prefix)
+redistanciation_fm_options(std::string const& prefix, bool addProjectorsOpts )
 {
     Feel::po::options_description redistanciationFMOptions("RedistanciationFM options");
     redistanciationFMOptions.add_options()
         (prefixvm(prefix,"fm-init-method").c_str(), Feel::po::value<std::string>()->default_value("ilp-l2"), "strategy to initialise the first elements before the fast marching:\nnone = do nothing\nilp-[nodal/l2/smooth] = interface local projection by nodal, L2 or smooth (|grad phi|) projections\nhj = Hamilton Jacoby equation (with parameters given in options)")
         ;
+
+    if( addProjectorsOpts )
+    {
+        redistanciationFMOptions
+            .add( backend_options( prefixvm(prefix, "projector-l2") ) )
+            .add( backend_options( prefixvm(prefix, "projector-sm") ) )
+            ;
+        redistanciationFMOptions.add_options()
+            (prefixvm(prefix,"projector-sm.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for projector-sm")
+            ;
+    }
 
     return redistanciationFMOptions;
 }
@@ -523,7 +534,7 @@ levelset_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix, "projector-sm-scalar-isopn") ) )
         .add( backend_options( prefixvm(prefix, "projector-sm-vectorial-isopn") ) )
         .add( backend_options( prefixvm(prefix, "extension-velocity") ) )
-        .add( redistanciation_fm_options( prefixvm(prefix, "redist-fm") ) )
+        .add( redistanciation_fm_options( prefixvm(prefix, "redist-fm"), false ) )
         .add( redistanciation_hj_options( prefixvm(prefix, "redist-hj") ) )
         ;
 
