@@ -105,11 +105,11 @@ struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprCo
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
 
-    SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> const& e ) : super_type( 1,e ) {}
-    SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> && e ) : super_type( 1,e ) {}
-    SymbolExpr( std::initializer_list<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>> const& e ) : super_type( e ) {}
+    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> const& e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> && e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( std::initializer_list<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>> const& e ) : super_type( e ) {}
 
-    SymbolExpr( std::vector<std::tuple<std::string,ExprT>> const& e )
+    explicit SymbolExpr( std::vector<std::tuple<std::string,ExprT>> const& e )
         :
         super_type()
     {
@@ -118,7 +118,7 @@ struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprCo
         for ( int k=0;k<e.size();++k )
             this->push_back( std::make_tuple( std::get<0>( e[k] ), std::get<1>( e[k] ), emptySuffix ) );
     }
-    SymbolExpr( std::vector<std::pair<std::string,ExprT>> const& e )
+    explicit SymbolExpr( std::vector<std::pair<std::string,ExprT>> const& e )
         :
         super_type()
     {
