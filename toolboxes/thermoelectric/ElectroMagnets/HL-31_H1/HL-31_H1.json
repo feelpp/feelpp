@@ -76,13 +76,13 @@
                     "FluxV0":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-heat_Cu_k*heat_dn_T:heat_Cu_k:heat_dn_T",
                         "markers":"V0"
                     },
                     "FluxV1":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-heat_Cu_k*heat_dn_T:heat_Cu_k:heat_dn_T",
                         "markers":"V1"
                     },
                     "temp":
