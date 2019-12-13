@@ -17,8 +17,8 @@
         "mymat2":
         {
             "markers":"Omega2",
-            "k":"100",
-            //"k":"{100,0,0,100}",//[ W/(m*K) ]
+            //"k":"100",
+            "k":"{100,0,0,100}",//[ W/(m*K) ]
             "Cp":"3500",
             "rho":"2"
         }
@@ -93,7 +93,7 @@
     {
         "Exports":
         {
-            "fields":["temperature"],//,"all"],
+            "fields":["temperature","all"],
             "expr":
             {
                 "toto":"2*x*y:x:y",
@@ -110,6 +110,11 @@
                         "expr":"4*x*y:x:y",
                         "markers":"Omega2"
                     },
+                    "representation":["nodal","element"]
+                },
+                "tutu":
+                {
+                    "expr":"{heat_k_xx,heat_k_xy,heat_k_yx,heat_k_yy}:heat_k_xx:heat_k_xy:heat_k_yx:heat_k_yy",
                     "representation":["nodal","element"]
                 }
             }
@@ -132,7 +137,7 @@
                 "fluxOnRobin":
                 {
                     "type":"integrate",
-                    "expr":"heat_mymat2_k*heat_dnT:heat_mymat2_k:heat_dnT",
+                    "expr":"heat_mymat2_k*heat_dn_T:heat_mymat2_k:heat_dn_T",
                     "markers":"MarkerRobin"
                 }
             },
