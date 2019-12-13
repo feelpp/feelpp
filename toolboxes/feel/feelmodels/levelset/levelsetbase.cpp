@@ -193,16 +193,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
             // If phi_init already has a value, ensure that it is a proper distance function
             if( hasInitialValue )
             {
-                // ILP on phi_init
-                auto const modGradPhiInit = this->modGrad( phi_init );
-                    
-                *phi_init = vf::project( 
-                    _space=this->functionSpace(),
-                    _range=elements(this->functionSpace()->mesh()),
-                    _expr=idv(phi_init) / idv(modGradPhiInit)
-                    );
                 // Redistanciate phi_init
-                *phi_init = this->redistanciationFM()->run( *phi_init );
+                *phi_init = this->redistanciate( *phi_init, LevelSetDistanceMethod::FASTMARCHING );
             }
             // Add shapes
             for( auto const& shape: M_icShapes )
