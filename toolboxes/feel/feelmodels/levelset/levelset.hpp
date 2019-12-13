@@ -303,8 +303,11 @@ public:
     // Tools
     projector_tensor2symm_ptrtype const& projectorL2Tensor2Symm() const { return M_projectorL2Tensor2Symm; }
     //--------------------------------------------------------------------//
-    // Reinitialization
+    // Redistanciation
     void redistanciate() override;
+
+    bool useOrder1AfterRedist() const { return M_useOrder1AfterRedist; }
+    void setUseOrder1AfterRedist( bool b ) { M_useOrder1AfterRedist = b; }
 
     //--------------------------------------------------------------------//
     // Cauchy-Green tensor related quantities
@@ -443,6 +446,8 @@ private:
     int M_iterSinceRedistanciation;
     // Vector that stores the iterSinceRedistanciation of each time-step
     std::vector<int> M_vecIterSinceRedistanciation;
+
+    bool M_useOrder1AfterRedist;
 
     //--------------------------------------------------------------------//
     // Extension velocity

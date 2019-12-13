@@ -31,7 +31,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
-    M_iterSinceRedistanciation(0)
+    M_iterSinceRedistanciation(0),
+    M_useOrder1AfterRedist( false )
 {
     this->setFilenameSaveInfo( prefixvm(this->prefix(),"Levelset.info") );
     //-----------------------------------------------------------------------------//
@@ -128,9 +129,15 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
             M_vecIterSinceRedistanciation.push_back( M_iterSinceRedistanciation );
     }
     // Adjust BDF order with iterSinceRedistanciation
-    if( M_iterSinceRedistanciation < this->timeOrder() )
+    if( this->useOrder1AfterRedist() && M_iterSinceRedistanciation < this->timeOrder() )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+        if( M_useGradientAugmented )
+            M_modGradPhiAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+        if( M_useStretchAugmented )
+            M_stretchAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
+        if( M_useCauchyAugmented )
+            M_backwardCharacteristicsAdvection->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
     }
 
     this->log("LevelSet", "init", "finish");
@@ -324,6 +331,8 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
+    M_useOrder1AfterRedist = boption( _name="use-order1-after-redist", _prefix=this->prefix() );
+
     M_useGradientAugmented = boption( _name="use-gradient-augmented", _prefix=this->prefix() );
     M_reinitGradientAugmented = boption( _name="reinit-gradient-augmented", _prefix=this->prefix() );
 
@@ -665,7 +674,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     this->updateTime( M_advectionToolbox->currentTime() );
 
-    if( M_iterSinceRedistanciation < this->timeOrder() )
+    if( this->useOrder1AfterRedist() && M_iterSinceRedistanciation < this->timeOrder() )
     {
         this->timeStepBDF()->setTimeOrder( M_iterSinceRedistanciation + 1 );
         if( M_useGradientAugmented )
