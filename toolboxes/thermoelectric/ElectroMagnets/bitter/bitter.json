@@ -120,7 +120,7 @@
                     "FluxV0":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dn_T:heat_omega_k:heat_dn_T",
                         "markers":"Channel0"
                     },
                     "FluxContV0":
@@ -132,7 +132,7 @@
                     "FluxV1":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dn_T:heat_omega_k:heat_dn_T",
                         "markers":"Channel1"
                     },
                     "FluxContV1":
@@ -144,7 +144,7 @@
                     "FluxCoolingHoles":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dn_T:heat_omega_k:heat_dn_T",
                         "markers":"CoolingHoles"
                     },
                     "FluxContCoolingHoles":
@@ -156,7 +156,7 @@
                     "FluxTieRods":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-heat_omega_k*heat_dn_T:heat_omega_k:heat_dn_T",
                         "markers":"TieRods"
                     },
                     "FluxContTieRods":
