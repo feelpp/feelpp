@@ -467,6 +467,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"thickness-interface-rectangular-function").c_str(), Feel::po::value<double>(), "thickness of the interface rectangular function")
         (prefixvm(prefix,"distance-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset distance computation method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
         (prefixvm(prefix,"redist-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset redistanciation method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
+        (prefixvm(prefix,"use-order1-after-redist").c_str(), Feel::po::value<bool>()->default_value( false ), "Use order 1 time-stepper after redistanciation.")
 
         (prefixvm(prefix,"redist-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "redistanciate levelset after setting initial value")
 
