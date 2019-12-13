@@ -641,6 +641,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
 {
     typedef std::shared_ptr<Vector<double> > vector_ptrtype;
     //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    using size_type = typename SolverEigen<double>::size_type;
     std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( (EigenSolverType)EigenMap[solver] );
     eigen->setEigenProblemType( (EigenProblemType)EigenMap[problem] );
