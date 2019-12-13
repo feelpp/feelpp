@@ -493,7 +493,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                                         std::string fieldNameBIS2 = (boost::format("%1%_%2%%3%") %fieldNameBIS %i %j).str();
                                                                         exporter->step( time )->add( prefixvm(this->prefix(),fieldNameBIS2),
                                                                                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldNameBIS2)),
-                                                                                                     expr(theexprBIS.template expr<ni,nj>(),symbolsExpr),rangeBIS,reprsBIS );
+                                                                                                     expr(theexprBIS.template expr<ni,nj>(),symbolsExpr)(i,j),rangeBIS,reprsBIS );
                                                                     }
                                                             }
                                                             else
