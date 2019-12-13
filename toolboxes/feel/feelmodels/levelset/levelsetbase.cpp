@@ -1815,6 +1815,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
     {
         case LevelSetDistanceMethod::NONE:
         {
+            this->log("LevelSetBase", "redistanciate", "no redistanciation");
             *phiRedist = phi;
         }
         break;
@@ -1872,7 +1873,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
                 //break;
             //} // switch M_fastMarchingInitializationMethod
 
-            LOG(INFO)<< "redistanciation with FM done"<<std::endl;
+            this->log("LevelSetBase", "redistanciate", "run fast-marching");
             *phiRedist = this->redistanciationFM()->run( phi );
         } // Fast Marching
         break;
@@ -1880,6 +1881,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
         case LevelSetDistanceMethod::HAMILTONJACOBI:
         {
             // TODO
+            this->log("LevelSetBase", "redistanciate", "run hamilton-jacobi");
             *phiRedist = this->redistanciationHJ()->run( phi );
         } // Hamilton-Jacobi
         break;
@@ -1887,6 +1889,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
         case LevelSetDistanceMethod::RENORMALISATION:
         {
             //auto R = this->interfaceRectangularFunction( phi );
+            this->log("LevelSetBase", "redistanciate", "renormalise");
             auto const modGradPhi = this->modGrad( phi );
             phiRedist->on(
                     _range=this->rangeMeshElements(),
