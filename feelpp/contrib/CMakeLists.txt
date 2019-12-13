@@ -97,33 +97,32 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 #
 # Eigen
 #
-add_subdirectory(eigen)
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-  FIND_PACKAGE(Eigen3)
+  FIND_PACKAGE(Eigen3 REQUIRED)
   MESSAGE(STATUS "Eigen3 system found:")
-  MESSAGE("EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIR:")
-  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-endif()
-if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
-  option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  
-  set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
-
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
-elseif( EIGEN3_FOUND )
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/System" )
 else()
-  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-    PATHS
-    $ENV{FEELPP_DIR}/include/feelpp
-    NO_DEFAULT_PATH
-    )
+
+  add_subdirectory(eigen)
+
+  if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
+    option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
+    
+    set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
+
+    SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
+  else()
+    message(FATAL_ERROR "Eigen contrib not found" )
+    # find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+    #   PATHS
+    #   $ENV{FEELPP_DIR}/include/feelpp
+    #   NO_DEFAULT_PATH
+    #   )
+  endif()
+
 endif()
 
-if ( MKL_FOUND )
+# there is an issue with eigen+mkl
+if ( 0 ) #MKL_FOUND )
   target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
   target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
   #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})

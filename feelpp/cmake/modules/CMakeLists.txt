@@ -22,9 +22,38 @@
 #
 #
 
-FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
+
+set( modules
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.version.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.crb.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.macros.om.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.host.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.precompiled.headers.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.schedulers.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.ccc.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.loadleveler.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.oar.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/feelpp.sched.slurm.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/ParseArguments.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/cotire.cmake
+  )
+
+if ( FEELPP_HAS_ANN )
+  set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindANN.cmake )
+endif()
+
+if ( FEELPP_HAS_GLPK )
+  set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindGLPK.cmake )
+endif()
+
+if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
+  set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindEigen3.cmake )
+endif()
+
+#FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 
 INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/Feel++Config.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FeelppContribConfig.cmake DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
-INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/feelpp.install.config.cmake COMPONENT Devel)
+#INSTALL(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/feelpp.install.config.cmake COMPONENT Devel)

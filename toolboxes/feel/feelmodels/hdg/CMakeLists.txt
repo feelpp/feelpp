@@ -38,7 +38,7 @@ foreach(_DIM 2 3)
   endforeach()
 endforeach()
 
-add_library(feelpp_toolbox_hdg_poisson_lib SHARED libmixedpoisson.cpp enums.cpp )
+add_library(feelpp_toolbox_hdg_poisson_lib SHARED libmixedpoisson.cpp )
 add_library(Feelpp::feelpp_toolbox_hdg_poisson_lib ALIAS feelpp_toolbox_hdg_poisson_lib )
 set_target_properties(feelpp_toolbox_hdg_poisson_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_poisson_lib" )
 target_link_libraries(feelpp_toolbox_hdg_poisson_lib ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON})
