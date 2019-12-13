@@ -175,27 +175,6 @@ class Heat : public ModelNumerical,
         void initInitialConditions();
         void initPostProcess() override;
 
-        template <typename FieldTemperatureType>
-        constexpr auto symbolsExprField( FieldTemperatureType const& t, hana::int_<2> /**/ ) const
-            {
-                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(t) ),
-                                              symbolExpr("heat_dxT",dxv(t) ),
-                                              symbolExpr("heat_dyT",dyv(t) ),
-                                              symbolExpr("heat_dnT",dnv(t) )
-                                              );
-            }
-        template <typename FieldTemperatureType>
-        constexpr auto symbolsExprField( FieldTemperatureType const& t, hana::int_<3> /**/ ) const
-            {
-                return Feel::vf::symbolsExpr( symbolExpr("heat_T",idv(t) ),
-                                              symbolExpr("heat_dxT",dxv(t) ),
-                                              symbolExpr("heat_dyT",dyv(t) ),
-                                              symbolExpr("heat_dzT",dzv(t) ),
-                                              symbolExpr("heat_dnT",dnv(t) )
-                                              );
-            }
-        //auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
-
         template <typename SymbExprType>
         auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
 
@@ -287,55 +266,32 @@ class Heat : public ModelNumerical,
                 return hana::make_tuple( mapExprScalar,mapExprTensor2,mapExprTensor2FromScalar );
             }
 
+        auto symbolsExpr( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExpr( this->fieldTemperature(), prefix_symbol ); }
         template <typename FieldTemperatureType>
-        /*constexpr*/auto symbolsExpr( FieldTemperatureType const& t ) const
+        auto symbolsExpr( FieldTemperatureType const& t, std::string const& prefix_symbol = "heat_" ) const
         {
-            auto seField = this->symbolsExprField( t );
+            auto seField = this->symbolsExprField( t, prefix_symbol );
             auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ), prefix_symbol );
             return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
-        auto symbolsExpr() const { return this->symbolsExpr( this->fieldTemperature() ); }
 
-        constexpr auto symbolsExprField() const { return this->symbolsExprField( this->fieldTemperature() ); }
+        auto symbolsExprField( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExprField( this->fieldTemperature(), prefix_symbol ); }
         template <typename FieldTemperatureType>
-        constexpr auto symbolsExprField( FieldTemperatureType const& t ) const { return this->symbolsExprField( t, hana::int_<nDim>() ); }
+        auto symbolsExprField( FieldTemperatureType const& t, std::string const& prefix_symbol = "heat_" ) const
+            {
+                // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dnT
+                return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%T")%prefix_symbol).str(),idv(t) ),
+                                              symbolExpr( (boost::format("%1%grad_T")%prefix_symbol).str(),gradv(t), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                                              symbolExpr( (boost::format("%1%dn_T")%prefix_symbol).str(),dnv(t) )
+                                              );
+            }
+
 
         template <typename SymbExprType>
-        auto symbolsExprMaterial( SymbExprType const& se ) const
+        auto symbolsExprMaterial( SymbExprType const& se, std::string const& prefix_symbol = "heat_" ) const
         {
-            std::string prefix_symbol = "heat_";
-
-            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
-            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)(0,0)) _expr_matrix_comp_type;
-            std::vector<std::pair<std::string,_expr_matrix_comp_type>> matPropSymbsMatrixComp;
-
-            // generate symbols heat_matName_k ...
-            for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
-            {
-                std::string const& _matName = rangeData.first;
-                auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
-                if ( thermalConductivity.isMatrix() )
-                {
-                    for ( int i=0;i<nDim;++i )
-                        for ( int j=0;j<nDim;++j )
-                            matPropSymbsMatrixComp.push_back( std::make_pair( (boost::format("%1%%2%_k%3%%4%")%prefix_symbol %_matName%i%j).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se )(i,j) ) );
-                }
-                else
-                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
-            }
-
-
-            typedef decltype( this->thermalProperties()->thermalConductivityScalarExpr( se ) ) _expr_scalar_selector_type;
-            std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
-            // generate the symbol heat_k if the all conductivities are scalar
-            if ( this->thermalProperties()->allThermalConductivitiesAreScalar() )
-            {
-                auto expr_k = this->thermalProperties()->thermalConductivityScalarExpr( se );
-                matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%k")% prefix_symbol).str(), expr_k ) );
-            }
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrixComp ), symbolExpr(matPropSymbsScalarSelector) );
+            return this->thermalProperties()->symbolsExpr( se, prefix_symbol );
         }
 
         //___________________________________________________________________________________//
