@@ -264,6 +264,9 @@ public:
     levelset_space_manager_ptrtype const& functionSpaceManager() const { return M_spaceManager; }
     void setFunctionSpaceManager( levelset_space_manager_ptrtype const& manager ) { M_spaceManager = manager; }
 
+    bool buildExtendedDofSpace() const { return M_buildExtendedDofSpace; }
+    void setBuildExtendedDofSpace( bool b ) { M_buildExtendedDofSpace = b; }
+
     space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
@@ -541,6 +544,7 @@ private:
     //--------------------------------------------------------------------//
     // Spaces
     levelset_space_manager_ptrtype M_spaceManager;
+    bool M_buildExtendedDofSpace;
     bool M_useSpaceIsoPN;
     space_levelset_ptrtype M_spaceLevelset;
     space_vectorial_ptrtype M_spaceVectorial;

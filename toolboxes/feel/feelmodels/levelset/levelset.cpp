@@ -71,6 +71,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
 {
     this->log("LevelSet", "init", "start");
 
+    // Build extended dof table if CIP stabilisation
+    if( this->M_advectionToolbox->stabilizationMethod() == AdvectionStabMethod::CIP )
+        this->setBuildExtendedDofSpace( true );
     // Init LevelSetBase
     super_type::init();
 
