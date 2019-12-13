@@ -396,6 +396,45 @@ public :
                 prop.second.setParameterValues( mp );
         }
 
+    template <typename SymbExprType>
+    auto symbolsExpr( SymbExprType const& se, std::string const& prefix_symbol ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
+            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)) _expr_matrix_type;
+            std::vector<std::tuple<std::string,_expr_matrix_type,SymbolExprComponentSuffix>> matPropSymbsMatrix;
+
+            // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& _matName = rangeData.first;
+                auto const& thermalConductivity = this->thermalConductivity( _matName );
+                if ( thermalConductivity.isMatrix() )
+                {
+                    matPropSymbsMatrix.push_back( std::make_tuple( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se ), SymbolExprComponentSuffix( nDim,nDim,true )  ) );
+                }
+                else
+                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
+            }
+
+            typedef decltype( this->thermalConductivityScalarExpr( se ) ) _expr_scalar_selector_type;
+            std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
+            typedef decltype( this->thermalConductivityExpr( se ) ) _expr_conductivity_matrix_selector_type;
+            std::vector<std::tuple<std::string,_expr_conductivity_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsConductivityMatrixSelector;
+            // generate the symbol heat_k if the all conductivities are scalar or heat_k(_xx,_xy,...) if at least one conductivity is a matrix
+            if ( this->allThermalConductivitiesAreScalar() )
+            {
+                auto expr_k = this->thermalConductivityScalarExpr( se );
+                matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%k")% prefix_symbol).str(), expr_k ) );
+            }
+            else
+            {
+                auto expr_k = this->thermalConductivityExpr( se );
+                matPropSymbsConductivityMatrixSelector.push_back( std::make_tuple( (boost::format("%1%k")% prefix_symbol).str(), expr_k,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+            }
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrix ), symbolExpr(matPropSymbsScalarSelector), symbolExpr( matPropSymbsConductivityMatrixSelector ) );
+        }
+
 private :
     std::string M_exprRepository;
     std::set<std::string> M_markers;
