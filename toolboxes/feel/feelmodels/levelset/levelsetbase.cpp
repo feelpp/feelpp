@@ -38,6 +38,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
     M_doUpdateSubmeshOuter(true),
     M_doUpdateSubmeshInner(true),
     M_doUpdateMarkers(true),
+    M_buildExtendedDofSpace(false),
     M_useCurvatureDiffusion(false),
     //M_periodicity(periodicityLS),
     M_redistanciationIsUpdatedForUse(false),
@@ -113,6 +114,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     if( !M_toolManager )
         M_toolManager = std::make_shared<levelset_tool_manager_type>( M_spaceManager, this->prefix() );
     // Function spaces
+    this->functionSpaceManager()->setBuildExtendedDofTable( this->buildExtendedDofSpace() );
     this->createFunctionSpaces();
     // Tools
     this->createInterfaceQuantities();
