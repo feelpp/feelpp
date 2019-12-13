@@ -118,14 +118,12 @@ class CoupledMixedPoisson : public MixedPoisson<Dim, Order, G_Order, E_Order>
         : super_type() {}
 
     CoupledMixedPoisson( std::string const& prefix,
-                         MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                          std::string const& subPrefix = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() )
-        : super_type( prefix, physic, worldComm, subPrefix, modelRep ) {}
+        : super_type( prefix, worldComm, subPrefix, modelRep ) {}
 
     static self_ptrtype New( std::string const& prefix = "hdg.poisson",
-                             MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "" );
 
@@ -168,10 +166,10 @@ class CoupledMixedPoisson : public MixedPoisson<Dim, Order, G_Order, E_Order>
 template <int Dim, int Order, int G_Order, int E_Order>
 typename CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::self_ptrtype
 CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::New( std::string const& prefix,
-                                                        MixedPoissonPhysics const& physic,
-                                                        worldcomm_ptr_t const& worldComm, std::string const& subPrefix )
+                                                        worldcomm_ptr_t const& worldComm,
+                                                        std::string const& subPrefix )
 {
-    return std::make_shared<self_type>( prefix, physic, worldComm, subPrefix );
+    return std::make_shared<self_type>( prefix, worldComm, subPrefix );
 }
 
 template <int Dim, int Order, int G_Order, int E_Order>
