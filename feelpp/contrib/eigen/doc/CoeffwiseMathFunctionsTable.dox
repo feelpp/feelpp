@@ -63,7 +63,7 @@ This also means that, unless specified, if the function \c std::foo is available
   \anchor cwisetable_conj
   a.\link ArrayBase::conjugate conjugate\endlink(); \n
   \link Eigen::conj conj\endlink(a); \n
-  m.\link MatrixBase::conjugate conjugate();
+  m.\link MatrixBase::conjugate conjugate\endlink();
   </td>
   <td><a href="https://en.wikipedia.org/wiki/Complex_conjugate">complex conjugate</a> (\f$ \bar{a_i} \f$),\n
   no-op for real </td>
@@ -133,8 +133,9 @@ This also means that, unless specified, if the function \c std::foo is available
   <td class="code">
   \anchor cwisetable_pow
   a.\link ArrayBase::pow pow\endlink(b); \n
-  \link Eigen::pow pow\endlink(a,b);
+  \link ArrayBase::pow(const Eigen::ArrayBase< Derived > &x, const Eigen::ArrayBase< ExponentDerived > &exponents) pow\endlink(a,b);
   </td>
+  <!-- For some reason Doxygen thinks that pow is in ArrayBase namespace -->
   <td>raises a number to the given power (\f$ a_i ^ {b_i} \f$) \n \c a and \c b can be either an array or scalar.</td>
   <td class="code">
   using <a href="http://en.cppreference.com/w/cpp/numeric/math/pow">std::pow</a>; \n
@@ -271,7 +272,7 @@ This also means that, unless specified, if the function \c std::foo is available
 <tr>
   <td class="code">
   \anchor cwisetable_atan
-  a.\link ArrayBase::atan tan\endlink(); \n
+  a.\link ArrayBase::atan atan\endlink(); \n
   \link Eigen::atan atan\endlink(a);
   </td>
   <td>computes arc tangent (\f$ \tan^{-1} a_i \f$)</td>
@@ -317,6 +318,42 @@ This also means that, unless specified, if the function \c std::foo is available
   <td class="code">
   using <a href="http://en.cppreference.com/w/cpp/numeric/math/tanh">std::tanh</a>; \n
   tanh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_asinh
+  a.\link ArrayBase::asinh asinh\endlink(); \n
+  \link Eigen::asinh asinh\endlink(a);
+  </td>
+  <td>computes inverse hyperbolic sine</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/asinh">std::asinh</a>; \n
+  asinh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_acosh
+  a.\link ArrayBase::acosh cohs\endlink(); \n
+  \link Eigen::acosh acosh\endlink(a);
+  </td>
+  <td>computes hyperbolic cosine</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/acosh">std::acosh</a>; \n
+  acosh(a[i]);</td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_atanh
+  a.\link ArrayBase::atanh atanh\endlink(); \n
+  \link Eigen::atanh atanh\endlink(a);
+  </td>
+  <td>computes hyperbolic tangent</td>
+  <td class="code">
+  using <a href="http://en.cppreference.com/w/cpp/numeric/math/atanh">std::atanh</a>; \n
+  atanh(a[i]);</td>
   <td></td>
 </tr>
 <tr>
@@ -506,10 +543,23 @@ This also means that, unless specified, if the function \c std::foo is available
 <tr>
   <td class="code">
   \anchor cwisetable_zeta
-  \link Eigen::zeta zeta\endlink(a,b);
+  \link Eigen::zeta zeta\endlink(a,b); \n
+  a.\link ArrayBase::zeta zeta\endlink(b);
   </td>
   <td><a href="https://en.wikipedia.org/wiki/Hurwitz_zeta_function">Hurwitz zeta function</a>
   \n \f$ \zeta(a_i,b_i)=\sum_{k=0}^{\infty}(b_i+k)^{\text{-}a_i} \f$</td>
+  <td>
+  built-in for float and double
+  </td>
+  <td></td>
+</tr>
+<tr>
+  <td class="code">
+  \anchor cwisetable_ndtri
+  a.\link ArrayBase::ndtri ndtri\endlink(); \n
+  \link Eigen::ndtri ndtri\endlink(a);
+  </td>
+  <td>Inverse of the CDF of the Normal distribution function</td>
   <td>
   built-in for float and double
   </td>
