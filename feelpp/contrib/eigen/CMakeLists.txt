@@ -69,7 +69,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." ON)
 
-
 macro(ei_add_cxx_compiler_flag FLAG)
   string(REGEX REPLACE "-" "" SFLAG1 ${FLAG})
   string(REGEX REPLACE "\\+" "p" SFLAG ${SFLAG1})
@@ -456,6 +455,7 @@ endif()
 
 install(DIRECTORY Eigen DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
+
 option(BUILD_DOC "Enable creation of Eigen doc." OFF)
 if (0)# BUILD_DOC )
   add_subdirectory(doc EXCLUDE_FROM_ALL)
@@ -530,9 +530,9 @@ endif()
 
 configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-# if(BUILD_TESTING)
-#   ei_testing_print_summary()
-# endif()
+if(BUILD_TESTING)
+  ei_testing_print_summary()
+endif()
 
 # message(STATUS "")
 # message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
