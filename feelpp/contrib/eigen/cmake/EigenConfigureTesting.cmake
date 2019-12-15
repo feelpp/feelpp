@@ -8,8 +8,8 @@ ei_set_sitename()
 ei_set_build_string()
 
 add_custom_target(buildtests)
-add_custom_target(check COMMAND "ctest")
-add_dependencies(check buildtests)
+add_custom_target(eigen-check COMMAND "ctest")
+add_dependencies(eigen-check buildtests)
 
 # check whether /bin/bash exists (disabled as not used anymore)
 # find_file(EIGEN_BIN_BASH_EXISTS "/bin/bash" PATHS "/" NO_DEFAULT_PATH)

@@ -102,12 +102,21 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   MESSAGE(STATUS "Eigen3 system found:")
 else()
 
+  set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
+  set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
   add_subdirectory(eigen)
 
   if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
     option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
     
     set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/contrib/eigen/>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported>
+      $<INSTALL_INTERFACE:include/feelpp/eigen>
+      $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
+      )
 
     SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
   else()
