@@ -75,6 +75,18 @@ class LevelSetRedistanciationFM :
                 > functionspace_P1_type;
         typedef std::shared_ptr<functionspace_P1_type> functionspace_P1_ptrtype;
 
+        // Gradient Pn-1 space
+        static const uint16_type PNm1Order = ( functionSpaceOrder > 0 ) ? functionSpaceOrder - 1 : 0;
+        typedef Lagrange<PNm1Order, Scalar, Discontinuous> basis_PNm1_type;
+        typedef FunctionSpace<
+            mesh_type, 
+            bases<basis_PNm1_type>, 
+            value_type,
+            Periodicity<NoPeriodicity>,
+            mortars<NoMortar>
+                > functionspace_PNm1d_type;
+        typedef std::shared_ptr<functionspace_PNm1d_type> functionspace_PNm1d_ptrtype;
+
         // Fast-marching space
         static constexpr bool UseRedistP1Space = !( functionSpaceOrder == 1 && !functionSpaceIsPeriodic );
         typedef typename mpl::if_< 
@@ -116,6 +128,8 @@ class LevelSetRedistanciationFM :
         projector_ptrtype const& projectorSM( bool buildOnTheFly = true ) const;
         void setProjectorSM( projector_ptrtype const& p ) { M_projectorSM = p; }
 
+        // PNm1d space
+        functionspace_PNm1d_ptrtype const& functionSpacePNm1d() const { return M_spacePNm1d; }
         // Fast-marching space
         functionspace_FM_ptrtype const& functionSpaceFM() const { return M_spaceFM; }
 
@@ -163,6 +177,8 @@ class LevelSetRedistanciationFM :
         op_interpolation_from_P1_ptrtype M_opInterpolationFromP1;
         op_lagrangeP1_ptrtype M_opLagrangeP1;
         //--------------------------------------------------------------------//
+        // PN-1 discontinuous space
+        functionspace_PNm1d_ptrtype M_spacePNm1d;
         // Fast-marching space
         functionspace_FM_ptrtype M_spaceFM;
 
@@ -197,6 +213,10 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
     // Load parameters
     this->loadParametersFromOptionsVm();
     // Init
+    M_spacePNm1d = functionspace_PNm1d_type::New(
+            _mesh=space->mesh()
+            );
+
     if constexpr( UseRedistP1Space )
     {
         M_opLagrangeP1 = lagrangeP1( 
@@ -289,22 +309,39 @@ template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
 LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const
 {
-    element_type phiRedist( phi );
+    auto phiRedist = this->functionSpace()->elementPtr();
     switch( M_fastMarchingInitialisationMethod )
     {
         case FastMarchingInitialisationMethod::ILP_NODAL :
         {
-            phiRedist.on( 
-                    _range=rangeInitialElts, 
-                    _expr=idv(phiRedist)/sqrt( inner( gradv(phiRedist), gradv(phiRedist) ) )
-                    );
+            phiRedist->setConstant( 1e8 );
+
+            auto const modGradPhi = this->functionSpacePNm1d()->elementPtr();
+            modGradPhi->on( _range=rangeInitialElts, _expr=norm2(gradv(phi)) );
+
+            static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
+            auto itElt = boost::get<1>( rangeInitialElts );
+            auto enElt = boost::get<2>( rangeInitialElts );
+            for( ; itElt != enElt; ++itElt )
+            {
+                auto const elt = boost::unwrap_ref( *itElt );
+                size_type const eltId = elt.id();
+
+                for( uint16_type j = 0; j < nDofPerElt; ++j )
+                {
+                    size_type dofId = phiRedist->functionSpace()->dof()->localToGlobalId( eltId, j );
+                    value_type sdist = phi.localToGlobal( eltId, j, 0 ) / modGradPhi->localToGlobal( eltId, 0, 0 );
+                    if( std::abs( sdist ) < std::abs( (*phiRedist)(dofId) ) )
+                        (*phiRedist)(dofId) = sdist;
+                }
+            }
         }
         break;
 
         case FastMarchingInitialisationMethod::ILP_L2 :
         {
-            auto const modGradPhi = this->projectorL2()->project( sqrt( gradv(phiRedist)*trans(gradv(phiRedist)) ) );
-            phiRedist.on( 
+            auto const modGradPhi = this->projectorL2()->project( norm2( gradv(phi) ) );
+            phiRedist->on( 
                     _range=rangeInitialElts, 
                     _expr=idv(phi)/idv(modGradPhi)
                     );
@@ -313,8 +350,8 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
 
         case FastMarchingInitialisationMethod::ILP_SMOOTH :
         {
-            auto const modGradPhi = this->projectorSM()->project( sqrt( gradv(phiRedist)*trans(gradv(phiRedist)) ) );
-            phiRedist.on( 
+            auto const modGradPhi = this->projectorSM()->project( norm2( gradv(phi) ) );
+            phiRedist->on( 
                     _range=rangeInitialElts, 
                     _expr=idv(phi)/idv(modGradPhi) 
                     );
@@ -326,7 +363,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
             CHECK( convex_type::is_simplex ) << "ILDIST is only implemented for simplex" << std::endl;
             CHECK( functionSpaceOrder == 1 ) << "ILDIST is only implemented at order 1" << std::endl;
 
-            phiRedist.setConstant( 1e8 );
+            phiRedist->setConstant( 1e8 );
 
             static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
             auto itElt = boost::get<1>( rangeInitialElts );
@@ -375,8 +412,8 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
                         auto P = eigenMap<nDim>( pt );
 
                         value_type dist = Feel::detail::geometry::distancePointToSegment( P, segmentPts[0], segmentPts[1] );
-                        if( dist < std::abs( phiRedist(dofId) ) )
-                            phiRedist(dofId) = ( phi(dofId) > 0. ) ? dist : -dist;
+                        if( dist < std::abs( (*phiRedist)(dofId) ) )
+                            (*phiRedist)(dofId) = ( phi(dofId) > 0. ) ? dist : -dist;
                     }
                 }
                 else if constexpr( nDim == 3)
@@ -406,7 +443,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
         break;
     } 
 
-    return phiRedist;
+    return *phiRedist;
 }
 
 template<typename FunctionSpaceType>
