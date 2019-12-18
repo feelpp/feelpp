@@ -29,6 +29,7 @@
 #include <feel/feelmodels/levelset/levelsetfilters.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feells/fastmarching.hpp>
+#include <feel/feells/distancepointtoface.hpp>
 
 namespace Feel
 {
@@ -47,6 +48,7 @@ class LevelSetRedistanciationFM :
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
         typedef typename functionspace_type::basis_type basis_type;
         static const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
+        static constexpr uint16_type nDim = functionspace_type::nDim;
         typedef typename functionspace_type::value_type value_type;
         // Element
         typedef typename functionspace_type::element_type element_type;
@@ -91,7 +93,10 @@ class LevelSetRedistanciationFM :
 
         // Initialisation method
         enum class FastMarchingInitialisationMethod { 
-            NONE=0, ILP_NODAL, ILP_L2, ILP_SMOOTH, HJ_EQ, IL_HJ_EQ
+            NONE=0, 
+            ILP_NODAL, ILP_L2, ILP_SMOOTH, 
+            ILDIST,
+            HJ_EQ, IL_HJ_EQ
         };
 
         typedef boost::bimap<std::string, FastMarchingInitialisationMethod> fastmarchinginitialisationmethodidmap_type;
@@ -178,6 +183,7 @@ boost::assign::list_of< typename LevelSetRedistanciationFM<FunctionSpaceType>::f
     ( "ilp-l2", FastMarchingInitialisationMethod::ILP_L2 )
     ( "ilp-smooth", FastMarchingInitialisationMethod::ILP_SMOOTH )
     ( "ilp-nodal", FastMarchingInitialisationMethod::ILP_NODAL )
+    ( "ildist", FastMarchingInitialisationMethod::ILDIST )
     ( "hj", FastMarchingInitialisationMethod::HJ_EQ )
     ( "il-hj", FastMarchingInitialisationMethod::IL_HJ_EQ )
 ;
@@ -312,6 +318,72 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
                     _range=rangeInitialElts, 
                     _expr=idv(phi)/idv(modGradPhi) 
                     );
+        }
+        break;
+
+        case FastMarchingInitialisationMethod::ILDIST :
+        {
+            CHECK( convex_type::is_simplex ) << "ILDIST is only implemented for simplex" << std::endl;
+            CHECK( functionSpaceOrder == 1 ) << "ILDIST is only implemented at order 1" << std::endl;
+
+            phiRedist.setConstant( 1e8 );
+
+            static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
+            auto itElt = boost::get<1>( rangeInitialElts );
+            auto enElt = boost::get<2>( rangeInitialElts );
+            for( ; itElt != enElt; ++itElt )
+            {
+                auto const elt = boost::unwrap_ref( *itElt );
+                size_type const eltId = elt.id();
+
+                std::vector< size_type > positiveDofIds, negativeDofIds;
+                for( uint16_type j = 0; j < nDofPerElt; ++j )
+                {
+                    size_type dofId = phi.functionSpace()->dof()->localToGlobalId( eltId, j );
+                    if( phi.localToGlobal( eltId, j, 0 ) < 0. )
+                        negativeDofIds.push_back( dofId );
+                    else
+                        positiveDofIds.push_back( dofId );
+                }
+                CHECK( negativeDofIds.size() != 0 && positiveDofIds.size() != 0 ) << "ILPDIST only works with initial elements lying on the interface\n";
+
+                if constexpr( nDim == 2)
+                {
+                    typedef Eigen::Matrix<value_type, nDim, 1, Eigen::ColMajor> pt_type;
+                    std::vector< pt_type > segmentPts;
+                    for( size_type const dofId1: negativeDofIds )
+                    {
+                        for( size_type const dofId2: positiveDofIds )
+                        {
+                            auto const& pt1 = boost::get<0>( phi.functionSpace()->dof()->dofPoint( dofId1 ) );
+                            auto P1 = eigenMap<nDim>( pt1 );
+                            value_type phi1 = phi(dofId1);
+
+                            auto const& pt2 = boost::get<0>( phi.functionSpace()->dof()->dofPoint( dofId2 ) );
+                            auto P2 = eigenMap<nDim>( pt2 );
+                            value_type phi2 = phi(dofId2);
+
+                            segmentPts.emplace_back( P1 + ( phi1 / (phi1-phi2) ) * (P2-P1) );
+                        }
+                    }
+                    CHECK( segmentPts.size() == 2 ) << "should have 2 intersection points (have " << segmentPts.size() << ")" << std::endl;
+
+                    for( uint16_type j = 0; j < nDofPerElt; ++j )
+                    {
+                        size_type dofId = phi.functionSpace()->dof()->localToGlobalId( eltId, j );
+                        auto const& pt = boost::get<0>( phi.functionSpace()->dof()->dofPoint( dofId ) );
+                        auto P = eigenMap<nDim>( pt );
+
+                        value_type dist = Feel::detail::geometry::distancePointToSegment( P, segmentPts[0], segmentPts[1] );
+                        if( dist < std::abs( phiRedist(dofId) ) )
+                            phiRedist(dofId) = ( phi(dofId) > 0. ) ? dist : -dist;
+                    }
+                }
+                else if constexpr( nDim == 3)
+                {
+                    //TODO
+                }
+            }
         }
         break;
 
