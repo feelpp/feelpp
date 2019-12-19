@@ -770,7 +770,9 @@ template<typename E, typename T, typename M_t, typename V_t>
 struct Condenser
 {
     using value_t = T;
+    using size_type = uint32_type;
     using sc_t=StaticCondensation<value_t> ;
+
     using local_vector_t = typename sc_t::local_vector_t;
     using local_matrix_t = typename sc_t::local_matrix_t;
     using block_local_matrices_t = typename sc_t::block_local_matrices_t;
