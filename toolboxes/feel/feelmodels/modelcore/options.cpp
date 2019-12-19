@@ -420,7 +420,7 @@ redistanciation_fm_options(std::string const& prefix, bool addProjectorsOpts )
 {
     Feel::po::options_description redistanciationFMOptions("RedistanciationFM options");
     redistanciationFMOptions.add_options()
-        (prefixvm(prefix,"fm-init-method").c_str(), Feel::po::value<std::string>()->default_value("ilp-l2"), "strategy to initialise the first elements before the fast marching:\nnone = do nothing\nilp-[nodal/l2/smooth] = interface local projection by nodal, L2 or smooth (|grad phi|) projections\nhj = Hamilton Jacoby equation (with parameters given in options)")
+        (prefixvm(prefix,"fm-init-method").c_str(), Feel::po::value<std::string>()->default_value("ilp-nodal"), "strategy to initialise the first elements before the fast marching:\nnone = do nothing\nilp-[nodal/l2/smooth] = interface local projection by nodal, L2 or smooth (|grad phi|) projections\nhj = Hamilton Jacoby equation (with parameters given in options)")
         ;
 
     if( addProjectorsOpts )
