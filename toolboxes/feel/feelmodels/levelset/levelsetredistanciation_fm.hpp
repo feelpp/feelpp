@@ -131,8 +131,6 @@ class LevelSetRedistanciationFM :
         projector_ptrtype const& projectorSM( bool buildOnTheFly = true ) const;
         void setProjectorSM( projector_ptrtype const& p ) { M_projectorSM = p; }
 
-        // discontinuous space
-        functionspace_discontinuous_ptrtype const& functionSpaceDiscontinuous() const { return M_spaceDiscontinuous; }
         // Fast-marching space
         functionspace_FM_ptrtype const& functionSpaceFM() const { return M_spaceFM; }
 
@@ -180,8 +178,6 @@ class LevelSetRedistanciationFM :
         op_interpolation_from_P1_ptrtype M_opInterpolationFromP1;
         op_lagrangeP1_ptrtype M_opLagrangeP1;
         //--------------------------------------------------------------------//
-        // PN-1 discontinuous space
-        functionspace_discontinuous_ptrtype M_spaceDiscontinuous;
         // Fast-marching space
         functionspace_FM_ptrtype M_spaceFM;
 
@@ -216,10 +212,6 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
     // Load parameters
     this->loadParametersFromOptionsVm();
     // Init
-    M_spaceDiscontinuous = functionspace_discontinuous_type::New(
-            _mesh=space->mesh()
-            );
-
     if constexpr( UseRedistP1Space )
     {
         M_opLagrangeP1 = lagrangeP1( 
@@ -319,7 +311,13 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
         {
             phiRedist->setConstant( 1e8 );
 
-            auto const modGradPhi = this->functionSpaceDiscontinuous()->elementPtr();
+            auto spaceModGradPhi = functionspace_discontinuous_type::New(
+                    _mesh=this->functionSpace()->mesh(),
+                    _range=rangeInitialElts,
+                    _worldscomm=this->functionSpace()->worldsComm()
+                    );
+
+            auto const modGradPhi = spaceModGradPhi->elementPtr();
             modGradPhi->on( _range=rangeInitialElts, _expr=norm2(gradv(phi)) );
 
             static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
