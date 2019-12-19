@@ -3,7 +3,6 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
    agents:
      docker: true
-     ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
    continue_on_failure: false
@@ -16,7 +15,6 @@ steps:
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
@@ -38,13 +36,11 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
@@ -58,13 +54,11 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
