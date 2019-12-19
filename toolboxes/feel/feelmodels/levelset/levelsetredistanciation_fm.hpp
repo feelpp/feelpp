@@ -27,6 +27,7 @@
 
 #include <feel/feelmodels/levelset/levelsetredistanciation.hpp>
 #include <feel/feelmodels/levelset/levelsetfilters.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 #include <feel/feeldiscr/projector.hpp>
 #include <feel/feells/fastmarching.hpp>
 #include <feel/feells/distancepointtoface.hpp>
@@ -46,8 +47,9 @@ class LevelSetRedistanciationFM :
         // Space
         typedef FunctionSpaceType functionspace_type;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
-        typedef typename functionspace_type::basis_type basis_type;
+        typedef typename functionspace_type::template Basis<0>::type basis_type;
         static const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
+        static const uint16_type nOrder = functionspace_type::fe_type::nOrder;
         static constexpr uint16_type nDim = functionspace_type::nDim;
         typedef typename functionspace_type::value_type value_type;
         // Element
@@ -75,17 +77,18 @@ class LevelSetRedistanciationFM :
                 > functionspace_P1_type;
         typedef std::shared_ptr<functionspace_P1_type> functionspace_P1_ptrtype;
 
-        // Gradient Pn-1 space
-        static const uint16_type PNm1Order = ( functionSpaceOrder > 0 ) ? functionSpaceOrder - 1 : 0;
-        typedef Lagrange<PNm1Order, Scalar, Discontinuous> basis_PNm1_type;
+        // Gradient discontinuous space
+        static const uint16_type functionSpaceDiscontinuousOrder = ( functionSpaceOrder == 1 ) ? 0 : functionSpaceOrder;
+        typedef typename FeelModels::detail::ChangeBasisContinuity<Discontinuous, typename FeelModels::detail::ChangeBasisOrder<functionSpaceDiscontinuousOrder, basis_type>::type>::type basis_discontinuous_type;
+        //typedef Lagrange<nOrder, Scalar, Discontinuous> basis_discontinuous_type;
         typedef FunctionSpace<
             mesh_type, 
-            bases<basis_PNm1_type>, 
+            bases<basis_discontinuous_type>, 
             value_type,
             Periodicity<NoPeriodicity>,
             mortars<NoMortar>
-                > functionspace_PNm1d_type;
-        typedef std::shared_ptr<functionspace_PNm1d_type> functionspace_PNm1d_ptrtype;
+                > functionspace_discontinuous_type;
+        typedef std::shared_ptr<functionspace_discontinuous_type> functionspace_discontinuous_ptrtype;
 
         // Fast-marching space
         static constexpr bool UseRedistP1Space = !( functionSpaceOrder == 1 && !functionSpaceIsPeriodic );
@@ -128,8 +131,8 @@ class LevelSetRedistanciationFM :
         projector_ptrtype const& projectorSM( bool buildOnTheFly = true ) const;
         void setProjectorSM( projector_ptrtype const& p ) { M_projectorSM = p; }
 
-        // PNm1d space
-        functionspace_PNm1d_ptrtype const& functionSpacePNm1d() const { return M_spacePNm1d; }
+        // discontinuous space
+        functionspace_discontinuous_ptrtype const& functionSpaceDiscontinuous() const { return M_spaceDiscontinuous; }
         // Fast-marching space
         functionspace_FM_ptrtype const& functionSpaceFM() const { return M_spaceFM; }
 
@@ -178,7 +181,7 @@ class LevelSetRedistanciationFM :
         op_lagrangeP1_ptrtype M_opLagrangeP1;
         //--------------------------------------------------------------------//
         // PN-1 discontinuous space
-        functionspace_PNm1d_ptrtype M_spacePNm1d;
+        functionspace_discontinuous_ptrtype M_spaceDiscontinuous;
         // Fast-marching space
         functionspace_FM_ptrtype M_spaceFM;
 
@@ -213,7 +216,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
     // Load parameters
     this->loadParametersFromOptionsVm();
     // Init
-    M_spacePNm1d = functionspace_PNm1d_type::New(
+    M_spaceDiscontinuous = functionspace_discontinuous_type::New(
             _mesh=space->mesh()
             );
 
@@ -316,7 +319,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
         {
             phiRedist->setConstant( 1e8 );
 
-            auto const modGradPhi = this->functionSpacePNm1d()->elementPtr();
+            auto const modGradPhi = this->functionSpaceDiscontinuous()->elementPtr();
             modGradPhi->on( _range=rangeInitialElts, _expr=norm2(gradv(phi)) );
 
             static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
@@ -330,7 +333,13 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
                 for( uint16_type j = 0; j < nDofPerElt; ++j )
                 {
                     size_type dofId = phiRedist->functionSpace()->dof()->localToGlobalId( eltId, j );
-                    value_type sdist = phi.localToGlobal( eltId, j, 0 ) / modGradPhi->localToGlobal( eltId, 0, 0 );
+                    value_type modgradphi;
+                    if constexpr( functionSpaceDiscontinuousOrder == 0 )
+                        modgradphi = modGradPhi->localToGlobal( eltId, 0, 0 );
+                    else
+                        modgradphi = modGradPhi->localToGlobal( eltId, j, 0 );
+
+                    value_type sdist = phi.localToGlobal( eltId, j, 0 ) / modgradphi;
                     if( std::abs( sdist ) < std::abs( (*phiRedist)(dofId) ) )
                         (*phiRedist)(dofId) = sdist;
                 }
