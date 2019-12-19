@@ -1497,7 +1497,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             nbRequest+=2;
     }
     if ( nbRequest ==0 ) return;
-    mpi::request * reqs = new mpi::request[nbRequest];
+    std::vector<mpi::request> reqs(nbRequest);
     int cptRequest=0;
 
     // first send
@@ -1505,8 +1505,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-        ++cptRequest;
+        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
     }
     // first recv
     std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
@@ -1515,12 +1514,13 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         // if we send a msg at proc else we recv a msg from proc
         if ( dataToSend.find(proc) != dataToSend.end() )
         {
-            reqs[cptRequest] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
-            ++cptRequest;
+            reqs[cptRequest++] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
         }
     }
+
+    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(std::begin(reqs), std::end(reqs));
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
@@ -1565,8 +1565,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
-        ++cptRequest;
+        //reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first , 221/*0*/, itDataToReSend->second );
+        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first, 1, &(itDataToReSend->second[0]), itDataToReSend->second.size() );
     }
     // recv the initial request
     std::map<rank_type, std::vector<size_type> > finalDataToRecv;
@@ -1574,13 +1574,15 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type pid = itDataToSend->first;
-        reqs[cptRequest] = theWorldComm.localComm().irecv( pid, 0, finalDataToRecv[pid] );
-        ++cptRequest;
+        //reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 221/*0*/, finalDataToRecv[pid] );
+        int nRecvData = itDataToSend->second.size();
+        finalDataToRecv[pid].resize( nRecvData );
+        reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 1, &(finalDataToRecv[pid][0]), nRecvData );
     }
+
+    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
-    // delete reqs because finish comm
-    delete [] reqs;
+    mpi::wait_all(std::begin(reqs), std::end(reqs));
 
     // update ghost element with element id in active partition
     auto itFinalDataToRecv = finalDataToRecv.begin();
@@ -1596,7 +1598,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         }
     }
 
-
+    // theWorldComm.barrier();
+    // if ( theWorldComm.isMasterRank() )
+    //     std::cout << "HOLA" << std::endl;
+    // theWorldComm.barrier();
 }
 
 
