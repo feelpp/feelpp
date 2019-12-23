@@ -36,7 +36,6 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelalg/glas.hpp>
 
-#include <feel/feelmesh/geoelement.hpp>
 #include <feel/feelpoly/im.hpp>
 
 
