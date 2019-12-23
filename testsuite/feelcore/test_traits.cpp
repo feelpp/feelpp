@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE( test_promote )
     using namespace Feel;
     // integral types
 #if !defined(__APPLE__)
-    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<int, uint>, int> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<int, uint>, uint> ) );
 #endif
     BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<int, uint64_type>, uint64_type> ) );
 
