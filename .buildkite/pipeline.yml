@@ -7,7 +7,7 @@ steps:
  - wait: ~
    continue_on_failure: false
  - plugins:
-     junit-annotate#v1.6.0:
+     junit-annotate#v1.7.0:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
  - wait
