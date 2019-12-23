@@ -75,41 +75,41 @@ BOOST_AUTO_TEST_CASE( test_promote )
     using namespace Feel;
     // integral types
 #if !defined(__APPLE__)
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<int, uint>::type, int>::type::value ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<int, uint>, int> ) );
 #endif
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<int, uint64_type>::type, uint64_type>::type::value ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<int, uint64_type>, uint64_type> ) );
 
     // floating types
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<double, float>::type, double>::type::value ) );
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<float, double>::type, double>::type::value ) );
-    //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<double, long double>::type, long double>::type::value ) );
-    //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<long double, double>::type, long double>::type::value ) );
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<float,double, int>::type, double>::type::value ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<double, float>, double> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<float, double>, double> ) );
+    //BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<double, long double>::type, long double> ) );
+    //BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<long double, double>::type, long double> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<float,double, int>, double> ) );
 
     // mix float/integral type
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<double, int>::type, double>::type::value ) );
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<double, uint64_type>::type, double>::type::value ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<double, int>, double> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<double, uint64_type>, double> ) );
 
     // multiples types: not working properly yet
-    //BOOST_MPL_ASSERT(( boost::is_same< strongest_numeric_type<float,double,long double, std::complex<double> >::type, std::complex<long double> > ));
+    //BOOST_MPL_ASSERT(( std::is_same_v< strongest_numeric_type<float,double,long double, std::complex<double> >::type, std::complex<long double> > ));
 
-    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<double, std::complex<double> >::type, std::complex<double> > ) );
-    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<std::complex<float>, double  >::type, std::complex<double> > ) );
+    BOOST_MPL_ASSERT( ( std::is_same< strongest_numeric_type<double, std::complex<double> >, std::complex<double> > ) );
+    BOOST_MPL_ASSERT( ( std::is_same< strongest_numeric_type<std::complex<float>, double  >, std::complex<float> > ) );
 
-    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<std::complex<float>, std::complex<double>  >::type, std::complex<double> > ) );
+    BOOST_MPL_ASSERT( ( std::is_same< strongest_numeric_type<std::complex<float>, std::complex<double>  >, std::complex<double> > ) );
 
 
 
 #if defined(FEELPP_HAS_QD_REAL)
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, float>::type, dd_real>::type::value ) );
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, double>::type, dd_real>::type::value ) );
-    //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<dd_real, long double>::type, dd_real>::type::value ) );
-    //BOOST_CHECK( ( boost::is_same<strongest_numeric_type<qd_real, long double>::type, qd_real>::type::value ) );
-    BOOST_CHECK( ( boost::is_same<strongest_numeric_type<qd_real, dd_real>::type, qd_real>::type::value ) );
-    BOOST_CHECK( ( !boost::is_same<strongest_numeric_type<qd_real, dd_real>::type, dd_real>::type::value ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<dd_real, float>, dd_real> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<dd_real, double>, dd_real> ) );
+    //BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<dd_real, long double>::type, dd_real> ) );
+    //BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<qd_real, long double>::type, qd_real> ) );
+    BOOST_CHECK( ( std::is_same_v<strongest_numeric_type<qd_real, dd_real>, qd_real> ) );
+    BOOST_CHECK( ( !std::is_same_v<strongest_numeric_type<qd_real, dd_real>, dd_real> ) );
 
     // multiples types
-    BOOST_MPL_ASSERT( ( boost::is_same< strongest_numeric_type<float,double,dd_real, qd_real>::type, qd_real> ) );
+    BOOST_MPL_ASSERT( ( std::is_same< strongest_numeric_type<float,double,dd_real, qd_real>, qd_real> ) );
 #endif
 }
 
