@@ -285,7 +285,7 @@ public:
     typedef boost::tuple<size_type, uint16_type, uint16_type, uint16_type> local_dof_type;
     typedef LocalDofSet<nDofComponents()> local_dof_set_type;
 
-    typedef boost::tuple<uint16_type&,size_type&> ref_shift_type;
+    typedef std::tuple<uint16_type&,size_type&> ref_shift_type;
 
     /**
      * Type that hold the map between a global dof and the elements
@@ -1221,7 +1221,7 @@ public:
 
                 if ( __inserted )
                 {
-                    if ( is_tensor2symm )
+                    if constexpr ( is_tensor2symm )
                         pDof += nRealComponents;
                     else
                         pDof += ncdof;
@@ -1239,7 +1239,7 @@ public:
                         << "invalid local dof index"
                         <<  lc_dof << ", " << fe_type::nLocalDof*std::get<1>(itdof->first);
 #endif
-                    if ( is_tensor2symm )
+                    if constexpr ( is_tensor2symm )
                     {
                         for( int c1 = 0; c1 < nComponents1; ++c1 )
                         {
