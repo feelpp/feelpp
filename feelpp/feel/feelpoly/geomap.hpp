@@ -814,7 +814,7 @@ class GeoMap
 
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
-        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim>::type permutation_type;
+        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim> permutation_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
@@ -2426,7 +2426,7 @@ class GeoMap
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
     std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
     context( ElementType_t const& e,
-             std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>::type, precompute_ptrtype>>& pc,
+             std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>, precompute_ptrtype>>& pc,
              uint16_type f, size_type dynctx = 0 )
     {
         return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(

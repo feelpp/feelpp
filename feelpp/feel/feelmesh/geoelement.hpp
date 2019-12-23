@@ -28,7 +28,6 @@
 #ifndef _GEOELEMENT_HH_
 #define _GEOELEMENT_HH_
 
-#include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -36,7 +35,7 @@
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
 
-#include <feel/feelalg/lu.hpp>
+//#include <feel/feelalg/lu.hpp>
 
 namespace Feel
 {
