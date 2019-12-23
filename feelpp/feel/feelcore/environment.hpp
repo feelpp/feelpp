@@ -33,9 +33,11 @@
 #include <memory>
 
 #include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
+#include <boost/signals2/signal.hpp>
+
 #include <boost/format.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -61,10 +63,10 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
-#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -75,7 +77,6 @@
 #include <hwloc.h>
 #endif
 
-#include <feel/feelcore/mongocxx.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -1104,5 +1105,4 @@ BOOST_PARAMETER_FUNCTION(
 } // Feel
 
 #include <feel/feelcore/feelio.hpp>
-
 #endif /* FEELPP_ENVIRONMENT_HPP */
