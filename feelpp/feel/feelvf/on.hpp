@@ -1083,10 +1083,10 @@ struct v_ptr2
 template<typename Args>
 struct integratoron_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_base_type;
-    typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
-    typedef typename clean_type<Args,tag::element>::type _element_type;
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef clean_type<Args,tag::range> _range_base_type;
+    typedef clean_type<Args,tag::rhs> _rhs_type;
+    typedef clean_type<Args,tag::element> _element_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
 
     typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
                                mpl::identity<_range_base_type>,
