@@ -77,6 +77,17 @@ class LevelSetRedistanciationFM :
                 > functionspace_P1_type;
         typedef std::shared_ptr<functionspace_P1_type> functionspace_P1_ptrtype;
 
+        // Marker P0d space
+        typedef Lagrange<0, Scalar, Discontinuous> basis_P0d_type;
+        typedef FunctionSpace<
+            mesh_type, 
+            bases<basis_P0d_type>, 
+            value_type,
+            Periodicity<NoPeriodicity>,
+            mortars<NoMortar>
+                > functionspace_P0d_type;
+        typedef std::shared_ptr<functionspace_P0d_type> functionspace_P0d_ptrtype;
+
         // Gradient discontinuous space
         static const uint16_type functionSpaceDiscontinuousOrder = ( functionSpaceOrder == 1 ) ? 0 : functionSpaceOrder;
         typedef typename FeelModels::detail::ChangeBasisContinuity<Discontinuous, typename FeelModels::detail::ChangeBasisOrder<functionSpaceDiscontinuousOrder, basis_type>::type>::type basis_discontinuous_type;
@@ -180,6 +191,9 @@ class LevelSetRedistanciationFM :
         //--------------------------------------------------------------------//
         // Fast-marching space
         functionspace_FM_ptrtype M_spaceFM;
+        // Marker P0d spaces
+        functionspace_P0d_ptrtype M_spaceP0d;
+        functionspace_P0d_ptrtype M_spaceP0dIsoPN;
 
         //--------------------------------------------------------------------//
         // Fast-marching
@@ -219,6 +233,14 @@ LevelSetRedistanciationFM<FunctionSpaceType>::LevelSetRedistanciationFM(
                 _update=MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES 
                 );
         M_spaceFM = functionspace_P1_type::New(
+                _mesh=M_opLagrangeP1->mesh(),
+                _periodicity=periodicity( NoPeriodicity() )
+                );
+        M_spaceP0d = functionspace_P0d_type::New(
+                _mesh=this->functionSpace()->mesh(),
+                _periodicity=periodicity( NoPeriodicity() )
+                );
+        M_spaceP0dIsoPN = functionspace_P0d_type::New(
                 _mesh=M_opLagrangeP1->mesh(),
                 _periodicity=periodicity( NoPeriodicity() )
                 );
@@ -305,6 +327,10 @@ typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type
 LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type const& phi, range_elements_type const& rangeInitialElts ) const
 {
     auto phiRedist = this->functionSpace()->elementPtr();
+    // Prevent potential P1IsoPN interpolation issues
+    if constexpr( UseRedistP1Space )
+        *phiRedist = phi;
+
     switch( M_fastMarchingInitialisationMethod )
     {
         case FastMarchingInitialisationMethod::ILP_NODAL :
@@ -471,9 +497,20 @@ LevelSetRedistanciationFM<FunctionSpaceType>::runFastMarching( element_type cons
         {
             phi_FM = vf::project( this->functionSpaceFM(), elements(this->mesh()), idv(phi) );
         }
+        
+        // Retrieve P1 space elements corresponding to rangeInitialElts
+        auto markerInitialElts = M_spaceP0d->element();
+        markerInitialElts.on( _range=rangeInitialElts, _expr=cst(1) );
+        auto markerInitialEltsP1Mesh = vf::project( 
+                _space=M_spaceP0dIsoPN,
+                _range=elements( M_spaceP0dIsoPN->mesh() ),
+                _expr=idv(markerInitialElts)
+                );
+        this->functionSpaceFM()->mesh()->updateMarker2( markerInitialEltsP1Mesh );
 
         // Run fast-marching
-        phi_FM = this->fastMarching()->run( phi_FM, rangeInitialElts );
+        //phi_FM = this->fastMarching()->run( phi_FM, rangeInitialElts );
+        phi_FM = this->fastMarching()->run( phi_FM, marked2elements( this->functionSpaceFM()->mesh(), 1 ) );
 
         // Project back onto function-space
         if( functionSpaceOrder > 1 )
