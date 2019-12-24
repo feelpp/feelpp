@@ -234,9 +234,8 @@ class DofFromElement
                         if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
                         {
                             gDof += l; // both nodal and modal case
-                            if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
+                            if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
                             {
-
                                 M_doftable->M_locglob_signs[ie][lc] = 1;
                             }
                         }
@@ -252,7 +251,7 @@ class DofFromElement
                             }
                             else
                                 gDof += fe_type::nDofPerEdge - 1 - l;
-                            if ( is_hdiv_conforming<fe_type>::value || is_hcurl_conforming<fe_type>::value )
+                            if constexpr ( is_hdiv_conforming_v<fe_type> || is_hcurl_conforming_v<fe_type> )
                             {
                                 sign = -1;
                                 M_doftable->M_locglob_signs[ie][lc] = -1;
@@ -291,7 +290,7 @@ class DofFromElement
                         if ( __elt.edgePermutation( i ).value() == edge_permutation_type::IDENTITY )
                         {
                             gDof += l; // both nodal and modal case
-                            if ( is_hcurl_conforming<fe_type>::value )
+                            if constexpr ( is_hcurl_conforming_v<fe_type> )
                             {
                                 M_doftable->M_locglob_signs[ie][lc] = 1;
                             }
