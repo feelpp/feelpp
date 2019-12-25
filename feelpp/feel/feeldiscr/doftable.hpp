@@ -135,6 +135,122 @@ ITERATOR end( std::pair<ITERATOR,ITERATOR> &range )
 // import fusion namespace in Feel
 namespace fusion = boost::fusion;
 namespace bimaps = boost::bimaps;
+
+template<typename IndexT = uint32_type>
+struct NoDofMarkerPolicy
+{
+    using index_t = IndexT;
+    typedef boost::bimap<index_t,boost::bimaps::multiset_of<size_type> > dof_marker_type;
+    typedef typename dof_marker_type::value_type dof2marker;
+
+    //NoDofMarkerPolicy(  
+    typename dof_marker_type::right_range_type
+    markerToDof( boost::any const& marker )
+        {
+            typename dof_marker_type::right_range_type x;
+            return x;
+        }
+
+    typename dof_marker_type::right_range_type
+    markerToDofLessThan( boost::any const& marker )
+        {
+            typename dof_marker_type::right_range_type x;
+            return x;
+        }
+    typename dof_marker_type::right_range_type
+    markerToDofGreaterThan( boost::any const& marker )
+        {
+            typename dof_marker_type::right_range_type x;
+            return x;
+        }
+
+    void printDofMarker(std::string const& filename )
+        {
+        }
+    void insertDofMarker( int, int )
+        {
+            //M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+        }
+    template<typename T>
+    void  renumberDofMarker( std::vector<T> const& previousGlobalIdToNewGlobalId )
+        {
+#if 0
+            dof_marker_type newDofMarker;
+            for ( auto it = M_dof_marker.left.begin(), en = M_dof_marker.left.end(); it != en; ++it )
+                newDofMarker.insert( dof2marker(previousGlobalIdToNewGlobalId[it->first],it->second) );
+            M_dof_marker.clear();
+            M_dof_marker.swap( newDofMarker );
+#endif
+        }
+    dof_marker_type M_dof_marker;
+
+};
+
+template<typename IndexT = uint32_type>
+struct WithDofMarkerPolicy
+{
+    using index_t = IndexT;
+    typedef boost::bimap<index_t,boost::bimaps::multiset_of<size_type> > dof_marker_type;
+    typedef typename dof_marker_type::value_type dof2marker;
+
+    WithDofMarkerPolicy() = default;
+    WithDofMarkerPolicy( std::shared_ptr<MeshBase<index_t>> const& m  )
+        : M_mesh( m  )
+        {}
+    typename dof_marker_type::right_range_type
+    markerToDof( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return M_dof_marker.right.range( id <= _key, _key<id+1 );
+        }
+
+    typename dof_marker_type::right_range_type
+    markerToDofLessThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return M_dof_marker.right.range( unbounded, _key<id );
+        }
+    typename dof_marker_type::right_range_type
+    markerToDofGreaterThan( boost::any const& marker )
+        {
+            using namespace boost::bimaps;
+            int id = M_mesh->markerId( marker );
+            return M_dof_marker.right.range( id<_key, unbounded );
+        }
+
+    void printDofMarker(std::string const& filename )
+        {
+            // std::ofstream ofs( filename.c_str() );
+            // BOOST_FOREACH( auto dof, _M_dof_marker )
+            // {
+            //     //ofs << dof.first << " " << dof.second << "\n";
+            // }
+            std::ofstream ofs( filename.c_str() );
+            for( auto dofleft : M_dof_marker.left )
+            {
+                ofs << dofleft.first << " " << dofleft.second << "\n";
+            }
+        }
+    void insertDofMarker( int key, int v )
+        {
+            M_dof_marker.insert( dof2marker( key,  v ) );
+        }
+    template<typename T>
+    void  renumberDofMarker( std::vector<T> const& previousGlobalIdToNewGlobalId )
+        {
+            dof_marker_type newDofMarker;
+            for ( auto it = M_dof_marker.left.begin(), en = M_dof_marker.left.end(); it != en; ++it )
+                newDofMarker.insert( dof2marker(previousGlobalIdToNewGlobalId[it->first],it->second) );
+            M_dof_marker.clear();
+            M_dof_marker.swap( newDofMarker );
+        }
+    dof_marker_type M_dof_marker;
+    std::shared_ptr<MeshBase<index_t>> M_mesh;
+
+};
+
 /**
  * \class DofTable
  * \ingroup SpaceTime
@@ -143,8 +259,10 @@ namespace bimaps = boost::bimaps;
  * \author Christophe Prud'homme
  * \author Goncalo Pena
  */
-template<typename MeshType,  typename FEType, typename PeriodicityType, typename MortarType>
-class DofTable : public DofTableBase
+template<typename MeshType,  typename FEType, typename PeriodicityType,
+         typename MortarType,
+         typename DofMarkerPolicy = NoDofMarkerPolicy<>>
+class DofTable : public DofTableBase, public DofMarkerPolicy
 {
     typedef DofTableBase super;
 public:
@@ -154,12 +272,12 @@ public:
      */
     typedef MeshType mesh_type;
     typedef FEType fe_type;
-    using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType>;
+    using self_type = DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>;
     using doftable_type = self_type;
 
     typedef std::shared_ptr<FEType> fe_ptrtype;
     typedef MortarType mortar_type;
-    static const bool is_mortar = mortar_type::is_mortar;
+    static constexpr bool is_mortar = mortar_type::is_mortar;
     typedef typename fe_type::SSpace::type mortar_fe_type;
 
     typedef MeshSupport<mesh_type> mesh_support_type;
@@ -291,9 +409,6 @@ public:
      * Type that hold the map between a global dof and the elements
      */
     typedef std::map<size_type, std::list<local_dof_type> >  dof_element_type;
-
-    typedef boost::bimap<size_type,boost::bimaps::multiset_of<size_type> > dof_marker_type;
-    typedef typename dof_marker_type::value_type dof2marker;
 
     typedef typename dof_element_type::iterator dof_iterator;
     typedef typename dof_element_type::const_iterator dof_const_iterator;
@@ -510,16 +625,15 @@ public:
 
     size_type getIndicesSize( int eid = 0 ) const
         {
-            return getIndicesSize( eid, mpl::bool_<is_mortar>() );
-        }
-    size_type getIndicesSize( int eid, mpl::true_ ) const
-        {
-            auto itrange = localDof( eid );
-            return std::distance( itrange.first, itrange.second );
-        }
-    size_type getIndicesSize( int eid, mpl::false_ ) const
-        {
-            return nLocalDof();
+            if constexpr ( is_mortar )
+            {
+                auto itrange = localDof( eid );
+                return std::distance( itrange.first, itrange.second );
+            }
+            else
+            {
+                return nLocalDof();
+            }
         }
     std::vector<size_type> getIndices( size_type id_el ) const
         {
@@ -536,20 +650,10 @@ public:
 
     void getIndicesSet( size_type id_el, std::vector<size_type>& ind ) const
         {
-#if 0
-            BOOST_FOREACH( localdof_type const& ldof, this->localDofSet( id_el ) )
-            {
-                auto it = M_el_l2g.left.find( ldof );
-                DCHECK(it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
-                ind[ldof.localDof()] = it->second.index();
-            }
-#else
             for( auto const& ldof : this->localDof( id_el ) )
             {
                 ind[ldof.first.localDof()] = ldof.second.index();
             }
-
-#endif
         }
 
     std::vector<size_type> getIndices( size_type id_el, mpl::size_t<MESH_FACES> /**/ ) const
@@ -751,7 +855,7 @@ public:
      */
     localglobal_indices_type const& localToGlobalSigns( size_type ElId ) const
         {
-            if ( is_hdiv_conforming || is_hcurl_conforming )
+            if constexpr  ( is_hdiv_conforming || is_hcurl_conforming )
                 return M_locglob_signs.find( ElId )->second;
             else
                 return M_locglob_nosigns;
@@ -1146,42 +1250,6 @@ public:
             map_gdof = mapdof;
         }
 
-    typename dof_marker_type::right_range_type
-    markerToDof( boost::any const& marker )
-        {
-            using namespace boost::bimaps;
-            int id = M_mesh->markerId( marker );
-            return M_dof_marker.right.range( id <= _key, _key<id+1 );
-        }
-
-    typename dof_marker_type::right_range_type
-    markerToDofLessThan( boost::any const& marker )
-        {
-            using namespace boost::bimaps;
-            int id = M_mesh->markerId( marker );
-            return M_dof_marker.right.range( unbounded, _key<id );
-        }
-    typename dof_marker_type::right_range_type
-    markerToDofGreaterThan( boost::any const& marker )
-        {
-            using namespace boost::bimaps;
-            int id = M_mesh->markerId( marker );
-            return M_dof_marker.right.range( id<_key, unbounded );
-        }
-
-    void printDofMarker(std::string const& filename )
-        {
-            // std::ofstream ofs( filename.c_str() );
-            // BOOST_FOREACH( auto dof, _M_dof_marker )
-            // {
-            //     //ofs << dof.first << " " << dof.second << "\n";
-            // }
-            std::ofstream ofs( filename.c_str() );
-            for( auto dofleft : M_dof_marker.left )
-            {
-                ofs << dofleft.first << " " << dofleft.second << "\n";
-            }
-        }
     /**
      * The dof are ordered such that they are contiguous per element
      * and components. This way an extraction of the dof indices in
@@ -1258,7 +1326,7 @@ public:
                                     ie << "," << lc_dof << ")";
                                 //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
 
-                                M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                                this->insertDofMarker( itdof->second+shift+k,  marker.value() );
                             }
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
@@ -1266,7 +1334,7 @@ public:
                             auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+k,  marker.value() ) );
+                            this->insertDofMarker( itdof->second+shift+k,  marker.value() );
                         }
                     }
                     else
@@ -1279,7 +1347,7 @@ public:
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
-                            M_dof_marker.insert( dof2marker( itdof->second+shift+c,  marker.value() ) );
+                            this->insertDofMarker( itdof->second+shift+c,  marker.value() );
                         }
                     }
 
@@ -1523,7 +1591,6 @@ private:
 
     mutable local_dof_set_type M_local_dof_set;
     dof_element_type M_dof2elt;
-    dof_marker_type M_dof_marker;
 
     dof_map_type map_gdof;
     localdof_type M_ldof;
@@ -1561,13 +1628,8 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nComponents;
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-const uint16_type DofTable<MeshType, FEType, PeriodicityType, MortarType>::nRealComponents;
-
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& mesh,
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::DofTable( mesh_type& mesh,
                                                                    fe_ptrtype const& _fe,
                                                                    periodicity_type const& periodicity,
                                                                    WorldComm const& _worldComm )
@@ -1593,17 +1655,19 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( mesh_type& me
     VLOG(2) << "[dof] is_periodic = " << is_periodic << "\n";
     size_type start_next_free_dof = 0;
 
+    map_gdof.reserve( nDofPerElement*M_mesh->numberOfElements() );
     if ( is_periodic )
         start_next_free_dof = buildPeriodicDofMap( mesh );
 
+    
     buildDofMap( mesh, start_next_free_dof );
     if ( !is_mortar )
         buildBoundaryDofMap( mesh );
     map_gdof.clear();
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype const& _fe,
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::DofTable( fe_ptrtype const& _fe,
                                                                    periodicity_type const& periodicity,
                                                                    WorldComm const& _worldComm )
     :
@@ -1627,8 +1691,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( fe_ptrtype co
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_type & dof2 )
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::DofTable( const self_type & dof2 )
     :
     super( dof2 ),
     M_fe( dof2.M_fe ),
@@ -1650,9 +1714,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::DofTable( const self_ty
 {
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::showMe() const
 {
     LOG(INFO)  << " Degree of Freedom (DofTable) Object" << "\n";
     //if ( verbose )
@@ -1705,9 +1769,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::showMe() const
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::initDofMap( mesh_type& M )
 {
     size_type numMeshElements = (this->hasMeshSupport())? this->meshSupport()->numElements() : M.numElements();
     M_n_el = numMeshElements;
@@ -1748,7 +1812,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     M_locglob_indices.reserve( nV );
     this->initNumberOfDofIdToContainerId( 1 );
 
-    if ( is_hdiv_conforming || is_hcurl_conforming )
+    if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
     {
         //M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
         M_locglob_signs.reserve( nV );
@@ -1761,7 +1825,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
         for ( size_type eltId : this->meshSupport()->rangeMeshElementsIdsPartialSupport() )
         {
             M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
-            if ( is_hdiv_conforming || is_hcurl_conforming )
+            if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
                 M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
         }
     }
@@ -1771,7 +1835,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
         {
             size_type eltId = unwrap_ref( elt ).id();
             M_locglob_indices[eltId] = localglobal_indices_type::Zero( nDofPerElement );
-            if ( is_hdiv_conforming || is_hcurl_conforming )
+            if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
                 M_locglob_signs[eltId] = localglobal_indices_type::Ones( nDofPerElement );
         }
     }
@@ -1780,9 +1844,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     DVLOG(2) << "generateFacePermutations: " << doperm << "\n";
     generateFacePermutations( M, mpl::bool_<doperm>() );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::build( mesh_type& M )
 {
     tic();
     M_mesh = boost::addressof( M );
@@ -2003,11 +2067,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         M_dof_points.clear();
         M_dof_points.swap( newDofPoints );
 
-        dof_marker_type newDofMarker;
-        for ( auto it = M_dof_marker.left.begin(), en = M_dof_marker.left.end(); it != en; ++it )
-            newDofMarker.insert( dof2marker(previousGlobalIdToNewGlobalId[it->first],it->second) );
-        M_dof_marker.clear();
-        M_dof_marker.swap( newDofMarker );
+        this->renumberDofMarker( previousGlobalIdToNewGlobalId );
     }
 
     this->initDofIdToContainerIdIdentity( 0,this->nLocalDofWithGhost() );
@@ -2023,10 +2083,10 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         size_type elid= elt.id();
         if ( is_mortar && elt.isOnBoundary() )
         {
-            VLOG(1) << "resizing indices and signs for mortar...";
+            DVLOG(1) << "resizing indices and signs for mortar...";
             auto const& ldof = this->localDof( elid );
             size_type ne = std::distance( ldof.first, ldof.second );
-            VLOG(1) << "resizing indices and signs for mortar:  " << ne;
+            DVLOG(1) << "resizing indices and signs for mortar:  " << ne;
             M_locglob_indices[elid].resize( ne );
             //M_locglob_signs[elid].resize( ne );
         }
@@ -2041,15 +2101,15 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     this->buildIndexSplit();
 
     // build splits with components
-    if ( is_product && nRealComponents > 1 )
+    if constexpr ( is_product && nRealComponents > 1 )
         this->buildIndexSplitWithComponents( nRealComponents );
 
     toc("DofTable::build", FLAGS_v>1);
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 size_type
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildPeriodicDofMap( mesh_type& M )
 {
     size_type nldof =
         fe_type::nDofPerVolume * element_type::numVolumes +
@@ -2343,16 +2403,16 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildPeriodicDofMap( me
     return max_gid+1;
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 size_type
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildLocallyDiscontinuousDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     typedef typename continuity_type::template apply<MeshType, self_type> builder;
     return fusion::accumulate( typename continuity_type::discontinuity_markers_type(), start_next_free_dof,  builder( M, *this ) );
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildDofMap( mesh_type& M, size_type start_next_free_dof )
 {
     if ( !M_dof_indices.empty() )
     {
@@ -2565,9 +2625,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( mesh_type& M )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildBoundaryDofMap( mesh_type& M )
 {
     tic();
     size_type nDofF = nLocalDofOnFace(true);
@@ -2667,18 +2727,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
     toc( "DofTable::buildBoundaryDofMap", FLAGS_v>1 );
 }    // updateBoundaryDof
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel ) const
 {
     tic();
     generateDofPoints( M, buildMinimalParallel, mpl::bool_<is_mortar>() );
     toc("DofTable::generateDofPoints",FLAGS_v>1); 
 
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<true> ) const
 {
     if ( hasDofPoints() )
         return;
@@ -2830,9 +2890,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     DVLOG(2) << "[Dof::generateDofPoints] mortar case, generating dof coordinates done\n";
 
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const
 {
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
@@ -2946,9 +3006,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
     }
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoints(  mesh_type& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::generatePeriodicDofPoints(  mesh_type& M,
                                                                                      periodic_element_list_type const& periodic_elements,
                                                                                      dof_periodic_points_type& periodic_dof_points )
 {
@@ -3085,18 +3145,18 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generatePeriodicDofPoin
 }
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofMap( mesh_type const& M, size_type next_free_dof )
 {
     addSubstructuringDofVertex( M, next_free_dof );
     addSubstructuringDofEdge( M, next_free_dof, mpl::int_<nDim>() );
     addSubstructuringDofFace( M, next_free_dof, mpl::int_<nDim>() );
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVertex(mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofVertex(mesh_type const& M,
                                                                                     size_type next_free_dof )
 {
     std::cout << "found CrossPoints and WireBasket\n";
@@ -3130,23 +3190,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofVer
     }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdge( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofEdge( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
@@ -3197,23 +3257,23 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofEdg
 
     }
 }
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<1> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<2> )
 {}
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFace( mesh_type const& M,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::addSubstructuringDofFace( mesh_type const& M,
                                                                                    size_type next_free_dof,
                                                                                    mpl::int_<3> )
 {
@@ -3298,9 +3358,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::addSubstructuringDofFac
 
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
 std::pair<std::unordered_map<size_type,size_type>,std::unordered_map<size_type,size_type> >
-DofTable<MeshType, FEType, PeriodicityType, MortarType>::pointIdToDofRelation(std::string fname, bool dof2pid, bool pid2dof ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::pointIdToDofRelation(std::string fname, bool dof2pid, bool pid2dof ) const
 {
     std::unordered_map<size_type,size_type> pidtodof,doftopid;
     auto rangeElements = M_mesh->elementsWithProcessId( M_mesh->worldComm().localRank() );
