@@ -30,6 +30,7 @@
 #include <feel/feeldiscr/makemesh.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/thch.hpp>
 #include <feel/feelfilters/unitcube.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
 #include <feel/feelvf/geometricdata.hpp>
@@ -74,12 +75,23 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( t2, T, dim_types )
         mesh = unitCube();
     else
         mesh = unitSquare();
+    tic();
     auto Xh = Pch<2>( mesh );
+    toc("Xh built", true );
     auto v = Xh->element(Px());
+    BOOST_CHECK_EQUAL( Xh->basisOrder()[0], 2 );
+    BOOST_CHECK( Xh->basisName() == "lagrange" );
+    BOOST_TEST_MESSAGE(  "nDof=" << Xh->nDof() << " family:" << Xh->basisName() << " Order: " << Xh->basisOrder()[0] );
+    auto Vh = THch<1>( mesh );
+    BOOST_CHECK_EQUAL( Vh->basisOrder()[0], 2 );
+    BOOST_CHECK_EQUAL( Vh->basisOrder()[1], 1 );
+    BOOST_CHECK( Vh->basisName() == "lagrange_lagrange" );
+    BOOST_TEST_MESSAGE(  "nDof=" << Vh->nDof() << " family:" << Vh->basisName() << " Order: " << Vh->basisOrder() );
 }
 
 BOOST_AUTO_TEST_CASE( t3 )
 {
+    
 }
 BOOST_AUTO_TEST_CASE( t4 )
 {
