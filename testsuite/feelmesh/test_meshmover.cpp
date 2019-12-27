@@ -30,7 +30,7 @@
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelfilters/geotool.hpp>
-#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
 #include <feel/feelvf/vf.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -39,15 +39,14 @@ using namespace Feel;
 
 BOOST_AUTO_TEST_SUITE( test_meshmover )
 
-typedef boost::mpl::list<Mesh<Simplex<2,1>>,Mesh<Simplex<2,2>>,
-                         Mesh<Simplex<3,1>>,Mesh<Simplex<3,2>>
-                         //Mesh<Hypercube<2,1>>,Mesh<Hypercube<3,1>>
+typedef boost::mpl::list<Simplex<2,1>,Simplex<2,2>,
+                         Simplex<3,1>,Simplex<3,2>
                          > test_mesh_types;
-BOOST_AUTO_TEST_CASE_TEMPLATE( test_allelements, MeshType, test_mesh_types )
+BOOST_AUTO_TEST_CASE_TEMPLATE( test_allelements, ConvexType, test_mesh_types )
 {
-    static const uint16_type nDim = MeshType::nDim;
-    static const uint16_type nGeoOrder = MeshType::nOrder;
-    auto mesh = loadMesh(_mesh=new MeshType);
+    constexpr uint16_type nDim = ConvexType::nDim;
+    constexpr uint16_type nGeoOrder = ConvexType::nOrder;
+    auto mesh = unitHypercube<nDim,ConvexType>();
     auto Vh = Pchv<nGeoOrder>( mesh );
     auto disp = Vh->element(one());
     std::map<size_type,std::vector<double>> M_baryByElt;
@@ -59,7 +58,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_allelements, MeshType, test_mesh_types )
         for ( uint16_type d=0;d<nDim;++d )
             M_baryByElt[elt.id()][d] = thebary[d];
     }
-
+    BOOST_CHECK( M_baryByElt.size() > 0 );
+    BOOST_TEST_MESSAGE( "move mesh in direction (1,1) in 2D, (1,1,1) in 3D" );
     meshMove( mesh, disp );
 
     for ( auto const& eltWrap : allelements(mesh) )
