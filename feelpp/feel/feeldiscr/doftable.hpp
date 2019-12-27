@@ -611,10 +611,46 @@ public:
             return M_n_dof_per_face_on_bdy;
         }
 
+    bool hasLocalDof( localdof_type const& ldof ) const
+        {
+            auto eit = M_el_l2g.left.find( ldof  );
+            if ( eit == M_el_l2g.left.end() )
+                return false;
+            else
+                return true;
+        }
+    auto findLocalDof( localdof_type const& ldof ) const
+        {
+            auto eit = M_el_l2g.left.find( ldof  );
+            return std::pair(eit,eit!=M_el_l2g.left.end());
+        }
+    auto insertDofRelation( localdof_type const& ldof, globaldof_type const& gdof )
+        {
+            auto res = M_el_l2g.insert( dof_relation( ldof, gdof ) );
+            return res;
+        }
+    template<typename Iterator>
+    bool modifyDofRelation( Iterator it, globaldof_type const& gdof )
+        {
+            return M_el_l2g.left.modify_data( it, bimaps::_data = gdof );
+        }
+
+    void renumberDofRelation( std::vector<size_type> const& previousGlobalIdToNewGlobalId )
+        {
+            for( auto it = M_el_l2g.left.begin(), en = M_el_l2g.left.end(); it != en; ++it )
+            {
+                auto const& previousGDof=it->second;
+                Dof newGDof( previousGDof );
+                newGDof.setIndex( previousGlobalIdToNewGlobalId[previousGDof.index()] );
+                bool successfulModify = M_el_l2g.left.modify_data( it, boost::bimaps::_data = newGDof );
+                CHECK( successfulModify ) << "modify global dof id fails";
+            }
+        } 
+
     indices_per_element_type  indices( size_type id_el ) const
         {
             indices_per_element_type ind;
-            BOOST_FOREACH( localdof_type const& ldof, localDofSet( id_el ) )
+            for( localdof_type const& ldof: localDofSet( id_el ) )
             {
                 auto it = M_el_l2g.left.find( ldof );
                 DCHECK( it != M_el_l2g.left.end() ) << "Invalid element id " << id_el;
@@ -955,24 +991,21 @@ public:
     template<typename ElemTest,typename ElemTrial>
     std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial  ) const
         {
-            return localIndices( eltTest,eltTrial,mpl::bool_<ElemTest::nDim==1 && ElemTrial::nDim==1>() );
-        }
-    template<typename ElemTest,typename ElemTrial>
-    std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial, mpl::false_ ) const
-        {
-            return M_localIndicesIdentity;
-        }
-    template<typename ElemTest,typename ElemTrial>
-    std::vector<uint16_type> const& localIndices( ElemTest const& eltTest, ElemTrial const& eltTrial, mpl::true_ ) const
-        {
-            double dotVec= ublas::inner_prod( ublas::column(eltTest.G(),1)  - ublas::column(eltTest.G(),0),
-                                              ublas::column(eltTrial.G(),1) - ublas::column(eltTrial.G(),0) );
-            CHECK( std::abs( dotVec ) > 1e-9 ) << " inner_prod is null " << dotVec << "\n";
-
-            if ( dotVec > 0 ) // identity permutation
+            if constexpr ( ElemTest::nDim==1 && ElemTrial::nDim==1 )
+            {
+                double dotVec= ublas::inner_prod( ublas::column(eltTest.G(),1)  - ublas::column(eltTest.G(),0),
+                                                  ublas::column(eltTrial.G(),1) - ublas::column(eltTrial.G(),0) );
+                CHECK( std::abs( dotVec ) > 1e-9 ) << " inner_prod is null " << dotVec << "\n";
+                
+                if ( dotVec > 0 ) // identity permutation
+                    return M_localIndicesIdentity;
+                else // reverse permutation
+                    return  M_localIndicesPerm;
+            }
+            else
+            {
                 return M_localIndicesIdentity;
-            else // reverse permutation
-                return  M_localIndicesPerm;
+            }
         }
 
 
@@ -1295,9 +1328,9 @@ public:
                         pDof += ncdof;
                 }
                 M_ldof.set(ie,lc_dof);
-                auto eit = M_el_l2g.left.find( M_ldof  );
+                bool has_local_dof = this->hasLocalDof( M_ldof );
                 // make sure that no already created dof is overwritten here (may be done elsewhere)
-                if ( eit == M_el_l2g.left.end() )
+                if ( !has_local_dof  )
                 {
                     M_gdof.set( itdof->second+shift, sign, is_dof_periodic );
                     DCHECK( itdof->first == gDof ) << "very bad logical error in insertDof";
@@ -1316,12 +1349,13 @@ public:
                                 const int k = Feel::detail::symmetricIndex(c1,c2,nComponents1);
                                 M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c2)+l_dof );
                                 M_gdof.setIndex( itdof->second+shift+k );
-                                auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                                auto res = this->insertDofRelation( M_ldof, M_gdof );
+                                
                                 DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                     ie << "," << lc_dof << ")";
 
                                 M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c2+c1)+l_dof );
-                                res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                                res = this->insertDofRelation( M_ldof, M_gdof );
                                 DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                     ie << "," << lc_dof << ")";
                                 //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
@@ -1331,7 +1365,7 @@ public:
                             M_ldof.setLocalDof( fe_type::nLocalDof*(nComponents1*c1+c1)+l_dof );
                             const int k = Feel::detail::symmetricIndex(c1,c1,nComponents1);
                             M_gdof.setIndex( itdof->second+shift+k);
-                            auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                            auto res = this->insertDofRelation( M_ldof, M_gdof );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift+k << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
                             this->insertDofMarker( itdof->second+shift+k,  marker.value() );
@@ -1343,7 +1377,7 @@ public:
                         {
                             M_ldof.setLocalDof( fe_type::nLocalDof*c+l_dof );
                             M_gdof.setIndex( itdof->second+shift+c );
-                            auto res = M_el_l2g.insert( dof_relation( M_ldof, M_gdof ) );
+                            auto res = this->insertDofRelation( M_ldof, M_gdof );
                             //(Dof  itdof->second+shift, sign, is_dof_periodic, 0, 0, marker.value() ) ) );
                             DCHECK( res.second ) << "global dof " << itdof->second+shift << " not inserted in local dof (" <<
                                 ie << "," << lc_dof << ")";
@@ -1383,7 +1417,7 @@ public:
                 }
 #endif
 
-                res = res && ( __inserted || ( ( M_el_l2g.left.find(localdof_type(ie,lc_dof)) != M_el_l2g.left.end() ) && shift ) );
+                res = res && ( __inserted || ( has_local_dof && shift ) );
             }
 
             return res;
@@ -2044,14 +2078,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::build(
         this->M_activeDofSharedOnCluster.clear();
         this->M_activeDofSharedOnCluster.swap( newActiveDofSharedOnCluster );
 
-        for( auto it = M_el_l2g.left.begin(), en = M_el_l2g.left.end(); it != en; ++it )
-        {
-            auto const& previousGDof=it->second;
-            Dof newGDof( previousGDof );
-            newGDof.setIndex( previousGlobalIdToNewGlobalId[previousGDof.index()] );
-            bool successfulModify = M_el_l2g.left.modify_data( it, boost::bimaps::_data = newGDof );
-            CHECK( successfulModify ) << "modify global dof id fails";
-        }
+        this->renumberDofRelation( previousGlobalIdToNewGlobalId );
 
         for ( auto & faceDataElt : M_face_l2g )
             for ( FaceDof & faceDataDof : faceDataElt.second )
@@ -2314,22 +2341,22 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildP
                 size_type gDof = it_dof2->second.template get<3>();
                 uint16_type dof2_type = it_dof2->second.template get<4>();
                 uint16_type dof1_type = dof.second.template get<4>();
-
+#if 0
                 FEELPP_ASSERT( dof1_type == dof2_type )
                     ( gid )( it_dof2->first )( gDof )( lid )( c2) ( ie )
                     ( dof1_type )( dof2_type ).error ( "invalid dof" );
 
-                VLOG(2) << "link " <<  M_el_l2g.left.find( localdof_type( ie, localDofId(lid,c2) ) )->second.index()  << " -> " << gid << "\n"
-                        << "element id1: " << ie1 << ", lid1: " << lid1 << ", c1: " << c1 << ",  gDof1: " << gDof1 << ", type1: " << dof1_type << "\n"
-                        << "element id2: " << ie << ", lid2: " << lid << ", c2: " << c2 << ",  gDof2: " << gDof << ", type: " << dof2_type << "\n";
+                DVLOG(2) << "link " <<  M_el_l2g.left.find( localdof_type( ie, localDofId(lid,c2) ) )->second.index()  << " -> " << gid << "\n"
+                         << "element id1: " << ie1 << ", lid1: " << lid1 << ", c1: " << c1 << ",  gDof1: " << gDof1 << ", type1: " << dof1_type << "\n"
+                         << "element id2: " << ie << ", lid2: " << lid << ", c2: " << c2 << ",  gDof2: " << gDof << ", type: " << dof2_type << "\n";
 
                 // gid is given by dof1
-                auto it = M_el_l2g.left.find(localdof_type( ie, localDofId(lid,c2) ));
-                //bool successful_modify = M_el_l2g.left.modify_data( it, bimaps::_data = Dof( boost::make_tuple( gid, 1, true ) ) );
-                bool successful_modify = M_el_l2g.left.modify_data( it, bimaps::_data = Dof( gid ) );
+                auto it = this->findLocalDof(localdof_type( ie, localDofId(lid,c2) ));
+                bool successful_modify = this->modifyDofRelation( it.first, Dof(gid) );
 
                 CHECK( successful_modify ) << "modify periodic dof table failed: element id "
                                            << ie << " local dof id " << lid << " component " << c2;
+#endif                
                 // map_gdof define only for one component
                 if ( c1 == 0 )
                 {
