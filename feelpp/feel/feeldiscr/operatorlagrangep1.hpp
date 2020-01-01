@@ -68,7 +68,7 @@ struct SpaceToLagrangeP1Space
 
         typedef Lagrange<1,PsetType> type;
     };
-    typedef typename convex_type::template shape<domain_mesh_type::nDim, 1, domain_mesh_type::nRealDim>::type image_convex_type;
+    typedef typename convex_type::template shape<domain_mesh_type::nDim, 1, domain_mesh_type::nRealDim> image_convex_type;
     typedef Mesh<image_convex_type> image_mesh_type;
 
     typedef typename mpl::if_<mpl::bool_<domain_space_type::is_scalar>,

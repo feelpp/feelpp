@@ -29,7 +29,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
-#include <boost/foreach.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
@@ -96,6 +95,7 @@
 #include <vtkTriangle.h>
 #include <vtkUnstructuredGrid.h>
 #endif
+
 
 namespace Feel
 {
@@ -2477,7 +2477,6 @@ constexpr int realdim( std::shared_ptr<MeshType> m,
 
 //#if !defined(FEELPP_INSTANTIATION_MODE)
 #include <feel/feeldiscr/meshimpl.hpp>
-
 //#endif
 
 #endif /* FEELPP_MESH_HPP */

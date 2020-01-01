@@ -337,9 +337,9 @@ namespace detail
 template<typename Args>
 struct elementon_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_type;
-    typedef typename clean_type<Args,tag::element>::type _element_type;
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef clean_type<Args,tag::range> _range_type;
+    typedef clean_type<Args,tag::element>_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
     typedef ElementOnExpr<_range_type, _element_type,
                       typename mpl::if_<boost::is_arithmetic<_expr_type>,
                                         mpl::identity<Expr<Cst<_expr_type> > >,
