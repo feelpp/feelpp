@@ -2824,7 +2824,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     //auto ctx = gm->template context<context,2>( elt, geopc );
     typedef Element<Y,Cont> element_type;
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::template PermutationSubEntity<2>::type permutation_type;
+    typedef typename geoelement_type::template PermutationSubEntity<2> permutation_type;
     typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
     std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numEdges );
     for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
@@ -2914,7 +2914,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     typedef Element<Y,Cont> element_type;
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim>::type permutation_type;
+    typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim> permutation_type;
     typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
     std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numVertices );
     for ( uint16_type __f = 0; __f < geoelement_type::numVertices; ++__f )
