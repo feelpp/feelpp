@@ -143,7 +143,7 @@ public :
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
                                                              std::forward<BackendT>(b),
-                                                             (s>=solve::strategy::static_condensation)?false:true )  )
+                                                           (s>=solve::strategy::static_condensation)?false:true, blockSize(ps) )  )
         {}
     template<typename T, typename BackendT>
     BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns,
@@ -153,7 +153,7 @@ public :
         M_matrix( std::make_shared<condensed_matrix_type>( s,
                                                              csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?pattern::toZero(patterns):patterns),
                                                              std::forward<BackendT>(b),
-                                                             (s>=solve::strategy::static_condensation)?false:true )  )
+                                                           (s>=solve::strategy::static_condensation)?false:true, blockSize(ps) ) )
         {}
 
     BlockBilinearForm(product_space_t&& ps, condensed_matrix_ptrtype & m)
@@ -484,12 +484,15 @@ public :
             cout << " . Solve done" << std::endl;
             toc("blockform.sc.solve", FLAGS_v>0);
 
-#if 0
-            S.matrixPtr()->printMatlab("S.m");
-            V.vectorPtr()->printMatlab("g.m");
-            e3.printMatlab("phat1.m");
-            e1.printMatlab("u.m");
-            e2.printMatlab("p.m");
+#if 1
+            if ( Environment::numberOfProcessors() == 1 )
+            {
+                S.matrixPtr()->printMatlab("S.m");
+                V.vectorPtr()->printMatlab("g.m");
+                e3.printMatlab("phat1.m");
+                e1.printMatlab("u.m");
+                e2.printMatlab("p.m");
+            }
 #endif
             tic();
             cout << " . starting local Solve" << std::endl;

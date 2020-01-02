@@ -211,7 +211,8 @@ void MatrixPetsc<T>::init ( const size_type m,
                             const size_type m_l,
                             const size_type n_l,
                             const size_type nnz,
-                            const size_type /*noz*/ )
+                            const size_type /*noz*/,
+                            int block_size )
 {
     //std::cout << "\nSEQUENTIAL : init without graph"<<std::endl;
 
@@ -264,7 +265,9 @@ void MatrixPetsc<T>::init ( const size_type m,
         CHKERRABORT( this->comm(),ierr );
 
     }
-
+    ierr = MatSetBlockSize ( M_mat, block_size );
+    CHKERRABORT( this->comm(),ierr );
+    
     ierr = MatSetFromOptions ( M_mat );
     CHKERRABORT( this->comm(),ierr );
 
@@ -297,7 +300,8 @@ void MatrixPetsc<T>::init ( const size_type /*m*/,
                             const size_type /*n*/,
                             const size_type /*m_l*/,
                             const size_type /*n_l*/,
-                            graph_ptrtype const& graph )
+                            graph_ptrtype const& graph,
+                            int block_size )
 {
     VLOG(1) << "MatrixPetsc init with graph";
     this->setGraph( graph );
@@ -374,6 +378,10 @@ void MatrixPetsc<T>::init ( const size_type /*m*/,
                                  dnz,
                                  //(int*) this->graph()->nNzOnProc().data(),
                                  &M_mat );
+
+        ierr = MatSetBlockSize ( M_mat, block_size );
+        CHKERRABORT( this->comm(),ierr );
+        
         CHKERRABORT( this->comm(),ierr );
         delete[] dnz;
         //ierr = MatSeqAIJSetPreallocation( M_mat, 0, (int*)this->graph()->nNzOnProc().data() );
@@ -2546,7 +2554,8 @@ void MatrixPetscMPI<T>::init( const size_type m,
                               const size_type m_l,
                               const size_type n_l,
                               const size_type nnz,
-                              const size_type /*noz*/ )
+                              const size_type /*noz*/,
+                              int block_size )
 {
     //std::cout << "\n MatrixPetscMPI<T>::init without graph " << std::endl;
 }
@@ -2556,7 +2565,8 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
                               const size_type /*n*/,
                               const size_type /*m_l*/,
                               const size_type /*n_l*/,
-                              graph_ptrtype const& graph )
+                              graph_ptrtype const& graph,
+                              int block_size )
 {
     //this->comm().globalComm().barrier();
     VLOG(1) << "MatrixPetscMPI<T>::init with graph start on proc"<< this->comm().globalRank() << "("<<this->comm().godRank() <<")" << std::endl;
@@ -2620,7 +2630,9 @@ void MatrixPetscMPI<T>::init( const size_type /*m*/,
 
 #endif
     CHKERRABORT( this->comm(),ierr );
-
+    Feel::cout <<"MatSetBlockSize disabled: "  << block_size << std::endl;
+    ierr = MatSetBlockSize ( this->M_mat, block_size );
+    CHKERRABORT( this->comm(),ierr );
     // free
     delete[] dnz;
     delete[] dnzOffProc;
@@ -2722,7 +2734,16 @@ MatrixPetscMPI<T>::initLocalToGlobalMapping()
 
     ierr=ISLocalToGlobalMappingCreateIS( isCol, &isLocToGlobMapCol );
     CHKERRABORT( this->comm(),ierr );
+    int bs;
+    ierr = MatGetBlockSize( this->M_mat, &bs );
+    Feel::cout << "block size=" << bs << std::endl;
 
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISLocalToGlobalMappingSetBlockSize( isLocToGlobMapRow, bs );
+    CHKERRABORT( this->comm(),ierr );
+    ierr = ISLocalToGlobalMappingSetBlockSize( isLocToGlobMapCol, bs );
+    CHKERRABORT( this->comm(),ierr );
+    
 #if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 2)
     ierr = MatSetLocalToGlobalMapping( this->mat(),isLocToGlobMapRow,isLocToGlobMapCol );
 #else

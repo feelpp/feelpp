@@ -372,6 +372,7 @@ public:
                                        ( trial,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) )
                                        ( test,*( boost::is_convertible<mpl::_,std::shared_ptr<FunctionSpaceBase> > ) ) )
                                      ( optional
+                                       ( block_size,( int ), 1 )
                                        ( pattern,( size_type ),Pattern::COUPLED )
                                        ( properties,( size_type ),NON_HERMITIAN )
                                        ( buildGraphWithTranspose, ( bool ),false )
@@ -412,7 +413,7 @@ public:
                 tic();
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                           s->graph() );
+                           s->graph(), block_size );
                 toc( "Backend::newMatrix:: initialize matrix", FLAGS_v > 0 );
             }
             else
@@ -437,7 +438,7 @@ public:
 
                 mat->init( test->nDof(), trial->nDof(),
                            test->nLocalDofWithoutGhost(), trial->nLocalDofWithoutGhost(),
-                           graph );
+                           graph, block_size );
             }
             tic();
             mat->zero();
@@ -453,10 +454,10 @@ public:
     }
 
     template<typename DomainSpace, typename ImageSpace>
-    sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN  )
+        sparse_matrix_ptrtype newMatrix( DomainSpace const& dm, ImageSpace const& im, sparse_matrix_ptrtype const& M, size_type prop = NON_HERMITIAN, int block_size = 1  )
     {
         sparse_matrix_ptrtype m = newMatrix( dm, im, prop  );
-        m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph() );
+        m->init( im->nDof(), dm->nDof(), im->nLocalDof(), dm->nLocalDof(), M->graph(), block_size );
         return m;
     }
 

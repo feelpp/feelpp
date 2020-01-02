@@ -212,7 +212,8 @@ public:
                         const size_type m_l,
                         const size_type n_l,
                         const size_type nnz=30,
-                        const size_type noz=10 ) = 0;
+                        const size_type noz=10,
+                        int block_size = 1 ) = 0;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -221,7 +222,8 @@ public:
                         const size_type n,
                         const size_type m_l,
                         const size_type n_l,
-                        graph_ptrtype const& graph ) = 0;
+                        graph_ptrtype const& graph,
+                        int block_size = 1 ) = 0;
 
     /**
      * set the indexSplit associated to the sparse matrix

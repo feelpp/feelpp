@@ -843,8 +843,15 @@ SolverLinearPetsc<T>::updateNearNullSpace( Mat A )
     int ierr = 0;
     int dimNullSpace = this->M_nearNullSpace->size();
     std::vector<Vec> petsc_vec(dimNullSpace);
+
+    int bs;
+    MatGetBlockSize(A,&bs);
+    Feel::cout << "blockSize::updateNear" << bs << std::endl;
     for ( int k = 0 ; k<dimNullSpace ; ++k )
+    {
         petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &this->M_nearNullSpace->basisVector(k) )->vec();
+        VecSetBlockSize( petsc_vec[k], bs );
+    }
     MatNullSpace nullsp;
     ierr = MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data()/*PETSC_NULL*/, &nullsp );
     CHKERRABORT( this->worldComm().globalComm(),ierr );

@@ -228,7 +228,8 @@ public:
                 const size_type m_l,
                 const size_type n_l,
                 const size_type nnz=30,
-                const size_type noz=10 );
+                const size_type noz=10,
+                int block_size = 1 );
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -237,7 +238,8 @@ public:
                 const size_type n,
                 const size_type m_l,
                 const size_type n_l,
-                graph_ptrtype const& graph );
+                graph_ptrtype const& graph,
+                int  block_size = 1 );
 
     /**
      * Release all memory and return

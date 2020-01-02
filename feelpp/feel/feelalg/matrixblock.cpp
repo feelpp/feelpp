@@ -162,7 +162,8 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const & bloc
 template <typename T>
 MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & blockgraph,
                                      backend_ptrtype backend,
-                                     bool diag_is_nonzero )
+                                     bool diag_is_nonzero,
+                                     int block_size )
     :
     super(),
     M_backend(backend),
@@ -178,7 +179,7 @@ MatrixBlockBase<T>::MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const & block
     M_mat = M_backend->newMatrix( graph->mapColPtr(),  graph->mapRowPtr(), properties, false );
     M_mat->init( graph->mapRow().nDof(), graph->mapCol().nDof(),
                  graph->mapRow().nLocalDofWithoutGhost(), graph->mapCol().nLocalDofWithoutGhost(),
-                 graph );
+                 graph, block_size );
 
     M_mat->zero();
 
@@ -197,7 +198,8 @@ MatrixBlockBase<T>::init ( const size_type m,
                            const size_type m_l,
                            const size_type n_l,
                            const size_type nnz,
-                           const size_type /*noz*/ )
+                           const size_type /*noz*/,
+                           int block_size )
 {
     if ( ( m==0 ) || ( n==0 ) )
         return;
@@ -210,7 +212,7 @@ MatrixBlockBase<T>::init ( const size_type m,
         this->setInitialized( true );
     }
 
-    M_mat->init( m,n,m_l,n_l,nnz );
+    M_mat->init( m,n,m_l,n_l,nnz, block_size );
 
 }
 
@@ -220,7 +222,8 @@ MatrixBlockBase<T>::init ( const size_type m,
                            const size_type n,
                            const size_type m_l,
                            const size_type n_l,
-                           graph_ptrtype const& graph )
+                           graph_ptrtype const& graph,
+                           int block_size )
 {
     this->setGraph( graph );
 
@@ -232,7 +235,7 @@ MatrixBlockBase<T>::init ( const size_type m,
         this->setInitialized(  true );
     }
 
-    M_mat->init( m,n,m_l,n_l,graph );
+    M_mat->init( m,n,m_l,n_l,graph, block_size );
 }
 
 

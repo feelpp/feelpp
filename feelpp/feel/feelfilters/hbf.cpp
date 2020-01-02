@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 #include <fstream>
 #include <iostream>
+#include <execution>
 #include <feel/feelcore/environment.hpp>
 //#include <fftw3.h>
 #include <feel/feelfilters/hbf.hpp>
@@ -210,10 +211,13 @@ Hbf2FeelppStruc::operator()( holo3_image<float> const& x )
     q1_element_type u = M_Xh->element();
     toc("h2f", FLAGS_v>0);
     tic();
-    for( auto const & dof : M_relation.left )
-    {
-        u( dof.second ) = x(dof.first.first,dof.first.second);
-    }
+    auto s = [&u,&x]( auto const& dof ){
+                 u( dof.second ) = x(dof.first.first,dof.first.second);
+             };
+
+    std::for_each( std::execution::par, M_relation.left.begin(), M_relation.left.end(), s );
+    //std::for_each( M_relation.left.begin(), M_relation.left.end(), s );
+
     toc("h2f dof", FLAGS_v>0);
     tic();
     sync(u,"=");

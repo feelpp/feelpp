@@ -215,6 +215,7 @@ void PreconditionerPetsc<T>::init ()
                     for ( int k = 0 ; k<dimNullSpace ; ++k )
                         petsc_vec[k] =  dynamic_cast<const VectorPetsc<T>*>( &nearnullspace->basisVector(k) )->vec();
 
+                    
                     MatNullSpace nullsp;
                     this->check( MatNullSpaceCreate( this->worldComm(), PETSC_FALSE , dimNullSpace, petsc_vec.data(), &nullsp ) );
                     //this->check( PetscObjectCompose((PetscObject) isToApply, "nullspace", (PetscObject) nullsp) );
@@ -2180,7 +2181,7 @@ ConfigurePCGAMG::ConfigurePCGAMG( PC& pc, PreconditionerPetsc<double> * precFeel
     M_coarsePCMatSolverPackage( option(_name="pc-factor-mat-solver-package-type",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<std::string>() ),
     M_coarsePCview( option(_name="pc-view",_prefix=M_prefixMGCoarse,_vm=this->vm()).as<bool>() )
 {
-    VLOG(2) << "ConfigurePC : GAMG\n"
+    Feel::cout << "ConfigurePC : GAMG\n"
             << "  |->prefix    : " << this->prefix() << std::string((this->sub().empty())? "" : " -sub="+this->sub()) << "\n"
             << "  |->mgType : " << M_mgType << "\n"
             << "  |->maxLevels : " << M_nLevels << "\n";
@@ -2236,7 +2237,8 @@ ConfigurePCGAMG::run( PC& pc )
         this->check( PCSetFromOptions( pc ) );
 
         //
-        this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
+        //this->check( PCGAMGSetNlevels( pc,M_nLevels ) );
+        this->check( PCGAMGSetNlevels( pc, 10 ) );//M_nLevels ) );
         // Set number of equations to aim for on coarse grids via processor reduction
         this->check( PCGAMGSetProcEqLim( pc, M_procEqLim ) );
         // Set max number of equations on coarse grids
@@ -2246,6 +2248,7 @@ ConfigurePCGAMG::run( PC& pc )
 #else
         // Relative threshold to use for dropping edges in aggregation graph
         this->check( PCGAMGSetThreshold( pc, M_threshold ) );
+        this->check( PCGAMGSetSquareGraph( pc, 5 ) );
 #endif
         // not works!!(seems to be missing PetscObjectComposeFunction with this function)
         //this->check( PCGAMGSetSymGraph( pc, ( M_setSymGraph )?PETSC_TRUE : PETSC_FALSE ) );

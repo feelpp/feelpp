@@ -535,6 +535,13 @@ product2( std::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
     return ProductSpaces2<T,SpaceList...>( ps, spaces... );
 }
 
+template<typename T>
+int
+blockSize( T const& space )
+{
+    return (space.numberOfSpaces()==1)?space[0_c]->nComponents:1;
+}
+
 
 #if 0
 namespace detail {
@@ -591,6 +598,7 @@ product( SpaceList... spaces )
     space_ptrtype Rh( space_type::NewFromList( spaces... ) );
     return Rh;
 }
+
 
 
 #endif

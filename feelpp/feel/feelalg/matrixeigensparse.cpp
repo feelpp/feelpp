@@ -74,11 +74,12 @@ MatrixEigenSparse<T>::~MatrixEigenSparse()
 template <typename T>
 void
 MatrixEigenSparse<T>::init ( const size_type m,
-                                const size_type n,
-                                const size_type /*m_l*/,
-                                const size_type /*n_l*/,
-                                const size_type /*nnz*/,
-                                const size_type /*noz*/ )
+                             const size_type n,
+                             const size_type /*m_l*/,
+                             const size_type /*n_l*/,
+                             const size_type /*nnz*/,
+                             const size_type /*noz*/,
+                             int block_size )
 {
     if ( ( m==0 ) || ( n==0 ) )
         return;
@@ -89,10 +90,11 @@ MatrixEigenSparse<T>::init ( const size_type m,
 template <typename T>
 void
 MatrixEigenSparse<T>::init ( const size_type m,
-                                const size_type n,
-                                const size_type m_l,
-                                const size_type n_l,
-                                graph_ptrtype const& graph )
+                             const size_type n,
+                             const size_type m_l,
+                             const size_type n_l,
+                             graph_ptrtype const& graph,
+                             int block_size )
 {
     Feel::detail::ignore_unused_variable_warning( m );
     Feel::detail::ignore_unused_variable_warning( n );

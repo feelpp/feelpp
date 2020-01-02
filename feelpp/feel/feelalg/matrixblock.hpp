@@ -153,7 +153,7 @@ class MatrixBlockBase : public MatrixSparse<T>
 
     MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const& graph,
                      backend_ptrtype backend,
-                     bool diag_is_nonzero = true );
+                     bool diag_is_nonzero = true, int block_size = 1  );
 
     MatrixBlockBase( vf::BlocksBase<matrix_ptrtype> const& blockSet,
                      backend_type& backend,
@@ -165,8 +165,9 @@ class MatrixBlockBase : public MatrixSparse<T>
 
     MatrixBlockBase( vf::BlocksBase<graph_ptrtype> const& graph,
                      backend_type& backend,
-                     bool diag_is_nonzero = true )
-        : MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero )
+                     bool diag_is_nonzero = true,
+                     int block_size = 1 )
+        : MatrixBlockBase( graph, backend.shared_from_this(), diag_is_nonzero, block_size )
     {
     }
 
@@ -237,7 +238,8 @@ class MatrixBlockBase : public MatrixSparse<T>
                const size_type m_l,
                const size_type n_l,
                const size_type nnz = 30,
-               const size_type noz = 10 ) override;
+               const size_type noz = 10,
+               int block_size = 1 ) override;
 
     /**
      * Initialize using sparsity structure computed by \p dof_map.
@@ -246,7 +248,8 @@ class MatrixBlockBase : public MatrixSparse<T>
                const size_type n,
                const size_type m_l,
                const size_type n_l,
-               graph_ptrtype const& graph ) override;
+               graph_ptrtype const& graph,
+               int  block_size = 1 ) override;
 
     //!
     //! get the backend read-only

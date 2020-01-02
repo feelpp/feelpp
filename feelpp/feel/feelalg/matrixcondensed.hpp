@@ -64,9 +64,10 @@ public:
     template<typename BackendT>
     MatrixCondensed( vf::BlocksBase<graph_ptrtype> const& graph,
                      BackendT&& b,
-                     bool diag_is_nonzero = true )
+                     bool diag_is_nonzero = true,
+                     int block_size = 1  )
         :
-        super( graph, std::forward<BackendT>(b), true ),
+        super( graph, std::forward<BackendT>(b), true, block_size ),
         M_sc( new sc_type ),
         M_strategy( solve::strategy::static_condensation )
         {}
@@ -74,9 +75,10 @@ public:
     MatrixCondensed( solve::strategy s,
                      vf::BlocksBase<graph_ptrtype> const& graph,
                      BackendT&& b,
-                     bool diag_is_nonzero = true )
+                     bool diag_is_nonzero = true,
+                     int block_size = 1 )
         :
-        super( graph, std::forward<BackendT>(b), true ),
+        super( graph, std::forward<BackendT>(b), true, block_size ),
         M_sc( new sc_type ),
         M_strategy( s )
         {}
