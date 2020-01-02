@@ -27,9 +27,9 @@
 namespace Feel
 {
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGhostDofMap( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGhostDofMap( mesh_type& mesh )
 {
     if ( this->hasMeshSupport() )
         this->meshSupport()->updateParallelData();
@@ -90,9 +90,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuous( mesh_type& mesh )
 {
     //------------------------------------------------------------------------------//
     size_type nbFaceDof = invalid_v<size_type>;
@@ -452,9 +452,9 @@ updateDofOnEdges( DofTableType const& doftable, typename DofTableType::mesh_type
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuousActifDof( mesh_type& mesh,
                                                                                                         std::vector< std::map<size_type,std::set<std::vector<size_type> > > > & listToSend,
                                                                                                         std::set<rank_type> & procRecvData )
 {
@@ -640,9 +640,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::
 buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type& mesh,
                                                                        std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
                                                                        std::set<rank_type> const& procRecvData )
@@ -883,9 +883,9 @@ buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofBlockingComm( mesh_type
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapContinuousGhostDofNonBlockingComm( mesh_type& mesh,
                                                                             std::vector< std::map<size_type,std::set<std::vector<size_type> > > > const& listToSend,
                                                                                                         std::set<rank_type> const& procRecvData )
 {
@@ -1203,9 +1203,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapDiscontinuous()
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapDiscontinuous()
 {
     const rank_type myRank = this->worldComm().rank();
     //------------------------------------------------------------------------------//
@@ -1256,9 +1256,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::generateDofPoints( ext_elements_t<mesh_type> const& myrange ) const
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::generateDofPoints( ext_elements_t<mesh_type> const& myrange ) const
 {
     if ( fe_type::is_modal )
         return;
@@ -1315,9 +1315,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::genera
 }
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapOthersMesh( mesh_type& mesh )
 {
     DVLOG(2) << "[buildGlobalProcessToGlobalClusterDofMapOthersMesh] start\n";
 
@@ -1669,9 +1669,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
     }
 }
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGlobalProcessToGlobalClusterDofMapOthersMeshNonBlockingComm( mesh_type& mesh,
                                                                                                                           std::vector< std::map<size_type,std::vector< std::vector<std::pair<uint16_type,size_type> > > > > const& listToSend )
 {
     typedef std::vector< boost::tuple<std::vector<uint16_type>, ublas::vector<double> > > mpidofs_subcontainer_type; // tuple : ldof of each component + node
@@ -1901,9 +1901,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 //--------------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------------//
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGhostDofMapExtended( mesh_type& mesh )
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGhostDofMapExtended( mesh_type& mesh )
 {
     DVLOG(2) << "[buildGhostDofMap] call buildGhostDofMapExtended on rank "<<  this->worldComm().rank() << "\n";
 
@@ -1948,9 +1948,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildG
 }
 
 
-template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofMarkerPolicy>
+template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType, typename DofRelation, typename DofMarkerPolicy>
 void
-DofTable<MeshType, FEType, PeriodicityType, MortarType, DofMarkerPolicy>::buildGhostDofMapExtended( mesh_type& mesh,
+DofTable<MeshType, FEType, PeriodicityType, MortarType, DofRelation, DofMarkerPolicy>::buildGhostDofMapExtended( mesh_type& mesh,
                                                                                    ext_elements_t<mesh_type> const& ghostEltRange,
                                                                                    ext_elements_t<mesh_type> const& activeEltTouchInterProcessRange )
 {

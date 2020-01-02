@@ -539,13 +539,13 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
                 {
                     for ( int c2 = 0; c2 < c1; ++c2, ++next_free_dof )
                     {
-                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c2 ) + l ),
-                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
-                        M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c2 + c1 ) + l ),
-                                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
+                        M_doftable->insertDofRelation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c2 ) + l ),
+                                                       Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) );
+                        M_doftable->insertDofRelation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c2 + c1 ) + l ),
+                                                       Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) );
                     }
-                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c1 ) + l ),
-                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
+                    M_doftable->insertDofRelation( localdof_type( ie, fe_type::nLocalDof * ( nComponents1 * c1 + c1 ) + l ),
+                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) );
                     ++next_free_dof;
                 }
             }
@@ -553,8 +553,8 @@ void DofFromElement<DofTableType, FEType>::add( element_type const& __elt,
             {
                 for ( int c = 0; c < ncdof; ++c, ++next_free_dof )
                 {
-                    M_doftable->M_el_l2g.insert( dof_relation( localdof_type( ie, fe_type::nLocalDof * c + l ),
-                                                               Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) ) );
+                    M_doftable->insertDofRelation( localdof_type( ie, fe_type::nLocalDof * c + l ),
+                                                   Dof( ( M_doftable->dofIndex( next_free_dof ) ), 1, false ) );
                 }
             }
         }
