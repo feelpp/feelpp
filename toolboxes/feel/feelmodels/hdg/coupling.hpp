@@ -582,14 +582,14 @@ void CoupledMixedPoisson<Dim, Order, G_Order, E_Order>::solve()
     auto bbf = blockform2( *( this->getPS() ), this->M_A_cst );
 #else
     auto bbf = blockform2( *( this->getPS() ), this->M_A );
-    this->M_A->printMatlab( "A-" + std::to_string( this->currentTime() ) + ".m" );
+    //this->M_A->printMatlab( "A-" + std::to_string( this->currentTime() ) + ".m" );
 #endif
 
     auto blf = blockform1( *( this->getPS() ), this->M_F );
 
     auto U = this->getPS()->element();
 
-    this->M_F->printMatlab( "F-" + std::to_string( this->currentTime() ) + ".m" );
+    //this->M_F->printMatlab( "F-" + std::to_string( this->currentTime() ) + ".m" );
 
     tic();
     bbf.solve( _solution = U, _rhs = blf, _condense = boption( prefixvm( this->prefix(), "use-sc" ) ), _name = this->prefix() );
