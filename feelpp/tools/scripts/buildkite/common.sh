@@ -45,12 +45,12 @@ tag_from_os() {
     splitfrom=(`echo "$1" | tr ":" "\n"`)
     fromos=${splitfrom[0]}
     fromtag=${splitfrom[1]}
-
-    ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "${fromos}-${fromtag}"  | while read line ; do
-        tokens=($line)
-        image=${tokens[0]}
-        printf "%s" "${image}"
-    done
+    printf "%s" "${fromos}-${fromtag}"
+    #    ${FEELPP_SCRIPTS_DIR}/list.sh $2 $3 | grep "${fromos}-${fromtag}"  | while read line ; do
+    #    tokens=($line)
+    #    image=${tokens[0]}
+    #    printf "%s" "${image}"
+    #done
 }
 
 extratags_from_target() {
