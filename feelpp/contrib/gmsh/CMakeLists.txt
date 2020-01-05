@@ -21,7 +21,7 @@ if ( WGET )
     #file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_custom_command(
       TARGET gmsh_get_files
-      COMMAND ${WGET} -c -q --timeout=5 ${gmsh_gitlab_url}/api/gmsh.h -O gmsh.h )
+      COMMAND ${WGET} -c -q --timeout=5 ${gmsh_gitlab_url}/api/gmsh.h -O gmsh.h || true )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gmsh.h DESTINATION include/feelpp/gmsh COMPONENT Devel )
   endif()
 endif()
