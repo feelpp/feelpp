@@ -9,10 +9,10 @@ FEELPP_BRANCH=develop
 DIST=${1:-focal}
 FLAVOR=${2:-ubuntu}
 
-#if [ -d /tmp/feelpp ]; then rm -rf /tmp/feelpp; fi
+if [ -d ../build-$DIST ]; then rm -rf ../build-$DIST; fi
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
-cd /tmp/ && mkdir build-$DIST
-cd build-$DIST && $HOME/Devel/feelpp/configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
+mkdir ../build-$DIST
+cd ../build-$DIST && ../feelpp/configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
 make package_source
 git clone https://github.com/feelpp/feelpp.pkg.git
 main_version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1/g' )
