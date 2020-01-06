@@ -1,13 +1,19 @@
 #! /bin/bash
 
 set -eo pipefail
-set -x
+#set -x
 
+# this script must be executed at the top level of the Feel++ directories
 
 # default values
 FEELPP_BRANCH=develop
 DIST=${1:-focal}
-FLAVOR=${2:-ubuntu}
+if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
+   FLAVOR=ubuntu
+elif [ "$DIST" = "buster" ]; then
+    FLAVOR=debian
+fi
+echo "Building $FLAVOR/$DIST packages for Feel++"
 
 if [ -d ../build-$DIST ]; then rm -rf ../build-$DIST; fi
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
