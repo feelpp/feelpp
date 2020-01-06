@@ -7,7 +7,7 @@ set -eo pipefail
 
 # default values
 FEELPP_BRANCH=develop
-DIST=${1:-focal}
+DIST=${DIST:-focal}
 if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
    FLAVOR=ubuntu
 elif [ "$DIST" = "buster" ]; then
