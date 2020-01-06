@@ -51,8 +51,7 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   branches: ["develop"]
-   if: build.message !~ /\[skip tests\]/
+   if: build.message !~ /\[skip tests\]/ && ( build.branch == "master" || build.branch == "develop" )
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
