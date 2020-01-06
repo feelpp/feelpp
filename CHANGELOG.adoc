@@ -15,6 +15,7 @@
 == https://github.com/feelpp/feelpp/tree/v0.107.0[v0.107.0] (2020-01-03)
 
 https://github.com/feelpp/feelpp/compare/v0.106.0...v0.107.0[Full Changelog]
+
 === Developers
 
 * use C++17 language features, {uri-issue}/1282[#1282]
