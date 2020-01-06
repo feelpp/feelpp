@@ -16,6 +16,30 @@ steps:
    agents:
      docker: true
  - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :ubuntu: Feel++  ${BUILDKITE_BRANCH}"
+   async: true
+   branches: ["develop","master"]
+   build:
+     env:
+       DIST: "focal"
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :ubuntu: Feel++  ${BUILDKITE_BRANCH}"
+   async: true
+   branches: ["develop","master"]   
+   build:
+     env:
+       DIST: "eoan"
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :debian: Feel++  ${BUILDKITE_BRANCH}"
+   async: true
+   branches: ["develop","master"]   
+   build:
+     env:
+       DIST: "buster"
+ - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
    async: true
@@ -28,6 +52,7 @@ steps:
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
    branches: ["develop"]
+   if: build.message !~ /\[skip tests\]/
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
