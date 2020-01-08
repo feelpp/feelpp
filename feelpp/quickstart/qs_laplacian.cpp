@@ -23,12 +23,15 @@
 //!
 // tag::global[]
 #include <feel/feel.hpp>
+#include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include <feel/feelvf/print.hpp>
+#include "cg_laplacian.hpp"
 int main( int argc, char** argv )
 {
     // tag::env[]
     using namespace Feel;
+    using namespace tabulate;
     using Feel::cout;
 
     po::options_description laplacianoptions( "Laplacian options" );
@@ -71,7 +74,7 @@ int main( int argc, char** argv )
         Vh = Pch<2>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
     else
         Vh = Pch<2>( mesh );
-    auto u = Vh->element( "u" );
+
 
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
@@ -119,75 +122,50 @@ int main( int argc, char** argv )
     auto r_2 = expr( locals.at("r_2") );
     thechecker.setSolution( locals.at("p") );
 
-    Feel::cout << "----------------------------------------" << std::endl;
-    Feel::cout << "Solving -div(( k grad p ) = f with the following boundary conditions" << std::endl;
-    Feel::cout << "                         k=" << locals.at("k") << std::endl;
-    Feel::cout << "                         f=" << locals.at("f") << std::endl;
-
+    Table summary;
+    summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
+    summary[0].format().font_align(FontAlign::center);
+    Table data;
+    //data.format().hide_border();
+    data.add_row({"k",locals.at("k")});
+    data.add_row({"f",locals.at("f")});
+    
     if ( support( Vh )->hasAnyMarker( {"Dirichlet"} ) ) 
     {
-        Feel::cout << "     Dirichlet (nfaces:" << nelements( markedfaces( support( Vh ), "Dirichlet" ) ) << ")" << std::endl;
-        Feel::cout << "                     p=" << locals.at("g") << std::endl;
+        data.add_row({"Dirichlet BC",std::to_string(nelements( markedfaces( support( Vh ), "Dirichlet" ) ))});
+        data.add_row({"p", locals.at("g")}); 
     }
     if ( support( Vh )->hasAnyMarker( {"Neumann"} ) ) 
     {
-        Feel::cout << "       Neumann (nfaces:" << nelements( markedfaces( support( Vh ), "Neumann" ) ) << ")" << std::endl;
-        Feel::cout << "              -k*dn(p)=" << locals.at("un") << std::endl;
+        data.add_row({"Neumann BC",std::to_string(nelements( markedfaces( support( Vh ), "Neumann" ) ))});
+        data.add_row({"-k*dn(p)", locals.at("un")}); 
     }
     if ( support( Vh )->hasAnyMarker( {"Robin"} ) ) 
     {
-        Feel::cout << "         Robin (nfaces:" << nelements( markedfaces( support( Vh ), "Robin" ) ) << ")" << std::endl;
-        Feel::cout << "              -k*dn(p)+" << locals.at("r_1") << "*u=" << locals.at("r_2") << std::endl;
+        data.add_row({"Robin BC",std::to_string(nelements( markedfaces( support( Vh ), "Robin" ) ))});
+        data.add_row({"-k*dn(p)+"+locals.at("r_1")+"*u", locals.at("r_2")}); 
     }
+    data.column(0).format().font_align(FontAlign::right);
+    summary.add_row({data});
     if ( thechecker.check() )
     {
-        Feel::cout << std::endl
-                   << "      Exact solution to be checked with L2/H1 norms" << std::endl;
-        Feel::cout << "                     p=" << locals.at("p") << std::endl;
-        Feel::cout << "            -k*grad(p)=" << locals.at("u") << std::endl;
+        Table ex;
+        //ex.format().hide_border();
+        summary.add_row({"Exact solution to be checked with L2/H1 norms"});
+        ex.add_row({"p",locals.at("p")});
+        ex.add_row({"-k*grad(p)",locals.at("u")});
+        ex.column(0).format().font_align(FontAlign::right);
+        summary.add_row({ex});
     }
-    Feel::cout << "----------------------------------------" << std::endl;
-    // tag::v[]
-    auto v = Vh->element( g, "g" );
-    // end::v[]
-    toc( "Vh" );
-    // end::mesh_space[]
+    Feel::cout << summary << std::endl;
+    if ( Environment::isMasterRank() )
+    {
+        std::ofstream ofs("model.txt" );
+        ofs << summary << std::endl;
+    }
 
-    // tag::forms[]
-    tic();
-    auto l = form1( _test = Vh );
-    l = integrate( _range = elements( support( Vh ) ),
-                   _expr = f * id( v ) );
-    l += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = -r_2 * id( v ) );
-    l += integrate( _range = markedfaces( support( Vh ), "Neumann" ), _expr = -un * id( v ) );
-    toc( "l" );
 
-    tic();
-    auto a = form2( _trial = Vh, _test = Vh );
-    tic();
-    a = integrate( _range = elements( support( Vh ) ),
-                   _expr = k * inner( gradt( u ), grad( v ) ) );
-    toc( "a.gradgrad" );
-    tic();
-    a += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = im( mesh, 4 ) );
-    toc( "a.robin" );
-    tic();
-    a += on( _range = markedfaces( support( Vh ), "Dirichlet" ), _rhs = l, _element = u, _expr = g );
-    //! if no markers Robin Neumann or Dirichlet are present in the mesh then
-    //! impose Dirichlet boundary conditions over the entire boundary
-    if ( !support( Vh )->hasAnyMarker( {"Robin", "Neumann", "Dirichlet"} ) )
-        a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
-    toc( "a.dirichlet" );
-    toc( "a" );
-    // end::forms[]
-
-    // tag::solve[]
-    tic();
-    //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
-    if ( !boption( "no-solve" ) )
-        a.solve( _rhs = l, _solution = u );
-    toc( "a.solve" );
-    // end::solve[]
+    auto u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
     tic();
