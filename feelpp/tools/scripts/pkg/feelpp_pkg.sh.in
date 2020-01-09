@@ -6,14 +6,20 @@ set -eo pipefail
 # this script must be executed at the top level of the Feel++ directories
 
 # default values
-FEELPP_BRANCH=develop
+COMPONENT=main
+if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
+    COMPONENT=devel
+fi
+if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
+    COMPONENT=stable
+fi 
 DIST=${DIST:-focal}
 if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
    FLAVOR=ubuntu
 elif [ "$DIST" = "buster" ]; then
     FLAVOR=debian
 fi
-echo "Building $FLAVOR/$DIST packages for Feel++"
+echo "Building $FLAVOR/$DIST packages for channel $COMPONENT Feel++ "
 
 PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result
 
@@ -40,9 +46,18 @@ make package_source
 echo "--- cloning feelpp.pkg"
 git clone -q https://github.com/feelpp/feelpp.pkg.git
 
-main_version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1/g' )
-version=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/\1~\2/g' )
-rename_archive=$(echo feelpp-*.tar.gz | sed -E 's/feelpp-(.*)-(.*).tar.gz/feelpp_\1~\2.orig.tar.gz/g' )
+
+
+main_version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g')
+extra_version=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g')
+
+if [ -z $extra_version ]; then
+    version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g' )
+    rename_archive=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/feelpp_\1.orig.tar.gz/g' )
+else
+    rename_archive=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/feelpp_\1~\2.orig.tar.gz/g' )
+    version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g' )
+fi
 echo "--- building archive $rename_archive for debian"
 cp feelpp-*.tar.gz feelpp.pkg/feelpp/$rename_archive
 cd feelpp.pkg/feelpp/$DIST && tar xzf ../$rename_archive --strip 1
@@ -54,5 +69,5 @@ pbuilder-dist $DIST build ../feelpp_${version}-1.dsc
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
-../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST
+../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $COMPONENT
 
