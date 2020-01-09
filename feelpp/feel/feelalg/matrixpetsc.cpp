@@ -741,7 +741,8 @@ void MatrixPetsc<T>::close ()  const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::size1 () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::size1 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -756,7 +757,8 @@ size_type MatrixPetsc<T>::size1 () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::size2 () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::size2 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -771,7 +773,8 @@ size_type MatrixPetsc<T>::size2 () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::rowStart () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::rowStart () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -787,7 +790,8 @@ size_type MatrixPetsc<T>::rowStart () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::rowStop () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::rowStop () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -801,7 +805,8 @@ size_type MatrixPetsc<T>::rowStop () const
 
 template <typename T>
 inline
-std::size_t MatrixPetsc<T>::nnz () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::nnz () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 

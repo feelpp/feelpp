@@ -33,8 +33,8 @@
 namespace Feel
 {
 
-template <typename T>
-NullSpace<T>::NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
+template <typename T, typename SizeT>
+NullSpace<T,SizeT>::NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
     :
     M_basisVector( vecBasis.size() )
 {
@@ -43,8 +43,8 @@ NullSpace<T>::NullSpace( std::vector<vector_ptrtype> const& vecBasis, backend_pt
 
 //template<typename T> class Backend;
 
-template <typename T>
-NullSpace<T>::NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization )
+template <typename T, typename SizeT>
+NullSpace<T,SizeT>::NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, bool redoOrthonormalization )
     :
     M_basisVector( ns.size() )
 {
@@ -60,15 +60,15 @@ NullSpace<T>::NullSpace( backend_ptrtype const& mybackend, NullSpace const& ns, 
         this->orthonormalizeBasisVector();
 }
 
-template <typename T>
-NullSpace<T>::NullSpace( NullSpace const& ns )
+template <typename T, typename SizeT>
+NullSpace<T,SizeT>::NullSpace( NullSpace const& ns )
     :
     M_basisVector( ns.M_basisVector )
 {}
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-NullSpace<T>::close()
+NullSpace<T,SizeT>::close()
 {
     if ( M_basisVector.size() )
     {
@@ -83,9 +83,9 @@ NullSpace<T>::close()
 }
 
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-NullSpace<T>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
+NullSpace<T,SizeT>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend_ptrtype const& mybackend )
 {
     // copy vectors
     for ( int k=0;k<vecBasis.size();++k )
@@ -100,9 +100,9 @@ NullSpace<T>::updateForUse( std::vector<vector_ptrtype> const& vecBasis, backend
         this->orthonormalizeBasisVector();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-NullSpace<T>::orthonormalizeBasisVector()
+NullSpace<T,SizeT>::orthonormalizeBasisVector()
 {
     int dimNullSpace = this->size();
     std::vector<double> dots(dimNullSpace);
@@ -128,9 +128,9 @@ NullSpace<T>::orthonormalizeBasisVector()
     CHECK( this->hasOrthonormalBasisVectors() ) << "basis vectors are not orthonormal\n";
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 bool
-NullSpace<T>::hasOrthonormalBasisVectors()
+NullSpace<T,SizeT>::hasOrthonormalBasisVectors()
 {
     int dimNullSpace = this->size();
     for ( int k = 0 ; k<dimNullSpace ; ++k )
@@ -155,6 +155,6 @@ NullSpace<T>::hasOrthonormalBasisVectors()
 }
 
 
-template class NullSpace<double>;
+template class NullSpace<double, uint32_type>;
 
 } // namespace Feel

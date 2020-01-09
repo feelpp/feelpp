@@ -152,7 +152,7 @@ public:
 
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
-
+    using size_type = typename datamap_type::size_type;
     //@}
 
     /** @name Constructors, destructor

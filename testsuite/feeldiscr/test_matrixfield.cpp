@@ -21,16 +21,18 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-#if 0
+
 #define BOOST_TEST_MODULE test_matrixfield
 #include <feel/feelcore/testsuite.hpp>
-#endif
+
 
 #include <feel/options.hpp>
 #include <feel/feeldiscr/pchm.hpp>
 #include <feel/feelfilters/gmsh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/redux.hpp>
+#include <feel/feelvf/eig.hpp>
 #include <feel/feelfilters/geotool.hpp>
 
 
@@ -81,78 +83,91 @@ makeAbout()
 
 }
 
-#if 0
-FEELPP_ENVIRONMENT_WITH_OPTIONS( test_matrixfield::makeAbout(), test_matrixfield::makeOptions() )
+FEELPP_ENVIRONMENT_WITH_OPTIONS( test_matrixfield::makeAbout(), test_matrixfield::makeOptions() );
 
 BOOST_AUTO_TEST_SUITE( interp_matrixfield )
 
-BOOST_AUTO_TEST_CASE( interp_matrixfield )
+typedef boost::mpl::list<boost::mpl::int_<2>,boost::mpl::int_<3> > dim_types;
+BOOST_AUTO_TEST_CASE_TEMPLATE( interp_matrixfield, T, dim_types )
 {
-
-    using namespace test_matrixfield;
-
-
-    auto test_app = Application_ptrtype( new Application_type );
-
-    test_app->changeRepository( boost::format( "testsuite/feeldiscr/%1%/" )
-                                % test_app->about().appName()
-                              );
-
-    typedef Mesh<Simplex<2,1,2> > mesh_type;
-    typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
-
-    double meshSize = test_app->vm()["hsize"].as<double>();
-
-    GeoTool::Node x1( 0,0 );
-    GeoTool::Node x2( 4,1 );
-    GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
-
-    auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
-    auto Mh = Pchm<1>( mesh) ;
-
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-#else
-
-int main(int argc, char** argv )
-{
-    Environment env( _argc=argc, _argv=argv,
-                     _about=about(_name="test_matrixfield",
-                                  _author="Christophe Prud'homme",
-                                  _email="christophe.prudhomme@feelpp.org") );
-
-    typedef Mesh<Simplex<2,1,2> > mesh_type;
+    typedef Mesh<Simplex<T::value,1,T::value> > mesh_type;
     typedef std::shared_ptr<  mesh_type > mesh_ptrtype;
 
     double meshSize = doption("gmsh.hsize");
 
-    GeoTool::Node x1( 0,0 );
-    GeoTool::Node x2( 4,1 );
-    GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
-
+    auto create_mesh = [&](){
+                           if constexpr ( T::value == 2 )
+                           {
+                               GeoTool::Node x1( 0,0 );
+                               GeoTool::Node x2( 4,1 );
+                               GeoTool::Rectangle R( meshSize,"OMEGA",x1,x2 );
+                               return R;
+                           }
+                           else
+                           {
+                               GeoTool::Node x1( 0,0,0 );
+                               GeoTool::Node x2( 1,2,1);
+                               GeoTool::Cube R( meshSize,"OMEGA",x1,x2 );
+                               return R;
+                           }
+                       };
+    auto R = create_mesh();
     auto mesh = R.createMesh(_mesh=new mesh_type,_name= "domain" );
-    auto Mh = Pchm<1>( mesh) ;
+    auto Mh = Pchm<2>( mesh) ;
+    auto Xh = Pch<2>( mesh) ;
     auto v = Mh->element();
-
+    auto u = Xh->element(), w = Xh->element();
     //
-    v.setOnes();
-    auto M0 = mat<2,2>( cst(1.), cst(1.), cst(1.), cst(1.)  );
-    auto i0 = integrate( _range=elements(mesh), _expr=idv(v) ).evaluate();
-    auto i0_res = integrate( _range=elements(mesh), _expr=M0 ).evaluate();
-    std::cout << "i0 = " << i0 << std::endl;
-    std::cout << "i0_res = " << i0_res << std::endl;
-    CHECK( (i0-i0_res).norm() < 1e-13 ) << "Invalid integral i0: expected " << i0_res << " got " << i0;
 
-    auto M = mat<2,2>( cst(1.), cst(2.), cst(3.), cst(4.)  );
-    v.on(_range=elements(mesh), _expr=M ) ;
-    v.printMatlab("v.m");
-    auto i1 = integrate( _range=elements(mesh), _expr=idv(v) ).evaluate();
-    auto i1_res = integrate( _range=elements(mesh), _expr=M ).evaluate();
-    std::cout << "i1 = " << i1 << std::endl;
-    std::cout << "i1_res = " << i1_res << std::endl;
-    CHECK( (i1-i1_res).norm() < 1e-13 ) << "Invalid integral: expected " << i1_res << " got " << i1;
+    auto check_interp = [&]( auto const& e ){
+                            v.on(_range=elements(mesh), _expr=e ) ;
+                            auto i0 = integrate( _range=elements(mesh), _expr=idv(v) ).evaluate();
+                            auto i0_res = integrate( _range=elements(mesh), _expr=e ).evaluate();
+                            BOOST_TEST_MESSAGE( "i0 = " << i0  );
+                            BOOST_TEST_MESSAGE( "i0_res = " << i0_res );
+                            BOOST_CHECK_SMALL( (i0-i0_res).norm(), 1e-13 );
+                        };
+    if constexpr( T::value == 2 )
+    {
+        check_interp( mat<2,2>( cst(1.), cst(1.), cst(1.), cst(1.)  ) );
+        check_interp( mat<2,2>( cst(1.), cst(2.), cst(3.), cst(4.)  ) );
+    }
+    if constexpr( T::value == 3 )
+    {
+        check_interp( ones<3,3>() );
+        check_interp( P()*trans(P()) );
+    }
+
+
+    auto check_sum_trace = [&]( auto const& e, auto const& expected_res ){
+                               v.on(_range=elements(mesh), _expr=e ) ;
+                               u.on(_range=elements(mesh), _expr=sum(eig(idv(v))) ) ;
+                               w.on(_range=elements(mesh), _expr=trace(idv(v))  );
+                               double l2error  = normL2(_range=elements(mesh), _expr=idv(u)-idv(w));
+                               BOOST_TEST_MESSAGE( "l2error = " << l2error  );
+                               BOOST_CHECK_SMALL( l2error, 1e-13 );
+                               u.on(_range=elements(mesh), _expr=sum(trans(eig(idv(v)))) ) ;
+                               double l2error_trans  = normL2(_range=elements(mesh), _expr=idv(u)-idv(w));
+                               BOOST_TEST_MESSAGE( "l2error trans = " << l2error_trans  );
+                               BOOST_CHECK_SMALL( l2error_trans, 1e-13 );
+                               double int_u = integrate( _range=elements( mesh ), _expr= idv(u)  ).evaluate()( 0, 0 );
+                               double int_exp = integrate( _range=elements( mesh ), _expr= expected_res  ).evaluate()( 0, 0 );
+                               BOOST_CHECK_CLOSE( int_u, int_exp, 1e-13 );
+
+                           };
+    if constexpr ( T::value == 2 )
+    {
+        check_sum_trace( mat<2,2>( cst(1.), cst(0.), cst(0.), cst(4.) ), cst(5.) );
+        check_sum_trace( mat<2,2>( Px(), cst(0.), cst(0.), Py()  ), sum(P()) );
+    }
+    else
+    {
+        check_sum_trace( eye<3,3>(), cst(3.) );
+        check_sum_trace( mat<3,3>( Px(), cst(0.), cst(2.),
+                                   cst(0.),  Py(), cst(0.),
+                                   cst(2.),  cst(0.), Pz()
+                                   ), sum(P()) );
+    }   
 }
+BOOST_AUTO_TEST_SUITE_END()
 
-#endif

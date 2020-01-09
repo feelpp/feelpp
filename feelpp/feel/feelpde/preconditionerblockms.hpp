@@ -47,12 +47,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Feel
 {
 template< typename space_type >
-    class PreconditionerBlockMS : public Preconditioner<typename space_type::value_type>
+class PreconditionerBlockMS : public Preconditioner<typename space_type::value_type, typename space_type::size_type>
 {
-    typedef Preconditioner<typename space_type::value_type> super;
+    typedef Preconditioner<typename space_type::value_type,typename space_type::size_type> super;
 public:
     static const uint16_type Dim = space_type::nDim;
     typedef typename space_type::value_type value_type;
+    typedef typename space_type::size_type size_type;
 
     typedef typename backend_type::solve_return_type solve_return_type;
     typedef typename backend_type::sparse_matrix_type sparse_matrix_type;

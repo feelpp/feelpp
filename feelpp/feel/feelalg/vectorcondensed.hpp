@@ -41,13 +41,14 @@ public:
     
     using super = VectorBlockBase<T>;
     using value_type = T;
+    using size_type = typename super::size_type;
     using vector_ptrtype = typename super::vector_ptrtype;
     using backend_type = typename super::backend_type;
     using backend_ptrtype = typename super::backend_ptrtype;
     using sc_type = StaticCondensation<value_type>;
     using sc_ptrtype = std::shared_ptr<sc_type>;
     using this_vector_ptrtype = std::shared_ptr<VectorCondensed<value_type>>;
-
+    
     VectorCondensed()
         :
         super(),

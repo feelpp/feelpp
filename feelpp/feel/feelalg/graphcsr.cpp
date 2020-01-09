@@ -47,8 +47,8 @@ GraphCSR::GraphCSR( size_type n,
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
     M_storage(),
-    M_mapRow( new DataMap(this->worldCommPtr()) ),
-    M_mapCol( new DataMap(this->worldCommPtr()) )
+    M_mapRow( new datamap_type(this->worldCommPtr()) ),
+    M_mapCol( new datamap_type(this->worldCommPtr()) )
 {
     const int myrank = this->worldComm().globalRank();
     const int worldsize = this->worldComm().globalSize();
@@ -103,8 +103,8 @@ GraphCSR::GraphCSR( size_type n,
 }
 
 
-GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
-                    std::shared_ptr<DataMap> const& mapCol )
+GraphCSR::GraphCSR( datamap_ptrtype const& mapRow,
+                    datamap_ptrtype const& mapCol )
     :
     super( mapRow->worldCommPtr() ),
     M_is_closed( false ),
@@ -117,8 +117,8 @@ GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
     M_mapCol(mapCol)
 {}
 
-GraphCSR::GraphCSR( DataMap const& mapRow,
-                    DataMap const& mapCol )
+GraphCSR::GraphCSR( datamap_type const& mapRow,
+                    datamap_type const& mapCol )
     :
     super( mapRow.worldCommPtr() ),
     M_is_closed( false ),
@@ -127,8 +127,8 @@ GraphCSR::GraphCSR( DataMap const& mapRow,
     M_n_nz( 0 ),
     M_n_oz( 0 ),
     M_storage(),
-    M_mapRow( new DataMap(mapRow) ),
-    M_mapCol( new DataMap(mapCol) )
+    M_mapRow( new datamap_type(mapRow) ),
+    M_mapCol( new datamap_type(mapCol) )
 {}
 
 
@@ -254,13 +254,13 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     }
     else
     {
-        std::vector<std::shared_ptr<DataMap> > listofdmRow, listofdmCol;
+        std::vector<datamap_ptrtype > listofdmRow, listofdmCol;
         for ( uint i=0; i<nRow; ++i )
             listofdmRow.push_back( blockSet(i,0)->mapRowPtr() );
         for ( uint i=0; i<nCol; ++i )
             listofdmCol.push_back( blockSet(0,i)->mapColPtr() );
-        M_mapRow.reset( new DataMap( listofdmRow, this->worldCommPtr() ) );
-        M_mapCol.reset( new DataMap( listofdmCol, this->worldCommPtr() ) );
+        M_mapRow.reset( new datamap_type( listofdmRow, this->worldCommPtr() ) );
+        M_mapCol.reset( new datamap_type( listofdmCol, this->worldCommPtr() ) );
     }
 }
 
@@ -389,7 +389,7 @@ GraphCSR::mergeBlockGraphMPI( self_ptrtype const& g,vf::BlocksBase<self_ptrtype>
 
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -399,7 +399,7 @@ GraphCSR::nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> cons
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -409,7 +409,7 @@ GraphCSR::nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> cons
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -419,7 +419,7 @@ GraphCSR::nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const &
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -1211,8 +1211,8 @@ BlocksBaseGraphCSR::close()
 {
     if ( this->isClosed() ) return;
 
-    std::vector<std::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
-    std::vector<std::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+    std::vector<datamap_ptrtype<>> dataMapRowRef(this->nRow());
+    std::vector<datamap_ptrtype<>> dataMapColRef(this->nCol());
 
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)

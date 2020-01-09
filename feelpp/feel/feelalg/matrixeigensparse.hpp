@@ -85,6 +85,7 @@ public:
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef Eigen::Triplet<T> triplet;
+    using size_type = typename super::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -95,7 +96,7 @@ public:
 
     MatrixEigenSparse( size_type r, size_type c, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
-    MatrixEigenSparse( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixEigenSparse( datamap_ptrtype<> const& dmRow, datamap_ptrtype<> const& dmCol );
 
     MatrixEigenSparse( MatrixEigenSparse const & m );
 
