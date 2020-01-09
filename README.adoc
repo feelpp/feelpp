@@ -60,8 +60,9 @@ image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/l
 * feelpp-toolboxes : mono and multiphysics toolboxes (cfd, csm, heat transfer, fsi, heat and fluid, hdg(poisson and elasticity), thermo-electric and maxwell)
 * feelpp-mor: model order reduction applications and tools
 
-{feelpp} is packaged and delivered via docker, debian and ubuntu packages.
+{feelpp} is packaged and delivered via http://docs.feelpp.org/user/0.107/install/containers/[docker], http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
+.Build status for each component
 |===
 | Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
 
@@ -89,7 +90,7 @@ image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/l
 == {feelpp} Documentation
 
 .link:http://docs.feelpp.org[{feelpp} Docs web site]
-image::https://github.com/feelpp/book.feelpp.org/raw/master/images/cover_small.jpg[{feelpp} Docs,link=http://book.feelpp.org]
+image::https://github.com/feelpp/book.feelpp.org/raw/master/images/cover_small.jpg[{feelpp} Docs,link=http://docs.feelpp.org]
 
 == Slack Discussion Forum
 
