@@ -85,8 +85,8 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
 |  Ubuntu Disco/19.04 clang-9
-|[ image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
-|[ image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
 
 |  Debian Buster/10 clang-7
 |image:https://badge.buildkite.com/3828dcf05f226bd39dfe7dc4da7effb6c1e84af2fa7eab4d0c.svg?branch=master[https://buildkite.com/feelpp/feelpp-debian-buster-10-clang-7]
