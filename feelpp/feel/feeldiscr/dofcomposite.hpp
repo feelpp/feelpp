@@ -41,9 +41,9 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-class DofComposite : public DataMap
+class DofComposite : public DataMap<>
 {
-    typedef DataMap super;
+    typedef DataMap<> super;
 public:
 
 
@@ -51,7 +51,7 @@ public:
      */
     //@{
 
-
+    using size_type = typename super::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -60,7 +60,7 @@ public:
 
     explicit DofComposite( worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() ): super( _worldComm ) {}
     DofComposite( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr() ) : super( n, n_local, _worldComm ) {}
-    DofComposite( std::vector< datamap_ptrtype > const& subdm, worldcomm_ptr_t const& _worldComm ) : super( subdm, _worldComm ) {}
+    DofComposite( std::vector< datamap_ptrtype<> > const& subdm, worldcomm_ptr_t const& _worldComm ) : super( subdm, _worldComm ) {}
     DofComposite( DofComposite const & dc ) : super( dc ) {}
     ~DofComposite() {}
 

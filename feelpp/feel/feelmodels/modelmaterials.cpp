@@ -310,4 +310,54 @@ ModelMaterials::saveMD(std::ostream &os)
   os << "\n";
 }
 
+ModelMaterial const&
+ModelMaterials::material( std::string const& m ) const
+{
+    auto it = this->find( m );
+    if ( it == this->end() )
+        throw std::invalid_argument( std::string("ModelMaterial: Invalid material name ") + m );
+    return it->second;
+}
+
+std::map<std::string,ModelMaterial> ModelMaterials::materialWithPhysic(std::string const& physic) const
+{
+    std::map<std::string,ModelMaterial> mat;
+    std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                 [physic](std::pair<std::string,ModelMaterial> const& mp)
+                 { return mp.second.hasPhysics(physic); } );
+    return mat;
+}
+
+std::map<std::string,ModelMaterial> ModelMaterials::materialWithPhysic(std::vector<std::string> const& physics) const
+{
+    std::map<std::string,ModelMaterial> mat;
+    std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                 [physics](std::pair<std::string,ModelMaterial> const& mp)
+                 {
+                     bool b = false;
+                     for( auto const& p : physics )
+                         b = b || mp.second.hasPhysics(p);
+                     return b;
+                 });
+    return mat;
+}
+
+std::set<std::string> ModelMaterials::markersWithPhysic(std::string const& physic) const
+{
+    std::set<std::string> markers;
+    auto mat = this->materialWithPhysic(physic);
+    for( auto const& m : mat )
+        markers.insert(m.second.meshMarkers().begin(), m.second.meshMarkers().end());
+    return markers;
+}
+
+std::set<std::string> ModelMaterials::markersWithPhysic(std::vector<std::string> const& physic) const
+{
+    std::set<std::string> markers;
+    auto mat = this->materialWithPhysic(physic);
+    for( auto const& m : mat )
+        markers.insert(m.second.meshMarkers().begin(), m.second.meshMarkers().end());
+    return markers;
+}
+
 }

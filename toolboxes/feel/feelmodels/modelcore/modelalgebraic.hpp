@@ -47,7 +47,8 @@ public :
     typedef ModelBase super_type;
 
     typedef double value_type;
-    typedef Backend<value_type> backend_type;
+    using size_type = uint32_type;
+    typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -426,9 +427,9 @@ public :
             auto itFind = M_startSubBlockSpaceIndex.find( name );
             if ( itFind != M_startSubBlockSpaceIndex.end() )
                 return itFind->second;
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
-    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
+    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
     void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
     //! update data usefull for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian

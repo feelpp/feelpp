@@ -18,13 +18,13 @@ makeAbout()
     return about;
 }
 
-template<int nDim, int OrderT>
+template<int nDim, int OrderT, int GOrder = 1>
 void
 runApplicationMixedPoisson( std::string  const& prefix )
 {
     using namespace Feel;
 
-    typedef FeelModels::MixedPoisson<nDim,OrderT> mp_type;
+    typedef FeelModels::MixedPoisson<nDim,OrderT,GOrder> mp_type;
 
     std::string p = "hdg.poisson";
     if( !prefix.empty() )
@@ -44,15 +44,42 @@ runApplicationMixedPoisson( std::string  const& prefix )
         Idhv = IPtr( _domainSpace=Pdhv<OrderT>(cmesh), _imageSpace=Pdhv<OrderT>(mesh) );
         MP -> init( cmesh, mesh );
     }
-	
+
 	// Feel::cout << "Stationary: " << MP -> isStationary() << std::endl;
 	// Feel::cout << "boption steady: " << boption("ts.steady") << std::endl;
 
     if ( MP -> isStationary() )
     {
-        MP->assembleAll();
-        MP->solve();
-        MP->exportResults( mesh, Idh, Idhv );
+        if( boption("use-picard") )
+        {
+            int maxit = ioption("picard.maxit");
+            double tol = doption("picard.tol");
+            double error;
+            int i = 0;
+            do
+            {
+                MP->setMatricesAndVectorToZero();
+                auto oldPotential = MP->potentialField();
+                MP->assembleCstPart();
+                MP->modelProperties().parameters().updateParameterValues();
+                MP->updateConductivityTerm(true);
+                MP->assembleRHS();
+                MP->assembleRhsBoundaryCond();
+                MP->solve();
+                auto p = MP->potentialField();
+                auto np = normL2(_range=elements(mesh),_expr=idv(p));
+                error = normL2(_range=elements(mesh),_expr=idv(p)-idv(oldPotential))/np;
+                Feel::cout << "error[" << i++ << "] = " << error << std::endl;
+            }
+            while( error > tol && i < maxit );
+            MP->exportResults( mesh, Idh, Idhv );
+        }
+        else
+        {
+            MP->assembleAll();
+            MP->solve();
+            MP->exportResults( mesh, Idh, Idhv );
+        }
     }
     else
     {
@@ -82,6 +109,9 @@ int main(int argc, char *argv[])
     mpoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P1" ), "discretization : P1,P2,P3 ")
+        ("use-picard", Feel::po::value<bool>()->default_value(false), "use picard to solve non linear problem" )
+        ("picard.tol", Feel::po::value<double>()->default_value(1e-8), "picard tolerance" )
+        ("picard.maxit", Feel::po::value<int>()->default_value(50), "picard maximum number of iteration")
         ;
 
     Feel::Environment env( _argc=argc,
@@ -96,24 +126,32 @@ int main(int argc, char *argv[])
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2>, hana::int_c<1> ),
+                                             hana::make_tuple("P3", hana::int_c<3>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ),
+                                             hana::make_tuple("P2G2", hana::int_c<2>, hana::int_c<2> ),
+                                             hana::make_tuple("P3G2", hana::int_c<3>, hana::int_c<2> ) );
 #elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P2", hana::int_c<2>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ),
+                                             hana::make_tuple("P2G2", hana::int_c<2>, hana::int_c<2> ) );
 #else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1>, hana::int_c<1> ),
+                                             hana::make_tuple("P1G2", hana::int_c<1>, hana::int_c<2> ) );
 #endif
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                                                                                         {
-                                                                                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                                                                                             std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                                                                                             constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                                                                                             if ( dimension == _dim && discretization == _discretization )
-                                                                                                 runApplicationMixedPoisson<_dim,_torder>( "" );
-                                                                                         } );
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                    [&discretization,&dimension]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            constexpr int _gorder = std::decay_t<decltype(hana::at_c<2>( hana::at_c<1>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretization )
+                                runApplicationMixedPoisson<_dim,_torder,_gorder>( "" );
+                        } );
 
     return 0;
 }

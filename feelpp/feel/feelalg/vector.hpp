@@ -43,7 +43,7 @@ namespace Feel
 namespace ublas = boost::numeric::ublas;
 
 // forward declarations
-template <typename T> class Vector;
+template <typename T, typename SizeT> class Vector;
 template <typename T> class MatrixSparse;
 template <typename T> class MatrixShell;
 
@@ -55,19 +55,20 @@ template <typename T> class MatrixShell;
  * @author Benjamin S. Kirk, 2003
  * @author Christophe Prud'homme 2005
  */
-template <typename T>
-class FEELPP_EXPORT Vector : public std::enable_shared_from_this<Vector<T> >
+template <typename T,typename SizeT = uint32_type>
+class FEELPP_EXPORT Vector : public std::enable_shared_from_this<Vector<T,SizeT> >
 {
 public:
 
     typedef T value_type;
+    using size_type = SizeT;
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<T> self_type;
     typedef std::shared_ptr<Vector<T> > self_ptrtype;
     typedef std::shared_ptr<Vector<T> > clone_ptrtype;
 
-    typedef DataMap datamap_type;
+    typedef DataMap<size_type> datamap_type;
     typedef std::shared_ptr<datamap_type> datamap_ptrtype;
     using vector_ptrtype = std::shared_ptr<Vector<T>>;
 
@@ -591,7 +592,7 @@ public:
     /**
      * Same as above but allows you to use stream syntax.
      */
-    friend std::ostream& operator << ( std::ostream& os, const Vector<T>& v )
+    friend std::ostream& operator << ( std::ostream& os, const Vector<T,size_type>& v )
     {
         v.print( os );
         return os;
@@ -740,9 +741,10 @@ struct is_vector_ptr<std::shared_ptr<VectorType> >
         VectorType>
 {};
 
-template <typename T>
+template <typename T,typename SizeT=uint32_type>
 struct FEELPP_EXPORT syncOperator
 {
+    using size_type = SizeT;
     typedef std::set<std::pair< rank_type, T > > storage_ghostdof_type;
     syncOperator() {}
     syncOperator( std::map<size_type, std::set<rank_type> > const& m )
@@ -762,17 +764,17 @@ private :
 
 } // namespace detail
 
-template <typename T>
+template <typename T,typename SizeT>
 FEELPP_EXPORT void
-sync( Vector<T> & v, std::string const& opSyncStr = "=" );
+sync( Vector<T,SizeT> & v, std::string const& opSyncStr = "=" );
 
-template <typename T>
+template <typename T, typename SizeT>
 FEELPP_EXPORT void
-sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+sync( Vector<T,SizeT> & v, std::string const& opSyncStr, std::set<SizeT> const& dofGlobalProcessPresent );
 
-template <typename T>
+template <typename T,typename SizeT>
 FEELPP_EXPORT void
-sync( Vector<T> & v, Feel::detail::syncOperator<T> const& opSync );
+sync( Vector<T,SizeT> & v, Feel::detail::syncOperator<T,SizeT> const& opSync );
 
 
 } // Feel

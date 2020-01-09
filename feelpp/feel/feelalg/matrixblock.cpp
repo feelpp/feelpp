@@ -54,8 +54,8 @@ BlocksBaseSparseMatrix<T>::close()
 {
     if ( this->isClosed() ) return;
 
-    std::vector<std::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
-    std::vector<std::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+    std::vector<std::shared_ptr<DataMap<>> > dataMapRowRef(this->nRow());
+    std::vector<std::shared_ptr<DataMap<>> > dataMapColRef(this->nCol());
 
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)
@@ -267,7 +267,7 @@ MatrixBlockBase<T>::close () const
 
 template <typename T>
 inline
-size_type
+typename MatrixBlockBase<T>::size_type
 MatrixBlockBase<T>::size1 () const
 {
     return M_mat->size1();
@@ -275,7 +275,7 @@ MatrixBlockBase<T>::size1 () const
 
 template <typename T>
 inline
-size_type
+typename MatrixBlockBase<T>::size_type
 MatrixBlockBase<T>::size2 () const
 {
     return M_mat->size2();
@@ -283,7 +283,7 @@ MatrixBlockBase<T>::size2 () const
 
 template <typename T>
 inline
-size_type
+typename MatrixBlockBase<T>::size_type
 MatrixBlockBase<T>::rowStart () const
 {
     return M_mat->rowStart();
@@ -291,7 +291,7 @@ MatrixBlockBase<T>::rowStart () const
 
 template <typename T>
 inline
-size_type
+typename MatrixBlockBase<T>::size_type
 MatrixBlockBase<T>::rowStop () const
 {
     return M_mat->rowStop();

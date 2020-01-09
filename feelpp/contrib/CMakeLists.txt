@@ -338,6 +338,17 @@ if ( FEELPP_HAS_GMSH )
   endif()
 endif()
 
+feelppContribPrepare( tabulate )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( tabulate )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_TABULATE )
+  target_link_libraries(feelpp_contrib INTERFACE tabulate )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/tabulate/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
+endif()
+  
 add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)

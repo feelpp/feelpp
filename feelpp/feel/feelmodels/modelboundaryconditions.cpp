@@ -27,6 +27,11 @@
 namespace Feel
 {
 
+ModelBoundaryCondition::ModelBoundaryCondition( worldcomm_ptr_t const& worldComm )
+    :
+    super( worldComm )
+{}
+
 ModelBoundaryCondition::ModelBoundaryCondition( pt::ptree const& p, std::string const& name,
                                                 std::string const& material, std::string const& e1,
                                                 std::string const& e2,
@@ -99,7 +104,7 @@ ModelBoundaryConditions::setup()
                     }
                 }
                 auto bc = ModelBoundaryCondition( c.second, name, mat, e1, e2 );
-                this->operator[]( field )[cond].push_back( bc );
+                this->operator[]( field )[cond][name] = bc;
             }
         }
     }

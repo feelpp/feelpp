@@ -105,7 +105,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "${PROJECT_SOURCE_DIR}/examples/levelset/"
   "${PROJECT_SOURCE_DIR}/examples/pbeq/"
   "${PROJECT_SOURCE_DIR}/research/"
-  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;__pycache__;pyfeelpp-env/;eigen-eigen*;build/"
+  "/*.tar.gz;*.tar.bz2;*.deb;obj-x86_64-linux-gnu/;__pycache__;pyfeelpp-env/;eigen-eigen*;build*/"
   "*.eps;*.tag;"
   "*.aux;*.log;*.bbl;*.idx;*.ist;*.out;*.blg;OpusManualBenchmarkEADSUJF.pdf"
   "${PROJECT_SOURCE_DIR}/applications/opus.old"

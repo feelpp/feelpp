@@ -52,7 +52,7 @@ if exact:
     stressn=n(stress,1,ns);
     
     # force density
-    f = -div(stress,s);
+    f = div(stress,s);
 else:
     stressn=sympify(locals()['stressn']);
     f=sympify(locals()['f']);
