@@ -70,7 +70,7 @@ image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/l
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
 |image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
-|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
+|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]

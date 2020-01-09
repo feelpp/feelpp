@@ -635,7 +635,7 @@ OpusApp<ModelType,RM,Model>::run()
                     {
                         auto min_func = expr( min_func_str, "min_func" );
                         min_map[soption(_name="crb.minimization-param-name")] = output_fem;
-                        auto min = min_func.evaluate( min_map );
+                        auto min = min_func.evaluate( min_map )(0,0);
                         if( min < min_value["fem"] || curpar == 1 )
                         {
                             min_value["fem"] = min;
@@ -852,7 +852,7 @@ OpusApp<ModelType,RM,Model>::run()
                         {
                             auto min_func = expr( min_func_str, "min_func" );
                             min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
-                            auto min = min_func.evaluate( min_map );
+                            auto min = min_func.evaluate( min_map )(0,0);
                             if( min < min_value["fem"] || curpar == 1 )
                             {
                                 min_value["fem"] = min;
@@ -892,7 +892,7 @@ OpusApp<ModelType,RM,Model>::run()
                             {
                                 auto min_func = expr( min_func_str, "min_func" );
                                 min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map );
+                                auto min = min_func.evaluate( min_map )(0,0);
                                 if( min < min_value["rb"] || curpar == 1 )
                                 {
                                     min_value["rb"] = min;
@@ -936,7 +936,7 @@ OpusApp<ModelType,RM,Model>::run()
                             {
                                 auto min_func = expr( min_func_str, "min_func" );
                                 min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map );
+                                auto min = min_func.evaluate( min_map )(0,0);
                                 if( min < min_value["rb"] || curpar == 1 )
                                 {
                                     min_value["rb"] = min;

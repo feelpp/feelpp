@@ -89,7 +89,7 @@ class Val
     typedef Val<ExprT1> this_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef value_1_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_1_type::evaluate_type;
 
     VF_CHECK_ARITHMETIC_TYPE( value_1_type )
 
@@ -119,6 +119,13 @@ class Val
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr_1.isPolynomial(); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr_1.evaluate(p,worldcomm);
+        }
+
 
     void eval( int nx, value_type const* x, value_type* f ) const
     {

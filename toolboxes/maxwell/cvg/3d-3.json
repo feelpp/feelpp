@@ -4,10 +4,8 @@
     "Models":
     {
         "equations":"regularized",
-        // "a_expr":"{(1-y^2)*(1-z^2),(1-x^2)*(1-z^2),(1-x^2)*(1-y^2)}:x:y:z",
-        // "b_expr":"{2*(z-y)*(1-x^2),2*(x-z)*(1-y^2),2*(y-x)*(1-z^2)}:x:y:z"
-        "a_expr":"{1-y^2,1-x^2,0}:x:y:z",
-        "b_expr":"{0,0,2*y-2*x}:x:y:z"
+        "a_expr":"{(1-y^2)*(1-z^2),(1-x^2)*(1-z^2),(1-x^2)*(1-y^2)}:x:y:z",
+        "b_expr":"{3*Pi^2*sin(Pi*x)*cos(Pi*y)*cos(Pi*z),0,-3*Pi^2*cos(Pi*x)*cos(Pi*y)*sin(Pi*z)}:x:y:z"
     },
     "Materials":
     {
@@ -25,9 +23,7 @@
             {
                 "omega":
                 {
-                    "expr":"{2,2,0}:x:y:z"
-                    // "expr":"{2*(y^2-z^2),2*(z^2-x^2),2*(x^2-y^2)}:x:y:z"
-                    // "expr":"{-2*(y^2+z^2-2),-2*(x^2+z^2-2),-2*(x^2+y^2-2)}:x:y:z"
+                    "expr":"{2*(2-y^2-z^2),2*(2-x^2-z^2),2*(2-x^2-y^2)}:x:y:z"
                 }
             },
             "Dirichlet":
@@ -39,7 +35,7 @@
                         "name":["side%1%","top","bottom"],
                         "index1":"1:5"
                     },
-                    "expr":"{(1-x^2)*nz,-(1-y^2)*nz,(1-y^2)*ny-(1-x^2)*nx}:x:y:z:nx:ny:nz",
+                    "expr":"{(1-x^2)*((1-z^2)*nz-(1-y^2)*ny),(1-y^2)*((1-x^2)*nx-(1-z^2)*nz),(1-z^2)*((1-y^2)*ny-(1-x^2)*nx)}:x:y:z:nx:ny:nz",
                     "material":"omega"
                 }
             }

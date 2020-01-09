@@ -110,4 +110,14 @@ ModelBoundaryConditions::setup()
     }
 }
 
+std::map<std::string,ModelBoundaryCondition>
+ModelBoundaryConditions::boundaryConditions(std::string field, std::string type) const
+{
+    std::map<std::string,ModelBoundaryCondition> ret;
+    auto itf = this->find(field); if( itf == this->end() ) return ret;
+    auto itt = itf->second.find(type); if( itt == itf->second.end() ) return ret;
+    return itt->second;
+}
+
+
 }

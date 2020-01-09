@@ -78,7 +78,7 @@ public :
 
     // TODO : not necessary specific to scalar expression
     bool isConstant() const { return this->hasExprScalar() && this->exprScalar().expression().isConstant(); }
-    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate(); }
+    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate()(0,0); }
 
     expr_scalar_type const& exprScalar() const { CHECK( this->hasExprScalar() ) << "no Scalar expression"; return *M_exprScalar; }
     expr_vectorial2_type const& exprVectorial2() const { CHECK( this->hasExprVectorial2() ) << "no Vectorial2 expression"; return *M_exprVectorial2; }

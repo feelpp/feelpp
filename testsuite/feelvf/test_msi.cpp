@@ -74,7 +74,7 @@ class Test
                 for (int j=0;j<=ny;j++)
                 {
                     std::map<std::string,double> m {{"x",i*doption("msi.pixelsize")},{"y",j*doption("msi.pixelsize")}};
-                    ima(j,i)=f.evaluate(m);
+                    ima(j,i)=f.evaluate(m)(0,0);
                 }
             }
 

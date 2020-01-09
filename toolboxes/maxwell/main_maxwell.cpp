@@ -2,12 +2,13 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 
 // template<int Order>
+template<int Dim>
 void
 runApplicationMaxwell()
 {
     using namespace Feel;
 
-    using model_type = FeelModels::Maxwell< Simplex<FEELPP_DIM,1> >;
+    using model_type = FeelModels::Maxwell< Simplex<Dim,1> >;
 
     std::shared_ptr<model_type> maxwell( new model_type("maxwell") );
     maxwell->init();
@@ -21,6 +22,9 @@ int main( int argc, char** argv )
     using namespace Feel;
     po::options_description maxwelloptions( "application maxwell options" );
     maxwelloptions.add( toolboxes_options("maxwell") );
+    maxwelloptions.add_options()
+        ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
+        ;
 
     Environment env( _argc=argc, _argv=argv,
                      _desc=maxwelloptions,
@@ -28,7 +32,11 @@ int main( int argc, char** argv )
                                   _author="Feel++ Consortium",
                                   _email="feelpp-devel@feelpp.org"));
 
-    runApplicationMaxwell();
+    int dimension = ioption(_name="case.dimension");
+    if( dimension == 2 )
+        runApplicationMaxwell<2>();
+    else
+        runApplicationMaxwell<3>();
 
     return 0;
 

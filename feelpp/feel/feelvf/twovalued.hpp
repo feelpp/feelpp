@@ -76,7 +76,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumvExpr<ExprT> this_type;
 
     //@}
@@ -99,6 +99,13 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
+
 
     /** @name Operator overloads
      */
@@ -372,7 +379,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumExpr<ExprT,Side> this_type;
 
     //@}
@@ -396,6 +403,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{
@@ -600,7 +612,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumTExpr<ExprT,Side> this_type;
 
     //@}
@@ -624,6 +636,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{
@@ -809,7 +826,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef FaceExprV<ExprT, func> this_type;
 
     //@}
@@ -833,6 +850,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{

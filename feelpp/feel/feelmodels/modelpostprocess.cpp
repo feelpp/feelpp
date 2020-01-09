@@ -262,7 +262,7 @@ ModelPostprocessCheckerMeasure::setup( std::string const& name, ModelIndexes con
 
     M_valueExpr.setExpr( "value", M_p, this->worldComm(), M_directoryLibExpr, indexes );
     CHECK( M_valueExpr.hasExprScalar() ) << "require value entry and the value should be a scalar expression";
-    M_value = M_valueExpr.exprScalar().evaluate();
+    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 
     if ( auto itTol = M_p.get_optional<double>("tolerance") )
         M_tolerance = *itTol;
@@ -287,7 +287,7 @@ void
 ModelPostprocessCheckerMeasure::setParameterValues( std::map<std::string,double> const& mp )
 {
     M_valueExpr.setParameterValues( mp );
-    M_value = M_valueExpr.exprScalar().evaluate();
+    M_value = M_valueExpr.exprScalar().evaluate()(0,0);
 }
 
 ModelPostprocess::ModelPostprocess( worldcomm_ptr_t const& world )

@@ -149,22 +149,22 @@ BOOST_AUTO_TEST_CASE( test_fit_evaluate )
 
     std::string interpType = "P1";
     auto exprFit0 = fit( cst(2.), datafilename, "x", "y", interpType );
-    BOOST_CHECK_CLOSE( f(2), exprFit0.evaluate(), 1e-10 );
+    BOOST_CHECK_CLOSE( f(2), exprFit0.evaluate()(0,0), 1e-10 );
     auto exprFit1 = fit( cst(2.25), datafilename, "x", "y", interpType );
-    BOOST_CHECK_CLOSE( (f(2)+f(2.5))/2., exprFit1.evaluate(), 1e-10 );
+    BOOST_CHECK_CLOSE( (f(2)+f(2.5))/2., exprFit1.evaluate()(0,0), 1e-10 );
 
     auto g = expr( "2*u+v:u:v" );
     std::map<std::string,double> mp;
     mp["u"] = -1.; mp["v"] = 5.;
     g.setParameterValues( mp );
     auto exprFit2 = fit( g, datafilename, "x", "y", interpType );
-    BOOST_CHECK_CLOSE( f(3), exprFit2.evaluate(), 1e-10 );
+    BOOST_CHECK_CLOSE( f(3), exprFit2.evaluate()(0,0), 1e-10 );
 
 
     auto hBase = expr( "5*w+u:u:w" );
     hBase.setParameterValues( mp );
     auto h = expr( hBase, symbolExpr("w",exprFit2) );
-    BOOST_CHECK_CLOSE( 5*f(3)-1., h.evaluate(), 1e-10 );
+    BOOST_CHECK_CLOSE( 5*f(3)-1., h.evaluate()(0,0), 1e-10 );
 }
 BOOST_AUTO_TEST_SUITE_END()
 

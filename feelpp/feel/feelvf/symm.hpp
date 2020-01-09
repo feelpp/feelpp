@@ -74,7 +74,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef Sym<ExprT,Part> this_type;
 
 
@@ -132,6 +132,18 @@ public:
     {
         return M_expr;
     }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            auto a = M_expr.evaluate(p,worldcomm);
+            auto at = a.transpose();
+            if constexpr ( Part == 1 )
+                return 0.5*( a+at );
+
+            else
+                return 0.5*( a-at );
+        }
 
     //@}
 

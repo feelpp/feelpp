@@ -63,7 +63,7 @@ struct FEELPP_EXPORT ModelParameter
         M_max( max ),
         M_expr( expr<2>( expression,"",world,dirLibExpr ) )
         {
-            M_value = M_expr->evaluate();
+            M_value = M_expr->evaluate()(0,0);
         }
     ModelParameter( std::string const& name, std::shared_ptr<Interpolator> interpolator, std::string const& expression,
                     std::string const& dirLibExpr = "",
@@ -97,7 +97,7 @@ struct FEELPP_EXPORT ModelParameter
             if ( !this->hasExpression() )
                 return;
             M_expr->setParameterValues( mp );
-            M_value = M_expr->evaluate();
+            M_value = M_expr->evaluate()(0,0);
         }
     scalar_field_expression<2> const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
 

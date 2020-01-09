@@ -88,7 +88,9 @@ class CrossProduct : public ExprDynamicBase
     typedef ExprL left_expression_type;
     typedef ExprR right_expression_type;
     typedef typename left_expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,
+                                        (left_expression_type::evaluate_type::RowsAtCompileTime == 3)? 3 : ((left_expression_type::evaluate_type::RowsAtCompileTime == 2)? 1 : Eigen::Dynamic),
+                                        1 >;
     typedef CrossProduct<ExprL, ExprR> this_type;
 
     //@}
@@ -150,6 +152,30 @@ class CrossProduct : public ExprDynamicBase
     {
         return M_right_expr;
     }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            auto leval = M_left_expr.evaluate(p,worldcomm);
+            auto reval = M_right_expr.evaluate(p,worldcomm);
+            CHECK( leval.rows() == reval.rows() && leval.cols() == reval.cols() ) << "vector should be same dim";
+            CHECK( leval.rows() == 2 || leval.rows() == 3 ) << "only vector of dim 2 or 3";
+            CHECK( leval.cols() == 1 ) << "not a vector";
+            if ( leval.rows() == 2 )
+            {
+                evaluate_type res(1,1);
+                res(0,0) = leval(0,0)*reval(1,0) - leval(1,0)*reval(0,0);
+                return res;
+            }
+            else
+            {
+                evaluate_type res(3,1);
+                res(0,0) = leval(1,0)*reval(2,0) - leval(2,0)*reval(1,0);
+                res(1,0) = leval(2,0)*reval(0,0) - leval(0,0)*reval(2,0);
+                res(2,0) = leval(0,0)*reval(1,0) - leval(1,0)*reval(0,0);
+                return res;
+            }
+        }
 
     //@}
 
