@@ -3,16 +3,14 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh testsuite
    agents:
      docker: true
-     ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
    continue_on_failure: false
  - plugins:
-     junit-annotate#v1.6.0:
+     junit-annotate#v1.7.0:
        artifacts: Testing/junit-*.xml
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-testsuite
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"

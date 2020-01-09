@@ -28,3 +28,6 @@
 [submodule "feelpp/contrib/fmilib"]
 	path = feelpp/contrib/fmilib
 	url = https://github.com/feelpp/fmi-library.git
+[submodule "feelpp/contrib/tabulate"]
+	path = feelpp/contrib/tabulate
+	url = https://github.com/feelpp/tabulate.git

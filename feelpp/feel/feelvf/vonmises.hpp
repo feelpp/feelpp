@@ -3,10 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2007-02-10
+       Date: 2019-12-07
 
-  Copyright (C) 2007 Universite Joseph Fourier (Grenoble I)
-  Copyright (C) 2010-2016 Feel++ Consortium
+  Copyright (C) 2019 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -22,13 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file trace.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2007-02-10
- */
-#ifndef __Trace_H
-#define __Trace_H 1
+#ifndef __FEELPP_VF_VONMISES_H
+#define __FEELPP_VF_VONMISES_H 1
 
 namespace Feel
 {
@@ -36,14 +30,14 @@ namespace vf
 {
 /// \cond detail
 /**
- * \class Trace
- * \brief trace of a matrix
+ * \class VonMises
+ * \brief VonMises of a matrix
  *
  * @author Christophe Prud'homme
  * @see
  */
 template <typename ExprT>
-class Trace : public ExprDynamicBase
+class VonMises : public ExprDynamicBase
 {
   public:
     using super = ExprDynamicBase;
@@ -66,8 +60,8 @@ class Trace : public ExprDynamicBase
     static const bool has_test_basis = ExprT::template has_test_basis<Func>;
     template <typename Func>
     static const bool has_trial_basis = ExprT::template has_trial_basis<Func>;
-    using test_basis = typename ExprT::test_basis;
-    using trial_basis = typename ExprT::trial_basis;
+    using test_basis = std::nullptr_t;
+    using trial_basis = std::nullptr_t;
 
     /** @name Typedefs
      */
@@ -75,17 +69,8 @@ class Trace : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    using evaluate_type = Eigen::Matrix<value_type,1,1>;
-    typedef Trace<ExprT> this_type;
-
-    template <typename... TheExpr>
-    struct Lambda
-    {
-        typedef Trace<typename expression_type::template Lambda<TheExpr...>::type> type;
-    };
-    template <typename... TheExpr>
-    typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
+    typedef value_type evaluate_type;
+    typedef VonMises<ExprT> this_type;
 
     //@}
 
@@ -93,18 +78,16 @@ class Trace : public ExprDynamicBase
      */
     //@{
 
-    explicit Trace( expression_type const& __expr )
+    explicit VonMises( expression_type const& __expr )
         : super( Feel::vf::dynamicContext( __expr ) ),
           M_expr( __expr )
     {
     }
-    Trace( Trace const& te )
-        : M_expr( te.M_expr )
+    VonMises( VonMises const& te )
+        : super( te ), M_expr( te.M_expr )
     {
     }
-    ~Trace()
-    {
-    }
+    ~VonMises() = default;
 
     //@}
 
@@ -131,21 +114,15 @@ class Trace : public ExprDynamicBase
     //@{
 
     //! polynomial order
-    uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
+    uint16_type polynomialOrder() const { return 2 * M_expr.polynomialOrder(); }
 
     //! expression is polynomial?
-    bool isPolynomial() const { return M_expr.isPolynomial(); }
+    constexpr bool isPolynomial() const { return false; }
 
     expression_type const& expression() const
     {
         return M_expr;
     }
-
-    //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
-        {
-            return evaluate_type::Constant( M_expr.evaluate(p,worldcomm).trace() );
-        }
 
     //@}
 
@@ -157,7 +134,7 @@ class Trace : public ExprDynamicBase
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape expr_shape;
-        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>>::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>));
+        BOOST_MPL_ASSERT_MSG( ( std::is_same_v<mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>> ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>));
         typedef Shape<expr_shape::nDim, Scalar, false, false> shape;
 
         template <class Args>
@@ -192,13 +169,13 @@ class Trace : public ExprDynamicBase
         {
             M_tensor_expr.init( im );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
         {
-            M_tensor_expr.update( geom, fev, feu );
+            update( geom );
         }
-        void update( Geo_t const& geom, Basis_i_t const& fev )
+        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ )
         {
-            M_tensor_expr.update( geom, fev );
+            update( geom );
         }
         void update( Geo_t const& geom )
         {
@@ -216,50 +193,38 @@ class Trace : public ExprDynamicBase
         }
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            value_type res = value_type( 0 );
-
-            for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += M_tensor_expr.evalijq( i, j, l, l, q );
-
-            return res;
-        }
-        template <int PatternContext>
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q,
-                 mpl::int_<PatternContext> ) const
-        {
-            value_type res = value_type( 0 );
-
-            for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += M_tensor_expr.evalijq( i, j, l, l, q, mpl::int_<PatternContext>() );
-
-            return res;
+            return evalq( c1, c2, q );
         }
 
         value_type
-        evaliq( uint16_type i, uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            value_type res = value_type( 0 );
-
-            for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += M_tensor_expr.evaliq( i, l, l, q );
-
-            return res;
+            return evalq( c1, c2, q );
         }
 
         value_type
-        evalq( uint16_type /*c1*/, uint16_type /*c2*/, uint16_type q ) const
-        {
-            value_type res = value_type( 0 );
-
-            for ( uint16_type l = 0; l < expr_shape::M; ++l )
-                res += M_tensor_expr.evalq( l, l, q );
-
-            return res;
+        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
+            {
+                if constexpr ( expr_shape::N == 1 )
+                    return M_tensor_expr.evalq( 0, 0, q );
+                else if constexpr ( expr_shape::N == 2 )
+                    return std::sqrt( std::pow( M_tensor_expr.evalq( 0, 0, q ), 2 ) -
+                                      M_tensor_expr.evalq( 0, 0, q )*M_tensor_expr.evalq( 1, 1, q )+
+                                      std::pow( M_tensor_expr.evalq( 1, 1, q ), 2 ) +
+                                      3 * std::pow( M_tensor_expr.evalq( 0, 1, q ), 2 ) 
+                                      );
+                else
+                    return std::sqrt( ( std::pow( M_tensor_expr.evalq( 0, 0, q )-M_tensor_expr.evalq( 1, 1, q ), 2 ) +
+                                        std::pow( M_tensor_expr.evalq( 1, 1, q )-M_tensor_expr.evalq( 2, 2, q ), 2 ) +
+                                        std::pow( M_tensor_expr.evalq( 2, 2, q )-M_tensor_expr.evalq( 0, 0, q ), 2 ) +
+                                        6*(std::pow( M_tensor_expr.evalq( 0, 1, q ),2)+
+                                           std::pow( M_tensor_expr.evalq( 0, 2, q ),2)+
+                                           std::pow( M_tensor_expr.evalq( 1, 2, q ),2) ) )/2
+                                      );
         }
-
+      private:
         tensor_expr_type M_tensor_expr;
     };
 
@@ -269,16 +234,16 @@ class Trace : public ExprDynamicBase
 /// \endcond
 
 /**
- * \brief trace of the expression tensor
+ * \brief compute the VonMises yield criterion
  */
 template <typename ExprT>
-inline Expr<Trace<ExprT>>
-trace( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+inline Expr<VonMises<ExprT>>
+vonmises( ExprT v, std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
 {
-    typedef Trace<ExprT> trace_t;
-    return Expr<trace_t>( trace_t( v ) );
+    typedef VonMises<ExprT> vonmises_t;
+    return Expr<vonmises_t>( vonmises_t( v ) );
 }
 
 } // namespace vf
 } // namespace Feel
-#endif /* __Trace_H */
+#endif /* __Inv_H */

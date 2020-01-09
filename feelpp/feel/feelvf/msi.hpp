@@ -105,7 +105,6 @@ public:
 
     typedef MSI<T,Options> this_type;
     typedef T value_type;
-    typedef value_type evaluate_type;
 
     using image_type = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
 

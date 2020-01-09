@@ -1196,13 +1196,13 @@ public :
             M_betaAq.resize( sizeA );
             for(int q=0; q<sizeA; q++)
             {
-                double coeff = M_ginacAq[q].evaluate(map_symbols);
+                double coeff = M_ginacAq[q].evaluate(map_symbols)(0,0);
                 M_betaAq[q]=coeff;
             }
             M_betaMq.resize( sizeM );
             for(int q=0; q<sizeM; q++)
             {
-                double coeff = M_ginacMq[q].evaluate( map_symbols );
+                double coeff = M_ginacMq[q].evaluate( map_symbols )(0,0);
                 M_betaMq[q]=coeff;
             }
             M_betaFq.resize( nboutputs );
@@ -1212,7 +1212,7 @@ public :
                 M_betaFq[output].resize( size );
                 for(int q=0; q<size; q++)
                 {
-                    double coeff = M_ginacFq[output][q].evaluate( map_symbols );
+                    double coeff = M_ginacFq[output][q].evaluate( map_symbols )(0,0);
                     M_betaFq[output][q]=coeff;
                 }
             }
@@ -1312,7 +1312,7 @@ public :
             M_betaAq.resize( sizeA );
             for(int q=0; q<sizeA; q++)
             {
-                double coeff = M_ginacAq[q].evaluate(map_symbols);
+                double coeff = M_ginacAq[q].evaluate(map_symbols)(0,0);
                 M_betaAq[q]=coeff;
             }
             M_betaFq.resize( nboutputs );
@@ -1322,7 +1322,7 @@ public :
                 M_betaFq[output].resize( size );
                 for(int q=0; q<size; q++)
                 {
-                    double coeff = M_ginacFq[output][q].evaluate( map_symbols );
+                    double coeff = M_ginacFq[output][q].evaluate( map_symbols )(0,0);
                     M_betaFq[output][q]=coeff;
                 }
             }

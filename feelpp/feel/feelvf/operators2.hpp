@@ -50,8 +50,8 @@ public:
     typedef this_type self_type;
 
     typedef typename test_element_type::polyset_type return_value_type;
-    typedef typename strongest_numeric_type<typename test_element_type::value_type,
-                                            typename trial_element_type::value_type>::type value_type;
+    typedef strongest_numeric_type<typename test_element_type::value_type,
+                                   typename trial_element_type::value_type> value_type;
     typedef typename test_element_type::functionspace_type test_functionspace_type; 
     typedef typename test_functionspace_type::reference_element_type test_fe_t;
     typedef typename trial_element_type::functionspace_type trial_functionspace_type; 
@@ -75,7 +75,6 @@ public:
     using test_basis = test_fe_t;
     using trial_basis = trial_fe_t;
     //using value_type = typename test_functionspace_type::value_type;
-    typedef value_type evaluate_type;
 
     typedef ublas::matrix<value_type> matrix_type;
 

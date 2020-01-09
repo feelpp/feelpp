@@ -148,16 +148,12 @@ public:
             mpl::identity<mpl::vector<vertex_permutation_type, vertex_permutation_type, vertex_permutation_type> > >::type>::type::type permutation_by_subentity_type;
 
     template<int N>
-    struct PermutationSubEntity
-    {
-        typedef typename mpl::at_c<permutation_by_subentity_type,N-1>::type type;
-    };
+    using PermutationSubEntity =  typename mpl::at_c<permutation_by_subentity_type,N-1>::type;
 
     template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
-    struct shape
-    {
-        typedef Hypercube<shape_dim, O, R> type;
-    };
+    using shape = Hypercube<shape_dim, O, R>;
+    template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
+    using shape_t = Hypercube<shape_dim, O, R>;
 
     Hypercube() = default;
     Hypercube( Hypercube const& ) = default;

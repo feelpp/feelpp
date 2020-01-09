@@ -3,9 +3,9 @@
   This file is part of the Feel library
 
   Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-       Date: 2012-04-26
+       Date: 2019-12-07
 
-  Copyright (C) 2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2019 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -21,13 +21,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file inv.hpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2012-04-26
- */
-#ifndef __FEELPP_VF_Inv_H
-#define __FEELPP_VF_Inv_H 1
+#ifndef __FEELPP_VF_REDUX_H
+#define __FEELPP_VF_REDUX_H 1
 
 namespace Feel
 {
@@ -35,14 +30,14 @@ namespace vf
 {
 /// \cond detail
 /**
- * \class Inv
- * \brief inv of a matrix
+ * \class Sum
+ * \brief sum of array elements
  *
  * @author Christophe Prud'homme
  * @see
  */
-template <typename ExprT>
-class Inv : public ExprDynamicBase
+template <typename ExprT, typename OpRedux>
+class Redux : public ExprDynamicBase
 {
   public:
     using super = ExprDynamicBase;
@@ -74,8 +69,9 @@ class Inv : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    using evaluate_type = typename expression_type::evaluate_type;
-    typedef Inv<ExprT> this_type;
+    typedef value_type evaluate_type;
+    using op_redux_t = OpRedux;
+    typedef Redux<ExprT,OpRedux> this_type;
 
     //@}
 
@@ -83,16 +79,17 @@ class Inv : public ExprDynamicBase
      */
     //@{
 
-    explicit Inv( expression_type const& __expr )
+    explicit Redux( expression_type const& __expr, op_redux_t op )
         : super( Feel::vf::dynamicContext( __expr ) ),
-          M_expr( __expr )
+          M_expr( __expr ),
+          M_op( op )
     {
     }
-    Inv( Inv const& te )
-        : super( te ), M_expr( te.M_expr )
+    Redux( Redux const& te )
+        : super( te ), M_expr( te.M_expr ), M_op( te.M_op )
     {
     }
-    ~Inv() = default;
+    ~Redux() = default;
 
     //@}
 
@@ -128,15 +125,10 @@ class Inv : public ExprDynamicBase
     {
         return M_expr;
     }
-
-    //! evaluate the expression without context
-    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
-        {
-            auto eval = M_expr.evaluate(p,worldcomm);
-            CHECK( eval.rows() == eval.cols() ) << "only square matrix";
-            return eval.inverse();
-       }
-
+    op_redux_t const& op() const
+    {
+        return M_op;
+    }
     //@}
 
     //template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,std::shared_ptrvf::detail::gmc<0> > > >, typename Basis_j_t = Basis_i_t>
@@ -147,11 +139,7 @@ class Inv : public ExprDynamicBase
         typedef typename tensor_expr_type::value_type value_type;
 
         typedef typename tensor_expr_type::shape expr_shape;
-        BOOST_MPL_ASSERT_MSG( ( boost::is_same<mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>>::value ), INVALID_TENSOR_SHOULD_BE_RANK_2_OR_0, (mpl::int_<expr_shape::M>, mpl::int_<expr_shape::N>));
-        typedef Shape<expr_shape::nDim, Tensor2, false, false> shape;
-
-        typedef Eigen::Matrix<value_type, shape::M, shape::N> matrix_type;
-        typedef std::vector<matrix_type> inv_matrix_type;
+        using shape = shape_rankdown_t<expr_shape>;
 
         template <class Args>
         struct sig
@@ -166,21 +154,22 @@ class Inv : public ExprDynamicBase
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            : M_tensor_expr( expr.expression(), geom, fev, feu ),
-              M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+            :
+            M_tensor_expr( expr.expression(), geom, fev, feu ),
+            M_op( expr.op() )
         {
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
             : M_tensor_expr( expr.expression(), geom, fev ),
-              M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+              M_op( expr.op() )
         {
         }
 
         tensor( this_type const& expr, Geo_t const& geom )
             : M_tensor_expr( expr.expression(), geom ),
-              M_inv( vf::detail::ExtractGm<Geo_t>::get( geom )->nPoints() )
+              M_op( expr.op() )
         {
         }
         template <typename IM>
@@ -199,12 +188,10 @@ class Inv : public ExprDynamicBase
         void update( Geo_t const& geom )
         {
             M_tensor_expr.update( geom );
-            computeInv( mpl::int_<shape::N>() );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_tensor_expr.update( geom, face );
-            computeInv( mpl::int_<shape::N>() );
         }
 
         value_type
@@ -228,84 +215,121 @@ class Inv : public ExprDynamicBase
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return M_inv[q]( c1, c2 );
+            return M_op( c2, q, expr_shape(), [this]( int i, int j, int q ){ return this->M_tensor_expr.evalq( i, j, q ); } );
         }
-
-      private:
-        void
-        computeInv( mpl::int_<1> )
-            {
-                for ( int q = 0; q < M_inv.size(); ++q )
-                {
-                    M_inv[q]( 0, 0 ) = 1. / M_tensor_expr.evalq( 0, 0, q );
-                }
-            }
-        void
-        computeInv( mpl::int_<2> )
-            {
-                for ( int q = 0; q < M_inv.size(); ++q )
-                {
-                    double a = M_tensor_expr.evalq( 0, 0, q );
-                    double b = M_tensor_expr.evalq( 0, 1, q );
-                    double c = M_tensor_expr.evalq( 1, 0, q );
-                    double d = M_tensor_expr.evalq( 1, 1, q );
-
-                    double determinant = a * d - c * b;
-
-                    M_inv[q]( 0, 0 ) = d / determinant;
-                    M_inv[q]( 0, 1 ) = -b / determinant;
-                    M_inv[q]( 1, 0 ) = -c / determinant;
-                    M_inv[q]( 1, 1 ) = a / determinant;
-                }
-            }
-        void
-        computeInv( mpl::int_<3> )
-            {
-                for ( int q = 0; q < M_inv.size(); ++q )
-                {
-                    double a = M_tensor_expr.evalq( 0, 0, q );
-                    double b = M_tensor_expr.evalq( 0, 1, q );
-                    double c = M_tensor_expr.evalq( 0, 2, q );
-                    double d = M_tensor_expr.evalq( 1, 0, q );
-                    double e = M_tensor_expr.evalq( 1, 1, q );
-                    double f = M_tensor_expr.evalq( 1, 2, q );
-                    double g = M_tensor_expr.evalq( 2, 0, q );
-                    double h = M_tensor_expr.evalq( 2, 1, q );
-                    double l = M_tensor_expr.evalq( 2, 2, q );
-
-                    double determinant = a * ( e * l - f * h ) - b * ( d * l - g * h ) + c * ( d * h - g * e );
-
-                    M_inv[q]( 0, 0 ) = ( e * l - f * h ) / determinant;
-                    M_inv[q]( 0, 1 ) = ( c * h - b * l ) / determinant;
-                    M_inv[q]( 0, 2 ) = ( b * f - c * e ) / determinant;
-                    M_inv[q]( 1, 0 ) = ( f * g - d * l ) / determinant;
-                    M_inv[q]( 1, 1 ) = ( a * l - c * g ) / determinant;
-                    M_inv[q]( 1, 2 ) = ( c * d - a * f ) / determinant;
-                    M_inv[q]( 2, 0 ) = ( d * h - e * g ) / determinant;
-                    M_inv[q]( 2, 1 ) = ( b * g - a * h ) / determinant;
-                    M_inv[q]( 2, 2 ) = ( a * e - b * d ) / determinant;
-                }
-            }
-
       private:
         tensor_expr_type M_tensor_expr;
-        inv_matrix_type M_inv;
+        op_redux_t M_op;
     };
 
   private:
     mutable expression_type M_expr;
+    op_redux_t M_op;
 };
 /// \endcond
 
-/**
- * \brief inv of the expression tensor
- */
-template <typename ExprT>
-inline Expr<Inv<ExprT>>
-inv( ExprT v )
+namespace detail
 {
-    typedef Inv<ExprT> inv_t;
-    return Expr<inv_t>( inv_t( v ) );
+template<typename shape_t, typename Fun, typename T>
+T OpReduxSum( T init, int c2, int q, Fun f )
+{
+    if constexpr ( shape_t::M > 1 )
+    {
+        T  res = init;
+        for( int i = 0; i < shape_t::M; ++i )
+            res += f( i, c2, q );
+        return res;
+    }
+    else if constexpr ( shape_t::N > 1 )
+    {
+        T  res = init;
+        for( int i = 0; i < shape_t::N; ++i )
+            res += f( 0, i, q );
+        return res;
+    }
+    else
+        return init + f( 0, 0, q );
+
+}
+template<typename shape_t, typename Fun, typename T>
+T OpReduxMean( T init, int c2, int q, Fun f )
+{
+    if constexpr ( shape_t::M > 1 )
+    {
+        T  res = 0.;
+        for( int i = 0; i < shape_t::M; ++i )
+            res += f( i, c2, q );
+        return init + res/shape_t::M;
+    }
+    else if constexpr ( shape_t::N > 1 )
+    {
+        T  res = 0.;
+        for( int i = 0; i < shape_t::N; ++i )
+            res += f( 0, i, q );
+        return init + res/shape_t::N;
+    }
+    else
+        return init + f( 0, 0, q );
+
+}
+
+template<typename shape_t, typename Fun, typename T>
+T OpReduxProd( T init, int c2, int q,  Fun f )
+{
+    if constexpr ( shape_t::M > 1 )
+    {
+        T  res = init;
+        for( int i = 0; i < shape_t::M; ++i )
+            res *= f( i, c2, q );
+        return res;
+    }
+    else if constexpr ( shape_t::N > 1 )
+    {
+        value_type  res = init;
+        for( int i = 0; i < shape_t::N; ++i )
+            res *= f( 0, i, q );
+        return res;
+    }
+    else
+        return init * f( 0, 0, q );
+
+}
+
+};
+/**
+ * \brief compute the sum of element array expression \p ExprT
+ * \return the sum of the elements of expression v along the first array dimension whose size does not equal 1.
+ */
+template <typename ExprT, typename T = typename  ExprT::value_type>
+inline auto
+sum( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+{
+    Redux redux_sum( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxSum<decltype(shape)>( init, c2, q, f ); } );
+    return Expr{ redux_sum };
+}
+
+/**
+ * \brief compute the mean of element array expression \p ExprT
+ * \return the mean of the elements of expression v along the first array dimension whose size does not equal 1.
+ */
+template <typename ExprT, typename T = typename  ExprT::value_type>
+inline auto
+mean( ExprT v, T init = 0., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+{
+    Redux redux_mean( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxMean<decltype(shape)>( init, c2, q, f ); } );
+    return Expr{ redux_mean };
+}
+
+/**
+ * \brief compute the productpf  element array expression \p ExprT
+ * \return the product of the elements of expression v along the first array dimension whose size does not equal 1.
+ */
+template <typename ExprT, typename T = typename  ExprT::value_type>
+inline auto
+prod( ExprT v, T init = 1., std::enable_if_t<std::is_base_of_v<ExprBase,ExprT>>* = nullptr )
+{
+    Redux redux_prod( v, [&]( int c2, int q, auto shape, auto const& f ) { return detail::OpReduxProd<decltype(shape)>( init, c2, q, f ); } );
+    return Expr{ redux_prod };
 }
 
 } // namespace vf

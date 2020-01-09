@@ -401,13 +401,13 @@ public:
      * \param list_p list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomials( std::vector<uint16_type> const& list_p  ) const
+    PolynomialSet<Poly, PolySetType> polynomials( std::vector<int> const& list_p  ) const
     {
         size_type dim_p = this->polynomialDimension();
         size_type new_dim_p = nComponents*list_p.size();
         matrix_type coeff( nComponents*nComponents*list_p.size(), M_coeff.size2() );
         int j = 0;
-        BOOST_FOREACH( uint16_type i, list_p )
+        for( int i: list_p )
         {
             for ( int c = 0; c < nComponents; ++c )
             {

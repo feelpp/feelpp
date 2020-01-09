@@ -448,7 +448,6 @@ public:
     // expression desc
     typedef typename functionspace_normal_type::geoelement_type geoelement_type;
     typedef typename functionspace_normal_type::value_type value_type;
-    typedef value_type evaluate_type;
     static const uint16_type nDim = fe_normal_type::nDim;
     static const uint16_type nRealDim = fe_normal_type::nRealDim;
     static const uint16_type rank = fe_normal_type::rank;

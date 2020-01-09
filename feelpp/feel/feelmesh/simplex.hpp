@@ -93,15 +93,13 @@ private:
     typedef mpl::vector_c<size_type, SHAPE_POINT, SHAPE_LINE, SHAPE_TRIANGLE, SHAPE_TETRA> shapes_t;
     typedef mpl::vector_c<size_type, GEOMETRY_POINT, GEOMETRY_LINE, GEOMETRY_SURFACE, GEOMETRY_VOLUME> geometries_t;
 
-    static const uint16_type orderTriangle = boost::mpl::if_<boost::mpl::greater< boost::mpl::int_<Order>,
-                             boost::mpl::int_<5> >,
-                             boost::mpl::int_<5>,
-                             typename boost::mpl::if_<boost::mpl::less< boost::mpl::int_<Order>,
-                             boost::mpl::int_<1> >,
-                             boost::mpl::int_<1>,
-                             boost::mpl::int_<Order>
-                             >::type
-                             >::type::value;
+    static constexpr int computeOrderTriangle() 
+        {
+            if constexpr ( Order > 5 ) return 5;
+            if constexpr ( Order < 1 ) return 1;
+            return Order;
+        }
+    inline static constexpr int orderTriangle = computeOrderTriangle();
 
     typedef mpl::vector<details::point<orderTriangle>, details::line<orderTriangle>, details::triangle<orderTriangle>, details::tetra<orderTriangle> > map_entity_to_point_t;
 
@@ -131,7 +129,25 @@ public:
     static const uint16_type topological_dimension = nDim;
     static const uint16_type real_dimension = nRealDim;
 
-    static const size_type Shape = mpl::at<shapes_t, mpl::int_<nDim> >::type::value;
+    /**
+     * handle a shape 
+     */
+    static constexpr int getShape()
+        {
+            if constexpr ( nDim == 0 ) return SHAPE_POINT;
+            else if constexpr ( nDim == 1 ) return SHAPE_LINE;
+            else if constexpr ( nDim == 2 ) return SHAPE_TRIANGLE;
+            else if constexpr ( nDim == 3 ) return SHAPE_TETRA;
+        }
+    static constexpr int Shape = getShape();
+    template<int shape_dim = nDim, int O = Order,  int R=nDim>
+    using shape = Simplex<shape_dim, O, R>;
+    template<int shape_dim, int O = Order,  int R=nDim>
+    using shape_t = Simplex<shape_dim, O, R>;
+    template<int shape_dim, int  O = Order,  int  R=nDim>
+    static constexpr int shape_v = Simplex<shape_dim, O, R>::Shape;
+
+    
     static const size_type Geometry = mpl::at<geometries_t, mpl::int_<nDim> >::type::value;
 
     typedef typename mpl::at<elements_t, mpl::int_<nDim> >::type element_type;
@@ -139,12 +155,46 @@ public:
     typedef typename mpl::at<v_edges_t, mpl::int_<real_dimension> >::type edge_type;
     typedef topological_face_type GeoBShape;
 
-    static const uint16_type numVertices = nDim+1;
-    static const uint16_type numFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numGeometricFaces = mpl::at<geo_faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numTopologicalFaces = mpl::at<faces_index_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numEdges = mpl::at<edges_t, mpl::int_<nDim> >::type::value;
-    static const uint16_type numVolumes = mpl::at<volumes_t, mpl::int_<nDim> >::type::value;
+    static constexpr int numberOfVertices()
+        {
+            return nDim+1;
+        }
+    static const int numVertices = numberOfVertices();
+    
+    static constexpr int numberOfGeometricFaces()
+        {
+            if constexpr ( nDim == 3 ) return 4;
+            else if constexpr ( nDim == 2 ) return 1;
+            else return 0;
+        }
+
+    static const int numFaces = numberOfGeometricFaces();
+    static const int numGeometricFaces = numberOfGeometricFaces();
+
+    static constexpr int numberOfTopologicalFaces()
+        {
+            if constexpr ( nDim == 3 ) return 4;
+            else if constexpr ( nDim == 2 ) return 3;
+            else if constexpr ( nDim == 1 ) return 2;
+            else return 0;
+        }
+    static const int numTopologicalFaces = numberOfTopologicalFaces();
+
+    static constexpr int numberOfEdges()
+        {
+            if constexpr ( nDim == 3 ) return 4+4-2;
+            else if constexpr ( nDim == 2 ) return 3;
+            else if constexpr ( nDim == 1 ) return 1;
+            else return 0;
+        }
+    static const int numEdges = numberOfEdges();
+
+    static constexpr int numberOfVolumes()
+        {
+            if constexpr ( nDim == 3 ) return 1;
+            else return 0;
+        }
+    static const int numVolumes = numberOfVolumes();
 
     static const uint16_type numNormals = mpl::at<normals_t, mpl::int_<nDim> >::type::value;
 
@@ -186,16 +236,7 @@ public:
             mpl::identity<mpl::vector<vertex_permutation_type, vertex_permutation_type, vertex_permutation_type> > >::type>::type::type permutation_by_subentity_type;
 
     template<int N>
-    struct PermutationSubEntity
-    {
-        typedef typename mpl::at_c<permutation_by_subentity_type,N-1>::type type;
-    };
-
-    template<uint16_type shape_dim, uint16_type O = Order,  uint16_type R=nDim>
-    struct shape
-    {
-        typedef Simplex<shape_dim, O, R> type;
-    };
+    using PermutationSubEntity = typename mpl::at_c<permutation_by_subentity_type,N-1>::type;
 
 
     Simplex() = default;
@@ -260,22 +301,22 @@ public:
      * -# (n+1)(n+2)/2 over the triangle,
      * -# (n+1)(n+2)(n+3)/6 in three dimensions.
      */
-    static uint32_type polyDims( int n )
+    static int polyDims( int n )
     {
-        if ( nDim == 0 )
+        if constexpr ( nDim == 0 )
             return (n>0)?0:1;
 
-        if ( nDim == 1 )
+        else if constexpr ( nDim == 1 )
             return std::max( 0, n + 1 );
 
-        if ( nDim == 2 )
+        else if constexpr ( nDim == 2 )
             return std::max( 0, ( n+1 )*( n+2 )/2 );
 
-        if ( nDim == 3 )
+        else if constexpr ( nDim == 3 )
             return std::max( 0, ( n+1 )*( n+2 )*( n+3 )/6 );
-
+        
         BOOST_STATIC_ASSERT( nDim == 0 || nDim == 1 || nDim == 2 || nDim == 3 );
-        return uint32_type( -1 );
+        return -1;
     }
 
     /**
