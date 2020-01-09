@@ -2,7 +2,7 @@
 :cpp: C++
 = {feelpp}: Finite Element Embedded Library in {cpp}
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
-:toc: macro
+# :toc: macro
 :toclevels: 2
 :uri-rel-file-base: link:
 :uri-rel-tree-base: link:
@@ -41,13 +41,52 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 :uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
 
 
-toc::[]
+# toc::[]
 
 image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
 
 link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
+
+== Releases
+
+Here is the latest release of {feelpp}
+
+https://github.com/feelpp/feelpp/releases/latest[{feelpp} latest release on github]
+image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/latestdoi/4392591]
+
+{feelpp} is split into three components:
+
+* feelpp : library and tools
+* feelpp-toolboxes : mono and multiphysics toolboxes (cfd, csm, heat transfer, fsi, heat and fluid, hdg(poisson and elasticity), thermo-electric and maxwell)
+* feelpp-mor: model order reduction applications and tools
+
+{feelpp} is packaged and delivered via docker, debian and ubuntu packages.
+
+|===
+| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+
+| feelpp 
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
+|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
+|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
+
+| feelpp-toolboxes
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+
+| feelpp-mor
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+|===
+
+
 
 == {feelpp} Documentation
 
@@ -106,13 +145,6 @@ The objectives of this framework is quite ambitious; ambitions which could be ex
 
 
 Some basic installation procedure are available in the link:INSTALL.md[INSTALL] file, the detailled process is available link:http://www.feelpp.org/docs/develop/BuildingP.html[here].
-
-== Releases
-
-Here is the latest release of {feelpp}
-
-https://github.com/feelpp/feelpp/releases/latest[{feelpp} latest release on github]
-image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/latestdoi/4392591]
 
 
 == Features
