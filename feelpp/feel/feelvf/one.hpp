@@ -62,7 +62,6 @@ public:
     typedef One<CType> this_type;
 
     typedef double value_type;
-    typedef value_type evaluate_type;
 
     One() {}
     One( One const& /*__vff*/ ) {}

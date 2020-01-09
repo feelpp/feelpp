@@ -69,7 +69,7 @@ public:
                               mpl::identity<T>,
                               mpl::identity<mpl::identity<T> > >::type::type::type _value_type;
     using value_type = std::decay_t<_value_type>;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
 
     typedef Cst<T> expression_type;
 
@@ -106,7 +106,7 @@ public:
     {
         return M_constant;
     }
-
+#if 0
     constexpr value_type evaluate() const
     {
         return M_constant;
@@ -116,10 +116,10 @@ public:
     {
         return M_constant;
     }
-
-    constexpr value_type evaluate( bool, worldcomm_ptr_t const& ) const
+#endif
+    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
     {
-        return M_constant;
+        return evaluate_type::Constant( M_constant );
     }
 
     template<typename... TheExpr>

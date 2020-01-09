@@ -236,7 +236,7 @@ BOOST_AUTO_TEST_CASE( test_postprocess )
     for (auto const& stat : model_props.postProcess().measuresStatistics() )
     {
         //std::cout << "stat.name() " << stat.name() << " " << stat.markers()  << std::endl;
-        std::get<0>( ppStatRegistered[stat.name()] ) = stat.expr().exprScalar().evaluate();
+        std::get<0>( ppStatRegistered[stat.name()] ) = stat.expr().exprScalar().evaluate()(0,0);
         std::get<1>( ppStatRegistered[stat.name()] ) = stat.markers();
     }
 

@@ -55,7 +55,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<size_type, T1::value | T2::value_type::second_type::context >{};
+                    return hana::integral_constant<size_type, T1::value | std::tuple_element<1,typename T2::value_type>::type::context >{};
                 }
         };
         template<typename Funct>
@@ -64,7 +64,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template HasTestFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template HasTestFunction<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -73,7 +73,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template HasTrialFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template HasTrialFunction<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -82,7 +82,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template has_test_basis<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template has_test_basis<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -91,7 +91,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || T2::value_type::second_type::template has_trial_basis<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template has_trial_basis<Funct>::result >{};
                 }
         };
 
@@ -131,7 +131,7 @@ public:
     typedef GiNaC::ex ginac_expression_type;
     typedef GinacExVF<Order,SymbolsExprType> this_type;
     typedef double value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
 
     typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
 
@@ -290,13 +290,36 @@ public:
         return invalid_uint16_type_value;
     }
 
-    const std::vector<uint16_type> indices() const
+    const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > > indices() const
     {
-        std::vector<uint16_type> indices_vec;
+        std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > > indices_vec;
+
         hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
                         {
                             for ( auto const& e : evec )
-                                indices_vec.push_back( this->index( e.first ) );
+                            {
+                                std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > tmp;
+                                if ( std::get<2>( e ).empty() ) // no suffix comp
+                                {
+                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    if ( idx != invalid_v<uint16_type> )
+                                        tmp.push_back( std::make_tuple( idx, 0, 0 ) );
+                                }
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    {
+                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        if ( idx != invalid_v<uint16_type> )
+                                        {
+                                            uint16_type c1 = compArray[0];
+                                            uint16_type c2 = compArray[1];
+                                            tmp.push_back( std::make_tuple( idx, c1, c2 ) );
+                                        }
+                                    }
+                                }
+                                indices_vec.push_back( tmp );
+                            }
                         });
         return indices_vec;
     }
@@ -316,7 +339,7 @@ public:
         {
             template <typename T>
             struct apply {
-                using type = typename T::value_type::second_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+                using type = typename std::tuple_element<1,typename T::value_type>::type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
             };
 
             template <typename T>
@@ -325,7 +348,7 @@ public:
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
                     std::vector<_tensor_type> res;
                     for ( auto const& sub : t )
-                        res.push_back( _tensor_type( sub.second,Geo_t{} ) );
+                        res.push_back( _tensor_type( std::get<1>( sub ),Geo_t{} ) );
                     return res;
                 }
             template <typename T>
@@ -334,7 +357,7 @@ public:
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
                     std::vector<_tensor_type> res;
                     for ( auto const& sub : t )
-                        res.push_back( _tensor_type( sub.second,geom,fev,feu ) );
+                        res.push_back( _tensor_type( std::get<1>(sub),geom,fev,feu ) );
                     return res;
                 }
             template <typename T>
@@ -343,7 +366,7 @@ public:
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
                     std::vector<_tensor_type> res;
                     for ( auto const& sub : t )
-                        res.push_back( _tensor_type( sub.second,geom,fev ) );
+                        res.push_back( _tensor_type( std::get<1>(sub),geom,fev ) );
                     return res;
                 }
             template <typename T>
@@ -352,7 +375,7 @@ public:
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
                     std::vector<_tensor_type> res;
                     for ( auto const& sub : t )
-                        res.push_back( _tensor_type( sub.second,geom ) );
+                        res.push_back( _tensor_type( std::get<1>(sub),geom ) );
                     return res;
                 }
         };
@@ -391,7 +414,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         tensor( this_type const& expr,
@@ -407,7 +430,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x(  expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         tensor( this_type const& expr, Geo_t const& geom )
@@ -422,7 +445,7 @@ public:
             M_nsyms( expr.syms().size() ),
             M_y( vec_type::Zero(M_gmc->nPoints()) ),
             M_x( expr.parameterValue() ),
-            M_yConstant( (M_is_constant)? expr.evaluate() : evaluate_type(0) )
+            M_yConstant( (M_is_constant)? expr.evaluate()(0,0) : value_type(0) )
             {}
 
         template<typename IM>
@@ -433,7 +456,7 @@ public:
                             {
                                 for ( auto & e : evec )
                                 {
-                                    if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                    if ( !M_t_expr_index[k].empty() )
                                         e.init( im );
                                     ++k;
                                 }
@@ -459,9 +482,8 @@ public:
                                     {
                                         for ( auto const& e : evec )
                                         {
-                                            uint16_type idx = M_t_expr_index[k];
-                                            if ( idx != invalid_uint16_type_value )
-                                                M_x[idx] = e.evalq( 0, 0, q );
+                                            for ( auto const& [idx,c1,c2] : M_t_expr_index[k] )
+                                                M_x[idx] = e.evalq( c1, c2, q );
                                             ++k;
                                         }
                                     });
@@ -478,7 +500,7 @@ public:
                             {
                                 for ( auto & e : evec )
                                 {
-                                    if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                    if ( !M_t_expr_index[k].empty() )
                                         e.update( geom,fev,feu );
                                     ++k;
                                 }
@@ -495,7 +517,7 @@ public:
                                 {
                                     for ( auto & e : evec )
                                     {
-                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                        if ( !M_t_expr_index[k].empty() )
                                             e.update( geom,fev );
                                         ++k;
                                     }
@@ -512,7 +534,7 @@ public:
                                 {
                                     for ( auto & e : evec )
                                     {
-                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                         if ( !M_t_expr_index[k].empty() )
                                             e.update( geom );
                                         ++k;
                                     }
@@ -530,7 +552,7 @@ public:
                                 {
                                     for ( auto & e : evec )
                                     {
-                                        if ( M_t_expr_index[k] != invalid_uint16_type_value )
+                                         if ( !M_t_expr_index[k].empty() )
                                             e.update( geom, face );
                                         ++k;
                                     }
@@ -575,13 +597,13 @@ public:
         const bool M_is_zero;
         const bool M_is_constant;
         tuple_tensor_expr_type M_t_expr;
-        const std::vector<uint16_type> M_t_expr_index;
+        const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type>>> M_t_expr_index; // (id,c1,c2)
         gmc_ptrtype M_gmc;
 
         int M_nsyms;
         vec_type M_y;
         vec_type M_x;
-        const evaluate_type M_yConstant;
+        const value_type M_yConstant;
     };
 
     evaluate_type
@@ -623,14 +645,31 @@ private :
                         {
                             for ( auto const& e : evec )
                             {
-                                uint16_type idx = this->index( e.first );
-                                if ( idx == invalid_uint16_type_value )
-                                    continue;
-                                auto const& theexpr = e.second;
-                                if ( theexpr.isPolynomial() )
-                                    symbTotalDegree.push_back( std::make_pair( M_syms[idx], theexpr.polynomialOrder() ) );
+                                auto const& theexpr = std::get<1>( e );
+                                if ( std::get<2>( e ).empty() )
+                                {
+                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    if ( idx == invalid_uint16_type_value )
+                                        continue;
+                                    if ( theexpr.isPolynomial() )
+                                        symbTotalDegree.push_back( std::make_pair( M_syms[idx], theexpr.polynomialOrder() ) );
+                                    else
+                                        symbExprArePolynomials = false;
+                                }
                                 else
-                                    symbExprArePolynomials = false;
+                                {
+                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    {
+                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        if ( idx != invalid_v<uint16_type> )
+                                        {
+                                            if ( theexpr.isPolynomial() )
+                                                symbTotalDegree.push_back( std::make_pair( M_syms[idx], theexpr.polynomialOrder() ) );
+                                            else
+                                                symbExprArePolynomials = false;
+                                        }
+                                    }
+                                }
                             }
                         });
 
@@ -654,7 +693,7 @@ private :
     evaluateImpl( bool parallel, worldcomm_ptr_t const& worldcomm ) const
     {
         if ( M_isNumericExpression )
-            return M_numericValue;
+            return evaluate_type::Constant( M_numericValue );
         int no = 1;
         int ni = M_syms.size();
 
@@ -665,17 +704,34 @@ private :
                         {
                             for ( auto const& e : evec )
                             {
-                                uint16_type idx = this->index( e.first );
-                                if ( idx == invalid_uint16_type_value )
-                                    continue;
-                                auto const& theexpr = e.second;
-                                x[idx] = theexpr.evaluate( parallel, worldcomm );
+                                auto const& theexpr = std::get<1>( e );
+                                if ( std::get<2>( e ).empty() )
+                                {
+                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    if ( idx == invalid_v<uint16_type> )
+                                        continue;
+                                    x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
+                                }
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    {
+                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        if ( idx != invalid_v<uint16_type> )
+                                        {
+                                            uint16_type c1 = compArray[0];
+                                            uint16_type c2 = compArray[1];
+                                            x[idx] = theexpr.evaluate( parallel, worldcomm )(c1,c2);
+                                        }
+                                    }
+                                }
                             }
                         });
 
         value_type res;
-        (*M_cfun)(&ni,x.data(),&no,&res);
-        return res;
+        (*M_cfun)(&ni,x.data(),&no,&res );
+
+        return evaluate_type::Constant( res );
     }
 
 private:
@@ -687,7 +743,7 @@ private:
     bool M_isPolynomial;
     uint16_type M_polynomialOrder;
     bool M_isNumericExpression;
-    evaluate_type M_numericValue;
+    value_type M_numericValue;
 };
 
 template<int Order,typename SymbolsExprType>

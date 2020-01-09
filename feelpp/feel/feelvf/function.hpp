@@ -75,7 +75,7 @@ public:
     typedef Func expression_type;
     typedef Function<Func> this_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+
     //@}
 
     /** @name Constructors, destructor

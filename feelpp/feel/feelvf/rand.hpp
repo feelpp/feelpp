@@ -93,7 +93,7 @@ public:
     typedef typename mpl::if_<boost::is_reference_wrapper<T>,
             mpl::identity<T>,
             mpl::identity<mpl::identity<T> > >::type::type::type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
 
     typedef Rand<T> expression_type;
 
@@ -131,9 +131,9 @@ public:
         return M_r();
     }
 
-    constexpr value_type evaluate( bool, WorldComm const& ) const
+    constexpr evaluate_type evaluate( bool, WorldComm const& ) const
     {
-        return M_r();
+        return evaluate_type::Constant( M_r() );
     }
 
     template<typename... TheExpr>
