@@ -332,6 +332,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 );
     }
 
+    sync( sol, "=" );
+
     return sol;
 }
 
