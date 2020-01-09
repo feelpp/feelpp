@@ -51,17 +51,13 @@ link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discon
 
 == {feelpp} Documentation
 
-.link:http://book.feelpp.org[{feelpp} Book web site]
-image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org]
+.link:http://docs.feelpp.org[{feelpp} Docs web site]
+image::https://github.com/feelpp/book.feelpp.org/raw/master/images/cover_small.jpg[{feelpp} Docs,link=http://book.feelpp.org]
 
-== Gitter Discussion Forum
+== Slack Discussion Forum
 
-We encourage you to ask questions and discuss any aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
-  Gitter forum].
+We encourage you to ask questions and discuss any aspects of the project on https://feelpp.slack.com[Slack].
 New contributors are always welcome!
-
-image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
-
 
 == Continuous Integration
 
@@ -86,19 +82,12 @@ The essence of a feature branch is that it exists as long as the feature is in d
 
 | Buildkite Ubuntu 16.04 clang6
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| No supported anymore
 
 | Buildkite Ubuntu 16.04 clang5
 | image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang5"]
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang5"]
+| not supported anymore
 
-| Buildkite Ubuntu 16.04 clang4
-| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang4"]
-| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang4"]
-
-| Buildkite MacOsX Homebrew
-| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=master[link=https://buildkite.com/feelpp/feelpp-homebrew]
-| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=develop[link=https://buildkite.com/feelpp/feelpp-homebrew]
 
 |===
 
@@ -117,27 +106,15 @@ Some basic installation procedure are available in the link:INSTALL.md[INSTALL] 
 
 == Releases
 
-Here are the latest releases of {feelpp}
+Here is the latest release of {feelpp}
 
 * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.2[v0.104.0-beta.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1239039.svg["DOI",link="https://doi.org/10.5281/zenodo.1239039"]
 
 
-* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="https://doi.org/10.5281/zenodo.45132"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="https://doi.org/10.5281/zenodo.11624"]
-
 == Features
 
  * 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
- * continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
+ * continuous and discontinuous (dG and hdG) arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
  * domain specific embedded language in C++ for variational formulations
  * interfaced with link:http://www.mcs.anl.gov/petsc/[PETSc] for linear and non-linear solvers
  * seamless parallel computations using PETSc
@@ -194,7 +171,7 @@ Issue tracker:: {uri-issues}
 
 == Copyright and Licensing
 
-Copyright (C) 2011-2017 {feelpp} Consortium.
+Copyright (C) 2011-2019 {feelpp} Consortium.
 Free use of this software is granted under the terms of the GPL License.
 
 See the {uri-license}[LICENSE] file for details.
@@ -209,7 +186,11 @@ The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud
 === Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve
-$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
+
+[stem]
+++++
+-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega
+++++
 
 [source,cpp]
 ----
@@ -251,7 +232,11 @@ int main(int argc, char**argv )
 === Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve
-$$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+
+[stem]
+++++
+-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+++++
 
 [source,cpp]
 ----
