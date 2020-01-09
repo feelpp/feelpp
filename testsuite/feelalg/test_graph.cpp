@@ -73,7 +73,8 @@ void run()
     double meshSize = doption(_name="hsize");
 
     typedef Mesh< Simplex<nDim, 1,nDim> > mesh_type;
-
+    using size_type = uint32_type;
+    
     GeoTool::Node x1( 0,-0.5 );
     GeoTool::Node x2( 6,0.5 );
     GeoTool::Rectangle Omega( meshSize,"Omega",x1,x2 );

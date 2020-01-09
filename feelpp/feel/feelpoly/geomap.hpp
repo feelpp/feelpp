@@ -2026,18 +2026,9 @@ class GeoMap
             {
                 if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
                 {
-                    //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
-                    std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                    const uint16_type size1 = M_G.size1();
-                    const uint16_type size3 = M_G.size2();
-                    const uint16_type size2 = M_pc->nPoints();
-
-                    for ( uint16_type i = 0; i < size1; ++i )
-                        for ( uint16_type j = 0; j < size2; ++j )
-                        {
-                            for ( uint16_type k = 0; k < size3; ++k )
-                                M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
-                        }
+                    em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
+                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    Xreal.noalias() = Pts * M_pc->phiEigen();
                 }
             }
 

@@ -50,6 +50,7 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "solvecg", po::value<bool>()->default_value( false ), "solve corresponding problem with CG"  )
+        ( "rhs_quad", po::value<int>()->default_value( 4 ), "quadrature order"  )
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
         ( "use-strong-dirichlet", po::value<bool>()->default_value( false ), "use strong ")
         ;
@@ -103,7 +104,7 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"J",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
     for( auto d: locals )
@@ -115,6 +116,7 @@ int hdg_laplacian()
     auto u_exact = expr<Dim,1>( u_exact_str );
     auto un_exact = expr( locals.at("un") );
     auto f_exact = expr( locals.at("f") );
+    auto J_exact = expr( locals.at("J") );
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") );
     std::map<std::string,double> ibc_exact_map;
@@ -183,16 +185,16 @@ int hdg_laplacian()
         tic();
         tic();
         auto l = form1( _test=cgXh );
-        l = integrate( _range=elements(mesh), _expr=-f_exact*id(u) );
+        l = integrate( _range=elements(mesh), _expr=f_exact*id(u) );
 
         l += integrate(_range=markedfaces(mesh,"Neumann"),
                        _expr=id(u)*un_exact );
         l += integrate( _range=markedfaces(mesh, "Robin"),
-                        _expr=id(u)*r_2);
+                        _expr=-id(u)*r_2);
         toc("cg.assembly.l",FLAGS_v>0);
         tic();
         auto a = form2(_trial=cgXh, _test=cgXh );
-        a = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(u)) );
+        a = integrate( _range=elements(mesh), _expr=K*gradt(u)*trans(grad(u)) );
         a += integrate( _range=markedfaces(mesh, "Robin"),
                         _expr=id(u)*idt(u)*r_1);
         a += on(_range=markedfaces(mesh,"Dirichlet"),
@@ -453,6 +455,7 @@ int hdg_laplacian()
     auto up = U(0_c);
     auto pp = U(1_c);
 
+    
     tic();
     tic();
     auto Whp = Pdh<OrderP+1>( mesh, true );
@@ -490,6 +493,34 @@ int hdg_laplacian()
     tic();
     v.on( _range=elements(mesh), _expr=u_exact );
     q.on( _range=elements(mesh), _expr=p_exact );
+
+    
+    double I1 = integrate( _range=elements(mesh), _expr=K*gradv(pp)*trans(gradv(pp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I2 = integrate( _range=elements(mesh), _expr=inner(idv(up))/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I3 = integrate( _range=elements(mesh), _expr=inner(u_exact)/K, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I4 = integrate( _range=elements(mesh), _expr=K*inner(gradv(q)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I5 = integrate( _range=elements(mesh), _expr=K*inner(gradv(ppp)), _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+    double I6 = integrate( _range=elements(mesh), _expr=J_exact, _quad=ioption("rhs_quad") ).evaluate()( 0,0 );
+
+    std::vector<double> J = {I1,I2,I5,I3,I4,I6};
+    double umin = up.min(), umax = up.max(), vmin = v.min(), vmax=v.max();
+    double pmin = pp.min(), pmax = pp.max(), qmin = q.min(), qmax=q.max();
+    Feel::cout << std::setprecision(10) << doption("gmsh.hsize") << " ";
+    for(auto j : J )
+        Feel::cout << std::scientific << std::setprecision(10) << j << " ";
+    Feel::cout << std::endl;
+    Feel::cout << std::setprecision(10) << doption("gmsh.hsize") << " ";
+    for(auto j : J )
+        Feel::cout << std::scientific << std::setprecision(10) << math::abs(j-I6) << " ";
+    Feel::cout << std::endl;
+    Feel::cout << std::setprecision(10) << doption("gmsh.hsize") << " ";
+    for(auto j : J )
+        Feel::cout << std::scientific << std::setprecision(10) << math::abs(j-I6)/I6 << " ";
+    Feel::cout << std::endl;
+    Feel::cout << "umin= " << umin << ", umax=" << umax << " vmin= " << vmin << ", vmax=" << vmax << std::endl;
+    Feel::cout << "pmin= " << pmin << ", pmax=" << pmax << " qmin= " << qmin << ", qmax=" << qmax << std::endl;
+
+    
     auto e = exporter( _mesh=mesh );
     e->setMesh( mesh );
     e->addRegions();

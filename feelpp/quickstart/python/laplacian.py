@@ -27,6 +27,7 @@ ns=nsyms( dim );
 grad_p=grad(p,s);
 flux=-k*grad(p,s);
 u=flux;
+J=tensorcontraction(tensorproduct(u,u),(0,1))/k;
 if 'un' in locals() and locals()['un']:
     un=sympify(locals()['un'])
 else:

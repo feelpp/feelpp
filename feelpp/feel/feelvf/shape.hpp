@@ -57,7 +57,7 @@ class Shape
  * @see
  */
 template<uint16_type Dim, bool transpose, bool diag>
-class Shape<Dim,Scalar,transpose,diag>
+class Shape<Dim,Scalar,transpose,diag>: Scalar<Dim>
 {
 public:
 
@@ -96,7 +96,7 @@ public:
  * @see
  */
 template<uint16_type Dim, bool transpose, bool diag>
-class Shape<Dim,Vectorial,transpose, diag>
+class Shape<Dim,Vectorial,transpose, diag> : Vectorial<Dim>
 {
 public:
 
@@ -135,7 +135,7 @@ public:
  * @see
  */
 template<uint16_type Dim, bool transpose, bool diag>
-class Shape<Dim,Tensor2,transpose,diag>
+class Shape<Dim,Tensor2,transpose,diag> : Tensor2<Dim>
 {
 public:
 
@@ -173,7 +173,7 @@ public:
  * @see
  */
 template<uint16_type Dim, bool transpose, bool diag>
-class Shape<Dim,Tensor3,transpose,diag>
+class Shape<Dim,Tensor3,transpose,diag> : Tensor3<Dim>
 {
 public:
 
@@ -202,6 +202,16 @@ public:
     typedef Shape<Dim,Tensor3,transpose,diag> shape_type;
     //@}
 };
+
+template<typename ShapeT>
+using shape_rankdown_t = typename mpl::if_<is_scalar_t<ShapeT>,
+                                           mpl::identity<Shape<ShapeT::nDim,Scalar,ShapeT::is_transposed,ShapeT::is_diagonalized>>,
+                                           typename mpl::if_<is_vectorial_t<ShapeT>,
+                                                             mpl::identity<Shape<ShapeT::nDim,Scalar,ShapeT::is_transposed,ShapeT::is_diagonalized>>,
+                                                             typename mpl::if_<is_tensor2_t<ShapeT>,
+                                                                               mpl::identity<Shape<ShapeT::nDim,Vectorial,false,ShapeT::is_diagonalized>>,
+                                                                               mpl::identity<Shape<ShapeT::nDim,Tensor2,false,ShapeT::is_diagonalized>>
+                                                                               >::type>::type>::type::type;
 
 //template<uint16_type Dim, template<uint16_type D> class Type, bool transpose>
 template<typename TheShape>

@@ -184,7 +184,7 @@ void run()
 #endif
 
     // extract another submatrix : a set of block
-    std::vector<size_type> indiceExtract_upl;
+    std::vector<uint32_type> indiceExtract_upl;
     for ( size_type k=0;k<Vhu->nLocalDofWithGhost();++k)
         indiceExtract_upl.push_back( A->mapRow().dofIdToContainerId(indexStart_u,k) );
     for ( size_type k=0;k<Vhp->nLocalDofWithGhost();++k)

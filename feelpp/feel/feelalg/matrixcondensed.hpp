@@ -42,6 +42,7 @@ class MatrixCondensed  : public MatrixBlockBase<T>
 public:
     
     using super = MatrixBlockBase<T>;
+    using size_type = typename super::size_type;
     using graph_ptrtype = typename super::graph_ptrtype;
     using value_type = T;
     using sc_type = StaticCondensation<value_type>;
@@ -146,7 +147,7 @@ public:
     //!
     //! @return the number of non-zero entries
     //!
-    std::size_t nnz() const override
+    size_type nnz() const override
         {
             if ( staticCondensation() )
                 return M_sc->nnz();

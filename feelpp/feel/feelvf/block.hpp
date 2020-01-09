@@ -58,7 +58,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using size_type = uint32_type;
 
     //@}
 
@@ -380,10 +380,11 @@ struct Blocks : public BlocksBase<T>
 
 } // vf
 
-class BlocksStencilPattern : public vf::BlocksBase<size_type>
+class BlocksStencilPattern : public vf::BlocksBase<uint32_type>
 {
-    typedef vf::BlocksBase<size_type> super_type;
+    typedef vf::BlocksBase<uint32_type> super_type;
     typedef super_type::index_type index_type;
+    using size_type = uint32_type;
     typedef BlocksStencilPattern self_type;
 public :
 

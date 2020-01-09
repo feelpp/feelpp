@@ -110,7 +110,7 @@ public:
     //@{
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
+    using size_type = typename mesh_type::size_type;
 
     typedef Pdh_type<MeshType,0> scalar_p0_space_type;
     typedef Pch_type<MeshType,1> scalar_p1_space_type;
@@ -138,7 +138,7 @@ public:
         typedef Step step_type;
         typedef MeshType mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
-
+        using size_type = typename mesh_type::size_type;
 
         typedef Pdh_type<MeshType,0> scalar_p0_space_type;
         typedef Pch_type<MeshType,1> scalar_p1_space_type;
