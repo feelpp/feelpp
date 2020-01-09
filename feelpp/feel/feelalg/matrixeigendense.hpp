@@ -80,7 +80,7 @@ public:
     /** @name Typedefs
      */
     //@{
-
+    using size_type = uint32_type;
     typedef T value_type;
     typedef typename type_traits<value_type>::real_type real_type;
     typedef Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
@@ -96,7 +96,7 @@ public:
 
     MatrixEigenDense( size_type r, size_type c, worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
 
-    MatrixEigenDense( datamap_ptrtype const& dmRow, datamap_ptrtype const& dmCol );
+    MatrixEigenDense( datamap_ptrtype<> const& dmRow, datamap_ptrtype<> const& dmCol );
 
     MatrixEigenDense( MatrixEigenDense const & m );
 

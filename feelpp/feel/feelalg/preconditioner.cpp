@@ -38,9 +38,9 @@
 
 namespace Feel
 {
-template <typename T>
-typename Preconditioner<T>::preconditioner_ptrtype
-Preconditioner<T>::build( std::string const& name,
+template <typename T, typename SizeT>
+typename Preconditioner<T,SizeT>::preconditioner_ptrtype
+Preconditioner<T,SizeT>::build( std::string const& name,
                           BackendType backend,
                           worldcomm_ptr_t const& worldComm )
 {
@@ -77,10 +77,10 @@ Preconditioner<std::complex<double>>::build( std::string const& name,
     return preconditioner_ptrtype();
 }
     
-template <typename T>
+template <typename T, typename SizeT>
 FEELPP_STRONG_INLINE
 void
-Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
+Preconditioner<T,SizeT>::setMatrix( sparse_matrix_ptrtype mat )
 {
     if (M_is_initialized)
     {
@@ -92,9 +92,9 @@ Preconditioner<T>::setMatrix( sparse_matrix_ptrtype mat )
     M_matrix = mat;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Preconditioner<T>::setType ( const PreconditionerType pct )
+Preconditioner<T,SizeT>::setType ( const PreconditionerType pct )
 {
     if (M_is_initialized && M_preconditioner_type!=pct)
     {
@@ -105,9 +105,9 @@ Preconditioner<T>::setType ( const PreconditionerType pct )
 
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
+Preconditioner<T,SizeT>::setMatSolverPackageType ( const MatSolverPackageType mspt )
 {
     if (M_is_initialized && M_matSolverPackage_type!=mspt )
     {
@@ -118,16 +118,16 @@ Preconditioner<T>::setMatSolverPackageType ( const MatSolverPackageType mspt )
     //M_is_initialized = false;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Preconditioner<T>::setPrecMatrixStructure( MatrixStructure mstruct  )
+Preconditioner<T,SizeT>::setPrecMatrixStructure( MatrixStructure mstruct  )
 {
     M_prec_matrix_structure = mstruct;
 }
 
 
 
-template class Preconditioner<double>;
-template class Preconditioner<std::complex<double>>;
+template class Preconditioner<double,uint32_type>;
+template class Preconditioner<std::complex<double>,uint32_type>;
 
 } // Feel

@@ -85,10 +85,10 @@ public :
     template<typename Args,typename IntEltsDefault>
     struct integrate_type
     {
-        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
-        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+        typedef vf::detail::clean_type<Args,tag::expr> _expr_type;
+        typedef vf::detail::clean2_type<Args,tag::range,IntEltsDefault> _range_type;
+        typedef vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > > _quad_type;
+        typedef vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > > _quad1_type;
     };
 
     BOOST_PARAMETER_MEMBER_FUNCTION(

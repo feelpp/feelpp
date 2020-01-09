@@ -572,9 +572,9 @@ namespace detail
 template<typename Args>
 struct evaluate
 {
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
-    typedef typename clean_type<Args,tag::pset>::type _pset_type;
-    typedef typename clean_type<Args,tag::range>::type _range_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
+    typedef clean_type<Args,tag::pset> _pset_type;
+    typedef clean_type<Args,tag::range> _range_type;
     typedef details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type> > eval_t;
     typedef typename eval_t::mesh_element_type mesh_element_type;
     typedef typename eval_t::eval_element_type element_type;
@@ -720,9 +720,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
-    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
-    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef detail::clean_type<Args,tag::expr> _expr_type;
+    typedef detail::clean_type<Args,tag::pset> _pset_type;
+    typedef detail::clean_type<Args,tag::range> _range_type;
     typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
     typedef typename eval_element_type::element_type element_type;
 
@@ -877,9 +877,9 @@ BOOST_PARAMETER_FUNCTION(
     )
 )
 {
-    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
-    typedef typename detail::clean_type<Args,tag::pset>::type _pset_type;
-    typedef typename detail::clean_type<Args,tag::range>::type _range_type;
+    typedef detail::clean_type<Args,tag::expr> _expr_type;
+    typedef detail::clean_type<Args,tag::pset> _pset_type;
+    typedef detail::clean_type<Args,tag::range> _range_type;
     typedef typename details::Evaluator<EVAL_NODAL, _range_type, _pset_type, Expr<_expr_type>>::eval_element_type eval_element_type;
     typedef typename eval_element_type::element_type element_type;
 
@@ -959,7 +959,7 @@ namespace detail{
 template <typename Args>
 struct maxPerCellData
 {
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
     typedef typename _expr_type::value_type value_type;
 
     typedef Eigen::Tensor<value_type,3> element_type;
@@ -985,7 +985,7 @@ BOOST_PARAMETER_FUNCTION(
       )
 )
 {
-    typedef typename detail::clean_type<Args,tag::expr>::type _expr_type;
+    typedef detail::clean_type<Args,tag::expr> _expr_type;
     typedef typename _expr_type::value_type value_type;
 
     auto e = evaluate_impl( range, pset, expr, geomap );

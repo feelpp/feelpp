@@ -3,12 +3,11 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
    agents:
      docker: true
-     ubuntu: "16.04"
    artifact_paths: Testing/junit-*.xml
  - wait: ~
    continue_on_failure: false
  - plugins:
-     junit-annotate#v1.6.0:
+     junit-annotate#v1.7.0:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
  - wait
@@ -16,7 +15,30 @@ steps:
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :ubuntu: focal Feel++ ${BUILDKITE_BRANCH}"
+   async: true
+   if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )
+   build:
+     env:
+       DIST: "focal"
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :ubuntu: eoan Feel++ ${BUILDKITE_BRANCH}"
+   async: true
+   if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )   
+   build:
+     env:
+       DIST: "eoan"
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :debian: buster Feel++  ${BUILDKITE_BRANCH}"
+   async: true
+   if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )      
+   build:
+     env:
+       DIST: "buster"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
@@ -29,7 +51,7 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   branches: ["develop"]
+   if: build.message !~ /\[skip tests\]/ && ( build.branch == "master" || build.branch == "develop" )
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
@@ -38,13 +60,11 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
@@ -58,13 +78,11 @@ steps:
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
-     ubuntu: "16.04"
  - wait
  - trigger: "feelpp-singularity"
    label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"

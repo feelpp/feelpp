@@ -70,18 +70,21 @@ public:
     std::string const& unit() const {  return M_unit; }
     void setUnit( std::string const& t) { M_unit = t; }
 
+    ModelParameters & parameters()  {  return M_params; }
     ModelParameters const& parameters() const {  return M_params; }
+
+    ModelMaterials & materials() {  return M_mat; }
     ModelMaterials const& materials() const {  return M_mat; }
+
+    BoundaryConditions & boundaryConditions()  { return M_bc; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
+
+    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
+
+    ModelInitialConditions & initialConditions() { return M_ic; }
     ModelInitialConditions const& initialConditions() const { return M_ic; }
     FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
-
-    ModelParameters & parameters()  {  return M_params; }
-    ModelMaterials & materials() {  return M_mat; }
-    BoundaryConditions & boundaryConditions()  { return M_bc; }
-    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
-    ModelInitialConditions & initialConditions() { return M_ic; }
-
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }

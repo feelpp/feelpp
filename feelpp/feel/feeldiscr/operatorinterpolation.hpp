@@ -354,7 +354,9 @@ public:
     typedef typename super::backend_ptrtype backend_ptrtype;
 
 
-
+    using size_type = typename domain_mesh_type::size_type;
+    using datamap_type = DataMap<size_type>;
+    using datamap_ptrtype = std::shared_ptr<datamap_type>;
     /*
      * image
      */
@@ -999,7 +1001,7 @@ domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof
 } // namespace detail
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::set<size_type>
+std::set<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::defineGhostDofUsedToInterpolate()
 {
     std::set<size_type> ghostDofUsedToInterpolate;
@@ -1920,7 +1922,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
     //this->dualImageSpace()->worldCommPtr()->showMe();
-    std::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldCommPtr()));// this->domainSpace()->mapOnOff().worldCommPtr());
+    datamap_ptrtype mapColInterp( new datamap_type(this->dualImageSpace()->worldCommPtr()));// this->domainSpace()->mapOnOff().worldCommPtr());
     mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
     mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
@@ -1983,7 +1985,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 //-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType,
                       ImageSpaceType,
                       IteratorRange,
@@ -2220,7 +2222,7 @@ OperatorInterpolation<DomainSpaceType,
 //-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                       IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
@@ -2683,7 +2685,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 } // version1
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                       IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld2( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
@@ -3090,7 +3092,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-boost::tuple<std::vector< std::vector<size_type> >, std::vector< std::vector<uint16_type> >,
+boost::tuple<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type> >, std::vector< std::vector<uint16_type> >,
              std::vector<std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type> >,
              std::vector<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type > > > >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
