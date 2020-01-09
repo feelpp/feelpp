@@ -18,6 +18,7 @@ if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
 else
     tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 fi
+tagos=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
 if test "$BUILDKITE_PIPELINE_SLUG" = "feelpp-debug"; then
     tag=${tag}-debug
 fi
@@ -30,7 +31,7 @@ echo "--- Building ${image}:${tag}"
 
 
 if [ "${component}" = "feelpp" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:latest" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
