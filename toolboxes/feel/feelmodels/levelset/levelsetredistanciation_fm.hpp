@@ -29,6 +29,7 @@
 #include <feel/feelmodels/levelset/levelsetfilters.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 #include <feel/feeldiscr/projector.hpp>
+#include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feells/fastmarching.hpp>
 #include <feel/feells/distancepointtoface.hpp>
 
@@ -365,9 +366,24 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
 
                     value_type sdist = phi.localToGlobal( eltId, j, 0 ) / modgradphi;
                     if( std::abs( sdist ) < std::abs( (*phiRedist)(dofId) ) )
+                    {
                         (*phiRedist)(dofId) = sdist;
+                    }
                 }
             }
+            // Sync initial elts
+            syncDofs( *phiRedist, rangeInitialElts,
+                    []( value_type valCurrent, std::unordered_set<value_type> ghostVals )
+                    {
+                        value_type res = valCurrent;
+                        for( value_type const ghostVal: ghostVals )
+                        {
+                            if( std::abs( ghostVal ) < std::abs( res ) )
+                                res = ghostVal;
+                        }
+                        return res;
+                    }
+                    );
         }
         break;
 
