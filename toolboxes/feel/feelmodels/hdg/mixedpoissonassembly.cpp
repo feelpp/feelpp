@@ -1114,7 +1114,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
                     for( auto const& pairMat : modelProperties().materials() )
                     {
                         auto material = pairMat.second;
-                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate();
+                        auto kk_ibc = material.getScalar( "scale_potential" ).evaluate()(0,0);
                         scaled_ibc = scaled_ibc * kk_ibc;
                     }
 

@@ -75,7 +75,6 @@ public:
     using test_basis = test_fe_t;
     using trial_basis = trial_fe_t;
     //using value_type = typename test_functionspace_type::value_type;
-    typedef value_type evaluate_type;
 
     typedef ublas::matrix<value_type> matrix_type;
 

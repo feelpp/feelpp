@@ -159,7 +159,6 @@ public:
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
-    typedef value_type evaluate_type;
     typedef typename element_type::return_type return_type;
     typedef OnExpr expression_type;
 
