@@ -30,7 +30,7 @@ if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds";
     ls -1 ${PBUILDER_RESULTS}/
-    rm ${PBUILDER_RESULTS}/*;
+    rm -f ${PBUILDER_RESULTS}/*;
 else
     echo "no files in ${PBUILDER_RESULTS}/";
 fi
