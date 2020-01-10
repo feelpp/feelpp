@@ -204,10 +204,10 @@ if ( GMSH_FOUND )
   endif()
   if ( FEELPP_HAS_GMSH_API )
     if ( NOT FEELPP_GMSH_API_MISSING_HEADERS )
-      target_include_directories( feelpp PUBLIC $<BUILD_INTERFACE:${GMSH_INCLUDE_DIR}> )
+      target_include_directories( feelpp PUBLIC ${GMSH_INCLUDE_DIR} )
     endif()
   else()
-    target_include_directories( feelpp BEFORE PUBLIC $<BUILD_INTERFACE:${GMSH_INCLUDE_DIR}> )  # fix conflicts (on macos homebrew) with some Python sources
+    target_include_directories( feelpp BEFORE PUBLIC ${GMSH_INCLUDE_DIR} )  # fix conflicts (on macos homebrew) with some Python sources
   endif()
   if ( GL2PS_LIBRARY )
     if ( GL_LIBRARY AND FEELPP_ENABLE_OPENGL )
