@@ -62,14 +62,14 @@ image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/l
 
 {feelpp} is packaged and delivered via http://docs.feelpp.org/user/0.107/install/containers/[docker], http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
-.Build status for each component
+.Build status for each component for the stable channel
 |===
 | Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
 
 | feelpp 
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
-|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp]
+|image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-eoan]
 |image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
