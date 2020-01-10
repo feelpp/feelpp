@@ -70,13 +70,12 @@ The channel is updated infrequently, only for a new release or a major bug.
 latest:: {feelpp} has a very active development and changes are made everyday with the research done by http://www.cemosis.fr[Cemosis] and its collaborators.
 Each commit in the main development branch triggers a new full build with more than 800 tests from unit test to full pde solves.
 
-Instruction are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
+Instructions are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
 
-Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
+WARNING: Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
 They are currently available only via docker.
 
 The following tables present the Continuous Integration status of the packaging of {feelpp}.
-
 
 
 .Build status for each component for the stable channel
