@@ -13,5 +13,4 @@ steps:
    label: ":package: :debian: buster Feel++  ${BUILDKITE_BRANCH}"
    async: true
    if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )
-notify:
-  - slack: #pkg-feelpp   
+
