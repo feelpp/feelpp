@@ -49,28 +49,68 @@ link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discon
 
 == Releases
 
-Here is the latest release of {feelpp}
+The latest release of {feelpp} is https://github.com/feelpp/feelpp/releases/latest[here]
+image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 
-https://github.com/feelpp/feelpp/releases/latest[{feelpp} latest release on github]
+{feelpp} has a DOI provided by Zenodo. Please use this to cite {feelpp} if you use it in a publication
 image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/latestdoi/4392591]
 
 {feelpp} is split into three components:
 
-* feelpp : library and tools
-* feelpp-toolboxes : mono and multiphysics toolboxes (cfd, csm, heat transfer, fsi, heat and fluid, hdg(poisson and elasticity), thermo-electric and maxwell)
-* feelpp-mor: model order reduction applications and tools
+feelpp:: library and tools
+feelpp-toolboxes:: mono and multiphysics toolboxes (cfd, csm, heat transfer, fsi, heat and fluid, hdg(poisson and elasticity), thermo-electric and maxwell)
+feelpp-mor:: model order reduction applications and tools
 
-{feelpp} is packaged and delivered via http://docs.feelpp.org/user/0.107/install/containers/[docker], http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
+These components are built and delivered in two distribution channels: `stable` and `latest`.
+The channels are currently available via Docker containers, Debian and Ubuntu packages.
+
+stable:: Once a year, sometimes more, we make a release of {feelpp}  and it becomes the basis of the `stable` channel.
+The channel is updated infrequently, only for a new release or a major bug.
+
+latest:: {feelpp} has a very active development and changes are made everyday with the research done by http://www.cemosis.fr[Cemosis] and its collaborators.
+Each commit in the main development branch triggers a new full build with more than 800 tests from unit test to full pde solves.
+
+Instruction are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
+
+Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
+They are currently available only via docker.
+
+The following tables present the Continuous Integration status of the packaging of {feelpp}.
+
+
 
 .Build status for each component for the stable channel
 |===
 | Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
 
-| feelpp 
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| feelpp
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 | image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp]
-|image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-eoan]
-|image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg[https://buildkite.com/feelpp/pkg-feelpp-focal]
+| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-eoan]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-focal]
+
+| feelpp-toolboxes
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+
+| feelpp-mor
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+|===
+
+.Build status for each component for the latest channel
+|===
+| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+
+| feelpp
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-eoan]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
 
 | feelpp-toolboxes
 | image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
@@ -84,7 +124,6 @@ image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/l
 |
 |
 |===
-
 
 
 == {feelpp} Documentation
@@ -344,6 +383,3 @@ main( int argc, char** argv )
     e->save();
 }
 ----
-
-
-
