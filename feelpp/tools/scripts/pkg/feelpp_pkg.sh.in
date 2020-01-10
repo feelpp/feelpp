@@ -26,7 +26,7 @@ PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
-if [ -n "$(find ${PBUILDER_RESULTS}/* -prune -empty 2>/dev/null)" ];
+if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
     echo "removing previous builds";
     ls -1 ${PBUILDER_RESULTS}/
