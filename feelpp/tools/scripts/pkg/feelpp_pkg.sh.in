@@ -8,7 +8,7 @@ set -eo pipefail
 # default values
 COMPONENT=main
 if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
-    COMPONENT=devel
+    COMPONENT=latest
 fi
 if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
     COMPONENT=stable
