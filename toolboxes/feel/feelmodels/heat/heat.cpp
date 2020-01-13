@@ -24,7 +24,8 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
+    ModelPhysics( "heat" )
+    //M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );
 
@@ -85,7 +86,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials() );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
@@ -99,14 +104,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->timerTool("Constructor").start();
 
     // functionspace
-    if ( M_thermalProperties->isDefinedOnWholeMesh() )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, M_thermalProperties->markers());
+        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
@@ -125,7 +130,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
 {
     if ( !M_XhVelocityConvection )
     {
-        if ( M_thermalProperties->isDefinedOnWholeMesh() )
+        if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
             M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
         else
             M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _range=M_rangeMeshElements );
@@ -449,7 +454,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
 
     // Materials parameters
     subPt.clear();
-    this->thermalProperties()->updateInformationObject( subPt );
+    this->materialsProperties()->updateInformationObject( subPt );
     p.put_child( "Materials parameters", subPt );
 
     // Mesh and FunctionSpace
@@ -499,7 +504,7 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
            << this->getInfoRobinBC();
-    *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
@@ -543,7 +548,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().parameters().setParameterValues( paramValues );
 
-    this->thermalProperties()->setParameterValues( paramValues );
+    this->materialsProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
@@ -609,7 +614,7 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
+    if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     else
         M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
