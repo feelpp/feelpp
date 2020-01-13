@@ -37,11 +37,13 @@
 #include <feel/feelts/bdf.hpp>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/heat/thermalpropertiesdescription.hpp>
+//#include <feel/feelmodels/heat/thermalpropertiesdescription.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -52,6 +54,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
+             public ModelPhysics,
              public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
              public MarkerManagementDirichletBC,
              public MarkerManagementNeumannBC,
@@ -88,8 +91,8 @@ class Heat : public ModelNumerical,
         typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
         typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
         typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-        typedef ThermalPropertiesDescription<mesh_type> thermalproperties_type;
-        typedef std::shared_ptr<thermalproperties_type> thermalproperties_ptrtype;
+        typedef MaterialsProperties<mesh_type> materialsproperties_type;
+        typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
         typedef std::shared_ptr<bdf_temperature_type> bdf_temperature_ptrtype;
@@ -115,6 +118,7 @@ class Heat : public ModelNumerical,
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
+        //std::string physic() const { return "heat"; }
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -138,8 +142,11 @@ class Heat : public ModelNumerical,
         stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
         //___________________________________________________________________________________//
         // physical parameters
-        thermalproperties_ptrtype const& thermalProperties() const { return M_thermalProperties; }
-        thermalproperties_ptrtype & thermalProperties() { return M_thermalProperties; }
+        materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+        materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+        materialsproperties_ptrtype const& thermalProperties() const { return M_materialsProperties; } // DEPRECATED
+        //thermalproperties_ptrtype const& thermalProperties() const { return M_thermalProperties; }
+        //thermalproperties_ptrtype & thermalProperties() { return M_thermalProperties; }
         // boundary condition + body forces
         map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
         map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
@@ -228,15 +235,15 @@ class Heat : public ModelNumerical,
                 typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
                 std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
 
-                bool onlyScalarThermalConductivity = this->thermalProperties()->allThermalConductivitiesAreScalar();
+                bool onlyScalarThermalConductivity = this->materialsProperties()->allThermalConductivitiesAreScalar();
 
-                for ( auto const& rangeData : this->thermalProperties()->rangeMeshElementsByMaterial() )
+                for ( auto const& rangeData : this->materialsProperties()->rangeMeshElementsByMaterial() )
                 {
                     std::string const& _matName = rangeData.first;
                     auto const& range = rangeData.second;
-                    if ( this->thermalProperties()->hasThermalConductivity( _matName ) )
+                    if ( this->materialsProperties()->hasThermalConductivity( _matName ) )
                     {
-                        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( _matName );
+                        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( _matName );
                         if ( thermalConductivity.isMatrix() )
                         {
                             auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se);
@@ -257,9 +264,9 @@ class Heat : public ModelNumerical,
                     }
                     //mapExpr[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
 
-                    if ( this->thermalProperties()->hasRho( _matName ) )
+                    if ( this->materialsProperties()->hasRho( _matName ) )
                     {
-                        auto densityExpr = expr( this->thermalProperties()->rho( _matName ).expr(), se );
+                        auto densityExpr = expr( this->materialsProperties()->rho( _matName ).expr(), se );
                         mapExprScalar[prefixvm(prefix,"density")].push_back( std::make_tuple( densityExpr, range, "element" ) );
                     }
                 }
@@ -291,7 +298,7 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto symbolsExprMaterial( SymbExprType const& se, std::string const& prefix_symbol = "heat_" ) const
         {
-            return this->thermalProperties()->symbolsExpr( se, prefix_symbol );
+            return this->materialsProperties()->symbolsExpr( se, prefix_symbol );
         }
 
         //___________________________________________________________________________________//
@@ -370,7 +377,8 @@ class Heat : public ModelNumerical,
 
         // physical parameter
         space_scalar_P0_ptrtype M_XhScalarP0;
-        thermalproperties_ptrtype M_thermalProperties;
+        //thermalproperties_ptrtype M_thermalProperties;
+        materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
         map_scalar_field<2> M_bcDirichlet;
@@ -434,7 +442,7 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     {
         auto const& u = this->fieldTemperature();
         double signFlux = (ppFlux.isOutward())? -1.0 : 1.0;
-        auto kappa = this->thermalProperties()->thermalConductivityExpr( symbolsExpr );
+        auto kappa = this->materialsProperties()->thermalConductivityExpr( symbolsExpr );
         double heatFlux = 0;
         if constexpr ( std::decay_t<decltype(kappa)>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
                          heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),

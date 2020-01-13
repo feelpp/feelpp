@@ -55,7 +55,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
         if ( thermalConductivity.isMatrix() )
         {
-            auto const& kappa = expr( thermalConductivity.template exprMatrix<nDim,nDim>(), symbolsExpr );
+            auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
             bool buildDiffusion = kappa.expression().isConstant()? buildCstPart : buildNonCstPart;
             if ( buildDiffusion )
             {
@@ -247,7 +247,6 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
-    //auto const& u = this->fieldTemperature();
     auto const u = Xh->element(XVec, this->rowStartInVector());
     auto const& v = this->fieldTemperature();
 
@@ -262,47 +261,44 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
-        if ( thermalConductivity.isConstant() )
+
+        std::string symbolStr = "heat_T";
+        bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
+        bool buildDiffusion = thermalConductivityDependOnTemperature? buildNonCstPart : buildCstPart;
+        if ( thermalConductivity.template hasExpr<nDim,nDim>() )
         {
-            if ( buildCstPart )
+            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+            if ( buildDiffusion )
             {
-                double kappa = thermalConductivity.value();
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= timeSteppingScaling*kappa*inner(gradt(u),grad(v)),
+                               _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradt(u))),
                                _geomap=this->geomap() );
+            }
+
+            if ( thermalConductivityDependOnTemperature && buildNonCstPart )
+            {
+                CHECK( false ) << "TODO";
             }
         }
         else
         {
             auto kappaExpr = expr( thermalConductivity.expr(), symbolsExpr );
-            std::string symbolStr = "heat_T";
-            if ( kappaExpr.expression().hasSymbol( symbolStr ) )
+            if ( buildDiffusion )
             {
-                if ( buildNonCstPart )
-                {
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
-                                   _geomap=this->geomap() );
-                    auto kappaDiffExpr = diff( kappaExpr,symbolStr,1,"",this->worldComm(),this->repository().expr());
-                    //auto kappaDiffEval = expr( kappaDiff.expression(), symbolsExpr );
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*kappaDiffExpr*idt(u)*inner(gradv(u),grad(v)),
-                                   _geomap=this->geomap() );
-                }
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
+                               _geomap=this->geomap() );
             }
-            else
+            if ( thermalConductivityDependOnTemperature && buildNonCstPart )
             {
-                if ( buildCstPart )
-                {
-                    //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-                    bilinearForm_PatternCoupled +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
-                                   _geomap=this->geomap() );
-                }
+                auto kappaDiffExpr = diff( kappaExpr,symbolStr,1,"",this->worldComm(),this->repository().expr());
+                //auto kappaDiffEval = expr( kappaDiff.expression(), symbolsExpr );
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*kappaDiffExpr*idt(u)*inner(gradv(u),grad(v)),
+                               _geomap=this->geomap() );
             }
         }
 
@@ -415,44 +411,32 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
         auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
-        if ( thermalConductivity.isConstant() )
+
+        std::string symbolStr = "heat_T";
+        bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
+        bool buildDiffusion = thermalConductivityDependOnTemperature? buildNonCstPart : buildNonCstPart && !UseJacobianLinearTerms;
+        if ( thermalConductivity.template hasExpr<nDim,nDim>() )
         {
-            if ( buildNonCstPart && !UseJacobianLinearTerms )
+            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+            if ( buildDiffusion )
             {
-                double kappa = thermalConductivity.value();
                 myLinearForm +=
                     integrate( _range=range,
-                               _expr= timeSteppingScaling*kappa*inner(gradv(u),grad(v)),
+                               _expr= timeSteppingScaling*grad(v)*(kappaExpr*trans(gradv(u))),
                                _geomap=this->geomap() );
             }
         }
         else
         {
             auto kappaExpr = expr(thermalConductivity.expr(),symbolsExpr);
-            std::string symbolStr = "heat_T";
-            if ( kappaExpr.expression().hasSymbol( symbolStr ) )
+            if ( buildDiffusion )
             {
-                if ( buildNonCstPart )
-                {
-                    myLinearForm +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*kappaExpr*inner(gradv(u),grad(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
-            else
-            {
-                if ( buildNonCstPart && !UseJacobianLinearTerms )
-                {
-                    //auto kappa = idv(this->thermalProperties()->fieldThermalConductivity());
-                    myLinearForm +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*kappaExpr*inner(gradv(u),grad(v)),
-                                   _geomap=this->geomap() );
-                }
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*kappaExpr*inner(gradv(u),grad(v)),
+                               _geomap=this->geomap() );
             }
         }
-
 
         if ( this->fieldVelocityConvectionIsUsedAndOperational() || !this->isStationary() )
         {
