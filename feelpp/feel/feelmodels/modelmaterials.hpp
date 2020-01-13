@@ -105,7 +105,8 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
 
     bool hasPhysics() const { return !M_physics.empty(); }
     bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }
-    bool hasPhysics( std::initializer_list<std::string> const& physics ) const
+    bool hasPhysics( std::initializer_list<std::string> const& physics ) const { return this->hasPhysics( std::set<std::string>( physics ) ); }
+    bool hasPhysics( std::set<std::string> const& physics ) const
     {
         for ( std::string const& s : physics )
             if ( this->hasPhysics( s ) )
