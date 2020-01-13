@@ -41,6 +41,12 @@ public :
     typedef matrix_field_expression<2,2,expr_order> expr_matrix22_type;
     typedef matrix_field_expression<3,3,expr_order> expr_matrix33_type;
 
+    static constexpr auto expr_shapes = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
+                                                          hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
+                                                          hana::make_tuple(hana::int_c<3>,hana::int_c<1>),
+                                                          hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
+                                                          hana::make_tuple(hana::int_c<3>,hana::int_c<3>) );
+
     ModelExpression() = default;
     ModelExpression( ModelExpression const& ) = default;
     ModelExpression( ModelExpression && ) = default;
@@ -70,6 +76,16 @@ public :
         else return false;
     }
 
+    bool hasExpr(int M,int N) const
+    {
+        if ( M==1 && N == 1 ) return this->hasExprScalar();
+        else if ( M == 2 && N == 1 ) return this->hasExprVectorial2();
+        else if ( M == 3 && N == 1 ) return this->hasExprVectorial3();
+        else if ( M==2 && N==2 ) return this->hasExprMatrix22();
+        else if ( M==3 && N==3 ) return this->hasExprMatrix33();
+        else return false;
+    }
+
     bool hasAtLeastOneExpr() const { return  this->hasExprScalar() || this->hasExprVectorial2() || this->hasExprVectorial3() || this->hasExprMatrix22() || this->hasExprMatrix33(); }
 
     bool isScalar() const { return hasExprScalar(); }
@@ -86,6 +102,12 @@ public :
     expr_matrix22_type const& exprMatrix22() const { CHECK( this->hasExprMatrix22() ) << "no Matrix22 expression"; return *M_exprMatrix22; }
     expr_matrix33_type const& exprMatrix33() const { CHECK( this->hasExprMatrix33() ) << "no Matrix33 expression"; return *M_exprMatrix33; }
 
+    expr_scalar_type & exprScalar() { CHECK( this->hasExprScalar() ) << "no Scalar expression"; return *M_exprScalar; }
+    expr_vectorial2_type & exprVectorial2() { CHECK( this->hasExprVectorial2() ) << "no Vectorial2 expression"; return *M_exprVectorial2; }
+    expr_vectorial3_type & exprVectorial3() { CHECK( this->hasExprVectorial3() ) << "no Vectorial3 expression"; return *M_exprVectorial3; }
+    expr_matrix22_type & exprMatrix22() { CHECK( this->hasExprMatrix22() ) << "no Matrix22 expression"; return *M_exprMatrix22; }
+    expr_matrix33_type & exprMatrix33() { CHECK( this->hasExprMatrix33() ) << "no Matrix33 expression"; return *M_exprMatrix33; }
+
     template <int M=1,int N=1>
         expr_scalar_type const& expr( typename std::enable_if< M==1 && N == 1>::type* = nullptr ) const { return this->exprScalar(); }
     template <int M=1,int N=1>
@@ -96,6 +118,17 @@ public :
         expr_matrix22_type const& expr( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) const { return this->exprMatrix22(); }
     template <int M=1,int N=1>
         expr_matrix33_type const& expr( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) const { return this->exprMatrix33(); }
+
+    template <int M=1,int N=1>
+        expr_scalar_type & expr( typename std::enable_if< M==1 && N == 1>::type* = nullptr ) { return this->exprScalar(); }
+    template <int M=1,int N=1>
+        expr_vectorial2_type & expr( typename std::enable_if< M==2 && N == 1>::type* = nullptr ) { return this->exprVectorial2(); }
+    template <int M=1,int N=1>
+        expr_vectorial3_type & expr( typename std::enable_if< M==3 && N == 1>::type* = nullptr ) { return this->exprVectorial3(); }
+    template <int M=1,int N=1>
+        expr_matrix22_type & expr( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) { return this->exprMatrix22(); }
+    template <int M=1,int N=1>
+        expr_matrix33_type & expr( typename std::enable_if< M==3 && N == 3>::type* = nullptr ) { return this->exprMatrix33(); }
 
     template <int M,int N>
         expr_matrix22_type const& exprMatrix( typename std::enable_if< M==2 && N == 2>::type* = nullptr ) const { return this->exprMatrix22(); }
@@ -114,16 +147,13 @@ public :
 
     void setParameterValues( std::map<std::string,double> const& mp )
     {
-        if ( this->hasExprScalar() )
-            M_exprScalar->setParameterValues( mp );
-        if ( this->hasExprVectorial2() )
-            M_exprVectorial2->setParameterValues( mp );
-        if ( this->hasExprVectorial3() )
-            M_exprVectorial3->setParameterValues( mp );
-        if ( this->hasExprMatrix22() )
-            M_exprMatrix22->setParameterValues( mp );
-        if ( this->hasExprMatrix33() )
-            M_exprMatrix33->setParameterValues( mp );
+        hana::for_each( expr_shapes, [this,&mp]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                this->expr<ni,nj>().setParameterValues( mp );
+                        });
     }
 
     template<typename ExprT>
@@ -131,6 +161,38 @@ public :
     exprScalar( std::string const& symb, ExprT const& e ) const
     {
         return Feel::vf::expr( this->exprScalar(), symbolExpr(symb, e) );
+    }
+
+    std::string exprToString() const
+    {
+        std::string res;
+        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                res = str( this->expr<ni,nj>().expression() ); // we guess that we have only one expression
+                        });
+        return res;
+    }
+
+    bool hasSymbolDependency( std::string const& symbolStr ) const
+    {
+        if ( this->isConstant() )
+            return false;
+
+        bool res = false;
+        hana::for_each( expr_shapes, [this,&symbolStr,&res]( auto const& e_ij )
+                        {
+                            if ( res )
+                                return;
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
+                                    res = true;
+                        });
+        return res;
     }
 
 private :
