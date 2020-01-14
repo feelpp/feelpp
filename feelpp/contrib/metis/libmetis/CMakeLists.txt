@@ -15,6 +15,7 @@ endforeach()
 # Build libmetis.
 add_library(feelpp_metis ${METIS_LIBRARY_TYPE} ${GKlib_sources} ${metis_sources})
 target_include_directories(feelpp_metis PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+set_target_properties(feelpp_metis PROPERTIES VERSION ${FEELPP_SHARED_VERSION} SOVERSION ${FEELPP_SHARED_SOVERSION})
 if(UNIX)
  target_link_libraries(feelpp_metis m)
 endif()
@@ -26,7 +27,7 @@ endif()
 if(METIS_INSTALL)
   install(TARGETS feelpp_metis
     EXPORT feelpp-contrib-export-targets
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION lib
-    ARCHIVE DESTINATION lib)
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 endif()

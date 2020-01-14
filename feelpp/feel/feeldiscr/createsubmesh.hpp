@@ -43,13 +43,14 @@
 
 namespace Feel
 {
-template <typename C, typename V, int T> class Mesh;
+template <typename C, typename V, int T, typename IndexT> class Mesh;
 
 template <typename MeshType,typename IteratorRange, int TheTag=MeshType::tag>
 class CreateSubmeshTool : public CommObject
 {
 public :
     using super = CommObject;
+    
     typedef IteratorRange range_type;
     typedef typename boost::tuples::template element<0, range_type>::type idim_type;
     typedef typename boost::tuples::template element<1, range_type>::type iterator_type;
@@ -57,22 +58,24 @@ public :
     static const uint16_type tag = TheTag;
     typedef MeshType mesh_type;
     typedef typename mesh_type::value_type value_type;
-
+    using index_type = typename mesh_type::index_type;
+    using size_type = typename mesh_type::size_type;
+    
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-                              mpl::identity< Mesh< Simplex< mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
-                              mpl::identity< Mesh< Hypercube<mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_elements_type;
+                              mpl::identity< Mesh< Simplex< mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > >,
+                              mpl::identity< Mesh< Hypercube<mesh_type::nDim,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > > >::type::type mesh_elements_type;
     typedef std::shared_ptr<mesh_elements_type> mesh_elements_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-                              mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
-                              mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_faces_type;
+                              mpl::identity< Mesh< Simplex< mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > >,
+                              mpl::identity< Mesh< Hypercube<mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > > >::type::type mesh_faces_type;
     typedef std::shared_ptr<mesh_faces_type> mesh_faces_ptrtype;
 
     typedef typename mpl::if_<mpl::bool_<mesh_type::shape_type::is_simplex>,
-                              mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > >,
-                              mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag > > >::type::type mesh_edges_type;
+                              mpl::identity< Mesh< Simplex< (mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > >,
+                              mpl::identity< Mesh< Hypercube<(mesh_type::nDim==3)?mesh_type::nDim-2:mesh_type::nDim-1,mesh_type::nOrder,mesh_type::nRealDim>, value_type, tag, index_type > > >::type::type mesh_edges_type;
     typedef std::shared_ptr<mesh_edges_type> mesh_edges_ptrtype;
 
     typedef typename mpl::if_< mpl::equal_to< idim_type ,mpl::size_t<MESH_ELEMENTS> >,
@@ -82,7 +85,7 @@ public :
                                                   mpl::identity<mesh_edges_type> >::type>::type::type mesh_build_type;
 
     typedef std::shared_ptr<mesh_build_type> mesh_build_ptrtype;
-    typedef SubMeshData smd_type;
+    typedef SubMeshData<> smd_type;
     typedef std::shared_ptr<smd_type> smd_ptrtype;
 
     CreateSubmeshTool( CreateSubmeshTool const& t ) = default;
@@ -98,7 +101,8 @@ public :
         M_listRange(),
         M_smd( new smd_type( inputMesh ) ),
         M_updateComponentsMesh( updateComponentsMesh ),
-        M_subMeshIsOnBoundaryFaces( false )
+        M_subMeshIsOnBoundaryFaces( false ),
+        M_isView( false )
         {
             M_listRange.push_back( range );
         }
@@ -113,7 +117,8 @@ public :
         M_listRange( range ),
         M_smd( new smd_type( inputMesh ) ),
         M_updateComponentsMesh( updateComponentsMesh ),
-        M_subMeshIsOnBoundaryFaces( false )
+        M_subMeshIsOnBoundaryFaces( false ),
+        M_isView( false )
         {}
 
     CreateSubmeshTool & operator=( CreateSubmeshTool const& t ) = default;
@@ -144,6 +149,8 @@ public :
                 m->setSubMeshData( this->subMeshData() );
             if ( c.test( EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT ) )
                  m->removeMarkerNameWithoutEntity();
+            if ( M_isView )
+                m->addMeshWithNodesShared( M_mesh );
             return m;
         }
 
@@ -160,6 +167,8 @@ public :
 
     bool subMeshIsOnBoundaryFaces() const { return M_subMeshIsOnBoundaryFaces; }
     void subMeshIsOnBoundaryFaces( bool b ) { M_subMeshIsOnBoundaryFaces=b; }
+
+    void setIsView( bool b ) { M_isView = b; }
 
 private:
 
@@ -189,96 +198,90 @@ private:
     smd_ptrtype M_smd;
     size_type M_updateComponentsMesh;
     bool M_subMeshIsOnBoundaryFaces;
+    bool M_isView;
 };
 
 namespace detail
 {
 
-template<typename MeshType,typename SubMeshType>
+template<typename MeshType,typename SubMeshType, typename IndexT=typename MeshType::index_type>
 void
 addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
-                         std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_edges,
-                         std::shared_ptr<SubMeshType> & submesh,std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
-{}
-template<typename MeshType,typename SubMeshType>
-void
-addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::element_type const& oldElt,
-                         std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_edges,
-                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
+                         std::map<IndexT,IndexT> const& new_node_numbers, IndexT & n_new_edges,
+                         std::shared_ptr<SubMeshType> & newMesh, std::set<IndexT> & oldEdgeIdsDone )
 {
-    typedef typename MeshType::edge_type edge_type;
-    const int proc_id = newMesh->worldComm().localRank();
-
-    for ( uint16_type s=0; s< MeshType::element_type::numLocalEdges; s++ )
+    if constexpr ( MeshType::nDim == 3 )
     {
-        if ( !oldElt.edgePtr( s ) ) continue;
-        // get the corresponding edge
-        auto const& oldEdge = oldElt.edge( s );
-        // ignore edge if no marker assigned
-        if ( !oldEdge.hasMarker() ) continue;
-        size_type oldEdgeId = oldEdge.id();
-        // ignore edge if already done
-        if( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
-            continue;
+        typedef typename MeshType::edge_type edge_type;
+        const int proc_id = newMesh->worldComm().localRank();
 
-        if ( mesh->hasEdge( oldEdgeId ) )
+        for ( uint16_type s = 0; s < MeshType::element_type::numLocalEdges; s++ )
         {
-            edge_type newEdge;
-            newEdge.setId( n_new_edges++ );
-            newEdge.setMarkers( oldEdge.markers() );
-            newEdge.setProcessIdInPartition( proc_id );
-            newEdge.setProcessId( proc_id );
-            for ( uint16_type p = 0; p < newEdge.nPoints(); ++p )
-                newEdge.setPoint( p, newMesh->point( new_node_numbers.find( oldEdge.point(p).id())->second ) );
-            // add it to the list of edges
-            newMesh->addEdge( newEdge );
-            oldEdgeIdsDone.insert( oldEdgeId );
+            if ( !oldElt.edgePtr( s ) ) continue;
+            // get the corresponding edge
+            auto const& oldEdge = oldElt.edge( s );
+            // ignore edge if no marker assigned
+            if ( !oldEdge.hasMarker() ) continue;
+            size_type oldEdgeId = oldEdge.id();
+            // ignore edge if already done
+            if ( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
+                continue;
+
+            if ( mesh->hasEdge( oldEdgeId ) )
+            {
+                edge_type newEdge;
+                newEdge.setId( n_new_edges++ );
+                newEdge.setMarkers( oldEdge.markers() );
+                newEdge.setProcessIdInPartition( proc_id );
+                newEdge.setProcessId( proc_id );
+                for ( uint16_type p = 0; p < newEdge.nPoints(); ++p )
+                    newEdge.setPoint( p, newMesh->point( new_node_numbers.find( oldEdge.point( p ).id() )->second ) );
+                // add it to the list of edges
+                newMesh->addEdge( newEdge );
+                oldEdgeIdsDone.insert( oldEdgeId );
+            }
         }
     }
 }
 
-template<typename MeshType,typename SubMeshType>
-void
-addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
-                         std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_faces,
-                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::false_ /**/ )
-{}
-template<typename MeshType,typename SubMeshType>
-void
-addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
-                         std::map<size_type,size_type> const& new_node_numbers, size_type & n_new_faces,
-                         std::shared_ptr<SubMeshType> & newMesh, std::set<size_type> & oldEdgeIdsDone, mpl::true_ /**/ )
+template <typename MeshType, typename SubMeshType, typename IndexT = typename MeshType::index_type>
+void addMarkedEdgesInSubMesh( std::shared_ptr<MeshType> const& mesh, typename MeshType::face_type const& oldFace,
+                              std::map<IndexT, IndexT> const& new_node_numbers, IndexT& n_new_faces,
+                              std::shared_ptr<SubMeshType>& newMesh, std::set<IndexT>& oldEdgeIdsDone )
 {
-    typedef typename SubMeshType::face_type new_face_type;
-    const int proc_id = newMesh->worldComm().localRank();
-
-    for ( uint16_type s=0; s< MeshType::face_type::numLocalEdges; s++ )
+    if constexpr ( MeshType::nDim == 3 )
     {
-        //if ( !oldFace.edgePtr( s ) ) continue;
-        if ( !oldFace.facePtr( s ) ) continue;
-        // get the corresponding edge
-        auto const& oldEdge = oldFace.edge( s );
-        // ignore edge if no marker assigned
-        if ( !oldEdge.hasMarker() ) continue;
-        size_type oldEdgeId = oldEdge.id();
-        // ignore edge if already done
-        if( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
-            continue;
+        typedef typename SubMeshType::face_type new_face_type;
+        const int proc_id = newMesh->worldComm().localRank();
 
-        if ( mesh->hasEdge( oldEdgeId ) )
+        for ( uint16_type s = 0; s < MeshType::face_type::numLocalEdges; s++ )
         {
-            new_face_type newFace;
-            newFace.setId( n_new_faces++ );
-            newFace.setMarkers( oldEdge.markers() );
-            newFace.setProcessIdInPartition( proc_id );
-            newFace.setProcessId( proc_id );
-            // very important! updateForUse put false for internalfaces after
-            newFace.setOnBoundary( true );
-            for ( uint16_type p = 0; p < newFace.nPoints(); ++p )
-                newFace.setPoint( p, newMesh->point( new_node_numbers.find( oldEdge.point(p).id())->second ) );
-            // add it to the list of edges
-            newMesh->addFace( newFace );
-            oldEdgeIdsDone.insert( oldEdgeId );
+            //if ( !oldFace.edgePtr( s ) ) continue;
+            if ( !oldFace.facePtr( s ) ) continue;
+            // get the corresponding edge
+            auto const& oldEdge = oldFace.edge( s );
+            // ignore edge if no marker assigned
+            if ( !oldEdge.hasMarker() ) continue;
+            size_type oldEdgeId = oldEdge.id();
+            // ignore edge if already done
+            if ( oldEdgeIdsDone.find( oldEdgeId ) != oldEdgeIdsDone.end() )
+                continue;
+
+            if ( mesh->hasEdge( oldEdgeId ) )
+            {
+                new_face_type newFace;
+                newFace.setId( n_new_faces++ );
+                newFace.setMarkers( oldEdge.markers() );
+                newFace.setProcessIdInPartition( proc_id );
+                newFace.setProcessId( proc_id );
+                // very important! updateForUse put false for internalfaces after
+                newFace.setOnBoundary( true );
+                for ( uint16_type p = 0; p < newFace.nPoints(); ++p )
+                    newFace.setPoint( p, newMesh->point( new_node_numbers.find( oldEdge.point( p ).id() )->second ) );
+                // add it to the list of edges
+                newMesh->addFace( newFace );
+                oldEdgeIdsDone.insert( oldEdgeId );
+            }
         }
     }
 }
@@ -349,7 +352,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             {
                 auto const& oldPoint = oldElem.point( n );
                 size_type oldPointId = oldPoint.id();
-                size_type newPtId = invalid_size_type_value;
+                size_type newPtId = invalid_v<size_type>;
                 auto itFindPoint = new_node_numbers.find( oldPointId );
                 if ( itFindPoint != new_node_numbers.end() )
                 {
@@ -360,7 +363,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
                     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] insert point " << oldPoint << "\n";
                     newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
                     new_node_numbers[oldPointId] = newPtId;
-                    point_type pt( newPtId, oldPoint  );
+                    point_type pt( newPtId, oldPoint, false, M_isView );
                     pt.setProcessIdInPartition( proc_id );
                     pt.setProcessId( proc_id );
                     pt.setMarkers( oldPoint.markers() );
@@ -397,9 +400,10 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             } // for (unsigned int n=0 ... )
 
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem,true );
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            auto [eit,inserted] = newMesh->addElement( newElem,true );
+            auto const& [eid,e] = *eit;
+            new_element_id[oldElem.id()] = eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
 
             // add marked faces for this element
             for ( uint16_type s=0; s<oldElem.numTopologicalFaces; s++ )
@@ -432,7 +436,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
 
             // add marked edges in 3d for this element
             Feel::detail::addMarkedEdgesInSubMesh( M_mesh, oldElem, new_node_numbers, n_new_edges,
-                                                   newMesh, oldEdgeIdsDone, mpl::bool_<mesh_type::nDim==3>() );
+                                                   newMesh, oldEdgeIdsDone );
         } //  for( ; it != en; ++ it )
     } // for (auto& itList : M_listRange)
 
@@ -581,7 +585,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             {
                 auto const& oldPoint = oldElem.point( n );
                 size_type oldPointId = oldPoint.id();
-                size_type newPtId = invalid_size_type_value;
+                size_type newPtId = invalid_v<size_type>;
                 auto itFindPoint = new_node_numbers.find( oldPointId );
                 if ( itFindPoint != new_node_numbers.end() )
                 {
@@ -592,7 +596,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] insert point " << oldPoint << "\n";
                     newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
                     new_node_numbers[oldPointId] = newPtId;
-                    typename mesh_faces_type::point_type pt( newPtId, oldPoint  );
+                    typename mesh_faces_type::point_type pt( newPtId, oldPoint, false, M_isView );
                     pt.setProcessIdInPartition( proc_id );
                     pt.setProcessId( proc_id );
                     pt.setMarkers( oldPoint.markers() );
@@ -646,14 +650,15 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             } // end for n
 
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem, true );
+            auto [eit,inserted] = newMesh->addElement( newElem, true );
+            auto const& [eid,e] = *eit;
             // update mesh relation
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            new_element_id[oldElem.id()]= eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
             DVLOG(2) << "connecting new face to " << e.id() << " face " << oldElem.id();
             // add marked edges in 3d as marked faces for this element
             Feel::detail::addMarkedEdgesInSubMesh( M_mesh, oldElem, new_node_numbers, n_new_faces,
-                                                   newMesh, oldEdgeIdsDone, mpl::bool_<mesh_type::nDim==3>() );
+                                                   newMesh, oldEdgeIdsDone );
         } // end for it
     } // for (auto& itList : M_listRange)
 
@@ -779,7 +784,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             {
                 auto const& oldPoint = oldElem.point( n );
                 size_type oldPointId = oldPoint.id();
-                size_type newPtId = invalid_size_type_value;
+                size_type newPtId = invalid_v<size_type>;
                 auto itFindPoint = new_node_numbers.find( oldPointId );
                 if ( itFindPoint != new_node_numbers.end() )
                 {
@@ -790,7 +795,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
                     DVLOG(2) << "[Mesh<Shape,T>::CreateSubmesh] insert point " << oldPoint << "\n";
                     newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
                     new_node_numbers[oldPointId] = newPtId;
-                    typename mesh_edges_type::point_type pt( newPtId, oldPoint );
+                    typename mesh_edges_type::point_type pt( newPtId, oldPoint, false, M_isView );
                     pt.setProcessIdInPartition( proc_id );
                     pt.setProcessId( proc_id );
                     pt.setMarkers( oldPoint.markers() );
@@ -851,10 +856,11 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             CHECK( newElem.facePtr(1) ) << "invalid face 1 in edge";
 #endif
             // Add an equivalent element type to the new_mesh
-            auto const& e = newMesh->addElement( newElem, true );
+            auto [eit,inserted] = newMesh->addElement( newElem, true );
+            auto const& [eid,e] = *eit;
             // update mesh relation
-            new_element_id[oldElem.id()]= e.id();
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( e.id(), oldElem.id() ) );
+            new_element_id[oldElem.id()]= eid;
+            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
         } // end for it
     } // for ( ; itListRange!=enListRange ; ++itListRange)
 
@@ -1047,7 +1053,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
         for ( size_type idEltRecv : dataToRecvPair.second )
         {
             // search id
-            size_type idEltInNewMesh = invalid_size_type_value;
+            size_type idEltInNewMesh = invalid_v<size_type>;
             auto const itFindId = new_element_id.find(idEltRecv);
             if ( itFindId != new_element_id.end() )
             {
@@ -1083,7 +1089,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
         for ( size_type k=0;k<dataToRecvPair.second.size();++k )
         {
             size_type idEltActiveInOtherProc = dataToRecvPair.second[k];
-            if ( idEltActiveInOtherProc == invalid_size_type_value )
+            if ( idEltActiveInOtherProc == invalid_v<size_type> )
                 continue;
 
             auto const& memoryPair = memoryDataToSend[rankRecv][k];
@@ -1150,7 +1156,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                 {
                     auto const& oldPoint = oldElem.point( n );
                     size_type oldPointId = oldPoint.id();
-                    size_type newPtId = invalid_size_type_value;
+                    size_type newPtId = invalid_v<size_type>;
                     auto itFindPoint = new_node_numbers.find( oldPointId );
                     if ( itFindPoint != new_node_numbers.end() )
                         newPtId = itFindPoint->second;
@@ -1160,7 +1166,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                         newPtId = (renumberPoint)? n_new_nodes++ : oldPointId;
                         new_node_numbers[oldPointId] = newPtId;
                         // create point and keep default process id because point not in partition ( invalid_rank_value_type )
-                        point_type pt( newPtId, oldPoint );
+                        point_type pt( newPtId, oldPoint, false, M_isView );
                         pt.setProcessIdInPartition( proc_id );
                         pt.setProcessId( invalid_rank_type_value );
                         pt.setMarkers( oldPoint.markers() );
@@ -1196,9 +1202,9 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                 newElem.setIdInOtherPartitions( rankRecv, idEltActiveInOtherProc );
 
                 // Add an equivalent element type to the new_mesh
-                auto const& e = newMesh->addElement( newElem, true );
+                auto [eit,inserted] = newMesh->addElement( newElem, true );
+                auto const& [newEltId,e] = *eit;
 
-                const size_type newEltId = e.id();
                 ghostOldEltDone[oldElem.id()]= std::make_pair(newEltId,e.processId());
                 // update mesh relation
                 M_smd->bm.insert( typename smd_type::bm_type::value_type( newEltId, oldEltId ) );
@@ -1265,7 +1271,7 @@ createSubmeshTool( std::shared_ptr<MeshType> inputMesh,
     t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t;
 }
-
+#if 0
 /**
  * @brief create a submesh
  * @code
@@ -1306,6 +1312,42 @@ createSubmesh( std::shared_ptr<MeshType> inputMesh,
     auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,wc,updateComponentsMesh );
     t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
     return t.build(ctx);
+}
+#endif
+
+
+namespace detail
+{
+template<typename Args>
+struct createSubmesh
+{
+    using mesh_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< typename parameter::binding<Args, tag::mesh>::type >::type >::type;
+    using range_type = typename Feel::meta::remove_all< typename parameter::binding<Args, tag::range>::type >::type;
+    using ptrtype = typename CreateSubmeshTool<mesh_type,typename Feel::detail::submeshrangetype<range_type>::type,mesh_type::tag>::mesh_build_ptrtype;
+};
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( typename Feel::detail::createSubmesh< Args>::ptrtype ), // return type
+    createSubmesh,    // 2. function name
+    tag,           // 3. namespace of tag types
+    ( required
+      ( mesh, *)
+      ( range, *)
+      ) // 4. one required parameter, and
+    ( optional
+      ( worldcomm,  *, mesh->worldCommPtr() )
+      ( context,    *(boost::is_integral<mpl::_>), EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT )
+      ( update,     *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+      ( only_on_boundary_faces, (bool), false )
+      ( view, (bool), false )
+      )
+                         )
+{
+    auto t = createSubmeshTool/*<MeshType,IteratorRange,TheTag>*/( mesh,range,worldcomm,update );
+    t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
+    t.setIsView( view );
+    return t.build(context);
 }
 
 /**

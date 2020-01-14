@@ -52,22 +52,19 @@ readHBF( std::string const& s )
         header += ch;
         ++count;
     }
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "header: " << header << "\n";
-        std::cout << count << std::endl;
-    }
+    LOG(INFO) << "header: " << header << "\n";
+    LOG(INFO) << count << std::endl;
+
     int32_t version = 0;
     in.read( (char*)&version, sizeof( int32_t ) );
     int32_t rows=0, cols=0;
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
-    if ( Environment::isMasterRank() )
-        std::cout << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+    LOG(INFO) << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
     Eigen::MatrixXf x( cols, rows  );
     in.read( (char*)x.data(), x.size()*sizeof(float) );
     if(x.rows() <= 6 && x.cols() <= 6)
-        std::cout << x << std::endl;
+        LOG(INFO) << x << std::endl;
    // if ( Environment::isMasterRank() )
        // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     return x.transpose();
@@ -76,44 +73,39 @@ readHBF( std::string const& s )
 void
 writeHBF( std::string const& s, holo3_image<float> const& x )
 {
-    #if 0  
+    if ( Environment::isMasterRank() )
+    {
+#if 0  
         std::ofstream out( Environment::expand(s).c_str(), std::ios::binary );
-    #else 
+#else 
         std::ofstream out( s, std::ios::binary );
-    #endif    
-    if ( !out )
-    {
-        std::cout << "Error opening file " << s.c_str() << std::endl;
-        exit(0);
-    }
-    const char* header = "class CH3Array2D<float> *";
-    out.write( header, strlen(header) );
-    out.write( "\0",sizeof(char) );
+#endif    
+        if ( !out )
+        {
+            Feel::cout << "Error opening file " << s.c_str() << std::endl;
+            exit(0);
+        }
+        const char* header = "class CH3Array2D<float> *";
+        out.write( header, strlen(header) );
+        out.write( "\0",sizeof(char) );
+        
+        LOG(INFO) << "writeHBF: write header " << header << "\n";
 
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: write header " << header << "\n";
-    }
-    int32_t version = 100;
-    out.write( (char*)&version, sizeof(int32_t) );
-    int32_t rows=x.rows(), cols=x.cols();
-    out.write( (char*)&rows, sizeof(int32_t) );
-    out.write( (char*)&cols, sizeof(int32_t) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
-    }
+        int32_t version = 100;
+        out.write( (char*)&version, sizeof(int32_t) );
+        int32_t rows=x.rows(), cols=x.cols();
+        out.write( (char*)&rows, sizeof(int32_t) );
+        out.write( (char*)&cols, sizeof(int32_t) );
+        LOG(INFO) << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
 
+        out.write( (char*)x.data(),x.size()*sizeof(float) );
 
-    out.write( (char*)x.data(),x.size()*sizeof(float) );
-    if ( Environment::isMasterRank() )
-    {
-        std::cout << "writeHBF: array written to disk" << std::endl;
+        LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
+
+        if(x.rows() <= 6 && x.cols() <= 6)
+            Feel::cout << x << std::endl;
+        LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     }
-    if(x.rows() <= 6 && x.cols() <= 6)
-        std::cout << x << std::endl;
-    if ( Environment::isMasterRank() )
-        std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
 }
 
 
@@ -164,14 +156,14 @@ Hbf2Feelpp::Hbf2Feelpp( int nx, int ny, q1_space_ptrtype Yh ):M_rows(ny), M_cols
             }
         }
     }
-    toc("structured 2 feelpp relation");
+    toc("structured 2 feelpp relation",FLAGS_v>0);
 }
 
 Hbf2Feelpp::q1_element_type
 Hbf2Feelpp::operator()( holo3_image<float> const& x )
 {
     q1_element_type u( M_Xh );
-    for( auto dof : M_relation.left )
+    for( auto const& dof : M_relation.left )
     {
         u( dof.second ) = x(dof.first.first,dof.first.second);
     }
@@ -189,60 +181,76 @@ Hbf2Feelpp::operator()( holo3_image<float> const& x )
 Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_rows(ny), M_cols(nx), M_Xh( Yh )
 {
     tic();
-    std::cout << "Hbf2FeelppStruc relation creation \n";
-    std::cout << nx << " : " << ny <<std::endl;
+    LOG(INFO) << "Hbf2FeelppStruc relation creation \n";
+    LOG(INFO) << nx << " : " << ny <<std::endl;
     
     int procSize = Environment::worldComm().godSize();
     rank_type partId = Environment::worldComm().localRank(); 
     int cx[procSize+1];
     for (int tmpProc=0;tmpProc<=procSize;tmpProc++)
-        cx[tmpProc]=(tmpProc)*(nx-1)/procSize;
+        cx[tmpProc]=(tmpProc)*(M_rows-1)/procSize;
 
-    auto relation = Yh->dof()->pointIdToDofRelation();
-    //LOG(INFO) << "relation.size() = " << relation.first.size() << "\t" << relation.second.size()<< std::endl;
-//#pragma omp parallel for
-    for( int i = 0; i < ny; ++i )
+    tic();
+    auto [dof2pid, pid2dof] = Yh->dof()->pointIdToDofRelation("", false, true );
+    toc("pidToDof relation",FLAGS_v>0);
+    for( int i = std::max(cx[partId]-1,0); i <= std::min(cx[partId+1]+1,M_rows-1); ++i )
     {
-        for( int j = std::max(cx[partId]-1,0); j <= std::min(cx[partId+1]+1,nx-1); ++j )
-        //for( int j = cx[partId]; j < cx[partId+1]; ++j )
+        for( int j = 0; j < M_cols; ++j )
         {
-            //LOG(INFO) << i << " : " << j << "\t->\t" << (nx)*i+j << std::endl;
-            //int grid_vid = (nx+1)*i+j;
-            //int dofid = relation.second[grid_vid];
-            //int dofid = (nx+1)*i+j;
-            M_relation.insert( dof_relation( std::make_pair(i,j), relation.second[(nx)*i+j] ));
-           //int dofid = (ny/procSize)*(j%((nx)/procSize))+i;
-           //int dofid = (nx)*(i%(ny/procSize))+j;
-           //std::cout << "r : " << relation.second[(nx)*i+j] <<  std::endl;
-           //std::cout << "r : " << relation.second[(nx)*i+j] << " dof : "<< dofid << std::endl;
-           //if (relation.second[nx*i+j] != dofid) 
-           //     std::cout << "STOOOOOOOOOOOP ------------------------------------"<< "r : " << relation.second[(nx)*i+j] << " dof : "<< dofid  << std::endl;
-           //M_relation.insert( dof_relation( std::make_pair(i,j), dofid ));
-       }
+            M_relation.push_back( dof_relation( std::make_pair(i,j), pid2dof[(M_cols)*i+j] ));
+        }
     }
-    //std::cout << "M_relation.size() = " << M_relation.size() << std::endl;
-    toc("structured 2 feelpp relation");
+    toc("structured 2 feelpp relation",FLAGS_v>0);
 }
 
 Hbf2FeelppStruc::q1_element_type
 Hbf2FeelppStruc::operator()( holo3_image<float> const& x )
 {
-    q1_element_type u( M_Xh );
-    //std::cout << "u.nDof() = " << u.nDof() << std::endl;
-    //std::cout << "M_relation.size() = " << M_relation.size() << std::endl;
-//#pragma omp parallel for
+    tic();
+    q1_element_type u = M_Xh->element();
+    toc("h2f", FLAGS_v>0);
+    tic();
     for( auto const & dof : M_relation.left )
     {
-        //LOG(INFO) << "dof.second = " << dof.second << " = " << dof.first.first << " : " << dof.first.second << std::endl;
-        //tic();
         u( dof.second ) = x(dof.first.first,dof.first.second);
-        //toc("hbfTOFeel::operator()");
     }
+    toc("h2f dof", FLAGS_v>0);
+    tic();
     sync(u,"=");
     u.close();
+    toc("h2f sync+close()", FLAGS_v>0);
     return u;
 
+
 }
+
+holo3_image<float>
+Hbf2FeelppStruc::operator()( q1_element_type const& u )
+{
+    tic();
+    holo3_image<float> y( M_rows, M_cols );
+    y = holo3_image<float>::Zero( M_rows, M_cols );
+    std::vector<int> sizes;
+    mpi::all_gather( Environment::worldComm(), (int)u.dof()->nLocalDofWithoutGhost(), sizes );
+    
+    for( auto const& dof : M_relation.left )
+    {
+        DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+        DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+        y( dof.first.first, dof.first.second ) = u(dof.second);
+    }
+    int p = Environment::rank();
+    int pm1 = (p==0)?0:p-1;
+    int s = 0;
+    for( int i = 0; i < p; ++i )
+        s += sizes[i];
+    holo3_image<float> x = y;
+    mpi::gatherv( Environment::worldComm(), y.data()+s, sizes[p], 
+                  x.data(), sizes, 0 );
+    toc("H2F feelpp to holo3_image",FLAGS_v>0);
+    return x;
+}
+
 
 Hbf2FeelppStruc::q1_element_type
 Hbf2FeelppStruc::operator()( holo3_image<float> const& x, q1_element_type u)

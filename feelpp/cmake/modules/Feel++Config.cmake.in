@@ -53,6 +53,7 @@ set(FEELPP_MESH_MAX_ORDER "@FEELPP_MESH_MAX_ORDER@")
 set(FEELPP_INSTANTIATION_ORDER_MAX "@FEELPP_INSTANTIATION_ORDER_MAX@")
 
 set(BOOST_MIN_VERSION "@BOOST_MIN_VERSION@")
+set(BOOST_COMPONENTS_REQUIRED "@BOOST_COMPONENTS_REQUIRED@")
 # Add info about with what Feel++ has been built
 #set(FEELPP_HAS_GFLAGS "@FEELPP_HAS_GFLAGS@")
 #set(FEELPP_HAS_GLOG "@FEELPP_HAS_GLOG@" )
@@ -180,13 +181,13 @@ if (NOT FEELPP_DONT_SETUP_CMAKE)
 
   include(CMakeFindDependencyMacro)
 
-  if ( CMAKE_VERSION VERSION_LESS 3.10 )
-    find_dependency(MPI 1.61 )
-    find_dependency(Boost 1.61 )
-  else()
-    find_dependency(MPI 1.61 REQUIRED MODULE)
-    find_dependency(Boost 1.61 REQUIRED MODULE)
-  endif()
+  find_dependency(MPI REQUIRED)
+
+  # workaround bug https://github.com/boostorg/boost_install/issues/5
+  set(__org ${BUILD_SHARED_LIBS})
+  set(BUILD_SHARED_LIBS ON)
+  find_dependency(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
+  set(BUILD_SHARED_LIBS ${__org})
 
   if ( FEELPP_HAS_ANN )
     find_dependency( ANN )

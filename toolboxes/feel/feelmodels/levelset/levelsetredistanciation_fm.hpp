@@ -52,6 +52,7 @@ class LevelSetRedistanciationFM :
         static const uint16_type functionSpaceOrder = functionspace_type::fe_type::nOrder;
         static const uint16_type nOrder = functionspace_type::fe_type::nOrder;
         static constexpr uint16_type nDim = functionspace_type::nDim;
+        using size_type = typename functionspace_type::size_type;
         typedef typename functionspace_type::value_type value_type;
         // Element
         typedef typename functionspace_type::element_type element_type;

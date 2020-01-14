@@ -39,23 +39,24 @@ namespace Feel
 {
 
 
-template<typename T> class Backend;
+template<typename T, typename SizeT> class Backend;
 
 
 
-template <typename T=double>
-class BlocksBaseVector : public vf::BlocksBase<std::shared_ptr<Vector<T> > >
+template <typename T=double, typename SizeT = uint32_type>
+class BlocksBaseVector : public vf::BlocksBase<std::shared_ptr<Vector<T,SizeT> > >
 {
 public :
-    typedef vf::BlocksBase<std::shared_ptr<Vector<T> > > super_type;
-    typedef BlocksBaseVector<T> self_type;
-    typedef Vector<T> vector_type;
+    using size_type = SizeT;
+    typedef vf::BlocksBase<std::shared_ptr<Vector<T,SizeT> > > super_type;
+    typedef BlocksBaseVector<T,SizeT> self_type;
+    typedef Vector<T,SizeT> vector_type;
     typedef std::shared_ptr<vector_type> vector_ptrtype;
-    typedef std::shared_ptr<Backend<T> > backend_ptrtype;
+    typedef std::shared_ptr<Backend<T,SizeT> > backend_ptrtype;
     //using local_vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
 
     BlocksBaseVector(uint16_type nr = 0,
-                     backend_ptr_t<T> b = backend() )
+                     backend_ptr_t<T,size_type> b = backend() )
         :
         super_type(nr,1),
         M_backend( b )
@@ -70,7 +71,7 @@ public :
     {}
 
     template<typename PS>
-    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T,size_type> b = backend(),
                       std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
         :
         super_type( ps.numberOfSpaces(), 1 ),
@@ -85,14 +86,12 @@ public :
                                           {
                                               for( int i = 0; i < x->numberOfSpaces(); ++i, ++n )
                                               {
-                                                  cout << "creating dyn vector block (" << n << "," << i  << ")\n";
                                                   (*this)(n,0) = (*x)[i]->elementPtr();
                                               }
 
                                           },
                                           [&]( auto&& x )
                                           {
-                                              cout << "creating vector block (" << n  << ")\n";
                                               (*this)(n,0) = x->elementPtr();
                                               ++n;
                                           } )(e);
@@ -103,7 +102,7 @@ public :
         }
 
     template<typename PS>
-    BlocksBaseVector( PS&& ps, backend_ptr_t<T> b = backend(),
+    BlocksBaseVector( PS&& ps, backend_ptr_t<T,size_type> b = backend(),
                       std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
         :
         super_type( ps.numberOfSpaces(), 1 ),
@@ -236,8 +235,8 @@ public :
  * @author Vincent Chabannes
  */
 
-template< typename T>
-class VectorBlockBase: public Vector<T>
+template< typename T, typename SizeT = uint32_type>
+class VectorBlockBase: public Vector<T, SizeT>
 {
 
 public:
@@ -246,10 +245,11 @@ public:
      */
     //@{
 
-    using super = Vector<T>;
+    using super = Vector<T, SizeT>;
     typedef VectorBlockBase<T> self_type;
     using value_type = typename super::value_type;
     using real_type = typename super::real_type;
+    using size_type = typename super::size_type;
     
     typedef Backend<value_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
@@ -286,6 +286,9 @@ public:
      */
     //@{
 
+    void setBackend( backend_ptrtype const& b ) { M_backend = b; } 
+    backend_ptrtype backend() const { return M_backend; }
+    
     VectorBlockBase& operator=( VectorBlockBase const& vb ) = default;
     VectorBlockBase& operator=( VectorBlockBase && vb ) = default;
 
@@ -375,20 +378,22 @@ protected:
 
 private:
 
+    backend_ptrtype M_backend;
     vector_ptrtype M_vec;
 };
 
 
-template<int NR, typename T>
-class VectorBlock : public VectorBlockBase<T>
+template<int NR, typename T, typename SizeT = uint32_type>
+class VectorBlock : public VectorBlockBase<T, SizeT>
 {
-    typedef VectorBlockBase<T> super_type;
+    typedef VectorBlockBase<T, SizeT> super_type;
 
 public:
 
     static const uint16_type NBLOCKROWS = NR;
 
     typedef typename super_type::value_type value_type;
+    using size_type = typename super_type::size_type;
     typedef typename super_type::vector_ptrtype vector_ptrtype;
     typedef typename super_type::backend_type backend_type;
     //typedef vf::Blocks<NBLOCKROWS,1,vector_ptrtype > blocks_type;
@@ -480,13 +485,13 @@ vectorBlocks( const Arg& arg,
  */
 template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
-BlocksBaseVector<double>
+BlocksBaseVector<double,uint32_type>
 blockVector( PS && ps, backend_ptrtype b = backend(),
              std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     const int size = ps.numberOfSpaces();
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
-    BlocksBaseVector<double> g( size, b );
+    BlocksBaseVector<double,uint32_type> g( size, b );
 
     int n = 0;
     hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
@@ -509,11 +514,11 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
 }
 
 template<typename PS>
-BlocksBaseVector<double>
+BlocksBaseVector<double,uint32_type>
 blockVector( PS && ps, backend_ptrtype b = backend(),
              std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
-    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+    BlocksBaseVector<double,uint32_type> g( ps.numberOfSpaces(), b );
 
     for( int i = 0; i < ps.numberOfSpaces(); ++i )
         g(i,0) = b->newVector( ps[i] );
@@ -522,13 +527,13 @@ blockVector( PS && ps, backend_ptrtype b = backend(),
 
 template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
-BlocksBaseVector<double>
+BlocksBaseVector<double,uint32_type>
 blockElement( PS && ps, backend_ptrtype b = backend(),
               std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     const int size = hana::size(ps.tupleSpaces());
     //BlocksBaseVector<typename decay_type<PS>::value_type> g( size, backend() );
-    BlocksBaseVector<double> g( size, b );
+    BlocksBaseVector<double,uint32_type> g( size, b );
 
     int n = 0;
     hana::for_each( ps.tupleSpaces(), [&]( auto const& e )
@@ -542,11 +547,11 @@ blockElement( PS && ps, backend_ptrtype b = backend(),
 
 template<typename PS>
 //BlocksBaseVector<typename decay_type<PS>::value_type>
-BlocksBaseVector<double>
+BlocksBaseVector<double,uint32_type>
 blockElement( PS && ps, backend_ptrtype b = backend(),
               std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
-    BlocksBaseVector<double> g( ps.numberOfSpaces(), b );
+    BlocksBaseVector<double,uint32_type> g( ps.numberOfSpaces(), b );
 
     int n = 0;
     for( int i = 0;i < ps.numberOfSpaces(); ++i )

@@ -1,0 +1,7 @@
+{
+    "k":"k0*heat_T/((1+alpha*(heat_T-T0))*T0):k0:heat_T:alpha:T0",
+    // "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
+    //"Cp":"1000.005", //[ J/(kg*K) ]
+    // "rho":"1.205", //[ kg/(m^3) ]
+    "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
+}

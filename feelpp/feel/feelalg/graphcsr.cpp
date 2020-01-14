@@ -47,8 +47,8 @@ GraphCSR::GraphCSR( size_type n,
     M_n_nz( n, 0 ),
     M_n_oz( n, 0 ),
     M_storage(),
-    M_mapRow( new DataMap(this->worldCommPtr()) ),
-    M_mapCol( new DataMap(this->worldCommPtr()) )
+    M_mapRow( new datamap_type(this->worldCommPtr()) ),
+    M_mapCol( new datamap_type(this->worldCommPtr()) )
 {
     const int myrank = this->worldComm().globalRank();
     const int worldsize = this->worldComm().globalSize();
@@ -103,8 +103,8 @@ GraphCSR::GraphCSR( size_type n,
 }
 
 
-GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
-                    std::shared_ptr<DataMap> const& mapCol )
+GraphCSR::GraphCSR( datamap_ptrtype const& mapRow,
+                    datamap_ptrtype const& mapCol )
     :
     super( mapRow->worldCommPtr() ),
     M_is_closed( false ),
@@ -117,8 +117,8 @@ GraphCSR::GraphCSR( std::shared_ptr<DataMap> const& mapRow,
     M_mapCol(mapCol)
 {}
 
-GraphCSR::GraphCSR( DataMap const& mapRow,
-                    DataMap const& mapCol )
+GraphCSR::GraphCSR( datamap_type const& mapRow,
+                    datamap_type const& mapCol )
     :
     super( mapRow.worldCommPtr() ),
     M_is_closed( false ),
@@ -127,8 +127,8 @@ GraphCSR::GraphCSR( DataMap const& mapRow,
     M_n_nz( 0 ),
     M_n_oz( 0 ),
     M_storage(),
-    M_mapRow( new DataMap(mapRow) ),
-    M_mapCol( new DataMap(mapCol) )
+    M_mapRow( new datamap_type(mapRow) ),
+    M_mapCol( new datamap_type(mapCol) )
 {}
 
 
@@ -254,13 +254,13 @@ GraphCSR::updateDataMap( vf::BlocksBase<self_ptrtype> const & blockSet )
     }
     else
     {
-        std::vector<std::shared_ptr<DataMap> > listofdmRow, listofdmCol;
+        std::vector<datamap_ptrtype > listofdmRow, listofdmCol;
         for ( uint i=0; i<nRow; ++i )
             listofdmRow.push_back( blockSet(i,0)->mapRowPtr() );
         for ( uint i=0; i<nCol; ++i )
             listofdmCol.push_back( blockSet(0,i)->mapColPtr() );
-        M_mapRow.reset( new DataMap( listofdmRow, this->worldCommPtr() ) );
-        M_mapCol.reset( new DataMap( listofdmCol, this->worldCommPtr() ) );
+        M_mapRow.reset( new datamap_type( listofdmRow, this->worldCommPtr() ) );
+        M_mapCol.reset( new datamap_type( listofdmCol, this->worldCommPtr() ) );
     }
 }
 
@@ -389,7 +389,7 @@ GraphCSR::mergeBlockGraphMPI( self_ptrtype const& g,vf::BlocksBase<self_ptrtype>
 
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -399,7 +399,7 @@ GraphCSR::nLocalDofWithoutGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> cons
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -409,7 +409,7 @@ GraphCSR::nLocalDofWithoutGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> cons
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -419,7 +419,7 @@ GraphCSR::nLocalDofWithGhostOnProcStartRow( vf::BlocksBase<self_ptrtype> const &
     return nDofStart;
 }
 
-size_type
+typename GraphCSR::size_type
 GraphCSR::nLocalDofWithGhostOnProcStartCol( vf::BlocksBase<self_ptrtype> const & blockSet, int proc, int rowIndex, int colIndex ) const
 {
     size_type nDofStart=0;
@@ -540,7 +540,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     CHECK( idExtractCol.size() == subMapCol->nLocalDofWithGhost() ) << "invalid size " << idExtractCol.size() << " vs "<< subMapCol->nLocalDofWithGhost();
 
     // container ( with optimized access ) for global dof active on proc ( pair : globalProcessDof, globalClusterDof )
-    std::vector<std::pair<size_type,size_type> > relationDofActiveRow( theMapRow.nLocalDofWithoutGhost(),std::make_pair(invalid_size_type_value,invalid_size_type_value) );
+    std::vector<std::pair<size_type,size_type> > relationDofActiveRow( theMapRow.nLocalDofWithoutGhost(),std::make_pair(invalid_v<size_type>,invalid_v<size_type>) );
     // container ( map ) for non active global dof ( pair : globalProcessDof, globalClusterDof )
     std::map<size_type,std::pair<size_type,size_type> > relationDofNonActiveRow;
     size_type subDofGPCounter = 0;
@@ -556,7 +556,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     }
 
     // container ( with optimized access ) for global dof active on proc
-    std::vector<size_type> relationDofActiveCol( theMapCol.nLocalDofWithoutGhost(),invalid_size_type_value );
+    std::vector<size_type> relationDofActiveCol( theMapCol.nLocalDofWithoutGhost(),invalid_v<size_type> );
     // container ( map ) for non active global dof
     std::map<size_type,size_type> relationDofNonActiveCol;
     subDofGPCounter = 0;
@@ -578,7 +578,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
     {
         size_type gdofRow = it->first;
 
-        size_type subDofRowGP = invalid_size_type_value, subDofRowGC = invalid_size_type_value;
+        size_type subDofRowGP = invalid_v<size_type>, subDofRowGC = invalid_v<size_type>;
         if ( theMapRow.dofGlobalClusterIsOnProc( gdofRow ) )
         {
             subDofRowGP = relationDofActiveRow[gdofRow-firstDofGCrow].first;
@@ -594,7 +594,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
             }
         }
         // ignore this row if dof not present in extraction
-        if ( subDofRowGC == invalid_size_type_value ) continue;
+        if ( subDofRowGC == invalid_v<size_type> ) continue;
 
         // Get the row of the sparsity pattern
         row_type const& datarow = it->second;
@@ -606,7 +606,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
         // iterate on each column dof
         for ( size_type dofColGC : datarow.get<2>() )
         {
-            size_type subDofColGC = invalid_size_type_value;
+            size_type subDofColGC = invalid_v<size_type>;
             if ( theMapCol.dofGlobalClusterIsOnProc( dofColGC ) )
             {
                 subDofColGC = relationDofActiveCol[dofColGC-firstDofGCcol];
@@ -620,7 +620,7 @@ GraphCSR::createSubGraph( std::vector<size_type> const& _rows, std::vector<size_
                 }
             }
             // add column indice if dof present in extraction
-            if ( subDofColGC != invalid_size_type_value )
+            if ( subDofColGC != invalid_v<size_type> )
                 subdatarow.get<2>().insert( subDofColGC );
         }
     }
@@ -1078,7 +1078,7 @@ GraphCSR::showMe( std::ostream& __out ) const
 void
 GraphCSR::printPython( std::string const& nameFile ) const
 {
-
+#if 0
 #if 0
     std::cout << "first_row_entry_on_proc " << this->firstRowEntryOnProc() << std::endl;
     std::cout << "last_row_entry_on_proc " << this->lastRowEntryOnProc() << std::endl;
@@ -1143,7 +1143,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
             if (M_storage.size() > 0)
                 {
-                    for ( auto it = M_storage.begin(), en = --M_storage.end() ; it != en; ++it )
+                    for ( auto it = M_storage.begin(), en = std::prev(M_storage.end()) ; it != en; ++it )
                         {
                             auto const& row = it->second;
 
@@ -1151,7 +1151,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
                                 for ( auto it2 = row.get<2>().begin(), en2= row.get<2>().end() ; it2!=en2 ; ++it2 )
                                     graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";// << std::endl;
                         }
-                    auto it = --M_storage.end();
+                    auto it = std::prev(M_storage.end());
                     auto const& row = it->second;
 
                     if ( ( int )row.get<0>()==proc )
@@ -1160,11 +1160,11 @@ GraphCSR::printPython( std::string const& nameFile ) const
                                 {
                                     if ( row.get<2>().size()>1 )
                                         {
-                                            for ( auto it2 = row.get<2>().begin(), en2= --row.get<2>().end() ; it2!=en2 ; ++it2 )
+                                            for ( auto it2 = row.get<2>().begin(), en2= std::prev(row.get<2>().end()) ; it2!=en2 ; ++it2 )
                                                 graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ],";
                                         }
 
-                                    auto it2 = --row.get<2>().end();
+                                    auto it2 = std::prev(row.get<2>().end());
 
                                     if ( proc==this->worldComm().globalSize()-1 || M_storage.size()==1 )
                                         graphFile << "[" << it->first << " , " << *it2 << " , 1.0 ] ])" << std::endl;
@@ -1203,7 +1203,7 @@ GraphCSR::printPython( std::string const& nameFile ) const
 
     }
 
-
+#endif
 } // printPython
 
 void
@@ -1211,8 +1211,8 @@ BlocksBaseGraphCSR::close()
 {
     if ( this->isClosed() ) return;
 
-    std::vector<std::shared_ptr<DataMap> > dataMapRowRef(this->nRow());
-    std::vector<std::shared_ptr<DataMap> > dataMapColRef(this->nCol());
+    std::vector<datamap_ptrtype<>> dataMapRowRef(this->nRow());
+    std::vector<datamap_ptrtype<>> dataMapColRef(this->nCol());
 
     // search a reference row datamap foreach row
     for ( index_type i=0 ; i<this->nRow() ;++i)

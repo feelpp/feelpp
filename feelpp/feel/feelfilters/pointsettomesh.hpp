@@ -106,7 +106,7 @@ public:
 
     typedef T value_type;
     typedef Convex convex_type;
-    typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim>::type mesh_convex_type;
+    typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim> mesh_convex_type;
 
     typedef PointSet<convex_type, value_type> pointset_type;
 
@@ -298,10 +298,7 @@ PointSetToMesh<Convex, T>::visit( pointset_type* pset, mpl::int_<1> )
             pf.setPoint( 1, M_mesh->point( __i+2 ) );
         }
 
-        element_type const& e  = M_mesh->addElement( pf );
-        DVLOG(2) << "o element " << e.id() << "\n"
-                      << "  p1 = " << e.point( 0 ).node() << "\n"
-                      << "  p2 = " << e.point( 1 ).node() << "\n";
+        M_mesh->addElement( pf );
     }
 
 

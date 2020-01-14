@@ -25,7 +25,6 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/elasticity/elasticity.hpp>
-#include <mpi4py/mpi4py.h>
 
 namespace py = pybind11;
 using namespace Feel;

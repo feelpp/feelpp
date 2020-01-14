@@ -61,8 +61,10 @@ namespace FeelModels {
 
 inline
 po::options_description
-makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
+makeMixedElasticityOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.elasticity" )
 {
+    std::string prefix = _toolbox_prefix.empty()?"hdg.elasticity":_toolbox_prefix;
+    
     po::options_description mpOptions( "Mixed Elasticity HDG options");
     mpOptions.add_options()
         ( prefixvm( prefix, "gmsh.submesh").c_str(), po::value<std::string>()->default_value( "" ), "submesh extraction" )
@@ -82,7 +84,7 @@ makeMixedElasticityOptions( std::string prefix = "mixedelasticity" )
 }
 
 inline po::options_description
-makeMixedElasticityLibOptions( std::string prefix = "mixedelasticity" )
+makeMixedElasticityLibOptions( std::string const&  _prefix = "", std::string const&  _toolbox_prefix = "hdg.elasticity" )
 {
     po::options_description mpLibOptions( "Mixed Elasticity HDG Lib options");
     // if ( !prefix.empty() )
@@ -217,27 +219,31 @@ protected:
 public:
 
     // constructor
-    MixedElasticity( std::string const& prefix = "mixedelasticity",
+    MixedElasticity( std::string const& prefix = "hdg.elasticity",
                      worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                      std::string const& subPrefix = "",
                      ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedElasticity( self_type const& ME ) = default;
-    static self_ptrtype New( std::string const& prefix = "mixedelasticity",
+    static self_ptrtype New( std::string const& prefix = "hdg.elasticity",
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
     mesh_ptrtype mesh() const { return M_mesh; }
-    Vh_ptr_t fluxSpace() const { return M_Vh; }
-    Wh_ptr_t potentialSpace() const { return M_Wh; }
+    FEELPP_DEPRECATED Vh_ptr_t fluxSpace() const { return M_Vh; }
+    Vh_ptr_t stressSpace() const { return M_Vh; }
+    FEELPP_DEPRECATED Wh_ptr_t potentialSpace() const { return M_Wh; }
+    Wh_ptr_t displacementSpace() const { return M_Wh; }
     Mh_ptr_t traceSpace() const { return M_Mh; }
     M0h_ptr_t traceSpaceOrder0() const { return M_M0h; }
     Ch_ptr_t constantSpace() const {return M_Ch;}
 
-    Vh_element_t fluxField() const { return M_up; }
-    Wh_element_t potentialField() const { return M_pp; }
+    FEELPP_DEPRECATED Vh_element_t const& fluxField() const { return M_up; }
+    Vh_element_t const& fieldStress() const { return M_up; }
+    FEELPP_DEPRECATED Wh_element_t potentialField() const { return M_pp; }
+    Wh_element_t fieldDisplacement() const { return M_pp; }
 
     integral_boundary_list_type integralBoundaryList() const { return M_IBCList; }
     int integralCondition() const { return M_integralCondition; }

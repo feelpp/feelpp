@@ -165,7 +165,7 @@ removeComments( std::string str )
 FEELPP_EXPORT void
 editPtreeFromOptions( pt::ptree& p, std::string const& prefix )
 {
-    if ( Environment::vm().count("json-editions") )
+    if ( Environment::vm().count(prefixvm(prefix, "json-editions")) )
     {
         std::vector<std::string> var_list = option( _name="json-editions", _prefix=prefix ).template as<std::vector<std::string>>();
 
@@ -187,15 +187,24 @@ editPtreeFromOptions( pt::ptree& p, std::string const& prefix )
                 std::string key = splited[0];
                 std::string value = splited[1];
 
-                try {
-                    p.get<std::string>( key );
-                }
-                catch ( pt::ptree_bad_path& e )
+                if ( auto ptreeAtKey = p.get_child_optional(key) )
                 {
-                    LOG(INFO) << "No entry \""<<key <<"\" found in ptree, add new entry with value="<< value << std::endl;
+                    if ( ptreeAtKey->empty() ) // value case
+                    {
+                        p.put( key, value );
+                    }
+                    else
+                    {
+                        ptreeAtKey->clear();
+                        p.put( key, value );
+                    }
+
                 }
-                p.put( key, value );
-                LOG(INFO)<< "ptree edition: entry "<< key <<" has new value "<< value <<std::endl;
+                else
+                {
+                    LOG(INFO)<< "ptree edition: entry "<< key <<" has new value "<< value <<std::endl;
+                    p.put( key, value );
+                }
             }
         }
     }

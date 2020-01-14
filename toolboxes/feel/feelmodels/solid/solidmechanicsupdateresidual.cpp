@@ -37,7 +37,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationary() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
         if ( M_timeStepping == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
@@ -92,7 +92,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // stress tensor terms
     this->timerTool("Solve").start();
 
-    if (M_pdeType=="Hyper-Elasticity")
+    if ( M_modelName == "Hyper-Elasticity" )
     {
         if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
         {
@@ -121,8 +121,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                _geomap=this->geomap() );
             }
         }
-    } // if (M_pdeType=="Hyper-Elasticity")
-    else if (M_pdeType=="Elasticity-Large-Deformation")
+    }
+    else if ( M_modelName =="Elasticity-Large-Deformation" )
     {
         if (!BuildCstPart)
             linearFormDisplacement +=
@@ -130,7 +130,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _expr= timeSteppingScaling*inner(Sv,grad(v)),
                            _geomap=this->geomap() );
     }
-    else if (M_pdeType=="Elasticity")
+    else if ( M_modelName == "Elasticity" )
     {
         if (!BuildCstPart && !UseJacobianLinearTerms)
             linearFormDisplacement +=
@@ -344,7 +344,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,
                                      _rowstart=rowStartInVector+blockIndexPressure );
 
-    if (M_pdeType=="Hyper-Elasticity")
+    if ( M_modelName == "Hyper-Elasticity" )
     {
         linearFormDisplacement +=
             integrate( _range=M_rangeMeshElements,
@@ -353,7 +353,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
                        _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,p,*this->mechanicalProperties()),grad(v) ),
                        _geomap=this->geomap() );
     }
-    else if (M_pdeType=="Elasticity-Large-Deformation" || M_pdeType=="Elasticity")
+    else if ( M_modelName == "Elasticity-Large-Deformation" || M_modelName == "Elasticity" )
     {
         //Identity Matrix
         auto Id = eye<nDim,nDim>();
@@ -495,7 +495,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
     }
 
     // update info for synchronization
-    this->updateDofEliminationIdsMultiProcess( "displacement", data );
+    this->updateDofEliminationIds( "displacement", data );
 
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".SolidMechanics","updateNewtonInitialGuess", "finish",
                                                this->worldComm(),this->verboseAllProc());
@@ -615,14 +615,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
 
     this->log("SolidMechanics","updateResidualDofElimination","start" );
 
-    vector_ptrtype& R = data.residual();
-
-    auto resFeViewDisp = M_XhDisplacement->element(R,this->rowStartInVector());
-    auto itFindDofsWithValueImposed = M_dofsWithValueImposed.find("displacement");
-    auto const& dofsWithValueImposedDisp = ( itFindDofsWithValueImposed != M_dofsWithValueImposed.end() )? itFindDofsWithValueImposed->second : std::set<size_type>();
-    for ( size_type thedof : dofsWithValueImposedDisp )
-        resFeViewDisp.set( thedof,0. );
-    sync( resFeViewDisp, "=", dofsWithValueImposedDisp );
+    this->updateDofEliminationIds( "displacement", data );
 
     this->log("SolidMechanics","updateResidualDofElimination","finish" );
 }

@@ -68,11 +68,11 @@ namespace Feel
  *  @author Christophe Prud'homme
  *  @see
  */
-template<typename Shape, typename T = double>
+template<typename Shape, typename T = double, typename IndexT = uint32_type>
 class Mesh0D
     :
         public VisitableBase<>,
-        public MeshBase,
+        public MeshBase<IndexT>,
         public Elements<Shape,T>,
         public Points<Shape::nRealDim,T>
 {
@@ -92,8 +92,11 @@ public:
     typedef typename VisitableBase<>::return_type return_type;
 
     typedef VisitableBase<> super_visitable;
-    typedef MeshBase super;
+    typedef MeshBase<IndexT> super;
 
+    using index_type = typename super::index_type;
+    using size_type = typename super::size_type;
+    
     typedef Elements<Shape,T> super_elements;
     typedef typename super_elements::elements_type elements_type;
     typedef typename super_elements::element_type element_type;
@@ -251,7 +254,7 @@ public:
 
     void setWorldComm( worldcomm_ptr_t const& _worldComm ) override
         {
-            MeshBase::setWorldComm( _worldComm );
+            MeshBase<IndexT>::setWorldComm( _worldComm );
             this->setWorldCommPoints( _worldComm );
         }
 
@@ -268,9 +271,10 @@ public:
      */
     virtual void clear()
         {
+            super::clear();
             super_elements::clear();
             super_points::clear();
-            FEELPP_ASSERT( isEmpty() ).error( "all mesh containers should be empty after a clear." );
+            CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
         }
 
 

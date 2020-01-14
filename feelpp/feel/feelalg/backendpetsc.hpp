@@ -54,15 +54,15 @@ namespace po = boost::program_options;
  *
  * this class provides an interface to the PETSC linear algebra library
  */
-template<typename T>
-class FEELPP_EXPORT BackendPetsc : public Backend<T>
+template<typename T, typename SizeT = uint32_type>
+class FEELPP_EXPORT BackendPetsc : public Backend<T,SizeT>
 {
     typedef Backend<T> super;
 public:
 
     // -- TYPEDEFS --
     typedef typename super::value_type value_type;
-
+    using size_type = typename super::size_type;
     /* matrix */
     typedef typename super::sparse_matrix_type sparse_matrix_type;
     typedef typename super::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -398,8 +398,8 @@ private:
 
 
 #if !defined(FEELPP_BACKEND_PETSC_NOEXTERN)
-extern template class BackendPetsc<double>;
-extern template class BackendPetsc<std::complex<double>>;
+extern template class BackendPetsc<double, uint32_type>;
+extern template class BackendPetsc<std::complex<double>,uint32_type>;
 #endif
 
 #endif // FEELPP_HAS_PETSC_H

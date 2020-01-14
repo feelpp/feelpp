@@ -42,6 +42,7 @@ class MatrixCondensed  : public MatrixBlockBase<T>
 public:
     
     using super = MatrixBlockBase<T>;
+    using size_type = typename super::size_type;
     using graph_ptrtype = typename super::graph_ptrtype;
     using value_type = T;
     using sc_type = StaticCondensation<value_type>;
@@ -102,6 +103,16 @@ public:
     bool staticCondensation() const { return M_strategy == solve::strategy::static_condensation; }
 
     //!
+    //! @return true if strategy is static condensation, false otherwise
+    //!
+    bool localSolve() const { return M_strategy == solve::strategy::local; }
+
+    //!
+    //! get the strategy 
+    //!
+    solve::strategy solveStrategy() const { return M_strategy; }
+    
+    //!
     //! set the strategy \p s
     //!
     void setStrategy( solve::strategy s ) { M_strategy = s; }
@@ -114,20 +125,34 @@ public:
                              ) override
         {
             tic();
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
                 M_sc->addLocalMatrix( rows, nrows, cols, ncols, data, K, K2 );
             else
                 super::addMatrix( rows, nrows, cols, ncols, data );
-            toc("addMatrix",FLAGS_v>0);
+            toc("addMatrix",FLAGS_v>2);
+        }
+    void addMatrix( const value_type a, MatrixSparse<value_type> const& M, Feel::MatrixStructure matStruc = Feel::SAME_NONZERO_PATTERN ) override
+        {
+            super::addMatrix( a, M, matStruc );
         }
     sc_ptrtype sc() { return M_sc; }
     sc_ptrtype const& sc() const { return M_sc; }
     sc_ptrtype const& sc( int row, int col ) const { M_sc->block( row, col );return M_sc; }
     sparse_matrix_ptrtype block( int row, int col )
         {
-            if ( staticCondensation() )
+            if ( staticCondensation() || localSolve() )
                 M_sc->block( row, col );
             return this->shared_from_this();
+        }
+    //!
+    //! @return the number of non-zero entries
+    //!
+    size_type nnz() const override
+        {
+            if ( staticCondensation() )
+                return M_sc->nnz();
+            else
+                return super::nnz();
         }
     void zero() override
         {
@@ -136,10 +161,24 @@ public:
             else
                 super::zero();
         }
-    void zeroBlock( int n1, int n2 ) 
+    //!
+    //! zero block with coordinates @p n1,n2
+    //!
+    void zeroBlock( int n1, int n2 )
         {
             if ( staticCondensation() )
                 M_sc->zero( n1, n2 );
+        }
+    /**
+     * transpose block \p n1,n2  and store it in \p n2,n1
+     *
+     * \param n1 row of the block to be transposed
+     * \param n2 column of the block to be transposed
+     */
+    void transposeBlock( int n1, int n2 )
+        {
+            if ( staticCondensation() )
+                M_sc->transpose( n1, n2 );
         }
 private:
     sc_ptrtype M_sc;

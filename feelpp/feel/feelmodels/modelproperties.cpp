@@ -33,14 +33,15 @@ namespace Feel {
 
 
 
-ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, WorldComm const& world, std::string const& prefix )
+ModelProperties::ModelProperties( std::string const& filename, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
     :
-    M_worldComm( world ),
+    super( world ),
     M_prefix( prefix ),
     M_params( world ),
     M_mat( world ),
     M_bc( world, false ),
-    M_ic( world, false ),
+    M_ic( world ),
+    M_icDeprecated( world, false ),
     M_bc2( world ),
     M_postproc( world ),
     M_outputs( world )
@@ -89,6 +90,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( Environment::isMasterRank() )
             std::cout << "Missing ShortName entry in model properties - set it to the Name entry : " << M_name << "\n";
     }
+    M_unit = M_p.get( "Unit", "m" );
     if ( auto mod = M_p.get_child_optional("Models") )
     {
         LOG(INFO) << "Model with model\n";
@@ -129,6 +131,16 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
             M_ic.setDirectoryLibExpr( directoryLibExpr );
         M_ic.setPTree( *ic );
     }
+
+    auto icDeprecated = M_p.get_child_optional("InitialConditionsDeprecated");
+    if ( icDeprecated )
+    {
+        LOG(INFO) << "Model with initial conditions\n";
+        if ( !directoryLibExpr.empty() )
+            M_icDeprecated.setDirectoryLibExpr( directoryLibExpr );
+        M_icDeprecated.setPTree( *icDeprecated );
+    }
+
     auto mat = M_p.get_child_optional("Materials");
     if ( mat )
     {

@@ -47,10 +47,10 @@ extern "C"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time_adjustor.hpp>
 #include <boost/date_time/c_local_time_adjustor.hpp>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
 
@@ -62,7 +62,11 @@ extern "C"
 #include <petscsys.h>
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+#include <gmsh.h>
+#else
 #include <Gmsh.h>
+#endif
 #endif
 
 #include <feel/feelcore/environment.hpp>
@@ -87,6 +91,20 @@ extern void cleanup_ex( bool verbose );
 }
 namespace detail
 {
+void DebugWait(int rank)
+{
+    char    a;
+    char hostname[256];
+    gethostname(hostname, sizeof(hostname));
+    std::cout << "PID " << getpid() << " on " << hostname <<  " ready for attach" << std::endl;
+    if(rank == 0) {
+        std::cin >> a;
+        std::cout << rank << ": Starting now\n";
+    } 
+
+    MPI_Bcast(&a, 1, MPI_BYTE, 0, MPI_COMM_WORLD);
+    std::cout << rank << ": Starting now\n";
+}
 class Env
 {
 public:
@@ -392,8 +410,6 @@ Environment::initPetsc( int * argc, char *** argv )
 
     if ( !is_petsc_initialized )
     {
-        i_initialized = true;
-
         int ierr;
         if( (*argc > 0) && ( argv != nullptr ) )
         {
@@ -485,7 +501,11 @@ Environment::Environment( int argc, char** argv,
     initPetsc( &argc, &envargv );
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+    gmsh::initialize();
+#else
     GmshInitialize();
+#endif
 #endif
 
     // parse options
@@ -509,9 +529,18 @@ Environment::Environment( int argc, char** argv,
     {
         if ( S_vm.count( "directory" ) )
             directory = S_vm["directory"].as<std::string>();
+        if ( S_vm.count( "repository.prefix" ) )
+            directory = S_vm["repository.prefix"].as<std::string>();
+        if ( S_vm.count( "repository.case" ) )
+        {
+            fs::path d( directory );
+            d /= S_vm["repository.case"].as<std::string>();
+            directory = d.string();
+        }
 
         boost::format f( directory );
-        bool createSubdir = add_subdir_np && S_vm["npdir"].as<bool>();
+        bool createSubdir = add_subdir_np &&
+            ( S_vm["repository.npdir"].as<bool>() || S_vm["npdir"].as<bool>() );
         changeRepository( _directory=f,_subdir=createSubdir );
     }
 
@@ -614,6 +643,8 @@ Environment::Environment( int argc, char** argv,
 #endif
 
     Environment::journalCheckpoint();
+
+    //::detail::DebugWait( worldComm().globalRank() );
 }
 void
 Environment::clearSomeMemory()
@@ -729,52 +760,49 @@ Environment::~Environment()
     MongoCxx::reset();
 #endif
 #if defined( FEELPP_HAS_GMSH_H )
+#if defined( FEELPP_HAS_GMSH_API )
+    gmsh::finalize();
+#else
     GmshFinalize();
 #endif
+#endif
 
-    if ( i_initialized )
-    {
-        VLOG( 2 ) << "clearing known paths\n";
-        S_paths.clear();
 
-        VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
+    VLOG( 2 ) << "clearing known paths\n";
+    S_paths.clear();
 
-        GiNaC::cleanup_ex( false );
+    VLOG( 2 ) << "[~Environment] cleaning up global excompiler\n";
+    GiNaC::cleanup_ex( false );
 
-        VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
+    VLOG( 2 ) << "[~Environment] finalizing slepc,petsc and mpi\n";
 #if defined ( FEELPP_HAS_PETSC_H )
-        PetscTruth is_petsc_initialized;
-        PetscInitialized( &is_petsc_initialized );
-
-        if ( is_petsc_initialized )
-        {
+    PetscTruth is_petsc_initialized;
+    PetscInitialized( &is_petsc_initialized );
+    if ( is_petsc_initialized )
+    {
 #if defined( FEELPP_HAS_SLEPC )
-            SlepcFinalize();
+        SlepcFinalize();
 #else
-            PetscFinalize();
+        PetscFinalize();
 #endif // FEELPP_HAS_SLEPC
-        }
-
+    }
 #endif // FEELPP_HAS_PETSC_H
 
-        stopLogging();
-        generateSummary( S_about.appName(), "end", true );
+    stopLogging();
+    generateSummary( S_about.appName(), "end", true );
 
-        JournalManager::journalFinalize();
-        S_timers.reset();
-        S_hwSysInstance.reset(); // call deleter
-        S_informationObject.reset();
+    JournalManager::journalFinalize();
+    S_timers.reset();
+    S_hwSysInstance.reset(); // call deleter
+    S_informationObject.reset();
 
-        // make sure everybody is here
-        Environment::worldComm().barrier();
-        if ( Environment::isMasterRank() && S_vm.count("rm") )
-        {
-            cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
-            fs::remove_all( S_appdir );
-        }
-        
+    // make sure everybody is here
+    Environment::worldComm().barrier();
+    if ( Environment::isMasterRank() && S_vm.count("rm") )
+    {
+        cout << tc::red << "Removing all files (--rm)  in " << appRepository() << "..." << tc::reset << std::endl;
+        fs::remove_all( S_appdir );
     }
-    
 }
 
 
@@ -1316,6 +1344,22 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 }
 
 
+std::string
+Environment::findFileRemotely( std::string const& fname, std::string const& subdir )
+{
+    RemoteData rdTool( fname, worldCommPtr());
+    if ( rdTool.canDownload() )
+    {
+        auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
+        for( auto dl : downloadedFolder )
+            std::cout << dl << std::endl;
+
+        //CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+        return downloadedFolder[0];
+    }
+    return fname;
+}
+
 
 void
 Environment::doOptions( int argc, char** argv,
@@ -1498,26 +1542,13 @@ Environment::doOptions( int argc, char** argv,
 bool
 Environment::initialized()
 {
-
-#if defined( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-    return mpi::environment::initialized() && is_petsc_initialized ;
-#else
     return mpi::environment::initialized() ;
-#endif
 }
 
 bool
 Environment::finalized()
 {
-#if defined( FEELPP_HAS_PETSC_H )
-    PetscTruth is_petsc_initialized;
-    PetscInitialized( &is_petsc_initialized );
-    return mpi::environment::finalized() && !is_petsc_initialized;
-#else
     return mpi::environment::finalized();
-#endif
 }
 
 
@@ -1540,7 +1571,7 @@ Environment::rootRepository()
     return std::string();
 }
 std::string
-Environment::findFile( std::string const& filename )
+Environment::findFile( std::string const& filename, std::vector<std::string> paths )
 {
     fs::path cp = fs::current_path();
 
@@ -1562,11 +1593,22 @@ Environment::findFile( std::string const& filename )
     }
 
 #endif
-
+    
+    auto filename_ = fs::path(filename).filename().string();
+    for( auto const& ps : paths )
+    {
+        
+        fs::path p( Environment::expand(ps) );
+        if ( fs::exists( p / filename_ ) )
+            
+            return ( p / filename_ ).string();
+    }
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
     {
+        LOG(INFO) << " looking for " << p/filename << std::endl;
+
         if ( fs::exists( p/filename ) )
             return true;
         return false;
@@ -1584,7 +1626,10 @@ Environment::findFile( std::string const& filename )
         return ( cp/filename ).string();
     }
 
-    if ( fs::path( filename ).extension() == ".geo" || fs::path( filename ).extension() == ".msh" )
+    if ( fs::path( filename ).extension() == ".geo" ||
+         fs::path( filename ).extension() == ".msh" ||
+         fs::path( filename ).extension() == ".mesh" ||
+         fs::path( filename ).extension() == ".med" )
     {
         if ( fs::exists( fs::path( Environment::localGeoRepository() ) / filename ) )
         {
@@ -1854,12 +1899,15 @@ Environment::updateInformationObject( pt::ptree & p )
         p.put( "run.directories.downloads", Environment::downloadsRepository() );
         p.put( "run.number_processors", Environment::numberOfProcessors() );
 
-        if ( S_vm.count( "case" ) )
+
+        std::string commandLineUsed;
+        for ( int i = 0; i < S_argc; ++i )
         {
-            p.put( "run.case", soption( _name="case" ) );
-            if ( S_vm.count( "case.config-file" ) )
-                p.put( "run.case.config-file", soption( _name="case.config-file" ) );
+            commandLineUsed += S_argv[i];
+            if (i < S_argc-1 )
+                commandLineUsed += " ";
         }
+        p.put( "run.command-line", commandLineUsed );
         pt::ptree ptTmp;
         for ( auto const& cfg : S_configFiles )
             ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
@@ -1949,7 +1997,12 @@ Environment::startLogging( std::string decorate )
     FLAGS_log_dir=a0.string();
 
     google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags( &S_argc, &S_argv, false );
+
+    // duplicate argv before passing to gflags because gflags is going to rearrange them
+    char** envargv = dupargv( S_argv );
+    int envargc = S_argc;
+    google::ParseCommandLineFlags( &envargc, &envargv/*S_argv*/, false );
+    freeargv( envargv );
     //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
 #if 0
     std::cout << "argc=" << S_argc << "\n";
@@ -2357,6 +2410,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "${cfgdir}", cfgDir );
     boost::replace_all( res, "${home}", homeDir );
     boost::replace_all( res, "${repository}", Environment::rootRepository() );
+    boost::replace_all( res, "${appdir}", Environment::appRepository() );
     boost::replace_all( res, "${datadir}", dataDir );
     boost::replace_all( res, "${exprdbdir}", exprdbDir );
     boost::replace_all( res, "${h}", std::to_string(doption("gmsh.hsize") ) );
@@ -2370,6 +2424,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$cfgdir", cfgDir );
     boost::replace_all( res, "$home", homeDir );
     boost::replace_all( res, "$repository", Environment::rootRepository() );
+    boost::replace_all( res, "$appdir", Environment::appRepository() );
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
@@ -2377,7 +2432,7 @@ Environment::expand( std::string const& expr )
 
     typedef std::vector< std::string > split_vector_type;
 
-#if defined FEELPP_ENABLED_PROJECTS
+#if defined(FEELPP_ENABLED_PROJECTS)
     split_vector_type SplitVec; // #2: Search for tokens
     boost::split( SplitVec, FEELPP_ENABLED_PROJECTS, boost::is_any_of(" "), boost::token_compress_on );
     for( auto const& s : SplitVec )

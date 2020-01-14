@@ -43,8 +43,8 @@
 
 namespace Feel
 {
-template <typename T>
-Backend<T>::Backend( worldcomm_ptr_t const& worldComm )
+template <typename T, typename SizeT>
+Backend<T,SizeT>::Backend( worldcomm_ptr_t const& worldComm )
     :
     super(worldComm),
 #if defined( FEELPP_HAS_PETSC_H )
@@ -87,8 +87,8 @@ Backend<T>::Backend( worldcomm_ptr_t const& worldComm )
         M_pc = "gasm";
 }
 
-template <typename T>
-Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+template <typename T, typename SizeT>
+Backend<T,SizeT>::Backend( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     M_vm( vm ),
@@ -109,12 +109,12 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, wor
     M_reuseJacIsBuild( false ) ,
     M_reuseJacRebuildAtFirstNewtonStep( vm[prefixvm( prefix,"reuse-jac.rebuild-at-first-newton-step" )].template as<bool>() ),
     M_transpose( false ),
-    M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<size_type>() ),
-    M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<size_type>() ),
-    M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<size_type>() ),
-    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSP ),
-    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<size_type>() : M_maxitKSPinSNES ),
-    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<size_type>() : M_maxitSNES ),
+    M_maxitKSP( vm[prefixvm( prefix,"ksp-maxit" )].template as<int>() ),
+    M_maxitKSPinSNES( vm[prefixvm( prefix,"snes-ksp-maxit" )].template as<int>() ),
+    M_maxitSNES( vm[prefixvm( prefix,"snes-maxit" )].template as<int>() ),
+    M_maxitKSPReuse( (vm.count(prefixvm( prefix,"ksp-maxit-reuse")))? vm[prefixvm( prefix,"ksp-maxit-reuse" )].template as<int>() : M_maxitKSP ),
+    M_maxitKSPinSNESReuse( (vm.count(prefixvm( prefix,"snes-ksp-maxit-reuse")))? vm[prefixvm( prefix,"snes-ksp-maxit-reuse" )].template as<int>() : M_maxitKSPinSNES ),
+    M_maxitSNESReuse( (vm.count(prefixvm( prefix,"snes-maxit-reuse")))? vm[prefixvm( prefix,"snes-maxit-reuse" )].template as<int>() : M_maxitSNES ),
     M_export( vm[prefixvm( prefix,"export-matlab" )].template as<std::string>() ),
     M_ksp( vm[prefixvm( prefix,"ksp-type" )].template as<std::string>() ),
     M_pc( vm[prefixvm( prefix,"pc-type" )].template as<std::string>() ),
@@ -125,14 +125,14 @@ Backend<T>::Backend( po::variables_map const& vm, std::string const& prefix, wor
     M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) )
 {
 }
-template <typename T>
-Backend<T>::~Backend()
+template <typename T, typename SizeT>
+Backend<T,SizeT>::~Backend()
 {
     this->clear();
 }
-template <typename T>
+template <typename T, typename SizeT>
 void
-Backend<T>::clear()
+Backend<T,SizeT>::clear()
 {
     if ( M_preconditioner )
         M_preconditioner->clear();
@@ -140,9 +140,9 @@ Backend<T>::clear()
     this->sendDeleteSignal();
     //this->clear ();
 }
-template <typename T>
-typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, worldcomm_ptr_t const&worldComm )
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::backend_ptrtype
+Backend<T,SizeT>::build( BackendType bt, worldcomm_ptr_t const&worldComm )
 {
     // Build the appropriate solver
     switch ( bt )
@@ -216,25 +216,25 @@ Backend<std::complex<double>>::build( BackendType bt, worldcomm_ptr_t const& wor
     return backend_ptrtype();
 }
 
-template <typename T>
-typename Backend<T>::backend_ptrtype
-Backend<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::backend_ptrtype
+Backend<T,SizeT>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     std::string kind = soption( _name="backend" );
     return build( kind, prefix, worldComm );
 }
-template <typename T>
-typename Backend<T>::backend_ptrtype
-Backend<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::backend_ptrtype
+Backend<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     if ( kind == "eigen")
-        return backend_ptrtype( new BackendEigen<value_type>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,0,SizeT>( Environment::vm(), prefix, worldComm ) );
     if ( kind == "eigen_dense")
-        return backend_ptrtype( new BackendEigen<value_type,1>( Environment::vm(), prefix, worldComm ) );
+        return backend_ptrtype( new BackendEigen<value_type,1,SizeT>( Environment::vm(), prefix, worldComm ) );
 #if defined ( FEELPP_HAS_PETSC_H )
     if ( kind == "petsc")
     {
-        auto b = backend_ptrtype( new BackendPetsc<value_type>( Environment::vm(), prefix, worldComm ) );
+        auto b = backend_ptrtype( new BackendPetsc<value_type,SizeT>( Environment::vm(), prefix, worldComm ) );
         b->attachPreconditioner();
         return b;
     }
@@ -259,9 +259,9 @@ Backend<std::complex<double>>::build( std::string const& kind, std::string const
 }
 
 
-template <typename T>
-typename Backend<T>::backend_ptrtype
-Backend<T>::build( BackendType bt, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::backend_ptrtype
+Backend<T,SizeT>::build( BackendType bt, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( enumToKind( bt ), prefix, worldComm );
 }
@@ -279,9 +279,9 @@ Backend<double>::attachPreconditioner()
     M_preconditioner = p;
 }
 
-template <typename T>
-typename Backend<T>::solve_return_type
-Backend<T>::solve( sparse_matrix_ptrtype const& A,
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::solve_return_type
+Backend<T,SizeT>::solve( sparse_matrix_ptrtype const& A,
                    sparse_matrix_ptrtype const& P,
                    vector_ptrtype& x,
                    vector_ptrtype const& b,
@@ -345,9 +345,9 @@ Backend<T>::solve( sparse_matrix_ptrtype const& A,
 
     return boost::make_tuple( M_converged, M_iteration, M_residual );
 }
-template <typename T>
-typename Backend<T>::nl_solve_return_type
-Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::nl_solve_return_type
+Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
                      vector_ptrtype& x,
                      vector_ptrtype& b,
                      const double tol, const int its,
@@ -469,9 +469,9 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
     return ret;
 }
-template <typename T>
-typename Backend<T>::nl_solve_return_type
-Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::nl_solve_return_type
+Backend<T,SizeT>::nlSolve( sparse_matrix_ptrtype& A,
                      vector_ptrtype& x,
                      vector_ptrtype& b,
                      const double tol, const int its )
@@ -503,18 +503,18 @@ Backend<T>::nlSolve( sparse_matrix_ptrtype& A,
 
     return ret;
 }
-template <typename T>
+template <typename T, typename SizeT>
 int
-Backend<T>::PtAP( sparse_matrix_ptrtype const& A,
+Backend<T,SizeT>::PtAP( sparse_matrix_ptrtype const& A,
                   sparse_matrix_ptrtype const& P,
                   sparse_matrix_ptrtype & C ) const
 {
     LOG(WARNING) << "PtAP not implemented in base class. You need to implement the procedure in the current backend.";
     return 0;
 }
-template <typename T>
+template <typename T, typename SizeT>
 int
-Backend<T>::PAPt( sparse_matrix_ptrtype const& A,
+Backend<T,SizeT>::PAPt( sparse_matrix_ptrtype const& A,
                   sparse_matrix_ptrtype const& P,
                   sparse_matrix_ptrtype & C ) const
 {
@@ -522,9 +522,9 @@ Backend<T>::PAPt( sparse_matrix_ptrtype const& A,
     return 0;
 }
 
-template <typename T>
-typename Backend<T>::value_type
-Backend<T>::dot( vector_type const& x, vector_type const& y ) const
+template <typename T, typename SizeT>
+typename Backend<T,SizeT>::value_type
+Backend<T,SizeT>::dot( vector_type const& x, vector_type const& y ) const
 {
     value_type localres = 0;
 
@@ -554,16 +554,16 @@ Backend<std::complex<double>>::dot( vector_type const& x, vector_type const& y )
     return globalres;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Backend<T>::start()
+Backend<T,SizeT>::start()
 {
     M_timer.restart();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Backend<T>::stop()
+Backend<T,SizeT>::stop()
 {
     double solveTime = M_timer.elapsed();
     double solveIter = M_iteration + 0.01;
@@ -609,9 +609,9 @@ Backend<T>::stop()
     }
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Backend<T>::reset()
+Backend<T,SizeT>::reset()
 {
     M_reusePC = false;
     M_totalSolveIter = 0.0;
@@ -620,37 +620,37 @@ Backend<T>::reset()
 
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 SolverType
-Backend<T>::kspEnumType() const
+Backend<T,SizeT>::kspEnumType() const
 {
     return kspTypeConvertStrToEnum( this->kspType() );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 SolverNonLinearType
-Backend<T>::snesEnumType() const
+Backend<T,SizeT>::snesEnumType() const
 {
     return snesTypeConvertStrToEnum( this->snesType() );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 PreconditionerType
-Backend<T>::pcEnumType() const
+Backend<T,SizeT>::pcEnumType() const
 {
     return pcTypeConvertStrToEnum( this->pcType() );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 FieldSplitType
-Backend<T>::fieldSplitEnumType() const
+Backend<T,SizeT>::fieldSplitEnumType() const
 {
     return fieldsplitTypeConvertStrToEnum( this->fieldsplitType() );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 MatSolverPackageType
-Backend<T>::matSolverPackageEnumType() const
+Backend<T,SizeT>::matSolverPackageEnumType() const
 {
     return matSolverPackageConvertStrToEnum( this->pcFactorMatSolverPackageType() );
 }
@@ -760,10 +760,10 @@ void updateBackendKSPOptions( po::options_description & _options, std::string co
           (useDefaultValue)?Feel::po::value<double>()->default_value( 1e5 ):Feel::po::value<double>(),
           "divergence tolerance" )
         ( prefixvm( prefix,kspctx+"ksp-maxit" ).c_str(),
-          (useDefaultValue)?Feel::po::value<size_type>()->default_value( maxit ):Feel::po::value<size_type>(),
+          (useDefaultValue)?Feel::po::value<int>()->default_value( maxit ):Feel::po::value<int>(),
           "maximum number of iterations" )
         ( prefixvm( prefix,kspctx+"ksp-maxit-reuse" ).c_str(),
-          (useDefaultValue)?Feel::po::value<size_type>():Feel::po::value<size_type>(),
+          (useDefaultValue)?Feel::po::value<int>():Feel::po::value<int>(),
           "maximum number of iterations when reuse prec/jac" )
         ( prefixvm( prefix,kspctx+"constant-null-space" ).c_str(),
           (useDefaultValue)?Feel::po::value<bool>()->default_value( 0 ):Feel::po::value<bool>(),
@@ -927,20 +927,15 @@ po::options_description backend_options( std::string const& prefix )
         ( prefixvm( prefix,"export-matlab" ).c_str(), Feel::po::value<std::string>()->default_value( "" ), "export matrix/vector to matlab, default empty string means no export, other string is used as prefix" )
 
         ( prefixvm( prefix,"snes-view" ).c_str(), Feel::po::value<bool>()->default_value( false ), "Prints the SNES data structure" )
-#if FEELPP_HAS_PETSC
-#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3,4,0 )
-        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESNEWTONLS ), "Set the SNES solver" )
-#else
-        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( SNESLS ), "Set the SNES solver" )
-#endif
-#endif
+        ( prefixvm( prefix,"snes-type" ).c_str(), Feel::po::value<std::string>()->default_value( "ls" ), "Set the SNES solver" )
+        ( prefixvm( prefix,"snes-line-search-type" ).c_str(), Feel::po::value<std::string>()->default_value( "bt" ), "Set the SNES line search solver" )
         ( prefixvm( prefix,"snes-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "relative tolerance" )
         ( prefixvm( prefix,"snes-atol" ).c_str(), Feel::po::value<double>()->default_value( 1e-50 ), "absolute tolerance" )
         ( prefixvm( prefix,"snes-stol" ).c_str(), Feel::po::value<double>()->default_value( 1e-8 ), "step length tolerance" )
-        ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 50 ), "maximum number of iterations" )
-        ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
-        ( prefixvm( prefix,"snes-ksp-maxit" ).c_str(), Feel::po::value<size_type>()->default_value( 1000 ), "maximum number of iterations" )
-        ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<size_type>(), "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,"snes-maxit" ).c_str(), Feel::po::value<int>()->default_value( 50 ), "maximum number of iterations" )
+        ( prefixvm( prefix,"snes-maxit-reuse" ).c_str(), Feel::po::value<int>(), "maximum number of iterations when reuse prec/jac" )
+        ( prefixvm( prefix,"snes-ksp-maxit" ).c_str(), Feel::po::value<int>()->default_value( 1000 ), "maximum number of iterations" )
+        ( prefixvm( prefix,"snes-ksp-maxit-reuse" ).c_str(), Feel::po::value<int>(), "maximum number of iterations when reuse prec/jac" )
         ( prefixvm( prefix,"snes-ksp-rtol" ).c_str(), Feel::po::value<double>()->default_value( 1e-5 ), "relative tolerance" )
         ( prefixvm( prefix,"snes-monitor" ).c_str(), Feel::po::value<bool>()->default_value( false ) , "monitor snes" )
         ( prefixvm( prefix,"snes-converged-reason" ).c_str() , "converged reason snes" )
@@ -1005,8 +1000,8 @@ po::options_description backend_options( std::string const& prefix )
 /*
  * Explicit instantiations
  */
-template class Backend<double>;
-template class Backend<std::complex<double>>;
+template class Backend<double,uint32_type>;
+template class Backend<std::complex<double>,uint32_type>;
     
 
 } // namespace Feel

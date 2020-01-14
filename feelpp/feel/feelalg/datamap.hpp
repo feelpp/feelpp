@@ -39,10 +39,8 @@
 
 namespace Feel
 {
-
+template<typename SizeT>
 class DataMap;
-
-
 
 /**
  *
@@ -70,10 +68,10 @@ class FEELPP_EXPORT IndexSplit : public std::vector<std::vector<size_type> >
     IndexSplit( int s )
         :
         super_type( s ),
-        M_firstIndex( s, invalid_size_type_value ),
-        M_lastIndex( s, invalid_size_type_value ),
-        M_nIndex( s, invalid_size_type_value ),
-        M_nIndexForSmallerRankId( s, invalid_size_type_value ),
+        M_firstIndex( s, invalid_v<size_type> ),
+        M_lastIndex( s, invalid_v<size_type> ),
+        M_nIndex( s, invalid_v<size_type> ),
+        M_nIndexForSmallerRankId( s, invalid_v<size_type> ),
         M_tag(s,0)
     {}
 
@@ -143,11 +141,13 @@ private :
  *  @author Christophe Prud'homme
  *  @see
  */
+template<typename SizeT=uint32_type>
 class FEELPP_EXPORT DataMap : public CommObject
 {
 
 public:
     using super = CommObject;
+    using size_type=SizeT;
     typedef IndexSplit indexsplit_type;
     typedef std::shared_ptr<indexsplit_type> indexsplit_ptrtype;
 
@@ -376,7 +376,7 @@ public:
     //! return global process id from global cluster id if available
     boost::tuple<bool,size_type> searchGlobalProcessDof( size_type gpdof ) const;
 
-    //! Returns local ID of global ID, return invalid_size_type_value if not found on this processor.
+    //! Returns local ID of global ID, return invalid_v<size_type> if not found on this processor.
     size_type  lid( size_type GID ) const
     {
         uint16_type pid = this->worldComm().rank();
@@ -385,7 +385,7 @@ public:
                 GID <= lastDof( pid ) )
             return GID - firstDof( pid );
 
-        return invalid_size_type_value;
+        return invalid_v<size_type>;
     }
 
     //! Returns global ID of local ID, return -1 if not found on this processor.
@@ -396,19 +396,19 @@ public:
         if ( LID < ( lastDof( pid )-firstDof( pid ) + 1 ) )
             return firstDof( pid ) + LID;
 
-        return invalid_size_type_value;
+        return invalid_v<size_type>;
     }
 
     //! Returns true if the GID passed in belongs to the calling processor in this map, otherwise returns false.
     bool  myGID( size_type GID ) const
     {
-        return( lid( GID )!=invalid_size_type_value );
+        return( lid( GID )!=invalid_v<size_type> );
     }
 
     //! Returns true if the LID passed in belongs to the calling processor in this map, otherwise returns false.
     bool  myLID( size_type LID ) const
     {
-        return( gid( LID )!=invalid_size_type_value );
+        return( gid( LID )!=invalid_v<size_type> );
     }
 
     //!Returns the minimum global ID across the entire map.
@@ -556,7 +556,7 @@ public:
                 if ( it !=M_dofIdToContainerId[tag].end() )
                     return tag;
             }
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
     /**
      * initialize the number of dofIdToContainerId mapping
@@ -565,7 +565,7 @@ public:
     /**
      * initialize the number of dof id in the mapping
      */
-    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize(nDof,invalid_size_type_value); }
+    void initDofIdToContainerId( int tag, int nDof ) { M_dofIdToContainerId[tag].resize(nDof,invalid_v<size_type>); }
     /**
      * initialize a mapping as identity
      */
@@ -598,7 +598,7 @@ public:
 
     size_type containerIdToDofId( int tag, size_type gpdof ) const
     {
-        size_type dof_id = invalid_size_type_value;
+        size_type dof_id = invalid_v<size_type>;
         auto it = std::find( M_dofIdToContainerId[tag].begin(), M_dofIdToContainerId[tag].end(), gpdof );
         if ( it !=M_dofIdToContainerId[tag].end() )
             dof_id = std::distance( M_dofIdToContainerId[tag].begin(), it );
@@ -639,7 +639,7 @@ public:
     void close() const;
 
     // add missing dof entries in // ( typically a ghost dof present in index set but not active dof associated )
-    void updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const;
+    void updateIndexSetWithParallelMissingDof( std::set<size_type> & _indexSet ) const;
     std::vector<size_type> buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const;
     // get process ids of active dof index (in cluster view) used in the input index set
     std::map<size_type, std::set<rank_type> >
@@ -741,10 +741,13 @@ private:
 
 };
 
-using datamap_t = DataMap;
+template<typename SizeT=uint32_type>
+using datamap_t = DataMap<SizeT>;
 
-using datamap_ptrtype = std::shared_ptr<datamap_t>;
-using datamap_ptr_t = datamap_ptrtype;
+template<typename SizeT=uint32_type>
+using datamap_ptrtype = std::shared_ptr<datamap_t<SizeT>>;
+template<typename SizeT=uint32_type>
+using datamap_ptr_t = datamap_ptrtype<SizeT>;
 
 } // Feel
 #endif /* __DataMap_H */

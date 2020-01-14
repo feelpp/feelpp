@@ -631,11 +631,11 @@ OpusApp<ModelType,RM,Model>::run()
                     std::ofstream res(soption(_name="result-file") );
                     res << "output="<< o[0] << "\n";
 
-                    if( this->vm().count("crb.minimization-func") )
+                    if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                     {
                         auto min_func = expr( min_func_str, "min_func" );
                         min_map[soption(_name="crb.minimization-param-name")] = output_fem;
-                        auto min = min_func.evaluate( min_map );
+                        auto min = min_func.evaluate( min_map )(0,0);
                         if( min < min_value["fem"] || curpar == 1 )
                         {
                             min_value["fem"] = min;
@@ -848,11 +848,11 @@ OpusApp<ModelType,RM,Model>::run()
                             }
                         }
 
-                        if( this->vm().count("crb.minimization-func") )
+                        if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                         {
                             auto min_func = expr( min_func_str, "min_func" );
                             min_map[soption(_name="crb.minimization-param-name")] = ofem[0];
-                            auto min = min_func.evaluate( min_map );
+                            auto min = min_func.evaluate( min_map )(0,0);
                             if( min < min_value["fem"] || curpar == 1 )
                             {
                                 min_value["fem"] = min;
@@ -888,11 +888,11 @@ OpusApp<ModelType,RM,Model>::run()
                             std::ofstream res(soption(_name="result-file") );
                             res << "output="<< ocrb << "\n";
 
-                            if( this->vm().count("crb.minimization-func") )
+                            if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                             {
                                 auto min_func = expr( min_func_str, "min_func" );
                                 min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map );
+                                auto min = min_func.evaluate( min_map )(0,0);
                                 if( min < min_value["rb"] || curpar == 1 )
                                 {
                                     min_value["rb"] = min;
@@ -932,11 +932,11 @@ OpusApp<ModelType,RM,Model>::run()
                             std::ofstream res(soption(_name="result-file") );
                             res << "output="<< ocrb << "\n";
 
-                            if( this->vm().count("crb.minimization-func") )
+                            if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() )
                             {
                                 auto min_func = expr( min_func_str, "min_func" );
                                 min_map[soption(_name="crb.minimization-param-name")] = ocrb;
-                                auto min = min_func.evaluate( min_map );
+                                auto min = min_func.evaluate( min_map )(0,0);
                                 if( min < min_value["rb"] || curpar == 1 )
                                 {
                                     min_value["rb"] = min;
@@ -1829,7 +1829,7 @@ OpusApp<ModelType,RM,Model>::run()
     }//end of compute-stat CRB
 
     // Find the output which minimize user-defined functional
-    if( this->vm().count("crb.minimization-func") && proc_number == Environment::worldComm().masterRank() )
+    if( this->vm().count("crb.minimization-func") && !soption("crb.minimization-func").empty() && proc_number == Environment::worldComm().masterRank() )
     {
         if( M_mode==CRBModelMode::PFEM || compute_fem )
         {

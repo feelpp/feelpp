@@ -86,17 +86,17 @@ SYMMETRIC = 1 << 3
 namespace detail
 {
 template<typename T>
-FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::true_ )
+FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t, mpl::true_ )
 {
     return t->mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t, mpl::false_ )
+FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t, mpl::false_ )
 {
     return t.mapPtr();
 }
 template<typename T>
-FEELPP_EXPORT std::shared_ptr<DataMap> datamap( T const& t )
+FEELPP_EXPORT std::shared_ptr<DataMap<>> datamap( T const& t )
 {
     return datamap( t, Feel::detail::is_shared_ptr<T>() );
 }
@@ -136,11 +136,11 @@ inline void default_prepost_solve( vector_ptrtype rhs, vector_ptrtype sol )
 
 template<typename T> class MatrixBlockBase;
 template<int NR, int NC, typename T> class MatrixBlock;
-template<typename T> class VectorBlockBase;
-template<int NR, typename T> class VectorBlock;
+template<typename T, typename SizeT> class VectorBlockBase;
+template<int NR, typename T, typename SizeT> class VectorBlock;
 
 template<typename T> class BlocksBaseSparseMatrix;
-template<typename T> class BlocksBaseVector;
+template<typename T, typename SizeT> class BlocksBaseVector;
 
 class BackendBase : public CommObject
 {
@@ -158,8 +158,8 @@ public:
  * @author Christophe Prud'homme
  * @see
  */
-template<typename T>
-class FEELPP_EXPORT Backend : public BackendBase, public std::enable_shared_from_this<Backend<T>>
+template<typename T, typename SizeT = uint32_type>
+class FEELPP_EXPORT Backend : public BackendBase, public std::enable_shared_from_this<Backend<T,SizeT>>
 {
 public:
 
@@ -169,6 +169,7 @@ public:
     //@{
     using super = BackendBase;
     typedef T value_type;
+    using size_type = SizeT;
     typedef typename type_traits<T>::real_type real_type;
 
     typedef Vector<value_type> vector_type;
@@ -186,13 +187,13 @@ public:
     typedef std::shared_ptr<backend_type> backend_ptrtype;
     typedef backend_ptrtype ptrtype;
 
-    typedef SolverNonLinear<value_type> solvernonlinear_type;
+    typedef SolverNonLinear<value_type,size_type> solvernonlinear_type;
     typedef std::shared_ptr<solvernonlinear_type> solvernonlinear_ptrtype;
 
-    typedef typename SolverLinear<real_type>::solve_return_type solve_return_type;
+    typedef typename SolverLinear<real_type,size_type>::solve_return_type solve_return_type;
     typedef typename solvernonlinear_type::solve_return_type nl_solve_return_type;
 
-    typedef DataMap datamap_type;
+    typedef DataMap<size_type> datamap_type;
     typedef std::shared_ptr<datamap_type> datamap_ptrtype;
 
     typedef typename datamap_type::indexsplit_type indexsplit_type;
@@ -529,10 +530,10 @@ public:
      * instantiate a new block matrix sparse
      */
     template<typename TB>
-    vector_ptrtype newBlockVectorImpl( BlocksBaseVector<TB> const & b,
-                                       bool copy_values=true )
+        vector_ptrtype newBlockVectorImpl( BlocksBaseVector<TB,size_type> const & b,
+                                           bool copy_values=true )
     {
-        using vector_block_type = VectorBlockBase<TB>;
+        using vector_block_type = VectorBlockBase<TB,size_type>;
         return std::make_shared<vector_block_type>( b, *this, copy_values )->getVector();
     }
 
@@ -942,6 +943,14 @@ public:
     /** @name  Methods
      */
     //@{
+
+    //!
+    //! build a new backend with the same properties
+    //!
+    backend_ptrtype clone()
+    {
+        return build( enumToKind( this->type() ), this->prefix(), this->worldCommPtr() );
+    }
 
     /**
      * clean up
@@ -1513,14 +1522,14 @@ private:
 };
 
 
-typedef Backend<double> backend_type;
+typedef Backend<double,uint32_type> backend_type;
 typedef std::shared_ptr<backend_type> backend_ptrtype;
 
 typedef Backend<std::complex<double>> c_backend_type;
 typedef std::shared_ptr<c_backend_type> c_backend_ptrtype;
 
-template<typename T = double>
-using backend_ptr_t = std::shared_ptr<Backend<T>>;
+template<typename T = double, typename SizeT = uint32_type>
+using backend_ptr_t = std::shared_ptr<Backend<T,SizeT>>;
 
 namespace detail
 {

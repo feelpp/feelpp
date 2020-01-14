@@ -54,20 +54,19 @@ MeshALE<Convex>::MeshALE(mesh_ptrtype mesh_moving,
     M_displacement(new ale_map_element_type( M_Xhmove) ),
     M_displacement_ref(new ale_map_element_ref_type( M_Xhref) ),
     M_meshVelocity(new ale_map_element_type( M_Xhmove) ),
+    M_fieldTmp( new  ale_map_element_type( M_Xhmove) ),
     M_drm( new DofRelationshipMap_type(M_Xhref,M_Xhmove ) ),
-    M_cpt_export(0),
     M_isARestart(boption(_name="ts.restart")),
     M_restartPath(soption(_name="ts.restart.path"))
     //M_doExport(option(_name="export",_prefix=prefixvm(prefix,"alemesh")).template as<bool>())
 {
-
     this->log(prefixvm(this->prefix(),"MeshALE"),"constructor", "start");
 
     // update M_identity_ale
     this->updateIdentityMap();
 
     // compute dist between P1(ref) to Ho mesh
-    if ( mesh_type::nOrder == mesh_ref_type::nOrder )
+    if ( mesh_type::nOrder != mesh_ref_type::nOrder )
     {
         M_dispP1ToHO_ref->on(_range=elements(M_referenceMesh),
                              _expr=vf::P() );
@@ -107,44 +106,31 @@ MeshALE<Convex>::init()
 
         // transfert displacement on the mobile mesh
         for (size_type i=0;i<M_displacement->nLocalDof();++i)
-            (*M_displacement)(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
-
-        //for (uint i=0;i<M_displacement->nDof();++i)
-        //    (*M_displacement)(M_drm->dofRelMap()[i]) -= M_bdf_ale_displacement_ref->unknown(0)(i);
+        {
+            size_type j = M_drm->dofRelMap()[i];
+            if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
+                M_displacement->set( j, (*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i) );
+            else
+                M_displacement->set( j, (*M_displacement_ref)(i) );
+        }
 
         //move the mesh
-        M_mesh_mover.apply(M_movingMesh, *M_displacement );
+        M_mesh_mover.apply( M_movingMesh, *M_displacement );
         M_isOnReferenceMesh = false;
         M_isOnMovingMesh = true;
 
         this->log(prefixvm(this->prefix(),"MeshALE"),"init", "restart on moving mesh");
 
         // rebuild dof point (necessary in updateIdentityMap with extended dof table)
-        M_Xhmove->rebuildDofPoints();
+        //M_Xhmove->rebuildDofPoints();
         // update M_identity_ale
         this->updateIdentityMap();
 
-
-#if 1
         *M_meshVelocity = M_bdf_ale_velocity->unknown(0);
-#else
-        // not good
-        *M_meshVelocity = *M_identity_ale;
-        M_meshVelocity->scale( M_bdf_ale_identity->polyDerivCoefficient(0) );
-        M_meshVelocity->add(-1.0,M_bdf_ale_identity->polyDeriv());
-#endif
-
-
     }
 
-
-    for ( auto const& faceWrap : markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving") ) )
-    {
-        auto const& face = unwrap_ref( faceWrap );
-        auto facedof = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dof()->faceLocalDof( face.id() );
-        for ( auto it= facedof.first, en= facedof.second ; it!=en;++it )
-            M_dofsOnMovingBoundary_HO.insert( it->index() );
-    }
+    auto therange = markedfaces(M_movingMesh,this->aleFactory()->flagSet("moving") );
+    M_dofsMultiProcessOnMovingBoundary_HO = M_displacementOnMovingBoundary_HO_ref->functionSpace()->dofs( therange, ComponentType::NO_COMPONENT, true );
 
     M_aleFactory->init();
 
@@ -238,49 +224,6 @@ MeshALE<Convex>::addBoundaryFlags(std::string const& bctype, std::string const& 
 //------------------------------------------------------------------------------------------------//
 
 template< class Convex >
-typename MeshALE<Convex>::mesh_ref_ptrtype
-MeshALE<Convex>::referenceMesh()
-{
-    return M_referenceMesh;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::mesh_ptrtype
-MeshALE<Convex>::movingMesh()
-{
-    return M_movingMesh;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_functionspace_ptrtype
-MeshALE<Convex>::functionSpace()
-{
-    return M_Xhmove;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_functionspace_ref_ptrtype
-MeshALE<Convex>::functionSpaceInRef()
-{
-    return M_Xhref;
-}
-
-//------------------------------------------------------------------------------------------------//
-template< class Convex >
-typename MeshALE<Convex>::ale_map_ptrtype const&
-MeshALE<Convex>::aleFactory() const
-{
-    return M_aleFactory;
-}
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
 typename MeshALE<Convex>::ale_map_element_ref_type const&
 MeshALE<Convex>::mapInRef() const
 {
@@ -307,79 +250,6 @@ MeshALE<Convex>::map()
 //------------------------------------------------------------------------------------------------//
 
 template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ptrtype
-MeshALE<Convex>::identityALE()
-{
-    return M_identity_ale;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ref_ptrtype
-MeshALE<Convex>::dispP1ToHO_ref()
-{
-    return M_dispP1ToHO_ref;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ptrtype
-MeshALE<Convex>::displacementOnMovingBoundary()
-{
-    return M_displacementOnMovingBoundary_HO_ref;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ref_ptrtype
-MeshALE<Convex>::displacementOnMovingBoundaryInRef()
-{
-    return M_displacementOnMovingBoundary_P1_ref;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ptrtype
-MeshALE<Convex>::displacement()
-{
-    return M_displacement;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ref_ptrtype
-MeshALE<Convex>::displacementInRef()
-{
-    return M_displacement_ref;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ptrtype
-MeshALE<Convex>::velocity() { return M_meshVelocity;}
-
-template< class Convex >
-typename MeshALE<Convex>::ale_map_element_ptrtype const&
-MeshALE<Convex>::velocity() const { return M_meshVelocity; }
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
-typename MeshALE<Convex>::DofRelationshipMap_ptrtype
-MeshALE<Convex>::dofRelationShipMap()
-{
-    return M_drm;
-}
-
-//------------------------------------------------------------------------------------------------//
-
-template< class Convex >
 void
 MeshALE<Convex>::updateIdentityMap()
 {
@@ -395,17 +265,10 @@ MeshALE<Convex>::revertReferenceMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnReferenceMesh() )
     {
-
-#if 1
-        auto temporaryDisp = *M_displacement;
-#else
-        auto temporaryDisp = M_Xhmove->element();
-        for (size_type i=0;i<temporaryDisp.nLocalDof();++i)
-            temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
-#endif
-        temporaryDisp.scale(-1.);
+        *M_fieldTmp =  *M_displacement;
+        M_fieldTmp->scale(-1.);
         M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
-        M_mesh_mover.apply(M_movingMesh, temporaryDisp );
+        M_mesh_mover.apply(M_movingMesh, *M_fieldTmp );
         M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = true;
         M_isOnMovingMesh = false;
@@ -420,15 +283,8 @@ MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
 {
     if ( !this->isOnMovingMesh() )
     {
-#if 1
-        auto temporaryDisp = *M_displacement;
-#else
-        auto temporaryDisp = M_Xhmove->element();
-        for (size_type i=0;i<temporaryDisp.nLocalDof();++i)
-            temporaryDisp(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);
-#endif
         M_mesh_mover.setUpdateMeshMeasures( updateMeshMeasures );
-        M_mesh_mover.apply(M_movingMesh, temporaryDisp );
+        M_mesh_mover.apply(M_movingMesh, *M_displacement );
         M_mesh_mover.setUpdateMeshMeasures( true );
         M_isOnReferenceMesh = false;
         M_isOnMovingMesh = true;
@@ -439,7 +295,7 @@ MeshALE<Convex>::revertMovingMesh( bool updateMeshMeasures )
 
 template< class Convex >
 void
-MeshALE<Convex>::updateBdf()
+MeshALE<Convex>::updateTimeStep()
 {
     M_bdf_ale_identity->shiftRight( *M_identity_ale );
     M_bdf_ale_velocity->shiftRight( *M_meshVelocity );
@@ -503,8 +359,13 @@ MeshALE<Convex>::updateImpl()
 {
     //---------------------------------------------------------------------------------------------//
     // transform disp from ref_ho -> ref_p1
-    for (size_type i=0;i<M_dispP1ToHO_ref->nLocalDof();++i)
-        (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]) + (*M_dispP1ToHO_ref)(i);
+    for (size_type i=0;i<M_displacementOnMovingBoundary_P1_ref->nLocalDof();++i)
+    {
+        if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
+            (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]) + (*M_dispP1ToHO_ref)(i);
+        else
+            (*M_displacementOnMovingBoundary_P1_ref)(i) = (*M_displacementOnMovingBoundary_HO_ref)(M_drm->dofRelMap()[i]);
+    }
 
     //---------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------//
@@ -515,42 +376,61 @@ MeshALE<Convex>::updateImpl()
     //generate the ale map
     M_aleFactory->generateMap( *M_displacementOnMovingBoundary_P1_ref, M_bdf_ale_displacement_ref->unknown(0) );
     //---------------------------------------------------------------------------------------------//
-    std::ostringstream ostrTime; ostrTime << "boost::mpi::timer :" << mpiTimer.elapsed() << "s";
-    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", "finish generateMap in "+ostrTime.str());
+    double tElapsed =  mpiTimer.elapsed();
+    this->log(prefixvm(this->prefix(),"MeshALE"),"updateImpl", (boost::format("finish generateMap in %1% s")%tElapsed).str() );
     //---------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------//
     //---------------------------------------------------------------------------------------------//
 
     //---------------------------------------------------------------------------------------------//
     //usefull for implicit fsi coupling (reset when we are in ptfixe cycle)
-    auto resetDisp = *M_displacement;
-    resetDisp.scale(-1.);
-    M_mesh_mover.apply(M_movingMesh, resetDisp );
+    //auto resetDisp = *M_displacement;
+    //resetDisp.scale(-1.);
+    //M_mesh_mover.apply(M_movingMesh, resetDisp );
 
     //---------------------------------------------------------------------------------------------//
     // get displacement on ref mesh
     *M_displacement_ref = M_aleFactory->displacement();
 
     //---------------------------------------------------------------------------------------------//
-    // transfert to the move mesh
-    for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        (*M_displacement)(M_drm->dofRelMap()[i])=(*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i);/////
-#if 0
-    //---------------------------------------------------------------------------------------------//
-    // update to real move
-    auto const& dispRefPrevious = M_bdf_ale_displacement_ref->unknown(0);
-    for (size_type i=0;i<M_displacement->nLocalDof();++i)
-        (*M_displacement)(M_drm->dofRelMap()[i]) -= dispRefPrevious(i) - (*M_dispP1ToHO_ref)(i);//////
-#endif
-    //---------------------------------------------------------------------------------------------//
-    //move the mesh
-    M_mesh_mover.apply(M_movingMesh, *M_displacement );
+    // get displacement on mesh and move it
+    if ( M_isOnReferenceMesh )
+    {
+        for (size_type i=0;i<M_displacement->nLocalDof();++i)
+        {
+            size_type j = M_drm->dofRelMap()[i];
+            if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
+                             M_displacement->set( j, (*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i) );
+            else
+                M_displacement->set( j, (*M_displacement_ref)(i) );
+        }
+        //move the mesh
+        M_mesh_mover.apply( M_movingMesh, *M_displacement );
+    }
+    else // M_isOnMovingMesh
+    {
+        auto displacementToApply = M_fieldTmp;
+        *displacementToApply = *M_displacement; // save previous disp
+        for (size_type i=0;i<M_displacement->nLocalDof();++i)
+        {
+            size_type j = M_drm->dofRelMap()[i];
+            if constexpr ( mesh_type::nOrder != mesh_ref_type::nOrder )
+                             M_displacement->set( j, (*M_displacement_ref)(i) - (*M_dispP1ToHO_ref)(i) );
+            else
+                M_displacement->set( j, (*M_displacement_ref)(i) );
 
+            displacementToApply->set( j, (*M_displacement)(j) - (*displacementToApply)(j) );
+        }
+        //move the mesh
+        M_mesh_mover.apply( M_movingMesh, *displacementToApply );
+    }
     M_isOnReferenceMesh = false;
     M_isOnMovingMesh = true;
 
+    //---------------------------------------------------------------------------------------------//
+
     // rebuild dof point (necessary in updateIdentityMap with extended dof table)
-    M_Xhmove->rebuildDofPoints();
+    //M_Xhmove->rebuildDofPoints();
 
     // up identity
     this->updateIdentityMap();

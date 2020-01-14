@@ -93,7 +93,8 @@ public:
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     static const uint16_type Order = BasisType::nOrder;
-    typedef double value_type;
+    using size_type = typename super_type::size_type;
+    using value_type = typename super_type::value_type;
 
     //--------------------------------------------------------------------//
     // Mesh

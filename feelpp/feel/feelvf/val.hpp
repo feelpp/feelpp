@@ -6,6 +6,7 @@
        Date: 2007-07-02
 
   Copyright (C) 2007-2011 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2019 Université de Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -29,86 +30,54 @@
 #if !defined( FEELPP_VF_VAL_HPP )
 #define FEELPP_VF_VAL_HPP 1
 
-# include <boost/preprocessor/comparison/less.hpp>
-# include <boost/preprocessor/logical/and.hpp>
-# include <boost/preprocessor/control/if.hpp>
-# include <boost/preprocessor/list/at.hpp>
-# include <boost/preprocessor/list/cat.hpp>
-# include <boost/preprocessor/list/for_each_product.hpp>
-# include <boost/preprocessor/logical/or.hpp>
-# include <boost/preprocessor/tuple/to_list.hpp>
-# include <boost/preprocessor/tuple/eat.hpp>
-# include <boost/preprocessor/facilities/empty.hpp>
-# include <boost/preprocessor/punctuation/comma.hpp>
-# include <boost/preprocessor/facilities/identity.hpp>
+#include <boost/preprocessor/comparison/less.hpp>
+#include <boost/preprocessor/control/if.hpp>
+#include <boost/preprocessor/facilities/empty.hpp>
+#include <boost/preprocessor/facilities/identity.hpp>
+#include <boost/preprocessor/list/at.hpp>
+#include <boost/preprocessor/list/cat.hpp>
+#include <boost/preprocessor/list/for_each_product.hpp>
+#include <boost/preprocessor/logical/and.hpp>
+#include <boost/preprocessor/logical/or.hpp>
+#include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/tuple/eat.hpp>
+#include <boost/preprocessor/tuple/to_list.hpp>
 
 /// \cond detail
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/unaryfunctor.hpp>
+#include <feel/feelvf/arithmetic.hpp>
 
-
-#if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_QD_H )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_MPFR )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value) ); \
-   /**/
-#else
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double> >::value ) \
-                         );                                             \
-   /**/
-#endif
 
 namespace Feel
 {
 namespace vf
 {
 
-template < typename ExprT1 >
+template <typename ExprT1>
 class Val
-    :
-public UnaryFunctor<typename ExprT1::value_type>
+    : public UnaryFunctor<typename ExprT1::value_type>,
+      public ExprDynamicBase
 {
-public:
-
+  public:
+    using super2 = ExprDynamicBase;
     static const size_type context = ExprT1::context;
     static const bool is_terminal = ExprT1::is_terminal;
 
-    template<typename Func>
+    template <typename Func>
     struct HasTestFunction
     {
         static const bool result = false;
     };
 
-    template<typename Func>
+    template <typename Func>
     struct HasTrialFunction
     {
         static const bool result = false;
     };
-    template<typename Func>
+    template <typename Func>
     static const bool has_test_basis = ExprT1::template has_test_basis<Func>;
-    template<typename Func>
+    template <typename Func>
     static const bool has_trial_basis = ExprT1::template has_trial_basis<Func>;
     using test_basis = typename ExprT1::test_basis;
     using trial_basis = typename ExprT1::trial_basis;
@@ -120,24 +89,24 @@ public:
     typedef Val<ExprT1> this_type;
     typedef typename expression_1_type::value_type value_1_type;
     typedef value_1_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_1_type::evaluate_type;
 
-    VF_CHECK_ARITHMETIC_TYPE(value_1_type)
+    VF_CHECK_ARITHMETIC_TYPE( value_1_type )
 
-    explicit Val( expression_1_type const& __expr1  )
-        :
-        super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
-        M_expr_1( __expr1 )
+    explicit Val( expression_1_type const& __expr1 )
+        : super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
+          super2( Feel::vf::dynamicContext( __expr1 ) ),
+          M_expr_1( __expr1 )
     {
-        DVLOG(2) << "Val::Val default constructorn";
+        DVLOG( 2 ) << "Val::Val default constructorn";
     }
 
-    Val( Val const& __vfp  )
-        :
-        super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
-        M_expr_1( __vfp.M_expr_1 )
+    Val( Val const& __vfp )
+        : super( "value", functordomain_ptrtype( new UnboundedDomain<value_type>() ) ),
+          super2( __vfp ),
+          M_expr_1( __vfp.M_expr_1 )
     {
-        DVLOG(2) << "Val::Val copy constructorn";
+        DVLOG( 2 ) << "Val::Val copy constructorn";
     }
 
     bool isSymetric() const
@@ -151,6 +120,13 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr_1.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr_1.evaluate(p,worldcomm);
+        }
+
+
     void eval( int nx, value_type const* x, value_type* f ) const
     {
         for ( int i = 0; i < nx; ++i )
@@ -162,7 +138,7 @@ public:
         return M_expr_1;
     }
 
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
+    template <typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
         typedef this_type expression_type;
@@ -170,8 +146,8 @@ public:
         typedef typename expression_1_type::template tensor<Geo_t> tensor2_expr_type;
         typedef typename tensor2_expr_type::value_type value_type;
         using key_type = key_t<Geo_t>;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
-        typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type* gmc_ptrtype;
+        typedef typename fusion::result_of::value_at_key<Geo_t, key_type>::type::element_type gmc_type;
         typedef typename tensor2_expr_type::shape shape;
 
         struct is_zero
@@ -179,34 +155,31 @@ public:
             static const bool value = tensor2_expr_type::is_zero::value;
         };
 
-        template<typename ExprT>
+        template <typename ExprT>
         tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ )
-            :
-            M_expr( expr.expression(), geom ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
+            : M_expr( expr.expression(), geom ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
-        template<typename ExprT>
-        tensor( ExprT const& expr,Geo_t const& geom, Basis_i_t const& /*fev*/ )
-            :
-            M_expr( expr.expression(), geom ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
+        template <typename ExprT>
+        tensor( ExprT const& expr, Geo_t const& geom, Basis_i_t const& /*fev*/ )
+            : M_expr( expr.expression(), geom ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
-        template<typename ExprT>
+        template <typename ExprT>
         tensor( ExprT const& expr, Geo_t const& geom )
-            :
-            M_expr( expr.expression(), geom ),
-            M_gmc( fusion::at_key<key_type>( geom ).get() ),
-            M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
+            : M_expr( expr.expression(), geom ),
+              M_gmc( fusion::at_key<key_type>( geom ).get() ),
+              M_loc( boost::extents[M_gmc->nPoints()][shape::M][shape::N] )
         {
             update( geom );
         }
-        template<typename IM>
+        template <typename IM>
         void init( IM const& im )
         {
             M_expr.init( im );
@@ -247,7 +220,7 @@ public:
         {
             return evalq( c1, c2, q );
         }
-        template<int PatternContext>
+        template <int PatternContext>
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
@@ -265,7 +238,8 @@ public:
         {
             return evalq( c1, c2, q, mpl::int_<shape::rank>() );
         }
-    private:
+
+      private:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const
         {
@@ -286,13 +260,14 @@ public:
         {
             return M_loc[q][c1][c2];
         }
-    private:
+
+      private:
         tensor2_expr_type M_expr;
         gmc_ptrtype M_gmc;
-        boost::multi_array<value_type,3> M_loc;
+        boost::multi_array<value_type, 3> M_loc;
     };
 
-protected:
+  protected:
     Val() {}
 
     expression_1_type M_expr_1;
@@ -304,19 +279,18 @@ protected:
  *
  * This allows for more efficient  bi/linear form assembly
  */
-template<typename ExprT1>
-inline
-Expr< Val<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type > >
-      val( ExprT1 const& __e1 )
+template <typename ExprT1>
+inline Expr<Val<typename mpl::if_<boost::is_arithmetic<ExprT1>,
+                                  mpl::identity<Cst<ExprT1>>,
+                                  mpl::identity<ExprT1>>::type::type>>
+val( ExprT1 const& __e1 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
+                              mpl::identity<Cst<ExprT1>>,
+                              mpl::identity<ExprT1>>::type::type t1;
     typedef Val<t1> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ) ) );
+    return Expr<expr_t>( expr_t( t1( __e1 ) ) );
 }
-} // vf
-} // Feel
+} // namespace vf
+} // namespace Feel
 #endif /* FEELPP_VF_VAL_HPP */

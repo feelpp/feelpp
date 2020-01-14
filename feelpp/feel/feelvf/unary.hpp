@@ -38,7 +38,7 @@ namespace vf
    \brief handler for unary plus expression
 */
 template < class ExprT >
-class UnaryPlus
+class UnaryPlus : public ExprDynamicBase
 {
 public:
 
@@ -65,7 +65,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef UnaryPlus<ExprT> this_type;
 
     UnaryPlus( const ExprT& expr )
@@ -104,6 +104,13 @@ public:
     {
         M_expr.setParameterValues( mp );
     }
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -223,7 +230,7 @@ operator + ( const Expr<T>& expr )
    \brief handler for unary minus expression
 */
 template < class ExprT >
-class UnaryMinus
+class UnaryMinus : public ExprDynamicBase
 {
 public:
 
@@ -250,7 +257,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename ExprT::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef UnaryMinus<ExprT> this_type;
 
     UnaryMinus( const ExprT& expr )
@@ -306,6 +313,13 @@ public:
     {
         M_expr.setParameterValues( mp );
     }
+    size_type dynamicContext() const { return vf::dynamicContext( M_expr ); } 
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return -M_expr.evaluate(p,worldcomm);
+        }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor

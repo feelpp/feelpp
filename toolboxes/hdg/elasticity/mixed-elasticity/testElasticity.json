@@ -1,0 +1,90 @@
+{
+    "Name": "HDG-Mixed-Linear-Elasticity",
+    "ShortName":"ME",
+    "Models": { "equations":"hdg"},
+    "Materials":
+    {
+        "omega":
+        {
+            "name":"simulation_domain",
+			"rho":"1",
+            "lambda":"1",
+	    	"mu":"1"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "stress":
+        {
+            "SourceTerm":
+            {
+                "omega":
+                {
+					"expr":"{8,0,0}"
+                }
+            },
+            "Neumann":
+            {
+                "top":
+                {
+                     "expr":"{0, 0, 3+2*x}:x"
+                },
+                "bottom":
+                {
+                     "expr":"{ 0, 0, -3-2*x}:x:y:z"
+                }
+            }
+		},
+		"displacement":
+		{
+			"InitialSolution":
+			{
+				"omega":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+					
+				}
+			},
+	    	"Dirichlet":
+	    	{
+        		"int":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"ext":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"in":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                },
+        		"out":
+                {
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+                }
+ 	    	}
+    	},
+		"ExactSolution":
+		{
+			"u_exact":
+			{
+				"omega":
+				{
+		     		"expr":"{x^2+y^2,1,z}:x:y:z" 
+				}
+			}
+		}
+     },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["stress","displacement"]
+        }
+    }
+}
+
+
+
+

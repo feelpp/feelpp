@@ -101,6 +101,10 @@ PYBIND11_MODULE(_modelcore, m )
         .def("setStationary", &ModelNumerical::setStationary, "set model steady state to true or false", py::arg("state") )
         .def("doRestart", &ModelNumerical::doRestart, "return if model is restarted, false otherwise")
         .def("setRestart", &ModelNumerical::setRestart, "set model restart status", py::arg("state"))
+
+        .def("hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise")
+        .def("modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties",py::return_value_policy::reference)
+        .def("addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties")
         
         .def("time", &ModelNumerical::time, "get the current time")
         .def("currentTime", &ModelNumerical::currentTime, "get the current time")

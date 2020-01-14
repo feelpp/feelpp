@@ -64,6 +64,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
 
         //--------------------------------------------------------------------//
         static constexpr uint16_type nRealDim = functionspace_type::nRealDim;
+        using size_type = typename functionspace_type::size_type;
         typedef typename functionspace_type::value_type value_type;
         typedef typename node<value_type>::type node_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;

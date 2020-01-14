@@ -26,6 +26,7 @@ SET( SRC
   expr.cpp
   ginac.cpp
   detail/ginacbuildlibrary.cpp
+  bilinearformbase.cpp
   )
 
 file(GLOB HDR RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.hpp detail/*.hpp)

@@ -76,7 +76,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumvExpr<ExprT> this_type;
 
     //@}
@@ -99,6 +99,13 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
+
 
     /** @name Operator overloads
      */
@@ -372,7 +379,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumExpr<ExprT,Side> this_type;
 
     //@}
@@ -396,6 +403,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{
@@ -476,23 +488,17 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& /*feu*/ )
         {
-            update( geom, fev, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
+            update( geom, fev );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
-            update( geom, fev, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
+            if constexpr( fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() )
+            {
+                M_gmc = fusion::at_key<vf::detail::gmc<Side> >( fev )->gmContext();
+                M_map = fusion::make_map<vf::detail::gmc<Side> >( M_gmc );
+                M_tensor_expr.update(  M_map, fev );
+            }
         }
-        void update( Geo_t const& /*geom*/, Basis_i_t const& fev, mpl::true_ )
-        {
-            M_gmc = fusion::at_key<vf::detail::gmc<Side> >( fev )->gmContext();
-            M_map = fusion::make_map<vf::detail::gmc<Side> >( M_gmc );
-            M_tensor_expr.update(  M_map, fev );
-        }
-        void update( Geo_t const& /*geom*/, Basis_i_t const& /*fev*/, mpl::false_ )
-        {
-
-        }
-
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
@@ -502,41 +508,28 @@ public:
 
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
             Feel::detail::ignore_unused_variable_warning( j );
-            return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
+            return evaliq( i, c1, c2, q );
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext> ) const
+                 mpl::int_<PatternContext> ) const noexcept
         {
             Feel::detail::ignore_unused_variable_warning( j );
-            return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
+            return evaliq( i, c1, c2, q );
         }
 
 
         value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
-            return evaliq( i, c1, c2, q, fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() );
-        }
-
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
-        {
-            return M_tensor_expr.evaliq( i, c1, c2, q );
-        }
-
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( i );
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return value_type( 0 );
+            if constexpr( fusion::result_of::has_key<Basis_i_t,vf::detail::gmc<Side> >() )
+                return M_tensor_expr.evaliq( i, c1, c2, q );
+            else
+                return value_type( 0 );
         }
 
         gmc_ptrtype M_gmc;
@@ -619,7 +612,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef SumTExpr<ExprT,Side> this_type;
 
     //@}
@@ -643,6 +636,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{
@@ -713,20 +711,13 @@ public:
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            update( geom, fev, feu, fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() );
+            if constexpr ( fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() )
+            {
+                M_gmc = fusion::at_key<key_type>( feu )->gmContext();
+                M_map = fusion::make_map<key_type>( M_gmc );
+                M_tensor_expr.update(  M_map, fev, feu );
+            }
         }
-        void update( Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu, mpl::true_ )
-        {
-            M_gmc = fusion::at_key<key_type>( feu )->gmContext();
-            M_map = fusion::make_map<key_type>( M_gmc );
-            M_tensor_expr.update(  M_map, fev, feu );
-        }
-        void update( Geo_t const& /*geom*/, Basis_i_t const& fev, Basis_j_t const& feu, mpl::false_ )
-        {
-            Feel::detail::ignore_unused_variable_warning( fev );
-            Feel::detail::ignore_unused_variable_warning( feu );
-        }
-
 
         value_type
         evalij( uint16_type i, uint16_type j ) const
@@ -736,53 +727,22 @@ public:
 
 
         value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept
         {
-            return evalijq( i, j, c1,c2, q, fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() );
+            if constexpr( fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() )
+                return M_tensor_expr.evalijq( i, j, c1, c2, q );
+            else
+                return 0.;
         }
         template<int PatternContext>
         value_type
         evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext> ) const
+                 mpl::int_<PatternContext> ) const noexcept
         {
-            return evalijq( i, j, c1,c2, q, mpl::int_<PatternContext>(), fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() );
-        }
-
-
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::true_ ) const
-        {
-            return M_tensor_expr.evalijq( i, j, c1, c2, q );
-        }
-
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::false_ ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( i );
-            Feel::detail::ignore_unused_variable_warning( j );
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return value_type( 0 );
-        }
-        template<int PatternContext>
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext>, mpl::true_ ) const
-        {
-            return M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
-        }
-        template<int PatternContext>
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q,
-                 mpl::int_<PatternContext>, mpl::false_ ) const
-        {
-            Feel::detail::ignore_unused_variable_warning( i );
-            Feel::detail::ignore_unused_variable_warning( j );
-            Feel::detail::ignore_unused_variable_warning( c1 );
-            Feel::detail::ignore_unused_variable_warning( c2 );
-            Feel::detail::ignore_unused_variable_warning( q );
-            return value_type( 0 );
+            if constexpr( fusion::result_of::has_key<Basis_j_t,vf::detail::gmc<Side> >() )
+                return M_tensor_expr.evalijq( i, j, c1, c2, q, mpl::int_<PatternContext>() );
+            else
+                return value_type( 0 );
         }
 
     private:
@@ -866,7 +826,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef FaceExprV<ExprT, func> this_type;
 
     //@}
@@ -890,6 +850,11 @@ public:
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
 
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
     /** @name Operator overloads
      */
     //@{

@@ -300,11 +300,12 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi ) co
                     interfaceElts->push_back( boost::cref(elt) );
             }
 
-            auto interfaceElements = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
-                    interfaceElts->begin(),
-                    interfaceElts->end(),
-                    interfaceElts
-                    );
+            elements_reference_wrapper_t<mesh_type> interfaceElements = 
+                boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                        interfaceElts->begin(),
+                        interfaceElts->end(),
+                        interfaceElts
+                        );
 
             //auto modGradPhiReinit = vf::sqrt(gradv(phi_redist)*trans(gradv(phi_redist)));
             auto modGradPhiReinit = vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );

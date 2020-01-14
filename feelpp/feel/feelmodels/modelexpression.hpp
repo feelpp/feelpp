@@ -26,6 +26,7 @@
 
 #include <feel/feelvf/expr.hpp>
 #include <feel/feelvf/ginac.hpp>
+#include <feel/feelmodels/modelindexes.hpp>
 
 namespace Feel {
 
@@ -77,7 +78,7 @@ public :
 
     // TODO : not necessary specific to scalar expression
     bool isConstant() const { return this->hasExprScalar() && this->exprScalar().expression().isConstant(); }
-    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate(); }
+    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate()(0,0); }
 
     expr_scalar_type const& exprScalar() const { CHECK( this->hasExprScalar() ) << "no Scalar expression"; return *M_exprScalar; }
     expr_vectorial2_type const& exprVectorial2() const { CHECK( this->hasExprVectorial2() ) << "no Vectorial2 expression"; return *M_exprVectorial2; }
@@ -108,7 +109,7 @@ public :
     void setExprMatrix33( expr_matrix33_type const& expr ) { M_exprMatrix33 = boost::optional<expr_matrix33_type>( expr ); }
 
     //! set an expression from a key of a ptree p
-    void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr );
+    void setExpr( std::string const& key, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr, ModelIndexes const& indexes = ModelIndexes() );
     void setExpr( std::string const& expr, WorldComm const& worldComm = Environment::worldComm(), std::string const& directoryLibExpr = "" );
 
     void setParameterValues( std::map<std::string,double> const& mp )

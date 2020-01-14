@@ -58,14 +58,15 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
 #if 1
     auto e = exporter(_mesh = mesh );
 #endif
-    std::string datafilename = (fs::current_path()/"data.txt").string();
+    std::string datafilename = (fs::current_path()/"data.csv").string();
     if ( Environment::worldComm().isMasterRank() )
     {
         // Generates the datafile
         // we assume an unitsquare as mesh
         std::ofstream datafile( datafilename );
+        datafile << "x, y\n";
         for(double t = -1; t < 2; t+=0.32)
-            datafile << t << "\t" << f(t) << "\n";
+            datafile << t << " , " << f(t) << "\n";
         datafile.close();
     }
     Environment::worldComm().barrier();
@@ -76,8 +77,8 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
         std::string const& interpType = interpTypeRange[k];
         BOOST_TEST_MESSAGE( boost::format("test %1%")% interpType );
         // evaluate K(T) with the interpolation from the datafile
-        K.on(_range=elements(mesh), _expr=fit( idv(T), datafilename, interpType ) );
-        Kd.on(_range=elements(mesh), _expr=fitDiff( idv(T), datafilename, interpType ) );
+        K.on(_range=elements(mesh), _expr=fit( idv(T), datafilename, "x", "y", interpType ) );
+        Kd.on(_range=elements(mesh), _expr=fitDiff( idv(T), datafilename, "x", "y", interpType ) );
 
         D_K.on(_range=elements(mesh),_expr=vf::abs(idv(K)-idv(T_K)));
         D_Kd.on(_range=elements(mesh),_expr=vf::abs(idv(Kd)-idv(T_Kd)));
@@ -128,6 +129,43 @@ BOOST_AUTO_TEST_CASE( test_main_fit )
    // end::fit[]
 }
 
+BOOST_AUTO_TEST_CASE( test_fit_evaluate )
+{
+    using namespace Feel;
+
+    auto f = [](double x) { return x*x; };
+    std::string datafilename = (fs::current_path()/"data_test_fit_evaluate.csv").string();
+    if ( Environment::worldComm().isMasterRank() )
+    {
+        // Generates the datafile
+        // we assume an unitsquare as mesh
+        std::ofstream datafile( datafilename );
+        datafile << "x, y\n";
+        for(double t = -10; t <= 10; t+=0.5)
+            datafile << t << " , " << f(t) << "\n";
+        datafile.close();
+    }
+    Environment::worldComm().barrier();
+
+    std::string interpType = "P1";
+    auto exprFit0 = fit( cst(2.), datafilename, "x", "y", interpType );
+    BOOST_CHECK_CLOSE( f(2), exprFit0.evaluate()(0,0), 1e-10 );
+    auto exprFit1 = fit( cst(2.25), datafilename, "x", "y", interpType );
+    BOOST_CHECK_CLOSE( (f(2)+f(2.5))/2., exprFit1.evaluate()(0,0), 1e-10 );
+
+    auto g = expr( "2*u+v:u:v" );
+    std::map<std::string,double> mp;
+    mp["u"] = -1.; mp["v"] = 5.;
+    g.setParameterValues( mp );
+    auto exprFit2 = fit( g, datafilename, "x", "y", interpType );
+    BOOST_CHECK_CLOSE( f(3), exprFit2.evaluate()(0,0), 1e-10 );
+
+
+    auto hBase = expr( "5*w+u:u:w" );
+    hBase.setParameterValues( mp );
+    auto h = expr( hBase, symbolExpr("w",exprFit2) );
+    BOOST_CHECK_CLOSE( 5*f(3)-1., h.evaluate()(0,0), 1e-10 );
+}
 BOOST_AUTO_TEST_SUITE_END()
 
 

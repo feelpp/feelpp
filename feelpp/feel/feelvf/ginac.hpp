@@ -288,6 +288,20 @@ expr( std::string const& s, std::vector<GiNaC::symbol> const& lsym, std::string 
 /**
  * @brief Create an Feel++ expression from a GiNaC expression as a string
  *
+ * @param value   The value of the expression
+ *
+ * @return Feel++ Expression
+ */
+inline
+Expr< GinacEx<> >
+expr( double value )
+{
+    return Expr< GinacEx<> >( GinacEx<>( value ) );
+}
+
+/**
+ * @brief Create an Feel++ expression from a GiNaC expression as a string
+ *
  * @tparam Order     Expression order
  * @param s          String containing the ginac expression and symbols
  * @param filename   Shared file

@@ -1,0 +1,55 @@
+{
+    "Name": "Thermoelectric",
+    "ShortName": "Thermoelectric",
+    "Model": "thermoelectric-crb",
+    "Parameters":
+    {
+        "p1":
+        {
+            "min":-2,
+            "max":2,
+            "value":1
+        },
+        "p2":
+        {
+            "min":-2,
+            "max":2,
+            "value":-0.5
+        }
+    },
+    "Materials":
+    {
+        "Cu":
+        {
+            "name":"copper",
+            "physics":"electric-geo",
+            "sigma":58e6,
+            "zmin":-0.08651,
+            "zmax":0.08651,
+            "params":["p1","p2"]
+        },
+        "box":
+        {
+            "physics":"magnetic"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "V1":
+                {
+                    "expr":"9",
+                    "material":"Cu"
+                },
+                "V0":
+                {
+                    "expr":"0",
+                    "material":"Cu"
+                }
+            }
+        }
+    }
+}

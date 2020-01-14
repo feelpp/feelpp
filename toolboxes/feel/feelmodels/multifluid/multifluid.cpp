@@ -385,7 +385,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::size_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->fluidModel()->nLocalDof();
@@ -1310,7 +1310,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::computeLevelsetForce( std::string const& name ) 
     auto u = solFluid->template element<0>();
     auto p = solFluid->template element<1>();
     std::string matName = this->fluidModel()->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor<2*fluid_model_type::nOrderVelocity>(u,p,*this->fluidModel()->materialProperties(),matName,true);
+    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->fluidModel()->materialProperties(),matName,true,2*fluid_model_type::nOrderVelocity,true);
 
     auto const& phi = this->levelsetModel(name)->phi();
     auto N_expr = trans(gradv(phi)) / sqrt( gradv(phi) * trans(gradv(phi)) );

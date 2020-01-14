@@ -179,6 +179,21 @@ snesTypeConvertEnumToStr( SolverNonLinearType type )
     else                                                  return std::string("newtonls");
 }
 
+SolverNonLinearLineSearchType
+snesLineSearchTypeConvertStrToEnum( std::string const& type )
+{
+    /**/ if ( type == "bt" ) return SolverNonLinearLineSearchType::BT;
+    else if ( type == "nleqerr" ) return SolverNonLinearLineSearchType::NLEQERR;
+    else if ( type == "basic" ) return SolverNonLinearLineSearchType::BASIC;
+    else if ( type == "l2" ) return SolverNonLinearLineSearchType::L2;
+    else if ( type == "cp" ) return SolverNonLinearLineSearchType::CP;
+    else
+    {
+        LOG(WARNING) << "line search type " << type << " is unknown, switch to bt";
+        return SolverNonLinearLineSearchType::BT;
+    }
+}
+
 MatSolverPackageType
 matSolverPackageConvertStrToEnum( std::string const& type )
 {
@@ -190,6 +205,7 @@ matSolverPackageConvertStrToEnum( std::string const& type )
     else if ( type=="lusol" )        return MatSolverPackageType::MATSOLVER_LUSOL;
     else if ( type=="mumps" )        return MatSolverPackageType::MATSOLVER_MUMPS;
     else if ( type=="mkl_pardiso" )  return MatSolverPackageType::MATSOLVER_MKL_PARDISO;
+    else if ( type=="mkl_cpardiso" )  return MatSolverPackageType::MATSOLVER_MKL_CPARDISO;
     else if ( type=="pastix" )       return MatSolverPackageType::MATSOLVER_PASTIX;
     else if ( type=="dscpack" )      return MatSolverPackageType::MATSOLVER_DSCPACK;
     else if ( type=="matlab" )       return MatSolverPackageType::MATSOLVER_MATLAB;

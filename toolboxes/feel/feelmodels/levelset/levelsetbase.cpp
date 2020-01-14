@@ -683,7 +683,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadConfigICFile()
 {
-    auto const& initialConditions = this->modelProperties().initialConditions();
+    auto const& initialConditions = this->modelProperties().initialConditionsDeprecated();
 
     this->M_icDirichlet = initialConditions.getScalarFields( std::string(this->prefix()), "Dirichlet" );
     
@@ -1604,9 +1604,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
-    typedef std::vector<element_ref_type> cont_range_type;
-    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    elements_reference_wrapper_ptrtype myelts( new elements_reference_wrapper_type );
 
     // Retrieve the elements touching the marked faces
     auto mfaces = markedfaces( this->mesh(), marker );
@@ -1619,7 +1617,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( boost::any const& marker )
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    auto myrange = boost::make_tuple(
+    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 
@@ -1643,9 +1641,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost
 {
     element_levelset_ptrtype distToMarkedFaces( new element_levelset_type(this->functionSpace(), "DistToMarkedFaces") );
 
-    typedef boost::reference_wrapper<typename MeshTraits<mymesh_type>::element_type const> element_ref_type;
-    typedef std::vector<element_ref_type> cont_range_type;
-    std::shared_ptr<cont_range_type> myelts( new cont_range_type );
+    elements_reference_wrapper_ptrtype myelts( new elements_reference_wrapper_type );
 
     // Retrieve the elements touching the marked faces
     //auto mfaces_list = markedfaces( this->mesh(), marker );
@@ -1659,7 +1655,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::distToMarkedFaces( std::initializer_list<boost
             myelts->push_back(boost::cref(face.element1()));
     }
 
-    auto myrange = boost::make_tuple(
+    elements_reference_wrapper_t<mesh_type> myrange = boost::make_tuple(
             mpl::size_t<MESH_ELEMENTS>(), myelts->begin(), myelts->end(), myelts
             );
 

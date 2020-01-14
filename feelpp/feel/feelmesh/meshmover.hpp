@@ -196,7 +196,7 @@ MeshMover<MeshType>::apply( mesh_ptrtype& imesh, DisplType const& u )
     typedef typename fectx_type::id_type m_type;
     typedef boost::multi_array<m_type,1> array_type;
     array_type uvalues( u.idExtents( *__ctx ) );
-    m_type m(fe_type::nComponents1,fe_type::nComponents2);
+    m_type m;
     std::fill( uvalues.data(), uvalues.data()+uvalues.num_elements(), m.constant(0.) );
     u.id( *__ctx, uvalues );
 
@@ -289,26 +289,8 @@ template<typename MeshType>
 void
 MeshMover<MeshType>::updateForUse( mesh_ptrtype& imesh )
 {
-    // reset geomap cache
-    if ( imesh->gm()->isCached() )
-    {
-        imesh->gm()->initCache( imesh.get() );
-        if ( mesh_type::nOrder > 1 )
-            imesh->gm1()->initCache( imesh.get() );
-    }
-
-    // update measures
-    if ( M_updateMeshMeasures )
-        imesh->updateMeasures();
-
-    // reset localisation tool
-    imesh->tool_localization()->reset();
-
-#if !defined( __INTEL_COMPILER )
-    // notify observers that the mesh has changed
-    LOG(INFO) << "Notify observers that the mesh has changed\n";
-    imesh->meshChanged(MESH_CHANGES_POINTS_COORDINATES );
-#endif
+    for ( auto m : imesh->meshesWithNodesShared() )
+        m->updateForUseAfterMovingNodes( M_updateMeshMeasures );
 }
 
 

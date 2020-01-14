@@ -18,13 +18,12 @@ namespace FeelModels
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
-                                                    bool buildMesh,
+                                                    std::string const& keyword,
                                                     worldcomm_ptr_t const& worldComm,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_hasBuildFromMesh( false ), M_hasBuildFromMesh1dReduced( false ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
     this->log("SolidMechanics","constructor", "start" );
@@ -48,21 +47,18 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
     // set of worldComm for the function spaces
     this->createWorldsComm();
     //-----------------------------------------------------------------------------//
-    // build  mesh, space,exporter,...
-    if (buildMesh) this->build();
-    //-----------------------------------------------------------------------------//
     this->log("SolidMechanics","constructor", "finish" );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::self_ptrtype
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::New( std::string const& prefix,
-                                         bool buildMesh,
+                                          std::string const& keyword,
                                          worldcomm_ptr_t const& worldComm,
                                          std::string const& subPrefix,
                                          ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, buildMesh, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -83,106 +79,9 @@ const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderDisplacement;
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 const uint16_type SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nOrderGeo;
 
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build()
-{
-    /**/ if ( M_pdeType == "Elasticity" )                   { buildStandardModel(); }
-    else if ( M_pdeType == "Elasticity-Large-Deformation" ) { buildStandardModel(); }
-    else if ( M_pdeType == "Hyper-Elasticity" )             { buildStandardModel(); }
-    else if ( M_pdeType == "Generalised-String" )           { build1dReducedModel(); }
-    else
-        CHECK(false) << "invalid pdeType" << M_pdeType;
-}
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build( mesh_ptrtype mesh )
-{
-    if ( M_pdeType == "Elasticity" || M_pdeType == "Elasticity-Large-Deformation" || M_pdeType == "Hyper-Elasticity" )
-        this->buildStandardModel(mesh);
-    else
-        CHECK(false) << "invalid pdeType" << M_pdeType << "need standard model";
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build( mesh_1dreduced_ptrtype mesh )
-{
-    if ( M_pdeType == "Generalised-String" )
-        this->build1dReducedModel(mesh);
-    else
-        CHECK(false) << "invalid pdeType" << M_pdeType << " (need 1d_reduced model)";
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildStandardModel( mesh_ptrtype mesh )
-{
-    this->log("SolidMechanics","buildStandardModel", "start" );
-    //-----------------------------------------------------------------------------//
-    M_isStandardModel=true;
-    M_is1dReducedModel=false;
-    //-----------------------------------------------------------------------------//
-    // create or reload mesh
-    if ( mesh )
-        M_mesh = mesh;
-    else
-        this->createMesh();
-    //-----------------------------------------------------------------------------//
-    M_hasBuildFromMesh = true;
-    this->log("SolidMechanics","buildStandardModel", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype mesh )
-{
-    if (this->doRestart())
-        this->build();
-    else
-        this->build(mesh);
-}
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_1dreduced_ptrtype mesh )
-{
-    // no restart case here :
-    // we consider that the mesh given is identicaly (from createsubmesh of fluid mesh)
-    this->build(mesh);
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::build1dReducedModel( mesh_1dreduced_ptrtype mesh )
-{
-    this->log("SolidMechanics","build1dReducedModel", "start" );
-    //-----------------------------------------------------------------------------//
-    M_isStandardModel=false;
-    M_is1dReducedModel=true;
-    //-----------------------------------------------------------------------------//
-    if ( mesh )
-        M_mesh_1dReduced = mesh;
-    else
-        this->createMesh1dReduced();
-    //-----------------------------------------------------------------------------//
-    M_hasBuildFromMesh1dReduced = true;
-    this->log("SolidMechanics","build1dReducedModel", "finish" );
-}
-
-//---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -196,13 +95,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_useDisplacementPressureFormulation = true;
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
 
-    std::string theSolidModel = this->modelProperties().models().model("solid").equations();
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        theSolidModel = soption(_name="model",_prefix=this->prefix());
-    this->pdeType( theSolidModel );
-
+        this->setModelName( soption(_name="model",_prefix=this->prefix()) );
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
-        M_pdeSolver = soption(_name="solver",_prefix=this->prefix());
+        this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
@@ -365,25 +261,31 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
 {
-    this->log("SolidMechanics","createMesh", "start" );
+    if ( this->is1dReducedModel() )
+    {
+        this->initMesh1dReduced();
+        return;
+    }
+
+    this->log("SolidMechanics","initMesh", "start" );
     this->timerTool("Constructor").start();
 
     createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
     CHECK( M_mesh ) << "mesh generation fail";
 
     this->timerTool("Constructor").stop("createMesh");
-    this->log("SolidMechanics","createMesh", "finish" );
+    this->log("SolidMechanics","initMesh", "finish" );
 }
 
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh1dReduced()
 {
-    this->log("SolidMechanics","createMesh1dReduced", "start" );
+    this->log("SolidMechanics","initMesh1dReduced", "start" );
     std::string prefix1dreduced = prefixvm(this->prefix(),"1dreduced");
 
     std::string modelMeshRestartFile = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
@@ -443,7 +345,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createMesh1dReduced()
         this->saveMeshFile( smpath );
     }
 
-    this->log("SolidMechanics","createMesh1dReduced", "finish" );
+    this->log("SolidMechanics","initMesh1dReduced", "finish" );
 } // createMesh1dReduced
 
 
@@ -730,7 +632,7 @@ NullSpace<double> getNullSpace( SpaceType const& space, mpl::int_<3> /**/ )
 template< typename TheBackendType >
 NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
                                    std::shared_ptr<TheBackendType> const& mybackend,
-                                   std::shared_ptr<DataMap> const& dm )
+                                   std::shared_ptr<DataMap<>> const& dm )
 {
     std::vector< typename NullSpace<double>::vector_ptrtype > myvecbasis(ns.size());
     for ( int k=0;k< ns.size();++k )
@@ -762,9 +664,21 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     this->log("SolidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( (this->isStandardModel() && !M_hasBuildFromMesh ) ||
-         (this->is1dReducedModel() && !M_hasBuildFromMesh1dReduced ) )
-        this->build();
+    if ( M_modelName.empty() )
+    {
+        std::string theSolidModel = this->modelProperties().models().model( this->keyword() ).equations();
+        this->setModelName( theSolidModel );
+    }
+    if ( M_solverName.empty() )
+    {
+        if ( M_modelName == "Elasticity" || M_modelName == "Generalised-String" )
+            this->setSolverName( "LinearSystem" );
+        else
+            this->setSolverName( "Newton" );
+    }
+
+    if ( !M_mesh && !M_mesh_1dReduced )
+        this->initMesh();
 
     this->initFunctionSpaces();
 

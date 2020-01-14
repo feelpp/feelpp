@@ -22,3 +22,12 @@
 [submodule "contrib/viewer"]
 	path = contrib/viewer
 	url = https://github.com/feelpp/viewer.git
+[submodule "benchmarks/benchmark"]
+	path = benchmarks/benchmark
+	url = https://github.com/feelpp/benchmark
+[submodule "feelpp/contrib/fmilib"]
+	path = feelpp/contrib/fmilib
+	url = https://github.com/feelpp/fmi-library.git
+[submodule "feelpp/contrib/tabulate"]
+	path = feelpp/contrib/tabulate
+	url = https://github.com/feelpp/tabulate.git

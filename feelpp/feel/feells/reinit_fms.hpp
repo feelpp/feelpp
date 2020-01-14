@@ -80,6 +80,7 @@ public:
     typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
     typedef typename functionspace_type::element_type element_type;
     typedef std::shared_ptr<element_type> element_ptrtype;
+    using size_type = typename functionspace_type::size_type;
     typedef typename functionspace_type::value_type value_type;
 
     typedef typename functionspace_type::mesh_type mesh_type;

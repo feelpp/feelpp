@@ -342,9 +342,9 @@
                            BOOST_PP_IDENTITY(class VF_TYPE_NAME(R)),    \
                            BOOST_PP_EMPTY                               \
                            )()>                                         \
-    class VF_OP_NAME( O ) VF_SPECIALIZATION_IF_BUILTIN( L, R )          \
+    class VF_OP_NAME( O ) VF_SPECIALIZATION_IF_BUILTIN( L, R ) : public ExprDynamicBase        \
     {                                                                   \
-    public:                                                             \
+      public:                                                           \
         typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> expression_type; \
         typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> this_type; \
         typedef VF_TYPE_VALUE_TYPE( L ) VF_VALUE_TYPE(L);               \
@@ -353,6 +353,7 @@
         typedef VF_TYPE_TYPE( R ) R_type;                               \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
+        size_type dynamicContext() const { return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right ); } \
                                                                         \
         static const bool is_terminal = false;                           \
                                                                         \
@@ -378,7 +379,7 @@
             mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
                                   mpl::identity<VF_VALUE_TYPE(L)>,      \
                                   mpl::identity<VF_VALUE_TYPE(R)> >::type::type value_type; \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
             :                                                           \
@@ -425,8 +426,8 @@
             typedef this_type expression_type;                          \
             typedef typename L_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type; \
             typedef typename R_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type; \
-            typedef typename strongest_numeric_type<typename l_type::value_type, \
-                typename r_type::value_type>::type value_type;          \
+            typedef strongest_numeric_type<typename l_type::value_type, \
+                                           typename r_type::value_type> value_type; \
             typedef typename VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::type shape; \
             static const int shape_op = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::op; \
                                                                         \
@@ -467,28 +468,28 @@
                 M_left.init( im );                                     \
                 M_right.init( im );                                    \
             }                                                           \
-            void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) \
+            void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) noexcept \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
                     M_left.update( geom, fev, feu );                   \
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, fev, feu );                  \
             }                                                           \
-            void update( Geo_t const& geom, Basis_i_t const& fev )      \
+            void update( Geo_t const& geom, Basis_i_t const& fev ) noexcept \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
                     M_left.update( geom, fev );                        \
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom, fev );                       \
             }                                                           \
-            void update( Geo_t const& geom )                            \
+            void update( Geo_t const& geom ) noexcept                   \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
                     M_left.update( geom );                             \
                 if ( is_zero::update_and_eval_right )                   \
                     M_right.update( geom );                            \
             }                                                           \
-            void update( Geo_t const& geom, uint16_type face )          \
+            void update( Geo_t const& geom, uint16_type face ) noexcept \
             {                                                           \
                 if ( is_zero::update_and_eval_left )                    \
                     M_left.update( geom, face );                            \
@@ -496,7 +497,7 @@
                     M_right.update( geom, face );                           \
             }                                                           \
             template<typename ... CTX>                                  \
-                void updateContext( CTX const& ... ctx )                \
+                void updateContext( CTX const& ... ctx ) noexcept       \
             {                                                           \
                 M_left.updateContext( ctx... );                        \
                 M_right.updateContext( ctx... );                        \
@@ -504,67 +505,67 @@
                                                                         \
                                                                         \
             value_type                                                  \
-            evalij( uint16_type i, uint16_type j ) const                \
+                evalij( uint16_type i, uint16_type j ) const noexcept   \
             {                                                           \
                 return M_left.evalij(i,j) VF_OP_SYMBOL( O ) M_right.evalij(i,j); \
             }                                                           \
                               \
-                value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const \
+            value_type                                                  \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const noexcept\
             {                                                           \
                 return evalijq(i,j,c1,c2,q,mpl::int_<shape_op>() );     \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext> ) const noexcept \
             {                                                           \
                 return evalijq(i,j,c1,c2,q,mpl::int_<PatternContext>(),mpl::int_<shape_op>() ); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const noexcept \
             {                                                           \
                 return evalijq( i, j, c1, c2, q, mpl::bool_<is_zero::update_and_eval_left>(), mpl::bool_<is_zero::update_and_eval_right>() ); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<false>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<false>  ) const noexcept \
             {                                                           \
                 return value_type( 0 );                                 \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<false>  ) const noexcept \
             {                                                           \
                 return M_left.evalijq(i, j, c1, c2, q);                \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<true>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>, mpl::bool_<true>  ) const noexcept \
             {                                                           \
                 return M_right.evalijq(i, j, c1, c2, q);               \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<true>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<true>  ) const noexcept \
             {                                                           \
                 return M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
             {                                                           \
                 return evalijq( i, j, c1, c2, q, mpl::bool_<is_zero::value>() ); \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>  ) const noexcept \
             {                                                           \
                 return value_type( 0 );                                 \
             }                                                           \
                               \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>  ) const noexcept \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
@@ -573,7 +574,7 @@
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq__( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const \
+                evalijq__( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const noexcept \
             {                                                           \
                 if ( is_zero::value )                                   \
                     return value_type( 0 );                             \
@@ -586,13 +587,13 @@
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const noexcept \
             {                                                           \
                 return M_left.evalijq(i, j, c1, c2, q,mpl::int_<PatternContext>()) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q,mpl::int_<PatternContext>()); \
             }                                                           \
             template<int PatternContext> \
                 value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<1>  ) const \
+                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<1>  ) const noexcept \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
@@ -601,13 +602,13 @@
             }                                                           \
                                                \
                 value_type                                              \
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const \
+                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q  ) const noexcept \
             {                                                           \
                 return evaliq(i, c1, c2, q, mpl::int_<shape_op>() );    \
             }                                                           \
                                                \
                 value_type                                              \
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const \
+                    evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const noexcept \
             {                                                           \
                 if ( is_zero::value )                                   \
                     return value_type( 0 );                             \
@@ -620,7 +621,7 @@
             }                                                           \
                                                \
                 value_type                                              \
-                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const \
+                evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
             {                                                           \
                 if ( is_zero::value ) \
                     return value_type( 0 );                             \
@@ -633,18 +634,18 @@
                     }                                                   \
             }                                                           \
             value_type                                                  \
-                evalq( uint16_type c1, uint16_type c2, uint16_type q ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q ) const noexcept \
             {                                                           \
                 return evalq( c1, c2, q, mpl::int_<shape_op>() );       \
             }                                                           \
                                                                         \
             value_type                                                  \
-                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const noexcept \
             {                                                           \
                 return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
             }                                                           \
             value_type                                                  \
-                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const \
+                evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const noexcept \
             {                                                           \
                 value_type res( value_type( 0 ) );                      \
                 for(uint16_type ii = 0; ii < l_type::shape::N; ++ii )   \
@@ -654,15 +655,34 @@
             l_type M_left;                                             \
             r_type M_right;                                            \
         }; /* tensor */                                                 \
-        double                                                          \
-            evaluate() const                                            \
+        evaluate_type                                                   \
+            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
         {                                                               \
-            return M_left.evaluate() VF_OP_SYMBOL( O ) M_right.evaluate(); \
-        }                                                               \
-        double                                                          \
-            evaluate(bool p) const                                            \
-        {                                                               \
-            return M_left.evaluate(p) VF_OP_SYMBOL( O ) M_right.evaluate(p); \
+            auto leval = M_left.evaluate(p,worldcomm);                  \
+            auto reval = M_right.evaluate(p,worldcomm);                 \
+            if ( leval.rows() == 1 && leval.cols() == 1 )               \
+            {                                                           \
+                if ( reval.rows() == 1 && reval.cols() == 1 )           \
+                    return Eigen::Matrix<value_type,1,1>::Constant( leval(0,0) VF_OP_SYMBOL( O ) reval(0,0) ); \
+                else                                                    \
+                    return leval(0,0) VF_OP_SYMBOL( O ) reval;          \
+            }                                                           \
+            else if ( reval.rows() == 1 && reval.cols() == 1 )          \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval(0,0);              \
+            }                                                           \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
+                               R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) \
+                                 return leval VF_OP_SYMBOL( O ) reval;  \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime > 1 && R_type::evaluate_type::SizeAtCompileTime > 1 ) \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval;                   \
+            }                                                           \
+            else                                                        \
+            {                                                           \
+                CHECK( false ) << "should notx go here";                 \
+                return Eigen::Matrix<value_type,1,1>::Constant( 0 );    \
+            }                                                           \
         }                                                               \
                                                                         \
         std::string expressionStr() const                               \

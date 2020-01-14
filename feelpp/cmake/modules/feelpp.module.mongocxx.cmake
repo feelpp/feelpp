@@ -34,6 +34,8 @@ if ( FEELPP_ENABLE_MONGOCXX )
 
   if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${FEELPP_SOURCE_DIR}/contrib/mongocxx/cmake")
+    SET(LIBBSON_DIR "/usr" CACHE STRING "Manual search path for libbson")
+    set(LIBMONGOC_DIR "/usr" CACHE STRING "Manual search path for mongoc")
     find_package(LibBSON ${BSON_MIN_VERSION_REQUIRED})
     find_package(LibMongoC ${MONGOC_MIN_VERSION_REQUIRED} )
     if ( LIBBSON_FOUND AND LIBMONGOC_FOUND )

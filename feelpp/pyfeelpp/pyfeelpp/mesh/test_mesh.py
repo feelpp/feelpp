@@ -1,9 +1,9 @@
-from pyfeelpp import core
+from pyfeelpp import core,mesh
 import sys
 
 e=core.Environment(sys.argv)
 
-from pyfeelpp import mesh
+
 
 geo={
     '2':core.download( "github:{repo:feelpp,path:feelpp/quickstart/laplacian/feelpp2d/feelpp2d.geo}", worldComm=core.Environment.worldCommPtr() )[0],
@@ -28,7 +28,6 @@ def run( m, geofile ):
     print("mesh elts:", mesh.nelements(r,True))
     r = mesh.boundaryfaces(m)
     print("mesh boundary faces:", mesh.nfaces(r,True))
-
 
 run( mesh.mesh(dim=2), geo['2'] )
 run( mesh.mesh(dim=3,realdim=3), geo['3'] )

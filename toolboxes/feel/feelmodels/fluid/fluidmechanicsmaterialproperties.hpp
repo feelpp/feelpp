@@ -410,6 +410,19 @@ public :
 
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
+    // return true one of fluid material use a non newtonian law
+    bool hasNonNewtonianLaw() const
+        {
+            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            {
+                std::string const& matName = rangeData.first;
+                auto const& dynamicViscosity = this->dynamicViscosity( matName );
+                if ( !dynamicViscosity.isNewtonianLaw() )
+                    return true;
+            }
+            return false;
+        }
+
 
     //! return dynamic viscosity projection field
     element_type const& fieldMu() const { return this->fieldDynamicViscosity(); }
@@ -510,6 +523,7 @@ public :
         std::shared_ptr<std::ostringstream> ostr( new std::ostringstream() );
 
         *ostr << "\n   Materials parameters";
+        *ostr << "\n     -- defined on whole mesh : " << this->isDefinedOnWholeMesh();
         *ostr << "\n     -- number of materials : " << M_rangeMeshElementsByMaterial.size();
         for ( auto const& matRange : M_rangeMeshElementsByMaterial)
         {

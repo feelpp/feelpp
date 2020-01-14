@@ -23,7 +23,10 @@
 #
 include (FindPackageHandleStandardArgs)
 
-function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_version_h)
+function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_include_h)
+
+  if ( EXISTS ${_gmsh_include_h}/GmshVersion.h ) # version < 4
+    set( _gmsh_version_h ${_gmsh_include_h}/GmshVersion.h )     
 	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*_VERSION.*")
 	if (NOT _gmsh_vinfo)
 		message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
@@ -31,6 +34,22 @@ function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_version_h)
 	string(REGEX REPLACE "^.*GMSH_MAJOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
 	string(REGEX REPLACE "^.*GMSH_MINOR_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
 	string(REGEX REPLACE "^.*GMSH_PATCH_VERSION[ \t]+([0-9]+).*" "\\1" ${_out_patch} "${_gmsh_vinfo}")
+  elseif( EXISTS ${_gmsh_include_h}/gmsh.h ) # version >=4
+    set( _gmsh_version_h ${_gmsh_include_h}/gmsh.h )     
+	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_API_VERSION_.*")
+	if (NOT _gmsh_vinfo) # for Gmsh 4.1
+      file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_API_VERSION.*")
+      string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	  string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\2" ${_out_minor} "${_gmsh_vinfo}")
+      if (NOT _gmsh_vinfo)
+	    message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
+	  endif()
+    else()
+      string(REGEX REPLACE "^.*GMSH_API_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	  string(REGEX REPLACE "^.*GMSH_API_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+    endif()
+    set( ${_out_patch} 0)
+  endif()
 	if (NOT ${_out_major} MATCHES "[0-9]+")
 		message(FATAL_ERROR "failed to determine GMSH_MAJOR_VERSION, "
 			            "expected a number, got ${${_out_major}}")
@@ -57,67 +76,79 @@ endfunction()
 
 find_program( GMSH_EXECUTABLE
   NAMES gmsh
-  PATHS
-  $ENV{GMSH_DIR}/bin
-  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
+  HINTS
+  ${GMSH_DIR}
+  $ENV{GMSH_DIR}
+#  ${CMAKE_BINARY_DIR}/contrib/gmsh
   PATH_SUFFIXES bin
   DOC "GMSH mesh generator"
-  NO_DEFAULT_PATH
   )
-if(NOT GMSH_EXECUTABLE)
-find_program( GMSH_EXECUTABLE
-  NAMES gmsh
-  PATHS
-  $ENV{GMSH_DIR}/bin
-  ${CMAKE_BINARY_DIR}/contrib/gmsh/bin
-  PATH_SUFFIXES bin
-  DOC "GMSH mesh generator" )
-endif()
 
 option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
   FIND_PATH(GMSH_INCLUDE_PATH
-    Gmsh.h Context.h GModel.h
+    gmsh.h Gmsh.h Context.h GModel.h
     HINTS
+    ${GMSH_DIR}
     $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh
+    # ${CMAKE_BINARY_DIR}/contrib/gmsh
+    ${Feelpp_SOURCE_DIR}/contrib/gmsh
     PATH_SUFFIXES
     include include/gmsh
     DOC "Directory where GMSH header files are stored" )
 
-  if ( GMSH_INCLUDE_PATH )
-    set( FEELPP_HAS_GMSH_H 1 )
-    set( FEELPP_HAS_GMSH_ADAPT_H 1 )
-  endif(GMSH_INCLUDE_PATH)
 
-  FIND_LIBRARY(GMSH_LIBRARY NAMES Gmsh gmsh-2.5.1 gmsh1 gmsh
-    PATHS
+  # first pass :search form GMSH_DIR cmake or env variable
+  FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
+    HINTS
+    ${GMSH_DIR}
     $ENV{GMSH_DIR}
-    ${CMAKE_BINARY_DIR}/contrib/gmsh
-    ${CMAKE_SYSTEM_PREFIX_PATH}
+    #${CMAKE_BINARY_DIR}/contrib/gmsh
+    NO_DEFAULT_PATH
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
 
-  if( NOT GMSH_LIBRARY )
-    if(APPLE)
-      set( GMSHLIB libGmsh.dylib )
-    else(APPLE)
-      set( GMSHLIB libGmsh.so )
-    endif(APPLE)
-    FIND_PATH(GMSH_LIBRARY_PATH ${GMSHLIB}
-      PATHS
-      $ENV{GMSH_DIR}/lib
-      ${CMAKE_BINARY_DIR}/contrib/gmsh/lib
-      NO_DEFAULT_PATH)
+  # second pass : search in system
+  FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
+    PATH_SUFFIXES
+    lib lib/x86_64-linux-gnu/ )
+  
+  if ( GMSH_LIBRARY )
+    if (GMSH_INCLUDE_PATH )
+      _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH})
+    else()
 
-    if(GMSH_LIBRARY_PATH)
-        set(GMSH_LIBRARY "${GMSH_LIBRARY_PATH}/${GMSHLIB}" )
-    else(GMSH_LIBRARY_PATH)
-        set(GMSH_LIBRARY "GMSH_LIBRARY-NOTFOUND" )
-    endif(GMSH_LIBRARY_PATH)
-  endif(NOT GMSH_LIBRARY)
+      get_filename_component( GMSH_LIBRARY_REALPATH ${GMSH_LIBRARY} REALPATH )
+      get_filename_component( GMSH_LIBRARY_NAME_WE ${GMSH_LIBRARY_REALPATH} NAME_WE )
+      get_filename_component( GMSH_LIBRARY_EXT ${GMSH_LIBRARY_REALPATH} EXT )
+
+      string(REGEX MATCH "[0-9]+\.[0-9]+\.[0-9]" GMSH_LIBRARY_VERSION ${GMSH_LIBRARY_EXT})
+      string(REGEX REPLACE "^([0-9]*)([.][0-9]*[.][0-9]*)$" "\\1" GMSH_MAJOR_VERSION ${GMSH_LIBRARY_VERSION})
+      string(REGEX REPLACE "^([0-9]*[.])([0-9]*)([.][0-9]*)$" "\\2" GMSH_MINOR_VERSION ${GMSH_LIBRARY_VERSION})
+      string(REGEX REPLACE "^([0-9]*[.][0-9]*[.])([0-9]*)$" "\\2" GMSH_PATCH_VERSION ${GMSH_LIBRARY_VERSION})
+
+      if ( 0 )
+        message("GMSH_LIBRARY_REALPATH=${GMSH_LIBRARY_REALPATH}")
+        message("GMSH_LIBRARY_NAME_WE=${GMSH_LIBRARY_NAME_WE}")
+        message("GMSH_LIBRARY_EXT=${GMSH_LIBRARY_EXT}")
+        message("GMSH_LIBRARY_VERSION=${GMSH_LIBRARY_VERSION}")
+        message("GMSH_MAJOR_VERSION=${GMSH_MAJOR_VERSION}")
+        message("GMSH_MINOR_VERSION=${GMSH_MINOR_VERSION}")
+        message("GMSH_PATCH_VERSION=${GMSH_PATCH_VERSION}")
+      endif()
+
+      if ( GMSH_MAJOR_VERSION VERSION_GREATER_EQUAL 4 )
+        set( GMSH_INCLUDE_PATH ${Feelpp_BINARY_DIR}/contrib/gmsh )
+        set( FEELPP_GMSH_API_MISSING_HEADERS 1 )
+      endif()
+
+    endif()
+  endif()
+
+
+
 
   OPTION( FEELPP_ENABLE_GL2PS "Enable the GL2PS library" ON )
   IF ( FEELPP_ENABLE_GL2PS )
@@ -212,14 +243,19 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
   if(GMSH_LIBRARY)
     set(GMSH_LIBRARIES ${GMSH_LIBRARIES} ${GMSH_LIBRARY} ${GMSH_EXTERNAL_LIBRARIES})
   endif()
-  
+
+ 
   FIND_PACKAGE_HANDLE_STANDARD_ARGS (GMSH DEFAULT_MSG
       GMSH_INCLUDE_DIR GMSH_LIBRARIES GMSH_EXECUTABLE
     )
 
   if ( GMSH_FOUND )
-    _gmsh_get_version( GMSH_MAJOR_VERSION GMSH_MINOR_VERSION GMSH_PATCH_VERSION ${GMSH_INCLUDE_PATH}/GmshVersion.h)
     set(FEELPP_HAS_GMSH_LIBRARY 1)
+    set( FEELPP_HAS_GMSH_H 1 )
+    set( FEELPP_HAS_GMSH_ADAPT_H 1 )
+    if ( GMSH_MAJOR_VERSION VERSION_GREATER_EQUAL 4 )
+      set(FEELPP_HAS_GMSH_API 1)
+    endif()
     MESSAGE( STATUS "GMSH found: header(${GMSH_INCLUDE_DIR}) lib(${GMSH_LIBRARY}) executable(${GMSH_EXECUTABLE})" )
     MESSAGE( STATUS "GL2PS found: lib(${GL2PS_LIBRARY})" )
     IF ( FEELPP_ENABLE_OPENGL )

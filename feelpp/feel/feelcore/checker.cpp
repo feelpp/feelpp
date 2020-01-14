@@ -21,6 +21,7 @@
 //! @date 24 Jul 2017
 //! @copyright 2017 Feel++ Consortium
 //!
+#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <feel/feelcore/checker.hpp>
 #include <feel/feelmath/polyfit.hpp>
@@ -55,7 +56,9 @@ hp::hp( double h, int p )
                 int order = boost::lexical_cast<int>(v.first);
 
                 M_data[fn.first][order].exact = v.second.get("exact",false);
-
+                if ( M_data[fn.first][order].exact )
+                    for( auto o : irange( order, 20 ) )
+                        M_data[fn.first][o].exact = true;
                 if ( M_data[fn.first][order].exact == false )
                 {
                     std::vector<double> hs;
@@ -101,8 +104,11 @@ hp::hp( double h, int p )
 }
 
 Checks
-hp::operator()( std::string const& solution, std::pair<std::string,double> const& r, double otol, double etol )
+hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, double otol, double etol )
 {
+    std::string solution = sol;
+    boost::trim_right_if(solution,boost::is_any_of(":"));
+    boost::erase_all(solution, " ");   
     // check that we have some data on solution for the specific order
     if ( M_data.count(solution) && M_data.at(solution).count(M_p) && ( M_data.at(solution).at(M_p).exact || M_data.at(solution).at(M_p).errors.count(r.first) ) )
     {
@@ -156,7 +162,15 @@ hp::operator()( std::string const& solution, std::pair<std::string,double> const
 } // rate
 
 Checker
-checker( std::string const& name ) { return Checker{ name }; }
+checker( std::string const& s, std::string const& p )
+{
+    if ( p.empty() && soption("checker.solution" ).empty() )
+        throw std::logic_error("Invalid setup of Checker system, no solution provided");
+    auto sol = p.empty()?soption("checker.solution" ):p;
+    Checker c{s};
+    c.setSolution( sol );
+    return c;
+}
 
 Checker::Checker( std::string const& name )
     :
@@ -167,7 +181,6 @@ Checker::Checker( std::string const& name )
     M_etol( doption("checker.tolerance.exact" ) ),
     M_otol( doption("checker.tolerance.order" ) )
 {
-
 }
 
 }

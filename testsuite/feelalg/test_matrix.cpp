@@ -67,6 +67,8 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_base )
     //#if defined(FEELPP_HAS_PETSC_H)
 
     int nprocs = Environment::worldComm().size();
+    if ( nprocs > 1 )
+        return;
     int m = 8;//10*Application::nProcess();
     int n = 8;//10*Application::nProcess();
 
@@ -179,7 +181,7 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     mat1a->close();
     BOOST_CHECK_SMALL( mat1a->l1Norm() - 3., tolCheck );
     BOOST_CHECK_SMALL( mat1a->linftyNorm() - 3., tolCheck );
-    // add scalar (on ghost only)
+    // add scalar (on actif only)
     for ( size_type k=0;k<nDofActivesMat1Row;++k )
         mat1a->add( k,k, 5.);
     mat1a->close();
@@ -197,10 +199,16 @@ BOOST_AUTO_TEST_CASE( test_matrix_petsc_operations )
     for ( size_type k=nDofActivesMat1Row;k<(nDofActivesMat1Row+nDofGhostsMat1aRow);++k )
         mat1a->add( k,k, 4.);
     mat1a->close();
-    double valExact = worldsize-1;
-    if ( Environment::worldComm().size() > 1 )
-        valExact += 4.;
-    BOOST_CHECK( mat1a->l1Norm() >= (valExact-tolCheck) );
+    double valExact = myrank;
+    auto const& aDofShared = mat1a->mapRow().activeDofSharedOnCluster();
+    for ( size_type k=0;k<nDofActivesMat1Row;++k )
+    {
+        auto itFindDofShared = aDofShared.find( k );
+        if ( itFindDofShared != aDofShared.end() )
+            valExact = std::max( valExact, myrank + 4.0*itFindDofShared->second.size() );
+    }
+    mpi::all_reduce( Environment::worldComm(), mpi::inplace( valExact ), mpi::maximum<double>() );
+    BOOST_CHECK_SMALL( mat1a->l1Norm() - valExact, tolCheck );
 
     // energy
     vec1a->setConstant( 2. );

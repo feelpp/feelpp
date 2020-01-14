@@ -94,7 +94,7 @@ public:
 
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
-
+    using size_type = typename super1::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -375,7 +375,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value )
+    void addVector ( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> )
     {
         for ( int j = 0; j < n; ++j )
             M_vec( i[j] ) += v[j];
