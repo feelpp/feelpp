@@ -7,6 +7,7 @@
 
   Copyright (C) 2005,2006 EPFL
   Copyright (C) 2006-2012 Universite Joseph Fourier (Grenoble I)
+  Copyright (C) 2011-2019 Université de Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -49,6 +50,7 @@
 #include <feel/feelcore/traits.hpp>
 #include <feel/feelvf/unaryfunctor.hpp>
 #include <feel/feelvf/binaryfunctor.hpp>
+#include <feel/feelvf/arithmetic.hpp>
 
 namespace Feel
 {
@@ -127,46 +129,14 @@ sign( T const& x )
       VF_BINARY_FUNCTIONS_CODE O \
    /**/
 
-#if defined( FEELPP_HAS_QD_H ) && defined(FEELPP_HAS_MPFR)
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_QD_H )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,dd_real>::value ||  \
-                         ::boost::is_same<VALUE_TYPE,qd_real>::value) ); \
-   /**/
-#elif defined( FEELPP_HAS_MPFR )
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-   BOOST_STATIC_ASSERT( (::boost::is_arithmetic<VALUE_TYPE>::value ||    \
-                         ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                         ::boost::is_same<VALUE_TYPE, std::complex<double> >::value || \
-                         ::boost::is_same<VALUE_TYPE,mp_type>::value) ); \
-   /**/
-#else
-# define VF_CHECK_ARITHMETIC_TYPE(VALUE_TYPE)                           \
-    BOOST_STATIC_ASSERT( ( ::boost::is_arithmetic<VALUE_TYPE>::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<float> >::value || \
-                           ::boost::is_same<VALUE_TYPE, std::complex<double> >::value ) \
-                         );                                             \
-   /**/
-#endif
 
 
 #define VF_UNARY_FUNCTIONS_CODE(O)                                      \
     template < typename ExprT1 >                                        \
-class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>              \
+    class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>, public ExprDynamicBase \
     {                                                                   \
     public:                                                             \
-                                                                        \
+        using super2 = ExprDynamicBase;                                 \
         static const size_type context = ExprT1::context;               \
         static const bool is_terminal = false;                          \
                                                                         \
@@ -195,14 +165,15 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         typedef VF_FUNC_NAME(O)<ExprT1> this_type;                      \
         typedef typename expression_1_type::value_type value_1_type;    \
         typedef value_1_type value_type;                                \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = typename expression_1_type::evaluate_type; \
                                                                         \
         VF_CHECK_ARITHMETIC_TYPE(value_1_type)                          \
                                                                         \
             explicit VF_FUNC_NAME(O)( expression_1_type const& __expr1  ) \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
-            M_expr_1( __expr1 )                                        \
+            super2( Feel::vf::dynamicContext( __expr1 ) ),              \
+            M_expr_1( __expr1 )                                         \
             {                                                           \
                 DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) default constructor\n"; \
             }                                                           \
@@ -210,6 +181,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         VF_FUNC_NAME(O)( VF_FUNC_NAME(O) const& __vfp  )                \
             :                                                           \
             super( VF_FUNC_NAME_STRING(O), functordomain_ptrtype(new VF_FUNC_DOMAIN(O) )), \
+            super2( Feel::vf::dynamicContext( __vfp.M_expr_1 ) ),       \
             M_expr_1( __vfp.M_expr_1 )                                \
                 {                                                       \
                     DVLOG(2) << "VF_FUNC_NAME(O)::VF_FUNC_NAME(O) copy constructor\n"; \
@@ -220,6 +192,16 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*M_expr_1.polynomialOrder(); } \
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) ); } \
+                                                                        \
+        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        {                                                               \
+            auto eval = M_expr_1.evaluate(p,worldcomm);                 \
+            evaluate_type res(eval.rows(),eval.cols());                 \
+            for ( uint16_type i=0;i< eval.rows();++i )                  \
+                for ( uint16_type j=0;j< eval.cols();++j )              \
+                    res(i,j) = VF_FUNC_IMPL(O)( eval(i,j) );            \
+            return res;                                                 \
+        }                                                               \
                                                                         \
         void eval( int nx, value_type const* x, value_type* f ) const   \
         {                                                               \
@@ -391,7 +373,7 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         typedef typename expression_1_type::value_type value_1_type;    \
         typedef typename expression_2_type::value_type value_2_type;    \
         typedef value_1_type value_type;                                \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = typename expression_1_type::evaluate_type; \
                                                                         \
         VF_CHECK_ARITHMETIC_TYPE(value_1_type)                          \
         VF_CHECK_ARITHMETIC_TYPE(value_2_type)                          \
@@ -419,6 +401,18 @@ class VF_FUNC_NAME( O ) : public UnaryFunctor<typename ExprT1::value_type>      
         uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*std::max(M_expr_1.polynomialOrder(),M_expr_2.polynomialOrder()); } \
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && M_expr_2.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) && ( M_expr_2.polynomialOrder() == 0 ) ); } \
+                                                                        \
+        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        {                                                               \
+            auto eval1 = M_expr_1.evaluate(p,worldcomm);                \
+            auto eval2 = M_expr_2.evaluate(p,worldcomm);                \
+            CHECK( eval1.rows() == eval2.rows() && eval1.cols() == eval2.cols() ) << "should be have same shape"; \
+            evaluate_type res(eval1.rows(),eval1.cols());               \
+            for ( uint16_type i=0;i< eval1.rows();++i )                 \
+                for ( uint16_type j=0;j< eval1.cols();++j )             \
+                    res(i,j) = VF_FUNC_IMPL(O)( eval1(i,j),eval2(i,j) ); \
+            return res;                                                 \
+        }                                                               \
                                                                         \
         void eval( int nx, value_1_type const* x, value_2_type const* y, value_type* f ) const   \
         {                                                               \

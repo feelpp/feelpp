@@ -77,6 +77,11 @@ PetscPCFactorSetMatSolverPackage( PC & pc, MatSolverPackageType mspackt )
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
         break;
 
+    case MATSOLVER_MKL_CPARDISO :
+        ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERMKL_CPARDISO );
+        CHKERRABORT( PETSC_COMM_WORLD,ierr );
+        break;
+
     case MATSOLVER_PASTIX :
         ierr = PCFactorSetMatSolverType( pc, ( char* ) MATSOLVERPASTIX );
         CHKERRABORT( PETSC_COMM_WORLD,ierr );
@@ -292,9 +297,13 @@ PetscConvertKSPReasonToString( KSPConvergedReason reason )
 #endif
     case KSP_DIVERGED_INDEFINITE_MAT : return "DIVERGED_INDEFINITE_MAT";
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 6, 0 )
+#if !PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 12, 0 )
     case KSP_DIVERGED_PCSETUP_FAILED : return "DIVERGED_PCSETUP_FAILED";
+#else
+    case KSP_DIVERGED_PC_FAILED      : return "DIVERGED_PC_FAILED";
 #endif
-    case KSP_CONVERGED_ITERATING : return "CONVERGED_ITERATING";
+#endif
+    case KSP_CONVERGED_ITERATING     : return "CONVERGED_ITERATING";
 
     default: return "INDEFINE_KSP_REASON";
 
@@ -313,7 +322,9 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
     case SNES_CONVERGED_SNORM_RELATIVE : return "CONVERGED_SNORM_RELATIVE";// =  4, /* Newton computed step size small; || delta x || < stol */
 #endif
     case SNES_CONVERGED_ITS            : return "CONVERGED_ITS";           // =  5, /* maximum iterations reached */
+#if !PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 12, 0 )
     case SNES_CONVERGED_TR_DELTA       : return "CONVERGED_TR_DELTA";      // =  7,
+#endif
         /* diverged */
     case SNES_DIVERGED_FUNCTION_DOMAIN : return "DIVERGED_FUNCTION_DOMAIN";// = -1, /* the new x location passed the function is not in the domain of F */
     case SNES_DIVERGED_FUNCTION_COUNT  : return "DIVERGED_FUNCTION_COUNT"; // = -2,
@@ -324,9 +335,12 @@ PetscConvertSNESReasonToString( SNESConvergedReason reason )
     case SNES_DIVERGED_LINE_SEARCH     : return "DIVERGED_LINE_SEARCH";    // = -6, /* the line search failed */
 #endif
 #if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 3, 0 )
-        case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
+    case SNES_DIVERGED_INNER           : return "DIVERGED_INNER";          // = -7, /* inner solve failed */
 #endif
     case SNES_DIVERGED_LOCAL_MIN       : return "DIVERGED_LOCAL_MIN";      // = -8, /* || J^T b || is small, implies converged to local minimum of F() */
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN( 3, 12, 0 )
+    case SNES_DIVERGED_TR_DELTA        : return "DIVERGED_TR_DELTA";       // =  -11,
+#endif
 
     case SNES_CONVERGED_ITERATING      : return "CONVERGED_ITERATING";     // =  0
 
@@ -402,5 +416,24 @@ PetscConvertIndexSplit( std::vector<IS> & isPetsc ,IndexSplit const& is, WorldCo
 
 
 }
+
+
+SNESLineSearchType
+toPetscName( Feel::SolverNonLinearLineSearchType const& type )
+{
+    switch ( type )
+    {
+    case Feel::SolverNonLinearLineSearchType::BT : return SNESLINESEARCHBT;
+    case Feel::SolverNonLinearLineSearchType::NLEQERR : return SNESLINESEARCHNLEQERR;
+    case Feel::SolverNonLinearLineSearchType::BASIC : return SNESLINESEARCHBASIC;
+    case Feel::SolverNonLinearLineSearchType::L2 : return SNESLINESEARCHL2;
+    case Feel::SolverNonLinearLineSearchType::CP : return SNESLINESEARCHCP;
+
+    default:
+        LOG(WARNING) << "line search type is unknown, switch to bt";
+        return SNESLINESEARCHBT;
+    }
+}
+
 
 } // namespace Feel

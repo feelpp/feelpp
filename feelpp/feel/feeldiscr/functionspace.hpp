@@ -116,7 +116,7 @@ struct ID
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -148,7 +148,6 @@ struct ID
     {
         for(int k = 0;k < M_id.shape()[0]; k++ )
         {
-            M_id[k].resize( M, N );
             M_id[k].setZero();
         }
         elem.id_( context, M_id );
@@ -212,7 +211,8 @@ struct DD
 {
     typedef T value_type;
     friend class boost::serialization::access;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -233,7 +233,6 @@ struct DD
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,N);
             M_grad[k].setZero();
         }
         elem.grad_( context, M_grad );
@@ -274,11 +273,81 @@ struct DD
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 };
+
+template<typename T,int M>
+struct SymmetricDD
+{
+    typedef T value_type;
+    friend class boost::serialization::access;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,M>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
+    typedef boost::multi_array<m_type,1> array_type;
+    typedef typename array_type::index_range range;
+    struct result
+    {
+
+        typedef array_type type;
+    };
+
+    SymmetricDD()
+        :
+        M_grad()
+    {}
+
+    template<typename Elem, typename ContextType>
+    SymmetricDD( Elem const& elem, ContextType const & context )
+        :
+        M_grad( elem.gradExtents( context ) )
+    {
+        for(int k = 0;k < M_grad.shape()[0]; k++ )
+        {
+            M_grad[k].setZero();
+        }
+        elem.symmetricGradient( context, M_grad );
+    }
+
+    m_type const& operator[]( uint16_type q  ) const
+    {
+        return M_grad[q];
+    }
+    value_type operator()( uint16_type c1, uint16_type c2, uint16_type q  ) const
+    {
+        return M_grad[q]( c1,c2 );
+    }
+    array_type M_grad;
+
+    template<class Archive>
+    void save( Archive & ar, const unsigned int /*version*/ ) const
+    {
+        size_type e1 = M_grad.shape()[0];
+        DVLOG(2) << "saving in archive e1= " << e1 << "\n";
+        ar  & e1;
+        DVLOG(2) << "saving in archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "saving in archive done\n";
+    }
+    template<class Archive>
+    void load( Archive & ar, const unsigned int /*version*/ )
+    {
+        size_type e1, e2, e3;
+        ar  & e1;
+        DVLOG(2) << "loading from archive e1= " << e1 << "\n";
+        M_grad.resize( boost::extents[e1] );
+        DVLOG(2) << "loading from archive array of size = " << M_grad.num_elements() << "\n";
+        ar  & boost::serialization::make_array( M_grad.data(), M_grad.num_elements() );
+        DVLOG(2) << "loading from archive done\n";
+        DVLOG(2) << "creating view interpolation context done\n";
+    }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
+
+};
+
 template<typename T,int N, int M, int P>
 struct D
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,P>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
 
@@ -300,7 +369,7 @@ struct D
     {
         for(int k = 0;k < M_grad.shape()[0]; k++ )
         {
-            M_grad[k].resize(M,P);
+            //M_grad[k].resize(M,P);
             M_grad[k].setZero();
         }
         elem.d_( N, context, M_grad );
@@ -321,7 +390,8 @@ template<typename T, int D = 1>
 struct Div
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<D,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -342,7 +412,7 @@ struct Div
     {
         for(int k = 0;k < M_div.shape()[0]; k++ )
         {
-            M_div[k].resize(D,1);
+            //M_div[k].resize(D,1);
             M_div[k].setZero();
         }
         elem.div_( context, M_div );
@@ -362,7 +432,8 @@ template<typename T, int N, int D>
 struct Curl
 {
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(D==3)?D:1,1>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename array_type::index_range range;
     struct result
@@ -383,7 +454,7 @@ struct Curl
     {
         for(int k = 0;k < M_curl.shape()[0]; k++ )
         {
-            M_curl[k].resize(D,1);
+            //M_curl[k].resize(D,1);
             M_curl[k].setZero();
         }
         init( elem, context, boost::is_same<mpl::int_<N>, mpl::int_<-1> >() );
@@ -433,7 +504,8 @@ struct H
 {
     friend class boost::serialization::access;
     typedef T value_type;
-    typedef Eigen::Tensor<value_type,2> m_type;
+    typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<M,N>> m_type;
+    //typedef Eigen::Tensor<value_type,2> m_type;
     typedef boost::multi_array<m_type,1> array_type;
     typedef typename  array_type::index_range range;
 
@@ -455,7 +527,7 @@ struct H
     {
         for(int k = 0;k < M_hess.shape()[0]; k++ )
         {
-            M_hess[k].resize(M,N);
+            //M_hess[k].resize(M,N);
             M_hess[k].setZero();
         }
         elem.hess_( context, M_hess );
@@ -478,11 +550,12 @@ struct InitializeSpace
     typedef typename SpaceType::mesh_ptrtype MeshPtrType;
     typedef typename SpaceType::mesh_support_vector_type mesh_support_vector_type;
     typedef typename SpaceType::periodicity_type PeriodicityType;
+    using globaldof_type = Dof<typename SpaceType::mesh_type::size_type>;
     InitializeSpace( functionspace_vector_type & functionspaces,
                      MeshPtrType const& mesh,
                      mesh_support_vector_type const& meshSupport,
                      PeriodicityType const& periodicity,
-                     std::vector<Dof> const& dofindices,
+                     std::vector<globaldof_type> const& dofindices,
                      worldscomm_ptr_t const & worldsComm,
                      std::vector<bool> extendedDofTable )
         :
@@ -497,52 +570,49 @@ struct InitializeSpace
     {}
     template <typename T>
     void operator()( T const& t ) const
-    {
-        operator()( t, is_shared_ptr<MeshPtrType>() );
-    }
-    template <typename T>
-    void operator()( T const& t, mpl::bool_<true> ) const
-    {
-        typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
-        typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
-        typedef typename subspace_ptrtype::element_type subspace_type;
+        {
+            if constexpr ( is_shared_ptr<MeshPtrType>() )
+            {
+                typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
+                typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
+                typedef typename subspace_ptrtype::element_type subspace_type;
 
-        auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
-        auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
-        auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
-        subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
-                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                        std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
-        FEELPP_ASSERT( subSpace ).error( "invalid function space" );
+                auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
+                auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
+                auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
+                subSpace = subspace_ptrtype( new subspace_type( M_mesh, subMeshSupport, M_dofindices, p,
+                                                                makeWorldsComm( 1,M_worldsComm[M_cursor] ),
+                                                                std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+                FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
-        ++M_cursor;// warning M_cursor < nb color
-    }
-    template <typename T>
-    void operator()( T const& t, mpl::bool_<false> ) const
-    {
-        typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
-        typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
-        typedef typename subspace_ptrtype::element_type subspace_type;
+                ++M_cursor;// warning M_cursor < nb color
+            }
+            else
+            {
+                typedef typename fusion::result_of::at_c<functionspace_vector_type,T::value>::type _subspace_ptrtype;
+                typedef typename boost::remove_reference<_subspace_ptrtype>::type subspace_ptrtype;
+                typedef typename subspace_ptrtype::element_type subspace_type;
 
-        auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
-        auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
-        // look for T::mesh_ptrtype in MeshPtrType
-        //auto m = *fusion::find<typename subspace_type::mesh_ptrtype>(M_mesh);
-        auto m = boost::fusion::at_c<T::value>( M_mesh );
-        auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
-        subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
-                                                        makeWorldsComm( 1,M_worldsComm[M_cursor] ),
-                                                        std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
-        FEELPP_ASSERT( subSpace ).error( "invalid function space" );
+                auto & subSpace = boost::fusion::at_c<T::value>( M_functionspaces );
+                auto p = *fusion::find<typename subspace_type::periodicity_0_type>(M_periodicity);
+                // look for T::mesh_ptrtype in MeshPtrType
+                //auto m = *fusion::find<typename subspace_type::mesh_ptrtype>(M_mesh);
+                auto m = boost::fusion::at_c<T::value>( M_mesh );
+                auto subMeshSupport = typename subspace_type::mesh_support_vector_type( boost::fusion::at_c<T::value>( M_meshSupport ) );
+                subSpace = subspace_ptrtype( new subspace_type( m, subMeshSupport, M_dofindices, p,
+                                                                makeWorldsComm( 1,M_worldsComm[M_cursor] ),
+                                                                std::vector<bool>( 1,M_extendedDofTable[M_cursor] ) ) );
+                FEELPP_ASSERT( subSpace ).error( "invalid function space" );
 
-        ++M_cursor;// warning M_cursor < nb color
-    }
+                ++M_cursor;// warning M_cursor < nb color
+            }
+        }
     functionspace_vector_type & M_functionspaces;
     mutable uint16_type M_cursor;
     worldscomm_ptr_t M_worldsComm;
     MeshPtrType M_mesh;
     mesh_support_vector_type const& M_meshSupport;
-    std::vector<Dof> const& M_dofindices;
+    std::vector<globaldof_type> const& M_dofindices;
     PeriodicityType M_periodicity;
     std::vector<bool> M_extendedDofTable;
 };
@@ -676,7 +746,7 @@ struct updateDataMapProcessStandard
     worldcomm_ptr_t M_worldComm;
     mutable uint16_type M_cursor;
     uint16_type M_lastCursor;
-    mutable std::vector<datamap_ptrtype> M_subdm;
+    mutable std::vector<datamap_ptrtype<>> M_subdm;
 };
 
 
@@ -686,7 +756,7 @@ struct updateDataMapProcessStandard
 struct NbDof
 {
     typedef size_type result_type;
-    NbDof( size_type start = 0, size_type size = invalid_size_type_value )
+    NbDof( size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size )
@@ -733,7 +803,7 @@ private:
 #if 0
 struct NLocalDof
 {
-    NLocalDof( size_type start = 0, size_type size = invalid_size_type_value )
+    NLocalDof( size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size )
@@ -779,7 +849,7 @@ struct NLocalDof
 
     NLocalDof( worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                bool useOffSubSpace = false,
-               size_type start = 0, size_type size = invalid_size_type_value )
+               size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_cursor( start ),
         M_finish( size ),
@@ -859,7 +929,7 @@ struct NLocalDofOnProc
     NLocalDofOnProc( const int proc,
                      worldscomm_ptr_t const & worldsComm = Environment::worldsComm(1),
                      bool useOffSubSpace = false,
-                     size_type start = 0, size_type size = invalid_size_type_value )
+                     size_type start = 0, size_type size = invalid_v<size_type> )
         :
         M_proc(proc),
         M_cursor( start ),
@@ -1213,10 +1283,10 @@ struct BasisOrder
 template<typename SpaceType>
 struct createWorldsComm
 {
-    
+
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
+    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct UpdateWorldsComm
     {
@@ -1277,7 +1347,7 @@ struct createMeshSupport
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase, meshes_list >::value;
+    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct HasAllMeshSupportDefined
     {
@@ -1468,7 +1538,9 @@ using Component = ComponentType;
 enum FunctionSpaceType
 {
     SCALAR = 0,
-    VECTORIAL = 1
+    VECTORIAL = 1,
+    TENSOR2,
+    TENSOR2_SYMM
 };
 
 template<uint16_type PN,
@@ -1484,7 +1556,7 @@ struct Order
 };
 
 typedef parameter::parameters<
-    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase,_> >
+    parameter::required<tag::mesh_type, boost::is_base_and_derived<MeshBase<>,_> >
     , parameter::optional<parameter::deduced<tag::bases_list>, boost::is_base_and_derived<Feel::detail::bases_base,_> >
     , parameter::optional<parameter::deduced<tag::value_type>, boost::is_floating_point<_> >
     , parameter::optional<parameter::deduced<tag::mortar_type>, boost::is_base_and_derived<Feel::detail::mortar_base,_> >
@@ -1531,7 +1603,7 @@ public:
 public:
 
     using super = FunctionSpaceBase;
-    
+
     template<typename ThePeriodicityType, int pos>
     struct GetPeriodicity
     {
@@ -1574,12 +1646,12 @@ public:
     template<typename BasisType>
     struct ChangeBasis
     {
-        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase<>, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
         typedef typename boost::remove_reference<bases_list>::type bases_list_noref;
         typedef typename fusion::result_of::distance<typename fusion::result_of::begin<bases_list_noref>::type,
                                                      typename fusion::result_of::find<bases_list_noref,BasisType>::type>::type pos;
 
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+        typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                   mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<BasisType>,value_type, Periodicity<typename GetPeriodicity<periodicity_type,pos::value>::type>, mortars<typename GetMortar<mortar_list,pos::value>::type > > > > >,
                                   mpl::identity<ChangeMesh<BasisType> > >::type::type::type type;
 
@@ -1609,8 +1681,8 @@ public:
     struct ChangeBasisToComponentBasis
     {
         typedef typename BasisType::component_basis_type component_basis_type;
-        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
-        typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+        //typedef typename mpl::if_<mpl::and_<boost::is_base_of<MeshBase<>, meshes_list >, boost::is_base_of<Feel::detail::periodic_base, periodicity_type > >,
+        typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                   mpl::identity<mpl::identity<std::shared_ptr<FunctionSpace<meshes_list,Feel::detail::bases<component_basis_type>,value_type, periodicity_type, mortar_list> > > >,
                                   mpl::identity<ChangeMeshToComponentBasis<BasisType> > >::type::type::type type;
     };
@@ -1641,7 +1713,7 @@ public:
     template<typename MeshListType,int N>
     struct GetMesh
     {
-        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase, MeshListType >,
+        typedef typename mpl::if_<mpl::or_<boost::is_base_of<MeshBase<>, MeshListType >,
                                            is_shared_ptr<MeshListType> >,
                                   mpl::identity<mpl::identity<MeshListType> >,
                                   mpl::identity<mpl::at_c<MeshListType,N> > >::type::type::type type;
@@ -1657,7 +1729,9 @@ public:
     // mesh
     typedef meshes_list MeshesListType;
     typedef typename GetMesh<meshes_list,0>::type mesh_0_type;
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    using index_type = typename mesh_0_type::index_type;
+    using size_type = typename mesh_0_type::size_type;
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<meshes_list>,
                               mpl::identity<mesh_0_type> >::type::type mesh_type;
 
@@ -1667,10 +1741,10 @@ public:
         typedef std::shared_ptr<MeshType> type;
     };
 
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                               mpl::identity<std::shared_ptr<mesh_type> >,
                               mpl::identity<typename mpl::transform<meshes_list, ChangeToMeshPtr<mpl::_1>, mpl::back_inserter<meshes<> > >::type  > >::type::type mesh_ptrtype;
-    typedef typename mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    typedef typename mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
             mpl::identity<typename mesh_type::element_type>,
             mpl::identity<typename mesh_0_type::element_type> >::type::type convex_type;
 
@@ -1695,10 +1769,10 @@ public:
                 typename mesh_type::element_type>::type::nComponents> type;
     };
     struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                           mpl::identity<meshes_list >,
                                           mpl::identity<nodim> >::type::type::nDim;
-    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase, meshes_list >,
+    static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                               mpl::identity<meshes_list>,
                                               mpl::identity<nodim> >::type::type::nRealDim;
 
@@ -1859,7 +1933,7 @@ public:
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
                               mpl::identity<mpl::void_>,
-                              mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
+                              mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::Hessian|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
                               //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
 #else
     static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
@@ -1877,7 +1951,7 @@ public:
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef std::shared_ptr<dof_type> dof_ptrtype;
-    typedef std::shared_ptr<DataMap> datamap_ptrtype;
+    typedef std::shared_ptr<DataMap<>> datamap_ptrtype;
     typedef std::shared_ptr<IndexSplit> indexsplit_ptrtype;
 
     // return types
@@ -1979,7 +2053,7 @@ public:
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_size_type_value );
+            auto analysis = loc->run_analysis( m, invalid_v<index_type> );
             auto found_points = analysis.template get<0>();
             bool found = found_points[0];
 
@@ -2167,7 +2241,8 @@ public:
         using mesh_type = typename functionspace_type::mesh_type;
         using mesh_ptrtype = typename functionspace_type::mesh_ptrtype;
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
-
+        using index_type = typename mesh_type::index_type;
+        
         static const uint16_type nDim = mesh_type::nDim;
         static const uint16_type nRealDim = mesh_type::nRealDim;
         static const bool is_composite = functionspace_type::is_composite;
@@ -2252,6 +2327,18 @@ public:
         typedef typename gm_type::precompute_ptrtype geopc_ptrtype;
         typedef typename gm_type::precompute_type geopc_type;
 
+        static constexpr size_type DefaultCTX = (is_hdiv_conforming?vm::POINT|vm::JACOBIAN:(is_hcurl_conforming?vm::POINT|vm::KB:vm::POINT));
+        template <size_type CTX=DefaultCTX>
+        using gmc_t = typename gm_type::template Context<CTX, geoelement_type>;
+        template <size_type CTX=DefaultCTX>
+        using gmc_ptr_t = std::shared_ptr<gmc_t<CTX>>;
+        
+        using fe_type = typename functionspace_type::fe_type;
+        template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
+        using fec_t = typename basis_0_type::template Context<FECTX, fe_type, gm_type, geoelement_type,GEOCTX>;
+        template <size_type FECTX=DefaultCTX, size_type GEOCTX=DefaultCTX>
+        using fec_ptr_t = std::shared_ptr<fec_t<FECTX,GEOCTX>>;
+        
         //@}
 
         /** @name Constructors, destructor
@@ -2565,25 +2652,25 @@ public:
                 return comp( i, ComponentType::NO_COMPONENT );//, typename mpl::not_<boost::is_same<container_type,VectorUblas<value_type> > >::type() );
             }
         value_type&
-        operator[]( size_type i )
+        operator[]( index_type i )
             {
                 return super::operator[]( i );
             }
         value_type
-        operator[]( size_type i )  const
+        operator[]( index_type i )  const
             {
                 return super::operator[]( i );
             }
 
-        value_type localToGlobal( size_type e, size_type l, int c ) const
+        value_type localToGlobal( index_type e, index_type l, int c ) const
         {
-            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=M_functionspace->dof()->localToGlobal( e, l, c ).index();
             return super::operator()( index );
         }
 #if 0
-        value_type& localToGlobal( size_type e, size_type l, int c )
+        value_type& localToGlobal( index_type e, index_type l, int c )
         {
-            size_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
+            index_type index=boost::get<0>( M_functionspace->dof()->localToGlobal( e, l, c ) );
             return super::operator()( index );
         }
 #endif
@@ -2602,9 +2689,43 @@ public:
 
             return *this;
         }
+
+        using p0dh_t =  FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>;
+        using p0dh_element_t =  typename FunctionSpace<mesh_type,bases<Lagrange<0,Scalar,Discontinuous>>>::template Element<value_type>;
+        
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& plusAssign( elt_t const& _e, const value_type sign = 1. )
+            {
+                if ( this->mesh()  != _e.mesh() )
+                    throw std::logic_error("Invalid mesh, they should be the same");
+                for ( auto const& rangeElt : elements( this->mesh() ) )
+                {
+                    auto const& meshElt = boost::unwrap_ref( rangeElt );
+                    index_type e = meshElt.id();
+                    auto p0_eid = _e.functionSpace()->dof()->localDof( e ).first->second.index();
+                    auto _v = _e.operator[](p0_eid);
+                    for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                    {
+                        index_type index = ldof.second.index();
+                        super::operator[]( index ) += sign*_v;
+                    }
+                }
+                return *this;
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator+=( elt_t const& _e )
+            {
+                return plusAssign( _e );
+            }
+        template<typename elt_t = p0dh_element_t,class = std::enable_if_t<!std::is_same<elt_t,this_type>::value>>
+        Element& operator-=( elt_t const& _e )
+            {
+                return plusAssign( _e, -1. );
+            }
+        
         Element& operator-=( Element const& _e )
         {
-            for ( size_type i=0; i < _e.nLocalDof(); ++i )
+            for ( index_type i=0; i < _e.nLocalDof(); ++i )
                 this->operator()( i ) -= _e( i );
 
             return *this;
@@ -2630,17 +2751,17 @@ public:
         {
             return super::assign( ae );
         }
-        void assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
+        void assign( index_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            index_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) = __v;
         }
-        void plus_assign( size_type ie, uint16_type il, uint16_type c, value_type const& __v )
+        void plus_assign( index_type ie, uint16_type il, uint16_type c, value_type const& __v )
         {
-            size_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
+            index_type index = M_functionspace->dof()->localToGlobal( ie, il, c ).index();
             super::operator[]( index ) += __v;
         }
-        local_interpolant_type element( std::vector<size_type> const& e ) const
+        local_interpolant_type element( std::vector<index_type> const& e ) const
             {
                 local_interpolant_type l( M_functionspace->basis()->localInterpolant(e.size()) ) ;
                 element( e, l );
@@ -2654,7 +2775,7 @@ public:
         //! @endcode
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<size_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+        void element( std::vector<index_type> const& e, Eigen::Ref<local_interpolant_t<B>> l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2662,7 +2783,7 @@ public:
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
                         {
-                            size_type index = ldof.second.index();
+                            index_type index = ldof.second.index();
                             l( n*s+ldof.first.localDof() ) = super::operator[]( index );
                         }
                         ++n;
@@ -2673,7 +2794,7 @@ public:
         //! @note the vector of components is already allocated
         //!
         template<typename B = basis_0_type>
-        void element( std::vector<size_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
+        void element( std::vector<index_type> const& e, local_interpolant_type& l, std::enable_if_t<!B::is_modal>* = nullptr ) const
             {
                 int s = l.size()/e.size();
                 int n = 0;
@@ -2681,15 +2802,17 @@ public:
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
                         {
-                            size_type index = ldof.second.index();
+                            index_type index = ldof.second.index();
                             l( n*s+ldof.first.localDof() ) = super::operator[]( index );
                         }
                         ++n;
                     });
             }
-        std::vector<int> dofs( std::vector<size_type> const& e ) const
+        std::vector<int> dofs( std::vector<index_type> const& e ) const
             {
                 std::vector<int> d;
+                int N = M_functionspace->dof()->nRealLocalDof();
+                d.reserve( e.size()*N );
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
@@ -2700,9 +2823,11 @@ public:
                 return d;
 
             }
-        std::vector<int> dofs( std::vector<size_type> const& e, DataMap const& dm, int block  ) const
+        std::vector<int> dofs( std::vector<index_type> const& e, DataMap<size_type> const& dm, int block  ) const
             {
                 std::vector<int> d;
+                int N = M_functionspace->dof()->nRealLocalDof();
+                d.reserve( e.size()*N );
                 std::for_each( e.begin(), e.end(), [&]( auto const& id ){
 
                         for( auto const& ldof : M_functionspace->dof()->localDof( id ) )
@@ -2714,14 +2839,14 @@ public:
 
             }
         template<typename Tloc>
-        void assignE( size_type e, Tloc&& loc, bool symm = true )
+        void assignE( index_type e, Tloc&& loc, bool symm = true )
             {
                 int N0 = M_functionspace->dof()->nRealLocalDof();
                 int N0c = M_functionspace->dof()->nRealLocalDof( true );
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                     for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                     {
-                        size_type index = ldof.second.index();
+                        index_type index = ldof.second.index();
                         if ( is_tensor2symm )
                         {
                             int i = M_functionspace->dof()->fe().unsymmToSymm(ldof.first.localDof());
@@ -2733,21 +2858,21 @@ public:
                         }
                     }
             }
-        void assign( size_type e, local_interpolant_type const& Ihloc )
+        void assign( index_type e, local_interpolant_type const& Ihloc )
             {
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
-                    size_type index = ldof.second.index();
+                    index_type index = ldof.second.index();
                     super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
                 }
             }
-        void plus_assign( size_type e, local_interpolant_type const& Ihloc )
+        void plus_assign( index_type e, local_interpolant_type const& Ihloc )
             {
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( e );
                 for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
                 {
-                    size_type index = ldof.second.index();
+                    index_type index = ldof.second.index();
                     super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
                 }
             }
@@ -2757,7 +2882,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index = ldof.second.index();
+                index_type index = ldof.second.index();
                 super::operator[]( index ) = s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2768,20 +2893,20 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = e.elements().begin()->first;
+                index_type eid = e.elements().begin()->first;
                 uint16_type edgeid_in_element = e.elements().begin()->second;
                 this->assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
             }
         template<typename EltType>
-        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+        void assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
             {
-                size_type eid = eltsInfo.first;
-                uint16_type edgeid_in_element = eltsInfo.second;
+                const auto [ eid,edgeid_in_element ]  = eltsInfo;
+                
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
                 {
-                    size_type index= ldof.index();
+                    index_type index= ldof.index();
                     //super::operator[]( index ) = s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
                     super::operator[]( index ) = Ihloc( ldof.localDofInFace() );
                 }
@@ -2792,18 +2917,18 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = p.elements().begin()->first;
+                index_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
                 this->assign( p, Ihloc, std::make_pair( eid, ptid_in_element ) );
             }
-        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+        void assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo )
             {
-                size_type eid = eltsInfo.first;
+                index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
-                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
                     super::operator[]( index ) = s(ptid_in_element)*Ihloc( c );
                 }
             }
@@ -2813,7 +2938,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index = ldof.index();
+                index_type index = ldof.index();
                 super::operator[]( index ) = s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2822,7 +2947,7 @@ public:
             auto const& s = M_functionspace->dof()->localToGlobalSigns( e.id() );
             for( auto const& ldof : M_functionspace->dof()->localDof( e.id() ) )
             {
-                size_type index = ldof.second.index();
+                index_type index = ldof.second.index();
                 super::operator[]( index ) += s(ldof.first.localDof())*Ihloc( ldof.first.localDof() );
             }
         }
@@ -2831,7 +2956,7 @@ public:
              auto const& s = M_functionspace->dof()->localToGlobalSigns( e.element( faceConnectionId ).id() );
             for( auto const& ldof : M_functionspace->dof()->faceLocalDof( e.id() ) )
             {
-                size_type index = ldof.index();
+                index_type index = ldof.index();
                 super::operator[]( index ) += s(ldof.localDof())*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2843,20 +2968,20 @@ public:
             // we assume here that we are in CG
             // TODO : adapt to DG and loop over all element to which the point belongs to
             // TODO : check if the doftable is computed for this eid
-            size_type eid = e.elements().begin()->first;
+            index_type eid = e.elements().begin()->first;
             uint16_type edgeid_in_element = e.elements().begin()->second;
             this->plus_assign( e, Ihloc, std::make_pair( eid,edgeid_in_element ) );
         }
         template<typename EltType>
-        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo,
+        void plus_assign( EltType const& e, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo,
                      typename std::enable_if<is_3d_real<EltType>::value && is_edge<EltType>::value>::type* = nullptr )
         {
-            size_type eid = eltsInfo.first;
+            index_type eid = eltsInfo.first;
             uint16_type edgeid_in_element = eltsInfo.second;
             auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
             for( auto const& ldof : M_functionspace->dof()->edgeLocalDof( eid, edgeid_in_element ) )
             {
-                size_type index= ldof.index();
+                index_type index= ldof.index();
                 super::operator[]( index ) += s(edgeid_in_element)*Ihloc( ldof.localDofInFace() );
             }
         }
@@ -2866,19 +2991,19 @@ public:
                 // we assume here that we are in CG
                 // TODO : adapt to DG and loop over all element to which the point belongs to
                 // TODO : check if the doftable is computed for this eid
-                size_type eid = p.elements().begin()->first;
+                index_type eid = p.elements().begin()->first;
                 uint16_type ptid_in_element = p.elements().begin()->second;
                 this->plus_assign( p, Ihloc, std::make_pair( eid,ptid_in_element ) );
             }
 
-        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<size_type, uint16_type> const& eltsInfo )
+        void plus_assign( geopoint_type const& p, local_interpolant_type const& Ihloc, std::pair<index_type, uint16_type> const& eltsInfo )
             {
-                size_type eid = eltsInfo.first;
+                index_type eid = eltsInfo.first;
                 uint16_type ptid_in_element = eltsInfo.second;
                 auto const& s = M_functionspace->dof()->localToGlobalSigns( eid );
                 for( int c = 0; c < (is_product?nComponents:1); ++c )
                 {
-                    size_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
+                    index_type index = M_functionspace->dof()->localToGlobal( eid, ptid_in_element, c ).index();
                     super::operator[]( index ) += s(ptid_in_element)*Ihloc( c );
                 }
             }
@@ -2897,12 +3022,16 @@ public:
         typedef Eigen::Matrix<value_type,nComponents2,1> _div_type;
         typedef Eigen::Matrix<value_type,nRealDim,1> _curl_type;
 #else
-        typedef Eigen::Tensor<value_type,2> _id_type;
-        typedef Eigen::Tensor<value_type,2> _grad_type;
-        typedef Eigen::Tensor<value_type,2> _dn_type;
-        typedef Eigen::Tensor<value_type,2> _hess_type;
-        typedef Eigen::Tensor<value_type,2> _div_type;
-        typedef Eigen::Tensor<value_type,2> _curl_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _id_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nRealDim>> _grad_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents1,nComponents2>> _dn_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nRealDim,nRealDim>> _hess_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<nComponents2,1>> _div_type;
+        typedef Eigen::TensorFixedSize<value_type,Eigen::Sizes<(nRealDim==3)?nRealDim:1,1>> _curl_type;
+        //typedef Eigen::Tensor<value_type,2> _dn_type;
+        //typedef Eigen::Tensor<value_type,2> _hess_type;
+        //typedef Eigen::Tensor<value_type,2> _div_type;
+        //typedef Eigen::Tensor<value_type,2> _curl_type;
 #endif
         typedef boost::multi_array<_id_type,1> id_array_type;
         typedef boost::multi_array<_grad_type,1> grad_array_type;
@@ -2970,19 +3099,19 @@ public:
 
             typename p0_space_type::element_type p0Element( P0h );
 
-            for ( auto const& rangeElt : elements( P0h->mesh() ) )
+            for ( auto const& rangeElt : P0h->template rangeElements<0>() /*elements( P0h->mesh() )*/ )
             {
                 auto const& meshElt = boost::unwrap_ref( rangeElt );
-                size_type eid = meshElt.id();
+                index_type eid = meshElt.id();
 
-                size_type dofp0 = boost::get<0>( P0h->dof()->localToGlobal( eid, 0, 0 ) );
+                index_type dofp0 = P0h->dof()->localToGlobal( eid, 0, 0 ).index();
                 std::vector<value_type> values ( functionspace_type::fe_type::nLocalDof );
 
-                size_type dofpn = 0;
+                index_type dofpn = 0;
 
                 for ( uint16_type local_id=0; local_id < functionspace_type::fe_type::nLocalDof; ++local_id )
                 {
-                    dofpn = boost::get<0>( this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ) );
+                    dofpn = this->functionSpace()->dof()->localToGlobal( eid, local_id, 0 ).index();
                     values[local_id] = this->operator()( dofpn );
                 }
 
@@ -3123,7 +3252,7 @@ public:
             shape[0] = 1;
 
             id_array_type v( shape );
-            _id_type idzero( ncdof, 1 );
+            _id_type idzero;
             std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             if( context.size() > 0 )
@@ -3164,7 +3293,7 @@ public:
             shape[0] = 1;
             id_array_type v( shape );
             const int ncdof  = is_product?nComponents:1;
-            _id_type idzero( ncdof, 1 );
+            _id_type idzero;
             std::fill( v.data(), v.data()+v.num_elements(), idzero.constant(0.));
 
             value_type result=0;
@@ -3294,11 +3423,18 @@ public:
         }
         template<typename ElementType>
         void
-        grad( ElementType const& elt, grad_array_type& v )
+        grad( ElementType const& elt, grad_array_type& v ) const
         {
-            gmc_ptrtype gmc( geomapPtr( elt ) );
-            v.resize( gradExtents(  *gmc ) );
-            grad_( *gmc, *pcPtr( elt ), v );
+            if constexpr ( std::is_base_of_v<ElementType,ConvexBase> )
+            {
+                gmc_ptrtype gmc( geomapPtr( elt ) );
+                v.resize( gradExtents(  *gmc ) );
+                grad_( *gmc, *pcPtr( elt ), v );
+            }
+            else
+            {
+                grad_( elt, v );
+            }
         }
 
         /**
@@ -3318,11 +3454,11 @@ public:
         template<typename ContextType>
         void grad_( ContextType const & context, grad_array_type& v ) const;
 
-        template<typename ContextType>
-        void grad( ContextType const & context, grad_array_type& v ) const
-        {
-            grad_( context, v );
-        }
+        //!
+        //! compute Symmetric Gradient only in the vectorial case
+        //!
+        template<typename ContextType,typename EType = this_type>
+        void symmetricGradient( ContextType const & context, grad_array_type& v, std::enable_if_t<EType::is_vectorial>* = nullptr ) const;
 
         void
         gradInterpolate( matrix_node_type __ptsReal, grad_array_type& v, bool conformalEval, matrix_node_type const& setPointsConf ) const;
@@ -3732,9 +3868,9 @@ public:
                                  std::shared_ptr<BackendType> backend )
             {
                 auto r =  functionSpace()->dof()->markerToDof( m );
-                size_type s = std::distance( r.first, r.second );
+                index_type s = std::distance( r.first, r.second );
                 vector_ptrtype res = backend->newVector(s, s);
-                size_type i = 0;
+                index_type i = 0;
                 for( auto it = r.first, en = r.second; it != en; ++it, ++i )
                     res->set( i, super::operator[]( it->second ) );
                 return res;
@@ -3747,9 +3883,9 @@ public:
             {
                 auto r1 =  functionSpace()->dof()->markerToDofLessThan( m );
                 auto r2 =  functionSpace()->dof()->markerToDofGreaterThan( m );
-                size_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
+                index_type s = std::distance( r1.first, r1.second ) + std::distance( r2.first, r2.second );
                 vector_ptrtype res = backend->newVector(s, s);
-                size_type i = 0;
+                index_type i = 0;
                 for( auto it = r1.first, en = r1.second; it != en; ++it, ++i )
                     res->set( i, super::operator[]( it->second ) );
                 for( auto it = r2.first, en = r2.second; it != en; ++it, ++i )
@@ -3821,11 +3957,11 @@ public:
         /**
          * world communicator
          */
-        WorldComm & worldComm() 
+        WorldComm & worldComm()
         {
             return M_functionspace->worldComm();
         }
-        
+
         /**
          * world communicator
          */
@@ -3954,13 +4090,14 @@ public:
             //super::init( M_functionspace->nDof(),  M_functionspace->nLocalDof() );
         }
 
-        BOOST_PARAMETER_MEMBER_FUNCTION( ( void ),
+        BOOST_PARAMETER_CONST_MEMBER_FUNCTION( ( void ),
                                          save,
                                          tag,
                                          ( required
                                            ( path,* ) )
                                          ( optional
-                                           ( type,( std::string ),std::string( "binary" ) )
+                                           ( name,( std::string ), M_name )
+                                           ( type,( std::string ),std::string( "default" ) )
                                            ( suffix,( std::string ),std::string( "" ) )
                                            ( sep,( std::string ),std::string( "" ) )
                                          ) )
@@ -3968,7 +4105,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            saveImpl( path, type, suffix, sep );
+            saveImpl( Environment::expand( path ), name, type, suffix, sep );
         }
 
         //!
@@ -3978,8 +4115,24 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filenames
         //!
-        void saveImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "")
+        void saveImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const & sep = "") const
         {
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( typeUsed != "binary" && typeUsed != "text" && typeUsed != "xml" &&  typeUsed != "hdf5" )
+            {
+                LOG(WARNING)  << "[save] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return;
+            }
+
             // if directory does not exist, create it only by one process
             if ( this->worldComm().isMasterRank() && !fs::exists( fs::path( path ) ) )
             {
@@ -3988,39 +4141,42 @@ public:
             // wait creating directory
             this->worldComm().barrier();
 
-            std::ostringstream os1;
-            os1 << M_name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-            fs::path p = fs::path( path ) / os1.str();
-            LOG(INFO) << "saving "  << p << "\n";
-
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                fs::ofstream ofs( p );
-                boost::archive::binary_oarchive oa( ofs );
-                oa << *this;
-            }
+                std::ostringstream os1;
+                os1 << name << sep << suffix << "-" << this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                fs::path p = fs::path( path ) / os1.str();
+                LOG(INFO) << "saving "  << p << "\n";
 
-            else if ( type == "text" )
-            {
-                fs::ofstream ofs( p );
-                boost::archive::text_oarchive oa( ofs );
-                oa << *this;
-            }
+                if ( typeUsed == "binary" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::binary_oarchive oa( ofs );
+                    oa << *this;
+                }
 
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_oarchive oa(ofs);
-                //oa << *this;
+                else if ( typeUsed == "text" )
+                {
+                    fs::ofstream ofs( p );
+                    boost::archive::text_oarchive oa( ofs );
+                    oa << *this;
+                }
+
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_oarchive oa(ofs);
+                    //oa << *this;
+                }
             }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
                 std::ostringstream os2;
-                os2 << M_name << sep << suffix << ".h5";
+                os2 << name << sep << suffix << ".h5";
                 fs::path filename = fs::path( path ) / os2.str();
 #ifdef FEELPP_HAS_HDF5
                 this->saveHDF5( filename.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
         }
@@ -4031,7 +4187,8 @@ public:
             ( required
               ( path,* ) )
             ( optional
-              ( type,( std::string ),std::string( "binary" ) )
+              ( name,( std::string ), M_name )
+              ( type,( std::string ),std::string( "default" ) )
               ( suffix,( std::string ),std::string( "" ) )
               ( sep,( std::string ),std::string( "" ) )
             )
@@ -4040,7 +4197,7 @@ public:
 #if BOOST_VERSION < 105900
             Feel::detail::ignore_unused_variable_warning( args );
 #endif
-            return loadImpl( path, type, suffix, sep );
+            return loadImpl( Environment::expand( path ), name, type, suffix, sep );
         }
         //!
         //! load function space element from file
@@ -4049,82 +4206,94 @@ public:
         //! @param suffix filename suffix to use
         //! @param sep separator to use in filename
         //!
-        bool loadImpl( std::string const& path, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
+        bool loadImpl( std::string const& path, std::string const& name, std::string const& type = "binary", std::string const& suffix = "", std::string const& sep = "" )
         {
-            fs::path partial_path = fs::path(path);
-            fs::path full_path_dir_sol(fs::current_path());
-            full_path_dir_sol = full_path_dir_sol/partial_path;
-
-            std::ostringstream os1;
-            std::ostringstream os2;
-            std::ostringstream os3;
+            std::ostringstream oss;
             fs::path p;
 
-            if ( type == "hdf5" )
+            if ( !fs::exists( path ) )
             {
-                os3 << M_name << sep << suffix << ".h5";
-                p = fs::path( path ) / os3.str();
+                LOG(WARNING) << "[load] : directory or file " << p << " not exists";
+                return false;
+            }
+
+            std::string typeUsed = type;
+            if ( typeUsed == "default" )
+            {
+#ifdef FEELPP_HAS_HDF5
+                typeUsed = "hdf5";
+#else
+                typeUsed = "binary";
+#endif
+            }
+
+            if ( fs::is_directory(path) )
+            {
+                if ( typeUsed == "hdf5" )
+                    oss << name << sep << suffix << ".h5";
+                else
+                    oss << name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
+                p = fs::path(path)/oss.str();
+
                 if ( !fs::exists( p ) )
                 {
-                    LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os3.str() << " DO NOT EXIST" << std::endl ;
-                    //std::cerr << "ATTENTION :  p does not exist
+                    LOG(WARNING) << "[load] : file " << p << " not exists";
+                    return 0;
+                }
+                if ( !fs::is_regular_file( p ) )
+                {
+                    LOG(WARNING) << "[load] : file " << p << " is not a  regular_file";
                     return 0;
                 }
             }
+            else if ( fs::is_regular_file( path ) )
+            {
+                p = path;
+            }
             else
             {
-                os1 << M_name << sep << suffix << "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank() << ".fdb";
-                p = fs::path( path ) / os1.str();
-                //std::cout << " In load the first full path is " << p << std::endl;
-                if ( !fs::exists( p ) )
-                {
-                    os2 << M_name << sep << suffix<< "-" <<  this->worldComm().globalSize() << "." << this->worldComm().globalRank();
-                    p = fs::path( path ) / os2.str();
-
-                    if ( !fs::exists( p ) )
-                    {
-                        LOG(WARNING)  << "[load] :" <<  full_path_dir_sol << "  FILE : " << os1.str() << " OR " << os2.str() << " DO NOT EXIST" << std::endl ;
-                        //std::cerr << "ATTENTION :  p does not exist
-                        return 0;
-                    }
-                }
-            }
-            LOG(INFO) << p << " exists, is is a regular file : " << fs::is_regular_file( p ) << "\n";
-            if ( !fs::is_regular_file( p ) )
-            {
-                LOG(WARNING) << "[load] : " << full_path_dir_sol << p << " is not a  regular_file !" << std::endl;
+                LOG(WARNING) << "[load] : file " << path << " is not a directory or a regular_file";
                 return 0;
             }
 
-            fs::ifstream ifs( p );
 
-            if ( type == "binary" )
+            if ( typeUsed == "binary" || typeUsed == "text" || typeUsed == "xml" )
             {
-                boost::archive::binary_iarchive ia( ifs );
-                ia >> *this;
-            }
+                fs::ifstream ifs( p );
+                if ( typeUsed == "binary" )
+                {
+                    boost::archive::binary_iarchive ia( ifs );
+                    ia >> *this;
+                }
 
-            else if ( type == "text" )
-            {
-                boost::archive::text_iarchive ia( ifs );
-                ia >> *this;
+                else if ( typeUsed == "text" )
+                {
+                    boost::archive::text_iarchive ia( ifs );
+                    ia >> *this;
+                }
+                else if ( typeUsed == "xml" )
+                {
+                    //boost::archive::xml_iarchive ia(ifs);
+                    //ia >> *this;
+                    return false;
+                }
             }
-
-            else if ( type == "xml" )
-            {
-                //boost::archive::xml_iarchive ia(ifs);
-                //ia >> *this;
-                return false;
-            }
-            else if ( type == "hdf5" )
+            else if ( typeUsed == "hdf5" )
             {
 #ifdef FEELPP_HAS_HDF5
                 this->loadHDF5( p.string() );
 #else
-                CHECK( false ) << "hdf5 not detected";
+                CHECK( false ) << "Feel++ is not compiled with hdf5";
 #endif
             }
+            else
+            {
+                LOG(WARNING)  << "[load] : invalid format " << typeUsed << " (type available : binary,text,xml,hdf5)";
+                return false;
+            }
+
             return true;
+
         }
 
         void printMatlab( std::string fname, bool gmsh = false ) const
@@ -4141,22 +4310,77 @@ public:
                 m.printMatlab( fname );
             }
 
+        //!
+        //! compute the element wise mean value of an element
+        //!
+        p0dh_element_t ewiseMean( std::shared_ptr<p0dh_t> & P0dh ) const
+            {
+                p0dh_element_t v = P0dh->element();
+                v.zero();
+                typename basis_type::points_type p(mesh_type::nDim,1);
+                auto basispc = this->functionSpace()->basis()->preCompute( this->functionSpace()->basis(), p );
+                auto gmpc = this->mesh()->gm()->preCompute( this->mesh()->gm(), p );
+                auto range_elts = elements( this->mesh() );
+                auto elt_beg = begin( range_elts );
+                auto elt_end = end( range_elts );
+                if ( elt_beg != elt_end )
+                {
+                    auto gmc = this->mesh()->gm()->template context<vm::JACOBIAN>( boost::unwrap_ref(*elt_beg), gmpc );
+                    for ( auto const& rangeElt : elements( this->mesh() ) )
+                    {
+                        auto const& meshElt = boost::unwrap_ref( rangeElt );
+                        size_type e = meshElt.id();
+                        gmc->update( meshElt );
+                        auto p0_eid = v.functionSpace()->dof()->localDof( e ).first->second.index();
+                        for( auto const& ldof : M_functionspace->dof()->localDof( e ) )
+                        {
+                            size_type index = ldof.second.index();
+                            v.operator[](p0_eid) += basispc->firstMoment(ldof.first.localDof())*super::operator[]( index );
+                        }
+                        v.operator[](p0_eid) *= gmc->J(0)/meshElt.measure();
+                    }
+                }
+                return v;
+            }
 
         BOOST_PARAMETER_MEMBER_FUNCTION( (void),
                                          on,
                                          tag,
                                          ( required
-                                           ( range, *  )
                                            ( expr,   * )
                                              ) // 4. one required parameter, and
 
                                          ( optional
+                                           ( range, *, elements(this->mesh())  )
                                            ( prefix,   ( std::string ), "" )
                                            ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
                                            ( accumulate,     *( boost::is_integral<mpl::_> ), false )
+                                           ( close,  (bool), false )
                                            ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
             {
-                return onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                onImpl( range, expr, prefix, Feel::detail::geomapStrategy(range,geomap), accumulate, verbose );
+                if ( close )
+                {
+                    std::string opUsed = ( accumulate )? "+" : "=";
+                    sync( *this, opUsed, this->functionSpace()->dofs( range, ComponentType::NO_COMPONENT, true ) );
+                }
+            }
+
+        BOOST_PARAMETER_MEMBER_FUNCTION( (void),
+                                         plus,
+                                         tag,
+                                         ( required
+                                           ( expr,   * )
+                                           ) // 4. one required parameter, and
+
+                                         ( optional
+                                           ( range, *, elements(this->mesh())  )
+                                           ( prefix,   ( std::string ), "" )
+                                           ( geomap,         *, GeomapStrategyType::GEOMAP_OPT )
+                                           ( close,  (bool), false )
+                                           ( verbose,   ( bool ), boption(_prefix=prefix,_name="on.verbose") )))
+            {
+                this->on(_range=range,_expr=expr,_prefix=prefix,_geomap=geomap,_accumulate=true,_close=close, _verbose=verbose );
             }
 
 
@@ -4364,7 +4588,7 @@ public:
     // Constructor
     FunctionSpace( mesh_ptrtype const& mesh,
                    mesh_support_vector_type const& meshSupport,
-                   std::vector<Dof > const& dofindices,
+                   std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                    periodicity_type periodicity = periodicity_type(),
                    worldscomm_ptr_t const& _worldsComm = Environment::worldsComm(nSpaces),
                    std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false),
@@ -4405,7 +4629,7 @@ public:
     }
 #endif // 0
 
-    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof > const& dofindices )
+    static pointer_type New( mesh_ptrtype const& __m, std::vector<Dof<typename mesh_type::size_type> > const& dofindices )
     {
         return pointer_type( new functionspace_type( __m, dofindices ) );
     }
@@ -4431,7 +4655,7 @@ public:
 
     static pointer_type NewImpl( mesh_ptrtype const& __m,
                                  mesh_support_vector_type const& meshSupport,
-                                 worldscomm_ptr_t & worldscomm = Environment::worldsComm(nSpaces),
+                                 worldscomm_ptr_t const& worldscomm = Environment::worldsComm(nSpaces),
                                  size_type mesh_components = MESH_RENUMBER | MESH_CHECK,
                                  periodicity_type periodicity = periodicity_type(),
                                  std::vector<bool> extendedDofTable = std::vector<bool>(nSpaces,false) )
@@ -4495,14 +4719,14 @@ public:
         DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
         DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
 
-        this->init( mesh, meshSupport, mesh_components, periodicity, std::vector<Dof >(), mpl::bool_<is_composite>() );
+        this->init( mesh, meshSupport, mesh_components, periodicity, std::vector<Dof<typename mesh_type::size_type> >(), mpl::bool_<is_composite>() );
         //mesh->addObserver( *this );
     }
 
     void init( mesh_ptrtype const& mesh,
                mesh_support_vector_type const& meshSupport,
                size_type mesh_components,
-               std::vector<Dof > const& dofindices,
+               std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                periodicity_type periodicity = periodicity_type() )
     {
 
@@ -4537,7 +4761,7 @@ public:
     {
         M_worldsComm=_worldsComm;
     }
-    worldscomm_ptr_t & worldsComm() 
+    worldscomm_ptr_t & worldsComm()
     {
         return M_worldsComm;
     }
@@ -4545,7 +4769,7 @@ public:
     {
         return M_worldsComm;
     }
-    
+
     bool hasEntriesForAllSpaces()
     {
         return (this->template mesh<0>()->worldComm().localSize() == this->template mesh<0>()->worldComm().globalSize() );
@@ -4662,7 +4886,7 @@ public:
     /**
      * \return the starting value of the global dof numbering
      */
-    size_type nDofStart( size_type i = /*invalid_size_type_value*/0 ) const
+    size_type nDofStart( size_type i = /*invalid_v<size_type>*/0 ) const
     {
         size_type start =  fusion::accumulate( this->functionSpaces(), size_type( 0 ), Feel::detail::NbDof( 0, i ) );
         return start;
@@ -4756,19 +4980,10 @@ public:
     typename GetMesh<mesh_ptrtype,i>::type
     mesh() const
     {
-        return mesh<i>( is_shared_ptr<mesh_ptrtype>() );
-    }
-    template<int i>
-    typename GetMesh<mesh_ptrtype,i>::type
-    mesh( mpl::bool_<true> ) const
-    {
-        return M_mesh;
-    }
-    template<int i>
-    typename GetMesh<mesh_ptrtype,i>::type
-    mesh( mpl::bool_<false> ) const
-    {
-        return fusion::at_c<i>(M_mesh);
+        if constexpr ( is_shared_ptr<mesh_ptrtype>() )
+            return M_mesh;
+        else
+            return fusion::at_c<i>(M_mesh);
     }
 
     /**
@@ -4869,7 +5084,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& map() const
+    DataMap<size_type> const& map() const
     {
         return *M_dof;
     }
@@ -4884,7 +5099,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& mapOn() const
+    DataMap<size_type> const& mapOn() const
     {
         return *M_dof;
     }
@@ -4892,7 +5107,7 @@ public:
     /**
        \return the degrees of freedom
     */
-    DataMap const& mapOnOff() const
+    DataMap<size_type> const& mapOnOff() const
     {
         return *M_dofOnOff;
     }
@@ -5337,13 +5552,13 @@ private:
                                 mesh_support_vector_type const& meshSupport,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
-                                std::vector<Dof > const& dofindices,
+                                std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                                 mpl::bool_<false> );
     FEELPP_NO_EXPORT void init( mesh_ptrtype const& mesh,
                                 mesh_support_vector_type const& meshSupport,
                                 size_type mesh_components,
                                 periodicity_type const& periodicity,
-                                std::vector<Dof > const& dofindices,
+                                std::vector<Dof<typename mesh_type::size_type> > const& dofindices,
                                 mpl::bool_<true> );
     template<typename FSpaceHead, typename... FSpaceTail>
     FEELPP_NO_EXPORT void initList( FSpaceHead& fspacehead, FSpaceTail... fspacetail );
@@ -5412,7 +5627,7 @@ private:
         }
     template <typename RangeType>
     void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
-               typename std::enable_if< std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5452,10 +5667,17 @@ private:
             }
         }
     template <typename RangeType>
+    void dofs( RangeType const& rangeFace, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
+               typename std::enable_if< boost::tuples::template element<0, RangeType>::type::value == MESH_FACES && !std::is_same<RangeType,faces_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
+        {
+            CHECK(false) << "TODO";
+        }
+
+    template <typename RangeType>
     void dofs( RangeType const& rangeEdge, ComponentType c1, bool onlyMultiProcessDofs, mpl::false_, std::set<size_type> & res,
                typename std::enable_if< std::is_same<RangeType,edges_reference_wrapper_t<mesh_type> >::value >::type* = nullptr ) const
         {
-            size_type eid = invalid_size_type_value;
+            size_type eid = invalid_v<size_type>;
             uint16_type edgeid_in_element;
             if ( c1 == ComponentType::NO_COMPONENT )
             {
@@ -5465,7 +5687,7 @@ private:
                     auto itEltInfo = edge.elements().begin();
                     if ( itEltInfo == edge.elements().end() )
                         continue;
-                    eid = invalid_size_type_value;
+                    eid = invalid_v<size_type>;
                     for ( auto const& eltConnectedToEdge : edge.elements() )
                     {
                         size_type eltIdConnected = eltConnectedToEdge.first;
@@ -5476,7 +5698,7 @@ private:
                             break;
                         }
                     }
-                    if ( eid == invalid_size_type_value )
+                    if ( eid == invalid_v<size_type> )
                         continue;
 
                     for( auto const& ldof : this->dof()->edgeLocalDof( eid, edgeid_in_element ) )
@@ -5500,7 +5722,7 @@ private:
                     auto itEltInfo = edge.elements().begin();
                     if ( itEltInfo == edge.elements().end() )
                         continue;
-                    eid = invalid_size_type_value;
+                    eid = invalid_v<size_type>;
                     for ( auto const& eltConnectedToEdge : edge.elements() )
                     {
                         size_type eltIdConnected = eltConnectedToEdge.first;
@@ -5511,7 +5733,7 @@ private:
                             break;
                         }
                     }
-                    if ( eid == invalid_size_type_value )
+                    if ( eid == invalid_v<size_type> )
                         continue;
 
                     for( auto const& ldof : XhComp->dof()->edgeLocalDof( eid, edgeid_in_element ) )
@@ -5539,7 +5761,7 @@ private:
             else
                 compUsed.push_back( (int)c1 );
 
-            size_type eid = invalid_size_type_value;
+            size_type eid = invalid_v<size_type>;
             uint16_type ptid_in_element;
             for ( auto const& pointWrap : rangePoint )
             {
@@ -5547,7 +5769,7 @@ private:
                 auto itPointInfo = point.elements().begin();
                 if ( itPointInfo == point.elements().end() )
                     continue;
-                eid = invalid_size_type_value;
+                eid = invalid_v<size_type>;
                 for ( auto const& eltConnectedToPoint : point.elements() )
                 {
                     size_type eltIdConnected = eltConnectedToPoint.first;
@@ -5558,7 +5780,7 @@ private:
                         break;
                     }
                 }
-                if ( eid == invalid_size_type_value )
+                if ( eid == invalid_v<size_type> )
                     continue;
 
                 for( uint16_type c : compUsed )
@@ -5720,7 +5942,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
-                                         std::vector<Dof> const& dofindices,
+                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
                                          mpl::bool_<false> )
 {
     DVLOG(2) << "calling init(<space>) begin\n";
@@ -5730,24 +5952,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
     M_periodicity = periodicity;
     VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
 
-
-    if ( basis_type::nDofPerEdge || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_EDGES;
-
-    /*
-     * update faces info in mesh only if dofs exists on faces or the
-     * expansion is continuous between elements. This case handles strong
-     * Dirichlet imposition
-     */
-    if ( basis_type::nDofPerFace || is_continuous  || nDim >= 3 )
-        mesh_components |= MESH_UPDATE_FACES;
-
-    if ( !M_mesh->isUpdatedForUse() )
+    if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
     {
-        M_mesh->components().set( mesh_components );
-        M_mesh->updateForUse();
-    }
 
+        if ( basis_type::nDofPerEdge || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_EDGES;
+
+        /*
+         * update faces info in mesh only if dofs exists on faces or the
+         * expansion is continuous between elements. This case handles strong
+         * Dirichlet imposition
+         */
+        if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
+            mesh_components |= MESH_UPDATE_FACES;
+
+        if ( !M_mesh->isUpdatedForUse() )
+        {
+            M_mesh->components().set( mesh_components );
+            M_mesh->updateForUse();
+        }
+    }
     if ( is_periodic )
     {
         M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
@@ -5755,17 +5979,26 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
 
     M_ref_fe = std::make_shared<basis_type>();
 
+    tic();
+    tic();
     M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-
+    toc("FunctionSpace dof-1", FLAGS_v>0);
+    tic();
     M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
-
+    toc("FunctionSpace dof-2", FLAGS_v>0);
     DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+    tic();
     M_dof->setDofIndices( dofindices );
+    toc("FunctionSpace dof-3", FLAGS_v>0);
     DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+    tic();
     if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
         M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
+    toc("FunctionSpace dof-4", FLAGS_v>0);
+    tic();
     M_dof->build( M_mesh );
-
+    toc("FunctionSpace dof-5", FLAGS_v>0);
+    toc("FunctionSpace dof table", FLAGS_v > 0 );
     M_dofOnOff = M_dof;
 
     this->applyUpdateInformationObject();
@@ -5787,7 +6020,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
                                          periodicity_type const& periodicity,
-                                         std::vector<Dof> const& dofindices,
+                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
                                          mpl::bool_<true> )
 {
     DVLOG(2) << "calling init(<composite>) begin\n";
@@ -5887,7 +6120,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::initList( FSpaceHead& head, FSpaceTail... tai
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nDof(<composite>) begin\n";
@@ -5897,14 +6130,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nDof( mpl::bool_<false> ) const
 {
     return M_dof->nDof();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -5914,7 +6147,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 {
     //return M_dof->nLocalDof();
@@ -5922,7 +6155,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDof( mpl::bool_<false> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -5932,14 +6165,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<true> ) const
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhost( mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -5949,14 +6182,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithGhost(proc);
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -5966,14 +6199,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<true> ) con
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhost( mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithoutGhost();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<true> ) const
 {
     DVLOG(2) << "calling nLocalDof(<composite>) begin\n";
@@ -5983,7 +6216,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, 
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
-size_type
+typename FunctionSpace<A0, A1, A2, A3, A4>::size_type
 FunctionSpace<A0, A1, A2, A3, A4>::nLocalDofWithoutGhostOnProc( const int proc, mpl::bool_<false> ) const
 {
     return M_dof->nLocalDofWithoutGhost(proc);
@@ -6111,7 +6344,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
     typedef typename gm_type::Inverse inv_trans_type;
     typename gm_type::reference_convex_type refelem;
 
-    std::pair<size_type,value_type> closest = std::make_pair( invalid_size_type_value, -1e30 );
+    std::pair<size_type,value_type> closest = std::make_pair( invalid_v<size_type>, -1e30 );
 
     region_tree_type::pbox_set_type::const_iterator it = boxlst.begin();
     region_tree_type::pbox_set_type::const_iterator ite = boxlst.end();
@@ -6265,6 +6498,14 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
-
+//!
+//! @return the support of a function space
+//!
+template<typename SpaceT>
+typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+support( std::shared_ptr<SpaceT> const& X )
+{
+    return X->template meshSupport<0>();
+}
 
 #endif /* __FunctionSpace_H */

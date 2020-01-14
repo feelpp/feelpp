@@ -102,7 +102,7 @@ public:
 
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
-
+    using size_type = typename super::size_type;
     typedef std::vector<std::set<size_type> > pattern_type;
 
     typedef typename super::graph_type graph_type;
@@ -217,7 +217,7 @@ public:
     //!
     //! @return the number of non-zero entries
     //!
-    std::size_t nnz() const;
+    size_type nnz() const;
 
     //@}
 
@@ -369,7 +369,7 @@ public:
                      int* cols, int ncols,
                      value_type* data,
                      size_type K = 0,
-                     size_type K2 = invalid_size_type_value);
+                     size_type K2 = invalid_v<size_type>);
 
     /**
      * Same, but assumes the row and column maps are the same.
@@ -622,7 +622,7 @@ class MatrixPetscMPI : public MatrixPetsc<T>
     typedef MatrixPetsc<T> super;
 
 public :
-
+    using size_type = typename super::size_type;
     typedef typename super::graph_type graph_type;
     typedef typename super::graph_ptrtype graph_ptrtype;
     typedef typename super::value_type value_type;
@@ -679,7 +679,7 @@ public :
 
     void addMatrix( int* rows, int nrows,
                     int* cols, int ncols,
-                    value_type* data, size_type K = 0, size_type K2 = invalid_size_type_value );
+                    value_type* data, size_type K = 0, size_type K2 = invalid_v<size_type> );
 
     //void addMatrix( const T a, MatrixSparse<T> const&X );
 

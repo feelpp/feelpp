@@ -91,10 +91,14 @@ checkCreateGmshMesh( std::string const& shape, std::string const& convex = "Simp
     tic();
 
 
-    std::string msh = soption(_name="arm.filename");
-
+    std::string fname = soption(_name="arm.filename");
+    if ( fname.empty() || !fs::exists( fs::path(Environment::findFile(fname) ) ) )
+    {
+        BOOST_TEST_MESSAGE( "file not found : " << fname );
+        return;
+    }
     auto mesh = loadMesh(_mesh=new mesh_type,
-                         _filename=msh,
+                         _filename=fname,
                          _update=updateComponentsMesh );
     if ( Environment::isMasterRank() )
         std::cout << "loadMesh done" << std::endl;

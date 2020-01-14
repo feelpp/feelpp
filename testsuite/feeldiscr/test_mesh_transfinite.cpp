@@ -21,49 +21,35 @@
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
-/**
-   \file test_integration_ginac.cpp
-   \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-   \date 2013-07-05
-*/
-#include <sstream>
-#include <boost/timer.hpp>
-#include <feel/feel.hpp>
 
-int main(int argc, char**argv )
+#define BOOST_TEST_MODULE test_meshmarker
+#include <feel/feelcore/testsuite.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelvf/vf.hpp>
+
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( mesh_transfinite )
+
+BOOST_AUTO_TEST_CASE( test_load )
 {
     using namespace Feel;
-    Environment env( _argc=argc,
-                     _argv=argv,
-                     _about=about( _name="test_mesh_transfinite" ,
-                                   _author="Feel++ Consortium",
-                                   _email="feelpp-devel@feelpp.org" )  );
 
     auto mesh = loadMesh( _mesh=new Mesh<Simplex<3>> );
     //auto Xh = Pch<3>( mesh );
-    auto area = integrate( boundaryfaces(mesh), cst(1.) ).evaluate()(0,0);
-    auto bottom = integrate( markedfaces(mesh,"Bottom"), cst(1.) ).evaluate()(0,0);
-    auto top = integrate( markedfaces(mesh,"Top"), cst(1.) ).evaluate()(0,0);
-    auto right = integrate( markedfaces(mesh,"Right"), cst(1.) ).evaluate()(0,0);
-    auto left = integrate( markedfaces(mesh,"Left"), cst(1.) ).evaluate()(0,0);
-    auto front = integrate( markedfaces(mesh,"Front"), cst(1.) ).evaluate()(0,0);
-    auto back = integrate( markedfaces(mesh,"Back"), cst(1.) ).evaluate()(0,0);
+    auto area = integrate( _range=boundaryfaces(mesh), _expr=cst(1.) ).evaluate()(0,0);
+    auto bottom = integrate( _range=markedfaces(mesh,"Bottom"), _expr=cst(1.) ).evaluate()(0,0);
+    auto top = integrate( _range=markedfaces(mesh,"Top"), _expr=cst(1.) ).evaluate()(0,0);
+    auto right = integrate( _range=markedfaces(mesh,"Right"), _expr=cst(1.) ).evaluate()(0,0);
+    auto left = integrate( _range=markedfaces(mesh,"Left"), _expr=cst(1.) ).evaluate()(0,0);
+    auto front = integrate( _range=markedfaces(mesh,"Front"), _expr=cst(1.) ).evaluate()(0,0);
+    auto back = integrate( _range=markedfaces(mesh,"Back"), _expr=cst(1.) ).evaluate()(0,0);
 
-    CHECK( math::abs( top - 100 ) < 1e-10  ) << "Top = " << top << " should be 100 ";
-
-    CHECK( math::abs( left - 100 ) < 1e-10  ) << "Left = " << left << " should be 100 ";
-    CHECK( math::abs( front - 100 ) < 1e-10  ) << "Front = " << front << " should be 100 ";
-    CHECK( math::abs( back - 100 ) < 1e-10  ) << "Back = " << back << " should be 100 ";
-
-    // there is a bug in gmsh mesh generator using transfinite mesh, some faces
-    // cannot be found in the mesh connectivity, see
-    // https://github.com/feelpp/feelpp/issues/147 for more details
-    // right and bootom should have area 100 but are 0, check for 0 for now until this is fixed
-#if 0
-    CHECK( math::abs( right - 100 ) < 1e-10  ) << "Right = " << right << " should be 100 ";
-    CHECK( math::abs( bottom - 100 ) < 1e-10  ) << "Bottom = " << bottom << " should be 100 ";
-#else
-    CHECK( math::abs( right - 0 ) < 1e-10  ) << "Right = " << right << " should be 100 ";
-    CHECK( math::abs( bottom - 0 ) < 1e-10  ) << "Bottom = " << bottom << " should be 100 ";
-#endif
+    BOOST_CHECK_CLOSE( top, 100, 1e-10 );
+    BOOST_CHECK_CLOSE( left, 100, 1e-10 );
+    BOOST_CHECK_CLOSE( front, 100, 1e-10 );
+    BOOST_CHECK_CLOSE( back, 100, 1e-10 );
+    BOOST_CHECK_CLOSE( right, 100, 1e-10 );
+    BOOST_CHECK_CLOSE( bottom, 100, 1e-10 );
 }
+BOOST_AUTO_TEST_SUITE_END()

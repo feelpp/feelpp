@@ -57,6 +57,7 @@ BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
 BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( about )
     BOOST_PARAMETER_NAME( prefix )
+    BOOST_PARAMETER_NAME( prefix_overload )
     BOOST_PARAMETER_NAME( sub )
     BOOST_PARAMETER_NAME( opt )
     BOOST_PARAMETER_NAME( path )
@@ -69,6 +70,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( argc )
     BOOST_PARAMETER_NAME( argv )
     BOOST_PARAMETER_NAME( remove )
+    BOOST_PARAMETER_NAME( logging )
 
     BOOST_PARAMETER_NAME( verbose )
     BOOST_PARAMETER_NAME( threading )
@@ -126,6 +128,7 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( transform )
     BOOST_PARAMETER_NAME( value_on_diagonal )
     BOOST_PARAMETER_NAME( condense )
+    BOOST_PARAMETER_NAME( local )
 // parameter for exporter
     BOOST_PARAMETER_NAME( geo )
     BOOST_PARAMETER_NAME( fileset )
@@ -309,6 +312,13 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
     BOOST_PARAMETER_NAME( tag )
+
+// create submesh
+    BOOST_PARAMETER_NAME( only_on_boundary_faces )
+    BOOST_PARAMETER_NAME( view )
+
+
+
 } // Feel
 
 

@@ -30,10 +30,19 @@ Line Loop(4) = {3, 1, 2};
 Plane Surface(4) = {4};                                                                                                                                       
 //+                                                                                                                                                           
 Surface Loop(1) = {2, 4, 3, 1};
-Physical Surface("Dirichlet") = {1,2,3,4};
+
+Physical Point("P1") = {1};
+Physical Point("P2") = {2};
+Physical Point("P3") = {3};
+Physical Point("P4") = {4};
+Physical Line("Edges") = {1,2,3,4,5,6};
+
+Physical Surface("Dirichlet") = {1,2};
+Physical Surface("Neumann") = {3};
+Physical Surface("Robin") = {4};
 //+                                                                                                                                                           
-Volume(0) = {1};                                                                                                                                              
-Physical Volume("tetra") = {0};    
+Volume(1) = {1};                                                                                                                                              
+Physical Volume("Tetrahedron") = {1};    
 
 
 

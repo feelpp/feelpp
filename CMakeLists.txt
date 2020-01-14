@@ -45,6 +45,17 @@ if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 AND ${CMAKE_VERSION} VERSION_LESS 3.6 
     message(STATUS "[feelpp] use old policy CMP0053" )
     cmake_policy(SET CMP0053 OLD)
 endif()
+
+if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
+  message(STATUS "[feelpp] use new policy CMP0079" )
+  cmake_policy(SET CMP0079 NEW)
+endif()
+
+if (POLICY CMP0045)
+# error on non-existent target in get_target_property
+cmake_policy(SET CMP0045 NEW)
+endif()
+
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -102,6 +113,7 @@ OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )
 if ( NOT FEELPP_ENABLE_BUILD_STATIC )
   set(BUILD_SHARED_LIBS ON)
 endif()
+OPTION(FEELPP_ENABLE_ASAN "enable asan flags" OFF)
 OPTION(FEELPP_BENCHMARK_FLAGS "enable benchmarks flags" OFF)
 OPTION(FEELPP_ENABLE_DOCUMENTATION "enable Feel++ documentation (aka examples)" ${FEELPP_DEFAULT})
 OPTION(FEELPP_ENABLE_BENCHMARKS "enable Feel++ benchmarks" ${FEELPP_DEFAULT})
@@ -179,6 +191,42 @@ add_custom_target(install-testcase
 
 add_custom_target(check-full COMMAND "ctest")
 
+#
+# list of sub-directories of curdir
+MACRO(project_list_subdir result curdir)
+  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+  FOREACH(child ${children})
+    IF(IS_DIRECTORY ${curdir}/${child})
+      LIST(APPEND dirlist ${child})
+    ENDIF()
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+ENDMACRO()
+
+# Load documented project for Doxygen
+# it assumes that a project is valid if :
+#   there is README.{md,adoc} file in the directory
+#   that the directory path include "research"
+# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
+# option which are set to OFF by default
+MESSAGE(STATUS "[feelpp] Feel++ projects :")
+project_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
+foreach(project ${projects})
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
+      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
+    string(TOUPPER ${project} PROJECT)
+    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "BRAIN" OR ${PROJECT} STREQUAL "SWIMMER"  )
+      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
+    else()
+      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
+    endif()
+    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
+		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
+		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
+		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
+  endif()
+endforeach()
+
 
 ################################################################################
 # Feel
@@ -240,29 +288,6 @@ ENDIF()
 
 
 
-# Load documented project for Doxygen
-# it assumes that a project is valid if :
-#   there is README.{md,adoc} file in the directory
-#   that the directory path include "research"
-# for each detected project it creates an FEELPP_ENABLE_RESEARCH_${PROJECT} and FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION
-# option which are set to OFF by default
-MESSAGE(STATUS "[feelpp] Feel++ projects :")
-feelpp_list_subdir(projects ${CMAKE_CURRENT_SOURCE_DIR}/research)
-foreach(project ${projects})
-  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.md OR 
-      EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research/${project}/README.adoc  )
-    string(TOUPPER ${project} PROJECT)
-    if ( ${PROJECT} STREQUAL "EYE2BRAIN" OR ${PROJECT} STREQUAL "HYDROMORPHO" OR ${PROJECT} STREQUAL "SIVIBIRPP"  )
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    else()
-      option(FEELPP_ENABLE_RESEARCH_${PROJECT} "Enable/Disable research/${project} " ON)
-    endif()
-    option(FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION "Enable/Disable documentation in research/${project}" OFF)
-		SET(FEELPP_ENABLED_PROJECTS "${FEELPP_ENABLED_PROJECTS} ${project}" )
-		MESSAGE(STATUS "[feelpp] ${project}\t-- Compile : ${FEELPP_ENABLE_RESEARCH_${PROJECT}} ")
-		MESSAGE(STATUS "        \t\t-- Doc :     ${FEELPP_ENABLE_RESEARCH_${PROJECT}_DOCUMENTATION}" )
-  endif()
-endforeach()
 
 if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/research AND FEELPP_ENABLE_RESEARCH )
   ADD_SUBDIRECTORY ( research )

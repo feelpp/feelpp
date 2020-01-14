@@ -26,6 +26,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelmarkers.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 
@@ -34,16 +35,17 @@ namespace Feel
 
 namespace pt = boost::property_tree;
 
-class FEELPP_EXPORT ModelBoundaryCondition
+class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
 {
-    public:
-    explicit ModelBoundaryCondition( WorldComm const& worldComm = Environment::worldComm() );
+  public:
+    using super = CommObject;
+    explicit ModelBoundaryCondition( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelBoundaryCondition( ModelBoundaryCondition const& ) = default;
     ModelBoundaryCondition( ModelBoundaryCondition&& ) = default;
     ModelBoundaryCondition( pt::ptree const& p, std::string const& name,
                             std::string const& material, std::string const& e1,
                             std::string const& e2,
-                            WorldComm const& worldComm = Environment::worldComm() );
+                            worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelBoundaryCondition& operator=( ModelBoundaryCondition const& ) = default;
     ModelBoundaryCondition& operator=( ModelBoundaryCondition && ) = default;
 
@@ -87,7 +89,6 @@ class FEELPP_EXPORT ModelBoundaryCondition
     auto expr2() { return M_modelExpr2.expr<M,N>(); }
 
 private:
-    WorldComm const * M_worldComm;
     pt::ptree M_pt;
     std::string M_name;
     std::string M_material;
@@ -98,16 +99,16 @@ private:
     ModelExpression M_modelExpr2;
 };
 
-class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::vector<ModelBoundaryCondition> > >
+class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::map<std::string,ModelBoundaryCondition> > >, public CommObject
 {
   public:
-    explicit ModelBoundaryConditions( WorldComm const& world = Environment::worldComm() );
+    using super = CommObject;
+    explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
 private:
     void setup();
 
-    WorldComm const* M_worldComm;
     pt::ptree M_pt;
 };
 

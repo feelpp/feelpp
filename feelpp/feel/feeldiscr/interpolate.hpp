@@ -30,11 +30,59 @@
 #define __interpolate_H 1
 
 #include <feel/feelmesh/intersect.hpp>
+#include <feel/feelvf/operators.hpp>
 
 namespace Feel
 {
 enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
 
+
+template<typename SpaceType, typename FunctionType>
+bool
+interpolate_copy( std::shared_ptr<SpaceType> const& space,
+                  FunctionType const& f,
+                  typename SpaceType::element_type& interp )
+{
+    if constexpr (
+#if 0
+        std::is_same_v<typename SpaceType::mesh_type, typename FunctionType::functionspace_type::mesh_type> && 
+        std::is_same_v<typename SpaceType::basis_type, typename FunctionType::functionspace_type::basis_type>
+#else
+        std::is_same_v<SpaceType, typename FunctionType::functionspace_type> 
+#endif
+                  )
+    {
+        if ( space == f.functionSpace() )
+        {
+            DVLOG(2) << "[interpolate_copy] Same mesh and same space\n";
+            auto n = interp.name();
+            interp = f;
+            interp.setName( n );
+            return true;
+        }
+    }
+    return false;
+}
+
+template<typename InterpType, typename SizeT>
+void
+interpolate_sync( InterpType & interp, bool hasMeshSupportPartialDomain, std::set<SizeT> const& dofUsedWithPartialMeshSupport )
+{
+    static const bool interp_is_vector = is_std_vector_v<InterpType>;
+    if constexpr ( !interp_is_vector )
+    {
+        if ( hasMeshSupportPartialDomain )
+            sync( interp, "=", dofUsedWithPartialMeshSupport );
+        else
+            sync( interp, "=" );
+    }
+    else
+    {
+        for ( auto & interp_c1 : interp )
+            for ( auto & interp_c2 : interp_c1 )
+                interpolate_sync( unwrap_ptr( interp_c2 ), hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
+    }
+}
 /**
  * Given a space \p space using a lagrange basis, compute the
  * interpolation \p interp of \p f belonging to another function
@@ -48,12 +96,13 @@ enum { INTERPOLATE_DIFFERENT_MESH=0, INTERPOLATE_SAME_MESH = 1 };
  * interpolate( Xh, f, u );
  * </pre>
  */
-template<typename SpaceType, typename FunctionType>
+template<typename SpaceType, typename FunctionType, typename InterpType>
 void
 interpolate( std::shared_ptr<SpaceType> const& space,
              FunctionType const& f,
-             typename SpaceType::element_type& interp, int same_mesh = INTERPOLATE_DIFFERENT_MESH )
+             /*typename SpaceType::element_type*/  InterpType & interp )
 {
+    static const bool interp_is_vector = is_std_vector_v<InterpType>;
     typedef typename SpaceType::value_type value_type;
     typedef boost::multi_array<value_type,3> array_type;
     typedef typename SpaceType::element_type interp_element_type;
@@ -61,7 +110,8 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     typedef typename SpaceType::mesh_type mesh_type;
     typedef typename mesh_type::element_type geoelement_type;
     typedef typename mesh_type::element_iterator mesh_element_iterator;
-
+    using size_type = typename SpaceType::size_type;
+    
     typedef typename FunctionType::functionspace_type::mesh_type domain_mesh_type;
     typedef typename domain_mesh_type::element_type domain_geoelement_type;
     typedef typename domain_mesh_type::element_iterator domain_mesh_element_iterator;
@@ -86,18 +136,12 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     // basis
     typedef typename SpaceType::basis_type basis_type;
 
-
-    const bool same_basis = boost::is_same<basis_type, typename FunctionType::functionspace_type::basis_type>::value;
-    DVLOG(2) << "[interpolate] are the basis the same " << same_basis << "\n";
-    DVLOG(2) << "[interpolate] are the meshes the same " << same_mesh << "\n";
-
-    // if same space type and mesh  then return the function itself
-    if ( same_basis && same_mesh == INTERPOLATE_SAME_MESH )
-    {
-        DVLOG(2) << "[interpolate] Same mesh and same space\n";
-        interp = f;
-        return;
-    }
+    if constexpr ( !interp_is_vector )
+        {
+            // if same space type and mesh  then return the function itself
+            if ( interpolate_copy( space, f, interp ) )
+                return;
+        }
 
     dof_type const* __dof = space->dof().get();
     basis_type const* __basis = space->basis().get();
@@ -110,24 +154,14 @@ interpolate( std::shared_ptr<SpaceType> const& space,
     geopc_ptrtype __geopc( new geopc_type( __gm, __basis->dual().points() ) );
 
 
-    f.updateGlobalValues();
-
-    //auto it = f.functionSpace()->mesh()->beginElementWithProcessId();
-    //auto en = f.functionSpace()->mesh()->endElementWithProcessId();
     bool inputUseDofTableMPIExtended = f.functionSpace()->dof()->buildDofTableMPIExtended();
     bool outputUseDofTableMPIExtended = space->dof()->buildDofTableMPIExtended();
     bool upExtendedElt = ( space->mesh()->worldComm().localSize()>1 && inputUseDofTableMPIExtended && outputUseDofTableMPIExtended );
 
     bool applyVectorSync = !upExtendedElt && outputUseDofTableMPIExtended;
 
-    //gmc_ptrtype __c( new gmc_type( __gm, *it, __geopc ) );
-
-    //f.id( *fectx, fvalues );
-
     // if same mesh but not same function space (different order)
-    //if ( f.functionSpace()->mesh() == space->mesh() )
-    //if ( same_mesh == INTERPOLATE_SAME_MESH )
-    if ( ( MeshBase* )f.functionSpace()->mesh().get() == ( MeshBase* )space->mesh().get() )
+    if ( f.functionSpace()->mesh()->isSameMesh( space->mesh() ) )
     {
         elements_reference_wrapper_t<typename FunctionType::functionspace_type::mesh_type> rangeElt;
         bool hasMeshSupportPartialDomain = f.functionSpace()->dof()->hasMeshSupport() && f.functionSpace()->dof()->meshSupport()->isPartialSupport();
@@ -151,91 +185,119 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         {
             if ( applyVectorSync )
             {
-                if ( hasMeshSupportPartialDomain )
-                    sync( interp, "=", dofUsedWithPartialMeshSupport );
-                else
-                    sync( interp, "=" );
+                interpolate_sync( interp, hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
             }
             return;
         }
 
-        DVLOG(2) << "[interpolate] Same mesh but not same space\n";
+        DVLOG(2) << "[interpolate] Same mesh but not same space";
 
-        domain_gm_ptrtype __dgm = f.functionSpace()->gm();
-        typedef typename domain_gm_type::precompute_ptrtype domain_geopc_ptrtype;
-        typedef typename domain_gm_type::precompute_type domain_geopc_type;
-        domain_geopc_ptrtype __dgeopc( new domain_geopc_type( __dgm, __basis->dual().points() ) );
-
-        domain_gmc_ptrtype __c( new domain_gmc_type( __dgm, *it, __dgeopc ) );
-        auto pc = f.functionSpace()->fe()->preCompute( f.functionSpace()->fe(), __c->xRefs() );
-
-        f_fectx_ptrtype fectx( new f_fectx_type( f.functionSpace()->fe(),
-                               __c,
-                               pc ) );
-
-        typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
-        array_type fvalues( f.idExtents( *fectx ) );
-
-
-
-        typename f_fectx_type::id_type m_id( basis_type::nComponents1, basis_type::nComponents2);
-        for ( ; it != en; ++ it )
+        if constexpr ( is_lagrange_polynomialset_v<basis_type> && (basis_type::nOrder == 1) &&
+                       is_lagrange_polynomialset_v<f_fe_type> && (f_fe_type::nOrder > 0 ) &&
+                       !SpaceType::is_mortar && !FunctionType::functionspace_type::is_mortar  )
         {
-            domain_geoelement_type const& curElt = boost::unwrap_ref(*it);
-            __c->update( curElt );
-            fectx->update( __c, pc );
-
-            std::fill( fvalues.data(), fvalues.data()+fvalues.num_elements(), m_id.constant(0.));
-            f.id( *fectx, fvalues );
-
-            //std::cout << "interpfunc :  " << interpfunc << "\n";
-            for ( uint16_type l = 0; l < basis_type::nLocalDof; ++l )
+            // we guess that the vertex local dofs id are the same
+            DVLOG(2) << "[interpolate] optimization with Lagrange fe P1";
+            for ( ; it != en; ++ it )
             {
-
-                const int ncdof1 = basis_type::is_product?basis_type::nComponents1:1;
-                const int ncdof2 = basis_type::is_product?basis_type::nComponents2:1;
-
-                for ( uint16_type comp1 = 0; comp1 < ncdof1; ++comp1 )
-                    for ( uint16_type comp2 = 0; comp2 < ncdof2; ++comp2 )
+                auto const& curElt = unwrap_ref(*it);
+                auto const& f_indices = f.functionSpace()->dof()->localToGlobalIndices( curElt.id() );
+                for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
                 {
-                    size_type globaldof =  boost::get<0>( __dof->localToGlobal( curElt.id(),
-                                                          l, ncdof2*comp1+comp2 ) );
-
-#if 0
-                    size_type globaldof_f =  boost::get<0>( f.functionSpace()->dof()->localToGlobal( curElt.id(),l, 0 ) );
-                    std::cout << "elt : " << curElt.id() << "\n"
-                              << "  l : " << l << "\n"
-                              << " comp: " << comp << "\n"
-                              << " dof: " << globaldof_f << "\n"
-                              << "  value: " << f( globaldof_f ) << "\n";
-#endif
-
-                    //DVLOG(2) << "globaldof = " << globaldof << " firstldof = " << interp.firstLocalIndex() << " lastldof " << interp.lastLocalIndex() << "\n";
-                    // update only values on the processor
-                    if ( globaldof >= interp.firstLocalIndex() &&
-                            globaldof < interp.lastLocalIndex() )
+                    index_type index = ldof.second.index();
+                    dofUsedWithPartialMeshSupport.insert( index );
+                    if constexpr ( !interp_is_vector )
                     {
-                        interp( globaldof ) = fvalues[l]( comp1,comp2 );
-                        dofUsedWithPartialMeshSupport.insert( globaldof );
-                        //DVLOG(2) << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
-                        //std::cout << "interp( " << globaldof << ")=" << interp( globaldof ) << "\n";
+                        uint16_type f_ldofId = ldof.first.localDof();
+                        if constexpr ( f_fe_type::nComponents > 1 )
+                        {
+                            uint16_type comp = f_ldofId/basis_type::nLocalDof;
+                            f_ldofId = space->fe()->dofParent( f_ldofId ) + comp*f_fe_type::nLocalDof;
+                        }
+                        DCHECK( f_ldofId < f_indices.size() ) << "something wrong " << f_ldofId << " vs " << f_indices.size();
+                        index_type f_index = f_indices[f_ldofId];
+                        interp( index ) = f( f_index );
+                    }
+                    else
+                    {
+                        for ( uint16_type c1=0; c1<interp.size(); ++c1 )
+                        {
+                            for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
+                            {
+                                uint16_type newLocalDofId = ldof.first.localDof()+(c2+f_fe_type::nComponents2*c1)*f_fe_type::nLocalDof;
+                                DCHECK( newLocalDofId <  f_indices.size() ) << "something wrong " << newLocalDofId << " vs " << f_indices.size();
+                                index_type f_index = f_indices[newLocalDofId];
+                                unwrap_ptr(interp[c1][c2])( index ) = f(f_index);
+                            }
+                        }
                     }
                 }
             }
         }
+        else
+        {
+            auto __fe = space->fe();
+            auto ex = idv(f);
+            const size_type context = ex.context|vm::POINT|vm::KB|vm::JACOBIAN;
+            auto gmc = __gm->template context<context>( unwrap_ref(*it), __geopc );
+            auto expr_evaluator = ex.evaluator( vf::mapgmc(gmc) );
+            if constexpr ( !interp_is_vector )
+            {
+                auto IhLoc = __fe->localInterpolant();
+                for ( ; it != en; ++ it )
+                {
+                    auto const& curElt = unwrap_ref(*it);
+                    gmc->update( curElt );
+                    expr_evaluator.update( vf::mapgmc( gmc ) );
+                    __fe->interpolate( expr_evaluator, IhLoc );
 
+                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                    {
+                        index_type index = ldof.second.index();
+                        interp( index ) = s(ldof.first.localDof())*IhLoc( ldof.first.localDof() );
+                        dofUsedWithPartialMeshSupport.insert( index );
+                    }
+                }
+            }
+            else
+            {
+                std::vector<std::tuple<uint16_type,uint16_type,decltype(__fe->localInterpolant())>> IhLocsByComp;
+                for ( uint16_type c1=0; c1<interp.size(); ++c1 )
+                    for ( uint16_type c2=0; c2<interp[c1].size(); ++c2 )
+                        IhLocsByComp.push_back( std::make_tuple( c1,c2,__fe->localInterpolant()) );
+
+                for ( ; it != en; ++ it )
+                {
+                    auto const& curElt = unwrap_ref(*it);
+                    gmc->update( curElt );
+                    expr_evaluator.update( vf::mapgmc( gmc ) );
+
+                    for ( auto & [c1,c2,IhLoc] : IhLocsByComp )
+                        for( int q = 0; q <  __fe->nLocalDof; ++q )
+                            IhLoc( q ) = expr_evaluator.evalq( c1, c2, q );
+
+                    auto const& s = space->dof()->localToGlobalSigns( curElt.id() );
+                    for( auto const& ldof : space->dof()->localDof( curElt.id() ) )
+                    {
+                        index_type gindex = ldof.second.index();
+                        uint16_type lindex = ldof.first.localDof();
+                        for ( auto const& [c1,c2,IhLoc] : IhLocsByComp )
+                            unwrap_ptr(interp[c1][c2])( gindex ) = s(lindex)*IhLoc( lindex );
+                        dofUsedWithPartialMeshSupport.insert( gindex );
+                    }
+                }
+            }
+        }
         if ( applyVectorSync )
         {
-            if ( hasMeshSupportPartialDomain )
-                sync( interp, "=", dofUsedWithPartialMeshSupport );
-            else
-                sync( interp, "=" );
+            interpolate_sync( interp, hasMeshSupportPartialDomain, dofUsedWithPartialMeshSupport );
         }
 
-        DVLOG(2) << "[interpolate] Same mesh but not same space done\n";
+        DVLOG(2) << "[interpolate] Same mesh but not same space done";
     } // same mesh
 
-    else // INTERPOLATE_DIFFERENT_MESH
+    else if constexpr ( !interp_is_vector ) // INTERPOLATE_DIFFERENT_MESH
     {
         EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
         auto rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
@@ -267,7 +329,7 @@ interpolate( std::shared_ptr<SpaceType> const& space,
         typedef boost::multi_array<typename f_fectx_type::id_type,1> array_type;
         array_type fvalues( f.idExtents( *fectx ) );
 
-
+        using index_type = typename domain_mesh_type::index_type;
         typename domain_mesh_type::Inverse meshinv( f.functionSpace()->mesh() );
 
         /* initialisation of the mesh::inverse data structure */
@@ -285,10 +347,10 @@ interpolate( std::shared_ptr<SpaceType> const& space,
 
         std::vector<bool> dof_done( nbpts );
         std::fill( dof_done.begin(), dof_done.end(), false );
-        std::vector<boost::tuple<size_type,uint16_type > > itab;
+        std::vector<boost::tuple<index_type,uint16_type > > itab;
 
         size_type first_dof = space->dof()->firstDof();
-        typename f_fectx_type::id_type m_id( SpaceType::nComponents1, SpaceType::nComponents2 );
+        typename f_fectx_type::id_type m_id;
         for ( ; it != en; ++ it )
         {
             domain_geoelement_type const& curElt = boost::unwrap_ref(*it);

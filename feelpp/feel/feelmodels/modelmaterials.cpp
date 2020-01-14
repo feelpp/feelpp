@@ -32,13 +32,13 @@
 
 namespace Feel {
 
-ModelMaterial::ModelMaterial( WorldComm const& worldComm )
+ModelMaterial::ModelMaterial( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
-ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, WorldComm const& worldComm, std::string const& directoryLibExpr )
+ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, worldcomm_ptr_t const& worldComm, std::string const& directoryLibExpr )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_name( name ),
     M_p( p ),
     M_directoryLibExpr( directoryLibExpr ),
@@ -73,12 +73,28 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, World
             M_physics.insert(M_p.get<std::string>("physics") );
     }
 
+    std::map<std::string,double> constantMaterialProperty;
+    for( auto const& [k,v] : M_p )
+    {
+        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename")
+             && v.empty() && !v.data().empty() )
+        {
+            this->setProperty( k,M_p );
+
+            if ( this->hasPropertyConstant( k ) && this->hasPropertyExprScalar( k ) )
+                constantMaterialProperty[k] = this->property( k ).value();
+        }
+    }
+    this->setParameterValues( constantMaterialProperty );
+
+#if 0
     std::set<std::string> matProperties = { "rho","mu","Cp","Cv","Tref","beta",
                                             "k","k11","k12","k13","k22","k23","k33",
                                             "E","nu","sigma","C","Cs","Cl","L",
                                             "Ks","Kl","Tsol","Tliq" };
     for ( std::string const& prop : matProperties )
         this->setProperty( prop,M_p );
+#endif
 }
 
 bool
@@ -164,7 +180,29 @@ void
 ModelMaterial::setProperty( std::string const& property, pt::ptree const& p )
 {
     M_materialProperties[property] = mat_property_expr_type();
-    M_materialProperties[property].setExpr( property,p,*M_worldComm,M_directoryLibExpr );
+    try
+    {
+        M_materialProperties[property].setExpr( property,p,this->worldComm(),M_directoryLibExpr );
+    } catch (std::exception &p) {
+        LOG(WARNING) << p.what() << std::endl;
+        M_materialProperties.erase(property);
+        return;
+    }
+}
+
+void
+ModelMaterial::setProperty( std::string const& property, std::string const& e )
+{
+    M_materialProperties[property] = mat_property_expr_type();
+    try
+    {
+        M_materialProperties[property].setExpr( e,this->worldComm(),M_directoryLibExpr );
+    } catch (std::exception &p) {
+        LOG(WARNING) << p.what() << std::endl;
+        M_materialProperties.erase(property);
+        return;
+    }
+
 }
 
 void
@@ -206,14 +244,14 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m )
     return os;
 }
 
-ModelMaterials::ModelMaterials( WorldComm const& worldComm )
+ModelMaterials::ModelMaterials( worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm )
+    super( worldComm )
 {}
 
-ModelMaterials::ModelMaterials( pt::ptree const& p, WorldComm const& worldComm )
+ModelMaterials::ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm )
     :
-    M_worldComm( &worldComm ),
+    super( worldComm ),
     M_p( p )
 {
     setup();
@@ -226,7 +264,7 @@ ModelMaterials::setup()
     {
         LOG(INFO) << "Material Physical/Region :" << v.first  << "\n";
         std::string name = v.first;
-        this->insert( std::make_pair( name, ModelMaterial( name, v.second, *M_worldComm, M_directoryLibExpr ) ) );
+        this->insert( std::make_pair( name, ModelMaterial( name, v.second, this->worldCommPtr(), M_directoryLibExpr ) ) );
     }
 }
 
@@ -270,6 +308,56 @@ ModelMaterials::saveMD(std::ostream &os)
        << "|" << it->second.Tliq()
        << "|\n";
   os << "\n";
+}
+
+ModelMaterial const&
+ModelMaterials::material( std::string const& m ) const
+{
+    auto it = this->find( m );
+    if ( it == this->end() )
+        throw std::invalid_argument( std::string("ModelMaterial: Invalid material name ") + m );
+    return it->second;
+}
+
+std::map<std::string,ModelMaterial> ModelMaterials::materialWithPhysic(std::string const& physic) const
+{
+    std::map<std::string,ModelMaterial> mat;
+    std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                 [physic](std::pair<std::string,ModelMaterial> const& mp)
+                 { return mp.second.hasPhysics(physic); } );
+    return mat;
+}
+
+std::map<std::string,ModelMaterial> ModelMaterials::materialWithPhysic(std::vector<std::string> const& physics) const
+{
+    std::map<std::string,ModelMaterial> mat;
+    std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
+                 [physics](std::pair<std::string,ModelMaterial> const& mp)
+                 {
+                     bool b = false;
+                     for( auto const& p : physics )
+                         b = b || mp.second.hasPhysics(p);
+                     return b;
+                 });
+    return mat;
+}
+
+std::set<std::string> ModelMaterials::markersWithPhysic(std::string const& physic) const
+{
+    std::set<std::string> markers;
+    auto mat = this->materialWithPhysic(physic);
+    for( auto const& m : mat )
+        markers.insert(m.second.meshMarkers().begin(), m.second.meshMarkers().end());
+    return markers;
+}
+
+std::set<std::string> ModelMaterials::markersWithPhysic(std::vector<std::string> const& physic) const
+{
+    std::set<std::string> markers;
+    auto mat = this->materialWithPhysic(physic);
+    for( auto const& m : mat )
+        markers.insert(m.second.meshMarkers().begin(), m.second.meshMarkers().end());
+    return markers;
 }
 
 }

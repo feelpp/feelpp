@@ -167,6 +167,12 @@ namespace FeelModels
         graph_ptrtype const&
         sparsityMatrixGraph() const { CHECK(M_J) << "no matrix register"; return M_J->graph(); }
 
+        //! return data information available in assembly process
+        ModelAlgebraic::DataUpdateBase const& dataInfos() const { return M_dataInfos; }
+
+        //! return data information available in assembly process
+        ModelAlgebraic::DataUpdateBase & dataInfos() { return M_dataInfos; }
+
         void
         attachNullSpace( NullSpace<value_type> const& nullSpace );
         void
@@ -197,9 +203,14 @@ namespace FeelModels
         void evaluateResidual( const vector_ptrtype& U, vector_ptrtype& R,
                                std::vector<std::string> const& infos = std::vector<std::string>(),
                                bool applyDofElimination = true ) const;
+        void evaluateResidual( ModelAlgebraic::DataUpdateResidual & dataResidual, bool applyDofElimination = true ) const;
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
+
+        void setFunctionLinearAssembly( function_assembly_linear_type const& func ) { M_functionLinearAssembly = func; }
+        void setFunctionJacobianAssembly( function_assembly_jacobian_type const& func ) { M_functionJacobianAssembly = func; }
+        void setFunctionResidualAssembly( function_assembly_residual_type const& func ) { M_functionResidualAssembly = func; }
 
         void addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key = "" );
         void addFunctionLinearDofElimination( function_assembly_linear_type const& func, std::string const& key = "" );
@@ -242,9 +253,18 @@ namespace FeelModels
         sparse_matrix_ptrtype M_Prec;
         sparse_matrix_ptrtype M_Extended;
 
+        double M_dofElimination_valueOnDiagonal;
+        Feel::Context M_dofElimination_strategy;
+
         bool M_hasBuildLinearJacobian;
         bool M_hasBuildResidualCst;
         bool M_hasBuildLinearSystemCst;
+
+        ModelAlgebraic::DataUpdateBase M_dataInfos;
+
+        function_assembly_linear_type M_functionLinearAssembly;
+        function_assembly_jacobian_type M_functionJacobianAssembly;
+        function_assembly_residual_type M_functionResidualAssembly;
 
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearAssembly;
         std::map<std::string,function_assembly_linear_type> M_addFunctionLinearDofElimination;

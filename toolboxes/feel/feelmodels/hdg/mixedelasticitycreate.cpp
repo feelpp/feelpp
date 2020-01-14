@@ -165,32 +165,32 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::init( mesh_ptrtype mesh, mesh_ptrtype meshV
         M_mesh = loadMesh( new mesh_type);
     else
         M_mesh = mesh;
-    M_timers["mesh"].push_back(toc("initMesh"));
+    M_timers["mesh"].push_back(toc("initMesh", this->verbose() || FLAGS_v > 0));
 
     tic();
     this->initModel();
-    M_timers["initModel"].push_back(toc("initModel"));
+    M_timers["initModel"].push_back(toc("initModel", this->verbose() || FLAGS_v > 0));
 
     tic();
     this->initSpaces();
-    M_timers["spaces"].push_back(toc("initSpaces"));
+    M_timers["spaces"].push_back(toc("initSpaces", this->verbose() || FLAGS_v > 0));
 
     if (!isStationary())
     {
         tic();
         this->createTimeDiscretization();
         this->initTimeStep();
-        toc("time_discretization");
+        toc("time_discretization", this->verbose() || FLAGS_v > 0);
     }
 
     tic();
     this->initExporter(meshVisu);
-    M_timers["exporter"].push_back(toc("initExporter"));
+    M_timers["exporter"].push_back(toc("initExporter", this->verbose() || FLAGS_v > 0));
 
 
     tic();
     this->assemble();
-    M_timers["asbMatrix"].push_back(toc("assembleMatrix"));
+    M_timers["asbMatrix"].push_back(toc("assembleMatrix", this->verbose() || FLAGS_v > 0));
 
 
 }
@@ -357,7 +357,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
                                                                 return false;
                                                             });
 
-    auto face_mesh = createSubmesh( M_mesh, complement_integral_bdy, EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
 
     M_Vh = Pdhms<Order>( M_mesh, true );
@@ -371,7 +371,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::initSpaces()
         ibc_markers.push_back(M_IBCList[i].marker());
     }
 
-    auto ibc_mesh = createSubmesh( M_mesh, markedfaces(M_mesh, ibc_markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto ibc_mesh = createSubmesh( _mesh=M_mesh, _range=markedfaces(M_mesh, ibc_markers), _update=0 );
     M_Ch = Pchv<0>( ibc_mesh, true );
     // M_Ch = Pchv<0>( M_mesh, true );
 

@@ -371,8 +371,8 @@ CRBTrilinear<TruthModelType>::offline()
 
     int proc_number = this->worldComm().globalRank();
 
-    bool rebuild_database = boption(_name="crb.rebuild-database") ;
-    bool orthonormalize_primal = boption(_name="crb.orthonormalize-primal") ;
+    bool rebuild_database = boption(_prefix=this->M_prefix,_name="crb.rebuild-database") ;
+    bool orthonormalize_primal = boption(_prefix=this->M_prefix,_name="crb.orthonormalize-primal") ;
 
     boost::timer ti;
     if( this->worldComm().isMasterRank() )
@@ -396,9 +396,9 @@ CRBTrilinear<TruthModelType>::offline()
         LOG(INFO) << "[CRBTrilinear::offline] compute random sampling\n";
 
         int total_proc = this->worldComm().globalSize();
-        std::string sampling_mode = soption("crb.sampling-mode");
-        bool all_proc_same_sampling=boption("crb.all-procs-have-same-sampling");
-        int sampling_size = ioption("crb.sampling-size");
+        std::string sampling_mode = soption(_prefix=this->M_prefix,"crb.sampling-mode");
+        bool all_proc_same_sampling=boption(_prefix=this->M_prefix,"crb.all-procs-have-same-sampling");
+        int sampling_size = ioption(_prefix=this->M_prefix,"crb.sampling-size");
         std::string file_name = ( boost::format("M_Xi_%1%_"+sampling_mode+"-proc%2%on%3%") % sampling_size %proc_number %total_proc ).str();
         if( all_proc_same_sampling )
             file_name+="-all-proc-have-same-sampling";
@@ -524,7 +524,7 @@ CRBTrilinear<TruthModelType>::offline()
     bool use_predefined_WNmu = this->vm()["crb.use-predefined-WNmu"].template as<bool>() ;
     int N_log_equi = this->vm()["crb.use-logEquidistributed-WNmu"].template as<int>() ;
     int N_equi = this->vm()["crb.use-equidistributed-WNmu"].template as<int>() ;
-    int N_random = ioption( "crb.use-random-WNmu" );
+    int N_random = ioption(_prefix=this->M_prefix, "crb.use-random-WNmu" );
 
     /*    if( N_log_equi > 0 || N_equi > 0 )
      use_predefined_WNmu = true;*/
@@ -1016,7 +1016,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
     map_R = -M_linear_terms;
     map_R += M_bilinear_terms * map_X ;
 
-    if( boption("crb.enable-convection-terms")  )
+    if( boption(_prefix=this->M_prefix,"crb.enable-convection-terms")  )
     {
         int qatri = this->M_model->QaTri();
         for ( size_type q = 0; q < qatri; ++q )
@@ -1032,7 +1032,7 @@ CRBTrilinear<TruthModelType>::updateResidual( const map_dense_vector_type& map_X
         }
     }
 
-    if ( boption("crb.compute-error-on-reduced-residual-jacobian") )
+    if ( boption(_prefix=this->M_prefix,"crb.compute-error-on-reduced-residual-jacobian") )
     {
         //bring the residual matrix from the model and then project it into the reduced basis
         auto expansionX = this->expansion( map_X , N  );

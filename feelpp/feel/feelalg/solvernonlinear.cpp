@@ -35,9 +35,9 @@
 
 namespace Feel
 {
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm )
     :
     super( worldComm ),
     residual        ( 0 ),
@@ -47,6 +47,7 @@ SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t
     M_is_initialized ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
     M_snl_type( snesTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-type" ) ) ),
+    M_snl_lstype( snesLineSearchTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-line-search-type" ) ) ),
     M_kspSolver_type( GMRES ),
     M_preconditioner_type( LU_PRECOND ),
     M_preconditioner(),
@@ -74,9 +75,9 @@ SolverNonLinear<T>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t
 {
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
+SolverNonLinear<T,SizeT>::SolverNonLinear ( SolverNonLinear const& snl )
     :
     super( snl ),
     residual        ( snl.residual ),
@@ -86,6 +87,7 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
     M_is_initialized( snl.M_is_initialized ),
     M_prec_matrix_structure( snl.M_prec_matrix_structure ),
     M_snl_type( snl.M_snl_type ),
+    M_snl_lstype( snl.M_snl_lstype ),
     M_kspSolver_type( snl.M_kspSolver_type ),
     M_preconditioner_type( snl.M_preconditioner_type ),
     M_preconditioner( snl.M_preconditioner ),
@@ -110,28 +112,28 @@ SolverNonLinear<T>::SolverNonLinear ( SolverNonLinear const& snl )
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 inline
-SolverNonLinear<T>::~SolverNonLinear ()
+SolverNonLinear<T,SizeT>::~SolverNonLinear ()
 {
     this->clear ();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( prefix,worldComm );
 }
-template <typename T>
+template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     return build( soption(_name="backend"),prefix,worldComm );
 }
-template <typename T>
+template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
@@ -255,9 +257,9 @@ SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::stri
     return solvernonlinear_ptrtype();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T>::build( SolverPackage solver_package, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( SolverPackage solver_package, worldcomm_ptr_t const& worldComm )
 {
 #if defined( FEELPP_HAS_PETSC )
 
@@ -365,8 +367,8 @@ SolverNonLinear<std::complex<double>>::build( SolverPackage solver_package, worl
 /*
  * Explicit instantiations
  */
-template class SolverNonLinear<double>;
-template class SolverNonLinear<std::complex<double>>;
+template class SolverNonLinear<double,uint32_type>;
+template class SolverNonLinear<std::complex<double>,uint32_type>;
 
 /**
  * \return the command lines options of the petsc backend

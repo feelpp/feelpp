@@ -35,9 +35,9 @@ namespace Feel
 {
 
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
+BlocksBaseVector<T, SizeT>::localize( vector_ptrtype const& vb, size_type _start_i )
 {
     if ( !vb->closed() )
         vb->close();
@@ -62,25 +62,25 @@ BlocksBaseVector<T>::localize( vector_ptrtype const& vb, size_type _start_i )
     }
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::localize()
+BlocksBaseVector<T, SizeT>::localize()
 {
     if ( !this->vector() ) return;
 
     this->localize( this->vector() );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::buildVector( backend_ptrtype backend )
+BlocksBaseVector<T, SizeT>::buildVector( backend_ptrtype backend )
 {
     M_vector = backend->newBlockVector( _block=*this );
 }
 
-template<typename T>
-typename BlocksBaseVector<T>::vector_ptrtype&
-BlocksBaseVector<T>::vectorMonolithic()
+template <typename T, typename SizeT>
+typename BlocksBaseVector<T, SizeT>::vector_ptrtype&
+BlocksBaseVector<T, SizeT>::vectorMonolithic()
 {
     CHECK( M_vector ) << "vector not initialized";
     std::shared_ptr< VectorBlockBase<T> > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> >( M_vector );
@@ -89,9 +89,9 @@ BlocksBaseVector<T>::vectorMonolithic()
     else
         return M_vector;
 }
-template<typename T>
-typename BlocksBaseVector<T>::vector_ptrtype const&
-BlocksBaseVector<T>::vectorMonolithic() const
+template <typename T, typename SizeT>
+typename BlocksBaseVector<T, SizeT>::vector_ptrtype const&
+BlocksBaseVector<T, SizeT>::vectorMonolithic() const
 {
     CHECK( M_vector ) << "vector not initialized";
     std::shared_ptr< VectorBlockBase<T> const > vcast = std::dynamic_pointer_cast< VectorBlockBase<T> const >( M_vector );
@@ -101,9 +101,9 @@ BlocksBaseVector<T>::vectorMonolithic() const
         return M_vector;
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, int dtId, bool closeVector ) const
+BlocksBaseVector<T, SizeT>::setVector( vector_type & vec, vector_type const& subvec, int dtId, bool closeVector ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
@@ -121,9 +121,9 @@ BlocksBaseVector<T>::setVector( vector_type & vec, vector_type const& subvec, in
         vec.close();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec , int idStart ) const
+BlocksBaseVector<T, SizeT>::setSubVector( vector_type & subvec, vector_type const& vec , int idStart ) const
 {
     auto const& dmVec = vec.map();
     auto const& dmSubVec = subvec.map();
@@ -140,9 +140,9 @@ BlocksBaseVector<T>::setSubVector( vector_type & subvec, vector_type const& vec 
     subvec.close();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::updateVectorFromSubVectors( vector_type & vec ) const
+BlocksBaseVector<T, SizeT>::updateVectorFromSubVectors( vector_type & vec ) const
 {
     int nBlock = this->nRow();
     for ( int k = 0, dtId = 0 ; k<nBlock ;++k )
@@ -154,38 +154,40 @@ BlocksBaseVector<T>::updateVectorFromSubVectors( vector_type & vec ) const
     vec.close();
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-BlocksBaseVector<T>::updateVectorFromSubVectors()
+BlocksBaseVector<T, SizeT>::updateVectorFromSubVectors()
 {
     if ( !M_vector )
         return;
     this->updateVectorFromSubVectors( *M_vector );
 }
 
-template class BlocksBaseVector<double>;
+template class BlocksBaseVector<double,uint32_type>;
 
 
-template <typename T>
-VectorBlockBase<T>::VectorBlockBase( BlocksBaseVector<T> const & blockVec,
+template <typename T, typename SizeT>
+VectorBlockBase<T,SizeT>::VectorBlockBase( BlocksBaseVector<T> const & blockVec,
                                      backend_type &backend,
                                      bool copy_values )
     :
+    M_backend( backend.shared_from_this() ),
     M_vec()
+    
 {
     auto nRow = blockVec.nRow();
 
-    std::shared_ptr<DataMap> dm;
+    std::shared_ptr<DataMap<>> dm;
     if ( nRow == 1 )
     {
         dm = blockVec(0,0)->mapPtr();
     }
     else
     {
-        std::vector<std::shared_ptr<DataMap> > listofdm;
+        std::vector<std::shared_ptr<DataMap<>> > listofdm;
         for ( uint16_type i=0 ; i<nRow; ++i )
             listofdm.push_back( blockVec(i,0)->mapPtr() );
-        dm.reset( new DataMap( listofdm, blockVec(0,0)->map().worldCommPtr() ) );
+        dm.reset( new DataMap<>( listofdm, blockVec(0,0)->map().worldCommPtr() ) );
     }
     M_vec = backend.newVector( dm );
     this->setMap( M_vec->mapPtr() );
@@ -197,9 +199,9 @@ VectorBlockBase<T>::VectorBlockBase( BlocksBaseVector<T> const & blockVec,
 
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
+VectorBlockBase<T,SizeT>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
 {
     auto const& dmb = m->map();
     auto const& dm = M_vec->map();
@@ -220,13 +222,13 @@ VectorBlockBase<T>::updateBlockVec( vector_ptrtype const& m, size_type start_i )
     //this->setMap( M_vec->mapPtr() );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 void
-VectorBlockBase<T>::addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 )
+VectorBlockBase<T,SizeT>::addVector ( int* rows, int nrows, value_type* data, size_type K, size_type K2 )
 {
     M_vec->addVector( rows, nrows, data, K, K2 );
 }
-template class VectorBlockBase<double>;
+template class VectorBlockBase<double,uint32_type>;
 
 } // Feel
 

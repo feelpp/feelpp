@@ -95,21 +95,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     }
     else if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "BDF" )
-        {
-            fieldVelocityPressureExtrapolated = M_bdf_fluid->polyPtr();
-        }
-        else if ( M_timeStepping == "Theta" )
-        {
-            fieldVelocityPressureExtrapolated = Xh->elementPtr();
-            if ( M_bdf_fluid->iteration() == 1 )
-                fieldVelocityPressureExtrapolated->add( 1, M_bdf_fluid->unknown(0) );
-            else if ( M_bdf_fluid->iteration() > 1 )
-            {
-                fieldVelocityPressureExtrapolated->add( 2 /*3./2.*/, M_bdf_fluid->unknown(0) );
-                fieldVelocityPressureExtrapolated->add( -1 /*-1./2.*/, M_bdf_fluid->unknown(1) );
-            }
-        }
+        fieldVelocityPressureExtrapolated = M_fieldConvectionVelocityExtrapolated;
     }
 
     auto const& U = this->fieldVelocityPressure();
@@ -135,36 +121,37 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
         auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-        if ( dynamicViscosity.isNewtonianLaw() )
+
+        if ( ( dynamicViscosity.isNewtonianLaw() && BuildCstPart ) ||
+             ( !dynamicViscosity.isNewtonianLaw() && build_StressTensorNonNewtonian ) )
         {
-            if ( BuildCstPart )
-            {
-                auto Sigmat = -idt(p)*Id + 2*idv(this->materialProperties()->fieldMu())*deft;
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*inner(Sigmat,grad(v)),
-                               _geomap=this->geomap() );
-            }
-        }
-        else
-        {
-            if ( build_StressTensorNonNewtonian )
+            if ( fieldVelocityPressureExtrapolated )
             {
                 auto const& BetaU = *fieldVelocityPressureExtrapolated;
                 auto betaU = BetaU.template element<0>();
-                auto myViscosity = Feel::FeelModels::fluidMecViscosity<2*nOrderVelocity>(betaU,p,*this->materialProperties(),matName);
+                auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
                                _geomap=this->geomap() );
             }
-            if ( BuildCstPart )
+            else
             {
+                // case with steady Stokes
+                CHECK( dynamicViscosity.isNewtonianLaw() ) << "not allow with non newtonian law";
+                auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*this->materialProperties(),matName);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
-                               _expr= -timeSteppingScaling*div(v)*idt(p),
+                               _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
                                _geomap=this->geomap() );
             }
+        }
+        if ( BuildCstPart )
+        {
+            bilinearForm_PatternCoupled +=
+                integrate( _range=range,
+                           _expr= -div(v)*idt(p),
+                           _geomap=this->geomap() );
         }
     }
     // incompressibility term
@@ -489,6 +476,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
             on( _range=markedfaces(this->mesh(),marker),
                 _element=u, _rhs=F,
                 _expr=-idv(inletVel)*N() );
+    }
+
+    for( auto const& d : M_bcMovingBoundaryImposed )
+    {
+        auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
+        bilinearForm +=
+            on( _range=markedfaces(this->mesh(),listMarkerFaces),
+                _element=u, _rhs=F,
+                _expr=idv(M_meshALE->velocity()) );
     }
 
     if ( this->hasMarkerPressureBC() )

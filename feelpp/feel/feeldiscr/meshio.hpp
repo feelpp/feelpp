@@ -26,22 +26,22 @@
 
 #include <feel/feelfilters/partitionio.hpp>
 
-#if defined(FEELPP_HAS_HDF5)
+#if defined( FEELPP_HAS_HDF5 )
 
-namespace Feel {
+namespace Feel
+{
 
-template<typename Shape, typename T, int Tag>
-void
-Mesh<Shape, T, Tag>::ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate )
+template <typename Shape, typename T, int Tag, typename IndexT>
+void Mesh<Shape, T, Tag, IndexT>::ioHDF5( IOStatus status, std::string const& filename, size_type ctxMeshUpdate, double scale )
 {
     PartitionIO<mesh_type> io( filename );
     if ( status == IOStatus::isLoading )
-        io.read( this->shared_from_this(), ctxMeshUpdate );
+        io.read( this->shared_from_this(), ctxMeshUpdate, scale );
     else if ( status == IOStatus::isSaving )
-        io.write( this->shared_from_this() );
+        io.write( this->shared_from_this(), scale );
 }
 
-}
+} // namespace Feel
 
 #endif
 

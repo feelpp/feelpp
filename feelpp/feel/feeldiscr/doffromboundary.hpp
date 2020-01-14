@@ -63,7 +63,7 @@ public:
 
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
-
+    using size_type = typename mesh_type::size_type;
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;
@@ -208,7 +208,7 @@ private:
         if ( useConnection0 )
         {
             iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
             iFaEl = face.pos_first();
@@ -218,7 +218,7 @@ private:
         else
         {
             iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
             iFaEl = face.pos_second();
@@ -249,7 +249,7 @@ private:
         if ( useConnection0 )
         {
             iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
             iFaEl = face.pos_first();
@@ -258,7 +258,7 @@ private:
         else
         {
             iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
             iFaEl = face.pos_second();
@@ -322,7 +322,7 @@ private:
         if ( useConnection0 )
         {
             iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
             ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
@@ -332,7 +332,7 @@ private:
         else
         {
             iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
             ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
@@ -375,7 +375,7 @@ private:
         if ( useConnection0 )
         {
             iElAd = face.ad_first();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
             ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
@@ -385,7 +385,7 @@ private:
         else
         {
             iElAd = face.ad_second();
-            FEELPP_ASSERT( iElAd != invalid_size_type_value )
+            FEELPP_ASSERT( iElAd != invalid_v<size_type> )
             ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
             // local id of the face in its adjacent element
@@ -445,7 +445,7 @@ private:
             if ( useConnection0 )
             {
                 iElAd = face.ad_first();
-                FEELPP_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_v<size_type> )
                     ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element
@@ -455,7 +455,7 @@ private:
             else
             {
                 iElAd = face.ad_second();
-                FEELPP_ASSERT( iElAd != invalid_size_type_value )
+                FEELPP_ASSERT( iElAd != invalid_v<size_type> )
                     ( face.id() ).error( "[Dof::buildBoundaryDof] invalid face/element in face" );
 
                 // local id of the face in its adjacent element

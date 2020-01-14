@@ -24,6 +24,10 @@
 #ifndef __PATTERN_H
 #define __PATTERN_H 1
 
+#include <vector>
+#include <feel/feelcore/feeltypes.hpp>
+
+
 
 namespace Feel
 {
@@ -44,6 +48,16 @@ enum  Pattern
 
 //} // namespace vf
 
+namespace pattern
+{
+//!
+//! @returns a pattern vector of the size of @param p using the ZERO pattern
+//!
+inline std::vector<uint32_type> toZero( std::vector<uint32_type> const& p )
+{
+    return std::vector( p.size(), uint32_type(Pattern::ZERO) );
+}
+}
 } // namespace Feel
 
 

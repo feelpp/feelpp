@@ -68,7 +68,6 @@ feelpp_add_test( wire_basket CLI "--gmsh.hsize=0.075" )
 feelpp_add_test( mortar CFG test_mortar.cfg NO_MPI_TEST)
 feelpp_add_test( mortar2 NO_MPI_TEST)
 
-feelpp_add_test( exporter   CFG exporter.cfg NO_MPI_TEST)
 feelpp_add_test( extended )
 
 feelpp_add_test( nlSolveComposite CFG test_nlSolveComposite.cfg)
@@ -98,3 +97,5 @@ feelpp_add_test( twospacesmap )
 feelpp_add_test( on_dofs SRCS test_on_dofs GEO square_mmarked.geo CFG test_on_dofs.cfg )
 #! not functional yet
 # feelpp_add_test( element0D )
+
+feelpp_add_test( operatorlagrangep1 CLI "--pc-type=gamg --gmsh.hsize=0.25" )

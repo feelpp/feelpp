@@ -87,9 +87,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine FEELPP_HAS_MEMORY_H
 
-/* Define to 1 if you have mkl support. */
-#cmakedefine FEELPP_HAS_MKL
-
 /* Define to 1 if you have mongocxx support. */
 /*#cmakedefine FEELPP_HAS_MONGOCXX*/
 
@@ -170,6 +167,9 @@
 
 /* Define to 1 if you have Python. */
 /*#cmakedefine FEELPP_HAS_PYTHON*/
+
+/* Define to 1 if you have Python module sympy. */
+#cmakedefine FEELPP_HAS_SYMPY
 
 /* Define to 1 if you enabled Python wrapping. */
 #cmakedefine FEELPP_ENABLE_PYTHON_WRAPPING

@@ -27,6 +27,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelparameters.hpp>
 #include <feel/feelmodels/modelmaterials.hpp>
@@ -35,22 +36,22 @@
 #include <feel/feelmodels/modeloutputs.hpp>
 #include <feel/feelpde/boundaryconditions.hpp>
 #include <feel/feelmodels/modelboundaryconditions.hpp>
+#include <feel/feelmodels/modelinitialconditions.hpp>
 
 
 namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-class FEELPP_EXPORT ModelProperties
+class FEELPP_EXPORT ModelProperties : public CommObject
 {
 public:
+    using super = CommObject;
     ModelProperties( std::string const& filename = Environment::expand(soption("mod-file")),
                      std::string const& directoryLibExpr = "",
-                     WorldComm const& world = Environment::worldComm(),
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
     virtual ~ModelProperties();
-
-    WorldComm const& worldComm() const { return M_worldComm; }
 
     pt::ptree const& pTree() const { return M_p; }
     pt::ptree & pTree() { return M_p; }
@@ -66,16 +67,24 @@ public:
     ModelModels & models() { return M_models; }
     ModelModels const& models() const { return M_models; }
 
-    ModelParameters const& parameters() const {  return M_params; }
-    ModelMaterials const& materials() const {  return M_mat; }
-    BoundaryConditions const& boundaryConditions() const { return M_bc; }
-    BoundaryConditions const& initialConditions() const { return M_ic; }
+    std::string const& unit() const {  return M_unit; }
+    void setUnit( std::string const& t) { M_unit = t; }
 
     ModelParameters & parameters()  {  return M_params; }
-    ModelMaterials & materials() {  return M_mat; }
-    BoundaryConditions & boundaryConditions()  { return M_bc; }
-    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    ModelParameters const& parameters() const {  return M_params; }
 
+    ModelMaterials & materials() {  return M_mat; }
+    ModelMaterials const& materials() const {  return M_mat; }
+
+    BoundaryConditions & boundaryConditions()  { return M_bc; }
+    BoundaryConditions const& boundaryConditions() const { return M_bc; }
+
+    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
+
+    ModelInitialConditions & initialConditions() { return M_ic; }
+    ModelInitialConditions const& initialConditions() const { return M_ic; }
+    FEELPP_DEPRECATED BoundaryConditions const& initialConditionsDeprecated() const { return M_icDeprecated; }
 
     ModelPostprocess& postProcess() { return M_postproc; }
     ModelPostprocess const& postProcess() const { return M_postproc; }
@@ -104,15 +113,15 @@ public:
     void write(std::string const &filename);
 
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
 
-    std::string M_name, M_shortname, M_description, M_prefix;
+    std::string M_name, M_shortname, M_description, M_prefix, M_unit;
     ModelModels M_models;
     ModelParameters M_params;
     ModelMaterials M_mat;
     BoundaryConditions M_bc;
-    BoundaryConditions M_ic; // Initial conditions
+    ModelInitialConditions M_ic;
+    BoundaryConditions M_icDeprecated; // DEPRECATED
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;

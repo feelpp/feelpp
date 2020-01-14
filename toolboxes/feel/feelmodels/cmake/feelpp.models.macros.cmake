@@ -86,11 +86,11 @@ macro( genLibHeat )
     # configure the lib
     set(HEAT_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heat/${HEAT_LIB_VARIANTS})
     set(HEAT_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatcreate_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassembly_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heat_inst.cpp
+      )
     set(HEAT_CODEGEN_SOURCES
-      ${HEAT_LIB_DIR}/heatcreate_inst.cpp
-      ${HEAT_LIB_DIR}/heatassembly_inst.cpp )
+      ${HEAT_LIB_DIR}/heat_inst.cpp
+      )
     set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
     genLibBase(

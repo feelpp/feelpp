@@ -29,7 +29,7 @@
 #ifndef FEELPP_DOF_HPP
 #define FEELPP_DOF_HPP 1
 
-#include <boost/tuple/tuple.hpp>
+#include <tuple>
 
 namespace Feel
 {
@@ -38,13 +38,16 @@ namespace Feel
  *
  * @see DofTable, FaceDof
  */
+template<typename SizeT=uint32_type>
 class Dof 
-    : 
-        public boost::tuple<size_type, int16_type, bool>
-//boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
+    :
+        public std::tuple<SizeT>
+        //public std::tuple<size_type, int16_type, bool>
+//std::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
 {
-    //typedef boost::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
-    typedef boost::tuple<size_type, int16_type, bool> super;
+    //typedef std::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
+    //typedef std::tuple<size_type, int16_type, bool> super;
+    typedef std::tuple<SizeT> super;
 public:
 
 
@@ -59,7 +62,7 @@ public:
      */
     //@{
 
-
+    using size_type = SizeT;
     //@}
 
     /** @name Constructors, destructor
@@ -77,28 +80,28 @@ public:
         :
         super( )
         {
-            this->get<0>() =  gid;
-            this->get<1>() =  1;
-            this->get<2>() =  false;
+            std::get<0>(*this) =  gid;
+            //this->get<1>() =  1;
+            //this->get<2>() =  false;
 
         }
     Dof( size_type gid, int16_type s )
         :
         super( )
         {
-            this->get<0>() =  gid;
-            this->get<1>() =  s;
-            this->get<2>() =  false;
+            std::get<0>(*this) =  gid;
+            //this->get<1>() =  s;
+            //this->get<2>() =  false;
 
         }
 
-    Dof( boost::tuple<size_type, int16_type, bool> const& t )
+    Dof( std::tuple<size_type, int16_type, bool> const& t )
         :
         super( )
         {
-            this->get<0>() =  t.get<0>();
-            this->get<1>() =  t.get<1>();
-            this->get<2>() =  t.get<2>();
+            std::get<0>(*this) =  std::get<0>(t);
+            //this->get<1>() =  t.get<1>();
+            //this->get<2>() =  t.get<2>();
 
         }
 
@@ -115,7 +118,7 @@ public:
 #else
     Dof( size_type _index, int16_type _sign, bool per )
         :
-        super(_index, _sign, per)
+        super(_index ) //, _sign, per)
         {
         }
 #endif
@@ -146,16 +149,16 @@ public:
 
     Dof& operator=( size_type t )
         {
-            this->get<0>() =  t;
-            this->get<1>() =  1;
-            this->get<2>() =  false;
+            std::get<0>(*this) =  t;
+            //this->get<1>() =  1;
+            //this->get<2>() =  false;
             return *this;
         }
-    Dof& operator=( boost::tuple<size_type, int16_type, bool> const& t )
+    Dof& operator=( std::tuple<size_type, int16_type, bool> const& t )
         {
-            this->get<0>() =  t.get<0>();
-            this->get<1>() =  t.get<1>();
-            this->get<2>() =  t.get<2>();
+            std::get<0>(*this) =  std::get<0>(t);
+            //this->get<1>() =  t.get<1>();
+            //this->get<2>() =  t.get<2>();
             return *this;
         }
 
@@ -168,18 +171,18 @@ public:
     /// @return the global index
     size_type index() const
         {
-            return this->get<0>();
+            return std::get<0>(*this);
         }
 
     /// @return the sign
     int16_type sign() const
         {
-            return this->get<1>();
+            return 1;//this->get<1>();
         }
     /// @return if periodic
     bool isPeriodic() const
         {
-            return this->get<2>();
+            return false;//this->get<2>();
         }
 #if 0
     /// @return the entity type (0: vertex, 1:edge, 2:face, 3:volume)
@@ -209,7 +212,7 @@ public:
     // set the global dof id
     void setIndex( size_type id )
         {
-            this->get<0>() = id;
+            std::get<0>(*this) = id;
         }
 
     /**
@@ -217,9 +220,9 @@ public:
      */
     void set( size_type _index, int16_type _sign, bool per )
         {
-            this->get<0>() =  _index;
-            this->get<1>() =  _sign;
-            this->get<2>() =  per; 
+            std::get<0>(*this) =  _index;
+            //this->get<1>() =  _sign;
+            //this->get<2>() =  per; 
         }
 
 
@@ -234,10 +237,10 @@ public:
     //@}
 };
 
-
+template<typename SizeT=uint32_type>
 inline
 std::ostream&
-operator<<( std::ostream& __os, Dof const& __dof )
+operator<<( std::ostream& __os, Dof<SizeT> const& __dof )
 {
     __os << "-----------Dof-Info------------\n"
          << "index        : " << __dof.index() << "\n"
@@ -261,11 +264,14 @@ operator<<( std::ostream& __os, Dof const& __dof )
  *  - local dof id in element
  *  - local dof id in face
  */
-struct FaceDof : public boost::tuple<size_type, int16_type, bool, uint16_type, uint16_type>
+template<typename SizeT=uint32_type>
+struct FaceDof : public std::tuple<SizeT, int16_type, bool, uint16_type, uint16_type>
 {
-    typedef boost::tuple<size_type, int16_type, bool, uint16_type, uint16_type> super;
+    typedef std::tuple<SizeT, int16_type, bool, uint16_type, uint16_type> super;
 public:
 
+    using size_type = SizeT;
+    
     /** @name Constructors, destructor
      */
     //@{
@@ -281,21 +287,21 @@ public:
         :
         super( )
         {
-            this->get<0>() =  gid;
-            this->get<1>() =  1;
-            this->get<2>() =  false;
-            this->get<3>() =  -1;
+            std::get<0>(*this) =  gid;
+            std::get<1>(*this) =  1;
+            std::get<2>(*this) =  false;
+            std::get<3>(*this) =  -1;
 
 
         }
 
-    FaceDof( boost::tuple<size_type, int16_type, bool> const& t )
+    FaceDof( std::tuple<size_type, int16_type, bool> const& t )
         :
         super( )
         {
-            this->get<0>() =  t.get<0>();
-            this->get<1>() =  t.get<1>();
-            this->get<2>() =  t.get<2>();
+            std::get<0>(*this) =  std::get<0>(t);
+            std::get<1>(*this) =  std::get<1>(t);
+            std::get<2>(*this) =  std::get<2>(t);
 
         }
     FaceDof( super const& t )
@@ -310,10 +316,10 @@ public:
      */
     FaceDof( size_type _index, int16_type _sign, bool per, uint16_type ld  )
         :
-        super(_index, _sign, per, ld )
+        super(_index, _sign, per, ld, -1 )
         {
         }
-    FaceDof( Dof const& d, uint16_type ldinface, uint16_type ldinelt   )
+    FaceDof( Dof<size_type> const& d, uint16_type ldinface, uint16_type ldinelt   )
         :
         super(d.index(), d.sign(), d.isPeriodic(), ldinelt, ldinface )
         {
@@ -350,16 +356,16 @@ public:
 
     FaceDof& operator=( size_type t )
         {
-            this->get<0>() =  t;
-            this->get<1>() =  1;
-            this->get<2>() =  false;
+            std::get<0>(*this) =  t;
+            std::get<1>(*this) =  1;
+            std::get<2>(*this) =  false;
             return *this;
         }
-    FaceDof& operator=( boost::tuple<size_type, int16_type, bool> const& t )
+    FaceDof& operator=( std::tuple<size_type, int16_type, bool> const& t )
         {
-            this->get<0>() =  t.get<0>();
-            this->get<1>() =  t.get<1>();
-            this->get<2>() =  t.get<2>();
+            std::get<0>(*this) =  std::get<0>(t);
+            std::get<1>(*this) =  std::get<1>(t);
+            std::get<2>(*this) =  std::get<2>(t);
             return *this;
         }
 
@@ -372,39 +378,39 @@ public:
     /// @return the global index
     size_type index() const
         {
-            return this->get<0>();
+            return std::get<0>(*this);
         }
 
     /// @return the sign
     int16_type sign() const
         {
-            return this->get<1>();
+            return std::get<1>(*this);
         }
     /// @return if periodic
     bool isPeriodic() const
         {
-            return this->get<2>();
+            return std::get<2>(*this);
         }
 
     /// @return the local dof in the element
     uint16_type localDof() const
         {
-            return this->get<3>();
+            return std::get<3>(*this);
         }
     /// @return the local dof in the face
     uint16_type localDofInFace() const
         {
-            return this->get<4>();
+            return std::get<4>(*this);
         }
     /// @return the local dof in the face
     uint16_type localDofInEntity() const
         {
-            return this->get<4>();
+            return std::get<4>(*this);
         }
     /// @return the local dof in element
     uint16_type localDofInElement() const                                \
         {
-            return this->get<3>();
+            return std::get<3>(*this);
         }
 
     //@}
@@ -415,7 +421,7 @@ public:
     // set the global dof id
     void setIndex( size_type id )
         {
-            this->get<0>() = id;
+            std::get<0>(*this) = id;
         }
 
     //@}
@@ -430,12 +436,14 @@ public:
 
 };
 //@ Alias for FaceDof
-using EntityDof =  FaceDof;
+template<typename SizeT=uint32_type>
+using EntityDof =  FaceDof<SizeT>;
 
-template<int NC = 1>
-class LocalDof: public std::pair<size_type,uint16_type>
+template<int NC = 1, typename SizeT=uint32_type>
+class LocalDof: public std::pair<SizeT,uint16_type>
 {
 public:
+    using size_type = SizeT;
     typedef std::pair<size_type,uint16_type> super;
 
     static constexpr uint16_type nComponents() { return NC; }
@@ -467,9 +475,9 @@ public:
 
 };
 
-template<int NC>
+template<int NC,typename SizeT=uint32_type>
 std::ostream&
-operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
+operator<<( std::ostream& __os, LocalDof<NC,SizeT> const& __dof )
 {
     __os << "-----------Dof-Info------------\n"
          << "elementId             : " << __dof.elementId() << "\n"
@@ -479,12 +487,13 @@ operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
     return __os;
 }
 
-template<int NC = 1>
-class LocalDofSet : public std::vector<LocalDof<NC>>
+template<int NC = 1,typename SizeT = uint32_type>
+class LocalDofSet : public std::vector<LocalDof<NC,SizeT>>
 {
   public:
-    typedef std::vector<LocalDof<NC>> super;
-    typedef LocalDof<NC> localdof_type;
+    using size_type = SizeT;
+    typedef std::vector<LocalDof<NC,size_type>> super;
+    typedef LocalDof<NC,size_type> localdof_type;
     static constexpr uint16_type nComponents() { return NC; }
     LocalDofSet()
         :

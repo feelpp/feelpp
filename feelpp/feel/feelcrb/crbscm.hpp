@@ -359,9 +359,9 @@ public:
      *
      *\return compute online the lower bounmd
      */
-    boost::tuple<value_type,value_type> lb( parameter_type const& mu, size_type K = invalid_size_type_value, int indexmu = -1 ) const;
-    boost::tuple<value_type,value_type> lbSCM( parameter_type const& mu, size_type K = invalid_size_type_value, int indexmu = -1 ) const;
-    boost::tuple<value_type,value_type> lbNoSCM( parameter_type const& mu, size_type K = invalid_size_type_value, int indexmu = -1 ) const;
+    boost::tuple<value_type,value_type> lb( parameter_type const& mu, size_type K = invalid_v<size_type>, int indexmu = -1 ) const;
+    boost::tuple<value_type,value_type> lbSCM( parameter_type const& mu, size_type K = invalid_v<size_type>, int indexmu = -1 ) const;
+    boost::tuple<value_type,value_type> lbNoSCM( parameter_type const& mu, size_type K = invalid_v<size_type>, int indexmu = -1 ) const;
     /**
      * Returns the lower bound of the coercive constant given a parameter \p
      * \f$\mu\f$
@@ -371,7 +371,7 @@ public:
      *
      *\return compute online the lower bounmd
      */
-    boost::tuple<value_type,value_type> lb( parameter_ptrtype const& mu, size_type K = invalid_size_type_value, int indexmu = -1 ) const
+    boost::tuple<value_type,value_type> lb( parameter_ptrtype const& mu, size_type K = invalid_v<size_type>, int indexmu = -1 ) const
     {
         return lb( *mu, K, indexmu );
     }
@@ -386,7 +386,7 @@ public:
      *
      *\return compute online the lower bounmd
      */
-    boost::tuple<value_type,value_type> ub( parameter_type const& mu, size_type K = invalid_size_type_value ) const;
+    boost::tuple<value_type,value_type> ub( parameter_type const& mu, size_type K = invalid_v<size_type> ) const;
 
     /**
      * Returns the upper bound of the coercive constant given a parameter \p
@@ -397,7 +397,7 @@ public:
      *
      *\return compute online the lower bounmd
      */
-    boost::tuple<value_type,value_type> ub( parameter_ptrtype const& mu, size_type K = invalid_size_type_value ) const
+    boost::tuple<value_type,value_type> ub( parameter_ptrtype const& mu, size_type K = invalid_v<size_type> ) const
     {
         return ub( *mu, K );
     }
@@ -1136,7 +1136,7 @@ CRBSCM<TruthModelType>::lbSCM( parameter_type const& mu ,size_type K ,int indexm
 {
 
 #if defined(FEELPP_HAS_GLPK_H)
-    if ( K == invalid_size_type_value ) K = this->KMax();
+    if ( K == invalid_v<size_type> ) K = this->KMax();
 
     if ( K > this->KMax() ) K = this->KMax();
 
@@ -1403,7 +1403,7 @@ template<typename TruthModelType>
 boost::tuple<typename CRBSCM<TruthModelType>::value_type, double>
 CRBSCM<TruthModelType>::ub( parameter_type const& mu ,size_type K ) const
 {
-    if ( K == invalid_size_type_value ) K = this->KMax();
+    if ( K == invalid_v<size_type> ) K = this->KMax();
 
     if ( K > this->KMax() ) K = this->KMax();
 

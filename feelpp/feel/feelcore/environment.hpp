@@ -33,9 +33,11 @@
 #include <memory>
 
 #include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
+#include <boost/signals2/signal.hpp>
+
 #include <boost/format.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -61,10 +63,10 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
-#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -75,7 +77,6 @@
 #include <hwloc.h>
 #endif
 
-#include <feel/feelcore/mongocxx.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -587,7 +588,7 @@ public:
      * If \p filename is not found, then the empty string is returned.
      * \return the string containing the filename path
      */
-    static std::string findFile( std::string const& filename );
+    static std::string findFile( std::string const& filename, std::vector<std::string> paths = {} );
 
     /**
      * \return the list of paths where Feel++ looks into to find a Gmsh Geo file
@@ -656,9 +657,8 @@ public:
         ( required
           ( name,( std::string ) ) )
         ( optional
-          ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
-          ( sub,( std::string ),"" )
-          ( prefix,( std::string ),"" )
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
           ( vm, ( po::variables_map const& ), Environment::vm() )
         ) )
     {
@@ -798,6 +798,13 @@ public:
      */
     static std::string expand( std::string const& expr );
 
+    /**
+     * try find remotely the file \p fname 
+     * \param fname filename 
+     * \param subdir ubdirectory to store the file that may be downloaded
+     * @return the filename
+     */ 
+    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" ); 
     //@}
 
 private:
@@ -838,7 +845,6 @@ private:
 
 private:
     /// Whether this environment object called MPI_Init
-    bool i_initialized;
     std::unique_ptr<mpi::environment> M_env;
 
     //! number of arguments in command line
@@ -895,13 +901,12 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
       ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
-    return Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix, _vm=vm );
+    return Environment::vm( _name=name,_sub=sub,_prefix=prefix, _vm=vm );
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -910,7 +915,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -919,7 +923,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<double>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<double>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -936,7 +940,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -945,7 +948,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<bool>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<bool>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -962,7 +965,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -971,7 +973,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<int>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<int>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -989,7 +991,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -998,7 +999,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::string>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::string>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1015,7 +1016,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1024,7 +1024,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1041,7 +1041,6 @@ BOOST_PARAMETER_FUNCTION(
     ( required
       ( name,( std::string ) ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
@@ -1050,7 +1049,7 @@ BOOST_PARAMETER_FUNCTION(
 
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1086,14 +1085,13 @@ BOOST_PARAMETER_FUNCTION(
       ( name,( std::string ) )
       ( in_out( opt ),* ) )
     ( optional
-      ( worldcomm, ( worldcomm_ptr_t ), Environment::worldCommPtr() )
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
     ) )
 {
     try
     {
-        opt = Environment::vm( _name=name,_worldcomm=worldcomm,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1107,5 +1105,4 @@ BOOST_PARAMETER_FUNCTION(
 } // Feel
 
 #include <feel/feelcore/feelio.hpp>
-
 #endif /* FEELPP_ENVIRONMENT_HPP */

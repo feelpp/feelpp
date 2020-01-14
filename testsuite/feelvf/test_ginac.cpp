@@ -548,13 +548,24 @@ void runTest4()
     params["a"]=2;
     params["b"]=4.5;
 
+    // constant
+    double cstValue = 3.14;
+    auto exprCst = expr( cstValue );
+    BOOST_CHECK( exprCst.expression().isConstant() );
+    BOOST_CHECK( exprCst.isPolynomial() );
+    BOOST_CHECK( exprCst.polynomialOrder() == 0 );
+    BOOST_CHECK_CLOSE( exprCst.evaluate()(0,0), cstValue, 1e-12 );
+    double intCst1 = integrate(_range=elements(mesh),_expr=cst(cstValue)).evaluate()(0,0);
+    double intCst2 = integrate(_range=elements(mesh),_expr=exprCst).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( intCst1, intCst2, 1e-12 );
+
     // scalar
     auto exprA = expr("2*a*b:a:b");
     exprA.setParameterValues( params );
     BOOST_CHECK( exprA.expression().isConstant() );
     BOOST_CHECK( exprA.isPolynomial() );
     BOOST_CHECK( exprA.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprA.evaluate(), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( exprA.evaluate()(0,0), 2*2*4.5, 1e-12 );
     double intA1 = integrate(_range=elements(mesh),_expr=cst(2*2*4.5)).evaluate()(0,0);
     double intA2 = integrate(_range=elements(mesh),_expr=exprA).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intA1, intA2, 1e-12 );
@@ -563,7 +574,7 @@ void runTest4()
     BOOST_CHECK( exprAu.expression().isConstant() );
     BOOST_CHECK( exprAu.isPolynomial() );
     BOOST_CHECK( exprAu.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprAu.evaluate(), 2*2*4.5, 1e-12 );
+    BOOST_CHECK_CLOSE( exprAu.evaluate()(0,0), 2*2*4.5, 1e-12 );
     double intAu2 = integrate(_range=elements(mesh),_expr=exprAu).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intA1, intAu2, 1e-12 );
 
@@ -598,7 +609,7 @@ void runTest4()
     BOOST_CHECK( exprF.isPolynomial() );
     BOOST_CHECK( exprF.polynomialOrder() == 0 );
     double evalFvalue = 4*std::sin(3*M_PI/2.)*std::exp(3.);
-    BOOST_CHECK_CLOSE( exprF.evaluate(), evalFvalue, 1e-12 );
+    BOOST_CHECK_CLOSE( exprF.evaluate()(0,0), evalFvalue, 1e-12 );
     double intF1 = integrate(_range=elements(mesh),_expr=cst(evalFvalue)).evaluate()(0,0);
     double intF2 = integrate(_range=elements(mesh),_expr=exprF).evaluate()(0,0);
     BOOST_CHECK_CLOSE( intF1, intF2, 1e-12 );
@@ -606,7 +617,7 @@ void runTest4()
     BOOST_CHECK( exprFu.expression().isConstant() );
     BOOST_CHECK( exprFu.isPolynomial() );
     BOOST_CHECK( exprFu.polynomialOrder() == 0 );
-    BOOST_CHECK_CLOSE( exprFu.evaluate(), evalFvalue, 1e-12 );
+    BOOST_CHECK_CLOSE( exprFu.evaluate()(0,0), evalFvalue, 1e-12 );
 
     // vectorial
     auto exprVA = expr<2,1>("{2*a*b,a+b}:a:b");
@@ -684,7 +695,41 @@ void runTest4()
             BOOST_CHECK_CLOSE( intMB1(i,j), intMB2(i,j), 1e-12 );
 }
 
-#if defined(USE_BOOST_TEST)
+void runTest5()
+{
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<2,1>>);
+    auto Vh = Pch<1>( mesh );
+    auto u = Vh->element();
+
+    auto exprScalar1 = expr("2*u*v_2+v_0+v_1:u:v_0:v_1:v_2");
+    auto exprScalar1vf = expr(exprScalar1,symbolExpr("u",cst(3.14)), symbolExpr("v",vec(cst(1.),cst(2.),cst(3.)), SymbolExprComponentSuffix( 3,1 ) ) );
+    BOOST_CHECK_CLOSE( exprScalar1vf.evaluate()(0,0), 21.84, 1e-12 );
+    u.on(_range=elements(mesh),_expr=exprScalar1vf);
+    BOOST_CHECK_CLOSE( u.max(), 21.84, 1e-12 );
+
+    auto exprScalar2 = expr("2*u*v_z+v_x+v_y:u:v_x:v_y:v_z");
+    auto exprScalar2vf = expr(exprScalar2,symbolExpr("u",cst(3.14)), symbolExpr("v",vec(cst(1.),cst(2.),cst(3.)), SymbolExprComponentSuffix( 3,1,true ) ) );
+    BOOST_CHECK_CLOSE( exprScalar2vf.evaluate()(0,0), 21.84, 1e-12 );
+    u.on(_range=elements(mesh),_expr=exprScalar2vf);
+    BOOST_CHECK_CLOSE( u.max(), 21.84, 1e-12 );
+
+
+    auto exprScalar3 = expr("2*u*v_xz+v_xx+v_yz:u:v_xx:v_xz:v_yz");
+    auto exprScalar3vf = expr(exprScalar3,symbolExpr("u",cst(3.14)), symbolExpr("v",mat<2,3>(cst(1.),cst(2.),cst(3.),
+                                                                                             cst(4.),cst(5.),cst(6.)), SymbolExprComponentSuffix( 2,3, true ) ) );
+    BOOST_CHECK_CLOSE( exprScalar3vf.evaluate()(0,0), 25.84, 1e-12 );
+    u.on(_range=elements(mesh),_expr=exprScalar3vf);
+    BOOST_CHECK_CLOSE( u.max(), 25.84, 1e-12 );
+
+    auto exprVec1 = expr<2,1>("{2*u*v_z+v_x, 1+u+v_y}:u:v_x:v_y:v_z");
+    auto exprVec1vf = expr(exprVec1,symbolExpr("u",cst(3.14)), symbolExpr("v",vec(cst(1.),cst(2.),cst(3.)), SymbolExprComponentSuffix( 3,1,true ) ) );
+    BOOST_CHECK_CLOSE( exprVec1vf.evaluate()(0,0), 19.84, 1e-12 );
+    BOOST_CHECK_CLOSE( exprVec1vf.evaluate()(1,0), 6.14, 1e-12 );
+    u.on(_range=elements(mesh),_expr=exprVec1vf(0,0));
+    BOOST_CHECK_CLOSE( u.max(), 19.84, 1e-12 );
+    u.on(_range=elements(mesh),_expr=exprVec1vf(1,0));
+    BOOST_CHECK_CLOSE( u.max(), 6.14, 1e-12 );
+}
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
@@ -708,20 +753,8 @@ BOOST_AUTO_TEST_CASE( test_4 )
 {
     runTest4();
 }
-BOOST_AUTO_TEST_SUITE_END()
-
-#else
-
-int main( int argc, char* argv[] )
+BOOST_AUTO_TEST_CASE( test_5 )
 {
-    using namespace Feel;
-    Environment env( _argc=argc, _argv=argv,
-                     _desc=makeOptions(),
-                     _about=makeAbout() );
-    runTest0();
-    runTest1();
-    runTest2();
-    runTest3();
-    runTest4();
+    runTest5();
 }
-#endif
+BOOST_AUTO_TEST_SUITE_END()

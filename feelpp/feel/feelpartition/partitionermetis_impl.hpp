@@ -78,6 +78,9 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
     // build the graph
     // std::vector<Metis::idx_t> options(5);
     std::vector<Metis::idx_t> vwgt(n_elems);
+    Metis::idx_t nibc = 0;
+    std::vector<Metis::idx_t> vibc;
+
     std::vector<Metis::idx_t> part(n_elems);
 
     // number of "nodes" (elements) in the graph
@@ -103,7 +106,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
     }
 
 
-    // Invoke METIS, but only on processor 0.
+    // Invoke METIS, but nly on processor 0.
     // Then broadcast the resulting decomposition
     if ( mesh->worldComm().isMasterRank() )
     {
@@ -115,6 +118,20 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 #ifndef NDEBUG
             std::size_t graph_size=0;
 #endif
+            if( boption("sc.ibc_partitioning") )
+            {
+                for( auto const& eltWrap : rangeMeshElt )
+                {
+                    auto const& elt = unwrap_ref( eltWrap );
+                    // (1) first pass - get the row sizes for each element by counting the number
+                    // of face neighbors.  Also populate the vwght array if necessary
+                    const dof_id_type gid = global_index_map[elt.id()].first;
+                    if ( hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
+                    {
+                        vibc.push_back( gid );
+                    }
+                }
+            }
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
             // face neighbors
@@ -132,6 +149,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                 //if(!_weights)
                 vwgt[gid] = elt.numPoints;
                 //else
+                    
                 //vwgt[gid] = static_cast<Metis::idx_t>((*_weights)[elem->id()]);
 
                 unsigned int num_neighbors = 0;
@@ -142,12 +160,16 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                 {
                     element_type const* neighbor = NULL;
                     size_type neighbor_id = elt.neighbor( ms );
-                    if ( neighbor_id != invalid_size_type_value )
+                    if ( neighbor_id != invalid_v<size_type> )
                     {
                         if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
                             continue;
                         num_neighbors++;
                     }
+                }
+                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
+                {
+                    num_neighbors += vibc.size()-1;
                 }
 #if 0
                 std::cout << "element id " << elt.id() << " gid: " << gid << " w: " << vwgt[gid] 
@@ -175,13 +197,21 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                 {
                     element_type const* neighbor = NULL;
                     size_type neighbor_id = elt.neighbor( ms );
-                    if ( neighbor_id != invalid_size_type_value )
+                    if ( neighbor_id != invalid_v<size_type> )
                     {
                         if ( usePartitionByRange && global_index_map.find( neighbor_id ) == global_index_map.end() )
                             continue;
                         csr_graph(gid, connection++) = global_index_map[neighbor_id].first;
 
                     }
+                }
+                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker(elt, soption("sc.ibc_partitioning.marker")) )
+                {
+                    if ( usePartitionByRange )
+                        continue;
+                    for( Metis::idx_t ngid: vibc )
+                        if ( gid != ngid )
+                            csr_graph(gid, connection++) = ngid;
                 }
             }
 #ifndef NDEBUG

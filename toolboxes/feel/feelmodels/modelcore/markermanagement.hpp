@@ -27,8 +27,8 @@
  \date 2012-01-19
  */
 
-#ifndef MARKERMANAGEMENT_HPP
-#define MARKERMANAGEMENT_HPP 1
+#ifndef FEELPP_TOOLBOXES_CORE_MARKERMANAGEMENT_HPP
+#define FEELPP_TOOLBOXES_CORE_MARKERMANAGEMENT_HPP 1
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/environment.hpp>

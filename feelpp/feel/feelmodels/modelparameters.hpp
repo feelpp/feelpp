@@ -28,6 +28,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 
+#include <feel/feelcore/commobject.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <feel/feelfit/interpolator.hpp>
 
@@ -35,7 +36,7 @@ namespace Feel {
 
 namespace pt =  boost::property_tree;
 
-struct FEELPP_EXPORT ModelParameter
+struct FEELPP_EXPORT ModelParameter 
 {
     ModelParameter() = default;
     ModelParameter( ModelParameter const& ) = default;
@@ -62,7 +63,7 @@ struct FEELPP_EXPORT ModelParameter
         M_max( max ),
         M_expr( expr<2>( expression,"",world,dirLibExpr ) )
         {
-            M_value = M_expr->evaluate();
+            M_value = M_expr->evaluate()(0,0);
         }
     ModelParameter( std::string const& name, std::shared_ptr<Interpolator> interpolator, std::string const& expression,
                     std::string const& dirLibExpr = "",
@@ -96,7 +97,7 @@ struct FEELPP_EXPORT ModelParameter
             if ( !this->hasExpression() )
                 return;
             M_expr->setParameterValues( mp );
-            M_value = M_expr->evaluate();
+            M_value = M_expr->evaluate()(0,0);
         }
     scalar_field_expression<2> const& expression() const { CHECK( this->hasExpression() ) << "no expression defined"; return *M_expr; }
 
@@ -114,11 +115,12 @@ private:
 //!
 //! class for Model Parameters
 //!
-class ModelParameters: public std::map<std::string,ModelParameter>
+class ModelParameters: public std::map<std::string,ModelParameter>, public CommObject
 {
 public:
-    ModelParameters( WorldComm const& world = Environment::worldComm() );
-    ModelParameters( pt::ptree const& p, WorldComm const& world = Environment::worldComm() );
+    using super=CommObject;
+    ModelParameters( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
+    ModelParameters( pt::ptree const& p, worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     ModelParameters( ModelParameters const& ) = default;
     virtual ~ModelParameters();
     void setPTree( pt::ptree const& _p );
@@ -132,7 +134,6 @@ public:
 private:
     void setup();
 private:
-    WorldComm const& M_worldComm;
     pt::ptree M_p;
     std::string M_directoryLibExpr;
 };

@@ -77,10 +77,10 @@ macro(feelpp_add_testcase )
     # ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY}
     # COMMENT "Syncing testcase ${testcase} in ${CMAKE_INSTALL_PREFIX}/share/feel/testcases/${FEELPP_CASE_CATEGORY} from ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}")
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${FEELPP_CASE_NAME}
-      DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+      DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc )
       install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.adoc
-        DESTINATION share/feelpp/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
+        DESTINATION share/feelpp/data/testcases/${FEELPP_CASE_CATEGORY} COMPONENT testcases)
     endif()
     #add_dependencies(install-testcase ${target})
   endif()
@@ -91,7 +91,7 @@ endmacro(feelpp_add_testcase)
 macro(feelpp_add_application)
 
   PARSE_ARGUMENTS(FEELPP_APP
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC;MAN"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;PYTHON;LABELS;DEFS;DEPS;SCRIPTS;TEST;TIMEOUT;PROJECT;EXEC;MAN"
     "TESTS;NO_TEST;NO_MPI_TEST;NO_SEQ_TEST;EXCLUDE_FROM_ALL;INCLUDE_IN_ALL;ADD_OT;NO_FEELPP_LIBRARY;INSTALL"
     ${ARGN}
     )
@@ -273,6 +273,16 @@ macro(feelpp_add_application)
     endforeach()
   endif(FEELPP_APP_CFG)
 
+  if ( FEELPP_APP_PYTHON )
+    foreach(  pyfile ${FEELPP_APP_PYTHON} )
+      # extract python filename  to be copied in binary dir
+      #get_filename_component( PYTHON_NAME ${python} NAME )
+      #configure_file( ${python} ${PYTHON_NAME} )
+      file(COPY ${pyfile} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+      #INSTALL(FILES "${pyfile}"  DESTINATION share/feelpp/feel/python)
+    endforeach()
+  endif(FEELPP_APP_PYTHON)
+
   if ( FEELPP_APP_GEO )
     foreach(  geo ${FEELPP_APP_GEO} )
       # extract geo filename  to be copied in binary dir
@@ -335,7 +345,7 @@ endmacro()
 
 macro(feelpp_add_test)
   PARSE_ARGUMENTS(FEELPP_TEST
-    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;LABEL;DEFS;DEPS;TIMEOUT;CLI;PROJECT;EXEC;INCLUDES"
+    "SRCS;LINK_LIBRARIES;CFG;GEO;MESH;PYTHON;LABEL;DEFS;DEPS;TIMEOUT;CLI;PROJECT;EXEC;INCLUDES"
     "NO_TEST;NO_MPI_TEST;EXCLUDE_FROM_ALL;NO_FEELPP_LIBRARY;SKIP_TEST;SKIP_SEQ_TEST;SKIP_MPI_TEST"
     ${ARGN}
     )
@@ -350,9 +360,9 @@ macro(feelpp_add_test)
   endif()
 
   if ( FEELPP_TEST_NO_FEELPP_LIBRARY )
-    feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${_SRCS_FILE} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES  ${FEELPP_TEST_LINK_LIBRARIES} NO_TEST NO_FEELPP_LIBRARY )
+    feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${_SRCS_FILE} CFG  ${FEELPP_TEST_CFG} PYTHON ${FEELPP_TEST_PYTHON} GEO ${FEELPP_TEST_GEO} MESH ${FEELPP_TEST_MESH}  DEFS ${FEELPP_TEST_DEFS} DEPS ${FEELPP_TEST_DEPS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES  ${FEELPP_TEST_LINK_LIBRARIES} NO_TEST NO_FEELPP_LIBRARY )
   else()
-    feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${_SRCS_FILE} CFG  ${FEELPP_TEST_CFG} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS}  PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_TEST_LINK_LIBRARIES} NO_TEST )
+    feelpp_add_application( ${FEELPP_TEST_NAME} SRCS ${_SRCS_FILE} CFG  ${FEELPP_TEST_CFG} PYTHON ${FEELPP_TEST_PYTHON} GEO ${FEELPP_TEST_GEO}  MESH ${FEELPP_TEST_MESH} DEFS ${FEELPP_TEST_DEFS} DEPS ${FEELPP_TEST_DEPS} PROJECT ${FEELPP_TEST_PROJECT} EXEC targetname LINK_LIBRARIES ${FEELPP_TEST_LINK_LIBRARIES} NO_TEST )
   endif()
   set( FEELPP_TEST_EXEC ${targetname} )
   if ( FEELPP_TEST_INCLUDES )
@@ -374,7 +384,7 @@ macro(feelpp_add_test)
       unset( FEELPP_TEST_CFG_CLI )
       if ( FEELPP_TEST_CFG )
         set( FEELPP_TEST_CFG_CLI --config-files)
-        foreach(  cfg ${FEELPP_APP_CFG} )
+        foreach(  cfg ${FEELPP_TEST_CFG} )
           set( FEELPP_TEST_CFG_CLI ${FEELPP_TEST_CFG_CLI} ${CMAKE_CURRENT_BINARY_DIR}/${cfg})
         endforeach()
         #set( FEELPP_TEST_CFG_CLI --config-file=${CMAKE_CURRENT_BINARY_DIR}/${FEELPP_TEST_CFG} )
@@ -438,10 +448,6 @@ macro(feelpp_add_test)
         endif(DEFINED ENV{FEELPP_WORKDIR})
       endforeach()
     endif(FEELPP_TEST_GEO)
-
-    if ( FEELPP_APP_DEPS )
-      add_dependencies( feelpp_test_${FEELPP_TEST_NAME} ${FEELPP_APP_DEPS})
-    endif()
 
 endmacro(feelpp_add_test)
 
@@ -820,6 +826,45 @@ macro( feelppContribPrepare contribname )
     endif()
   endif()
 endmacro( feelppContribPrepare )
+
+# feelppGitSubmodulePrepare( submodulename )
+# Clone/Update a submodule hold on feel++ repository 
+macro( feelppGitSubmodulePrepare contribname )
+  set( FEELPP_PREPARE_SUCCEED FALSE )
+  set( FEELPP_SUBMODULE_UPDATED FALSE )
+  message(STATUS "[feelpp] ${contribname} : ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}")
+  # Count files number in <name>.
+  file(GLOB CONTRIB_LIST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${contribname}/*")
+  list(LENGTH CONTRIB_LIST_FILES CONTRIB_NFILES)
+  if ( EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${contribname} )
+    # Update submodule if the contrib/<name> directory is empty. User should run
+    # `git submodule update --init --recursive` in other cases.
+    if ( GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git/ AND CONTRIB_NFILES EQUAL 0 )
+      execute_process(
+        COMMAND git submodule update --init --recursive ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        ERROR_FILE ${FEELPP_BUILD_DIR}/git.${contribname}.log
+        RESULT_VARIABLE ERROR_CODE
+        )
+      if(ERROR_CODE EQUAL "0")
+        message( STATUS "[feelpp] ${contribname}: submodule updated!`")
+        set( FEELPP_PREPARE_SUCCEED TRUE )
+      else()
+        MESSAGE(WARNING "Git submodule ${contribname} failed to be updated (error: ${ERROR_CODE}). Possible cause: No internet access, firewalls ...")
+      endif()
+    else()
+      if ( NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${contribname})
+        message( WARNING "Please make sure that git submodule ${CMAKE_CURRENT_SOURCE_DIR}/${contribname} is available")
+        message( WARNING "  run `git submodule update --init --recursive ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}`")
+      else()
+        message( STATUS "[feelpp] ${CMAKE_CURRENT_SOURCE_DIR}/${contribname}: submodule hold!")
+        set( FEELPP_PREPARE_SUCCEED TRUE )
+        set( FEELPP_SUBMODULE_UPDATED TRUE ) # Diplay message info."$Feel++ submodules are not updated automatically. Please be sure to run `git submodule update --init --recurse` in the source directory beforehand!"
+      endif()
+    endif()
+  endif()
+endmacro( feelppGitSubmodulePrepare )
 
 
 # Colorized cmake message.

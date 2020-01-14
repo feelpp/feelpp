@@ -36,6 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/serialization.hpp>
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelmesh/geoentity.hpp>

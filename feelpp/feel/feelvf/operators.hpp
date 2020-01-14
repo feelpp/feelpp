@@ -71,6 +71,39 @@ void convertEigenMatrixTensor( Eigen::Tensor<ValueType,3> const& input, Eigen::M
         CHECK( false ) << "TODO dim "<< input.dimension(0) << ","<< input.dimension(1) << ","<<input.dimension(2) <<"\n";
 }
 
+template <typename ValueType, long ShapeM,long ShapeN>
+void convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN>> const& input, Eigen::Matrix<ValueType,ShapeM,ShapeN> & output )
+{
+    output = Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
+}
+template <typename ValueType, long ShapeM,long ShapeN>
+void convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,1>> const& input, Eigen::Matrix<ValueType,ShapeM,ShapeN> & output )
+{
+    //if ( input.size() == ShapeM*ShapeN )
+    if ( input.dimension(2)  == 1 )
+        output = Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
+    else
+        CHECK( false ) << "TODO dim "<< input.dimension(0) << ","<< input.dimension(1) << ","<<input.dimension(2) <<"\n";
+}
+
+
+template <typename ValueType, long ShapeM,long ShapeN>
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM,ShapeN>> convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN>> const& input )
+{
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
+}
+template <typename ValueType, long ShapeM,long ShapeN>
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM,ShapeN>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,1>> const& input )
+{
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM,ShapeN> >( input.data() );
+}
+
+template <typename ValueType, long ShapeM,long ShapeN,long ShapeP>
+Eigen::Map<const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN>>  convertEigenMatrixTensor( Eigen::TensorFixedSize<ValueType,Eigen::Sizes<ShapeM,ShapeN,ShapeP>> const& input )
+{
+    return Eigen::Map< const Eigen::Matrix<ValueType,ShapeM*ShapeP,ShapeN> >( input.data() );
+}
+
 }
 
 /// \cond detail
@@ -93,22 +126,25 @@ void convertEigenMatrixTensor( Eigen::Tensor<ValueType,3> const& input, Eigen::M
 # /* List of applicative operators. */
 # define VF_OPERATORS \
    BOOST_PP_TUPLE_TO_LIST( \
-      13, \
+      16, \
       (                                                                 \
-          ( OpId   , id   , id   , 0, 0, 0, vm::JACOBIAN          , RankSame,false, 0, 1 ), \
-          ( OpDx   , dx   , dx   , 0, 1, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDy   , dy   , dy   , 0, 1, 1, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDz   , dz   , dz   , 0, 1, 2, vm::JACOBIAN|vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
-          ( OpDn   , dn   , dn   , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1,1 ), \
-          ( OpGrad , grad , grad , 0, 0, 0, vm::JACOBIAN|vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
-          ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankCurl,false,-1,1 ), \
-          ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::JACOBIAN|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
-          ( OpHess , hess , hess,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
-          ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::JACOBIAN|vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ) \
-      ) \
+       ( OpId   , id   , id   , 0, 0, 0, 0          , RankSame,false, 0, 1 ), \
+       ( OpN    , normal    , normalComponent    , 1, 0, 0, vm::NORMAL_COMPONENT|vm::KB|vm::NORMAL , RankDown,false, 0, 1 ), \
+       ( OpDx   , dx   , dx   , 0, 1, 0, vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDy   , dy   , dy   , 0, 1, 1, vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDz   , dz   , dz   , 0, 1, 2, vm::KB|vm::GRAD , RankSame,false,-1,1 ), \
+       ( OpDn   , dn   , dn   , 0, 0, 0, vm::KB|vm::NORMAL|vm::FIRST_DERIVATIVE|vm::FIRST_DERIVATIVE_NORMAL , RankSame,false,-1,1 ), \
+       ( OpGrad , grad , grad , 0, 0, 0, vm::KB|vm::GRAD , RankUp,true,-1,1 ), \
+       ( OpSymmGrad , symm_grad , symmetricGradient , 1, 0, 0, vm::KB|vm::GRAD|vm::SYMM , RankUp,true,-1,1 ), \
+       ( OpDiv  , div  , div  , 1, 0, 0, vm::DIV|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurl , curl , curl , 1, 0, 0, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankCurl,false,-1,1 ), \
+       ( OpCurlX, curlx, curlx, 1, 1, 0, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurlY, curly, curly, 1, 1, 1, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpCurlZ, curlz, curlz, 1, 1, 2, vm::CURL|vm::KB|vm::FIRST_DERIVATIVE , RankDown,false,-1,1 ), \
+       ( OpHess , hess , hess,  0, 0, 0, vm::KB|vm::HESSIAN|vm::FIRST_DERIVATIVE , RankUp2,false,-2,1 ), \
+       ( OpLap  , laplacian, laplacian,  0, 0, 0, vm::KB|vm::LAPLACIAN|vm::FIRST_DERIVATIVE , RankSame,false,-2,1 ), \
+       ( OpTrace  , trace, trace,  0, 0, 0, vm::TRACE , Rank0,false,0,1 ) \
+                                                                        ) \
    ) \
    /**/
 #
@@ -222,8 +258,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
         {                                                               \
         public:                                                         \
                                                                         \
-            static const size_type context = VF_OPERATOR_CONTEXT( O );  \
-                                                                        \
             typedef Element element_type;                               \
             typedef std::shared_ptr<element_type> element_ptrtype;    \
             typedef VF_OPERATOR_NAME( O )<element_type, VF_OP_TYPE_OBJECT(T)> this_type; \
@@ -236,12 +270,16 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
-            typedef value_type evaluate_type;                           \
                                                                         \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
             static const uint16_type nComponents2 = fe_type::nComponents2; \
             static const bool is_terminal = VF_OPERATOR_TERMINAL(O);    \
+            static const bool is_hdiv_conforming = Feel::is_hdiv_conforming_v<fe_type>; \
+            static const bool is_hcurl_conforming = Feel::is_hcurl_conforming_v<fe_type>; \
+            inline static const size_type context = (is_hdiv_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::JACOBIAN|vm::KB)\
+                                                     :(is_hcurl_conforming_v<fe_type>?(VF_OPERATOR_CONTEXT( O )|vm::KB):VF_OPERATOR_CONTEXT( O )))|(VF_OP_TYPE_IS_VALUE( T )?vm::INTERPOLANT:vm::BASIS_FUNCTION); \
+                                                                        \
                                                                         \
             template<typename Func>                                     \
                 struct HasTestFunction                                  \
@@ -300,6 +338,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                                                                         \
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
+                                                                        \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \
@@ -346,8 +385,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context, gmc_type::subEntityCoDim> ctx_type; \
                 typedef std::shared_ptr<ctx_type> ctx_ptrtype;        \
                 /*typedef Eigen::Matrix<value_type,shape::M,shape::N> loc_type;*/ \
-                using loc_type = Eigen::Tensor<value_type,2>;           \
-                typedef Eigen::Matrix<value_type,shape::M,shape::N> ret_type; \
+                using loc_type = Eigen::TensorFixedSize<value_type,Eigen::Sizes<shape::M,shape::N>>; \
+                using eigen_matrix_mn_type = eigen_matrix_type<shape::M,shape::N,value_type>; \
+                using ret_type = Eigen::Map<const eigen_matrix_mn_type>; \
                 typedef boost::multi_array<loc_type,1> array_type;    \
                                                                         \
                                                                         \
@@ -385,9 +425,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     /*M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), (new ctx_type( M_expr.e().functionSpace()->fe(), M_geot, (pc_ptrtype const&)M_pc ) ) ) ),*/ \
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), t.M_ctx ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), M_expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*M_geot) ) ), \
-                    M_mzero( shape::M, shape::N ),                      \
-                    M_zero( ret_type::Zero() ),                         \
-                    M_returnEigenMatrix( ret_type::Zero() ),            \
+                    M_mzero(),                                          \
+                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
+                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
                     M_did_init( t.M_did_init ),                         \
                     M_hasRelationMesh( t.M_hasRelationMesh ),           \
                     M_same_mesh( t.M_same_mesh )                        \
@@ -412,9 +452,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_mzero( shape::M, shape::N ),                      \
-                    M_zero( ret_type::Zero() ),                         \
-                    M_returnEigenMatrix( ret_type::Zero() ),            \
+                    M_mzero(),                                          \
+                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
+                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
@@ -437,9 +477,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                 ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_mzero( shape::M, shape::N ),                      \
-                    M_zero( ret_type::Zero() ),                         \
-                    M_returnEigenMatrix( ret_type::Zero() ),            \
+                    M_mzero(),                                          \
+                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
+                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
@@ -460,9 +500,9 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     M_ctx( VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), \
                                                     ( this->createCtxIfSameGeom(expr,geom, mpl::bool_<isSameGeo>() )) ) ), \
                     M_loc(VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_VALUE( T ), expr.e().BOOST_PP_CAT(VF_OPERATOR_TERM( O ),Extents)(*fusion::at_key<key_type>( geom )) ) ), \
-                    M_mzero( shape::M, shape::N ),                      \
-                    M_zero( ret_type::Zero() ),                         \
-                    M_returnEigenMatrix( ret_type::Zero() ),            \
+                    M_mzero(),                                          \
+                    M_zero( eigen_matrix_mn_type::Zero() ),                         \
+                    M_returnEigenMatrix( eigen_matrix_mn_type::Zero() ),            \
                     M_did_init( false ),                                \
                     M_hasRelationMesh( ( expr.e().functionSpace() && expr.e().functionSpace()->mesh() )? fusion::at_key<key_type>( geom )->element().mesh()->isRelatedTo( expr.e().functionSpace()->mesh()) : false ), \
                     M_same_mesh( M_hasRelationMesh && isSameGeo )         \
@@ -598,7 +638,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     std::fill( M_loc.data(), M_loc.data()+M_loc.num_elements(), M_mzero.constant(0.) ); \
                     this->updateCtxIfSameGeom(geom,mpl::bool_<isSameGeo>() ); \
                     if (M_same_mesh) {                                  \
-                        /*std::cout << "\n idv no interp \n";*/         \
                         M_expr.e().VF_OPERATOR_SYMBOL( O )( *M_ctx, M_loc ); \
                     }                                                   \
                     else {                                              \
@@ -616,7 +655,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     Feel::detail::ignore_unused_variable_warning(geom); \
                 }                                                       \
                                                                         \
-                ret_type const&                                         \
+                ret_type                                                \
                     evalijq( uint16_type i,                             \
                              uint16_type VF_OP_SWITCH_ELSE_EMPTY( VF_OP_TYPE_IS_TRIAL( T ), j ), \
                              uint16_type q  ) const                     \
@@ -643,7 +682,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return evalijq( i, j, c1, c2, q );                  \
                 }                                                       \
                                                                         \
-                ret_type const&                                         \
+                ret_type                                                \
                     evaliq( uint16_type i, uint16_type q  ) const       \
                 {                                                       \
                     return evaliq_( i, q, mpl::bool_<dim_ok && fe_ok>() ); \
@@ -659,49 +698,49 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
-                ret_type const&                                         \
+                ret_type                                                \
                     evalq( uint16_type q ) const                        \
                 {                                                       \
                     BOOST_MPL_ASSERT_MSG( VF_OP_TYPE_IS_VALUE( T ), INVALID_CALL_TO_EVALQ, ()); \
-                    Feel::vf::detail::convertEigenMatrixTensor( M_loc[q],M_returnEigenMatrix ); \
-                    return M_returnEigenMatrix;                         \
+                    return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q] ); \
+                    /*return M_returnEigenMatrix;*/                     \
                     /*return M_loc[q];*/                                \
                 }                                                       \
             private:                                                    \
                                                                         \
-                    result_type                                         \
-                    evaliq_( uint16_type /*i*/,                       \
-                             uint16_type /*c1*/, uint16_type /*c2*/,    \
-                             int /*q*/,                                 \
-                             mpl::bool_<false> ) const                  \
+                result_type                                             \
+                    evaliq_( uint16_type /*i*/,                         \
+                    uint16_type /*c1*/, uint16_type /*c2*/,             \
+                    int /*q*/,                                          \
+                    mpl::bool_<false> ) const                           \
                 {                                                       \
                     return 0;                                           \
                 }                                                       \
-                    ret_type const&                                            \
-                        evaliq_( uint16_type /*i*/,                     \
-                             int /*q*/,                                 \
-                             mpl::bool_<false> ) const                  \
+                ret_type                                                \
+                    evaliq_( uint16_type /*i*/,                         \
+                    int /*q*/,                                          \
+                    mpl::bool_<false> ) const                           \
                 {                                                       \
-                    return M_zero;                                      \
+                    return ret_type(M_zero.data());                     \
                 }                                                       \
                                                                         \
-                    ret_type const&                                     \
-                        evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
-                    {                                                   \
-                        return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
-                    }                                                   \
-                    result_type                                         \
+                ret_type                                                \
+                    evaliq_( uint16_type i, uint16_type q, mpl::bool_<true> ) const \
+                {                                                       \
+                    return evaliq__( i, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
+                }                                                           \
+                result_type                                             \
                     evaliq_( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true> ) const \
                 {                                                       \
                     return evaliq__( i, c1, c2, q, mpl::bool_<true>(), mpl::bool_<VF_OP_TYPE_IS_VALUE( T )>() ); \
                 }                                                       \
                                                                         \
-                    ret_type  const&                                    \
-                        evaliq__( uint16_type /*i*/,  uint16_type q,    \
-                                  mpl::bool_<true>, mpl::bool_<true> ) const \
+                ret_type                                                \
+                    evaliq__( uint16_type /*i*/,  uint16_type q,        \
+                    mpl::bool_<true>, mpl::bool_<true> ) const          \
                     {                                                   \
-                        Feel::vf::detail::convertEigenMatrixTensor( M_loc[q],M_returnEigenMatrix ); \
-                        return M_returnEigenMatrix;                     \
+                        return Feel::vf::detail::convertEigenMatrixTensor( M_loc[q]); \
+                        /*return M_returnEigenMatrix;*/                 \
                         /*return M_loc[q];*/                            \
                     }                                                   \
                     result_type                                         \
@@ -711,11 +750,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return evalq( c1, c2, q, mpl::int_<shape::rank>() ); \
                 }                                                       \
                                                                         \
-                    ret_type const&                                         \
+                    ret_type                                            \
                         evaliq__( uint16_type i, uint16_type q, mpl::bool_<true>, mpl::bool_<false> ) const \
                     {                                                   \
-                        Feel::vf::detail::convertEigenMatrixTensor( M_fec->VF_OPERATOR_TERM( O )( i, q ), M_returnEigenMatrix ); \
-                        return M_returnEigenMatrix;                     \
+                        return Feel::vf::detail::convertEigenMatrixTensor( M_fec->VF_OPERATOR_TERM( O )( i, q ) ); \
+                        /*return M_returnEigenMatrix;*/                 \
                         /*return M_fec->VF_OPERATOR_TERM( O )( i, q );*/ \
                     }                                                   \
                     result_type                                         \
@@ -778,7 +817,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     return ctx_ptrtype( /*new ctx_type( )*/ );          \
                 }                                                       \
                 void updateCtxIfSameGeom(Geo_t const& geom, mpl::bool_<true> )    \
-                        {   if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
+                {                                                       \
+                    if ( gmc_type::subEntityCoDim > 1 || fusion::at_key<key_type>( geom )->faceId() != invalid_uint16_type_value ) /*face case*/ \
                         M_pc->update(fusion::at_key<key_type>( geom )->pc()->nodes() ); \
                     M_ctx->update( fusion::at_key<key_type>( geom ),  (pc_ptrtype const&) M_pc ); \
                 }                                                       \
@@ -805,8 +845,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 ctx_ptrtype M_ctx;                                      \
                 array_type M_loc;                                      \
                 loc_type M_mzero;                                       \
-                ret_type M_zero;                                        \
-                mutable ret_type M_returnEigenMatrix;                   \
+                eigen_matrix_mn_type M_zero;                            \
+                mutable eigen_matrix_mn_type M_returnEigenMatrix;       \
                 /*typename element_type::BOOST_PP_CAT( VF_OPERATOR_TERM( O ), _type) M_loc;*/ \
                 bool M_did_init;                                        \
                 const bool M_hasRelationMesh;                           \
@@ -822,7 +862,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( ELEM const& expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(expr,useInterpWithConfLoc) ); \
@@ -832,7 +872,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
               BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
         BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ),  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
     inline Expr< VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> >   \
-    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false ) \
+    BOOST_PP_CAT( VF_OPERATOR_SYMBOL(O), VF_OP_TYPE_SUFFIX(T) )( std::shared_ptr<ELEM> expr,bool useInterpWithConfLoc=false, std::enable_if_t<std::is_base_of<FunctionSpaceBase::ElementBase,ELEM>::value>* = nullptr ) \
         {                                                               \
             typedef VF_OPERATOR_NAME( O )< ELEM, VF_OP_TYPE_OBJECT(T)> expr_t; \
             return Expr< expr_t >(  expr_t(*expr,useInterpWithConfLoc) ); \
@@ -843,7 +883,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 //
 // Generate the code
 //
-BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT(
+
+
+    VF_ARRAY_OPERATOR, 2, (
+        VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond
 
 // try to add operators to Python library

@@ -27,11 +27,16 @@
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
+#include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
 using namespace Feel;
+
+//PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
 
 template<typename MeshT, int Order = 1>
 class MyElement: public Pch_type<MeshT,Order>::element_type
@@ -50,24 +55,30 @@ void defDiscr(py::module &m)
     using mesh_support_vector_t = typename space_t::mesh_support_vector_type;
     using periodicity_t = typename space_t::periodicity_type;
     using mesh_t = typename space_t::mesh_type;
+    using size_type = typename mesh_t::size_type;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
     using element_t = typename space_t::element_type;
     std::string pyclass_name;
     int Order = space_t::basis_0_type::nOrder;
     std::string suffix = std::to_string(mesh_t::nDim)+std::string("D_P") + std::to_string(Order);
     //std::cout << "suffix discr: " << suffix << std::endl;
-
-    if ( space_t::is_continuous )
+    //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
+    if ( space_t::is_continuous && space_t::is_scalar )
         pyclass_name = std::string("Pch_") + suffix;
-    else
+    if ( space_t::is_continuous && space_t::is_vectorial )
+        pyclass_name = std::string("Pchv_") + suffix;
+    if ( !space_t::is_continuous && space_t::is_scalar )
         pyclass_name = std::string("Pdh_") + suffix;
+    if ( !space_t::is_continuous && space_t::is_vectorial )
+        pyclass_name = std::string("Pdhv_") + suffix;
+    
     py::class_<space_t,std::shared_ptr<space_t>>(m,pyclass_name.c_str())
-        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, std::vector<worldcomm_ptr_t> const&, std::vector<bool>>(),
+        .def(py::init<mesh_ptr_t const&,mesh_support_vector_t const&, size_type, periodicity_t, worldscomm_ptr_t const&, std::vector<bool>>(),
              py::arg("mesh"),
              py::arg("support")=mesh_support_vector_t(),
              py::arg("components")=MESH_RENUMBER | MESH_CHECK,
              py::arg("periodicity")=periodicity_t(),
-             py::arg("worldsComm") = Environment::worldsComm(1),
+             py::arg("worldsComm"),
              py::arg("extendedDofTable") = std::vector<bool>(1,false) )
         .def("nDof",static_cast<size_type(space_t::*)() const>(&space_t::nDof), "get the number of degrees of freedom over the whole domain")
         .def("nLocalDof",static_cast<size_type(space_t::*)() const>(&space_t::nLocalDof), "get the number of degrees of freedom over the current subdomain")
@@ -81,24 +92,28 @@ void defDiscr(py::module &m)
         ;
 
     // Element
-    if ( space_t::is_continuous )
-        pyclass_name = std::string("Element_Pch_") + suffix;
-    else
-        pyclass_name = std::string("Element_Pdh_") + suffix;
-    py::class_<element_t,std::shared_ptr<element_t>>(m,pyclass_name.c_str())
-        .def(py::init<>())
+    std::string e_pyclass_name = std::string("Element_") + pyclass_name;
+    py::class_<element_t,std::shared_ptr<element_t>> elt(m,e_pyclass_name.c_str());
+    elt.def(py::init<>())
         .def(py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
         .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
         .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
+        
+        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
+        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ");
 
-        .def("save", &element_t::saveImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
-        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("type")="binary", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ")
-
-        .def("on", static_cast<void (element_t::*)( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool)>(&element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>,Expr<GinacEx<2>>>),
+        if constexpr( space_t::is_scalar )
+            {
+                elt.def("on", static_cast<void (element_t::*)( elements_reference_wrapper_t<mesh_ptr_t> const&, Expr<GinacEx<2>> const&, std::string const&, GeomapStrategyType, bool, bool)>(&element_t::template onImpl<elements_reference_wrapper_t<mesh_ptr_t>,Expr<GinacEx<2>>>),
              py::arg("range"), py::arg("expr"), py::arg("prefix")="",
-             py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements")
-        ;
+             py::arg("geomap")=GeomapStrategyType::GEOMAP_OPT, py::arg("accumulate")=false, py::arg("verbose")=false, "build the interpolant of the expression expr on a range of elements");
+            }
 
+    std::string I_pyclass_name = std::string("I_") + pyclass_name;
+    py::class_<I_t<space_t,space_t>,std::shared_ptr<I_t<space_t,space_t>>>(m,I_pyclass_name.c_str())
+        .def(py::init<>())
+        //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
+        ;
     
 }
 template<typename space_t>
@@ -160,11 +175,19 @@ PYBIND11_MODULE(_discr, m )
     defDiscr<Pdh_type<Mesh<Simplex<2>>,2>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<2>>,3>>( m );
 
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,1>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,2>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,3>>( m );
+
     defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
     defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<3>>,1>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<3>>,2>>( m );
     defDiscr<Pdh_type<Mesh<Simplex<3>>,3>>( m );
+
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,1>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,2>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,3>>( m );
     //defDiscr<Mesh<Simplex<2>>,2>( m );
 }
 

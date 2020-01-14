@@ -42,16 +42,39 @@ class OpMass
 {
 public:
 
-    static const size_type context = vm::JACOBIAN;
-
+    static const size_type context = vm::MASS|vm::JACOBIAN;
+    static const bool is_terminal = false;
     typedef Element1 test_element_type;
     typedef Element2 trial_element_type;
     typedef OpMass<test_element_type, trial_element_type> this_type;
     typedef this_type self_type;
 
-    typedef typename test_element_type::return_value_type return_value_type;
-    typedef typename strongest_numeric_type<typename test_element_type::value_type,
-            typename trial_element_type::value_type>::type value_type;
+    typedef typename test_element_type::polyset_type return_value_type;
+    typedef strongest_numeric_type<typename test_element_type::value_type,
+                                   typename trial_element_type::value_type> value_type;
+    typedef typename test_element_type::functionspace_type test_functionspace_type; 
+    typedef typename test_functionspace_type::reference_element_type test_fe_t;
+    typedef typename trial_element_type::functionspace_type trial_functionspace_type; 
+    typedef typename trial_functionspace_type::reference_element_type trial_fe_t; 
+    
+    template<typename Func>
+    struct HasTestFunction
+    {
+        static const bool result = true;
+    };
+    template<typename Func>
+    struct HasTrialFunction
+    {
+        static const bool result = true;
+    };
+
+    template<typename Func>
+    static const bool has_test_basis = true;
+    template<typename Func>
+    static const bool has_trial_basis = true;
+    using test_basis = test_fe_t;
+    using trial_basis = trial_fe_t;
+    //using value_type = typename test_functionspace_type::value_type;
 
     typedef ublas::matrix<value_type> matrix_type;
 
@@ -64,9 +87,18 @@ public:
     {
         DVLOG(2) << "[" BOOST_PP_STRINGIZE( OpMass ) "] default constructorn";
 
-        M_exact_mass = ublas::prod( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ),
-                                     ublas::trans( return_value_type::toMatrix( M_v.functionSpace()->basis()->coeff() ) ) );
+        M_exact_mass = ublas::prod( test_element_type::polyset_type::toMatrix( M_v.functionSpace()->basis()->coeff() ),
+                                    ublas::trans( trial_element_type::polyset_type::toMatrix( M_v.functionSpace()->basis()->coeff() ) ) );
+        //Feel::cout << "m=" << M_exact_mass << std::endl;
 
+#if 0
+        ublas::scalar_vector<double> one (M_exact_mass.size2(),1);
+        ublas::vector<double> w (M_exact_mass.size1());
+        ublas::vector<double> wo (M_exact_mass.size1());
+        wo = one;
+        w = ublas::prod(M_exact_mass,wo);
+        Feel::cout << "meas = " << ublas::inner_prod( w, one ) << std::endl;
+#endif
     }
     OpMass( OpMass const& op )
         :
@@ -98,7 +130,7 @@ public:
     {
         return M_exact_mass( i, j );
     }
-    matrix_type exactMass() const
+    matrix_type const& exactMass() const
     {
         return M_exact_mass;
     }
@@ -110,32 +142,95 @@ public:
         typedef Basis_i_t test_basis_context_type;
         typedef Basis_j_t trial_basis_context_type;
 
-        typedef typename test_basis_context_type::value_type value_type;
-        typedef typename test_basis_context_type::polyset_type return_value_type;
+        using key_type = key_t<Geo_t>;
+        using gmc_ptrtype = gmc_ptr_t<Geo_t>;
+        using gmc_type = gmc_t<Geo_t>;
+        typedef Shape<gmc_type::nDim, Scalar, false, false> shape;
+        using value_type = typename test_element_type::value_type;
+        //typedef typename test_basis_context_type::value_type value_type;
+        //typedef typename test_basis_context_type::polyset_type return_value_type;
+        template<typename Func>
+        struct HasTestFunction
+        {
+            static const bool result = true;
+        };
+        template<typename Func>
+        struct HasTrialFunction
+        {
+            static const bool result = true;
+        };
 
-        static const uint16_type nComponents = return_value_type::nComponents;
+        template<typename Func>
+        static const bool has_test_basis = true;
+        template<typename Func>
+        static const bool has_trial_basis = true;
 
+        //static const uint16_type nComponents = return_value_type::nComponents;
+        using test_basis = test_fe_t;
+        using trial_basis = trial_fe_t;
+
+        template<typename Indq, typename Indi, typename Indj>
+        struct expr
+        {
+            typedef value_type type;
+        };
+
+        struct is_zero
+        {
+            static const bool value = false;
+        };
+        
         tensor( this_type const& expr,
                 Geo_t const& /*geom*/,
                 Basis_i_t const& fev,
                 Basis_j_t const& feu )
             :
-            M_mat( expr.exactMass() ),
             M_fev( fev ),
-            M_feu( feu )
+            M_feu( feu ),
+            M_mat( expr.exactMass() )
         {}
 
-        void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-        {
-            // no need to update in case of exact integration
-
-        }
-
+        template<typename IM>
+        void init( IM const& /*im*/ )
+            {
+            }
+        void update( Geo_t const& geom, Basis_i_t const& , Basis_j_t const&  )
+            {
+                M_gmc = fusion::at_key<key_type>( geom ).get();
+            }
+        void update( Geo_t const& , Basis_i_t const&  )
+            {
+            }
+        void update( Geo_t const& )
+            {
+            }
+        void update( Geo_t const&, uint16_type )
+            {
+            }
+        template<typename ... CTX>
+        void updateContext( CTX const& ... ctx )
+            {
+            }
         value_type
         operator()( uint16_type i, uint16_type j ) const
         {
-            return M_mat( i, j );
+            return M_mat( i, j )*M_gmc->J( 0 );
         }
+        value_type
+        evalij( uint16_type i, uint16_type j ) const
+            {
+                return M_mat( i, j )*M_gmc->J( 0 );
+            }
+        value_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+            {
+                return M_mat( i, j )*M_gmc->J( 0 );
+            }
+        value_type
+        evalijq( uint16_type i, uint16_type j, int c1, int c2, uint16_type q ) const
+            {
+                return M_mat( i, j )*M_gmc->J( 0 );
+            }
 
 
         value_type
@@ -149,6 +244,7 @@ public:
         trial_basis_context_type const& M_feu;
         //this_type const& M_expr;
         matrix_type const& M_mat;
+        gmc_ptrtype M_gmc;
     };
 
 protected:
@@ -157,6 +253,7 @@ protected:
     test_element_type const& M_v;
     trial_element_type const& M_u;
     ublas::matrix<value_type> M_exact_mass;
+    
 };
 /// \endcond
 /**

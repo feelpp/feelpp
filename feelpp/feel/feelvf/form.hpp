@@ -43,7 +43,7 @@
 namespace Feel
 {
 using namespace std::string_literals;
-template<typename T> class Vector;
+template<typename T, typename SizeT> class Vector;
 
 //
 // free form functions

@@ -428,7 +428,7 @@ struct Tensor2Symm : public Tensor2SymmBase
  */
 template<typename T>
 struct is_symm
-    : mpl::bool_<std::is_base_of<Tensor2SymmBase,T>::value>
+    : mpl::bool_<std::is_base_of_v<Tensor2SymmBase,T>>
 {
 };
 
@@ -437,7 +437,20 @@ struct is_symm
  * orherwise
  */
 template<typename T>
-constexpr bool is_symm_v = std::is_base_of<Tensor2SymmBase,T>::value;
+constexpr bool is_symm_v = std::is_base_of_v<Tensor2SymmBase,T>;
+
+template<typename T>
+using is_scalar_t = mpl::bool_<std::is_base_of_v<ScalarBase,T>>;
+template<typename T>
+constexpr bool is_scalar_v = std::is_base_of_v<ScalarBase,T>;
+template<typename T>
+using is_vectorial_t = mpl::bool_<std::is_base_of_v<VectorialBase,T>>;
+template<typename T>
+constexpr bool is_vectorial_v = std::is_base_of_v<VectorialBase,T>;
+template<typename T>
+using is_tensor2_t = mpl::bool_<std::is_base_of_v<Tensor2Base,T>>;
+template<typename T>
+constexpr bool is_tensor2_v = std::is_base_of_v<Tensor2Base,T>;
 
 /**
  * Policy for rank 2 tensor polynomials or polynomial sets of
@@ -555,10 +568,32 @@ struct RankUp2
 };
 
 template<typename T>
+struct RankDown2
+{
+    static const uint16_type nDim = T::nDim;
+    typedef mpl::vector<Scalar<nDim>, Vectorial<nDim>, Tensor2<nDim>, Tensor3<nDim> > types;
+
+    typedef typename mpl::find<types, T>::type iter;
+    typedef typename mpl::deref<typename mpl::prior<typename mpl::prior<iter>::type>::type>::type type;
+};
+
+template<typename T>
 struct RankSame
 {
     static const uint16_type nDim = T::nDim;
     typedef T type;
+};
+template<typename T>
+struct Rank0
+{
+    static const uint16_type nDim = T::nDim;
+    typedef Scalar<nDim> type;
+};
+template<typename T>
+struct Rank1
+{
+    static const uint16_type nDim = T::nDim;
+    typedef Vectorial<nDim> type;
 };
 
 template<typename T>
@@ -575,6 +610,8 @@ struct RankDown
             mpl::identity<Scalar<nDim> >,
             mpl::identity<_type> >::type::type type;
 };
+template<typename T>
+using rankdown_t = typename RankDown<T>::type;
 
 template<typename T>
 struct RankCurl
@@ -582,6 +619,7 @@ struct RankCurl
     static const uint16_type nDim = T::nDim;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                               RankSame<T>,RankDown<T> >::type::type type;
+    static const uint16_type value = (nDim==3)?3:1;
 };
 
 /**

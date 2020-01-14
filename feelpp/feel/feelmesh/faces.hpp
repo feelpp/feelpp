@@ -57,22 +57,24 @@ public:
     //@{
     
     typedef typename ElementType::value_type value_type;
+    using index_type = typename ElementType::index_type;
+    using size_type = typename ElementType::size_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<EntityType::nRealDim-1> >,
                               mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
-                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType>, value_type > >,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOf<ElementType>, value_type, index_type > >,
                                                               typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
-                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType>, value_type > >,
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType>, value_type, index_type > >,
                                                                                 mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOf<ElementType>, value_type > >
                                                                                 >::type>::type>,
                               mpl::identity<typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<0> >,
-                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOfMany<ElementType>, value_type > >,
+                                                              mpl::identity<GeoElement0D<EntityType::nRealDim, SubFaceOfMany<ElementType>, value_type, index_type > >,
                                                               typename mpl::if_<mpl::equal_to<mpl::int_<EntityType::nDim>, mpl::int_<1> >,
-                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType>, value_type > >,
-                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType>, value_type > >
+                                                                                mpl::identity<GeoElement1D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType>, value_type, index_type > >,
+                                                                                mpl::identity<GeoElement2D<EntityType::nRealDim, EntityType,  SubFaceOfMany<ElementType>, value_type, index_type > >
                                                                                 >::type>::type> >::type::type::type face_type;
 
 
-    typedef std::unordered_map<size_type,face_type> faces_type;
+    typedef std::unordered_map<index_type,face_type,std::hash<index_type>> faces_type;
 
     typedef typename faces_type::iterator face_iterator;
     typedef typename faces_type::const_iterator face_const_iterator;
@@ -316,6 +318,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
     /**
@@ -342,6 +345,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
     /**
@@ -408,6 +412,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -431,6 +436,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -458,6 +464,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -481,6 +488,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -502,6 +510,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 

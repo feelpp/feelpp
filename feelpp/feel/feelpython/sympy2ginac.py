@@ -16,12 +16,19 @@ def toginac(s,symbols):
         strsymbols.append(str(i))
     strsymbols=sorted(strsymbols);
     if Array(sympify(s)).rank() == 0:
-        return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in strsymbols);
-    return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in strsymbols)
+        if strsymbols:
+            return str(ccode(sympify(s),standard='C99'))+':' + ':'.join(str(e) for e in strsymbols);
+        else:
+            return str(ccode(sympify(s),standard='C99'))
+    if strsymbols:
+        return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}:' + ':'.join(str(e) for e in strsymbols)
+    else:
+        return '{' + ','.join(str(ccode(sympify(e),standard='C99')) for e in s) + '}'
+        
 
 def sympytoginac(e):
     if isinstance(e,Expr) or isinstance(e,Array):
-        return toginac(sympify( e ), [x] if len( e.free_symbols)==0 else e.free_symbols );
+        return toginac(sympify( e ), [] if len( e.free_symbols)==0 else e.free_symbols );
     return str(e);
 
 def dx(f):

@@ -19,6 +19,7 @@ public:
     //--------------------------------------------------------------------//
     // Class
     typedef ModelNumerical super_type;
+    using size_type = typename super_type::size_type;
     typedef MultiFluid< FluidType, LevelSetType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
@@ -260,7 +261,7 @@ protected:
     // Initialization
     void initMesh();
     void initLevelsets();
-    void initPostProcess();
+    void initPostProcess() override;
 
     virtual int initBlockVector();
     bool useImplicitCoupling() const;

@@ -83,7 +83,7 @@ public:
     typedef typename super::clone_ptrtype clone_ptrtype;
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
-
+    using size_type = typename super::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -503,7 +503,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen]
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
 
     /**
      * \f$ U+=v \f$ where \p v is a std::vector<T>
@@ -837,13 +837,14 @@ template<typename T>
 class VectorPetscMPI : public VectorPetsc<T>
 {
     typedef VectorPetsc<T> super;
+public:
     typedef typename super::datamap_type datamap_type;
     typedef typename super::datamap_ptrtype datamap_ptrtype;
-public:
+    
     friend class boost::serialization::access;
 
     typedef typename super::value_type value_type;
-
+    using size_type = typename datamap_type::size_type;
     VectorPetscMPI()
         :
         super()
@@ -920,7 +921,7 @@ public:
     /**
      * v([i1,i2,...,in]) += [value1,...,valuen] (i1,i2,... is global process index)
      */
-    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_size_type_value ) override;
+    void addVector( int* i, int n, value_type* v, size_type K = 0, size_type K2 = invalid_v<size_type> ) override;
 
     /**
      *  \f$v = x*y\f$: coefficient-wise multiplication
@@ -983,7 +984,8 @@ class VectorPetscMPIRange : public VectorPetscMPI<T>
     typedef VectorPetscMPI<T> super_type;
 public:
     typedef typename super_type::value_type value_type;
-
+    using datamap_ptrtype = typename super_type::datamap_ptrtype;
+    using size_type = typename super_type::size_type;
     VectorPetscMPIRange( datamap_ptrtype const& dm );
 
     VectorPetscMPIRange( Vec v, datamap_ptrtype const& dm, bool duplicate = false );
@@ -1114,10 +1116,11 @@ private :
 /**
  * @brief create a shared pointer VectorPetsc from PETSc Vec \p v
  */
+template<typename SizeT>
 #if BOOST_VERSION < 105900
-vector_ptrtype vec( Vec v, datamap_ptrtype d );
+vector_ptrtype vec( Vec v, datamap_ptrtype<SizeT> d );
 #else
-vector_uptrtype vec( Vec v, datamap_ptrtype d );
+vector_uptrtype vec( Vec v, datamap_ptrtype<SizeT> d );
 #endif
 /**
  * @}

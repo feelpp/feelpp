@@ -26,12 +26,14 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2008-02-28
  */
+#include <feel/feelcore/feel.hpp>
 #include <feel/feelalg/datamap.hpp>
 //#include <boost/thread/thread.hpp>
 
 namespace Feel
 {
-DataMap::DataMap( worldcomm_ptr_t const& _worldComm )
+template<typename SizeT>
+DataMap<SizeT>::DataMap( worldcomm_ptr_t const& _worldComm )
     :
     super( _worldComm ),
     M_closed( false ),
@@ -47,7 +49,8 @@ DataMap::DataMap( worldcomm_ptr_t const& _worldComm )
     M_indexSplit()
 {}
 
-DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm )
+template<typename SizeT>
+DataMap<SizeT>::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldComm )
     :
     super( _worldComm ),
     M_closed( false ),
@@ -92,7 +95,7 @@ DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldC
                    0 );
     }
 
-    if ( n == invalid_size_type_value )
+    if ( n == invalid_v<size_type> )
         M_n_dofs = n_local;
 
     this->initNumberOfDofIdToContainerId( 1 );
@@ -107,7 +110,7 @@ DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldC
     for ( int p=0; p< this->worldComm().size(); p++ )
         sum += M_n_localWithoutGhost_df[p];
 
-    if ( n != invalid_size_type_value )
+    if ( n != invalid_v<size_type> )
         FEELPP_ASSERT ( sum == static_cast<int>( n ) )
         ( sum )( n )
         ( this->worldComm().rank() )
@@ -125,7 +128,8 @@ DataMap::DataMap( size_type n, size_type n_local, worldcomm_ptr_t const& _worldC
 
 }
 
-DataMap::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldcomm_ptr_t const& _worldComm )
+template<typename SizeT>
+DataMap<SizeT>::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldcomm_ptr_t const& _worldComm )
     :
     DataMap( _worldComm )
 {
@@ -265,11 +269,13 @@ DataMap::DataMap( std::vector<std::shared_ptr<DataMap> > const& listofdm, worldc
     //this->showMeMapGlobalProcessToGlobalCluster();
 }
 
-DataMap::~DataMap()
+template<typename SizeT>
+DataMap<SizeT>::~DataMap()
 {}
 
+template<typename SizeT>
 bool
-DataMap::isCompatible( DataMap const& dm ) const
+DataMap<SizeT>::isCompatible( DataMap const& dm ) const
 {
     bool sameobject = ( dynamic_cast<void const*>( this ) == dynamic_cast<void const*>( &dm ) );
     if ( sameobject )
@@ -283,9 +289,9 @@ DataMap::isCompatible( DataMap const& dm ) const
      */
 }
 
-
+template<typename SizeT>
 void
-DataMap::close() const
+DataMap<SizeT>::close() const
 {
     // we assume here that the data is contiguous
     M_myglobalelements.resize( nMyElements() );
@@ -297,8 +303,10 @@ DataMap::close() const
 
     M_closed = true;
 }
-std::vector<size_type> const&
-DataMap::myGlobalElements() const
+
+template<typename SizeT>
+std::vector<SizeT> const&
+DataMap<SizeT>::myGlobalElements() const
 {
     if ( !this->closed() )
         this->close();
@@ -306,67 +314,83 @@ DataMap::myGlobalElements() const
     return M_myglobalelements;
 }
 
-
+template<typename SizeT>
 void
-DataMap::setNDof( size_type ndof )
+DataMap<SizeT>::setNDof( size_type ndof )
 {
     M_n_dofs=ndof;
 }
 
+template<typename SizeT>
 void
-DataMap::setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld )
+DataMap<SizeT>::setNLocalDofWithoutGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithoutGhost_df[proc]=n;
 }
+
+template<typename SizeT>
 void
-DataMap::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
+DataMap<SizeT>::setNLocalDofWithGhost( const rank_type proc, const size_type n, bool inWorld )
 {
     M_n_localWithGhost_df[proc]=n;
 }
+
+template<typename SizeT>
 void
-DataMap::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
+DataMap<SizeT>::setFirstDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_first_df[proc]=df;
 }
+
+template<typename SizeT>
 void
-DataMap::setLastDof( const rank_type proc, const size_type df, bool inWorld )
+DataMap<SizeT>::setLastDof( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df.size() )( proc )( M_first_df.size() ).error( "invalid proc id or dof table" );
     M_last_df[proc]=df;
 }
+
+template<typename SizeT>
 void
-DataMap::setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
+DataMap<SizeT>::setFirstDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_first_df_globalcluster[proc]=df;
 }
+
+template<typename SizeT>
 void
-DataMap::setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
+DataMap<SizeT>::setLastDofGlobalCluster( const rank_type proc, const size_type df, bool inWorld )
 {
     FEELPP_ASSERT( proc < M_first_df_globalcluster.size() )( proc )( M_first_df_globalcluster.size() ).error( "invalid proc id or dof table" );
     M_last_df_globalcluster[proc]=df;
 }
 
-
+template<typename SizeT>
 void
-DataMap::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map )
+DataMap<SizeT>::setMapGlobalProcessToGlobalCluster( std::vector<size_type> const& map )
 {
     M_mapGlobalProcessToGlobalCluster=map;
 }
+
+template<typename SizeT>
 void
-DataMap::setMapGlobalProcessToGlobalCluster( size_type i, size_type j )
+DataMap<SizeT>::setMapGlobalProcessToGlobalCluster( size_type i, size_type j )
 {
     M_mapGlobalProcessToGlobalCluster[i]=j;
 }
+
+template<typename SizeT>
 void
-DataMap::resizeMapGlobalProcessToGlobalCluster( size_type n )
+DataMap<SizeT>::resizeMapGlobalProcessToGlobalCluster( size_type n )
 {
     M_mapGlobalProcessToGlobalCluster.resize( n );
 }
 
+template<typename SizeT>
 void
-DataMap::updateDataInWorld()
+DataMap<SizeT>::updateDataInWorld()
 {
     mpi::all_gather( this->worldComm().globalComm(),
                      this->M_n_localWithoutGhost_df[this->worldComm().globalRank()],
@@ -391,9 +415,9 @@ DataMap::updateDataInWorld()
     //_globalcluster
 }
 
-
+template<typename SizeT>
 rank_type
-DataMap::procOnGlobalCluster( size_type globDof ) const
+DataMap<SizeT>::procOnGlobalCluster( size_type globDof ) const
 {
     rank_type proc=0,res=invalid_rank_type_value;
     bool find=false;
@@ -411,10 +435,11 @@ DataMap::procOnGlobalCluster( size_type globDof ) const
     return res;
 }
 
-boost::tuple<bool,size_type>
-DataMap::searchGlobalProcessDof( size_type gcdof ) const
+template<typename SizeT>
+boost::tuple<bool,SizeT>
+DataMap<SizeT>::searchGlobalProcessDof( size_type gcdof ) const
 {
-    size_type gpdof = invalid_size_type_value;
+    size_type gpdof = invalid_v<size_type>;
     if ( this->dofGlobalClusterIsOnProc( gcdof ) )
     {
         gpdof = gcdof - this->firstDofGlobalCluster();
@@ -434,38 +459,37 @@ DataMap::searchGlobalProcessDof( size_type gcdof ) const
     return boost::make_tuple( find,gpdof );
 }
 
-void
-DataMap::updateIndexSetWithParallelMissingDof( std::vector<size_type> & _indexSet ) const
+template<typename SizeT>
+std::vector<SizeT>
+DataMap<SizeT>::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const
 {
-    auto res = this->buildIndexSetWithParallelMissingDof( _indexSet );
-    _indexSet.assign( res.begin(), res.end() );
+    if ( this->worldComm().localSize() == 1 )
+        return _indexSet;
+    std::set<size_type> indexSet;
+    indexSet.insert( _indexSet.begin(), _indexSet.end() );
+    this->updateIndexSetWithParallelMissingDof( indexSet );
+    std::vector<size_type> res;
+    res.assign( indexSet.begin(), indexSet.end() );
+    return res;
 }
 
-std::vector<size_type>
-DataMap::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _indexSet ) const
+template<typename SizeT>
+void
+DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & indexSet ) const
 {
-    std::vector<size_type> indexSet;
-    indexSet.insert( indexSet.begin(), _indexSet.begin(), _indexSet.end() );
-
     // if sequential return identical index set
     if ( this->worldComm().localSize() == 1 )
-        return indexSet;
+        return;
 
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
     for ( rank_type p : this->neighborSubdomains() )
         dataToSend[p].clear();
 
-    // up data used in mpi comm
+    // up data used in mpi comm : send ghost dofs to correponding active dofs
     for ( auto const& id : indexSet )
     {
-        if ( !this->dofGlobalProcessIsGhost(id) )
-        {
-            if ( this->activeDofSharedOnCluster().find( id ) != this->activeDofSharedOnCluster().end() )
-                for ( rank_type pNeighborId : this->activeDofSharedOnCluster().find( id )->second )
-                    dataToSend[pNeighborId].push_back( this->mapGlobalProcessToGlobalCluster( id ) );
-        }
-        else
+        if ( this->dofGlobalProcessIsGhost(id) )
         {
             size_type gcdof = this->mapGlobalProcessToGlobalCluster( id );
             rank_type procIdFinded = procOnGlobalCluster( gcdof );
@@ -482,34 +506,65 @@ DataMap::buildIndexSetWithParallelMissingDof( std::vector<size_type> const& _ind
     for ( rank_type p : this->neighborSubdomains() )
     {
         CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + nbRequest);
-    delete [] reqs;
 
-    // update indexSet : can be usefull for fix missing dof entries in input at interprocess zone!
+    // clear data
+    for ( rank_type p : this->neighborSubdomains() )
+        dataToSend[p].clear();
+
+    // active dofs send to all ghost dofs shared
     for ( auto const& dataR : dataToRecv )
     {
         rank_type theproc = dataR.first;
         for ( size_type dataRfromproc : dataR.second )
         {
-            //size_type thelocdof = this->mapGlobalClusterToGlobalProcess( dataRfromproc );
             auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
-            CHECK( thelocdof.get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
-            //indexSet.insert( thelocdof.get<1>() );
-            indexSet.push_back( thelocdof.get<1>() );
+            CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+            size_type gpdof = thelocdof.template get<1>();
+            //indexSet.push_back( gpdof );
+            indexSet.insert( gpdof );
+            auto itFindDofShared = this->activeDofSharedOnCluster().find( gpdof ) ;
+            if ( itFindDofShared == this->activeDofSharedOnCluster().end() )
+                continue;
+            for ( rank_type pNeighborId : itFindDofShared->second )
+                dataToSend[pNeighborId].push_back( dataRfromproc );
         }
     }
+    // apply isend/irecv
+    cptRequest=0;
+    for ( rank_type p : this->neighborSubdomains() )
+        dataToRecv[p].clear();
+    for ( rank_type p : this->neighborSubdomains() )
+    {
+        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
+        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + nbRequest);
+    delete [] reqs;
 
-    return indexSet;
+    // insert ghost dofs from active dofs request
+    for ( auto const& dataR : dataToRecv )
+    {
+        for ( size_type dataRfromproc : dataR.second )
+        {
+            auto thelocdof = this->searchGlobalProcessDof( dataRfromproc );
+            CHECK( thelocdof.template get<0>() ) << "local dof not find with cluster id : " << dataRfromproc;
+            size_type gpdof = thelocdof.template get<1>();
+            //indexSet.push_back( gpdof );
+            indexSet.insert( gpdof );
+        }
+    }
 }
 
-std::map<size_type, std::set<rank_type> >
-DataMap::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcessPresent ) const
+template<typename SizeT>
+std::map<SizeT, std::set<rank_type> >
+DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcessPresent ) const
 {
     // result container
     std::map<size_type, std::set<rank_type> > res;
@@ -572,9 +627,9 @@ DataMap::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobalProcess
     return res;
 }
 
-
-std::shared_ptr<DataMap>
-DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _checkAndFixInputRange ) const
+template<typename SizeT>
+std::shared_ptr<DataMap<SizeT>>
+DataMap<SizeT>::createSubDataMap( std::vector<size_type> const& _idExtract, bool _checkAndFixInputRange ) const
 {
     rank_type curProcId = this->worldComm().localRank();
 
@@ -587,7 +642,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     idExtract.insert( idExtractVec.begin(), idExtractVec.end() );
 
     // init new dataMap pointer
-    std::shared_ptr<DataMap> dataMapRes( new DataMap( this->worldCommPtr() ) );
+    std::shared_ptr<DataMap<SizeT>> dataMapRes( new DataMap<SizeT>( this->worldCommPtr() ) );
 
     // define neighbor process as identical
     dataMapRes->setNeighborSubdomains( this->neighborSubdomains() );
@@ -613,12 +668,12 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     size_type nDof = 0;
     for (rank_type p=0;p<this->worldComm().localSize();++p)
     {
-        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].get<0>();
+        const size_type nLocalDofWithGhostOnProc = dataRecvFromGather[p].template get<0>();
         dataMapRes->setFirstDof( p, 0 );
         dataMapRes->setLastDof( p, (nLocalDofWithGhostOnProc > 0)? nLocalDofWithGhostOnProc-1 :0  );
         dataMapRes->setNLocalDofWithGhost( p, nLocalDofWithGhostOnProc );
 
-        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].get<1>();
+        const size_type nLocalDofWithoutGhostOnProc = dataRecvFromGather[p].template get<1>();
         if ( p == 0 )
         {
             dataMapRes->setFirstDofGlobalCluster( p, 0 );
@@ -670,7 +725,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
             CHECK ( procIdFinded != invalid_rank_type_value ) << " proc not find for gcdof : " << gcdof;
             dataToSend[procIdFinded].push_back( gcdof );
             memoryDataToSend[procIdFinded].push_back( idLocalDof );
-            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=invalid_size_type_value;
+            dataMapRes->M_mapGlobalProcessToGlobalCluster[idLocalDof]=invalid_v<size_type>;
         }
         ++idLocalDof;
     }
@@ -711,7 +766,7 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
 
                 CHECK( dofTableRelationGP.find( gpdof ) != dofTableRelationGP.end() ) << "active dof gpdof not register";
                 size_type gcdoffinded = dataMapRes->mapGlobalProcessToGlobalCluster( dofTableRelationGP.find( gpdof )->second );
-                CHECK( gcdoffinded != invalid_size_type_value ) << " active dof not register in map";
+                CHECK( gcdoffinded != invalid_v<size_type> ) << " active dof not register in map";
                 dataToReSend[theproc].push_back( gcdoffinded );
             }
         }
@@ -771,9 +826,9 @@ DataMap::createSubDataMap( std::vector<size_type> const& _idExtract, bool _check
     return dataMapRes;
 }
 
-
+template<typename SizeT>
 void
-DataMap::showMe( bool showAll, std::ostream& __out2 ) const
+DataMap<SizeT>::showMe( bool showAll, std::ostream& __out2 ) const
 {
     //__out << std::endl;
     this->comm().globalComm().barrier();
@@ -890,9 +945,9 @@ DataMap::showMe( bool showAll, std::ostream& __out2 ) const
 
 }
 
-
+template<typename SizeT>
 void
-DataMap::buildIndexSplit()
+DataMap<SizeT>::buildIndexSplit()
 {
     DVLOG(1) << "buildIndexSplit() start\n";
     M_indexSplit.reset( new indexsplit_type( 1 ) );
@@ -919,8 +974,9 @@ DataMap::buildIndexSplit()
     DVLOG(1) << "buildIndexSplit() done\n";
 }
 
+template<typename SizeT>
 void
-DataMap::buildIndexSplitWithComponents( uint16_type nComp )
+DataMap<SizeT>::buildIndexSplitWithComponents( uint16_type nComp )
 {
     CHECK( ( this->nLocalDofWithoutGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
     CHECK( ( this->nLocalDofWithGhost() % nComp) == 0 ) << "invalid nComp " << nComp;
@@ -1243,5 +1299,6 @@ IndexSplit::showMe() const
 
 }
 
-
+template class DataMap<uint32_type>;
+template class DataMap<uint64_type>;
 } // namespace Feel

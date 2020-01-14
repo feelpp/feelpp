@@ -150,17 +150,17 @@ public :
 
     void saveSubMeshFromMarked3Faces()
     {
-        auto meshMark1 = createSubmesh( M_mesh, marked3faces(M_mesh,1),EXTRACTION_KEEP_MESH_RELATION, 0, false);
+        auto meshMark1 = createSubmesh( _mesh=M_mesh, _range=marked3faces(M_mesh,1),_context=EXTRACTION_KEEP_MESH_RELATION, _update=0, _only_on_boundary_faces=false);
         saveGMSHMesh(_mesh=meshMark1,_filename="submesh-marked3facesBy1.msh");
-        auto meshMark0 = createSubmesh( M_mesh, marked3faces(M_mesh,0),EXTRACTION_KEEP_MESH_RELATION, 0, false);
+        auto meshMark0 = createSubmesh( _mesh=M_mesh, _range=marked3faces(M_mesh,0),_context=EXTRACTION_KEEP_MESH_RELATION, _update=0, _only_on_boundary_faces=false);
         saveGMSHMesh(_mesh=meshMark0,_filename="submesh-marked3facesBy0.msh");
     }
 
     void saveSubMeshFromMarked3Elements()
     {
-        auto meshMark1 = createSubmesh( M_mesh, marked3elements(M_mesh,1),EXTRACTION_KEEP_MESH_RELATION, 0, false);
+        auto meshMark1 = createSubmesh( _mesh=M_mesh, _range=marked3elements(M_mesh,1),_context=EXTRACTION_KEEP_MESH_RELATION, _update=0, _only_on_boundary_faces=false);
         saveGMSHMesh(_mesh=meshMark1,_filename="submesh-marked3elementsBy1.msh");
-        auto meshMark0 = createSubmesh( M_mesh, marked3elements(M_mesh,0),EXTRACTION_KEEP_MESH_RELATION, 0, false);
+        auto meshMark0 = createSubmesh( _mesh=M_mesh, _range=marked3elements(M_mesh,0),_context=EXTRACTION_KEEP_MESH_RELATION, _update=0, _only_on_boundary_faces=false);
         saveGMSHMesh(_mesh=meshMark0,_filename="submesh-marked3elementsBy0.msh");
     }
 
