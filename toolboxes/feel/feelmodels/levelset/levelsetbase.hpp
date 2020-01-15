@@ -76,7 +76,8 @@ enum class LevelSetFieldsExported
     GradPhi, ModGradPhi, 
     Distance, DistanceNormal, DistanceCurvature,
     AdvectionVelocity,
-    BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2
+    BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2,
+    Pid
 };
 
 template<
