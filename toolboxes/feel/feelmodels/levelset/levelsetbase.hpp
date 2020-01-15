@@ -354,6 +354,14 @@ public:
     projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
 
     //--------------------------------------------------------------------//
+    // Symbols expressions
+    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField() ); }
+    constexpr auto symbolsExprField() const {
+        return Feel::vf::symbolsExpr(
+                symbolExpr( "levelset_phi", idv( this->phiElt() ) )
+                );
+    }
+    //--------------------------------------------------------------------//
     // Curvature diffusion
     bool useCurvatureDiffusion() const { return M_useCurvatureDiffusion; }
     void setUseCurvatureDiffusion( bool b ) { M_useCurvatureDiffusion = b; }
@@ -491,7 +499,7 @@ private:
 
     //--------------------------------------------------------------------//
     void addShape( 
-            std::pair<ShapeType, parameter_map> const& shape, 
+            pt::ptree const& shapeParameters, 
             element_levelset_type & phi );
 
 
