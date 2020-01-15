@@ -148,68 +148,34 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 
     if( !M_initialPhi ) // look for JSON initial values
     {
-        bool hasInitialValue = false;
+        bool hasInitialValue = !this->modelProperties().initialConditions().empty();
 
-        auto phi_init = this->functionSpace()->elementPtr();
-        phi_init->setConstant( std::numeric_limits<value_type>::max() );
-
-        this->modelProperties().parameters().updateParameterValues();
-        if( !this->M_icDirichlet.empty() )
+        if( hasInitialValue )
         {
-            M_icDirichlet.setParameterValues( this->modelProperties().parameters().toParameterValues() );
+            auto phiInit = this->functionSpace()->elementPtr();
+            phiInit->setConstant( std::numeric_limits<value_type>::max() );
+            std::vector<element_levelset_ptrtype> icLevelSetFields = { phiInit };
 
-            for( auto const& iv : M_icDirichlet )
+            this->modelProperties().parameters().updateParameterValues();
+            auto paramValues = this->modelProperties().parameters().toParameterValues();
+            this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+            this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icLevelSetFields );
+
+            ModelInitialConditionTimeSet const& icts = this->modelProperties().initialConditions().get( this->prefix() );
+            for( auto const& [time,icByType]: icts )
             {
-                auto const& icMarkers = markers(iv);
-                if( icMarkers.empty() )
-                    continue;
-                else
+                auto itFindIcShapes = icByType.find( "Shapes" );
+                if( itFindIcShapes != icByType.end() )
                 {
-                    for( std::string const& marker: icMarkers )
+                    for( auto const& icShape: itFindIcShapes->second )
                     {
-                        if( marker.empty() )
-                        {
-                            phi_init->on(
-                                    _range=elements(phi_init->mesh()),
-                                    _expr=expression(iv),
-                                    _geomap=this->geomap()
-                                    );
-                        }
-                        else
-                        {
-                            phi_init->on(
-                                    _range=markedelements(phi_init->mesh(), marker),
-                                    _expr=expression(iv),
-                                    _geomap=this->geomap()
-                                    );
-                        }
+                        this->addShape( icShape.pTree(), *phiInit );
                     }
                 }
             }
 
-            hasInitialValue = true;
-        }
-
-        if( !this->M_icShapes.empty() )
-        {
-            // If phi_init already has a value, ensure that it is a proper distance function
-            if( hasInitialValue )
-            {
-                // Redistanciate phi_init
-                *phi_init = this->redistanciate( *phi_init, LevelSetDistanceMethod::FASTMARCHING );
-            }
-            // Add shapes
-            for( auto const& shape: M_icShapes )
-            {
-                this->addShape( shape, *phi_init );
-            }
-
-            hasInitialValue = true;
-        }
-
-        if( hasInitialValue ) // has JSON-provided initial value
-        {
-            this->setInitialValue( phi_init );
+            this->setInitialValue( phiInit );
         }
     }
 
@@ -231,55 +197,64 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::addShape( 
-        std::pair<ShapeType, parameter_map> const& shape, 
+        pt::ptree const& shapeParameters,
         element_levelset_type & phi 
         )
 {
-    ShapeType shapeType = shape.first;
-    parameter_map const& shapeParams = shape.second;
-
-    switch(shapeType)
+    boost::optional<std::string> shapeStr = shapeParameters.get_optional<std::string>( "shape" );
+    CHECK( shapeStr ) << "missing shape type\n";
+    auto const& shapeTypeIt = ShapeTypeMap.find( *shapeStr );
+    if( shapeTypeIt != ShapeTypeMap.end() )
     {
-        case ShapeType::SPHERE:
-        {
-            auto X = Px() - shapeParams.dget("xc");
-            auto Y = Py() - shapeParams.dget("yc");
-            auto Z = Pz() - shapeParams.dget("zc"); 
-            auto R = shapeParams.dget("radius");
-            phi = vf::project(
-                    _space=this->functionSpace(),
-                    _range=elements(this->functionSpace()->mesh()),
-                    _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
-                    _geomap=this->geomap()
-                    );
-        }
-        break;
+        ShapeType shapeType = shapeTypeIt->second;
 
-        case ShapeType::ELLIPSE:
+        switch(shapeType)
         {
-            auto X = Px() - shapeParams.dget("xc");
-            auto Y = Py() - shapeParams.dget("yc");
-            auto Z = Pz() - shapeParams.dget("zc");
-            double A = shapeParams.dget("a");
-            double B = shapeParams.dget("b");
-            double C = shapeParams.dget("c");
-            double psi = shapeParams.dget("psi");
-            double theta = shapeParams.dget("theta");
-            // Apply inverse ZYX TaitBryan rotation
-            double cosPsi = std::cos(psi); double sinPsi = std::sin(psi);
-            double cosTheta = std::cos(theta); double sinTheta = std::sin(theta);
-            auto Xp = cosTheta*(cosPsi*X+sinPsi*Y) + sinTheta*Z;
-            auto Yp = -sinPsi*X + cosPsi*Y;
-            auto Zp = -sinTheta*(cosPsi*X+sinPsi*Y) + cosTheta*Z;
-            // Project
-            phi = vf::project(
-                    _space=this->functionSpace(),
-                    _range=elements(this->functionSpace()->mesh()),
-                    _expr=vf::min( idv(phi), sqrt(Xp*Xp+Yp*Yp*(A*A)/(B*B)+Zp*Zp*(A*A)/(C*C))-A ),
-                    _geomap=this->geomap()
-                    );
+            case ShapeType::SPHERE:
+            {
+                auto X = Px() - shapeParameters.get("xc", 0.);
+                auto Y = Py() - shapeParameters.get("yc", 0.);
+                auto Z = Pz() - shapeParameters.get("zc", 0.); 
+                auto R = shapeParameters.get("radius", 0.);
+                phi = vf::project(
+                        _space=this->functionSpace(),
+                        _range=elements(this->functionSpace()->mesh()),
+                        _expr=vf::min( idv(phi), sqrt(X*X+Y*Y+Z*Z)-R ),
+                        _geomap=this->geomap()
+                        );
+            }
+            break;
+
+            case ShapeType::ELLIPSE:
+            {
+                auto X = Px() - shapeParameters.get("xc", 0.);
+                auto Y = Py() - shapeParameters.get("yc", 0.);
+                auto Z = Pz() - shapeParameters.get("zc", 0.);
+                double A = shapeParameters.get("a", 0.);
+                double B = shapeParameters.get("b", 0.);
+                double C = shapeParameters.get("c", 0.);
+                double psi = shapeParameters.get("psi", 0.);
+                double theta = shapeParameters.get("theta", 0.);
+                // Apply inverse ZYX TaitBryan rotation
+                double cosPsi = std::cos(psi); double sinPsi = std::sin(psi);
+                double cosTheta = std::cos(theta); double sinTheta = std::sin(theta);
+                auto Xp = cosTheta*(cosPsi*X+sinPsi*Y) + sinTheta*Z;
+                auto Yp = -sinPsi*X + cosPsi*Y;
+                auto Zp = -sinTheta*(cosPsi*X+sinPsi*Y) + cosTheta*Z;
+                // Project
+                phi = vf::project(
+                        _space=this->functionSpace(),
+                        _range=elements(this->functionSpace()->mesh()),
+                        _expr=vf::min( idv(phi), sqrt(Xp*Xp+Yp*Yp*(A*A)/(B*B)+Zp*Zp*(A*A)/(C*C))-A ),
+                        _geomap=this->geomap()
+                        );
+            }
+            break;
         }
-        break;
+    }
+    else
+    {
+        CHECK( false ) << "unknown shape type " << *shapeStr << std::endl;
     }
 }
 
