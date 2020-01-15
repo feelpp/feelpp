@@ -39,11 +39,7 @@
 #include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
 #include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
 
-#include <feel/feelfilters/straightenmesh.hpp>
-
 #include <feel/feelmodels/modelcore/modelbase.hpp>
-
-#include <boost/parameter/preprocessor.hpp>
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
@@ -695,7 +691,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 //;
 
 //----------------------------------------------------------------------------//
-
 
 } // namespace FeelModels
 } // namespace Feel
