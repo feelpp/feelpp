@@ -9,6 +9,15 @@
 #include <boost/assign/list_inserter.hpp>
 
 namespace Feel {
+
+// Prevent LevelSetRedistanciation* instantiations
+extern template class LevelSetRedistanciationFM< 
+    typename FeelModels::LEVELSETBASE_CLASS_TYPE::space_levelset_type 
+    >;
+extern template class LevelSetRedistanciationHJ< 
+    typename FeelModels::LEVELSETBASE_CLASS_TYPE::space_levelset_type 
+    >;
+
 namespace FeelModels {
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS

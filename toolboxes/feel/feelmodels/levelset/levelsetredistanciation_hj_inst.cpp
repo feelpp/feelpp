@@ -1,6 +1,7 @@
 
 #include "levelsetbaseconfig.h"
-#include <feel/feelmodels/levelset/levelsetbase.cpp>
+#include <feel/feelmodels/levelset/levelsetbase.hpp>
+#include <feel/feelmodels/levelset/levelsetredistanciation_hj.cpp>
 
 // Scalar advection required for ReinitializerHJ
 #define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
@@ -9,12 +10,10 @@
 #define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
     AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
         /**/
-//#include <feel/feelmodels/advection/advection.cpp>
+#include <feel/feelmodels/advection/advection.cpp>
 
 namespace Feel {
 namespace FeelModels {
-
-LEVELSETBASE_CLASS_INSTANTIATION
 
 // Scalar iso advection (for reinitializerHJ)
 //template class AdvDiffReac<
@@ -30,6 +29,13 @@ LEVELSETBASE_CLASS_INSTANTIATION
         //Periodicity<LEVELSETBASE_PERIODICITY>
             //>
     //>;
+template class AdvDiffReac<
+    typename LEVELSETBASE_CLASS_TYPE::space_levelset_type
+    >;
 
 }
+
+template class LevelSetRedistanciationHJ< 
+    typename FeelModels::LEVELSETBASE_CLASS_TYPE::space_levelset_type
+    >;
 }
