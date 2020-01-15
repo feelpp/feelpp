@@ -775,6 +775,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceNormal );
         if( o == "distance-curvature" || o == "all" )
             this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::DistanceCurvature );
+        if( o == "pid" || o == "all" )
+            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::Pid );
     }
 
     // Overwrite with options from CFG
@@ -2208,6 +2210,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
         this->M_exporter->step( time )->add( prefixvm(this->prefix(),"DistanceCurvature"),
                                        prefixvm(this->prefix(),prefixvm(this->subPrefix(),"DistanceCurvature")),
                                        *this->distanceCurvature() );
+    }
+    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::Pid ) )
+    {
+        this->M_exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
     }
 
     if( save )
