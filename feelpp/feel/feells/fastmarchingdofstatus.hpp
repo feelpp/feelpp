@@ -89,5 +89,19 @@ struct FastMarchingDofStatus
 
 }
 
+namespace boost {
+namespace serialization {
+    template<class Archive>
+    void serialize( Archive & ar, Feel::FastMarchingDofStatus & s, const unsigned int version )
+    {
+        ar & s.status;
+    }
+}
+namespace mpi {
+    template <>
+    struct is_mpi_datatype<Feel::FastMarchingDofStatus> : mpl::true_ { };
+}
+}
+
 #endif
 
