@@ -48,7 +48,6 @@ void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& fu
     mpi::request * mpiRequests = new mpi::request[nRequests];
     int cntRequests = 0;
     std::map< rank_type, std::set< std::pair<size_type, value_type> > > dataToSend, dataToRecv;
-    std::map< rank_type, std::set< size_type > > dataToRequest, dataRequested;
     std::map< rank_type, std::set< std::pair<size_type, value_type> > > dataToReSend, dataToReRecv;
 
     // Send ghost dofs to the unique active dof
@@ -69,39 +68,6 @@ void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& fu
                 value_type dofVal = phi(dofId);
                 dataToSend[procId].insert( std::make_pair( dofGCId, dofVal ) );
             }
-            else
-            { 
-                // If the dof is active and shared, request it from neighbours
-                auto const dofActiveIt = dofTable->activeDofSharedOnCluster().find( dofId );
-                if( dofActiveIt != dofTable->activeDofSharedOnCluster().end() )
-                {
-                    size_type const dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
-                    for( rank_type const neighProcId: dofActiveIt->second )
-                    {
-                        dataToRequest[neighProcId].insert( dofGCId );
-                    }
-                }
-            }
-        }
-    }
-    // Perform requests
-    cntRequests = 0;
-    for( rank_type p: dofTable->neighborSubdomains() )
-    {
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().isend( p, 0, dataToRequest[p] );
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().irecv( p, 0, dataRequested[p] );
-    }
-    mpi::wait_all( mpiRequests, mpiRequests + nRequests );
-    for( auto const& dataReq: dataRequested )
-    {
-        rank_type const procId = dataReq.first;
-        for( size_type const dofReqGCId: dataReq.second )
-        {
-            // Find received dof global process id
-            auto resSearchDof = dofTable->searchGlobalProcessDof( dofReqGCId );
-            DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofReqGCId << " not found\n";
-            size_type const dofReqId = boost::get<1>( resSearchDof );
-            dataToSend[procId].insert( std::make_pair( dofReqGCId, phi(dofReqId) ) );
         }
     }
     // Perform communications
