@@ -31,20 +31,17 @@
 
 namespace Feel {
 
-template<typename ElementType, typename RangeType, typename FunctionType>
-void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& func )
+template<typename VectorType, typename DofTableType, typename RangeType, typename FunctionType>
+void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& range, FunctionType const& func )
 {
-    typedef typename ElementType::value_type value_type;
-    typedef typename ElementType::functionspace_type functionspace_type;
-    static const uint16_type nDofPerElt = functionspace_type::fe_type::nDof;
-    // Dof table
-    auto const& dofTable = phi.dof();
+    typedef typename VectorType::value_type value_type;
+    static const uint16_type nDofPerElt = DofTableType::nDofPerElement;
     // If sequential return
-    if( dofTable->worldCommPtr()->localSize() == 1 )
+    if( dofTable.worldCommPtr()->localSize() == 1 )
         return;
     // MPI requests
-    rank_type const localPid = dofTable->worldCommPtr()->localRank();
-    int nRequests = 2 * dofTable->neighborSubdomains().size();
+    rank_type const localPid = dofTable.worldCommPtr()->localRank();
+    int nRequests = 2 * dofTable.neighborSubdomains().size();
     mpi::request * mpiRequests = new mpi::request[nRequests];
     int cntRequests = 0;
     std::map< rank_type, std::set< std::pair<size_type, value_type> > > dataToSend, dataToRecv;
@@ -59,28 +56,28 @@ void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& fu
         size_type const eltId = elt.id();
         for( uint16_type j = 0; j < nDofPerElt; ++j )
         {
-            size_type const dofId = dofTable->localToGlobalId( eltId, j );
+            size_type const dofId = dofTable.localToGlobalId( eltId, j );
             // If the dof is ghost, mark to send
-            if( dofTable->dofGlobalProcessIsGhost( dofId ) )
+            if( dofTable.dofGlobalProcessIsGhost( dofId ) )
             {
-                size_type const dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
-                rank_type const procId = dofTable->procOnGlobalCluster( dofGCId );
-                value_type dofVal = phi(dofId);
+                size_type const dofGCId = dofTable.mapGlobalProcessToGlobalCluster( dofId );
+                rank_type const procId = dofTable.procOnGlobalCluster( dofGCId );
+                value_type dofVal = phi[dofId];
                 dataToSend[procId].insert( std::make_pair( dofGCId, dofVal ) );
             }
         }
     }
     // Perform communications
     cntRequests = 0;
-    for( rank_type p: dofTable->neighborSubdomains() )
+    for( rank_type p: dofTable.neighborSubdomains() )
     {
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().isend( p, 0, dataToSend[p] );
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().irecv( p, 0, dataToRecv[p] );
+        mpiRequests[cntRequests++] = dofTable.worldCommPtr()->localComm().isend( p, 0, dataToSend[p] );
+        mpiRequests[cntRequests++] = dofTable.worldCommPtr()->localComm().irecv( p, 0, dataToRecv[p] );
     }
     mpi::wait_all( mpiRequests, mpiRequests + nRequests );
     // Update the current value of active dof with respect to the ghost values and the synchronisation functional
-    std::map< size_type, std::unordered_set< value_type > > ghostDofValues;
-    std::map< size_type, std::unordered_set< rank_type > > ghostDofProcIds;
+    std::map< size_type, std::set< value_type > > ghostDofValues;
+    std::map< size_type, std::set< rank_type > > ghostDofProcIds;
     for( auto const& dataR: dataToRecv )
     {
         rank_type const procId = dataR.first;
@@ -96,32 +93,32 @@ void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& fu
     {
         size_type dofGCId = ghostDofVal.first;
         // Find received dof global process id
-        auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
+        auto resSearchDof = dofTable.searchGlobalProcessDof( dofGCId );
         DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
         size_type const dofId = boost::get<1>( resSearchDof );
-        //size_type const dofId = dofGCId - dofTable->firstDofGlobalCluster();
+        //size_type const dofId = dofGCId - dofTable.firstDofGlobalCluster();
         // Update current value with received ghost values
-        value_type valCurrent = phi(dofId);
+        value_type valCurrent = phi[dofId];
         //std::cout << "[" << localPid << "] " << "syncing dof " << dofId << " with "
             //<< "valCurrent = " << valCurrent << ", "
             //<< "valGhosts = ";
         //for( auto const ghostVal: ghostDofVal.second )
             //std::cout << ghostVal << "\t";
         //std::cout << std::endl;
-        phi.set( dofId, func( valCurrent, ghostDofVal.second ) );
+        phi[dofId] = func( valCurrent, ghostDofVal.second );
         // Prepare the updated active dof to be re-send
         for( rank_type const procId: ghostDofProcIds[dofGCId] )
         {
-            dataToReSend[procId].insert( std::make_pair( dofGCId, phi(dofId) ) );
+            dataToReSend[procId].insert( std::make_pair( dofGCId, phi[dofId] ) );
         }
     }
     
     // Re-send active dof value to ghost dofs
     cntRequests = 0;
-    for( rank_type p: dofTable->neighborSubdomains() )
+    for( rank_type p: dofTable.neighborSubdomains() )
     {
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().isend( p, 0, dataToReSend[p] );
-        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().irecv( p, 0, dataToReRecv[p] );
+        mpiRequests[cntRequests++] = dofTable.worldCommPtr()->localComm().isend( p, 0, dataToReSend[p] );
+        mpiRequests[cntRequests++] = dofTable.worldCommPtr()->localComm().irecv( p, 0, dataToReRecv[p] );
     }
     mpi::wait_all( mpiRequests, mpiRequests + nRequests );
     // We done with mpi comms
@@ -135,13 +132,19 @@ void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& fu
             size_type dofGCId = dataRFromProc.first;
             value_type dofVal = dataRFromProc.second;
             // Find received dof global process id
-            auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
+            auto resSearchDof = dofTable.searchGlobalProcessDof( dofGCId );
             DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "] " << "dof " << dofGCId << " not found\n";
             size_type const dofId = boost::get<1>( resSearchDof );
-            DCHECK( dofTable->dofGlobalProcessIsGhost( dofId ) ) << "[" << localPid << "] "<< "dof " << dofGCId << ", " << dofId << " is not a ghost\n";
-            phi.set( dofId, dofVal );
+            DCHECK( dofTable.dofGlobalProcessIsGhost( dofId ) ) << "[" << localPid << "] "<< "dof " << dofGCId << ", " << dofId << " is not a ghost\n";
+            phi[dofId] = dofVal;
         }
     }
+}
+
+template<typename ElementType, typename RangeType, typename FunctionType>
+void syncDofs( ElementType & phi, RangeType const& range, FunctionType const& func )
+{
+    syncDofs( phi, *phi.dof(), range, func );
 }
 
 }
