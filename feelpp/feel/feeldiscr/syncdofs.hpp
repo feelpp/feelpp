@@ -106,14 +106,29 @@ void syncDofs( VectorType & phi, DofTableType const& dofTable, RangeType const& 
             //std::cout << ghostVal << "\t";
         //std::cout << std::endl;
         phi[dofId] = func( valCurrent, ghostDofVal.second );
-        // Prepare the updated active dof to be re-send
-        for( rank_type const procId: ghostDofProcIds[dofGCId] )
-        {
-            dataToReSend[procId].insert( std::make_pair( dofGCId, phi[dofId] ) );
-        }
     }
     
     // Re-send active dof value to ghost dofs
+    auto const& activeDofsShared = dofTable.activeDofSharedOnCluster();
+    itElt = range.template get<1>();
+    for( ; itElt != enElt; ++itElt )
+    {
+        auto const elt = boost::unwrap_ref( *itElt );
+        size_type const eltId = elt.id();
+        for( uint16_type j = 0; j < nDofPerElt; ++j )
+        {
+            size_type const dofId = dofTable.localToGlobalId( eltId, j );
+            // If the dof is active, mark to resend
+            auto const dofActiveIt = activeDofsShared.find( dofId );
+            if( dofActiveIt != activeDofsShared.end() )
+            {
+                size_type const dofGCId = dofTable.mapGlobalProcessToGlobalCluster( dofId );
+                value_type dofVal = phi[dofId];
+                for( rank_type const procId: dofActiveIt->second )
+                    dataToReSend[procId].insert( std::make_pair( dofGCId, dofVal ) );
+            }
+        }
+    }
     cntRequests = 0;
     for( rank_type p: dofTable.neighborSubdomains() )
     {
