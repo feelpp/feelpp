@@ -25,6 +25,7 @@
 #include <feel/feelmodels/levelset/levelsetredistanciation_fm.hpp>
 #include <feel/feeldiscr/syncdofs.hpp>
 #include <feel/feells/distancepointtoface.hpp>
+#include <feel/feells/fastmarching_impl.hpp>
 
 namespace Feel
 {
@@ -189,15 +190,24 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
                         modgradphi = modGradPhi->localToGlobal( eltId, j, 0 );
 
                     value_type sdist = phi.localToGlobal( eltId, j, 0 ) / modgradphi;
+                    //std::cout << "[" << this->mesh()->worldCommPtr()->localRank() << "] "
+                        //<< "updating dofId " << dofId << " "
+                        //<< "( phiRedist = " << (*phiRedist)(dofId) << ", "
+                        //<< "phi = " << phi.localToGlobal( eltId, j, 0 ) << ", "
+                        //<< "modgradphi = " << modgradphi << " ) "
+                        //<< "with sdist = " << sdist << "\t"
+                        //;
                     if( std::abs( sdist ) < std::abs( (*phiRedist)(dofId) ) )
                     {
                         (*phiRedist)(dofId) = sdist;
+                        //std::cout << "accepted";
                     }
+                    //std::cout << std::endl;
                 }
             }
             // Sync initial elts
             syncDofs( *phiRedist, rangeInitialElts,
-                    []( value_type valCurrent, std::unordered_set<value_type> ghostVals )
+                    []( value_type valCurrent, std::set<value_type> ghostVals )
                     {
                         value_type res = valCurrent;
                         for( value_type const ghostVal: ghostVals )
