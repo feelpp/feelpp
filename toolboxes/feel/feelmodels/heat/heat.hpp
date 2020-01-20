@@ -54,7 +54,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
-             public ModelPhysics,
+             public ModelPhysics<ConvexType::nDim>,
              public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
              public MarkerManagementDirichletBC,
              public MarkerManagementNeumannBC,
