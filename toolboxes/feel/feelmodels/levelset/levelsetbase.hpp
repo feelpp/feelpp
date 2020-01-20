@@ -65,16 +65,6 @@ enum class LevelSetMeasuresExported
 {
     Volume, Perimeter, Position_COM, Velocity_COM
 };
-enum class LevelSetFieldsExported
-{
-    Dirac, Heaviside,
-    Normal, Curvature,
-    GradPhi, ModGradPhi, 
-    Distance, DistanceNormal, DistanceCurvature,
-    AdvectionVelocity,
-    BackwardCharacteristics, CauchyGreenInvariant1, CauchyGreenInvariant2,
-    Pid
-};
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
@@ -426,10 +416,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    void exportResults( bool save = true ) { this->exportResults( this->currentTime(), save ); }
-    void exportResults( double time, bool save = true );
+    bool hasPostProcessFieldExported( std::string const& field) const;
     bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
-    bool hasPostProcessFieldExported( LevelSetFieldsExported const& field) const;
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
+    void exportFields( double time );
+    virtual bool updateExportedFields( exporter_ptrtype const& exporter, std::set<std::string> const& fields, double time );
     exporter_ptrtype & exporter() { return M_exporter; }
     exporter_ptrtype const& exporter() const { return M_exporter; }
     //--------------------------------------------------------------------//
@@ -478,12 +470,10 @@ protected:
     element_levelset_type interfaceRectangularFunction( element_levelset_type const& p ) const;
     //--------------------------------------------------------------------//
     // Export
-    virtual bool exportResultsImpl( double time, bool save );
-    virtual bool exportMeasuresImpl( double time, bool save );
+    virtual bool exportMeasuresImpl( double time );
 
 private:
     void loadParametersFromOptionsVm();
-    void loadConfigICFile();
     void loadConfigPostProcess();
 
     void createFunctionSpaces();
@@ -521,15 +511,10 @@ protected:
     mutable bool M_doUpdateMarkers;
 
     //--------------------------------------------------------------------//
-    // Levelset initial value
-    map_scalar_field<2> M_icDirichlet;
-    std::vector<std::pair<ShapeType, parameter_map>> M_icShapes;
-
-    //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
     std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
-    std::set<LevelSetFieldsExported> M_postProcessFieldsExported;
+    std::set<std::string> M_postProcessFieldExported;
 
 private:
     //--------------------------------------------------------------------//
