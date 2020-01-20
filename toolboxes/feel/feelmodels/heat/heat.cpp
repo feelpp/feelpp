@@ -24,7 +24,7 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics( "heat" )
+    ModelPhysics<nDim>( "heat" )
     //M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );

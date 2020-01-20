@@ -3,17 +3,25 @@
 #ifndef FEELPP_TOOLBOXES_MODELCORE_MODELPHYSICS_H
 #define FEELPP_TOOLBOXES_MODELCORE_MODELPHYSICS_H 1
 
+#include <type_traits> // TO ADD
+#include <feel/feelcore/feeltypes.hpp>
 #include <string>
 #include <set>
 #include <map>
+
+#include <feel/feelmodels/modelcore/modelpde.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
 
-class ModelPhysics
+template <uint16_type Dim>
+class ModelPhysics : public ModelPDE<Dim>
 {
+    using super_type = ModelPDE<Dim>;
+    using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
+    static const uint16_type nDim = Dim;
 public :
     ModelPhysics( std::string const& physic );
     ModelPhysics( ModelPhysics const& ) = default;

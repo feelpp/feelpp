@@ -16,21 +16,17 @@ namespace FeelModels
 class MaterialProperty : public ModelExpression
 {
 public :
-    MaterialProperty( std::string const& symbol, ModelExpression const& expr )
+    MaterialProperty( std::string const& name, ModelExpression const& expr )
         :
         ModelExpression( expr ),
-        M_symbol( symbol )
-        //M_expr( expr )
+        M_name( name )
         {}
     MaterialProperty( MaterialProperty const& ) = default;
     MaterialProperty( MaterialProperty && ) = default;
 
-    //ModelExpression const& expr() const { return M_expr; }
+    std::string const& name() const { return M_name; }
 private :
     std::string M_name;
-    std::string M_symbol;
-    //ModelExpression M_expr;
-    //std::set<std::string> M_shapes;
 };
 
 
@@ -44,12 +40,12 @@ public :
 
     void add( std::string const& propName, ModelExpression const& expr )
         {
-            this->/*M_propertyToExpression.*/emplace(propName, MaterialProperty(propName, expr) );
+            this->emplace(propName, MaterialProperty(propName, expr) );
         }
 
     bool has( std::string const& propName ) const
         {
-            if ( this->/*M_propertyToExpression.*/find( propName ) != this->/*M_propertyToExpression.*/end() )
+            if ( this->find( propName ) != this->end() )
                 return true;
             return false;
         }
@@ -57,8 +53,8 @@ public :
     MaterialProperty const&
     property( std::string const& propName ) const
         {
-            auto itFind = this->/*M_propertyToExpression.*/find( propName );
-            CHECK( itFind != this->/*M_propertyToExpression.*/end() ) << "material property" << propName << " not found";
+            auto itFind = this->find( propName );
+            CHECK( itFind != this->end() ) << "material property" << propName << " not found";
             return itFind->second;
         }
 
@@ -68,15 +64,8 @@ public :
                 matProp.setParameterValues( mp );
         }
 
-    // ModelExpression const&
-    // expr( std::string const& propName ) const
-    //     {
-    //         return this->property( propName ).expr();
-    //     }
-
 private :
     std::string M_materialName;
-    //std::map<std::string, MaterialProperty> M_propertyToExpression;
 };
 
 template<class MeshType>
@@ -99,7 +88,7 @@ public :
 
     MaterialsProperties( MaterialsProperties const& ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics const& modelphysics )
+    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics )
         {
             std::set<std::string> eltMarkersInMesh;
             for (auto const& markPair : mesh->markerNames() )
@@ -121,13 +110,7 @@ public :
             {
                 std::string const& matName = m.first;
                 auto const& mat = m.second;
-#if 0
-                if ( mat.hasPhysics() && !mat.hasPhysics( { "heat","aerothermal","thermo-electric" } ) )
-                    continue;
 
-                if (  mat.hasPhysics() && !mat.hasPhysics( physicsAvailable ) )
-                    continue;
-#endif
                 std::set<std::string> currentPhysicsReaded;
                 if ( mat.hasPhysics() )
                 {
@@ -168,6 +151,10 @@ public :
             for ( std::string const& p : currentPhysics )
                 M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == eltMarkersInMesh.size() );
 
+
+            for ( auto const& [propName, propDesc] : modelphysics.matertialPropertyDescription() )
+                M_matertialPropertyDescription[propName] = propDesc;
+
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
@@ -184,26 +171,7 @@ public :
                 auto [itProp,isAdded] = M_materialNameToProperties.emplace( matName, MaterialProperties<mesh_type>( matName ) );
                 auto & matProperties = itProp->second;
 
-#if 0
-                M_thermalConductivityByMaterial[matName];
-                if ( mat.hasProperty("k") )
-                {
-                    M_thermalConductivityByMaterial[matName] = mat.property( "k");
-                    auto & prop = M_thermalConductivityByMaterial[matName];
-                    if ( prop.hasAtLeastOneExpr() && ( !prop.hasExprScalar() && !prop.template hasExprMatrix<nDim,nDim>() )  )
-                        CHECK( false ) << "thermal conductivty should be a scalar or a matrix";
-                }
-#endif
-                using shape_dim_type = std::pair<uint16_type,uint16_type>;
-                shape_dim_type scalarShape = std::make_pair(1,1);
-                shape_dim_type matrixShape = std::make_pair(nDim,nDim);
-                std::map<std::string,std::tuple<std::string,std::vector<shape_dim_type>>> mapPropNameToPropDesc;
-                mapPropNameToPropDesc["density"] = std::make_tuple("rho", std::vector<shape_dim_type>( { scalarShape } ) );
-                mapPropNameToPropDesc["specific-heat-capacity"] = std::make_tuple("Cp", std::vector<shape_dim_type>( { scalarShape } ) );
-                mapPropNameToPropDesc["thermal-expansion"] = std::make_tuple("beta", std::vector<shape_dim_type>( { scalarShape } ) );
-                mapPropNameToPropDesc["thermal-conductivity"] = std::make_tuple("k", std::vector<shape_dim_type>( { scalarShape, matrixShape } /*"scalar_or_matrix"*/ ) );
-
-                for ( auto const& [propName,desc] : mapPropNameToPropDesc )
+                for ( auto const& [propName,desc] : M_matertialPropertyDescription  )
                 {
                     std::string const& symbol = std::get<0>( desc );
                     if ( !mat.hasProperty( symbol ) )
@@ -301,6 +269,24 @@ public :
             return true;
         }
 
+    //! return true is the property \propName is defined as a scalar or a matrix TheDim x TheDim in all materials
+    template <int TheDim>
+    bool materialPropertyIsScalarOrMatrixInAllMaterials( std::string const& propName ) const
+        {
+            auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
+            if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+                return false;
+            auto const& theShapes = std::get<1>( itFindPropDesc->second );
+            if ( theShapes.size() != 2 )
+                return false;
+            if ( theShapes[0].first == 1 && theShapes[0].second == 1 && theShapes[1].first == TheDim && theShapes[1].second == TheDim )
+                return true;
+            if ( theShapes[1].first == 1 && theShapes[1].second == 1 && theShapes[0].first == TheDim && theShapes[0].second == TheDim )
+                return true;
+            return false;
+        }
+
+    //! return true if the  property \propName depends on symbol named \symbolStr
     bool hasMaterialPropertyDependingOnSymbol( std::string const& propName, std::string const& symbolStr ) const
         {
             for ( auto & [matName,matProps] : M_materialNameToProperties )
@@ -313,6 +299,57 @@ public :
                     return true;
             }
             return false;
+        }
+
+    template <int TheDim, typename SymbolsExpr>
+    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+        {
+            auto Id = eye<TheDim,TheDim>();
+            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)*Id) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar_as_matrix;
+            typedef decltype(expr(matrix_field_expression<TheDim,TheDim,2>{},symbolsExpr)) _expr_matrix_type;
+            std::vector<std::pair<std::string,_expr_matrix_type>> exprs_matrix;
+
+            for ( auto & [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( !matProps.has( propName ) )
+                    continue;
+                auto const& matProp = matProps.property( propName );
+
+                if ( matProp.template hasExpr<TheDim,TheDim>() )
+                {
+                    auto matPropExpr = expr( matProp.template expr<TheDim,TheDim>(), symbolsExpr );
+                    exprs_matrix.push_back( std::make_pair( matName, matPropExpr ) );
+                }
+                else if ( matProp.hasExprScalar() )
+                {
+                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
+                    exprs_scalar_as_matrix.push_back( std::make_pair( matName, matPropExpr*Id ) );
+                }
+            }
+
+            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+        }
+
+    template <typename SymbolsExpr>
+    auto materialPropertyExprScalar( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar;
+            for ( auto & [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( !matProps.has( propName ) )
+                    continue;
+                auto const& matProp = matProps.property( propName );
+
+                if ( matProp.isScalar() )
+                {
+                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
+                    exprs_scalar.push_back( std::make_pair( matName, matPropExpr ) );
+                }
+            }
+
+            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar );
         }
 
 
@@ -328,86 +365,23 @@ public :
     bool allThermalConductivitiesAreScalar() const
         {
             return this->materialPropertyIsScalarInAllMaterials( "thermal-conductivity" );
-#if 0
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-            {
-                std::string const& _matName = rangeData.first;
-                auto const& thermalConductivity = this->thermalConductivity( _matName );
-                if ( !thermalConductivity.isScalar() )
-                    return false;
-            }
-            return true;
-#endif
         }
 
-        bool hasThermalConductivityDependingOnSymbol( std::string const& symbolStr ) const
+    bool hasThermalConductivityDependingOnSymbol( std::string const& symbolStr ) const
         {
             return this->hasMaterialPropertyDependingOnSymbol( "thermal-conductivity", symbolStr );
-#if 0
-            for ( auto const& conductivityData : M_thermalConductivityByMaterial )
-            {
-                auto const& thermalConductivity = conductivityData.second;
-                if ( thermalConductivity.isMatrix() )
-                {
-                    if ( thermalConductivity.template exprMatrix<nDim,nDim>().expression().hasSymbol( symbolStr ) )
-                        return true;
-                    continue;
-                }
-                if ( thermalConductivity.isConstant() )
-                    continue;
-                if ( thermalConductivity.expr().expression().hasSymbol( symbolStr ) )
-                    return true;
-            }
-            return false;
-#endif
         }
-
 
     template <typename SymbolsExpr>
     auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr ) const
         {
-            auto Id = eye<nDim,nDim>();
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)*Id) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_k;
-            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},symbolsExpr)) _expr_matrix_type;
-            std::vector<std::pair<std::string,_expr_matrix_type>> exprs_k_matrix;
-
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-            {
-                std::string const& _matName = rangeData.first;
-                auto const& thermalConductivity = this->thermalConductivity( _matName );
-                if ( thermalConductivity.isMatrix() )
-                {
-                    auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
-                    exprs_k_matrix.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
-                }
-                else
-                {
-                    auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
-                    exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr*Id ) );
-                }
-            }
-            auto kappa = expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_k, exprs_k_matrix );
-            return kappa;
+            return this->materialPropertyExprScalarOrMatrix<nDim>( "thermal-conductivity", symbolsExpr );
         }
 
     template <typename SymbolsExpr>
     auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_k;
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-            {
-                std::string const& _matName = rangeData.first;
-                auto const& thermalConductivity = this->thermalConductivity( _matName );
-                if ( thermalConductivity.isScalar() )
-                {
-                    auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), symbolsExpr );
-                    exprs_k.push_back( std::make_pair( _matName, thermalConductivityExpr ) );
-                }
-            }
-            auto kappa = expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_k );
-            return kappa;
+            return this->materialPropertyExprScalar( "thermal-conductivity", symbolsExpr );
         }
 
 
@@ -423,7 +397,7 @@ public :
     MaterialProperty/*ModelExpression*/ const& rho( std::string const& matName ) const { return this->density( matName ); } // DEPRECATED
     bool hasRho( std::string const& matName ) const { return this->hasDensity( matName ); } // DEPRECATED
 
-        // heat capacity
+    // heat capacity
     bool hasHeatCapacity( std::string const& matName ) const
         {
             return this->hasProperty( matName, "specific-heat-capacity" );
@@ -500,34 +474,51 @@ public :
             std::vector<std::tuple<std::string,_expr_matrix_type,SymbolExprComponentSuffix>> matPropSymbsMatrix;
 
             // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
-                std::string const& _matName = rangeData.first;
-                auto const& thermalConductivity = this->thermalConductivity( _matName );
-                if ( thermalConductivity.isMatrix() )
+                for ( auto const& [propName,matProp] : matProps )
                 {
-                    matPropSymbsMatrix.push_back( std::make_tuple( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.template exprMatrix<nDim,nDim>(), se ), SymbolExprComponentSuffix( nDim,nDim,true )  ) );
+                    auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+                        continue;
+                    std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
+                    std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
+                    if ( matProp.template hasExpr<nDim,nDim>() )
+                    {
+                        auto matPropExpr = expr( matProp.template expr<nDim,nDim>(), se );
+                        matPropSymbsMatrix.push_back( std::make_tuple( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+
+                    }
+                    else if ( matProp.hasExprScalar() )
+                    {
+                        auto matPropExpr = expr( matProp.exprScalar(), se );
+                        matPropSymbsScalar.push_back( std::make_pair( symbolPrefixMatProp, matPropExpr ) );
+                    }
                 }
-                else
-                    matPropSymbsScalar.push_back( std::make_pair( (boost::format("%1%%2%_k")%prefix_symbol %_matName).str(), expr( thermalConductivity.exprScalar(), se ) ) );
             }
 
-            typedef decltype( this->thermalConductivityScalarExpr( se ) ) _expr_scalar_selector_type;
+            typedef decltype( this->materialPropertyExprScalar( "", se ) ) _expr_scalar_selector_type;
             std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
-            typedef decltype( this->thermalConductivityExpr( se ) ) _expr_conductivity_matrix_selector_type;
-            std::vector<std::tuple<std::string,_expr_conductivity_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsConductivityMatrixSelector;
+            typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "", se ) ) _expr_scalar_or_matrix_selector_type;
+            std::vector<std::tuple<std::string,_expr_scalar_or_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsScalarOrMatrixSelector;
+
             // generate the symbol heat_k if the all conductivities are scalar or heat_k(_xx,_xy,...) if at least one conductivity is a matrix
-            if ( this->allThermalConductivitiesAreScalar() )
+            for ( auto const& [propName,propDesc] : M_matertialPropertyDescription )
             {
-                auto expr_k = this->thermalConductivityScalarExpr( se );
-                matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%k")% prefix_symbol).str(), expr_k ) );
+                std::string const& symbolProp = std::get<0>( propDesc );
+                if ( this->materialPropertyIsScalarInAllMaterials( propName ) )
+                {
+                    auto propExpr = this->materialPropertyExprScalar( propName,se );
+                    matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%%2%")% prefix_symbol %symbolProp).str(), propExpr ) );
+                }
+                else if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
+                {
+                    auto propExpr = materialPropertyExprScalarOrMatrix<nDim>( propName,se );
+                    matPropSymbsScalarOrMatrixSelector.push_back( std::make_tuple( (boost::format("%1%%2%")% prefix_symbol %symbolProp).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+                }
             }
-            else
-            {
-                auto expr_k = this->thermalConductivityExpr( se );
-                matPropSymbsConductivityMatrixSelector.push_back( std::make_tuple( (boost::format("%1%k")% prefix_symbol).str(), expr_k,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
-            }
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrix ), symbolExpr(matPropSymbsScalarSelector), symbolExpr( matPropSymbsConductivityMatrixSelector ) );
+
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrix ), symbolExpr(matPropSymbsScalarSelector), symbolExpr( matPropSymbsScalarOrMatrixSelector ) );
         }
 
 private :
@@ -537,11 +528,10 @@ private :
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial; // matName -> range
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> M_exprSelectorByMeshElementMapping;
 
-    std::map<std::string, ModelExpressionScalar> /*M_thermalConductivityByMaterial,*/ /*M_heatCapacityByMaterial, M_rhoByMaterial, M_thermalExpansionByMaterial,*/ M_rhoHeatCapacityByMaterial;
-    //std::map<std::string, ModelExpression> M_thermalConductivityByMaterial;
-    //double M_thermalConductivityDefaultValue, M_heatCapacityDefaultValue, M_rhoDefaultValue, M_thermalExpansionDefaultValue;
+    std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;
 
     std::map<std::string,MaterialProperties<mesh_type>> M_materialNameToProperties;
+    std::map<std::string,typename ModelPDE<nDim>::material_property_description_type> M_matertialPropertyDescription; // name -> (symbol, shapes.. )
 };
 
 

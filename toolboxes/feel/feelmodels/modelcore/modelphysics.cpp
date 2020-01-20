@@ -7,7 +7,8 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelPhysics::ModelPhysics( std::string const& physic )
+template <uint16_type Dim>
+ModelPhysics<Dim>::ModelPhysics( std::string const& physic )
     :
     M_physic( physic )
 {
@@ -26,7 +27,22 @@ ModelPhysics::ModelPhysics( std::string const& physic )
         M_mapPhysicsToSubphysics["aerothermal"] = { "heat", "fluid" };
     }
 
+
+    material_property_shape_dim_type scalarShape = std::make_pair(1,1);
+    material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
+
+    this->addMatertialPropertyDescription( "density", "rho", { scalarShape } );
+    if ( M_physic == "heat" ||  M_physic == "thermo-electric" || M_physic == "aerothermal" )
+    {
+        this->addMatertialPropertyDescription( "specific-heat-capacity", "Cp", { scalarShape } );
+        this->addMatertialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
+        this->addMatertialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
+    }
+
 }
+
+template class ModelPhysics<2>;
+template class ModelPhysics<3>;
 
 } // namespace FeelModels
 } // namespace Feel
