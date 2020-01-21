@@ -113,6 +113,12 @@ public:
     typedef typename levelset_space_manager_type::space_scalar_PN_ptrtype space_levelset_PN_ptrtype;
     typedef typename space_levelset_PN_type::element_type element_levelset_PN_type;
     typedef std::shared_ptr<element_levelset_PN_type> element_levelset_PN_ptrtype;
+    // scalar
+    typedef typename levelset_space_manager_type::basis_scalar_type basis_scalar_type;
+    typedef typename levelset_space_manager_type::space_scalar_type space_scalar_type;
+    typedef typename levelset_space_manager_type::space_scalar_ptrtype space_scalar_ptrtype;
+    typedef typename space_scalar_type::element_type element_scalar_type;
+    typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
     // vectorial
     typedef typename levelset_space_manager_type::basis_vectorial_type basis_vectorial_type;
     typedef typename levelset_space_manager_type::space_vectorial_type space_vectorial_type;
@@ -233,9 +239,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Exporter
-    typedef Exporter<mymesh_type, nOrderGeo> exporter_type;
-    typedef std::shared_ptr<exporter_type> exporter_ptrtype;
-    typedef exporter_ptrtype exporter_manager_ptrtype;
+    using exporter_type = typename super_type::exporter_type;
+    using exporter_ptrtype = typename super_type::exporter_ptrtype;
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -342,6 +347,53 @@ public:
     element_advection_velocity_type extensionVelocity( vf::Expr<ExprT> const& u ) const;
 
     //--------------------------------------------------------------------//
+    // Symbols expressions
+    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField() ); }
+    constexpr auto symbolsExprField() const {
+        return Feel::vf::symbolsExpr(
+                symbolExpr( "levelset_phi", idv( this->phiElt() ) )
+                );
+    }
+    // Fields
+    auto genericFields() const
+    {
+        return hana::concat( super_type::allFields(), hana::make_tuple(
+                std::make_pair( "advection-velocity", M_advectionToolbox->fieldAdvectionVelocityPtr() )
+                ) );
+    }
+    auto optionalScalarFields() const
+    {
+        std::map<std::string, element_scalar_ptrtype> fields;
+        if( M_useStretchAugmented )
+        {
+            fields["stretch"] = this->stretch();
+        }
+        if( M_useCauchyAugmented )
+        {
+            fields["cauchygreeninvariant1"] = this->cauchyGreenInvariant1();
+            fields["cauchygreeninvariant2"] = this->cauchyGreenInvariant2();
+        }
+        return fields;
+    }
+    auto optionalVectorialFields() const
+    {
+        std::map<std::string, element_vectorial_ptrtype> fields;
+        if( M_useCauchyAugmented )
+        {
+            fields["backwardcharacteristics"] = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+        }
+        return fields;
+    }
+    //--------------------------------------------------------------------//
+    // Export
+    std::set<std::string> postProcessSaveAllFieldsAvailable() const override;
+    std::set<std::string> postProcessExportsAllFieldsAvailable() const override;
+
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time ) { this->exportResults( time, this->symbolsExpr() ); }
+    template<typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    //--------------------------------------------------------------------//
     // Physical quantities
     auto velocityCOM() const;
 
@@ -370,8 +422,7 @@ private:
 
     //--------------------------------------------------------------------//
     // Export
-    bool exportResultsImpl( double time, bool save ) override;
-    bool exportMeasuresImpl( double time, bool save ) override;
+    bool exportMeasuresImpl( double time ) override;
     // Save
     void saveCurrent() const;
 
@@ -471,22 +522,32 @@ private:
 
 }; //class LevelSet
 
+#ifndef LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+#define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
+        /**/
+#endif
+#ifndef LEVELSET_CLASS_TEMPLATE_TYPE
+#define LEVELSET_CLASS_TEMPLATE_TYPE \
+    LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> \
+        /**/
+#endif
 //----------------------------------------------------------------------------//
 // Advection
-template<typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType>
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void 
-LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::advect(vf::Expr<ExprT> const& velocity)
+LEVELSET_CLASS_TEMPLATE_TYPE::advect(vf::Expr<ExprT> const& velocity)
 {
     this->updateAdvectionVelocity(velocity);
     this->solve();
 }
 //----------------------------------------------------------------------------//
 // Extension velocity
-template<typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType>
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
-typename LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::element_advection_velocity_type
-LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType>::extensionVelocity( vf::Expr<ExprT> const& u) const
+typename LEVELSET_CLASS_TEMPLATE_TYPE::element_advection_velocity_type
+LEVELSET_CLASS_TEMPLATE_TYPE::extensionVelocity( vf::Expr<ExprT> const& u) const
 {
     this->log("LevelSet", "extensionVelocity", "start");
     this->timerTool("Solve").start();
@@ -554,6 +615,35 @@ LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityT
             _range=this->rangeMeshElements(),
             _expr=(idv(Fext)*NExpr - u)*idv(this->heaviside()) + u
             );
+}
+
+//----------------------------------------------------------------------------//
+// Export
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template<typename SymbolsExpr>
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("LevelSet","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    this->executePostProcessExports( this->exporter(), time, this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields() );
+    //this->executePostProcessMeasures( time, fields, symbolsExpr );
+    //if( this->M_doExportAdvection )
+        //this->M_advectionToolbox->exportResults( time );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("LevelSet","exportResults", "finish");
 }
 
 } // namespace FeelModels

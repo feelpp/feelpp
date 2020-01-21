@@ -196,10 +196,10 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::restartPostProcess()
 {
-    if ( this->restartPath().empty() )
-    {
-        if ( this->exporter()->doExport() ) this->exporter()->restart( this->timeInitial() );
-    }
+    //if ( this->restartPath().empty() )
+    //{
+        //if ( this->exporter()->doExport() ) this->exporter()->restart( this->timeInitial() );
+    //}
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -431,32 +431,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
         }
     }
 
-    // Load Fields from JSON
-    for ( auto const& o :  modelPostProcess.exports().fields() )
-    {
-        if( o == "advection-velocity" || o == "all" )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
-        if( o == "backwardcharacteristics" )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
-        if( o == "cauchygreeninvariant1" )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
-        if( o == "cauchygreeninvariant2" )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
-    }
+    //// Load Fields from JSON
+    //for ( auto const& o :  modelPostProcess.exports().fields() )
+    //{
+        //if( o == "advection-velocity" || o == "all" )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
+        //if( o == "backwardcharacteristics" )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
+        //if( o == "cauchygreeninvariant1" )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+        //if( o == "cauchygreeninvariant2" )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
+    //}
 
-    // Overwrite with options from CFG
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_advectionvelocity").c_str()) )
-        if ( boption(_name="do_export_advectionvelocity",_prefix=this->prefix()) )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
-        if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
-        if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
-    if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant2").c_str()) )
-        if ( boption(_name="do_export_cauchygreeninvariant2",_prefix=this->prefix()) )
-            this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
+    //// Overwrite with options from CFG
+    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_advectionvelocity").c_str()) )
+        //if ( boption(_name="do_export_advectionvelocity",_prefix=this->prefix()) )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
+    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
+        //if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
+    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
+        //if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
+    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant2").c_str()) )
+        //if ( boption(_name="do_export_cauchygreeninvariant2",_prefix=this->prefix()) )
+            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
 }
 
 //----------------------------------------------------------------------------//
@@ -1078,77 +1078,26 @@ LEVELSET_CLASS_TEMPLATE_TYPE::getInfo() const
 //----------------------------------------------------------------------------//
 // Export results
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time, bool save )
+std::set<std::string>
+LEVELSET_CLASS_TEMPLATE_TYPE::postProcessSaveAllFieldsAvailable() const
 {
-    this->log("LevelSet","exportResults", "start");
-    this->timerTool("PostProcessing").start();
+    std::set<std::string> postProcessSaveAllFieldsAvailable = super_type::postProcessSaveAllFieldsAvailable();
+    postProcessSaveAllFieldsAvailable.insert( { "advection-velocity", "stretch", "backwardcharacteristics", "cauchygreeninvariant1", "cauchygreeninvariant2" } );
+    return postProcessSaveAllFieldsAvailable;
+}
 
-    bool hasResultToExport = super_type::exportResultsImpl( time, false );
-
-    if( this->M_doExportAdvection )
-        this->M_advectionToolbox->exportResults( time );
-
-    if ( !this->exporter()->doExport() ) return false;
-
-    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::AdvectionVelocity ) )
-    {
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"AdvectionVelocity"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"AdvectionVelocity")),
-                                       M_advectionToolbox->fieldAdvectionVelocity() );
-    }
-
-    if( M_useGradientAugmented )
-    {
-        M_modGradPhiAdvection->exportResults( time );
-    }
-    if( M_useStretchAugmented )
-    {
-        M_stretchAdvection->exportResults( time );
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"InterfaceRectangularF"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"InterfaceRectangularF")),
-                                       this->interfaceRectangularFunction() );
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"Stretch"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"Stretch")),
-                                       *this->stretch() );
-    }
-    if( M_useCauchyAugmented )
-    {
-        M_backwardCharacteristicsAdvection->exportResults( time );
-    }
-    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::BackwardCharacteristics ) )
-    {
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"BackwardCharacteristics"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"BackwardCharacteristics")),
-                                       M_backwardCharacteristicsAdvection->fieldSolution() );
-    }
-    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant1 ) )
-    {
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant1(SqrtTrCofC)"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant1(SqrtTrCofC)")),
-                                       *this->cauchyGreenInvariant1() );
-    }
-    if ( this->hasPostProcessFieldExported( LevelSetFieldsExported::CauchyGreenInvariant2 ) )
-    {
-        this->exporter()->step( time )->add( prefixvm(this->prefix(),"CauchyGreenInvariant2(TrC_2SqrtTrCofC)"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"CauchyGreenInvariant2(TrC_2SqrtTrCofC)")),
-                                       *this->cauchyGreenInvariant2() );
-    }
-
-    if( save )
-        this->exporter()->save();
-
-    return hasResultToExport;
-
-    double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
-    this->log("LevelSet","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+LEVELSET_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
+{
+    return super_type::postProcessExportsAllFieldsAvailable();
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 bool
-LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
 {
-    bool hasMeasureToExport = super_type::exportMeasuresImpl( time, false );
+    bool hasMeasureToExport = super_type::exportMeasuresImpl( time );
 
     if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Velocity_COM ) )
     {
@@ -1162,7 +1111,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time, bool save )
         hasMeasureToExport = true;
     }
 
-    if( save && hasMeasureToExport )
+    if( hasMeasureToExport )
     {
         if ( !this->isStationary() )
             this->postProcessMeasuresIO().setMeasure( "time", time );
