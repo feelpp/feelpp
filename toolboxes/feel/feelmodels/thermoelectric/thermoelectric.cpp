@@ -49,7 +49,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<mesh_type::nDim>( "thermo-electric" )
 {
     this->log("ThermoElectric","constructor", "start" );
 
@@ -167,11 +168,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_mesh )
         this->initMesh();
 
+    // physical properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
+
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                           this->subPrefix(), this->repository() ) );
+                                           this->subPrefix(), this->repository() ) );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
@@ -179,6 +190,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
     M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 
     M_modelName = "ThermoElectric";

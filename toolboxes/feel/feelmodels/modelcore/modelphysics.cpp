@@ -16,6 +16,10 @@ ModelPhysics<Dim>::ModelPhysics( std::string const& physic )
     {
         M_physics = { "heat" };
     }
+    else if ( M_physic == "electric" )
+    {
+        M_physics = { "electric" };
+    }
     else if ( M_physic == "thermo-electric" )
     {
         M_physics = { "heat", "electric", "thermo-electric" };
@@ -37,6 +41,10 @@ ModelPhysics<Dim>::ModelPhysics( std::string const& physic )
         this->addMatertialPropertyDescription( "specific-heat-capacity", "Cp", { scalarShape } );
         this->addMatertialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
         this->addMatertialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
+    }
+    if ( M_physic == "electric" || M_physic == "thermo-electric" )
+    {
+        this->addMatertialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
 
 }

@@ -144,6 +144,7 @@ class Heat : public ModelNumerical,
         // physical parameters
         materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
         materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+        void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
         materialsproperties_ptrtype const& thermalProperties() const { return M_materialsProperties; } // DEPRECATED
         //thermalproperties_ptrtype const& thermalProperties() const { return M_thermalProperties; }
         //thermalproperties_ptrtype & thermalProperties() { return M_thermalProperties; }

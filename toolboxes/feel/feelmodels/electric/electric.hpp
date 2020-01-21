@@ -31,7 +31,8 @@
 #define FEELPP_TOOLBOXES_ELECTRIC_HPP 1
 
 #include <feel/feelmodels/heat/heat.hpp>
-#include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
+//#include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
@@ -43,10 +44,11 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
-                       public MarkerManagementDirichletBC,
-                       public MarkerManagementNeumannBC,
-                       public MarkerManagementRobinBC,
-                       public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
+                 public ModelPhysics<ConvexType::nDim>,
+                 public MarkerManagementDirichletBC,
+                 public MarkerManagementNeumannBC,
+                 public MarkerManagementRobinBC,
+                 public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
 {
 
 public:
@@ -86,8 +88,10 @@ public:
     typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
     typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
     typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-    typedef ElectricPropertiesDescription<space_scalar_P0_type> electricproperties_type;
-    typedef std::shared_ptr<electricproperties_type> electricproperties_ptrtype;
+    //typedef ElectricPropertiesDescription<space_scalar_P0_type> electricproperties_type;
+    //typedef std::shared_ptr<electricproperties_type> electricproperties_ptrtype;
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
@@ -199,22 +203,24 @@ public :
 
 
     template <typename FieldElectricPotentialType>
-    /*constexpr*/auto symbolsExpr( FieldElectricPotentialType const& v ) const
+    /*constexpr*/auto symbolsExpr( FieldElectricPotentialType const& v, std::string const& prefix_symbol = "electric_" ) const
         {
-            auto seField = this->symbolsExprField( v );
+            auto seField = this->symbolsExprField( v, prefix_symbol );
             auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ), prefix_symbol );
             return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
-    auto symbolsExpr() const { return this->symbolsExpr( this->fieldElectricPotential() ); }
+    auto symbolsExpr( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExpr( this->fieldElectricPotential(), prefix_symbol ); }
 
-    constexpr auto symbolsExprField() const { return this->symbolsExprField( this->fieldElectricPotential() ); }
+    constexpr auto symbolsExprField( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExprField( this->fieldElectricPotential(), prefix_symbol ); }
     template <typename FieldElectricPotentialType>
-    constexpr auto symbolsExprField( FieldElectricPotentialType const& v ) const { return this->symbolsExprField( v, hana::int_<nDim>() ); }
+    constexpr auto symbolsExprField( FieldElectricPotentialType const& v,  std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExprField( v, hana::int_<nDim>() ); }
 
     template <typename SymbExprType>
-    auto symbolsExprMaterial( SymbExprType const& se ) const
+    auto symbolsExprMaterial( SymbExprType const& se, std::string const& prefix_symbol = "electric_" ) const
         {
+            return this->materialsProperties()->symbolsExpr( se, prefix_symbol );
+#if 0
             typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_type;
             std::vector<std::pair<std::string,_expr_type>> matPropSymbs;
             for ( auto const& [_matname, _expr] : this->electricProperties()->electricConductivityByMaterial() )
@@ -222,6 +228,7 @@ public :
                 matPropSymbs.push_back( std::make_pair( (boost::format("electric_%1%_sigma")%_matname).str(), expr( _expr.expr(), se ) ) );
             }
             return Feel::vf::symbolsExpr( symbolExpr( matPropSymbs ) );
+#endif
         }
 
     //___________________________________________________________________________________//
@@ -241,7 +248,10 @@ public :
     element_component_electricfield_type const& fieldJoulesLosses() const { return *M_fieldJoulesLosses; }
     element_component_electricfield_ptrtype const& fieldJoulesLossesPtr() const { return M_fieldJoulesLosses; }
 
-    electricproperties_ptrtype const& electricProperties() const { return M_electricProperties; }
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+    materialsproperties_ptrtype const& electricProperties() const { return M_materialsProperties; } // DEPRECATED  
 
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -323,7 +333,8 @@ private :
     element_component_electricfield_ptrtype M_fieldJoulesLosses;
 
     // physical parameter
-    electricproperties_ptrtype M_electricProperties;
+    //electricproperties_ptrtype M_electricProperties;
+    materialsproperties_ptrtype M_materialsProperties;
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
