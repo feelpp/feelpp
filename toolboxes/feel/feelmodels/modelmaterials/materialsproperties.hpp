@@ -423,6 +423,21 @@ public :
         }
 
 
+    // electric conductivity
+    bool hasElectricConductivity( std::string const& matName ) const
+        {
+            return this->hasProperty( matName, "electric-conductivity" );
+        }
+    MaterialProperty const& electricConductivity( std::string const& matName ) const
+        {
+            return this->materialProperty( matName, "electric-conductivity" );
+        }
+    bool hasElectricConductivityDependingOnSymbol( std::string const& symbolStr ) const
+        {
+            return this->hasMaterialPropertyDependingOnSymbol( "electric-conductivity", symbolStr );
+        }
+
+
     std::shared_ptr<std::ostringstream>
     getInfoMaterialParameters() const
         {
