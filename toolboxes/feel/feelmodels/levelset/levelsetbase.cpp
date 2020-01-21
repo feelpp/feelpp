@@ -141,6 +141,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     M_initialVolume = this->volume();
     M_initialPerimeter = this->perimeter();
 
+    // Init user-defined functions
+    this->initUserFunctions();
     // Init post-process
     this->initPostProcess();
 
@@ -298,6 +300,81 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initUserFunctions()
+{
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        std::string funcName = funcData.name();
+
+        if ( funcData.isScalar() )
+        {
+            if ( this->hasFieldUserScalar( funcName ) )
+                continue;
+            M_fieldsUserScalar[funcName] = this->functionSpaceScalar()->elementPtr();
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVectorial()->elementPtr();
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            if ( this->hasFieldUserVectorial( funcName ) )
+                continue;
+            M_fieldsUserVectorial[funcName] = this->functionSpaceVectorial()->elementPtr();
+        }
+    }
+
+    // update custom field given by registerCustomField
+    for ( auto & [name,uptr] : M_fieldsUserScalar )
+        if ( !uptr )
+            uptr = this->functionSpaceScalar()->elementPtr();
+    for ( auto & [name,uptr] : M_fieldsUserVectorial )
+        if ( !uptr )
+            uptr = this->functionSpaceVectorial()->elementPtr();
+
+    this->updateUserFunctions();
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymbol )
+{
+    if ( this->modelProperties().functions().empty() )
+        return;
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().functions().setParameterValues( paramValues );
+    for ( auto const& modelfunc : this->modelProperties().functions() )
+    {
+        auto const& funcData = modelfunc.second;
+        if ( onlyExprWithTimeSymbol && !funcData.hasSymbol("t") )
+            continue;
+
+        std::string funcName = funcData.name();
+        if ( funcData.isScalar() )
+        {
+            CHECK( this->hasFieldUserScalar( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserScalar[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionScalar() );
+        }
+        else if ( funcData.isVectorial2() )
+        {
+            if ( nDim != 2 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial2() );
+        }
+        else if ( funcData.isVectorial3() )
+        {
+            if ( nDim != 3 ) continue;
+            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+            M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial3() );
+        }
+    }
+}
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     //if (this->doRestart() && this->restartPath().empty() )
