@@ -217,6 +217,10 @@ public:
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
     typedef exporter_ptrtype exporter_manager_ptrtype;
 
+    // Measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_levelset_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
+
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -244,9 +248,9 @@ public:
     void init();
     void initLevelsetValue();
     void initUserFunctions();
-    void initPostProcess();
+    void initPostProcess() override;
 
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
     //--------------------------------------------------------------------//
     // Spaces
@@ -445,7 +449,12 @@ public:
     template<typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
-    bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
+    bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
+    void executePostProcessMeasures( double time );
+    template<typename TupleFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    template<typename TupleFieldsType, typename SymbolsExpr>
+    bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     //--------------------------------------------------------------------//
     // User-defined fields
@@ -494,9 +503,24 @@ public:
 
     //--------------------------------------------------------------------//
     // Physical quantities
-    double volume() const;
-    double perimeter() const;
-    auto positionCOM() const;
+    double volume() const { 
+        return integrate( 
+                _range=this->rangeMeshElements(), 
+                _expr=(1-idv(this->heaviside())) 
+                ).evaluate()(0,0); 
+    }
+    double perimeter() const { 
+        return integrate( 
+                _range=this->rangeDiracElements(), 
+                _expr=this->diracExpr() 
+                ).evaluate()(0,0); 
+    }
+    Eigen::Matrix<value_type, nDim, 1> positionCOM() const { 
+        return integrate( 
+                _range=this->rangeMeshElements(), 
+                _expr=vf::P() * (1.-idv(this->H())) 
+                ).evaluate() / this->volume(); 
+    }
 
     //--------------------------------------------------------------------//
     // Parameters
@@ -538,11 +562,9 @@ protected:
     element_levelset_type interfaceRectangularFunction( element_levelset_type const& p ) const;
     //--------------------------------------------------------------------//
     // Export
-    virtual bool exportMeasuresImpl( double time );
 
 private:
     void loadParametersFromOptionsVm();
-    void loadConfigPostProcess();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
@@ -581,7 +603,8 @@ protected:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
-    std::set<LevelSetMeasuresExported> M_postProcessMeasuresExported;
+    std::map<std::string, std::string> M_postProcessMeasuresQuantities;
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
     //--------------------------------------------------------------------//
     // User-defined fields
@@ -765,7 +788,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
         //this->upload( M_exporter->path() );
     //}
     this->executePostProcessExports( M_exporter, time, this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
-    //this->executePostProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->allFields(), symbolsExpr );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -775,6 +798,59 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
         this->timerTool("PostProcessing").save();
     }
     this->log("LevelSetBase","exportResults", "finish");
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename TupleFieldsType, typename SymbolsExpr>
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename TupleFieldsType, typename SymbolsExpr>
+bool
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+
+    // compute measures
+    if( this->hasPostProcessMeasuresQuantities( "volume" ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
+        hasMeasure = true;
+    }
+    if( this->hasPostProcessMeasuresQuantities( "perimeter" ) )
+    {
+        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
+        hasMeasure = true;
+    }
+    if( this->hasPostProcessMeasuresQuantities( "position-com" ) )
+    {
+        auto com = this->positionCOM();
+        std::vector<double> vecCOM = { com(0,0) };
+        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
+        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
+        hasMeasure = true;
+    }
+
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), tupleFields, symbolsExpr );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), tupleFields, symbolsExpr );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    return hasMeasure;
 }
 
 } // namespace FeelModels

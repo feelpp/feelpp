@@ -57,8 +57,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
-    // Load post-process
-    this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -436,12 +434,42 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     }
 
     // Measures
+    // Physical quantities
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
+    {
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "Volume" )
+            {
+                M_postProcessMeasuresQuantities["volume"] = "";
+            }
+            else if ( ptreeLevel1Name == "Perimeter" )
+            {
+                M_postProcessMeasuresQuantities["perimeter"] = "";
+            }
+            else if ( ptreeLevel1Name == "PositionCOM" )
+            {
+                M_postProcessMeasuresQuantities["position-com"] = "";
+            }
+        }
+    }
+    // Point measures
+    auto fieldNamesWithSpaceLevelset = std::make_pair( std::set<std::string>({"levelset"}), this->functionSpace() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceLevelset );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        M_measurePointsEvaluation->init( evalPoints );
+    // Start measures export
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )
             this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
         else
-        //if( !this->doRestart() )
             this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
     }
 }
@@ -785,28 +813,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
         this->setUseCurvatureDiffusion( true );
 
     M_useSpaceIsoPN = boption( _name="use-space-iso-pn", _prefix=this->prefix() );
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
-{
-    auto& modelPostProcess = this->modelProperties().postProcess();
-
-    if ( auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities") )
-    {
-        for( auto& i: *physicalQuantities )
-        {
-            auto o = i.second.template get_value<std::string>();
-            LOG(INFO) << "add to postprocess physical quantity " << o;
-            if( o == "volume" || o == "all" )
-                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Volume );
-            if( o == "perimeter" || o == "all" )
-                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Perimeter );
-            if( o == "position_com" || o == "all" )
-                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Position_COM );
-        }
-    }
 }
 
 //----------------------------------------------------------------------------//
@@ -2113,86 +2119,17 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
 // Export results
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasuresQuantities( 
+        std::string const& q ) const
 {
-    bool hasMeasureToExport = false;
-
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Volume ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
-        hasMeasureToExport = true;
-    }
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Perimeter ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
-        hasMeasureToExport = true;
-    }
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Position_COM ) )
-    {
-        auto com = this->positionCOM();
-        std::vector<double> vecCOM = { com(0,0) };
-        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
-        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
-        hasMeasureToExport = true;
-    }
-
-    if( hasMeasureToExport )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-
-    return hasMeasureToExport;
+    return M_postProcessMeasuresQuantities.find(q) != M_postProcessMeasuresQuantities.end();
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasureExported( 
-        LevelSetMeasuresExported const& measure) const
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    return M_postProcessMeasuresExported.find(measure) != M_postProcessMeasuresExported.end();
-}
-
-//----------------------------------------------------------------------------//
-// Physical quantities
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-double
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::volume() const
-{
-    double volume = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=(1-idv(this->heaviside())) 
-            ).evaluate()(0,0);
-
-    return volume;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-double
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::perimeter() const
-{
-    double perimeter = integrate(
-            _range=this->rangeDiracElements(),
-            _expr=this->diracExpr()
-            ).evaluate()(0,0);
-
-    return perimeter;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-auto
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::positionCOM() const
-{
-    auto com = integrate( 
-            _range=this->rangeMeshElements(), 
-            _expr=vf::P() * (1.-idv(this->H()))
-            ).evaluate();
-    com = com / this->volume();
-
-    return com;
+    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
 }
 
 //----------------------------------------------------------------------------//
