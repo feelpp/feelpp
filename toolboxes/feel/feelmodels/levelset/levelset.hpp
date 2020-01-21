@@ -270,7 +270,7 @@ public:
     // Initialization
     void init();
     void initInitialValues();
-    void restartPostProcess();
+    void initPostProcess() override;
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
@@ -393,9 +393,20 @@ public:
     void exportResults( double time ) { this->exportResults( time, this->symbolsExpr() ); }
     template<typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
+
+    void executePostProcessMeasures( double time );
+    template<typename TupleFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    template<typename TupleFieldsType, typename SymbolsExpr>
+    bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
     //--------------------------------------------------------------------//
     // Physical quantities
-    auto velocityCOM() const;
+    Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 
+        return integrate( 
+            _range=this->rangeMeshElements(), 
+            _expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
+            ).evaluate() / this->volume();
+    }
 
 protected:
     //--------------------------------------------------------------------//
@@ -408,9 +419,7 @@ protected:
 
 private:
     void loadParametersFromOptionsVm();
-    void loadConfigICFile();
     void initBoundaryConditions();
-    void loadConfigPostProcess();
 
     void createFunctionSpaces();
     void createInterfaceQuantities();
@@ -421,8 +430,6 @@ private:
     element_levelset_ptrtype const& phiPreviousTimeStepPtr() const { return this->timeStepBDF()->unknowns()[1]; }
 
     //--------------------------------------------------------------------//
-    // Export
-    bool exportMeasuresImpl( double time ) override;
     // Save
     void saveCurrent() const;
 
@@ -644,6 +651,45 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& sym
         this->timerTool("PostProcessing").save();
     }
     this->log("LevelSet","exportResults", "finish");
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template<typename TupleFieldsType, typename SymbolsExpr>
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
+LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+template<typename TupleFieldsType, typename SymbolsExpr>
+bool
+LEVELSET_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = super_type::updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+
+    // compute measures
+    if( this->hasPostProcessMeasuresQuantities( "velocity-com" ) )
+    {
+        auto ucom = this->velocityCOM();
+        std::vector<double> vecUCOM = { ucom(0,0) };
+        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
+        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
+        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
+        hasMeasure = true;
+    }
+
+    return hasMeasure;
 }
 
 } // namespace FeelModels

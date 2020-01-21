@@ -41,8 +41,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
     //-----------------------------------------------------------------------------//
     // Load parameters
     this->loadParametersFromOptionsVm();
-    // Load post-process
-    this->loadConfigPostProcess();
     // Get periodicity from options (if needed)
     //this->loadPeriodicityFromOptionsVm();
 
@@ -103,8 +101,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     if (this->doRestart())
     {
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
-        this->restartPostProcess();
     }
+    this->initPostProcess();
 
     // Init iterSinceRedistanciation
     if( this->doRestart() )
@@ -194,18 +192,24 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initInitialValues()
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::restartPostProcess()
+LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    //if ( this->restartPath().empty() )
-    //{
-        //if ( this->exporter()->doExport() ) this->exporter()->restart( this->timeInitial() );
-    //}
-
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
     // Measures
+    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
+    std::string ppTypeMeasures = "Measures";
+    for( auto const& ptreeLevel0 : ptree )
+    {
+        std::string ptreeLevel0Name = ptreeLevel0.first;
+        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
+        for( auto const& ptreeLevel1 : ptreeLevel0.second )
+        {
+            std::string ptreeLevel1Name = ptreeLevel1.first;
+            if ( ptreeLevel1Name == "VelocityCOM" )
+            {
+                this->M_postProcessMeasuresQuantities["velocity-com"] = "";
+            }
+        }
+    }
     if ( !this->isStationary() )
     {
         this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
@@ -412,51 +416,6 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         M_levelsetParticleInjectors.push_back( particleInjector );
     }
-}
-
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::loadConfigPostProcess()
-{
-    auto& modelPostProcess = this->modelProperties().postProcess();
-
-    if ( auto physicalQuantities = modelPostProcess.pTree().get_child_optional("PhysicalQuantities") )
-    {
-        for( auto& i: *physicalQuantities )
-        {
-            auto o = i.second.template get_value<std::string>();
-            LOG(INFO) << "add to postprocess physical quantity " << o;
-            if( o == "velocity_com" || o == "all" )
-                this->M_postProcessMeasuresExported.insert( LevelSetMeasuresExported::Velocity_COM );
-        }
-    }
-
-    //// Load Fields from JSON
-    //for ( auto const& o :  modelPostProcess.exports().fields() )
-    //{
-        //if( o == "advection-velocity" || o == "all" )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
-        //if( o == "backwardcharacteristics" )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
-        //if( o == "cauchygreeninvariant1" )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
-        //if( o == "cauchygreeninvariant2" )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
-    //}
-
-    //// Overwrite with options from CFG
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_advectionvelocity").c_str()) )
-        //if ( boption(_name="do_export_advectionvelocity",_prefix=this->prefix()) )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::AdvectionVelocity );
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_backwardcharacteristics").c_str()) )
-        //if ( boption(_name="do_export_backwardcharacteristics",_prefix=this->prefix()) )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::BackwardCharacteristics );
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant1").c_str()) )
-        //if ( boption(_name="do_export_cauchygreeninvariant1",_prefix=this->prefix()) )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant1 );
-    //if ( Environment::vm().count(prefixvm(this->prefix(),"do_export_cauchygreeninvariant2").c_str()) )
-        //if ( boption(_name="do_export_cauchygreeninvariant2",_prefix=this->prefix()) )
-            //this->M_postProcessFieldsExported.insert( LevelSetFieldsExported::CauchyGreenInvariant2 );
 }
 
 //----------------------------------------------------------------------------//
@@ -1094,47 +1053,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSET_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
+void
+LEVELSET_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    bool hasMeasureToExport = super_type::exportMeasuresImpl( time );
-
-    if( this->hasPostProcessMeasureExported( LevelSetMeasuresExported::Velocity_COM ) )
-    {
-        auto ucom = this->velocityCOM();
-        std::vector<double> vecUCOM = { ucom(0,0) };
-        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
-        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
-        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
-        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
-        hasMeasureToExport = true;
-    }
-
-    if( hasMeasureToExport )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-
-    return hasMeasureToExport;
-}
-
-//----------------------------------------------------------------------------//
-// Physical quantities
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-auto
-LEVELSET_CLASS_TEMPLATE_TYPE::velocityCOM() const
-{
-    auto ucom = integrate( 
-            _range=this->rangeMeshElements(), 
-            _expr=idv(M_advectionToolbox->fieldAdvectionVelocity()) * (1.-idv(this->H()))
-            ).evaluate();
-    ucom /= this->volume();
-
-    return ucom;
+    this->executePostProcessMeasures( time, this->genericFields(), this->symbolsExpr() );
 }
 
 //----------------------------------------------------------------------------//
