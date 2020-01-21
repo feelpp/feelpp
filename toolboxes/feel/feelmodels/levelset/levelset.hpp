@@ -531,12 +531,12 @@ private:
 
 #ifndef LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 #define LEVELSET_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
+    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename FunctionSpaceAdvectionVelocityType, typename BasisPnType > \
         /**/
 #endif
 #ifndef LEVELSET_CLASS_TEMPLATE_TYPE
 #define LEVELSET_CLASS_TEMPLATE_TYPE \
-    LevelSet<ConvexType, BasisType, PeriodicityType, BasisPnType> \
+    LevelSet<ConvexType, BasisType, PeriodicityType, FunctionSpaceAdvectionVelocityType, BasisPnType> \
         /**/
 #endif
 //----------------------------------------------------------------------------//

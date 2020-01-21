@@ -194,6 +194,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    super_type::initPostProcess();
     // Measures
     pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     std::string ppTypeMeasures = "Measures";
@@ -210,10 +211,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
             }
         }
     }
-    if ( !this->isStationary() )
-    {
-        this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-    }
+    //if ( !this->isStationary() )
+    //{
+        //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+    //}
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
