@@ -151,9 +151,13 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
-        template <typename ExporterType,typename TupleFieldsType>
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields );
-        template <typename ExporterType,typename TupleFieldsType>
+        template <typename ExporterType, typename... TupleFieldsType>
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& ... tupleFields );
+        template <typename ExporterType, typename TupleFieldsType,
+                 std::enable_if_t<hana::Foldable<TupleFieldsType>::value, int> = 0 >
+        bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
+        template <typename ExporterType, typename TupleFieldsType,
+                 std::enable_if_t<Feel::is_iterable<TupleFieldsType>::value, int> = 0 >
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
 
         template <typename MeshType, typename RangeType, typename TupleFieldsType, typename SymbolsExpr>
@@ -323,11 +327,11 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         *dataToUpdate[k] = *dataToUpdate[0];
 }
 
-template <typename ExporterType,typename TupleFieldsType>
+template <typename ExporterType, typename ... TupleFieldsType>
 void
-ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields )
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& ... tupleFields )
 {
-    bool hasFieldToExport = this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields );
+    bool hasFieldToExport = ( this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields ) || ... );
     if ( hasFieldToExport )
     {
         exporter->save();
@@ -335,7 +339,8 @@ ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporte
     }
 }
 
-template <typename ExporterType,typename TupleFieldsType>
+template <typename ExporterType, typename TupleFieldsType,
+         std::enable_if_t<hana::Foldable<TupleFieldsType>::value, int> >
 bool
 ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, TupleFieldsType const& tupleFields )
 {
@@ -355,6 +360,33 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                             hasFieldToExport = true;
                         }
                     });
+    if ( fieldsNamesToExport.find( "pid" ) != fieldsNamesToExport.end() )
+    {
+        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
+        hasFieldToExport = true;
+    }
+    return hasFieldToExport;
+}
+
+template <typename ExporterType, typename TupleFieldsType,
+         std::enable_if_t<Feel::is_iterable<TupleFieldsType>::value, int> >
+bool
+ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fieldsNamesToExport, double time, TupleFieldsType const& tupleFields )
+{
+    if ( !exporter ) return false;
+    if ( !exporter->doExport() ) return false;
+
+    bool hasFieldToExport = false;
+    for( auto const& [fieldName, fieldPtr] : tupleFields )
+    {
+        if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+        {
+            exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                    *fieldPtr );
+            hasFieldToExport = true;
+        }
+    }
     if ( fieldsNamesToExport.find( "pid" ) != fieldsNamesToExport.end() )
     {
         exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
