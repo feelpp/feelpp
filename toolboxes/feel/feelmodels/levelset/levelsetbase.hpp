@@ -243,6 +243,7 @@ public:
     void createMesh();
     void init();
     void initLevelsetValue();
+    void initUserFunctions();
     void initPostProcess();
 
     std::shared_ptr<std::ostringstream> getInfo() const;
@@ -257,6 +258,7 @@ public:
 
     space_levelset_ptrtype const& functionSpace() const { return M_spaceLevelset; }
     space_markers_ptrtype const& functionSpaceMarkers() const { return M_spaceMarkers; }
+    space_scalar_ptrtype const& functionSpaceScalar() const { return M_spaceLevelset; }
     space_vectorial_ptrtype const& functionSpaceVectorial() const { return M_spaceVectorial; }
 
     mesh_ptrtype const& mesh() const { return this->functionSpace()->mesh(); }
@@ -348,6 +350,22 @@ public:
                 symbolExpr( "levelset_phi", idv( this->phiElt() ) )
                 );
     }
+    // Fields
+    auto allFields() const
+    {
+        return hana::make_tuple(
+                std::make_pair( "phi", this->phiPtr() ),
+                std::make_pair( "dirac", this->dirac() ),
+                std::make_pair( "heaviside", this->heaviside() ),
+                std::make_pair( "normal", this->normal() ),
+                std::make_pair( "curvature", this->curvature() ),
+                std::make_pair( "gradphi", this->gradPhi() ),
+                std::make_pair( "modgradphi", this->modGradPhi() ),
+                std::make_pair( "distance", this->distance() ),
+                std::make_pair( "distance-normal", this->distanceNormal() ),
+                std::make_pair( "distance-curvature", this->distanceCurvature() )
+                );
+    }
     //--------------------------------------------------------------------//
     // Curvature diffusion
     bool useCurvatureDiffusion() const { return M_useCurvatureDiffusion; }
@@ -416,14 +434,19 @@ public:
 
     //--------------------------------------------------------------------//
     // Export results
-    bool hasPostProcessFieldExported( std::string const& field) const;
-    bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
-    void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
-    void exportFields( double time );
-    virtual bool updateExportedFields( exporter_ptrtype const& exporter, std::set<std::string> const& fields, double time );
     exporter_ptrtype & exporter() { return M_exporter; }
     exporter_ptrtype const& exporter() const { return M_exporter; }
+
+    virtual std::set<std::string> postProcessSaveAllFieldsAvailable() const;
+    virtual std::set<std::string> postProcessExportsAllFieldsAvailable() const;
+
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time ) { this->exportResults( time, this->symbolsExpr() ); }
+    template<typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+
+    bool hasPostProcessMeasureExported( LevelSetMeasuresExported const& measure) const;
+
     //--------------------------------------------------------------------//
     // User-defined fields
     std::map<std::string, element_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
@@ -527,7 +550,7 @@ private:
     void createRedistanciationFM();
     void createRedistanciationHJ();
     void createTools();
-    void createExporters();
+    void createPostProcessExporters();
 
     //--------------------------------------------------------------------//
     void addShape( 
@@ -648,13 +671,11 @@ private:
     bool M_useCurvatureDiffusion;
 
     //--------------------------------------------------------------------//
-    // Redistantiation
+    // Redistanciation
     static const std::map<std::string, LevelSetDistanceMethod> LevelSetDistanceMethodIdMap;
 
     LevelSetDistanceMethod M_distanceMethod;
 
-    //--------------------------------------------------------------------//
-    // Redistanciation
     redistanciationFM_ptrtype M_redistanciationFM;
     redistanciationHJ_ptrtype M_redistanciationHJ;
     bool M_redistanciationIsUpdatedForUse;
@@ -725,6 +746,36 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 //;
 
 //----------------------------------------------------------------------------//
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename SymbolsExpr>
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr )
+{
+    this->log("LevelSetBase","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    //bool hasFieldToExport = this->updatePostProcessExports( M_exporter, this->postProcessExportsFields(), time );
+    //if ( hasFieldToExport )
+    //{
+        //M_exporter->save();
+        //this->upload( M_exporter->path() );
+    //}
+    this->executePostProcessExports( M_exporter, time, this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+    //this->executePostProcessMeasures( time, fields, symbolsExpr );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("LevelSetBase","exportResults", "finish");
+}
 
 } // namespace FeelModels
 } // namespace Feel

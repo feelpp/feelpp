@@ -127,7 +127,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     this->createInterfaceQuantities();
     this->createTools();
     this->createRedistanciation();
-    this->createExporters();
 
     // Initial value
     //if( !this->doRestart() )
@@ -375,6 +374,34 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymb
         }
     }
 }
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessSaveAllFieldsAvailable() const
+{
+    std::set<std::string> postProcessSaveAllFieldsAvailable( { "phi", "dirac", "heaviside", "normal", "curvature", "gradphi", "modgradphi", "distance", "distance-normal", "distance-curvature" } );
+    // Add possible user defined fields
+    for( auto const& f : this->modelProperties().postProcess().exports( this->keyword() ).fields() )
+    {
+        if ( this->hasFieldUserScalar( f ) || this->hasFieldUserVectorial( f ) )
+        {
+            postProcessSaveAllFieldsAvailable.insert( f );
+        }
+    }
+    return postProcessSaveAllFieldsAvailable;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+std::set<std::string>
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
+{
+    std::set<std::string> postProcessExportsAllFieldsAvailable = this->postProcessSaveAllFieldsAvailable();
+    postProcessExportsAllFieldsAvailable.insert( "pid" );
+    return postProcessExportsAllFieldsAvailable;
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     //if (this->doRestart() && this->restartPath().empty() )
@@ -388,11 +415,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
+    this->setPostProcessExportsAllFieldsAvailable( this->postProcessExportsAllFieldsAvailable() );
+    this->setPostProcessSaveAllFieldsAvailable( this->postProcessSaveAllFieldsAvailable() );
+    super_type::initPostProcess();
+
     // Init exporters
     if ( boption(_name="exporter.export") )
     {
-        M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
-        if ( !M_postProcessFieldExported.empty() )
+        if ( !this->postProcessExportsFields().empty() )
         {
             this->createPostProcessExporters();
             // restart exporters if restart is activated
@@ -556,13 +586,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createTools()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::createExporters()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
     std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
     M_exporter = Feel::exporter( 
             _mesh=this->mesh(),
-            _name="ExportLS",
+            _name="Export",
             _geo=geoExportType,
+            _worldcomm=this->functionSpace()->worldComm(),
             _path=this->exporterPath() 
             );
 }
@@ -1946,7 +1977,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     int exporterFreq = this->M_exporter->freq();
 
     std::string exportedFields;
-    for( std::string const& field : M_postProcessFieldExported )
+    for( std::string const& field : this->postProcessExportsFields() )
         exportedFields = (exportedFields.empty())? field : exportedFields + " - " + field;
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
@@ -2081,134 +2112,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
 //----------------------------------------------------------------------------//
 // Export results
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
-{
-    this->log("LevelSetBase","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->exportFields( time );
-    this->exportMeasuresImpl( time );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("LevelSetBase","exportResults", "finish" );
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportFields( double time )
-{
-    if( M_exporter )
-    {
-        bool hasFieldToExport = this->updateExportedFields( M_exporter, M_postProcessFieldExported, time );
-        if ( hasFieldToExport )
-        {
-            M_exporter->save();
-            this->upload( M_exporter->path() );
-        }
-    }
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateExportedFields( exporter_ptrtype const& exporter, std::set<std::string> const& fields, double time )
-{
-    if ( !exporter ) return false;
-    if ( !exporter->doExport() ) return false;
-
-    bool hasFieldToExport = false;
-
-    if( fields.find( "phi" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
-                                             prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi")),
-                                             this->phiElt() );
-        hasFieldToExport = true;
-    }
-
-    if( fields.find( "dirac" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"dirac"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"dirac")),
-                                       *this->dirac() );
-        hasFieldToExport = true;
-    }
-
-    if( fields.find( "heaviside" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"heaviside"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"heaviside")),
-                                       *this->heaviside() );
-        hasFieldToExport = true;
-    }
-
-    if( fields.find( "normal" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"normal"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"normal")),
-                                       *this->normal() );
-        hasFieldToExport = true;
-    }
-
-    if( fields.find( "curvature" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"curvature"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"curvature")),
-                                       *this->curvature() );
-        hasFieldToExport = true;
-    }
-
-    if( fields.find( "gradphi" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"gradphi"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"gradphi")),
-                                       *this->gradPhi() );
-        hasFieldToExport = true;
-    }
-    if( fields.find( "modgradphi" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"modgradphi"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"modgradphi")),
-                                       *this->modGradPhi() );
-        hasFieldToExport = true;
-    }
-    if( fields.find( "distance" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"distance"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"distance")),
-                                       *this->distance() );
-        hasFieldToExport = true;
-    }
-    if( fields.find( "distance-normal" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"distance-normal"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"distance-normal")),
-                                       *this->distanceNormal() );
-        hasFieldToExport = true;
-    }
-    if( fields.find( "distance-curvature" ) != fields.end() )
-    {
-        exporter->step( time )->add( prefixvm(this->prefix(),"distance-curvature"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"distance-curvature")),
-                                       *this->distanceCurvature() );
-        hasFieldToExport = true;
-    }
-    if( fields.find( "pid" ) != fields.end() )
-    {
-        exporter->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
-        hasFieldToExport = true;
-    }
-
-    return hasFieldToExport;
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 bool
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
 {
@@ -2251,14 +2154,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasureExported(
         LevelSetMeasuresExported const& measure) const
 {
     return M_postProcessMeasuresExported.find(measure) != M_postProcessMeasuresExported.end();
-}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessFieldExported( 
-        std::string const& field) const
-{
-    return M_postProcessFieldExported.find(field) != M_postProcessFieldExported.end();
 }
 
 //----------------------------------------------------------------------------//
