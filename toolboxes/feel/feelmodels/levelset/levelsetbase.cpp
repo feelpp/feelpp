@@ -1978,9 +1978,14 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string restartMode = (this->doRestart())? "ON": "OFF";
 
-    std::string exporterType = this->M_exporter->type();
-    std::string hovisuMode = "OFF";
-    int exporterFreq = this->M_exporter->freq();
+    std::string exporterType, hovisuMode;
+    int exporterFreq;
+    hovisuMode = "OFF";
+    if( M_exporter )
+    {
+        exporterType = this->M_exporter->type();
+        exporterFreq = this->M_exporter->freq();
+    }
 
     std::string exportedFields;
     for( std::string const& field : this->postProcessExportsFields() )
