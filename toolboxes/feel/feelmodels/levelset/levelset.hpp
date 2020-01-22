@@ -639,7 +639,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& sym
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     this->executePostProcessExports( this->exporter(), time, this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields() );
-    //this->executePostProcessMeasures( time, fields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->genericFields(), symbolsExpr );
     //if( this->M_doExportAdvection )
         //this->M_advectionToolbox->exportResults( time );
 
