@@ -37,7 +37,6 @@
 #include <boost/multi_array.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/timer.hpp>
 
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/visitor.hpp>
@@ -481,7 +480,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::determineFacePermutation( uint16_type numZeros
 template <typename GEOSHAPE, typename T, typename IndexT>
 void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionOnePermutation()
 {
-    boost::timer ti;
+    tic();
     std::vector<size_type> _left( face_type::numVertices );
     std::vector<size_type> _right( face_type::numVertices );
     std::vector<uint32_type> _diff( face_type::numVertices );
@@ -534,7 +533,7 @@ void Mesh3D<GEOSHAPE, T, IndexT>::updateEntitiesCoDimensionOnePermutation()
         }
     }
 #endif
-    DVLOG( 2 ) << "[Mesh3D::updateFaces] element/face permutation : " << ti.elapsed() << "\n";
+    toc( "[Mesh3D::updateFaces] element/face permutation", FLAGS_v > 1 );
 }
 
 template <typename GEOSHAPE, typename T, typename IndexT>
