@@ -49,10 +49,10 @@ class QuadPtLocalization
 {
 public :
 
-    static const size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
+    static const Feel::size_type iDim = boost::tuples::template element<0, IteratorRange>::type::value;
 
     //static const size_type context = Expr::context|vm::POINT;
-    static const size_type context = mpl::if_< boost::is_same< mpl::int_<iDim>, mpl::int_<MESH_FACES> >,
+    static const Feel::size_type context = mpl::if_< boost::is_same< mpl::int_<iDim>, mpl::int_<MESH_FACES> >,
                                                mpl::int_<Expr::context|vm::JACOBIAN|vm::KB|vm::NORMAL|vm::POINT>,
                                                mpl::int_<Expr::context|vm::POINT|vm::JACOBIAN> >::type::value;
 
