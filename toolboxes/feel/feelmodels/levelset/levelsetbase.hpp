@@ -531,6 +531,8 @@ protected:
     //--------------------------------------------------------------------//
     void buildImpl();
     //--------------------------------------------------------------------//
+    void initPostProcessExportsAndMeasures();
+    //--------------------------------------------------------------------//
     // Levelset data update functions
     void updateGradPhi();
     void updateModGradPhi();
@@ -562,6 +564,8 @@ protected:
     element_levelset_type interfaceRectangularFunction( element_levelset_type const& p ) const;
     //--------------------------------------------------------------------//
     // Export
+    void createPostProcessExporters();
+    void createPostProcessMeasures();
 
 private:
     void loadParametersFromOptionsVm();
@@ -572,7 +576,6 @@ private:
     void createRedistanciationFM();
     void createRedistanciationHJ();
     void createTools();
-    void createPostProcessExporters();
 
     //--------------------------------------------------------------------//
     void addShape( 

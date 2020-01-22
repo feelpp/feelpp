@@ -102,7 +102,10 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     {
         this->setTimeInitial( M_advectionToolbox->timeInitial() );
     }
-    this->initPostProcess();
+    // We create the exporters only after having set the correct initial time
+    // to prevent restart mishmash
+    this->createPostProcessExporters();
+    this->createPostProcessMeasures();
 
     // Init iterSinceRedistanciation
     if( this->doRestart() )
@@ -194,7 +197,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    super_type::initPostProcess();
+    super_type::initPostProcessExportsAndMeasures();
     // Measures
     pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
     std::string ppTypeMeasures = "Measures";
@@ -211,10 +214,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
             }
         }
     }
-    //if ( !this->isStationary() )
-    //{
-        //this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-    //}
+    // Do not call the createPostProcess* functions here, this is done after time initial
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

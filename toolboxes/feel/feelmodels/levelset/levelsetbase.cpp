@@ -400,14 +400,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
 {
-    //if (this->doRestart() && this->restartPath().empty() )
-    //{
-        //this->log("LevelSetBase", "initPostProcess", "restart exporter");
-        //if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-    //}
-
     // Update post-process expressions
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
@@ -416,22 +410,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->setPostProcessExportsAllFieldsAvailable( this->postProcessExportsAllFieldsAvailable() );
     this->setPostProcessSaveAllFieldsAvailable( this->postProcessSaveAllFieldsAvailable() );
     super_type::initPostProcess();
-
-    // Init exporters
-    if ( boption(_name="exporter.export") )
-    {
-        if ( !this->postProcessExportsFields().empty() )
-        {
-            this->createPostProcessExporters();
-            // restart exporters if restart is activated
-            if ( this->doRestart() && this->restartPath().empty() )
-            {
-                // if restart and same directory, update the exporter for new value, else nothing (create a new exporter)
-                if ( M_exporter && M_exporter->doExport() )
-                    M_exporter->restart( this->timeInitial() );
-            }
-        }
-    }
 
     // Measures
     // Physical quantities
@@ -464,14 +442,15 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
         M_measurePointsEvaluation->init( evalPoints );
-    // Start measures export
-    if ( !this->isStationary() )
-    {
-        if ( this->doRestart() )
-            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
-        else
-            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
-    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcess()
+{
+    this->initPostProcessExportsAndMeasures();
+    this->createPostProcessExporters();
+    this->createPostProcessMeasures();
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -616,14 +595,34 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
-    std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
-    M_exporter = Feel::exporter( 
-            _mesh=this->mesh(),
-            _name="Export",
-            _geo=geoExportType,
-            _worldcomm=this->functionSpace()->worldComm(),
-            _path=this->exporterPath() 
-            );
+    if ( !this->postProcessExportsFields().empty() )
+    {
+        std::string geoExportType = "static";//this->geoExportType();//change_coords_only, change, static
+        M_exporter = Feel::exporter( 
+                _mesh=this->mesh(),
+                _name="Export",
+                _geo=geoExportType,
+                _worldcomm=this->functionSpace()->worldComm(),
+                _path=this->exporterPath() 
+                );
+
+        if ( M_exporter->doExport() && this->doRestart() && this->restartPath().empty() )
+            M_exporter->restart(this->timeInitial());
+    }
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::createPostProcessMeasures()
+{
+    // Start measures export
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+    }
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
