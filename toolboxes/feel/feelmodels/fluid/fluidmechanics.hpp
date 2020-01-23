@@ -124,14 +124,32 @@ public:
     // function space for lagrange multiplier which impose the mean pressure
     typedef FunctionSpace<mesh_type, bases<basis_l_type> > space_meanpressurelm_type;
     typedef std::shared_ptr<space_meanpressurelm_type> space_meanpressurelm_ptrtype;
-    // function space for Diriclet condition using lagrange multiplier
-    typedef FunctionSpace<trace_mesh_type, bases<basis_fluid_u_type> > space_dirichletlm_velocity_type;
-    typedef std::shared_ptr<space_dirichletlm_velocity_type> space_dirichletlm_velocity_ptrtype;
-    // function space for lagrange multiplier used in pressure bc
-    typedef typename space_dirichletlm_velocity_type::component_functionspace_type space_trace_velocity_component_type;
+    // function space velocity on trace
+    typedef FunctionSpace<trace_mesh_type, bases<basis_fluid_u_type> > space_trace_velocity_type;
+    typedef std::shared_ptr<space_trace_velocity_type> space_trace_velocity_ptrtype;
+    typedef typename space_trace_velocity_type::element_type element_trace_velocity_type;
+    typedef std::shared_ptr<element_trace_velocity_type> element_trace_velocity_ptrtype;
+    // function space component of velocity on trace
+    typedef typename space_trace_velocity_type::component_functionspace_type space_trace_velocity_component_type;
     typedef std::shared_ptr<space_trace_velocity_component_type> space_trace_velocity_component_ptrtype;
     typedef typename space_trace_velocity_component_type::element_type element_trace_velocity_component_type;
     typedef std::shared_ptr<element_trace_velocity_component_type> element_trace_velocity_component_ptrtype;
+    // function space P0 continuous vectorial on trace
+    typedef FunctionSpace<trace_mesh_type, bases<Lagrange<0, Vectorial,Continuous>>> space_trace_p0c_vectorial_type;
+    typedef std::shared_ptr<space_trace_p0c_vectorial_type> space_trace_p0c_vectorial_ptrtype;
+    typedef typename space_trace_p0c_vectorial_type::element_type element_trace_p0c_vectorial_type;
+    typedef std::shared_ptr<element_trace_p0c_vectorial_type> element_trace_p0c_vectorial_ptrtype;
+    // function space P0 continuous scalar on trace
+    typedef FunctionSpace<trace_mesh_type, bases<Lagrange<0, Scalar,Continuous>>> space_trace_p0c_scalar_type;
+    typedef std::shared_ptr<space_trace_p0c_scalar_type> space_trace_p0c_scalar_ptrtype;
+
+    typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                               space_trace_p0c_scalar_type,
+                               space_trace_p0c_vectorial_type >::type space_trace_angular_velocity_type;
+    typedef std::shared_ptr<space_trace_angular_velocity_type> space_trace_angular_velocity_ptrtype;
+    typedef typename space_trace_angular_velocity_type::element_type element_trace_angular_velocity_type;
+    typedef std::shared_ptr<element_trace_angular_velocity_type> element_trace_angular_velocity_ptrtype;
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -214,6 +232,10 @@ public:
     typedef std::shared_ptr<bdf_velocity_type> bdf_velocity_ptrtype;
     typedef Bdf<space_pressure_type> savets_pressure_type;
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
+    typedef Bdf<space_trace_p0c_vectorial_type> bdf_trace_p0c_vectorial_type;
+    typedef std::shared_ptr<bdf_trace_p0c_vectorial_type> bdf_trace_p0c_vectorial_ptrtype;
+    typedef Bdf<space_trace_angular_velocity_type> bdf_trace_angular_velocity_type;
+    typedef std::shared_ptr<bdf_trace_angular_velocity_type> bdf_trace_angular_velocity_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
@@ -476,8 +498,8 @@ public :
     // post process
     std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
     bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
-    std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
+    //std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    //bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -644,6 +666,14 @@ public :
             std::map<std::string,element_normalstress_ptrtype> fields_normalstress;
             fields_normalstress[prefixvm(prefix,"trace.normal-stress")] = this->fieldNormalStressPtr();
             fields_normalstress[prefixvm(prefix,"trace.wall-shear-stress")] = this->fieldWallShearStressPtr();
+#if 1
+            std::map<std::string,element_trace_p0c_vectorial_ptrtype> fields_NoSlipRigidParticlesTranslationalVelocity;
+            if ( M_fieldNoSlipRigidParticlesTranslationalVelocity )
+                fields_NoSlipRigidParticlesTranslationalVelocity[prefixvm(prefix,"trace.particles.translational-velocity")]= M_fieldNoSlipRigidParticlesTranslationalVelocity;
+            std::map<std::string,element_trace_angular_velocity_ptrtype> fields_NoSlipRigidParticlesAngularVelocity;
+            if ( M_fieldNoSlipRigidParticlesAngularVelocity )
+                fields_NoSlipRigidParticlesAngularVelocity[prefixvm(prefix,"trace.particles.angular-velocity")]=M_fieldNoSlipRigidParticlesAngularVelocity;
+#endif
             std::map<std::string, typename mesh_ale_type::ale_map_element_ptrtype> fields_disp;
             if ( this->isMoveDomain() )
                 fields_disp[prefixvm(prefix,"displacement")] = this->meshALE()->displacement();
@@ -651,7 +681,9 @@ public :
                                      std::make_pair( prefixvm( prefix,"pressure"),this->fieldPressurePtr() ),
                                      std::make_pair( prefixvm( prefix,"vorticity"),this->fieldVorticityPtr() ),
                                      fields_disp,
-                                     fields_normalstress );
+                                     fields_normalstress,
+                                     fields_NoSlipRigidParticlesTranslationalVelocity,fields_NoSlipRigidParticlesAngularVelocity
+                                     );
         }
 
     //___________________________________________________________________________________//
@@ -692,7 +724,7 @@ public :
     //___________________________________________________________________________________//
     // dirichlet with Lagrange multiplier
     trace_mesh_ptrtype const& meshDirichletLM() const { return M_meshDirichletLM; }
-    space_dirichletlm_velocity_ptrtype const& XhDirichletLM() const { return M_XhDirichletLM; }
+    space_trace_velocity_ptrtype const& XhDirichletLM() const { return M_XhDirichletLM; }
     //___________________________________________________________________________________//
     // impose mean pressure with P0 Lagrange multiplier
     space_meanpressurelm_ptrtype const& XhMeanPressureLM( int k ) const { return M_XhMeanPressureLM[k]; }
@@ -1018,11 +1050,21 @@ protected:
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
     trace_mesh_ptrtype M_meshDirichletLM;
-    space_dirichletlm_velocity_ptrtype M_XhDirichletLM;
+    space_trace_velocity_ptrtype M_XhDirichletLM;
     // lagrange multiplier for impose pressure bc
     trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
     space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
     element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
+    // no-slip on rigid particles
+    bool M_hasNoSlipRigidParticlesBC;
+    trace_mesh_ptrtype M_meshNoSlipRigidParticles;
+    space_trace_p0c_vectorial_ptrtype M_XhNoSlipRigidParticlesTranslationalVelocity;
+    space_trace_angular_velocity_ptrtype M_XhNoSlipRigidParticlesAngularVelocity;
+    element_trace_p0c_vectorial_ptrtype M_fieldNoSlipRigidParticlesTranslationalVelocity;
+    element_trace_angular_velocity_ptrtype M_fieldNoSlipRigidParticlesAngularVelocity;
+    bdf_trace_p0c_vectorial_ptrtype M_bdfNoSlipRigidParticlesTranslationalVelocity;
+    bdf_trace_angular_velocity_ptrtype M_bdfNoSlipRigidParticlesAngularVelocity;
+
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;

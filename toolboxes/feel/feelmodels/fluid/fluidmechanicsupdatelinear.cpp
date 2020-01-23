@@ -499,19 +499,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         size_type startBlockIndexPressureLM1 = this->startSubBlockSpaceIndex("pressurelm1");
         form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
                _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM1,
-               _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM1 ) +=
+               _colstart=this->colStartInMatrix()+startBlockIndexPressureLM1 ) +=
             on( _range=rangePressureBC, _rhs=F,
                 _element=*M_fieldLagrangeMultiplierPressureBC1, _expr=cst(0.));
-        if ( nDim == 3 )
+        if constexpr ( nDim == 3 )
         {
             size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
             form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexPressureLM2,
-                   _colstart=this->rowStartInMatrix()+startBlockIndexPressureLM2 ) +=
+                   _colstart=this->colStartInMatrix()+startBlockIndexPressureLM2 ) +=
                 on( _range=rangePressureBC, _rhs=F,
                     _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
         }
     }
+#if 0
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        this->log("FluidMechanics","updateLinearPDEDofElimination","M_hasNoSlipRigidParticlesBC");
+        size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc.translational-velocity");
+        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc.angular-velocity");
+        auto vTranslation = expr<2,1>( "{0.2,0.5}" );
+#if 0
+        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
+               _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
+            on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
+                _element=*M_fieldNoSlipRigidParticlesTranslationalVelocity, _expr=vTranslation/*vf::zero<nDim,1>()*/);
+#endif
+        if constexpr ( nDim == 2 )
+        {
+#if 0
+            form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,_matrix=A,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexAngularVelocity,
+                   _colstart=this->colStartInMatrix()+startBlockIndexAngularVelocity ) +=
+                on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
+                    _element=*M_fieldNoSlipRigidParticlesAngularVelocity, _expr=cst(0.));
+#endif
+        }
+        else
+        {
+            //TODO
+        }
+    }
+#endif
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDEDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );

@@ -840,6 +840,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
+    
+    //M_fieldNoSlipRigidParticlesTranslationalVelocity->setConstant(1.);
+    
     //--------------------------------------------------
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -1223,6 +1226,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     {
         M_bdfVelocity->start( *M_fieldVelocity );
         M_savetsPressure->start( *M_fieldPressure );
+        if ( M_hasNoSlipRigidParticlesBC )
+        {
+            M_bdfNoSlipRigidParticlesTranslationalVelocity->start();
+            M_bdfNoSlipRigidParticlesAngularVelocity->start();
+        }
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1297,6 +1305,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if (this->isMoveDomain())
         M_meshALE->updateTimeStep();
 #endif
+
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        M_bdfNoSlipRigidParticlesTranslationalVelocity->next(*M_fieldNoSlipRigidParticlesTranslationalVelocity);
+        M_bdfNoSlipRigidParticlesAngularVelocity->next(*M_fieldNoSlipRigidParticlesAngularVelocity);
+    }
 
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )
@@ -1901,6 +1915,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
+    if ( M_hasNoSlipRigidParticlesBC )
+        nBlock += 2;
     return nBlock;
 }
 
@@ -2017,6 +2033,33 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                               _diag_is_nonzero=false,_close=false)->graph();
         }
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
+    }
+
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhV,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhP,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+
+        ++indexBlock;
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhV,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhP,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
+                                             _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
     }
 
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );

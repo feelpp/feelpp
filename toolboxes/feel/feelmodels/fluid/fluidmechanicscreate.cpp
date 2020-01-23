@@ -518,6 +518,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "VolumicForces" );
 
 
+    
+    M_hasNoSlipRigidParticlesBC = false;
+    if ( auto _bcPTree = this->modelProperties().pTree().get_child_optional("BoundaryConditions") )
+    {
+        if ( auto _fluidPTree = _bcPTree->get_child_optional("fluid") )
+        {
+            if ( auto _particlesPtree = _fluidPTree->get_child_optional("particles") )
+            {
+                if ( this->worldComm().isMasterRank() )
+                    std::cout << "use oSlipRigidParticlesBC" << std::endl;
+                M_hasNoSlipRigidParticlesBC = true;
+            }
+        }
+    }
+    
     // Dirichlet bc using a lagrange multiplier
     if (this->hasMarkerDirichletBClm())
     {
@@ -531,7 +546,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             saveGMSHMesh(_mesh=M_meshDirichletLM,_filename=nameMeshDirichletLM);
         }
 
-        M_XhDirichletLM = space_dirichletlm_velocity_type::New( _mesh=M_meshDirichletLM, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_XhDirichletLM = space_trace_velocity_type::New( _mesh=M_meshDirichletLM, _worldscomm=this->localNonCompositeWorldsComm() );
         //std::cout << "M_XhDirichletLM->nDof()"<< M_XhDirichletLM->nDof() <<std::endl;
     }
 
@@ -546,9 +561,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     }
 
     // init fluid outlet
-    this->initFluidOutlet();
+    // this->initFluidOutlet();  (MOVE in init but should be fixed : TODO)
     // init fluid inlet
     this->initFluidInlet();
+
+
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        M_meshNoSlipRigidParticles = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"wall2"}),_view=true );
+        M_XhNoSlipRigidParticlesTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_meshNoSlipRigidParticles );
+        if constexpr ( nDim == 2 )
+            M_XhNoSlipRigidParticlesAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_meshNoSlipRigidParticles ); //M_XhNoSlipRigidParticlesTranslationalVelocity->compSpace();
+        else
+            M_XhNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity;
+        M_fieldNoSlipRigidParticlesTranslationalVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity->elementPtr();
+        M_fieldNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesAngularVelocity->elementPtr();
+    }
 
 
     this->updateBoundaryConditionsForUse();
@@ -915,11 +943,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // functionSpaces and elements
     this->createFunctionSpaces();
 
+    this->initBoundaryConditions();
+
     // start or restart time step scheme
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    this->initBoundaryConditions();
+    // init fluid outlet
+    this->initFluidOutlet(); // (MOVE in initBoundaryConditions but should be fixed : TODO)  because defined time steping inside
 
     // ALE mode (maybe)
     this->createALE();
@@ -1171,6 +1202,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     M_savetsPressure->setfileFormat( myFileFormat );
     M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
 
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        M_bdfNoSlipRigidParticlesTranslationalVelocity = this->createBdf( M_XhNoSlipRigidParticlesTranslationalVelocity, "NoSlipRigidParticlesTranslationalVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
+        M_bdfNoSlipRigidParticlesAngularVelocity = this->createBdf( M_XhNoSlipRigidParticlesAngularVelocity, "NoSlipRigidParticlesAngularVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
+    }
+
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
@@ -1182,6 +1219,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         // start time step
         double tir = M_bdfVelocity->restart();
         M_savetsPressure->restart();
+        if ( M_hasNoSlipRigidParticlesBC )
+            CHECK( false ) << "TODO";
         // load a previous solution as current solution
         *M_fieldVelocity = M_bdfVelocity->unknown(0);
         *M_fieldPressure = M_savetsPressure->unknown(0);
@@ -1481,6 +1520,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
     return res;
 }
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix ) const
@@ -1492,9 +1532,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldOnTraceExported( std::set<st
             res.insert( "normal-stress" );
         if ( o == prefixvm(prefix,"wall-shear-stress") || o == prefixvm(prefix,"all") )
             res.insert( "wall-shear-stress" );
+#if 1
+        if ( o == prefixvm(prefix,"particles.translational-velocity") || o == prefixvm(prefix,"all") )
+            res.insert( "particles.translational-velocity" );
+        if ( o == prefixvm(prefix,"particles.angular-velocity") || o == prefixvm(prefix,"all") )
+            res.insert( "particles.angular-velocity" );
+#endif
     }
     return res;
 }
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -1507,7 +1554,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     this->setPostProcessExportsPidName( "pid" );
-    this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress"} );
+    this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress", "trace.particles.translational-velocity", "trace.particles.angular-velocity" } );
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     super_type::initPostProcess();
@@ -1537,9 +1584,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         {
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
+#if 0
             auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
-
+#else
+            auto rangeTrace = markedfaces(this->mesh(),{"wall2"});
+            M_meshTrace = M_meshNoSlipRigidParticles;
+#endif
             this->updateRangeDistributionByMaterialName( "trace_mesh", rangeTrace );
             std::string geoExportType = "static";//change_coords_only, change, static
             M_exporterTrace = exporter( _mesh=M_meshTrace,
@@ -1667,6 +1718,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        this->setStartSubBlockSpaceIndex( "particles-bc.translational-velocity", currentStartIndex++ );
+        this->setStartSubBlockSpaceIndex( "particles-bc.angular-velocity", currentStartIndex++ );
+    }
+
     return currentStartIndex;
 }
 
@@ -1713,6 +1770,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             M_blockVectorSolution(cptBlock) = this->backend()->newVector( M_fluidOutletWindkesselSpace );
             ++cptBlock;
         }
+    }
+
+    if ( M_hasNoSlipRigidParticlesBC )
+    {
+        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesTranslationalVelocity;
+        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesAngularVelocity;
     }
 
     return cptBlock;
