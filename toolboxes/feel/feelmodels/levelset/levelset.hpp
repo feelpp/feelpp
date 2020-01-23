@@ -389,10 +389,12 @@ public:
     std::set<std::string> postProcessSaveAllFieldsAvailable() const override;
     std::set<std::string> postProcessExportsAllFieldsAvailable() const override;
 
-    void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time ) { this->exportResults( time, this->symbolsExpr() ); }
-    template<typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    using super_type::exportResults;
+    void exportResults( double time ) override { 
+        super_type::exportResults( time, this->symbolsExpr(), this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+    }
+    //template<typename SymbolsExpr>
+    //void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
     void executePostProcessMeasures( double time );
     template<typename TupleFieldsType, typename SymbolsExpr>
@@ -626,32 +628,32 @@ LEVELSET_CLASS_TEMPLATE_TYPE::extensionVelocity( vf::Expr<ExprT> const& u) const
 
 //----------------------------------------------------------------------------//
 // Export
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-template<typename SymbolsExpr>
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr )
-{
-    this->log("LevelSet","exportResults", "start");
-    this->timerTool("PostProcessing").start();
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//template<typename SymbolsExpr>
+//void
+//LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr )
+//{
+    //this->log("LevelSet","exportResults", "start");
+    //this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    //this->modelProperties().parameters().updateParameterValues();
+    //auto paramValues = this->modelProperties().parameters().toParameterValues();
+    //this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->executePostProcessExports( this->exporter(), time, this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields() );
-    this->executePostProcessMeasures( time, this->genericFields(), symbolsExpr );
-    //if( this->M_doExportAdvection )
-        //this->M_advectionToolbox->exportResults( time );
+    //this->executePostProcessExports( this->exporter(), time, this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields() );
+    //this->executePostProcessMeasures( time, this->genericFields(), symbolsExpr );
+    ////if( this->M_doExportAdvection )
+        ////this->M_advectionToolbox->exportResults( time );
 
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("LevelSet","exportResults", "finish");
-}
+    //this->timerTool("PostProcessing").stop("exportResults");
+    //if ( this->scalabilitySave() )
+    //{
+        //if ( !this->isStationary() )
+            //this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        //this->timerTool("PostProcessing").save();
+    //}
+    //this->log("LevelSet","exportResults", "finish");
+//}
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 template<typename TupleFieldsType, typename SymbolsExpr>

@@ -445,9 +445,9 @@ public:
     virtual std::set<std::string> postProcessExportsAllFieldsAvailable() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time ) { this->exportResults( time, this->symbolsExpr() ); }
-    template<typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    virtual void exportResults( double time ) { this->exportResults( time, this->symbolsExpr(), this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() ); }
+    template<typename SymbolsExpr, typename... TupleFieldsType>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields );
 
     bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
     void executePostProcessMeasures( double time );
@@ -773,9 +773,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 
 //----------------------------------------------------------------------------//
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename SymbolsExpr>
+template<typename SymbolsExpr, typename... TupleFieldsType>
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields )
 {
     this->log("LevelSetBase","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -784,13 +784,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    //bool hasFieldToExport = this->updatePostProcessExports( M_exporter, this->postProcessExportsFields(), time );
-    //if ( hasFieldToExport )
-    //{
-        //M_exporter->save();
-        //this->upload( M_exporter->path() );
-    //}
-    this->executePostProcessExports( M_exporter, time, this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+    this->executePostProcessExports( M_exporter, time, fields... );
+    // TODO executePostProcessMeasures should be variadic
     this->executePostProcessMeasures( time, this->allFields(), symbolsExpr );
 
     this->timerTool("PostProcessing").stop("exportResults");
