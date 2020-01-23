@@ -119,6 +119,35 @@ class ModelNumerical : public ModelAlgebraic
         void setTimeStep(double v)  { M_timeStep=v; }
         void setTimeOrder(int o) { M_timeOrder=o; }
 
+
+        template<typename SpaceType>
+        auto createBdf( std::shared_ptr<SpaceType> space, std::string const& name, int bdfOrder, int nConsecutiveSave, std::string myFileFormat )
+            {
+                std::string suffixName = "";
+                if ( myFileFormat == "binary" )
+                    suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
+                fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
+
+                double ti = this->timeInitial();
+                double tf = this->timeFinal();
+                double dt = this->timeStep();
+
+                auto thebdf = bdf( _space=space,
+                                   _name=name+suffixName,
+                                   _prefix=this->prefix(),
+                                   _order=bdfOrder,
+                                   // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
+                                   _initial_time=ti, _final_time=tf, _time_step=dt,
+                                   _restart=this->doRestart(),
+                                   _restart_path=this->restartPath(),
+                                   _restart_at_last_save=this->restartAtLastSave(),
+                                   _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq(),
+                                   _n_consecutive_save=nConsecutiveSave );
+                thebdf->setfileFormat( myFileFormat );
+                thebdf->setPathSave( ( saveTsDir/name ).string() );
+                return thebdf;
+            }
+
         bool hasModelProperties() const { return (M_modelProps)? true : false; }
         std::shared_ptr<ModelProperties> modelPropertiesPtr() const { return M_modelProps; }
         ModelProperties const& modelProperties() const { return *M_modelProps; }
