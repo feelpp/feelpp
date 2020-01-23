@@ -1962,9 +1962,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     {
         for ( int k=0;k<M_XhMeanPressureLM.size();++k )
         {
-            myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM[k],_trial=XhP,
+            myblockGraph(indexBlock,1) = stencil(_test=M_XhMeanPressureLM[k],_trial=XhP,
                                                  _diag_is_nonzero=false,_close=false)->graph();
-            myblockGraph(0,indexBlock) = stencil(_test=XhP,_trial=M_XhMeanPressureLM[k],
+            myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhMeanPressureLM[k],
                                                  _diag_is_nonzero=false,_close=false)->graph();
             ++indexBlock;
         }
