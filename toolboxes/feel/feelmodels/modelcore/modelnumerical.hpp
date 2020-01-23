@@ -167,6 +167,8 @@ class ModelNumerical : public ModelAlgebraic
         bool executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
         template <typename MeasurePointEvalType, typename... TupleFieldsType>
         bool executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields );
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
+        bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
 
         template <typename TupleFieldsType>
         void executePostProcessSave( uint32_type index, TupleFieldsType const& fields )
@@ -417,6 +419,17 @@ ModelNumerical::executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEva
         hasMeasure = true;
     }
     return hasMeasure;
+}
+
+template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
+bool 
+ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+{
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
+    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
+
+    return ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint );
 }
 
 template <typename TupleFieldsType>
