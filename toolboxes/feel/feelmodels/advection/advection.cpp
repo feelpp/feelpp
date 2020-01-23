@@ -625,7 +625,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 //----------------------------------------------------------------------------//
 // Algebraic data
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::size_type
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::matrixPattern() const
 {
     size_type pat = size_type(Pattern::COUPLED);
@@ -681,7 +681,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::size_type
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();

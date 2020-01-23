@@ -176,7 +176,7 @@ HEAT_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename HEAT_CLASS_TEMPLATE_TYPE::size_type
 HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     size_type res = this->spaceTemperature()->nLocalDofWithGhost();

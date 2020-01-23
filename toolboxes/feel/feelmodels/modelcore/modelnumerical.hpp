@@ -63,7 +63,7 @@ class ModelNumerical : public ModelAlgebraic
         static const bool is_class_null = false;
 
         typedef double value_type;
-
+        using size_type = typename super_type::size_type;
         typedef super_type::backend_type backend_type;
         typedef super_type::backend_ptrtype backend_ptrtype;
 

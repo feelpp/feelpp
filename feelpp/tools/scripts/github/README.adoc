@@ -1,0 +1,28 @@
+= Updating CHANGELOG
+:pp: {plus}{plus}
+
+== Github Changelog Generator
+we use https://github.com/github-changelog-generator/github-changelog-generator[github changelog generator] to help generate automatically the https://github.com/feelpp/feelpp/blob/develop/CHANGELOG.adoc[ChangeLog] of {feelpp}.
+
+
+----
+gem install github_changelog_generator
+----
+
+== Kramdoc 
+
+`github_changelog_generator` generates Markdown file format.
+We convert the Markdown file using `kramdoc` into asciidoc format.
+
+.Install kramdown-asciidoc
+----
+gem install kramdown-asciidoc
+----
+
+We have a new command in the path, called `kramdoc`.
+
+We now use `kramdoc` to convert from Markdown to Asciidoc
+
+----
+kramdoc --format=GFM --output=CHANGELOG.adoc --wrap=ventilate CHANGELOG.md
+----

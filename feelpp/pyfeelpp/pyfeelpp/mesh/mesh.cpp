@@ -69,14 +69,14 @@ boundaryfacesByPid( MeshT m )
 }
 
 template<typename MeshT>
-size_type
+auto
 nElementsTuple( elements_pid_t<MeshT> const& r, bool global ) 
 {
     return nelements( r, global );
 }
 
 template<typename MeshT>
-size_type
+auto
 nFacesTuple( faces_reference_wrapper_t<MeshT> const& r, bool global ) 
 {
     return nelements( r, global );

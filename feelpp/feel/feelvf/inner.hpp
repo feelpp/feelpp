@@ -252,38 +252,38 @@ class Product : public ExprDynamicBase
         void init( IM const& im )
         {
             M_l_tensor_expr.init( im );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_l_tensor_expr.update( geom, fev, feu );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, fev, feu );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             M_l_tensor_expr.update( geom, fev );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, fev );
         }
         void update( Geo_t const& geom )
         {
             M_l_tensor_expr.update( geom );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_l_tensor_expr.update( geom, face );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, face );
         }
         template <typename... CTX>
         void updateContext( CTX const&... ctx )
         {
             M_l_tensor_expr.updateContext( ctx... );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.updateContext( ctx... );
         }
 
@@ -291,7 +291,7 @@ class Product : public ExprDynamicBase
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
             value_type res = evalijq( i, j, cc1, cc2, q, mpl::bool_<IsSame>() );
-            if ( ApplySqrt )
+            if constexpr ( ApplySqrt )
                 return math::sqrt( res );
             else
                 return res;

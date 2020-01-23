@@ -38,15 +38,16 @@ namespace Feel
  *
  * @see DofTable, FaceDof
  */
+template<typename SizeT=uint32_type>
 class Dof 
     :
-        public std::tuple<size_type>
+        public std::tuple<SizeT>
         //public std::tuple<size_type, int16_type, bool>
 //std::tuple<size_type, int16_type, bool, uint16_type, bool, size_type>
 {
     //typedef std::tuple<size_type, int16_type, bool, uint16_type, bool, size_type> super;
     //typedef std::tuple<size_type, int16_type, bool> super;
-    typedef std::tuple<size_type> super;
+    typedef std::tuple<SizeT> super;
 public:
 
 
@@ -61,7 +62,7 @@ public:
      */
     //@{
 
-
+    using size_type = SizeT;
     //@}
 
     /** @name Constructors, destructor
@@ -236,10 +237,10 @@ public:
     //@}
 };
 
-
+template<typename SizeT=uint32_type>
 inline
 std::ostream&
-operator<<( std::ostream& __os, Dof const& __dof )
+operator<<( std::ostream& __os, Dof<SizeT> const& __dof )
 {
     __os << "-----------Dof-Info------------\n"
          << "index        : " << __dof.index() << "\n"
@@ -263,11 +264,14 @@ operator<<( std::ostream& __os, Dof const& __dof )
  *  - local dof id in element
  *  - local dof id in face
  */
-struct FaceDof : public std::tuple<size_type, int16_type, bool, uint16_type, uint16_type>
+template<typename SizeT=uint32_type>
+struct FaceDof : public std::tuple<SizeT, int16_type, bool, uint16_type, uint16_type>
 {
-    typedef std::tuple<size_type, int16_type, bool, uint16_type, uint16_type> super;
+    typedef std::tuple<SizeT, int16_type, bool, uint16_type, uint16_type> super;
 public:
 
+    using size_type = SizeT;
+    
     /** @name Constructors, destructor
      */
     //@{
@@ -315,7 +319,7 @@ public:
         super(_index, _sign, per, ld, -1 )
         {
         }
-    FaceDof( Dof const& d, uint16_type ldinface, uint16_type ldinelt   )
+    FaceDof( Dof<size_type> const& d, uint16_type ldinface, uint16_type ldinelt   )
         :
         super(d.index(), d.sign(), d.isPeriodic(), ldinelt, ldinface )
         {
@@ -432,12 +436,14 @@ public:
 
 };
 //@ Alias for FaceDof
-using EntityDof =  FaceDof;
+template<typename SizeT=uint32_type>
+using EntityDof =  FaceDof<SizeT>;
 
-template<int NC = 1>
-class LocalDof: public std::pair<size_type,uint16_type>
+template<int NC = 1, typename SizeT=uint32_type>
+class LocalDof: public std::pair<SizeT,uint16_type>
 {
 public:
+    using size_type = SizeT;
     typedef std::pair<size_type,uint16_type> super;
 
     static constexpr uint16_type nComponents() { return NC; }
@@ -469,9 +475,9 @@ public:
 
 };
 
-template<int NC>
+template<int NC,typename SizeT=uint32_type>
 std::ostream&
-operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
+operator<<( std::ostream& __os, LocalDof<NC,SizeT> const& __dof )
 {
     __os << "-----------Dof-Info------------\n"
          << "elementId             : " << __dof.elementId() << "\n"
@@ -481,12 +487,13 @@ operator<<( std::ostream& __os, LocalDof<NC> const& __dof )
     return __os;
 }
 
-template<int NC = 1>
-class LocalDofSet : public std::vector<LocalDof<NC>>
+template<int NC = 1,typename SizeT = uint32_type>
+class LocalDofSet : public std::vector<LocalDof<NC,SizeT>>
 {
   public:
-    typedef std::vector<LocalDof<NC>> super;
-    typedef LocalDof<NC> localdof_type;
+    using size_type = SizeT;
+    typedef std::vector<LocalDof<NC,size_type>> super;
+    typedef LocalDof<NC,size_type> localdof_type;
     static constexpr uint16_type nComponents() { return NC; }
     LocalDofSet()
         :

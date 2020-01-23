@@ -74,7 +74,7 @@ class FluidMechanics : public ModelNumerical,
 {
 public:
     typedef ModelNumerical super_type;
-
+    using size_type = typename super_type::size_type;
     typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//

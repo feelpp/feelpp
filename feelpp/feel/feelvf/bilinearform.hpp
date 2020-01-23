@@ -262,6 +262,7 @@ public:
     typedef typename space_2_type::gm1_ptrtype gm1_2_ptrtype;
 
     using index_type = typename mesh_1_type::index_type;
+    using size_type = typename mesh_1_type::size_type;
     
     using matrix_ptrtype = typename super::matrix_ptrtype;
     

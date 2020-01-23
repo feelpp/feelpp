@@ -334,10 +334,28 @@ endif()
 if ( FEELPP_HAS_GMSH )
   add_subdirectory(gmsh)
   if( FEELPP_HAS_GMSH_LIBRARY AND ( NOT FEELPP_HAS_GMSH_API OR FEELPP_GMSH_API_MISSING_HEADERS ) )
-    add_dependencies( feelpp_contrib gmsh_get_files )
+    if ( TARGET feelpp_gmsh_get_files )
+      add_dependencies( feelpp_contrib feelpp_gmsh_get_files )
+    endif()
+    if ( DEFINED FEELPP_GMSH_MISSING_HEADERS_DIR )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${FEELPP_GMSH_MISSING_HEADERS_DIR}>
+        $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+    endif()
   endif()
 endif()
 
+feelppContribPrepare( tabulate )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( tabulate )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_TABULATE )
+  target_link_libraries(feelpp_contrib INTERFACE tabulate )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/tabulate/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
+endif()
+  
 add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)
