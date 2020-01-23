@@ -6401,11 +6401,12 @@ template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ )
 {
-    if ( p.get_child_optional( "mesh" ) )
+    if ( p.get_child_optional( "nSpace" ) )
         return;
 
     p.put( "nSpace", functionspace_type::nSpaces );
-    p.put( "mesh", this->mesh()->journalSectionName() );
+    if ( this->mesh() )
+        p.put( "mesh", this->mesh()->journalSectionName() );
 
     p.put( "basis.name", basisName() );
     p.put( "basis.order", basisOrder() );
