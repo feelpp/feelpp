@@ -1,10 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_CORE_MEASURE_POINTS_EVALUATION_HPP
 #define FEELPP_TOOLBOXES_CORE_MEASURE_POINTS_EVALUATION_HPP 1
 
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
+#include <feel/feelcore/for_each.hpp>
 
 namespace Feel
 {
@@ -100,9 +102,9 @@ public :
 
 
 
-    template <typename FieldTupleType>
+    template <typename... FieldTupleType>
     void
-    eval( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, std::map<std::string,double> & res, FieldTupleType const& fieldTuple )
+    eval( std::vector<ModelPostprocessPointPosition> const& allEvalPoints, std::map<std::string,double> & res, FieldTupleType const& ... fieldTuple )
         {
             for ( auto const& evalPoints : allEvalPoints )
             {
@@ -110,8 +112,8 @@ public :
             }
 
             hana::for_each( M_contextFields,
-                            [&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple,
+                            [&fieldTuple...,&res](auto const& x) {
+                                ( Feel::for_each( fieldTuple,
                                                 [&x,&res](auto const& y) {
                                                     auto const& fectx = std::get<0>( x );
 
@@ -151,7 +153,7 @@ public :
                                                                 } //
                                                             }
                                                         }
-                                                }); // for_each fieldTuple
+                                                }), ... ); // for_each fieldTuple
                             }); // for_each M_contextFields
 
         }
