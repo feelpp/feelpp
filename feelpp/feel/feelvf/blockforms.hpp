@@ -105,6 +105,7 @@ class BlockBilinearForm
 public :
     using value_type = typename Feel::decay_type<PS>::value_type;
     using condensed_matrix_type = MatrixCondensed<value_type>;
+    using size_type = typename condensed_matrix_type::size_type;
     using condensed_matrix_ptrtype = std::shared_ptr<condensed_matrix_type>;
     using product_space_t = decay_type<PS>;
 

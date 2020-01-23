@@ -22,7 +22,9 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
       M_conductivityKey(soption( prefixvm(this->prefix(), "conductivity_json")) ),
       M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_useUserIBC(false)
+      M_useUserIBC(false),
+      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) ),
+      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -104,6 +106,15 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
 {
+    this->modelProperties().parameters().updateParameterValues();
+    M_paramValues = this->modelProperties().parameters().toParameterValues();
+    for( auto const& [k,v] : M_paramValues )
+    {
+        Feel::cout << " - parameter " << k << " : " << v << std::endl;
+    }
+    this->modelProperties().materials().setParameterValues( M_paramValues );
+    //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
+    this->modelProperties().postProcess().setParameterValues( M_paramValues );
 
     // initialize marker lists for each boundary condition type
     auto itField = modelProperties().boundaryConditions().find( "potential");
@@ -241,6 +252,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     M_Vh = Pdhv<Order>( M_mesh, true);
     M_Wh = Pdh<Order>( M_mesh, true );
+    M_Whp = Pdh<Order+1>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
@@ -266,23 +278,31 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
+    M_ppp = M_Whp->element( "pp" );
 
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(M_Ch->element("mup"));
 
-    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
-
-#if 0
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
-#else
     tic();
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    this->initMatricesAndVector();
     toc("matrixCondensed", FLAGS_v > 0);
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMatricesAndVector()
+{
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+    solve::strategy spp = solve::strategy::local;
+    auto pps = product( M_Whp );
+
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+#ifndef USE_SAME_MAT
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
 #endif
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
+    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS

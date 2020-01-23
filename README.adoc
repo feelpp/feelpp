@@ -2,7 +2,7 @@
 :cpp: C++
 = {feelpp}: Finite Element Embedded Library in {cpp}
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
-:toc: macro
+# :toc: macro
 :toclevels: 2
 :uri-rel-file-base: link:
 :uri-rel-tree-base: link:
@@ -41,27 +41,100 @@ ifdef::env-github,env-browser[:outfilesuffix: .adoc]
 :uri-freesoftware: https://www.gnu.org/philosophy/free-sw.html
 
 
-toc::[]
-
 image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
 image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 image:https://api.codacy.com/project/badge/Grade/ee741577e2454024a18d44603be62a6d[link="https://www.codacy.com/app/prudhomm/feelpp?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=feelpp/feelpp&amp;utm_campaign=Badge_Grade"]
 
-link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel.
+link:http://www.feelpp.org[{feelpp}] is a {cpp} library for continuous or discontinuous Galerkin methods including finite element method(FEM), spectral element methods(SEM), reduced basis methods, discontinuous galerkin methods (DG and HDG) in 1D 2D and 3D and in parallel. Checkout <<what-is-feel>>, {feelpp} <<features>> and some <<examples>>.
+
+== Releases
+
+The latest release of {feelpp} is https://github.com/feelpp/feelpp/releases/latest[here]
+image:https://github-basic-badges.herokuapp.com/release/feelpp/feelpp.svg[link=https://github.com/feelpp/feelpp/releases/latest]
+
+{feelpp} has a DOI provided by Zenodo. Please use this to cite {feelpp} if you use it in a publication
+image:https://zenodo.org/badge/4392591.svg["DOI",link=https://zenodo.org/badge/latestdoi/4392591]
+
+{feelpp} is split into three components:
+
+feelpp:: library and tools
+feelpp-toolboxes:: mono and multiphysics toolboxes (cfd, csm, heat transfer, fsi, heat and fluid, hdg(poisson and elasticity), thermo-electric and maxwell)
+feelpp-mor:: model order reduction applications and tools
+
+These components are built and delivered in two distribution channels: `stable` and `latest`.
+The channels are currently available via Docker containers, Debian and Ubuntu packages.
+
+stable:: Once a year, sometimes more, we make a release of {feelpp}  and it becomes the basis of the `stable` channel.
+The channel is updated infrequently, only for a new release or a major bug.
+
+latest:: {feelpp} has a very active development and changes are made everyday with the research done by http://www.cemosis.fr[Cemosis] and its collaborators.
+Each commit in the main development branch triggers a new full build with more than 800 tests from unit test to full pde solves.
+
+Instructions are available for http://docs.feelpp.org/user/0.107/install/containers/[docker] and http://docs.feelpp.org/user/0.107/install/distributions/[debian and ubuntu packages].
+
+WARNING: Providing Debian and ubuntu packages for `feelpp-toolboxes` and `feelpp-mor` is a work in progress.
+They are currently available only via docker.
+
+[[cipkg]]
+The following tables present the Continuous Integration status of the packaging of {feelpp}.
+
+
+.Build status for each component for the stable channel
+|===
+| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+
+| feelpp
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-eoan]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=master[https://buildkite.com/feelpp/pkg-feelpp-focal]
+
+| feelpp-toolboxes
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+
+| feelpp-mor
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+|===
+
+.Build status for each component for the latest channel
+|===
+| Component | Docker | Debian/Buster | Ubuntu/Eoan | Ubuntu/Focal
+
+| feelpp
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+| image:https://badge.buildkite.com/8b8635a2a63929d7d2087b5169d8d6e4e1e3d5417ee83d0754.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp]
+| image:https://badge.buildkite.com/663cf620a1e2d9c420c64e41998a9ba4d2023772872f88a893.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-eoan]
+| image:https://badge.buildkite.com/001f62767f40f08e353509962eff783c0e2318429356728e6f.svg?branch=develop[https://buildkite.com/feelpp/pkg-feelpp-focal]
+
+| feelpp-toolboxes
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+
+| feelpp-mor
+| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|
+|
+|
+|===
+
 
 == {feelpp} Documentation
 
-.link:http://book.feelpp.org[{feelpp} Book web site]
-image::https://media.githubusercontent.com/media/feelpp/book.feelpp.org/master/images/cover_small.jpg[{feelpp} Book,link=http://book.feelpp.org]
+.link:http://docs.feelpp.org[{feelpp} Docs web site]
+image::https://github.com/feelpp/book.feelpp.org/raw/master/images/cover_small.jpg[{feelpp} Docs,link=http://docs.feelpp.org]
 
-== Gitter Discussion Forum
+== Slack Discussion Forum
 
-We encourage you to ask questions and discuss any aspects of the project on the link:http://gitter.im/feelpp/feelpp[{feelpp}
-  Gitter forum].
+We encourage you to ask questions and discuss any aspects of the project on https://feelpp.slack.com[Slack].
 New contributors are always welcome!
-
-image:https://badges.gitter.im/Join%20Chat.svg["Join the chat at", https://gitter.im/feelpp/feelpp",link="https://gitter.im/feelpp/feelpp"]
-
 
 == Continuous Integration
 
@@ -84,21 +157,17 @@ The essence of a feature branch is that it exists as long as the feature is in d
 |===
 | Platform & Compiler | `master` | `develop`
 
-| Buildkite Ubuntu 16.04 clang6
+|  Ubuntu Focal/20.04 clang-9
 |  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=master["Build Status", link="https://buildkite.com/feelpp/feelpp"]
-| image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
+|  image:https://badge.buildkite.com/192023cd78277ebeb80f48580ea813c586ec6dcd0365531b33.svg?branch=develop["Build Status", link="https://buildkite.com/feelpp/feelpp"]
 
-| Buildkite Ubuntu 16.04 clang5
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang5"]
-| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang5"]
+|  Ubuntu Disco/19.04 clang-9
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=master[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
+| image:https://badge.buildkite.com/56a8f50b0cd6a7ebf60abb852eb5f78f578f36623b37701809.svg?branch=develop[https://buildkite.com/feelpp/feelpp-ubuntu-disco-19-dot-04-clang9]
 
-| Buildkite Ubuntu 16.04 clang4
-| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=master[link="https://buildkite.com/feelpp/feelpp-clang4"]
-| image:https://badge.buildkite.com/70be862a4a14334363d173068c7b0c7caf63adc8e1555bd813.svg?branch=develop[link="https://buildkite.com/feelpp/feelpp-clang4"]
-
-| Buildkite MacOsX Homebrew
-| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=master[link=https://buildkite.com/feelpp/feelpp-homebrew]
-| image:https://badge.buildkite.com/8957ffa3255c088997196cfe0743e43e3c4fca200d39755f4b.svg?branch=develop[link=https://buildkite.com/feelpp/feelpp-homebrew]
+|  Debian Buster/10 clang-7
+|image:https://badge.buildkite.com/3828dcf05f226bd39dfe7dc4da7effb6c1e84af2fa7eab4d0c.svg?branch=master[https://buildkite.com/feelpp/feelpp-debian-buster-10-clang-7]
+|image:https://badge.buildkite.com/3828dcf05f226bd39dfe7dc4da7effb6c1e84af2fa7eab4d0c.svg?branch=develop[https://buildkite.com/feelpp/feelpp-debian-buster-10-clang-7]
 
 |===
 
@@ -115,29 +184,11 @@ The objectives of this framework is quite ambitious; ambitions which could be ex
 
 Some basic installation procedure are available in the link:INSTALL.md[INSTALL] file, the detailled process is available link:http://www.feelpp.org/docs/develop/BuildingP.html[here].
 
-== Releases
-
-Here are the latest releases of {feelpp}
-
-* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.2[v0.104.0-beta.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1239039.svg["DOI",link="https://doi.org/10.5281/zenodo.1239039"]
-
-
-* {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.104.0-beta.1[v0.104.0-beta.1] image:https://zenodo.org/badge/DOI/10.5281/zenodo.1227144.svg["DOI",link="https://doi.org/10.5281/zenodo.1227144"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.103.2[v0.103.2] image:https://zenodo.org/badge/DOI/10.5281/zenodo.581705.svg["DOI",link="https://doi.org/10.5281/zenodo.581705"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.102.0[v0.102.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.495740.svg["DOI",link="https://doi.org/10.5281/zenodo.495740"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.100.0[v0.100.0]
- image:https://zenodo.org/badge/doi/10.5281/zenodo.45132.svg["DOI",link="https://doi.org/10.5281/zenodo.45132"]
-
- * {feelpp} link:https://github.com/feelpp/feelpp/releases/tag/v0.99.0-final.1[v0.99.0] image:https://zenodo.org/badge/doi/10.5281/zenodo.11624.svg["DOI",link="https://doi.org/10.5281/zenodo.11624"]
 
 == Features
 
  * 1D 2D and 3D (including high order) geometries and also lower topological dimension 1D(curve) in 2D and 3D or 2D(surface) in 3D
- * continuous and discontinuous arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
+ * continuous and discontinuous (dG and hdG) arbitrary order Galerkin Methods in 1D, 2D and 3D including finite and spectral element methods
  * domain specific embedded language in C++ for variational formulations
  * interfaced with link:http://www.mcs.anl.gov/petsc/[PETSc] for linear and non-linear solvers
  * seamless parallel computations using PETSc
@@ -178,7 +229,7 @@ But we can't do it without your feedback!
 We encourage you to ask questions and discuss any aspects of the project on the discussion list, on Twitter or in the chat room.
 
 Twitter:: #feelpp hashtag or @feelpp mention
-Chat (Gitter):: image:https://badges.gitter.im/Join%20In.svg[Gitter, link=https://gitter.im/feelpp/feelpp]
+Chat (Slack):: image:https://img.shields.io/badge/slack-feelpp-blue[Slack, link=https://feelpp.slack.com]
 
 ifdef::env-github[]
 Further information and documentation about {feelpp} can be found on the project's website.
@@ -194,7 +245,7 @@ Issue tracker:: {uri-issues}
 
 == Copyright and Licensing
 
-Copyright (C) 2011-2017 {feelpp} Consortium.
+Copyright (C) 2011-2019 {feelpp} Consortium.
 Free use of this software is granted under the terms of the GPL License.
 
 See the {uri-license}[LICENSE] file for details.
@@ -209,7 +260,11 @@ The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud
 === Laplacian in 2D using P3 Lagrange basis functions
 
 Here is a full example to solve
-$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
+
+[stem]
+++++
+-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega
+++++
 
 [source,cpp]
 ----
@@ -251,7 +306,11 @@ int main(int argc, char**argv )
 === Bratu equation in 2D
 
 Here is a full non-linear example - the Bratu equation - to solve
-$$-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+
+[stem]
+++++
+-\Delta u + e^u = 0 \mbox{ in } \Omega,\quad u=0 \mbox{ on } \partial \Omega$$.
+++++
 
 [source,cpp]
 ----
@@ -324,6 +383,3 @@ main( int argc, char** argv )
     e->save();
 }
 ----
-
-
-

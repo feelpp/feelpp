@@ -113,7 +113,7 @@ VectorEigen<T>::resize( size_type s, bool preserve )
 }
 
 template <typename T>
-size_type
+typename VectorEigen<T>::size_type
 VectorEigen<T>::start( ) const
 {
     return 0;

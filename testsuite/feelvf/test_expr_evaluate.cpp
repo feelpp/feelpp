@@ -30,6 +30,7 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/eig.hpp>
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
@@ -200,5 +201,15 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK( eval19.rows() == 1 && eval19.cols() == 1 );
     BOOST_CHECK_CLOSE( eval19(0,0), std::pow(4,3), tolerance );
 
+    // eig (symmetric mat)
+    auto ex20base = mat<3,3>(cst(0.),cst(1),cst(-1.),
+                             cst(1.),cst(1.),cst(0.),
+                             cst(-1.),cst(0.),cst(1.) );
+    auto ex20 = eig( ex20base );
+    auto eval20 = ex20.evaluate();
+    BOOST_CHECK( eval20.rows() == 3 && eval20.cols() == 1 );
+    BOOST_CHECK_CLOSE( eval20(0,0), -1.0, tolerance );
+    BOOST_CHECK_CLOSE( eval20(1,0), 1.0, tolerance );
+    BOOST_CHECK_CLOSE( eval20(2,0), 2.0, tolerance );
 }
 BOOST_AUTO_TEST_SUITE_END()

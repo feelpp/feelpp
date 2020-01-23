@@ -1278,7 +1278,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
 
     gm_context_ptrtype __c;
 
-    std::vector<bool> dof_done( nLocalDofWithGhost(), false );
+    std::vector<bool> dof_done( this->nLocalDofWithGhost(), false );
 
     for (auto const& eltWrap : myrange )
     {
@@ -1299,12 +1299,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints( ext_
             uint16_type ldofId = ldof.first.localDof();
             uint16_type ldofParentId = this->fe().dofParent( ldofId );
 
-            if ( ( thedof >= firstDof() ) && ( thedof <= lastDof() ) )
+            if ( ( thedof >= this->firstDof() ) && ( thedof <= this->lastDof() ) )
             {
-                DCHECK( thedof < nLocalDofWithGhost() )
+                DCHECK( thedof < this->nLocalDofWithGhost() )
                     << "invalid local dof index "
-                    <<  thedof << ", " << nLocalDofWithGhost() << "," << firstDof()  << ","
-                    <<  lastDof() << "," << elt.id() << "," << ldofId << "," << ldofParentId;
+                    <<  thedof << ", " << this->nLocalDofWithGhost() << "," << this->firstDof()  << ","
+                    <<  this->lastDof() << "," << elt.id() << "," << ldofId << "," << ldofParentId;
 
                 uint16_type comp = this->fe().component( ldofId );
                 M_dof_points[thedof] = boost::make_tuple( __c->xReal( ldofParentId ), thedof, comp );

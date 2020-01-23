@@ -385,7 +385,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::size_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->fluidModel()->nLocalDof();

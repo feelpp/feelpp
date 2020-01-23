@@ -129,8 +129,8 @@ public:
         typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type;
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
-        typedef typename strongest_numeric_type<typename l_type::value_type,
-                typename r_type::value_type>::type value_type;
+        typedef strongest_numeric_type<typename l_type::value_type,
+                                       typename r_type::value_type> value_type;
 
 
         using key_type = key_t<Geo_t>;

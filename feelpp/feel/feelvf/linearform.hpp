@@ -113,7 +113,7 @@ public:
     typedef typename space_type::gm1_ptrtype gm1_ptrtype;
 
     typedef typename space_type::fe_type fe_type;
-
+    using size_type = typename mesh_type::size_type;
     template<typename TheSpaceType, bool UseMortar = false>
     struct finite_element
     {
@@ -968,7 +968,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
                  << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
-    datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
+    auto dm = M_F->mapPtr(); // M_X->dof();
     this->setDofIdToContainerId( dm->dofIdToContainerId( M_row_startInVector ) );
     if (  init )
         M_F->zero();

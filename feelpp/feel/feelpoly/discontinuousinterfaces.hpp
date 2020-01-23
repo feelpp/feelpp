@@ -141,7 +141,8 @@ public:
     class apply
     {
     public:
-        typedef size_type result_type;
+        using size_type = typename MeshType::size_type;
+        using result_type = size_type;
         typedef MeshType mesh_type;
         typedef DofType dof_type;
         typedef typename dof_type::fe_type fe_type;

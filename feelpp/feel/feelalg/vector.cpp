@@ -32,31 +32,31 @@
 
 namespace Feel
 {
-template <typename T>
-Vector<T>::Vector( worldcomm_ptr_t const& _worldComm ) :
+template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector( worldcomm_ptr_t const& _worldComm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( new datamap_type( _worldComm ) )
 {}
 
 
-    /*template <typename T>
-Vector<T>::Vector ( datamap_type const& dm ) :
+    /*template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector ( datamap_type const& dm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( new datamap_type(dm) )
 {}
     */
-template <typename T>
-Vector<T>::Vector( datamap_ptrtype const& dm ) :
+template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector( datamap_ptrtype const& dm ) :
     M_is_closed( false ),
     M_is_initialized( false ),
     M_map ( dm )
 {}
 
 
-template <typename T>
-Vector<T>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
+template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
     :
     M_is_closed( false ),
     M_is_initialized( false ),
@@ -65,8 +65,8 @@ Vector<T>::Vector ( const size_type n, worldcomm_ptr_t const& _worldComm )
 
 
 
-template <typename T>
-Vector<T>::Vector ( const size_type n,
+template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector ( const size_type n,
                     const size_type n_local,
                     worldcomm_ptr_t const& _worldComm )
     :
@@ -76,26 +76,26 @@ Vector<T>::Vector ( const size_type n,
 
 {}
 
-template <typename T>
-Vector<T>::Vector ( Vector const& v )
+template <typename T, typename SizeT>
+Vector<T,SizeT>::Vector ( Vector const& v )
     :
     M_is_closed( v.M_is_closed ),
     M_is_initialized( v.M_is_initialized ),
     M_map( v.M_map )
 {
 }
-template <typename T>
+template <typename T, typename SizeT>
 
-Vector<T>::~Vector ()
+Vector<T,SizeT>::~Vector ()
 {
     clear ();
 }
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 
-Vector<T> & Vector<T>::operator= ( const T )
+Vector<T> & Vector<T,SizeT>::operator= ( const T )
 {
     //  error();
 
@@ -103,9 +103,9 @@ Vector<T> & Vector<T>::operator= ( const T )
 }
 
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Vector<T>::init ( const size_type n,
+Vector<T,SizeT>::init ( const size_type n,
                   const size_type nl,
                   const bool fast )
 {
@@ -114,17 +114,17 @@ Vector<T>::init ( const size_type n,
     //M_map=DataMap( n, nl );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-Vector<T>::init ( const size_type n,
+Vector<T,SizeT>::init ( const size_type n,
                   const bool fast )
 {
     this->init( n, n, fast );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 
-Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
+Vector<T> & Vector<T,SizeT>::operator= ( const Vector<T>& v )
 {
     if ( this != &v )
     {
@@ -143,9 +143,9 @@ Vector<T> & Vector<T>::operator= ( const Vector<T>& v )
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 
-Vector<T> & Vector<T>::operator= ( const std::vector<T>& v )
+Vector<T> & Vector<T,SizeT>::operator= ( const std::vector<T>& v )
 {
     M_map.reset( new datamap_type( v.size(), 0 ) );
     return *this;
@@ -153,48 +153,48 @@ Vector<T> & Vector<T>::operator= ( const std::vector<T>& v )
 
 
 
-template <typename T>
+template <typename T, typename SizeT>
 
-void Vector<T>::clear ()
+void Vector<T,SizeT>::clear ()
 {
     M_is_closed      = false;
     M_is_initialized = false;
 }
-template<typename T>
+template <typename T, typename SizeT>
 void
-Vector<T>::addVector ( const Vector<T>& V_in,
+Vector<T,SizeT>::addVector ( const Vector<T>& V_in,
                        const MatrixShell<T>& A_in )
 {
     A_in.multVector( V_in, *this );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 void
-Vector<T>::addVector ( const std::shared_ptr<Vector<T> >& V_in,
+Vector<T,SizeT>::addVector ( const std::shared_ptr<Vector<T> >& V_in,
                        const std::shared_ptr<MatrixShell<T> >& A_in )
 {
     A_in->multVector( *V_in, *this );
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 int
-Vector<T>::reciprocal ()
+Vector<T,SizeT>::reciprocal ()
 {
     LOG(WARNING) << "Invalid call to reciprocal. Not implement in Vector base class";
     return 0;
 }
 
 
-template<typename T>
-typename Vector<T>::real_type
-Vector<T>::maxWithIndex (int* index) const
+template <typename T, typename SizeT>
+typename Vector<T,SizeT>::real_type
+Vector<T,SizeT>::maxWithIndex (int* index) const
 {
     return 0;
 }
 
-template<typename T>
+template <typename T, typename SizeT>
 void
-Vector<T>::abs ()
+Vector<T,SizeT>::abs ()
 {}
 
 
@@ -223,8 +223,8 @@ void Vector<Complex>::print( std::ostream& os ) const
 
 template <>
 int
-Vector<float>::compare ( const Vector<float> &other_vector,
-                         const real_type threshold ) const
+Vector<float,uint32_type>::compare ( const Vector<float,uint32_type> &other_vector,
+                                     const real_type threshold ) const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( other_vector.isInitialized() ).error( "vector not initialized" );
@@ -250,8 +250,8 @@ Vector<float>::compare ( const Vector<float> &other_vector,
 // Full specialization for double datatypes
 template <>
 int
-Vector<double>::compare ( const Vector<double> &other_vector,
-                          const real_type threshold ) const
+Vector<double,uint32_type>::compare ( const Vector<double,uint32_type> &other_vector,
+                                      const real_type threshold ) const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     FEELPP_ASSERT ( other_vector.isInitialized() ).error( "vector not initialized" );
@@ -305,7 +305,7 @@ Vector<long double>::compare ( const Vector<long double> &other_vector,
 // Full specialization for Complex datatypes
 template <>
 int
-Vector<std::complex<double>>::compare ( const Vector<std::complex<double>> &other_vector,
+Vector<std::complex<double>,uint32_type>::compare ( const Vector<std::complex<double>> &other_vector,
                                         const real_type threshold ) const
 {
     CHECK ( this->isInitialized() ) << "vector not initialized";
@@ -331,9 +331,9 @@ Vector<std::complex<double>>::compare ( const Vector<std::complex<double>> &othe
 }
 
 
-template <typename T>
+template <typename T, typename SizeT>
 
-void Vector<T>::print( std::ostream& os ) const
+void Vector<T,SizeT>::print( std::ostream& os ) const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "vector not initialized" );
     os << "Size\tglobal =  " << this->size()
@@ -344,8 +344,8 @@ void Vector<T>::print( std::ostream& os ) const
     for ( size_type i=this->firstLocalIndex(); i<this->lastLocalIndex(); i++ )
         os << i << "\t" << ( *this )( i ) << std::endl;
 }
-template <typename T>
-void Vector<T>::localize( Vector<T> const& v )
+template <typename T, typename SizeT>
+void Vector<T,SizeT>::localize( Vector<T> const& v )
 {
 }
 
@@ -363,10 +363,11 @@ template class Vector<std::complex<double>>;
 
 namespace detail
 {
-template <typename T>
-struct syncOperatorEqual : syncOperator<T>
+template <typename T, typename SizeT>
+struct syncOperatorEqual : syncOperator<T,SizeT>
 {
-    typedef syncOperator<T> super_type;
+    typedef syncOperator<T,SizeT> super_type;
+    using size_type = typename super_type::size_type;
     typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
     syncOperatorEqual( bool hasOperator )
         :
@@ -403,10 +404,11 @@ private :
     bool M_hasOperator;
 };
 
-template <typename T>
-struct syncOperatorPlus : syncOperator<T>
+template <typename T, typename SizeT>
+struct syncOperatorPlus : syncOperator<T,SizeT>
 {
-    typedef syncOperator<T> super_type;
+    typedef syncOperator<T,SizeT> super_type;
+    using size_type = typename super_type::size_type;
     typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
     syncOperatorPlus()
         :
@@ -449,10 +451,11 @@ struct syncOperatorPlus : syncOperator<T>
     virtual bool hasOperator() const { return true; }
 };
 // BinaryFuncType = 0 -> min, BinaryFuncType=1 -> max
-template <typename T, int BinaryFuncType>
-struct syncOperatorBinaryFunc : syncOperator<T>
+template <typename T, int BinaryFuncType,typename SizeT>
+struct syncOperatorBinaryFunc : syncOperator<T,SizeT>
 {
-    typedef syncOperator<T> super_type;
+    typedef syncOperator<T,SizeT> super_type;
+    using size_type = typename super_type::size_type;
     typedef typename super_type::storage_ghostdof_type storage_ghostdof_type;
     syncOperatorBinaryFunc()
         :
@@ -509,41 +512,42 @@ struct syncOperatorBinaryFunc : syncOperator<T>
     virtual bool hasOperator() const { return true; }
 };
 
-}
+} // detail
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-sync( Vector<T> & v, std::string const& opSyncStr )
+sync( Vector<T,SizeT> & v, std::string const& opSyncStr )
 {
     if ( opSyncStr == "=" )
-        sync( v, detail::syncOperatorEqual<T>(false) );
+        sync( v, detail::syncOperatorEqual<T,SizeT>(false) );
     else if ( opSyncStr == "+" )
-        sync( v, detail::syncOperatorPlus<T>() );
+        sync( v, detail::syncOperatorPlus<T,SizeT>() );
     else if ( opSyncStr == "min" )
-        sync( v, detail::syncOperatorBinaryFunc<T,0>() );
+        sync( v, detail::syncOperatorBinaryFunc<T,0,SizeT>() );
     else if ( opSyncStr == "max" )
-        sync( v, detail::syncOperatorBinaryFunc<T,1>() );
+        sync( v, detail::syncOperatorBinaryFunc<T,1,SizeT>() );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-sync( Vector<T> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent )
+sync( Vector<T,SizeT> & v, std::string const& opSyncStr, std::set<SizeT> const& dofGlobalProcessPresent )
 {
     auto activeDofData = v.mapPtr()->activeDofClusterUsedByProc( dofGlobalProcessPresent );
     if ( opSyncStr == "=" )
-        sync( v, detail::syncOperatorEqual<T>(activeDofData) );
+        sync( v, detail::syncOperatorEqual<T,SizeT>(activeDofData) );
     else if ( opSyncStr == "+" )
-        sync( v, detail::syncOperatorPlus<T>(activeDofData) );
+        sync( v, detail::syncOperatorPlus<T,SizeT>(activeDofData) );
     else if ( opSyncStr == "min" )
-        sync( v, detail::syncOperatorBinaryFunc<T,0>(activeDofData) );
+        sync( v, detail::syncOperatorBinaryFunc<T,0,SizeT>(activeDofData) );
     else if ( opSyncStr == "max" )
-        sync( v, detail::syncOperatorBinaryFunc<T,1>(activeDofData) );
+        sync( v, detail::syncOperatorBinaryFunc<T,1,SizeT>(activeDofData) );
 }
 
-template <typename T>
+template <typename T, typename SizeT>
 void
-sync( Vector<T> & v, detail::syncOperator<T> const& opSync )
+sync( Vector<T,SizeT> & v, detail::syncOperator<T,SizeT> const& opSync )
 {
+    using size_type = SizeT;
     auto dataMap = v.mapPtr();
 
     // if sequential return
@@ -658,7 +662,8 @@ sync( Vector<T> & v, detail::syncOperator<T> const& opSync )
 
 }
 
-template void sync<double>( Vector<double> & v, std::string const& opSyncStr, std::set<size_type> const& dofGlobalProcessPresent );
+template void sync<double,uint32_type>( Vector<double,uint32_type> & v, std::string const& opSyncStr, std::set<uint32_type> const& dofGlobalProcessPresent );
+template void sync<double,uint64_type>( Vector<double,uint64_type> & v, std::string const& opSyncStr, std::set<uint64_type> const& dofGlobalProcessPresent );
 template void sync<double>( Vector<double> & v, std::string const& opSyncStr );
 template void sync<double>( Vector<double> & v, detail::syncOperator<double> const& opSync );
 

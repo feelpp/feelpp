@@ -160,13 +160,13 @@ TestSubMatrix<Dim>::run()
     int nr = Xh->nDof()/3;
     int nc = Xh->nDof()/2;
 
-    std::vector<size_type> rows(nr);
-    std::vector<size_type> cols(nc);
+    std::vector<uint32_type> rows(nr);
+    std::vector<uint32_type> cols(nc);
 
-    for (size_type i = 0; i < nr; ++i)
+    for (uint32_type i = 0; i < nr; ++i)
         rows[i] = i;
 
-    for (size_type i = 0; i < nc; ++i)
+    for (uint32_type i = 0; i < nc; ++i)
         cols[i] = i;
 
     auto SubA = M_backend->newMatrix(nr,nc,nr,nc);

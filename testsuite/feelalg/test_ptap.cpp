@@ -28,9 +28,9 @@ BOOST_AUTO_TEST_CASE( test_0 )
     matA->close();
 
     auto cTilde = backend()->newMatrix(_test=Nh, _trial=Nh);
-    std::vector<size_type> rows( Nh->nLocalDof() );
+    std::vector<uint32_type> rows( Nh->nLocalDof() );
     std::iota( rows.begin(), rows.end(), 0 );
-    std::vector<size_type> indexesToKeep( Nh->nLocalDof() );
+    std::vector<uint32_type> indexesToKeep( Nh->nLocalDof() );
     std::iota( indexesToKeep.begin(), indexesToKeep.end(), 0 );
     indexesToKeep.erase( indexesToKeep.begin()+2);
 
