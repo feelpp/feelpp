@@ -162,11 +162,11 @@ class ModelNumerical : public ModelAlgebraic
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
 
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
-        bool executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
+        bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
-        bool executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
+        bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
         template <typename MeasurePointEvalType, typename... TupleFieldsType>
-        bool executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields );
+        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields );
         template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
         bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
 
@@ -372,7 +372,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
 
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
 bool
-ModelNumerical::executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
@@ -390,7 +390,7 @@ ModelNumerical::executePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, 
 
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
 bool
-ModelNumerical::executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
@@ -408,7 +408,7 @@ ModelNumerical::executePostProcessMeasuresStatistics( std::shared_ptr<MeshType> 
 
 template <typename MeasurePointEvalType, typename ... TupleFieldsType>
 bool
-ModelNumerical::executePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields )
 {
     bool hasMeasure = false;
     std::map<std::string,double> resPpPoints;
@@ -425,9 +425,9 @@ template <typename MeshType, typename RangeType, typename MeasurePointEvalType, 
 bool 
 ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
 {
-    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
-    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
-    bool hasMeasurePoint = this->executePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
 
     return ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint );
 }
