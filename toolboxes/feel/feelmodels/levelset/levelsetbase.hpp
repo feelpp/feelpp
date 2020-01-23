@@ -842,8 +842,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleF
         hasMeasure = true;
     }
 
-    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), tupleFields, symbolsExpr );
-    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), tupleFields, symbolsExpr );
+    bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, tupleFields );
+    bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, tupleFields );
     bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
     if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
         hasMeasure = true;
