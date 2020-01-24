@@ -30,11 +30,16 @@
 
 namespace Feel {
 
-class FEELPP_EXPORT ModelPostprocessExports
+class FEELPP_EXPORT ModelPostprocessExports : public CommObject
 {
   public :
-    ModelPostprocessExports()
+    using super = CommObject;
+    // (name,expr,markers,representations,tags)
+    using vector_export_expr_type = std::vector<std::tuple<std::string,ModelExpression,ModelMarkers,std::set<std::string>,std::set<std::string>>>;
+
+    ModelPostprocessExports( worldcomm_ptr_t const& world = Environment::worldCommPtr() )
         :
+        super( world ),
         M_format( "ensightgold" )
     {}
     ModelPostprocessExports( ModelPostprocessExports const& ) = default;
@@ -43,13 +48,18 @@ class FEELPP_EXPORT ModelPostprocessExports
     ModelPostprocessExports& operator=( ModelPostprocessExports && ) = default;
 
     std::set<std::string> const& fields() const { return M_fields; }
+    vector_export_expr_type const& expressions() const { return M_exprs; }
     std::string const& format() const { return M_format; }
 
     void setup( pt::ptree const& p );
 
+    void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
+    void setParameterValues( std::map<std::string,double> const& mp );
   private :
+    std::string M_directoryLibExpr;
     std::set<std::string> M_fields;
     std::string M_format;
+    vector_export_expr_type M_exprs;
 };
 
 class FEELPP_EXPORT ModelPostprocessSave

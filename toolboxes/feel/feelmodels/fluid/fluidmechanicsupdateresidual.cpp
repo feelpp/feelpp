@@ -18,7 +18,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
-    using namespace Feel::vf;
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
     bool BuildCstPart = data.buildCstPart();
@@ -53,21 +52,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
     size_type rowStartInVector = this->rowStartInVector();
-    auto linearForm_PatternDefault = form1( _test=Xh, _vector=R,
+    auto linearFormV_PatternDefault = form1( _test=XhV, _vector=R,
                                             _pattern=size_type(Pattern::DEFAULT),
                                             _rowstart=rowStartInVector );
-    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
-                                            _pattern=size_type(Pattern::COUPLED),
-                                            _rowstart=rowStartInVector );
+    auto linearFormV_PatternCoupled = form1( _test=XhV, _vector=R,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=rowStartInVector );
+    auto linearFormP = form1( _test=XhP, _vector=R,
+                              _pattern=size_type(Pattern::COUPLED),
+                              _rowstart=rowStartInVector+1 );
 
-    auto U = Xh->element(XVec, rowStartInVector);
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto u = XhV->element(XVec, rowStartInVector+0);
+    auto const& v = u;
+    auto p = XhP->element(XVec, rowStartInVector+1);
+    auto const& q = p;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -87,9 +89,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     {
         if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
         {
-            auto const& BetaU = *M_fieldConvectionVelocityExtrapolated;
-            auto betaU = BetaU.template element<0>();
-            linearForm_PatternCoupled +=
+            auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
+            linearFormV_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
                            _geomap=this->geomap() );
@@ -100,7 +101,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             if ( this->doStabConvectionEnergy() )
             {
-                linearForm_PatternCoupled +=
+                linearFormV_PatternCoupled +=
                     integrate( _range=M_rangeMeshElements,
                                //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
                                _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
@@ -111,7 +112,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 // convection term
                 // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
                 auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
-                linearForm_PatternCoupled +=
+                linearFormV_PatternCoupled +=
                     integrate( _range=M_rangeMeshElements,
                                _expr=timeSteppingScaling*convecTerm,
                                _geomap=this->geomap() );
@@ -126,7 +127,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if ( M_isMoveDomain && !BuildCstPart && !UseJacobianLinearTerms )
     {
         // mesh velocity (convection) term
-        linearForm_PatternCoupled +=
+        linearFormV_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -timeSteppingScaling*val(idv(rho)*trans( gradv(u)*( idv( this->meshVelocity() ))))*id(v),
                        _geomap=this->geomap() );
@@ -145,7 +146,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
         if ( !timeSteppingEvaluateResidualWithoutTimeDerivative && BuildNonCstPart && !UseJacobianLinearTerms )
         {
-            linearForm_PatternCoupled +=
+            linearFormV_PatternCoupled +=
                 integrate( _range=range,
                            _expr= -idv(p)*div(v),
                            _geomap=this->geomap() );
@@ -155,7 +156,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,false/*true*/);
             // sigma : grad(v) on Omega
-            linearForm_PatternCoupled +=
+            linearFormV_PatternCoupled +=
                 integrate( _range=range,
                            _expr= timeSteppingScaling*inner( StressTensorExpr,grad(v) ),
                            _geomap=this->geomap() );
@@ -166,13 +167,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // take into account that div u != 0
     if (!this->velocityDivIsEqualToZero() && BuildCstPart)
     {
-        linearForm_PatternCoupled +=
+        linearFormP +=
             integrate( _range=M_rangeMeshElements,
                        _expr= idv(this->velocityDiv())*id(q),
                        _geomap=this->geomap() );
 
         auto coeffDiv = (2./3.)*idv(this->materialProperties()->fieldMu()); //(eps-2mu/3)
-        linearForm_PatternCoupled +=
+        linearFormV_PatternCoupled +=
             integrate( _range=M_rangeMeshElements,
                        _expr= val(-timeSteppingScaling*coeffDiv*gradv(this->velocityDiv()))*id(v),
                        _geomap=this->geomap() );
@@ -183,7 +184,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     // incompressibility term
     if (!BuildCstPart && !UseJacobianLinearTerms )
     {
-        linearForm_PatternCoupled +=
+        linearFormP +=
             integrate( _range=M_rangeMeshElements,
                        _expr= -divv(u)*id(q),
                        _geomap=this->geomap() );
@@ -203,7 +204,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             for( auto const& d : this->M_volumicForcesProperties )
             {
                 auto rangeBodyForceUsed = ( markers(d).empty() )? M_rangeMeshElements : markedelements(this->mesh(),markers(d));
-                linearForm_PatternCoupled +=
+                linearFormV_PatternCoupled +=
                     integrate( _range=rangeBodyForceUsed,
                                _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                                _geomap=this->geomap() );
@@ -212,14 +213,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
         if (M_haveSourceAdded)
         {
-            linearForm_PatternCoupled +=
+            linearFormV_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= -timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
                            _geomap=this->geomap() );
         }
         if ( M_useGravityForce )
         {
-            linearForm_PatternCoupled +=
+            linearFormV_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= -timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
@@ -236,17 +237,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
         if (Build_TransientTerm) //  !BuildCstPart && !UseJacobianLinearTerms )
         {
-            linearForm_PatternDefault +=
+            linearFormV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= val(idv(rho)*trans(idv(u))*M_bdf_fluid->polyDerivCoefficient(0))*id(v),
+                           _expr= val(idv(rho)*trans(idv(u))*M_bdfVelocity->polyDerivCoefficient(0))*id(v),
                            _geomap=this->geomap() );
         }
 
         if (BuildCstPart)
         {
-            auto Buzz = M_bdf_fluid->polyDeriv();
-            auto buzz = Buzz.template element<0>();
-            linearForm_PatternDefault +=
+            auto buzz = M_bdfVelocity->polyDeriv();
+            linearFormV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= val(-idv(rho)*trans(idv(buzz)))*id(v),
                            _geomap=this->geomap() );
@@ -261,7 +261,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             double beta = this->definePressureCstPenalisationBeta();
             for ( auto const& rangeElt : M_definePressureCstMeshRanges )
-                linearForm_PatternCoupled +=
+                linearFormP +=
                     integrate( _range=rangeElt,
                                _expr=beta*idv(p)*id(q),
                                _geomap=this->geomap() );
@@ -307,7 +307,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //------------------------------------------------------------------------------------//
 
-    this->updateResidualStabilisation( data, U );
+    this->updateResidualStabilisation( data, u,p );
 
     //------------------------------------------------------------------------------------//
 #if 0
@@ -322,7 +322,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 #endif
     //------------------------------------------------------------------------------------//
 
-    this->updateResidualWeakBC( data, U );
+    this->updateResidualWeakBC( data, u,p );
 
     //------------------------------------------------------------------------------------//
 
@@ -343,9 +343,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
 
     vector_ptrtype& U = data.initialGuess();
     size_type rowStartInVector = this->rowStartInVector();
-    auto Xh = this->functionSpace();
-    auto up = Xh->element( U, rowStartInVector );
-    auto u = up.template element<0>();
+    auto XhV = this->functionSpaceVelocity();
+    auto u = XhV->element( U, rowStartInVector );
     auto mesh = this->mesh();
 
     if ( this->hasMarkerDirichletBCelimination() )
@@ -453,8 +452,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
     // imposed mean pressure (TODO use updateDofEliminationIds)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
-        auto upSol = this->functionSpace()->element( U, this->rowStartInVector() );
-        auto pSol = upSol.template element<1>();
+        auto pSol = this->functionSpacePressure()->element( U, this->rowStartInVector()+1 );
         CHECK( !M_definePressureCstAlgebraicOperatorMeanPressure.empty() ) << "mean pressure operator does not init";
 
         for ( int k=0;k<M_definePressureCstAlgebraicOperatorMeanPressure.size();++k )
@@ -475,10 +473,6 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
     if ( !this->hasStrongDirichletBC() ) return;
-
-    vector_ptrtype& R = data.residual();
-    auto Xh = this->spaceVelocityPressure();
-    size_type rowStartInVector = this->rowStartInVector();
 
     this->updateDofEliminationIds( "velocity", data );
 

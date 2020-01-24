@@ -93,8 +93,6 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     HINTS
     ${GMSH_DIR}
     $ENV{GMSH_DIR}
-    # ${CMAKE_BINARY_DIR}/contrib/gmsh
-    ${Feelpp_SOURCE_DIR}/contrib/gmsh
     PATH_SUFFIXES
     include include/gmsh
     DOC "Directory where GMSH header files are stored" )

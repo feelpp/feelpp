@@ -314,5 +314,22 @@ ModelMeasuresFlowRate::setup( pt::ptree const& ptree, std::string const& name )
 }
 
 
+void
+ModelMeasuresNormalFluxGeneric::setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes )
+{
+    M_name = name;
+
+    if ( auto ptmarkers = _pt.get_child_optional("markers") )
+        M_markers.setPTree(*ptmarkers, indexes);
+
+    if ( auto itDir = _pt.get_optional<std::string>("direction") )
+        M_direction = indexes.replace( *itDir );
+    else
+        M_direction = "outward";
+
+    CHECK( M_direction == "inward" || M_direction == "outward" ) << "invalid dir " << M_direction;
+}
+
+
 } // namespace FeelModels
 } // namespace Feel

@@ -7,17 +7,18 @@
         "mymat1":
         {
             "markers":"Omega1",
-            "k":"10",//[ W/(m*K) ]
+            //"k":"10",//[ W/(m*K) ]
             //"k":"10+100*(1+y):y",//[ W/(m*K) ]
             //"k":"{10,0,0,100}",//[ W/(m*K) ]
-            //"k":"10*heat_T/293:heat_T",//[ W/(m*K) ]
+            "k":"10+100*(1-heat_T/293):heat_T",//[ W/(m*K) ]
             "Cp":"1000.005", //[ J/(kg*K) ]
             "rho":"1.205" //[ kg/(m^3) ]
         },
         "mymat2":
         {
             "markers":"Omega2",
-            "k":"100",
+            //"k":"100",
+            "k":"{100,0,0,100}",//[ W/(m*K) ]
             "Cp":"3500",
             "rho":"2"
         }
@@ -41,7 +42,8 @@
             {
                 "MarkerNeumann":
                 {
-                    "expr":"0:x" 
+                    "markers":["MarkerNeumann_1","MarkerNeumann_2"],
+                    "expr":"0" 
                 }
             },
             "Robin":
@@ -91,11 +93,54 @@
     {
         "Exports":
         {
-            "fields":["temperature"]
+            "fields":["temperature","all"],
+            "expr":
+            {
+                "toto":"2*x*y:x:y",
+                "titi":
+                {
+                    //"tag":"todo",
+                    "part":
+                    {
+                        "expr":"3*x*y:x:y",
+                        "markers":"Omega1"
+                    },
+                    "part":
+                    {
+                        "expr":"4*x*y:x:y",
+                        "markers":"Omega2"
+                    },
+                    "representation":["nodal","element"]
+                },
+                "tutu":
+                {
+                    "expr":"{heat_k_xx,heat_k_xy,heat_k_yx,heat_k_yy}:heat_k_xx:heat_k_xy:heat_k_yx:heat_k_yy",
+                    "representation":["nodal","element"]
+                }
+            }
         },
         "Measures":
         {
-            "Normal-Heat-Flux":["MarkerRobin","MarkerNeumann"],
+            "Normal-Heat-Flux":
+            {
+                "onRobin":
+                {
+                    "markers":"MarkerRobin"
+                },
+                "onNeumann":
+                {
+                    "markers":["MarkerNeumann_1","MarkerNeumann_2"]
+                }
+            },
+            "Statistics":
+            {
+                "fluxOnRobin":
+                {
+                    "type":"integrate",
+                    "expr":"heat_mymat2_k*heat_dn_T:heat_mymat2_k:heat_dn_T",
+                    "markers":"MarkerRobin"
+                }
+            },
             "Points":
             {
                 "ptA":

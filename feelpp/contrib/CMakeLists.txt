@@ -334,7 +334,14 @@ endif()
 if ( FEELPP_HAS_GMSH )
   add_subdirectory(gmsh)
   if( FEELPP_HAS_GMSH_LIBRARY AND ( NOT FEELPP_HAS_GMSH_API OR FEELPP_GMSH_API_MISSING_HEADERS ) )
-    add_dependencies( feelpp_contrib gmsh_get_files )
+    if ( TARGET feelpp_gmsh_get_files )
+      add_dependencies( feelpp_contrib feelpp_gmsh_get_files )
+    endif()
+    if ( DEFINED FEELPP_GMSH_MISSING_HEADERS_DIR )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${FEELPP_GMSH_MISSING_HEADERS_DIR}>
+        $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+    endif()
   endif()
 endif()
 

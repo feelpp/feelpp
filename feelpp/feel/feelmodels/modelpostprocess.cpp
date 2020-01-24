@@ -58,6 +58,83 @@ ModelPostprocessExports::setup( pt::ptree const& p )
     }
     if ( auto formatOpt = p.get_optional<std::string>( "format" ) )
         M_format = *formatOpt;
+
+    if ( auto exprTree = p.get_child_optional("expr") )
+    {
+        for ( auto const& item : *exprTree )
+        {
+            std::string exprName = item.first;
+            std::set<std::string> representations, tags;
+
+            if ( item.second.empty() ) // name:expr
+            {
+                ModelExpression modelexpr;
+                ModelMarkers markers;
+                modelexpr.setExpr( exprName,  *exprTree, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+            }
+            else
+            {
+                if ( auto repOpt = item.second.get_child_optional("representation") )
+                {
+                    if ( repOpt->empty() )
+                        representations.insert( repOpt->get_value<std::string>() );
+                    else
+                    {
+                        for ( auto const& therep : *repOpt )
+                        {
+                            CHECK( therep.first.empty() ) << "should be an array, not a subtree";
+                            representations.insert( therep.second.template get_value<std::string>() );
+                        }
+                    }
+                }
+
+                if ( auto tagOpt = item.second.get_child_optional("tag") )
+                {
+                    if ( tagOpt->empty() )
+                        tags.insert( tagOpt->get_value<std::string>() );
+                    else
+                    {
+                        for ( auto const& thetag : *tagOpt )
+                            tags.insert( thetag.second.template get_value<std::string>() );
+                    }
+                }
+
+                if ( auto ptexpr = item.second.get_child_optional("expr") )
+                {
+                    ModelExpression modelexpr;
+                    ModelMarkers markers;
+                    modelexpr.setExpr( "expr",  item.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    if ( auto ptmarkers = item.second.get_child_optional("markers") )
+                        markers.setPTree(*ptmarkers/*, indexes*/);
+                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                    M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                }
+
+                for ( auto const& item2 : item.second )
+                {
+                    if ( item2.first != "part" )
+                        continue;
+                    ModelExpression modelexpr;
+                    ModelMarkers markers;
+                    modelexpr.setExpr( "expr",  item2.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                    if ( auto ptmarkers = item2.second.get_child_optional("markers") )
+                        markers.setPTree(*ptmarkers/*, indexes*/);
+                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                    M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                }
+            }
+
+        } // for ( auto const& item : *exprTree )
+    }
+}
+
+void
+ModelPostprocessExports::setParameterValues( std::map<std::string,double> const& mp )
+{
+    for ( auto & edata : M_exprs )
+        std::get<1>( edata ).setParameterValues( mp );
 }
 
 void
@@ -365,9 +442,10 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 {
     if ( auto exports = p.get_child_optional("Exports") )
     {
-        ModelPostprocessExports ppexports;
+        ModelPostprocessExports ppexports( this->worldCommPtr() );
+        ppexports.setDirectoryLibExpr( M_directoryLibExpr );
         ppexports.setup( *exports );
-        if ( !ppexports.fields().empty() )
+        if ( !ppexports.fields().empty() || !ppexports.expressions().empty() )
             M_exports[name] = ppexports;
     }
     if ( auto save = p.get_child_optional("Save") )
@@ -478,6 +556,10 @@ ModelPostprocess::saveMD(std::ostream &os)
 void
 ModelPostprocess::setParameterValues( std::map<std::string,double> const& mp )
 {
+
+    for (auto & [name,p] : M_exports )
+        p.setParameterValues( mp );
+
     for( auto & p : M_measuresPoint )
         for( auto & p2 : p.second )
             p2.setParameterValues( mp );

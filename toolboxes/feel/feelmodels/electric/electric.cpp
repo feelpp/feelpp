@@ -50,7 +50,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
                                         ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    M_electricProperties( new electricproperties_type( prefix ) )
+    ModelPhysics<nDim>( "electric" )
+    //M_electricProperties( new electricproperties_type( prefix ) )
 {
     this->log("Electric","constructor", "start" );
 
@@ -129,10 +130,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // physical properties
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_electricProperties->updateForUse( M_mesh, this->modelProperties().materials(),  this->localNonCompositeWorldsComm());
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
 
     // functionspace
-    if ( M_electricProperties->isDefinedOnWholeMesh() )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
@@ -140,7 +145,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, M_electricProperties->markers());
+        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
         M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
@@ -253,7 +258,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses","pid"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();
 
@@ -378,7 +384,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
            << this->getInfoRobinBC();
-    *_ostr << M_electricProperties->getInfoMaterialParameters()->str();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
@@ -426,7 +432,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
 
-    this->electricProperties()->setParameterValues( paramValues );
+    this->materialsProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );

@@ -1050,8 +1050,7 @@ FSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, bool _useExtra
         if ( true )
         {
             // bdf extrapolation
-            auto solExtrap = this->fluidModel()->timeStepBDF()->poly();
-            auto velExtrap = solExtrap.template element<0>();
+            auto const& velExtrap = this->fluidModel()->timeStepBDF()->poly();
             if (M_interfaceFSIisConforme)
             {
                 CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
@@ -1066,13 +1065,13 @@ FSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, bool _useExtra
         {
             // extrap in Explicit strategies for incompressible fluid-structure interaction problems: Nitche ....
 #if 0
-            auto velExtrap = this->fluidModel()->functionSpace()->template functionSpace<0>()->element();
+            auto velExtrap = this->fluidModel()->functionSpaceVelocity()->element();
             velExtrap.add(  2.0, this->fluidModel()->getSolution()->template element<0>() );
             velExtrap.add( -1.0, this->fluidModel()->timeStepBDF()->unknown(0).template element<0>() );
 #else
-            auto velExtrap = this->fluidModel()->functionSpace()->template functionSpace<0>()->element();
-            velExtrap.add(  2.0, this->fluidModel()->timeStepBDF()->unknown(0).template element<0>() );
-            velExtrap.add( -1.0, this->fluidModel()->timeStepBDF()->unknown(1).template element<0>() );
+            auto velExtrap = this->fluidModel()->functionSpaceVelocity()->element();
+            velExtrap.add(  2.0, this->fluidModel()->timeStepBDF()->unknown(0) );
+            velExtrap.add( -1.0, this->fluidModel()->timeStepBDF()->unknown(1) );
 #endif
             if (M_interfaceFSIisConforme)
             {
@@ -1091,7 +1090,7 @@ FSI<FluidType,SolidType>::transfertVelocityF2S( int iterationFSI, bool _useExtra
         {
             CHECK( M_opVelocity2dTo2dconfF2S ) << "interpolation operator not build";
 #if 0
-            M_opVelocity2dTo2dconfF2S->apply( this->fluidModel()->timeStepBDF()->unknown(0).template element<0>(),
+            M_opVelocity2dTo2dconfF2S->apply( this->fluidModel()->timeStepBDF()->unknown(0),
                                               *this->fieldVelocityInterfaceFromFluidPtr_solid() );
 #else
             M_opVelocity2dTo2dconfF2S->apply( this->fluidModel()->fieldVelocity(),

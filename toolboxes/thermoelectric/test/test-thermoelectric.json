@@ -63,7 +63,7 @@
         {
             "Exports":
             {
-                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","heat.pid"]
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","pid"]
             }
         },
         "heat":

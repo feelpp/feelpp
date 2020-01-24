@@ -128,21 +128,19 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         for (int tk2=0;tk2<nBlockFluid ;++tk2 )
             myblockGraph(startIndexBlockFluid+tk1,startIndexBlockFluid+tk2) = blockMatFluid(tk1,tk2);
 
-    BlocksStencilPattern patCoupling1(1,M_fluidModel->functionSpace()->nSpaces,size_type(Pattern::ZERO));
-    patCoupling1(0,0) = size_type(Pattern::COUPLED);
     myblockGraph(startIndexBlockHeat,startIndexBlockFluid) = stencil(_test=M_heatModel->spaceTemperature(),
-                                                                     _trial=M_fluidModel->functionSpace(),
-                                                                     _pattern_block=patCoupling1,
+                                                                     _trial=M_fluidModel->functionSpaceVelocity(),
                                                                      _diag_is_nonzero=false,_close=false)->graph();
 
-    BlocksStencilPattern patCoupling2(M_fluidModel->functionSpace()->nSpaces,1,size_type(Pattern::ZERO));
-    patCoupling2(0,0) = size_type(Pattern::COUPLED);
-    if ( M_fluidModel->stabilizationGLS() )
-        patCoupling2(1,0) = size_type(Pattern::COUPLED);
-    myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpace(),
+    myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpaceVelocity(),
                                                                      _trial=M_heatModel->spaceTemperature(),
-                                                                     _pattern_block=patCoupling2,
                                                                      _diag_is_nonzero=false,_close=false)->graph();
+    if ( M_fluidModel->stabilizationGLS() )
+    {
+        myblockGraph(startIndexBlockFluid+1,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpaceVelocity(),
+                                                                           _trial=M_heatModel->spaceTemperature(),
+                                                                           _diag_is_nonzero=false,_close=false)->graph();
+    }
 
     auto blockMatHeat = M_heatModel->buildBlockMatrixGraph();
     for (int tk1=0;tk1<nBlockHeat ;++tk1 )
@@ -298,11 +296,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("HeatFluid","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeatt = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
-    M_postProcessFieldExportedFluid = M_fluidModel->postProcessFieldExported( exportsFields, M_fluidModel->keyword() );
+    std::set<std::string> ppExportsAllFieldsAvailable;
+    for ( auto const& s : M_heatModel->postProcessExportsAllFieldsAvailable() )
+        ppExportsAllFieldsAvailable.insert( prefixvm( M_heatModel->keyword(), s) );
+    for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
+        ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s) );
+    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->setPostProcessExportsPidName( "pid" );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExportedHeatt.empty() || !M_postProcessFieldExportedFluid.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -350,14 +353,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
         *_ostr << "\n   Exporter"
                << "\n     -- type            : " << M_exporter->type()
                << "\n     -- freq save       : " << M_exporter->freq();
-        std::string fieldExportedHeat;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeatt )
-            fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
-        std::string fieldExportedFluid;
-        for ( std::string const& fieldName : M_postProcessFieldExportedFluid )
-            fieldExportedFluid=(fieldExportedFluid.empty())? fieldName : fieldExportedFluid + " - " + fieldName;
-        *_ostr << "\n     -- fields [heat] : " << fieldExportedHeat
-               << "\n     -- fields [fluid] : " << fieldExportedFluid;
+        std::string fieldExported;
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
+            fieldExported=(fieldExported.empty())? fieldName : fieldExported + " - " + fieldName;
+        *_ostr << "\n     -- fields : " << fieldExported;
     }
 
     *_ostr << "\n   Processors"
@@ -431,19 +430,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    if ( M_exporter && M_exporter->doExport() )
-    {
-        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter,M_postProcessFieldExportedHeatt,time, M_heatModel->allFields() );
-        bool hasFieldToExportFluid = M_fluidModel->updateExportedFields( M_exporter,M_postProcessFieldExportedFluid,time );
-        if ( hasFieldToExportHeat || hasFieldToExportFluid )
-        {
-            this->upload( M_exporter->path() );
-            M_exporter->save();
-        }
-    }
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    M_heatModel->exportResults( time );
-    M_fluidModel->exportResults( time );
+    auto symbolExpr = this->symbolsExpr();
+    M_heatModel->exportResults( time, symbolExpr );
+    M_fluidModel->exportResults( time, symbolExpr );
+
+    auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
+    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) );
+    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -487,8 +484,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
         if ( M_useSemiImplicitTimeScheme )
         {
             M_heatModel->setFieldVelocityConvectionIsUsed( true );
-            auto const& UConvection = *M_fluidModel->fieldConvectionVelocityExtrapolatedPtr();
-            auto const& uConvection = UConvection.template element<0>();
+            auto const& uConvection = *M_fluidModel->fieldConvectionVelocityExtrapolatedPtr();
             for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
             {
                 auto const& range = rangeData.second;
@@ -702,15 +698,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         if ( !M_heatModel->isStationary() )
             timeSteppingScaling_heat = data.doubleInfo( prefixvm(M_heatModel->prefix(),"time-stepping.scaling") );
 
-        auto XhVP = M_fluidModel->spaceVelocityPressure();
-        auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
-        auto u = U.template element<0>();
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
 
         auto XhT = M_heatModel->spaceTemperature();
         auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
         auto const& thermalProperties = M_heatModel->thermalProperties();
 
-        auto bfVPT = form2( _test=XhVP,_trial=XhT,_matrix=J,
+        auto bfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
                             _rowstart=M_fluidModel->rowStartInMatrix(),
                             _colstart=M_heatModel->colStartInMatrix() );
 
@@ -733,14 +728,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                            _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
 
-            form2( _test=XhT,_trial=XhVP,_matrix=J,
+            form2( _test=XhT,_trial=XhV,_matrix=J,
                    _rowstart=M_heatModel->rowStartInMatrix(),
                    _colstart=M_fluidModel->colStartInMatrix() ) +=
                 integrate( _range=range,
                            _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
                            _geomap=this->geomap() );
 
-            bfVPT +=
+            bfVT +=
                 integrate( _range=range,
                            _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
@@ -760,7 +755,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 {
                     auto stab_test = rhocp*grad(t)*idv(u);
                     auto stab_residual_bilinear = rhocp*gradv(t)*idt(u);
-                    form2( _test=XhT,_trial=XhVP,_matrix=J,
+                    form2( _test=XhT,_trial=XhV,_matrix=J,
                            _rowstart=M_heatModel->rowStartInMatrix(),
                            _colstart=M_fluidModel->colStartInMatrix() ) +=
                          integrate( _range=range,
@@ -768,14 +763,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                                     _geomap=this->geomap() );
                     
                     auto stab_test2 = rhocp*gradv(t)*idt(u);
-                    form2( _test=XhVP,_trial=XhVP,_matrix=J,
+                    form2( _test=XhVP,_trial=XhV,_matrix=J,
                            _rowstart=M_fluidModel->rowStartInMatrix(),
                            _colstart=M_fluidModel->colStartInMatrix() ) +=
                         integrate( _range=range,
                                    _expr=tau*stab_residual_bilinear*stab_test2,
                                    _geomap=this->geomap() );
                     auto stab_residual_bilinear2 = rhocp*(idt(t)*M_heatModel->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(t)*idv(u) );
-                    form2( _test=XhVP,_trial=XhT,_matrix=J,
+                    form2( _test=XhV,_trial=XhT,_matrix=J,
                            _rowstart=M_fluidModel->rowStartInMatrix(),
                            _colstart=M_heatModel->colStartInMatrix() ) +=
                         integrate( _range=range,
@@ -796,7 +791,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
                 auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
-                M_fluidModel->updateJacobianStabilisationGLS( data, U, rhoF, mu, matName, std::make_pair(bfVPT, exprAddedInGLSResidual) );
+
+                auto XhP = M_fluidModel->functionSpacePressure();
+                auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
+                M_fluidModel->updateJacobianStabilisationGLS( data, u, p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
             }
 
         }
@@ -848,16 +846,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     if ( buildNonCstPart )
     {
-        auto XhVP = M_fluidModel->spaceVelocityPressure();
-        auto const U = XhVP->element(XVec, M_fluidModel->rowStartInVector()+0 );
-        auto u = U.template element<0>();
-
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
         auto XhT = M_heatModel->spaceTemperature();
         auto const t = XhT->element(XVec, M_heatModel->rowStartInVector()+0 );
         auto mylfT = form1( _test=XhT, _vector=R,
                             _rowstart=M_heatModel->rowStartInVector()+0 );
-        auto mylfVP = form1( _test=XhVP, _vector=R,
-                             _rowstart=M_fluidModel->rowStartInVector()+0 );
+        auto mylfV = form1( _test=XhV, _vector=R,
+                            _rowstart=M_fluidModel->rowStartInVector()+0 );
 
 
         for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
@@ -880,7 +876,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
             double T0 = M_BoussinesqRefTemperature;
             if ( doAssemblyFluid )
             {
-                mylfVP +=
+                mylfV +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
                                _geomap=this->geomap() );
@@ -896,8 +892,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 {
                     auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
                     auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
-                    auto UOld = XhVP->element( previousSol, M_fluidModel->rowStartInVector() );
-                    auto uOld = UOld.template element<0>();
+                    auto uOld = XhV->element( previousSol, M_fluidModel->rowStartInVector() );
                     auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoHeatCapacityExpr*gradv(tOld)*idv(uOld);
                     M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data, exprAddedInRhsOld );
                 }
@@ -911,15 +906,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
                 auto expraddedInGLSResidual = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;
+                auto XhP = M_fluidModel->functionSpacePressure();
+                auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
                 if ( M_fluidModel->timeStepping() ==  "Theta" )
                 {
                     auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
                     auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
                     auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoExpr*(beta*(idv(tOld)-T0))*M_gravityForce;
-                    M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, matName, expraddedInGLSResidual, exprAddedInRhsOld );
+                    M_fluidModel->updateResidualStabilisationGLS( data, u, p, rhoF, mu, matName, expraddedInGLSResidual, exprAddedInRhsOld );
                 }
                 else
-                    M_fluidModel->updateResidualStabilisationGLS( data, U, rhoF, mu, matName, expraddedInGLSResidual );
+                    M_fluidModel->updateResidualStabilisationGLS( data, u, p, rhoF, mu, matName, expraddedInGLSResidual );
             }
         }
 
@@ -973,14 +970,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
         timeSteppingScaling = data.doubleInfo( prefixvm(M_fluidModel->prefix(),"time-stepping.scaling") );
 
 
-    auto XhVP = M_fluidModel->spaceVelocityPressure();
-    auto const& U = M_fluidModel->fieldVelocityPressure();
-    auto u = U.template element<0>();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto const& u = M_fluidModel->fieldVelocity();
     auto XhT = M_heatModel->spaceTemperature();
     auto const& t = M_heatModel->fieldTemperature();
 
-    auto mylfVP = form1( _test=XhVP, _vector=F,
-                         _rowstart=M_fluidModel->rowStartInVector() );
+    auto mylfV = form1( _test=XhV, _vector=F,
+                        _rowstart=M_fluidModel->rowStartInVector() );
 
     for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
     {
@@ -994,7 +990,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
         auto const& betaExpr = thermalExpansion.expr();
         double T0 = M_BoussinesqRefTemperature;
 
-        mylfVP +=
+        mylfV +=
             integrate( _range=range,
                        _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
                        _geomap=this->geomap() );
@@ -1042,16 +1038,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
 
     this->log("HeatFluid","updateResidualFluidSolver", "start" );
 
-    auto XhVP = M_fluidModel->spaceVelocityPressure();
-
-    auto U = XhVP->element(XVec, M_fluidModel->rowStartInVector());
-    auto u = U.template element<0>();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
 
     auto XhT = M_heatModel->spaceTemperature();
     auto const& t = M_heatModel->fieldTemperature();
 
-    auto mylfVP = form1( _test=XhVP, _vector=R,
-                         _rowstart=M_fluidModel->rowStartInVector() );
+    auto mylfV = form1( _test=XhV, _vector=R,
+                        _rowstart=M_fluidModel->rowStartInVector() );
 
     for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
     {
@@ -1065,7 +1059,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
         auto const& betaExpr = thermalExpansion.expr();
         double T0 = M_BoussinesqRefTemperature;
 
-        mylfVP +=
+        mylfV +=
             integrate( _range=range,
                        _expr= timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
                        _geomap=this->geomap() );

@@ -575,7 +575,7 @@ public:
         }
 
     //! \return the root repository (default: \c $HOME/feel)
-    static std::string rootRepository();
+    static std::string const& rootRepository();
 
     /**
      * Find a file. The lookup is as follows:
@@ -854,6 +854,7 @@ private:
 
     static std::vector<fs::path> S_paths;
 
+    static fs::path S_rootdir;
     static fs::path S_appdir;
     static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;

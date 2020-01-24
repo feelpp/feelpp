@@ -69,8 +69,11 @@ class Eig : public ExprDynamicBase
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
     typedef Eig<ExprT> this_type;
+
+    using evaluate_type = Eigen::Matrix<value_type,
+                                        (expression_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic)? Eigen::Dynamic : expression_type::evaluate_type::RowsAtCompileTime,
+                                        1>;
 
     //@}
 
@@ -123,6 +126,14 @@ class Eig : public ExprDynamicBase
     {
         return M_expr;
     }
+
+    evaluate_type
+    evaluate( bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            auto evalExpr = M_expr.evaluate( p, worldcomm );
+            Eigen::SelfAdjointEigenSolver<typename expression_type::evaluate_type> es( evalExpr );
+            return es.eigenvalues();
+        }
 
     //@}
 

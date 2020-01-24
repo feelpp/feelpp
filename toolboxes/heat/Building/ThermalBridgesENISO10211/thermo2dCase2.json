@@ -82,19 +82,19 @@
                 "Check_Heat-Flux_top":
                 {
                     "type":"integrate",
-                    "expr":"-heat_Concrete_k*heat_dnT - h_top*(heat_T-T0_top):heat_Concrete_k:heat_dnT:heat_T:h_top:T0_top",
+                    "expr":"-heat_Concrete_k*heat_dn_T - h_top*(heat_T-T0_top):heat_Concrete_k:heat_dn_T:heat_T:h_top:T0_top",
                     "markers":"top"
                 },
                 "Check_Heat-Flux_bottom":
                 {
                     "type":"integrate",
-                    "expr":"-heat_Aluminium_k*heat_dnT - h_bottom*(heat_T-T0_bottom):heat_Aluminium_k:heat_dnT:heat_T:h_bottom:T0_bottom",
+                    "expr":"-heat_Aluminium_k*heat_dn_T - h_bottom*(heat_T-T0_bottom):heat_Aluminium_k:heat_dn_T:heat_T:h_bottom:T0_bottom",
                     "markers":"bottom"
                 },
                 "CheckGeneric_Heat-Flux_%1_1%":
                 {
                     "type":"integrate",
-                    "expr":"-heat_%1_2%_k*heat_dnT - h_%1_1%*(heat_T-T0_%1_1%):heat_%1_2%_k:heat_dnT:heat_T:h_%1_1%:T0_%1_1%",
+                    "expr":"-heat_%1_2%_k*heat_dn_T - h_%1_1%*(heat_T-T0_%1_1%):heat_%1_2%_k:heat_dn_T:heat_T:h_%1_1%:T0_%1_1%",
                     "markers":"%1_1%",
                     "index1":[ ["top", "Concrete"],["bottom", "Aluminium"] ]
                 },

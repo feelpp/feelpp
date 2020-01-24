@@ -25,7 +25,8 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
+    ModelPhysics<nDim>( "heat" )
+    //M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );
 
@@ -53,9 +54,6 @@ HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
         Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
     M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
-
-    M_doExportAll = boption(_name="do_export_all",_prefix=this->prefix());
-    M_doExportVelocityConvection = boption(_name="do_export_velocity-convection",_prefix=this->prefix());
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
@@ -89,7 +87,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().materials().setParameterValues( paramValues );
-    M_thermalProperties->updateForUse( M_mesh, this->modelProperties().materials() );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
@@ -103,14 +105,14 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->timerTool("Constructor").start();
 
     // functionspace
-    if ( M_thermalProperties->isDefinedOnWholeMesh() )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, M_thermalProperties->markers());
+        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
@@ -129,7 +131,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
 {
     if ( !M_XhVelocityConvection )
     {
-        if ( M_thermalProperties->isDefinedOnWholeMesh() )
+        if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
             M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
         else
             M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _range=M_rangeMeshElements );
@@ -257,7 +259,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
-    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme 
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
     M_bdfTemperature = bdf( _space=this->spaceTemperature(),
                             _name="temperature"+suffixName,
                             _prefix=this->prefix(),
@@ -311,15 +313,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
 
         this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
 
-        if ( !this->isStationary() )
-            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
-
         if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
         {
             auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
                                 "",this->worldComm(),this->repository().expr() );
-            this->fieldTemperaturePtr()->on(_range=M_rangeMeshElements,_expr=myexpr);
+            icTemperatureFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
+            for ( int k=1;k<icTemperatureFields.size();++k )
+                *icTemperatureFields[k] = *icTemperatureFields[0];
         }
+
+        if ( !this->isStationary() )
+            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
     }
 }
 
@@ -330,7 +334,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density","pid"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
     super_type::initPostProcess();
 
@@ -357,32 +362,19 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
         for( auto const& ptreeLevel1 : ptreeLevel0.second )
         {
             std::string ptreeLevel1Name = ptreeLevel1.first;
+
             if ( ptreeLevel1Name == "Normal-Heat-Flux" )
             {
-                // get list of marker
-                std::set<std::string> markerSet;
-                std::string markerUnique = ptreeLevel1.second.template get_value<std::string>();
-                if ( markerUnique.empty() )
+                for( auto const& ptreeNormalHeatFlux : ptreeLevel1.second )
                 {
-                    for (auto const& ptreeMarker : ptreeLevel1.second )
+                    auto indexesAllCases = ModelIndexes::generateAllCases( ptreeNormalHeatFlux.second );
+                    for ( auto const& indexes : indexesAllCases )
                     {
-                        std::string marker = ptreeMarker.second.template get_value<std::string>();
-                        markerSet.insert( marker );
+                        ModelMeasuresNormalFluxGeneric ppFlux;
+                        ppFlux.setup( ptreeNormalHeatFlux.second, indexes.replace( ptreeNormalHeatFlux.first ), indexes );
+                        if ( !ppFlux.markers().empty() )
+                            M_postProcessMeasuresNormalHeatFlux[ppFlux.name()] = ppFlux;
                     }
-                }
-                else
-                {
-                    markerSet.insert( markerUnique );
-                }
-                // save forces measure for each marker
-                for ( std::string const& marker : markerSet )
-                {
-                    ModelMeasuresForces myPpForces;
-                    myPpForces.addMarker( marker );
-                    myPpForces.setName( marker );
-                    //std::cout << "add ppHeatFlux with name " << marker<<"\n";
-                    std::string name = myPpForces.name();
-                    M_postProcessMeasuresForces.push_back( myPpForces );
                 }
             }
         }
@@ -463,7 +455,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
 
     // Materials parameters
     subPt.clear();
-    this->thermalProperties()->updateInformationObject( subPt );
+    this->materialsProperties()->updateInformationObject( subPt );
     p.put_child( "Materials parameters", subPt );
 
     // Mesh and FunctionSpace
@@ -513,7 +505,7 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
            << this->getInfoRobinBC();
-    *_ostr << this->thermalProperties()->getInfoMaterialParameters()->str();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
@@ -557,7 +549,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().parameters().setParameterValues( paramValues );
 
-    this->thermalProperties()->setParameterValues( paramValues );
+    this->materialsProperties()->setParameterValues( paramValues );
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
@@ -623,7 +615,7 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.updateVectorFromSubVectors();
 
-    if ( this->thermalProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
+    if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
         M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     else
         M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );

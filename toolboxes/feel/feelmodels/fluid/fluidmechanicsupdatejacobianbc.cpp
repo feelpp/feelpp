@@ -15,7 +15,7 @@ namespace FeelModels
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
     using namespace Feel::vf;
 
@@ -32,18 +32,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
+    auto const& v = u;
+    auto const& q = p;
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
+    auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=J,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix,
+                                 _colstart=colStartInMatrix );
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // density
@@ -55,16 +54,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // Dirichlet bc by using Nitsche formulation
     if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart )
     {
-        // strain tensor
-        auto const deft = sym(gradt(u));
-        // stress tensor
-        auto const Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
-
-        bilinearForm_PatternCoupled +=
-            integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
-                       _expr= -timeSteppingScaling*trans(Sigmat*N())*id(v)
-                       /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
-                       _geomap=this->geomap() );
+        auto deft = sym(gradt(u));
+        auto viscousStressTensor = 2*idv(mu)*deft;
+         bilinearFormVV +=
+             integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
+                        _expr= -timeSteppingScaling*inner(viscousStressTensor*N(),id(v) )
+                        /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner(idt(u),id(v))/hFace(),
+                        _geomap=this->geomap() );
+        auto bilinearFormVP = form2( _test=XhV,_trial=XhP,_matrix=J,
+                                     _pattern=size_type(Pattern::COUPLED),
+                                     _rowstart=rowStartInMatrix,
+                                     _colstart=colStartInMatrix+1 );
+         bilinearFormVP +=
+             integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
+                        _expr= timeSteppingScaling*inner( idt(p)*N(),id(v) ),
+                        _geomap=this->geomap() );
     }
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Lagrange-multiplier
@@ -76,17 +80,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
             size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
 
             auto lambdaBC = this->XhDirichletLM()->element();
-            form2( _test=Xh,_trial=this->XhDirichletLM(),_matrix=J,_pattern=size_type(Pattern::COUPLED),
+            std::cout << "----lm-1-----"<<std::endl;
+            form2( _test=XhV,_trial=this->XhDirichletLM(),_matrix=J,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexDirichletLM )+=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(lambdaBC),id(u) ) );
 
-            form2( _test=this->XhDirichletLM(),_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+            std::cout << "----lm-2-----"<<std::endl;
+            form2( _test=this->XhDirichletLM(),_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix+startBlockIndexDirichletLM,
                    _colstart=colStartInMatrix ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(u),id(lambdaBC) ) );
+            std::cout << "----lm-3-----"<<std::endl;
         }
     }
     //--------------------------------------------------------------------------------------------------//
@@ -99,14 +106,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
         {
             if ( nDim==2 )
             {
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -116,14 +123,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
             else if ( nDim==3 )
             {
                 auto alpha = 1./sqrt(1-Nz()*Nz());
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -133,7 +140,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                 CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
                 size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -141,7 +148,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=J,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=J,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -203,7 +210,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                             Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
                 }
 
-                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=J,
                        _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces(mesh,markerOutlet),
@@ -219,7 +226,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                     J->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureDistalCol/*colStartInMatrixWindkessel*/  , -1.);
                 }
 
-                form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=J,
+                form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=J,
                        _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                        _colstart=colStartInMatrix )+=
                     integrate( _range=markedfaces(mesh,markerOutlet),
@@ -227,7 +234,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                                _geomap=this->geomap() );
                 //--------------------//
                 // coupling with fluid model
-                form2( _test=Xh, _trial=M_fluidOutletWindkesselSpace, _matrix=J,
+                form2( _test=XhV, _trial=M_fluidOutletWindkesselSpace, _matrix=J,
                        _rowstart=rowStartInMatrix,
                        _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
                     integrate( _range=markedfaces(mesh,markerOutlet),
@@ -244,15 +251,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
-        auto Beta = M_bdf_fluid->poly();
+        auto betaExtrapolate = M_bdfVelocity->poly();
         //auto beta = Beta.element<0>();
-        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
-                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto beta = vf::project( _space=XhV,
+                                 _range=boundaryfaces(mesh),
+                                 _expr=idv(rho)*idv(betaExtrapolate) );
         auto Cn = val(gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h()));
         auto Ctau = val(gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) ));
 
-        bilinearForm_PatternCoupled +=
+        bilinearFormVV +=
             integrate( _range= markedfaces(mesh,this->markerSlipBC()),
                        _expr= Cn*(trans(idt(u))*N())*(trans(id(v))*N())+
                        Ctau*trans(idt(u))*id(v),
