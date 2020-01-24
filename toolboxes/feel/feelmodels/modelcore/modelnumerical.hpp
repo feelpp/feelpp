@@ -161,6 +161,10 @@ class ModelNumerical : public ModelAlgebraic
         template <typename ExporterType, typename TupleFieldsType>
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
 
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
+        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
+        template<typename... TupleQuantitiesType>
+        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& ... tupleQuantities );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
         bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
         template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
@@ -370,6 +374,48 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     return hasFieldToExport;
 }
 
+template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
+void 
+ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+{
+    bool hasMeasure = this->updatePostProcessMeasures( mesh, range, measurePointsEvaluation, symbolsExpr, tupleFields... );
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
+template<typename... TupleQuantitiesType>
+bool 
+ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& ... tupleQuantities )
+{
+    bool hasMeasure = false;
+    std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
+    ( Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& e )
+            {
+                std::string const& quantityName = e.first;
+                auto const& quantityValue = e.second;
+                if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
+                {
+                    if constexpr( std::is_arithmetic_v<decltype(quantityValue)> )
+                    {
+                        this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
+                    }
+                    else
+                    {
+                        std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
+                        this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                    }
+                    hasMeasure = true;
+                }
+            }), ... );
+    return hasMeasure;
+}
+
 template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
 bool
 ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
@@ -427,7 +473,9 @@ ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, Range
 {
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
+    bool hasMeasurePoint = false;
+    if( measurePointsEvaluation )
+        hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
 
     return ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint );
 }
