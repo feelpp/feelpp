@@ -384,6 +384,13 @@ public:
         }
         return fields;
     }
+    // Measures quantities
+    auto allMeasuresQuantities() const
+    {
+        return hana::concat( super_type::allMeasuresQuantities(), hana::make_tuple(
+                    std::make_pair( "velocity-com", this->velocityCOM() )
+                    ) );
+    }
     //--------------------------------------------------------------------//
     // Export
     std::set<std::string> postProcessSaveAllFieldsAvailable() const override;
@@ -391,16 +398,16 @@ public:
 
     using super_type::exportResults;
     void exportResults( double time ) override { 
-        super_type::exportResults( time, this->symbolsExpr(), this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+        super_type::exportResults( time, this->symbolsExpr(), this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields(), this->fieldsUserScalar(), this->fieldsUserVectorial(), this->allMeasuresQuantities() );
     }
     //template<typename SymbolsExpr>
     //void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
-    void executePostProcessMeasures( double time );
-    template<typename TupleFieldsType, typename SymbolsExpr>
-    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
-    template<typename TupleFieldsType, typename SymbolsExpr>
-    bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    //void executePostProcessMeasures( double time );
+    //template<typename TupleFieldsType, typename SymbolsExpr>
+    //void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    //template<typename TupleFieldsType, typename SymbolsExpr>
+    //bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
     //--------------------------------------------------------------------//
     // Physical quantities
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 
@@ -655,44 +662,44 @@ LEVELSET_CLASS_TEMPLATE_TYPE::extensionVelocity( vf::Expr<ExprT> const& u) const
     //this->log("LevelSet","exportResults", "finish");
 //}
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-template<typename TupleFieldsType, typename SymbolsExpr>
-void
-LEVELSET_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
-{
-    bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//template<typename TupleFieldsType, typename SymbolsExpr>
+//void
+//LEVELSET_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+//{
+    //bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-}
+    //if ( hasMeasure )
+    //{
+        //if ( !this->isStationary() )
+            //this->postProcessMeasuresIO().setMeasure( "time", time );
+        //this->postProcessMeasuresIO().exportMeasures();
+        //this->upload( this->postProcessMeasuresIO().pathFile() );
+    //}
+//}
 
-LEVELSET_CLASS_TEMPLATE_DECLARATIONS
-template<typename TupleFieldsType, typename SymbolsExpr>
-bool
-LEVELSET_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
-{
-    bool hasMeasure = super_type::updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+//LEVELSET_CLASS_TEMPLATE_DECLARATIONS
+//template<typename TupleFieldsType, typename SymbolsExpr>
+//bool
+//LEVELSET_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+//{
+    //bool hasMeasure = super_type::updatePostProcessMeasures( time, tupleFields, symbolsExpr );
 
-    // compute measures
-    if( this->hasPostProcessMeasuresQuantities( "velocity-com" ) )
-    {
-        auto ucom = this->velocityCOM();
-        std::vector<double> vecUCOM = { ucom(0,0) };
-        if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
-        if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
-        double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
-        this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
-        hasMeasure = true;
-    }
+    //// compute measures
+    //if( this->hasPostProcessMeasuresQuantities( "velocity-com" ) )
+    //{
+        //auto ucom = this->velocityCOM();
+        //std::vector<double> vecUCOM = { ucom(0,0) };
+        //if( nDim > 1 ) vecUCOM.push_back( ucom(1,0) );
+        //if( nDim > 2 ) vecUCOM.push_back( ucom(2,0) );
+        //this->postProcessMeasuresIO().setMeasureComp( "velocity_com", vecUCOM );
+        //double normUCOM = std::sqrt( std::inner_product( vecUCOM.begin(), vecUCOM.end(), vecUCOM.begin(), 0.0 ) );
+        //this->postProcessMeasuresIO().setMeasure( "velocity_com", normUCOM );
+        //hasMeasure = true;
+    //}
 
-    return hasMeasure;
-}
+    //return hasMeasure;
+//}
 
 } // namespace FeelModels
 } // namespace Feel
