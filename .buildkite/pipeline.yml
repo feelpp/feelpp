@@ -73,5 +73,5 @@ steps:
        GIRDER_ID: "5a4fa90ab0e9571f842931e5"
        PROJECT: "feelpp-mor"
        TAG: ${BUILDKITE_BRANCH}
-notify:
-  - slack: #env-buildkite
+# notify:
+#   - slack: #env-buildkite

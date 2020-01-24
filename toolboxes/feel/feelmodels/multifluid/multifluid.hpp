@@ -57,10 +57,10 @@ public:
     typedef typename levelset_model_type::space_markers_ptrtype space_levelset_markers_ptrtype;
     typedef typename levelset_model_type::space_advection_velocity_type space_levelset_advection_velocity_type;
     typedef typename levelset_model_type::space_advection_velocity_ptrtype space_levelset_advection_velocity_ptrtype;
-    typedef typename fluid_model_type::component_space_fluid_velocity_type component_space_fluid_velocity_type;
+    typedef typename fluid_model_type::component_space_velocity_type component_space_fluid_velocity_type;
 
-    typedef typename fluid_model_type::space_fluid_velocity_type space_fluid_velocity_type;
-    typedef typename fluid_model_type::space_fluid_velocity_ptrtype space_fluid_velocity_ptrtype;
+    typedef typename fluid_model_type::space_velocity_type space_fluid_velocity_type;
+    typedef typename fluid_model_type::space_velocity_ptrtype space_fluid_velocity_ptrtype;
 
     typedef typename levelset_model_type::element_levelset_type element_levelset_type;
     typedef typename levelset_model_type::element_levelset_ptrtype element_levelset_ptrtype; 
@@ -182,11 +182,11 @@ public:
 
     //--------------------------------------------------------------------//
     // Accessors interfaces
-    decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
+    //decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
     decltype(auto) functionSpaceVelocity() const { return this->fluidModel()->functionSpaceVelocity(); }
     decltype(auto) functionSpacePressure() const { return this->fluidModel()->functionSpacePressure(); }
-    decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
-    decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
+    //decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
+    //decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
     decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 

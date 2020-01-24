@@ -60,11 +60,6 @@ public :
             }
 
             M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-            if ( M_isDefinedOnWholeMesh )
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
-            else
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
-            M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
 
             for( auto const& m : mats )
             {
@@ -84,7 +79,6 @@ public :
                 {
                     auto const& expr = mat.propertyExprScalar("sigma");
                     M_electricConductivityByMaterial[matName].setExpr( expr );
-                    M_fieldElectricConductivity->on(_range=range,_expr=expr);
                 }
             }
         }
@@ -115,9 +109,6 @@ public :
             CHECK( itFindMat != M_electricConductivityByMaterial.end() ) << "material name not registered : " << matName;
             return itFindMat->second.value();
         }
-
-    element_type const& fieldElectricConductivity() const { return *M_fieldElectricConductivity; }
-    element_ptrtype const& fieldElectricConductivityPtr() const { return M_fieldElectricConductivity; }
 
     bool hasElectricConductivity( std::string const& matName ) const
         {
@@ -173,44 +164,11 @@ public :
                 prop.second.setParameterValues( mp );
         }
 
-    template <typename SymbolsExpr>
-    void updateFields( SymbolsExpr const& symbolsExpr )
-        {
-            this->updateElectricConductivityField( symbolsExpr );
-        }
-
-    template <typename SymbolsExpr>
-    void updateElectricConductivityField( SymbolsExpr const& symbolsExpr )
-        {
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-            {
-                std::string const& matName = rangeData.first;
-                this->updateElectricConductivityField( matName, symbolsExpr );
-            }
-        }
-
-    template <typename SymbolsExpr>
-    void updateElectricConductivityField( std::string const& matName, SymbolsExpr const& symbolsExpr )
-        {
-            if  ( !M_fieldElectricConductivity )
-                return;
-            if ( !this->hasMaterial( matName ) )
-                return;
-            auto const& range = this->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->electricConductivity( matName );
-
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            M_fieldElectricConductivity->on(_range=range,_expr=sigmaExpr );
-        }
-
-
 private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
-    space_ptrtype M_space;
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
     std::map<std::string, ModelExpressionScalar> M_electricConductivityByMaterial;
-    element_ptrtype M_fieldElectricConductivity;
     double M_electricConductivityDefaultValue;
 };
 

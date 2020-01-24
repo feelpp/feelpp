@@ -68,7 +68,7 @@ enum LevelSetTimeDiscretization {BDF2, /*CN,*/ EU, CN_CONSERVATIVE};
 
 template<
     typename ConvexType, typename BasisType, typename PeriodicityType = NoPeriodicity, 
-    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< Mesh<ConvexType>, bases<typename detail::ChangeBasisPolySet<Vectorial,BasisType>::type>, Periodicity<PeriodicityType> >,
+    typename FunctionSpaceAdvectionVelocityType = FunctionSpace< Mesh<ConvexType>, bases<typename detail::ChangeBasisPolySet<Vectorial,BasisType>::type>/*, Periodicity<PeriodicityType>*/ >,
     typename BasisPnType = BasisType
     >
 class LevelSet : public LevelSetBase<ConvexType, BasisType, PeriodicityType, BasisPnType>,

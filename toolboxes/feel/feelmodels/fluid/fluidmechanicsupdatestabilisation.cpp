@@ -54,14 +54,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     //----------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
-    auto U = Xh->element("u");
-    auto V = Xh->element("v");
-    auto u = U.template element<0>();
-    auto v = V.template element<0>();
-    auto p = U.template element<1>();
-    auto q = V.template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& v = u;
+    auto const& p = this->fieldPressure();
+    auto const& q = p;
+
     // dynamic viscosity
     auto const& mu = this->materialProperties()->fieldMu();
 
@@ -72,13 +72,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
      _pattern=size_type(Pattern::DEFAULT),
      _rowstart=rowStartInMatrix,
      _colstart=colStartInMatrix );*/
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
+    auto bilinearFormVV_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
+                                                _pattern=size_type(Pattern::COUPLED),
+                                                _rowstart=rowStartInMatrix,
+                                                _colstart=colStartInMatrix );
     // a detail very important (A is cst or not)
     sparse_matrix_ptrtype A_extendedReal = (this->buildMatrixPrecond())?A_extended:A;
-    auto bilinearForm_PatternExtended = form2( _test=Xh,_trial=Xh,_matrix=A_extendedReal/*A_extended*/,
+    auto bilinearFormVV_PatternExtended = form2( _test=XhV,_trial=XhV,_matrix=A_extendedReal/*A_extended*/,
                                                _pattern=size_type(Pattern::EXTENDED),
                                                _rowstart=rowStartInMatrix,
                                                _colstart=colStartInMatrix );
@@ -88,8 +88,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     if ( this->doStabDivDiv() && BuildCstPart  )
     {
         double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(Xh->mesh()),
+        bilinearFormVV_PatternCoupled +=
+            integrate( _range=M_rangeMeshElements,
                        _expr=/*vf::h()**/beta*divt(u)*div(v),
                        _geomap=this->geomap() );
     }
@@ -99,15 +99,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     {
         double gamma = this->stabCIPConvectionGamma();
         double order_scaling = math::pow( double(nOrderVelocity), 3.5 );
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
 
         if (M_isMoveDomain)
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( inner(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/),N() ) )*pow(hFace(),2.0);
-            bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+            bilinearFormVV_PatternExtended +=
+                integrate( _range=marked3faces(XhV->mesh(),1),
                            //_expr=val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
                            _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
@@ -116,8 +115,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         else
         {
             auto cip_stab_coeff_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0);
-            bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+            bilinearFormVV_PatternExtended +=
+                integrate( _range=marked3faces(XhV->mesh(),1),
                            //_expr=val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
                            _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
@@ -128,13 +127,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
     {
         double gamma = this->stabCIPDivergenceGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
         auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
-        bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        bilinearFormVV_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_div_coeff_expr)*inner( jumpt(divt(u)),jump(div(v)) ),
                        _geomap=this->geomap() );
     }
@@ -143,8 +141,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     if ( this->doCIPStabPressure() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPPressureGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
 #if 1
         //double order_scaling = math::pow( double(nOrderPressure), 3.5 );
@@ -155,8 +152,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         auto Re = beta_abs*hFace()/idv(mu);
         auto cip_stab_coeff_expr =  gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)/max(beta_abs,cst(1e-6)); //last max in order to not divide by 0
 #endif
-        bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=A_extendedReal/*A_extended*/,
+                                                     _pattern=size_type(Pattern::EXTENDED),
+                                                     _rowstart=rowStartInMatrix+1,
+                                                     _colstart=colStartInMatrix+1 );
+        bilinearFormPP_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_stab_coeff_expr)*( jumpt(gradt(p))*jump(grad(q)) ),
                        _geomap=this->geomap() );
     }
@@ -200,7 +201,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
@@ -209,10 +210,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         auto mu = idv(this->materialProperties()->fieldMu());
 
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-            this->updateResidualStabilisationGLS( data, U, rho, mu, rangeData.first );
+            this->updateResidualStabilisationGLS( data, u, p, rho, mu, rangeData.first );
     }
-
-    using namespace Feel::vf;
 
     this->log("FluidMechanics","updateResidualStabilisation", "start" );
     boost::mpi::timer thetimer;
@@ -228,14 +227,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
-    //auto U = Xh->element("u"); U = *XVec;
-    //auto V = Xh->element("v");
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto const& v = u;
+    auto const& q = p;
     // dynamic viscosity
     auto const& mu = this->materialProperties()->fieldMu();
 
@@ -245,20 +241,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     /*auto linearForm_PatternDefault = form1( _test=Xh, _vector=R,
      _pattern=size_type(Pattern::DEFAULT),
      _rowstart=rowStartInVector );*/
-    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
-                                            _pattern=size_type(Pattern::COUPLED),
-                                            _rowstart=rowStartInVector );
-    auto linearForm_PatternExtended = form1( _test=Xh, _vector=R,
-                                             _pattern=size_type(Pattern::EXTENDED),
+    auto linearFormV_PatternCoupled = form1( _test=XhV, _vector=R,
+                                             _pattern=size_type(Pattern::COUPLED),
                                              _rowstart=rowStartInVector );
+    auto linearFormV_PatternExtended = form1( _test=XhV, _vector=R,
+                                              _pattern=size_type(Pattern::EXTENDED),
+                                              _rowstart=rowStartInVector );
 
     if (!BuildCstPart && !UseJacobianLinearTerms )
     {
         if ( this->doStabDivDiv()  )
         {
             double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-            linearForm_PatternCoupled +=
-                integrate( _range=elements(Xh->mesh()),
+            linearFormV_PatternCoupled +=
+                integrate( _range=elements(XhV->mesh()),
                            _expr=/*vf::h()**/beta*divv(u)*div(v),
                            _geomap=this->geomap() );
         }
@@ -269,14 +265,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     {
         double gamma = this->stabCIPConvectionGamma();
         auto order_scaling = std::pow( double(nOrderVelocity), 3.5 );
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
 
         if (M_isMoveDomain)
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = gamma*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
-            linearForm_PatternExtended +=
+            linearFormV_PatternExtended +=
                 integrate( _range=marked3faces(mesh,1),
                            //_expr= val( cip_stab_coeff_ale_expr*trans(jumpv(gradv(u))) )*jump(grad(v)), // this line not work!
                            _expr= val( cip_stab_coeff_ale_expr )*inner( jumpv(gradv(u)),jump(grad(v)) ),
@@ -286,7 +281,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         else
         {
             auto cip_stab_coeff_expr = gamma*abs( trans(idv(u_extrapoled) )*N() )*pow(hFace(),2.0)/cst(order_scaling);
-            linearForm_PatternExtended +=
+            linearFormV_PatternExtended +=
                 integrate( _range=marked3faces(mesh,1),
                            //_expr= val( cip_stab_coeff_expr*trans(jumpv(gradv(u))) )*jump(grad(v)), // this line not work!
                            _expr= val( cip_stab_coeff_expr)*inner( jumpv(gradv(u)),jump(grad(v)) ),
@@ -297,26 +292,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
     {
         double gamma = this->stabCIPDivergenceGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
         auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
-        linearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        linearFormV_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_div_coeff_expr)*inner( jumpv(divv(u)),jump(div(v)) ),
                        _geomap=this->geomap() );
     }
     // stabilisation-cip-pressure
     if ( this->doCIPStabPressure() && BuildTermStabCIP )
     {
+        auto linearFormP_PatternExtended = form1( _test=XhP, _vector=R,
+                                                  _pattern=size_type(Pattern::EXTENDED),
+                                                  _rowstart=rowStartInVector+1 );
         double gamma = this->stabCIPPressureGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
         auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
-        linearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        linearFormP_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_stab_coeff_expr)*( jumpv(gradv(p))*jump(grad(q)) ),
                        _geomap=this->geomap() );
     }
@@ -386,17 +382,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
-    using namespace Feel::vf;
-
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
         auto rho = idv(this->materialProperties()->fieldRho());
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-            this->updateJacobianStabilisationGLS( data, U, rho, mu, rangeData.first );
+            this->updateJacobianStabilisationGLS( data, u, p, rho, mu, rangeData.first );
     }
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
@@ -416,34 +410,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
+    auto const& v = u;
+    auto const& q = p;
 
-    //auto U = Xh->element("u"); U = *XVec;
-    //auto V = Xh->element("v");
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
     // dynamic viscosity
     auto const& mu = this->materialProperties()->fieldMu();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
-    auto bilinearForm_PatternExtended = form2( _test=Xh,_trial=Xh,_matrix=J,
-                                               _pattern=size_type(Pattern::EXTENDED),
-                                               _rowstart=rowStartInMatrix,
-                                               _colstart=colStartInMatrix );
+    auto bilinearFormVV_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
+                                                _pattern=size_type(Pattern::COUPLED),
+                                                _rowstart=rowStartInMatrix,
+                                                _colstart=colStartInMatrix );
+    auto bilinearFormVV_PatternExtended = form2( _test=XhV,_trial=XhV,_matrix=J,
+                                                 _pattern=size_type(Pattern::EXTENDED),
+                                                 _rowstart=rowStartInMatrix,
+                                                 _colstart=colStartInMatrix );
 
     //--------------------------------------------------------------------------------------------------//
     if ( BuildCstPart && this->doStabDivDiv() )
     {
         double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-        bilinearForm_PatternCoupled +=
-            integrate( _range=elements(Xh->mesh()),
+        bilinearFormVV_PatternCoupled +=
+            integrate( _range=elements(XhV->mesh()),
                        _expr=/*vf::h()**/beta*divt(u)*div(v),
                        _geomap=this->geomap() );
     }
@@ -453,8 +444,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     {
         double gamma = this->stabCIPConvectionGamma();
         auto order_scaling = std::pow( double(nOrderVelocity), 3.5 );
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
 #if 0
         auto betaField = Xh->template functionSpace<0>()->element();
         if ( this->isMoveDomain() )
@@ -470,8 +460,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             auto cip_stab_coeff_ale_expr = (gamma/order_scaling)*abs( trans(idv(u_extrapoled)-idv(M_fieldMeshVelocityUsedWithStabCIP/*this->meshVelocity()*/))*N() )*pow(hFace(),2.0);
-            bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+            bilinearFormVV_PatternExtended +=
+                integrate( _range=marked3faces(XhV->mesh(),1),
                            //_expr= val(cip_stab_coeff_ale_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
                            _expr=val(cip_stab_coeff_ale_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
@@ -486,8 +476,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
             auto Re = beta_abs*hFace()/idv(mu);
             auto cip_stab_coeff_expr = gamma*min(cst(1.),Re)*abs( trans(idv(u_extrapoled))*N() )*pow(hFace(),2.0)/cst(order_scaling);
 #endif
-            bilinearForm_PatternExtended +=
-                integrate( _range=marked3faces(Xh->mesh(),1),
+            bilinearFormVV_PatternExtended +=
+                integrate( _range=marked3faces(XhV->mesh(),1),
                            //_expr= val(cip_stab_coeff_expr)*inner( jumpt(gradt(u)),jump(grad(v)) ),
                            _expr=val(cip_stab_coeff_expr)*inner( jumpgradt(u), jumpgrad(v) ),
                            _geomap=this->geomap() );
@@ -498,13 +488,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     if ( this->doCIPStabDivergence() && BuildTermStabCIP  )
     {
         double gamma = this->stabCIPDivergenceGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
         auto Re = beta_abs*hFace()/idv(mu);
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
-        bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        bilinearFormVV_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_div_coeff_expr)*inner( jumpt(divt(u)),jump(div(v)) ),
                        _geomap=this->geomap() );
     }
@@ -512,13 +501,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     if ( this->doCIPStabPressure() && BuildTermStabCIP )
     {
         double gamma = this->stabCIPPressureGamma();
-        auto U_extrapoled = this->timeStepBDF()->poly();
-        auto u_extrapoled = U_extrapoled.template element<0>();
+        auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
         auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
 
-        bilinearForm_PatternExtended +=
-            integrate( _range=marked3faces(Xh->mesh(),1),
+        auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=J,
+                                                     _pattern=size_type(Pattern::EXTENDED),
+                                                     _rowstart=rowStartInMatrix+1,
+                                                     _colstart=colStartInMatrix+1 );
+        bilinearFormPP_PatternExtended +=
+            integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_stab_coeff_expr)*( jumpt(gradt(p))*jump(grad(q)) ),
                        _geomap=this->geomap() );
     }

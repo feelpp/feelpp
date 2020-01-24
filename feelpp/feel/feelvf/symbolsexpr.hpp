@@ -289,6 +289,7 @@ template <>
 struct SymbolsExpr<>
 {
     using tuple_type = hana::tuple<>;
+    using feelpp_tag = SymbolsExprTag;
     tuple_type tupleExpr;
 };
 

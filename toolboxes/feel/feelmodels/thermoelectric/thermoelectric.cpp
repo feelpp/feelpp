@@ -49,7 +49,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     std::string const& subPrefix,
                                                     ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<mesh_type::nDim>( "thermo-electric" )
 {
     this->log("ThermoElectric","constructor", "start" );
 
@@ -167,11 +168,21 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_mesh )
         this->initMesh();
 
+    // physical properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
+
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                           this->subPrefix(), this->repository() ) );
+                                           this->subPrefix(), this->repository() ) );
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
@@ -179,6 +190,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_electricModel->modelPropertiesPtr() )
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
     M_electricModel->setMesh( this->mesh() );
+    M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
 
     M_modelName = "ThermoElectric";
@@ -280,11 +292,16 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    auto const& exportsFields = this->modelProperties().postProcess().exports( this->keyword() ).fields();
-    M_postProcessFieldExportedHeat = M_heatModel->postProcessExportsFields( exportsFields, M_heatModel->keyword() );
-    M_postProcessFieldExportedElectric = M_electricModel->postProcessExportsFields( exportsFields, M_electricModel->keyword() );
+    std::set<std::string> ppExportsAllFieldsAvailable;
+    for ( auto const& s : M_heatModel->postProcessExportsAllFieldsAvailable() )
+        ppExportsAllFieldsAvailable.insert( prefixvm( M_heatModel->keyword(), s) );
+    for ( auto const& s : M_electricModel->postProcessExportsAllFieldsAvailable() )
+        ppExportsAllFieldsAvailable.insert( prefixvm( M_electricModel->keyword(), s) );
+    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->setPostProcessExportsPidName( "pid" );
+    super_type::initPostProcess();
 
-    if ( !M_postProcessFieldExportedHeat.empty() || !M_postProcessFieldExportedElectric.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -330,13 +347,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
         subPt.put( "type",M_exporter->type() );
         subPt.put( "freq save",M_exporter->freq() );
         pt::ptree subPt2;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
             subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-        subPt.put_child( "fields [heat]", subPt2 );
-        subPt2.clear();
-        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-            subPt2.push_back( std::make_pair("", pt::ptree( fieldName ) ) );
-        subPt.put_child( "fields [electric]", subPt2 );
+        subPt.put_child( "fields", subPt2 );
         p.put_child( "Exporter", subPt );
     }
 
@@ -375,14 +388,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
         *_ostr << "\n   Exporter"
                << "\n     -- type            : " << M_exporter->type()
                << "\n     -- freq save       : " << M_exporter->freq();
-        std::string fieldExportedHeat;
-        for ( std::string const& fieldName : M_postProcessFieldExportedHeat )
-            fieldExportedHeat=(fieldExportedHeat.empty())? fieldName : fieldExportedHeat + " - " + fieldName;
-        std::string fieldExportedElectric;
-        for ( std::string const& fieldName : M_postProcessFieldExportedElectric )
-            fieldExportedElectric=(fieldExportedElectric.empty())? fieldName : fieldExportedElectric + " - " + fieldName;
-        *_ostr << "\n     -- fields [heat] : " << fieldExportedHeat
-               << "\n     -- fields [electric] : " << fieldExportedElectric;
+        std::string fieldExported;
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
+            fieldExported=(fieldExported.empty())? fieldName : fieldExported + " - " + fieldName;
+        *_ostr << "\n     -- fields [heat] : " << fieldExported;
     }
     *_ostr << "\n   Processors"
            << "\n     -- number of proc : " << this->worldComm().globalSize()
@@ -411,20 +420,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    if ( M_exporter && M_exporter->doExport() )
-    {
-        bool hasFieldToExportHeat = M_heatModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedHeat, time, M_heatModel->allFields() );
-        bool hasFieldToExportElectric = M_electricModel->updatePostProcessExports( M_exporter, M_postProcessFieldExportedElectric, time, M_electricModel->allFields() );
-        if ( hasFieldToExportHeat || hasFieldToExportElectric )
-        {
-            M_exporter->save();
-            this->upload( M_exporter->path() );
-        }
-    }
-
     auto symbolExpr = this->symbolsExpr();
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
+
+    auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
+    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) );
+    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

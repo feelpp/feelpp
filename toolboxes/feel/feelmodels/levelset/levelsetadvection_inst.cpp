@@ -23,10 +23,10 @@ template class AdvDiffReac<
             >::space_scalar_type,
     FunctionSpace<
         Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        Feel::detail::bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>,
+        /*Feel::detail::*/bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>/*,
         double,
         Periodicity<LEVELSET_PERIODICITY>,
-        mortars<NoMortar>
+                                                                                                                         mortars<NoMortar>*/
             >
     >;
 // Vectorial advection
@@ -39,13 +39,14 @@ template class AdvDiffReac<
             >::space_vectorial_type,
     FunctionSpace<
         Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        Feel::detail::bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, PointSetFekete>>,
+        /*Feel::detail::*/bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, PointSetFekete>>/*,
         double,
         Periodicity<LEVELSET_PERIODICITY>,
-        mortars<NoMortar>
+                                                                                                          mortars<NoMortar>*/
             >
     >;
 
+#if LEVELSET_ORDERPOLY != LEVELSET_VELOCITY_ORDER
 // Scalar iso advection (for HJ redistanciation)
 template class AdvDiffReac<
     typename LevelSetSpaceManager<
@@ -56,10 +57,10 @@ template class AdvDiffReac<
             >::space_scalar_type,
     FunctionSpace<
         Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>,
-        Periodicity<LEVELSET_PERIODICITY>
+        bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>/*,
+                                                                                                  Periodicity<LEVELSET_PERIODICITY>*/
             >
     >;
-
+#endif
 }
 }

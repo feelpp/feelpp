@@ -1,0 +1,177 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+
+PortGroup           cmake 1.0
+PortGroup           qt5 1.0
+PortGroup           mpi 1.0
+
+name                paraview
+version             5.6.0
+
+categories          science graphics
+platforms           darwin
+license             BSD
+
+set branch          [join [lrange [split ${version} .] 0 1] .]
+
+maintainers         {gmail.com:jjstickel @jjstickel} {dstrubbe @dstrubbe} openmaintainer
+
+description         3D data analysis and visualization application
+
+long_description    An open-source, multi-platform data \
+    analysis and visualization application. ParaView users can quickly \
+    build visualizations to analyze their data using qualitative and \
+    quantitative techniques. The data exploration can be done \
+    interactively in 3D or programmatically using ParaView's batch \
+    processing capabilities.
+
+homepage            http://www.paraview.org/
+master_sites        ${homepage}/files/v${branch}/
+
+distname            ParaView-v${version}
+
+checksums           sha256  cb8c4d752ad9805c74b4a08f8ae6e83402c3f11e38b274dba171b99bb6ac2460 \
+                    rmd160  86f1727d3fa083df689eb404125e777eafd0b636 \
+                    size    54085457
+
+depends_build-append    port:readline \
+    port:netcdf \
+    port:qt5-sqlite-plugin port:qt5-qttools 
+
+patchfiles patch-install-paraview.patch
+
+cmake.out_of_source yes
+
+#configure.pre_args-delete\
+#    -DCMAKE_INSTALL_PREFIX=${prefix}
+
+#configure.args-delete \
+#    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+#    -DCMAKE_INSTALL_RPATH=${prefix}/lib \
+#    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib
+
+configure.args-delete \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON
+
+#    -DCMAKE_MACOSX_RPATH=OFF \
+
+# ${destroot} needs to be part of MACOSX_APP_INSTALL_PREFIX; see further
+# comments below, JJS 12/21/15
+configure.args-append \
+    -DBUILD_TESTING:BOOL=OFF \
+    -DPARAVIEW_DO_UNIX_STYLE_INSTALLS=ON \
+    -DCMAKE_INSTALL_PREFIX=${prefix} \
+    -DBUILD_SHARED_LIBS:BOOL=ON \
+    -DPARAVIEW_BUILD_QT_GUI=ON \
+    -DPARAVIEW_QT_VERSION=5 \
+    -DQt5_DIR=${qt_dir} \
+    -DQT_HELP_GENERATOR=${qt_bins_dir}/qhelpgenerator \
+    -DQT_XMLPATTERNS_EXECUTABLE=${qt_bins_dir}/xmlpatterns \
+    -DPARAVIEW_ENABLE_CATALYST=ON \
+    -DPARAVIEW_INSTALL_DEVELOPMENT_FILES=ON
+
+pre-configure {
+    configure.args-append -DCMAKE_CXX_COMPILER=${configure.cxx} \
+        -DCMAKE_C_COMPILER=${configure.cc}
+
+       if {[mpi_variant_isset]} {
+           configure.args-append  \
+               -DPARAVIEW_USE_MPI:BOOL=ON \
+               -DMPI_C_COMPILER=${mpi.cc} \
+               -DMPI_CXX_COMPILER=${mpi.cxx} \
+               -DMPIEXEC=${mpi.exec} \
+               -DMPI_Fortran_COMPILER=${mpi.fc}
+       }
+}
+
+# Some cmake tests will fail with "error: unrecognized option '-arch'" from gcc 4.6 and earlier.
+#compilers.choose    fc
+#mpi.setup           default -gcc44 -gcc45 -gcc46
+
+mpi.setup
+
+# no compilers.choose cc cxx because:
+# gcc6,7 C compiler fails with:
+#:info:build In file included from /usr/include/dispatch/dispatch.h:51:0,
+#:info:build                  from /System/Library/Frameworks/CoreFoundation.framework/Headers/CFStream.h:15,
+#:info:build                  from /System/Library/Frameworks/CoreFoundation.framework/Headers/CFPropertyList.h:13,
+#:info:build                  from /System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h:55,
+#:info:build                  from /System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h:19,
+#:info:build                  from /opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/ParaView-v5.0.1-source/VTK/ThirdParty/freetype/vtkfreetype/src/base/ftmac.c:100,
+#:info:build                  from /opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/ParaView-v5.0.1-source/VTK/ThirdParty/freetype/vtkfreetype/src/base/ftbase.c:38:
+#:info:build /usr/include/dispatch/object.h:143:15: error: expected identifier or '(' before '^' token
+#:info:build  typedef void (^dispatch_block_t)(void);
+#:info:build                ^
+#:info:build /usr/include/dispatch/object.h:362:3: error: unknown type name 'dispatch_block_t'
+#:info:build    dispatch_block_t notification_block);
+#:info:build    ^~~~~~~~~~~~~~~~
+
+# I do not understand why, but the default "destroot" makes a mess of things;
+# even setting full path of MACOSX_APP_INSTALL_PREFIX above and an empty
+# DESTDIR does not work; JJS 12/21/15
+#destroot {
+#    system "cd ${build.dir} && make install"
+#}
+
+# Error using default destroot is:
+#Warning: Error determining file type of `/opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/destroot/opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/build/CMakeFiles/__macos_install/bin/paraview.app/Contents/www/lib/widgets/vtkweb-widgets.js': lstat(/opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/destroot/opt/local/var/macports/build/_Users_dstrubbe_Software_MacPorts_macports-trunk_dports_science_paraview/paraview/work/build/CMakeFiles/__macos_install/bin/paraview.app/Contents/www/lib/widgets/vtkweb-widgets.js):no such file or directory
+#Warning: A file belonging to the `paraview' port is missing or unreadable. Consider reinstalling it.
+
+
+# other pythons?
+variant python27 conflicts python36 description {Add Python 2.7 support.} {
+    depends_lib-append  port:py27-matplotlib
+    configure.args-append \
+        -DPARAVIEW_ENABLE_PYTHON:BOOL=ON \
+        -DPYTHON_EXECUTABLE=${prefix}/bin/python2.7 \
+        -DPYTHON_INCLUDE_DIR=${frameworks_dir}/Python.framework/Versions/2.7/Headers/ \
+        -DPYTHON_LIBRARY=${prefix}/lib/libpython2.7.dylib
+    if {[mpi_variant_isset]} {
+        depends_lib-append  port:py27-mpi4py
+        configure.args-append \
+            -DVTK_USE_SYSTEM_MPI4PY=ON
+    }
+}
+variant python36 conflicts python27 description {Add Python 3.6 support.} {
+    depends_lib-append  port:py36-matplotlib
+    configure.args-append \
+        -DPARAVIEW_ENABLE_PYTHON:BOOL=ON \
+        -DPYTHON_EXECUTABLE=${prefix}/bin/python3.6 \
+        -DPYTHON_INCLUDE_DIR=${frameworks_dir}/Python.framework/Versions/3.6/Headers/ \
+        -DPYTHON_LIBRARY=${frameworks_dir}/Python.framework/Versions/3.6/Python \
+        -DVTK_PYTHON_VERSION=3
+    if {[mpi_variant_isset]} {
+        depends_lib-append  port:py36-mpi4py
+        configure.args-append \
+            -DVTK_USE_SYSTEM_MPI4PY=ON
+    }
+}
+
+# if {[variant_isset python27] || [variant_isset python36]} {
+#    notes-append\
+#        "\n Currently Paraview installs as an app, including the Python modules. To use with MacPorts Python, add ${applications_dir}/paraview.app/Contents/Python/:${applications_dir}/paraview.app/Contents/Libraries/ to PYTHONPATH and ${applications_dir}/paraview.app/Contents/Libraries/ to DYLD_LIBRARY_PATH. Also, simultaneous use of independent vtk libraries, e.g. with Mayavi, may result in segfault."
+# }
+
+variant ffmpeg description {Add support for FFMPEG} {
+   depends_lib-append port:ffmpeg
+   configure.args-append -DPARAVIEW_ENABLE_FFMPEG:BOOL=ON
+}
+
+default_variants-append +ffmpeg
+
+livecheck.type      regex
+livecheck.url       ${homepage}
+livecheck.regex     ParaView (\[0-9.\]+)
+
+test.run            yes
+pre-test {
+    if {![variant_isset testing]} {
+        ui_error "You must build with +testing variant to be able to run the tests."
+        return -code error "Build with +testing for test phase."
+    }
+}
+
+variant testing description {Build executables and download data to be able to run tests.} {
+    configure.args-replace  -DBUILD_TESTING:BOOL=OFF -DBUILD_TESTING:BOOL=ON
+}

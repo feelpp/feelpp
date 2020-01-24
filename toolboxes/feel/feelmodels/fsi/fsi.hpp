@@ -132,10 +132,10 @@ public :
                                   range_fluid_trace_elt_type/*range_fluid_face_type*/,InterpolationConforme> op_interpolation2dTo2dconf_velocity_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_velocity_type> op_interpolation2dTo2dconf_velocity_ptrtype;
     
-    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_velocity_type,
                                   range_fluid_face_type,InterpolationNonConforme> op_interpolation2dTo2dnonconf_velocityBis_type;
     typedef std::shared_ptr<op_interpolation2dTo2dnonconf_velocityBis_type> op_interpolation2dTo2dnonconf_velocityBis_ptrtype;
-    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_fluid_velocity_type,
+    typedef OperatorInterpolation<space_struct_velocity_type, typename fluid_type::space_velocity_type,
                                   range_fluid_face_type,InterpolationConforme> op_interpolation2dTo2dconf_velocityBis_type;
     typedef std::shared_ptr<op_interpolation2dTo2dconf_velocityBis_type> op_interpolation2dTo2dconf_velocityBis_ptrtype;
     
@@ -187,7 +187,7 @@ public :
     typedef std::shared_ptr<op_s2f_interpolation2dTo2dconf_stress_type> op_s2f_interpolation2dTo2dconf_stress_ptrtype;
 
     //typedef typename fluid_type::space_fluid_velocity_type space_fluid_velocity_type;
-    typedef OperatorInterpolation<typename fluid_type::space_fluid_velocity_type/*space_fluid_velocity_type*/,space_struct_velocity_type,
+    typedef OperatorInterpolation<typename fluid_type::space_velocity_type/*space_fluid_velocity_type*/,space_struct_velocity_type,
                                   range_solid_face_type,InterpolationConforme> op_f2s_interpolation2dTo2dconf_velocity_type;
     typedef std::shared_ptr<op_f2s_interpolation2dTo2dconf_velocity_type> op_f2s_interpolation2dTo2dconf_velocity_ptrtype;
 
@@ -281,7 +281,7 @@ private :
 
 
     double couplingRNG_coeffForm2() const { return M_couplingRNG_coeffForm2; }
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ const& couplingRNG_evalForm1() const { return M_couplingRNG_evalForm1; }
 
     auto
     couplingRNG_operatorExpr( mpl::int_<2> /**/ ) const
@@ -371,8 +371,8 @@ private :
     double M_couplingNitscheFamily_gamma, M_couplingNitscheFamily_gamma0, M_couplingNitscheFamily_alpha;
 
     double M_couplingRNG_coeffForm2;
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_couplingRNG_evalForm1;
-    typename fluid_type::space_fluid_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_couplingRNG_evalForm1;
+    typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
     bool M_coulingRNG_usePrecomputeBC;

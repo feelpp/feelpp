@@ -136,6 +136,31 @@ private :
     std::string M_direction;
 };
 
+
+class ModelMeasuresNormalFluxGeneric
+{
+public :
+    ModelMeasuresNormalFluxGeneric() = default;
+    ModelMeasuresNormalFluxGeneric( ModelMeasuresNormalFluxGeneric const& ) = default;
+    ModelMeasuresNormalFluxGeneric( ModelMeasuresNormalFluxGeneric&& ) = default;
+    ModelMeasuresNormalFluxGeneric& operator=( ModelMeasuresNormalFluxGeneric const& ) = default;
+    ModelMeasuresNormalFluxGeneric& operator=( ModelMeasuresNormalFluxGeneric && ) = default;
+
+    std::string const& name() const { return M_name; }
+    std::set<std::string> const& markers() const { return M_markers; }
+    std::string const& direction() const { return M_direction; }
+    bool isOutward() const { return M_direction == "outward"; }
+
+    void setup( pt::ptree const& _pt, std::string const& name, ModelIndexes const& indexes );
+
+private :
+    std::string M_name;
+    ModelMarkers M_markers;
+    std::string M_direction;
+};
+
+
+
 } // namespace FeelModels
 } // namespace Feel
 

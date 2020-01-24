@@ -1,0 +1,148 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+#PortGroup           active_variants 1.1
+PortGroup           mpi 1.0
+
+# fetch.type          svn
+# fetch.user          gmsh
+# fetch.password      gmsh
+# svn.url             https://geuz.org/svn/gmsh/trunk
+# svn.revision        21697
+# svn.method          export
+# svn.post_args       --username ${fetch.user} --password ${fetch.password}
+
+name                gmsh
+version             2.16.0
+categories          science
+platforms           darwin
+maintainers         feelpp.org:christophe.prudhomme
+description         Finite element mesh generator in 1D, 2D and 3D
+long_description    \
+        Gmsh is an automatic 3D finite element mesh generator (primarily   \
+        Delaunay) with build-in CAD and post-processing facilities. Its     \
+        design goal is to provide a simple meshing tool for academic test   \
+        cases with parametric input and up to date visualization            \
+        capabilities.
+
+homepage            http://www.geuz.org/gmsh/
+master_sites        http://www.geuz.org/gmsh/src/
+distname            gmsh-${version}-source
+extract.suffix      .tgz
+
+checksums           rmd160  d682f35f9ce07e2f0c60d1932c5e0c66416efafb \
+                    sha256  e829eaf32ea02350a385202cc749341f2a3217c464719384b18f653edd028eea
+
+#worksrcdir          trunk
+conflicts           gmsh-devel
+
+patchfiles     gmsh.patch patch-bamg.diff patch-bamg2.diff
+patch.dir      ${worksrcpath}
+
+#worksrcdir	build
+#configure	{ system "mkdir -p ${worksrcpath}/ && cd ${worksrcpath}/ && cmake ${configure.args} ../gmsh-${version}-source" }
+
+#configure.cmd       cmake
+cmake.out_of_source yes
+
+# mpi.enforce_variant   petsc
+# mpi.enforce_variant   slepc
+mpi.setup
+
+default_variants +atlas
+
+#configure.pre_args
+pre-configure {
+configure.args-append \
+    -DCMAKE_INSTALL_PREFIX=${prefix}\
+    -DCMAKE_VERBOSE_MAKEFILE=OFF \
+    -DCMAKE_COLOR_MAKEFILE=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
+    -DCMAKE_INSTALL_NAME_DIR=${prefix}/lib \
+    -DCMAKE_SYSTEM_PREFIX_PATH=\"${prefix}\;/usr\" \
+    -DENABLE_OS_SPECIFIC_INSTALL=OFF \
+    -DCMAKE_CXX_COMPILER=${configure.cxx} \
+    -DCMAKE_C_COMPILER=${configure.cc} \
+    -DENABLE_BUILD_LIB=OFF \
+    -DENABLE_BUILD_SHARED=ON \
+    -DENABLE_NATIVE_FILE_CHOOSER:BOOL=OFF \
+    -DENABLE_OCC:BOOL=OFF \
+    -DENABLE_FLTK:BOOL=ON \
+    -DENABLE_GRAPHICS:BOOL=ON \
+    -DENABLE_METIS=ON \
+    -DENABLE_TAUCS=OFF \
+    -DSEARCH_ANN_IN_SYSTEM=OFF
+}
+
+build.target all shared
+
+depends_lib  \
+    port:mesa \
+    port:cmake \
+    port:libpng \
+    port:python27 \
+    path:lib/libpoppler.dylib:poppler \
+    port:swig \
+    port:swig-python \
+    path:lib/libfltk.dylib:fltk \
+    port:jpeg \
+    port:zlib \
+    port:texinfo \
+    port:libANN
+
+
+
+
+
+variant atlas description {Use Atlas for BLAS-LAPACK} {
+    depends_lib-append port:atlas
+    configure.args-append \
+        -DBLAS_LAPACK_LIBRARIES=${prefix}/lib/libtatlas.dylib
+}
+
+
+variant slepc description {compile with PETSC/SLEPC support} {
+    depends_lib-append      port:petsc
+    depends_lib-append      port:slepc
+
+    mpi.enforce_variant   petsc
+    mpi.enforce_variant   slepc
+
+    #require_active_variants petsc clang37
+    require_active_variants petsc atlas
+    require_active_variants petsc hdf5
+    require_active_variants petsc ml
+    require_active_variants petsc mumps
+    #require_active_variants petsc openmpi
+    require_active_variants petsc parmetis
+    require_active_variants petsc suitesparse
+
+    #require_active_variants slepc clang37
+    #require_active_variants slepc openmpi
+
+    #-DCMAKE_PREFIX_PATH=/opt/local/lib/openmpi/bin \
+ 
+    configure.args-append \
+        -DENABLE_MPI=ON \
+        -DMPIEXEC=${mpi.exec} \
+        -DMPI_CXX_COMPILER=${mpi.cxx} \
+        -DMPI_C_COMPILER=${mpi.cc} \
+        -DENABLE_PETSC=ON \
+        -DPETSC_INC=${prefix}/lib/petsc/include \
+        -DPETSC_LIBS=${prefix}/lib/petsc/lib/libpetsc.dylib \
+        -DENABLE_SLEPC=ON \
+        -DSLEPC_INC=${prefix}/lib/slepc/include \
+        -DSLEPC_LIB=${prefix}/lib/slepc/lib/libslepc.dylib
+}
+
+
+if {![variant_isset slepc] } {
+    configure.args-append \
+        -DENABLE_MPI=OFF \
+        -DENABLE_PETSC=OFF \
+        -DENABLE_SLEPC=OFF
+}
+
