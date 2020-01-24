@@ -156,23 +156,23 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
-        template <typename ExporterType, typename... TupleFieldsType>
-        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& ... tupleFields );
+        template <typename ExporterType, typename TupleFieldsType>
+        void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields );
         template <typename ExporterType, typename TupleFieldsType>
         bool updatePostProcessExports( std::shared_ptr<ExporterType> exporter, std::set<std::string> const& fields, double time, TupleFieldsType const& tupleFields );
 
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
-        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
-        template<typename... TupleQuantitiesType>
-        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& ... tupleQuantities );
-        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
-        bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
-        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
-        bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
-        template <typename MeasurePointEvalType, typename... TupleFieldsType>
-        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields );
-        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
-        bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields );
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename TupleFieldsType, typename TupleQuantitiesType>
+        void executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities );
+        template<typename TupleQuantitiesType>
+        bool updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities );
+        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename TupleFieldsType>
+        bool updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields );
+        template <typename MeshType, typename RangeType, typename SymbolsExpr, typename TupleFieldsType>
+        bool updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields );
+        template <typename MeasurePointEvalType, typename TupleFieldsType>
+        bool updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& tupleFields );
+        template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename TupleFieldsType>
+        bool updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields );
 
         template <typename TupleFieldsType>
         void executePostProcessSave( uint32_type index, TupleFieldsType const& fields )
@@ -334,11 +334,11 @@ ModelNumerical::updateInitialConditions( ModelInitialConditionTimeSet const& ict
         *dataToUpdate[k] = *dataToUpdate[0];
 }
 
-template <typename ExporterType, typename ... TupleFieldsType>
+template <typename ExporterType, typename TupleFieldsType>
 void
-ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& ... tupleFields )
+ModelNumerical::executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields )
 {
-    bool hasFieldToExport = ( this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields ) || ... );
+    bool hasFieldToExport = this->updatePostProcessExports( exporter, this->postProcessExportsFields(), time, tupleFields );
     if ( hasFieldToExport )
     {
         exporter->save();
@@ -354,16 +354,32 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    Feel::for_each( tupleFields, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+    hana::for_each( tupleFields, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
-                        std::string const& fieldName = e.first;
-                        auto const& fieldPtr = e.second;
-                        if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                        if constexpr( Feel::is_iterable<decltype(e)>::value )
                         {
-                            exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
-                                                         prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
-                                                         *fieldPtr );
-                            hasFieldToExport = true;
+                            for( auto const& [fieldName,fieldPtr] : e )
+                            {
+                                if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                                {
+                                    exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                                 prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                                 *fieldPtr );
+                                    hasFieldToExport = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            std::string const& fieldName = e.first;
+                            auto const& fieldPtr = e.second;
+                            if ( fieldPtr && fieldsNamesToExport.find( fieldName ) != fieldsNamesToExport.end() )
+                            {
+                                exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
+                                                             prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
+                                                             *fieldPtr );
+                                hasFieldToExport = true;
+                            }
                         }
                     });
     if ( fieldsNamesToExport.find( "pid" ) != fieldsNamesToExport.end() )
@@ -389,9 +405,9 @@ ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshTyp
     }
 }
 
-template<typename... TupleQuantitiesType>
+template<typename TupleQuantitiesType>
 bool 
-ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& ... tupleQuantities )
+ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& tupleQuantities )
 {
     bool hasMeasure = false;
     std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
@@ -416,15 +432,15 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
     return hasMeasure;
 }
 
-template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
+template <typename MeshType, typename RangeType, typename SymbolsExpr, typename TupleFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
     {
         std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( mesh, rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields... );
+        measureNormEvaluation( mesh, rangeMeshElements, ppNorm, resPpNorms, symbolsExpr, tupleFields );
         for ( auto const& resPpNorm : resPpNorms )
         {
             this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
@@ -434,15 +450,15 @@ ModelNumerical::updatePostProcessMeasuresNorm( std::shared_ptr<MeshType> mesh, R
     return hasMeasure;
 }
 
-template <typename MeshType, typename RangeType, typename SymbolsExpr, typename... TupleFieldsType>
+template <typename MeshType, typename RangeType, typename SymbolsExpr, typename TupleFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields )
 {
     bool hasMeasure = false;
     for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
     {
         std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( mesh, rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields... );
+        measureStatisticsEvaluation( mesh, rangeMeshElements, ppStat, resPpStats, symbolsExpr, tupleFields );
         for ( auto const& resPpStat : resPpStats )
         {
             this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
@@ -452,13 +468,13 @@ ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> m
     return hasMeasure;
 }
 
-template <typename MeasurePointEvalType, typename ... TupleFieldsType>
+template <typename MeasurePointEvalType, typename TupleFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& ... tupleFields )
+ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, TupleFieldsType const& tupleFields )
 {
     bool hasMeasure = false;
     std::map<std::string,double> resPpPoints;
-    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields... );
+    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
@@ -467,12 +483,12 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
     return hasMeasure;
 }
 
-template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename... TupleFieldsType>
+template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename TupleFieldsType>
 bool 
 ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... tupleFields )
 {
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields... );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields );
     bool hasMeasurePoint = false;
     if( measurePointsEvaluation )
         hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields... );
