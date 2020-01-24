@@ -28,6 +28,8 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/vonmises.hpp>
+#include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
 #include "nullspace-rigidbody.hpp"
 
@@ -39,7 +41,7 @@ makeOptions()
 {
     po::options_description hdgoptions( "test qs_hdg_elasticity options" );
     hdgoptions.add_options()
-        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/feelpp/quickstart/elasticity.py"), "python file to evaluate" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value("$cfgdir/../python/elasticity.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
@@ -59,7 +61,6 @@ makeOptions()
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
         ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
-        ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
         ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
         ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
         ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
@@ -221,27 +222,28 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
                                        trans(idt(uhat))*rightface(normal(v))) );
     a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-trans(idt(uhat))*(normal(v)));
+
     toc("a(0,2)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=(trans(id(w))*divt(sigma)));
+                              _expr=-trans(id(w))*divt(sigma));
     toc("a(1,0)", true);
     tic();
     // begin dp: here we need to put the projection of u on the faces
-    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant*(
+    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=tau_constant*(
                                   trans(leftfacet(idt(u)))*leftface(id(w)) +
                                   trans(rightfacet(idt(u)))*rightface(id(w) )) );
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-(tau_constant * trans(idt(u))*id(w)));
+                              _expr=(tau_constant * trans(idt(u))*id(w)));
     toc("a(1,1)", true);
     tic();
 
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=tau_constant*trans(idt(uhat))*(leftface(id(w))+rightface(id(w)))  );
+                              _expr=-tau_constant*trans(idt(uhat))*(leftface(id(w))+rightface(id(w)))  );
 
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=tau_constant * trans(idt(uhat)) * id(w) );
+                              _expr=-tau_constant * trans(idt(uhat)) * id(w) );
 
     toc("a(1,2)", true);
     tic();
@@ -269,10 +271,10 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
                                   _expr=( trans(id(m))*(normalt(sigma)) ));
 
         a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=tau_constant * trans(id(m)) * ( idt(u) ) );
+                                  _expr=-tau_constant * trans(id(m)) * ( idt(u) ) );
 
         a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                                  _expr=-tau_constant * trans(idt(uhat)) * id(m)  );
+                                  _expr=tau_constant * trans(idt(uhat)) * id(m)  );
     }
     toc("a(2,{0,1,2})", true);
     toc("matrices",true);
@@ -350,13 +352,17 @@ int hdg_elasticity( std::map<std::string,std::string>& locals )
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
-    e->add( sigmaName, sigmap );
-    e->add( uName, up );
+    e->add( sigmaName, sigmap, "nodal" );
+    e->add( uName, up, "nodal" );
+    std::set<std::string> reps({ "nodal", "element" });
+    e->add( "vonmises", vonmises(idv(sigmap)), reps );
+    e->add( "principal_stress", eig(idv(sigmap)), reps );
+    e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
     
     if ( boption("exact" ) )
     {
-        e->add( sigma_exName, v );
-        e->add( u_exName, w );
+        e->add( sigma_exName, v, "nodal" );
+        e->add( u_exName, w, "nodal" );
     }
 
     e->save();

@@ -165,7 +165,7 @@ sign( T const& x )
         typedef VF_FUNC_NAME(O)<ExprT1> this_type;                      \
         typedef typename expression_1_type::value_type value_1_type;    \
         typedef value_1_type value_type;                                \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = typename expression_1_type::evaluate_type; \
                                                                         \
         VF_CHECK_ARITHMETIC_TYPE(value_1_type)                          \
                                                                         \
@@ -192,6 +192,16 @@ sign( T const& x )
         uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*M_expr_1.polynomialOrder(); } \
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) ); } \
+                                                                        \
+        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        {                                                               \
+            auto eval = M_expr_1.evaluate(p,worldcomm);                 \
+            evaluate_type res(eval.rows(),eval.cols());                 \
+            for ( uint16_type i=0;i< eval.rows();++i )                  \
+                for ( uint16_type j=0;j< eval.cols();++j )              \
+                    res(i,j) = VF_FUNC_IMPL(O)( eval(i,j) );            \
+            return res;                                                 \
+        }                                                               \
                                                                         \
         void eval( int nx, value_type const* x, value_type* f ) const   \
         {                                                               \
@@ -363,7 +373,7 @@ sign( T const& x )
         typedef typename expression_1_type::value_type value_1_type;    \
         typedef typename expression_2_type::value_type value_2_type;    \
         typedef value_1_type value_type;                                \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = typename expression_1_type::evaluate_type; \
                                                                         \
         VF_CHECK_ARITHMETIC_TYPE(value_1_type)                          \
         VF_CHECK_ARITHMETIC_TYPE(value_2_type)                          \
@@ -391,6 +401,18 @@ sign( T const& x )
         uint16_type polynomialOrder() const { return VF_FUNC_POLYNOMIALORDER_SCALING(O)*std::max(M_expr_1.polynomialOrder(),M_expr_2.polynomialOrder()); } \
                                                                         \
         bool isPolynomial() const { return  ( M_expr_1.isPolynomial() && M_expr_2.isPolynomial() && ( M_expr_1.polynomialOrder() == 0 ) && ( M_expr_2.polynomialOrder() == 0 ) ); } \
+                                                                        \
+        evaluate_type evaluate( bool p, worldcomm_ptr_t const& worldcomm ) const \
+        {                                                               \
+            auto eval1 = M_expr_1.evaluate(p,worldcomm);                \
+            auto eval2 = M_expr_2.evaluate(p,worldcomm);                \
+            CHECK( eval1.rows() == eval2.rows() && eval1.cols() == eval2.cols() ) << "should be have same shape"; \
+            evaluate_type res(eval1.rows(),eval1.cols());               \
+            for ( uint16_type i=0;i< eval1.rows();++i )                 \
+                for ( uint16_type j=0;j< eval1.cols();++j )             \
+                    res(i,j) = VF_FUNC_IMPL(O)( eval1(i,j),eval2(i,j) ); \
+            return res;                                                 \
+        }                                                               \
                                                                         \
         void eval( int nx, value_1_type const* x, value_2_type const* y, value_type* f ) const   \
         {                                                               \

@@ -369,15 +369,15 @@ struct space_value
 template<typename Args>
 struct project
 {
-    typedef typename clean_type<Args,tag::space>::type the_space_type;
+    typedef clean_type<Args,tag::space> the_space_type;
     typedef typename mpl::if_<is_shared_ptr<the_space_type>,
                               mpl::identity<space_ptr<the_space_type> >,
                               mpl::identity<space_value<the_space_type> > >::type::type space_type;
     typedef typename space_type::type _space_type;
     typedef std::shared_ptr<_space_type> _space_ptrtype;
     typedef typename _space_type::element_type element_type;
-    //typedef typename clean_type<Args,tag::expr>::type _expr_type;
-    //typedef typename clean_type<Args,tag::range>::type _range_type;
+    //typedef lean_type<Args,tag::expr> _expr_type;
+    //typedef clean_type<Args,tag::range> _range_type;
 };
 }
 /// \endcond

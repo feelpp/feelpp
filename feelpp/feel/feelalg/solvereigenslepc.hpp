@@ -83,7 +83,7 @@ public:
 
     typedef typename super::value_type value_type;
     typedef typename super::real_type real_type;
-
+    using size_type = typename super::size_type;
     typedef typename super::solvereigen_type solvereigen_type;
     typedef typename super::solvereigen_ptrtype solvereigen_ptrtype;
 

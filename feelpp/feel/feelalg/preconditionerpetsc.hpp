@@ -218,9 +218,42 @@ getOption( std::string const& name, std::string const& prefix, std::string const
     return res;
 }
 template <typename T>
+struct getOptionIfAvalaible
+{
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( std::optional<T> ), static apply, tag,
+        ( required
+          ( name,( std::string ) ) )
+        ( optional
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
+          ( prefix_overload, *, std::vector<std::string>() )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
+          ) )
+        {
+            std::optional<T> res;
+            std::string optctx = (sub.empty())? "": sub+"-";
+            if ( vm.count( prefixvm(prefix,optctx+name) ) )
+            {
+                res = option(_name=name,_prefix=prefix,_sub=sub,_vm=vm).template as<T>();
+            }
+            for ( std::string const& prefixAdded : prefix_overload/*prefixOverwrite*/ )
+            {
+                if ( vm.count( prefixvm(prefixAdded,optctx+name) ) )
+                {
+                    res = option(_name=name,_prefix=prefixAdded,_sub=sub,_vm=vm).template as<T>();
+                }
+            }
+            return res;
+        }
+
+};
+
+template <typename T>
 std::pair<bool,T>
-getOptionIfAvalaible( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
-                      po::variables_map vm = Environment::vm() )
+getOptionIfAvalaibleOLD( std::string const& name, std::string const& prefix, std::string const& sub, std::vector<std::string> const& prefixOverwrite,
+                         po::variables_map vm = Environment::vm() )
 {
     bool hasOption=false;
     T res{};
@@ -573,6 +606,7 @@ public :
 
 private :
     void run( PC& pc );
+    void runSchur( PC& pc );
 
 
     class ConfigureSubKSP : public ConfigurePCBase
@@ -655,22 +689,6 @@ private :
 };
 
 /**
- * ConfigurePCHYPRE_EUCLID
- */
-class ConfigurePCHYPRE_EUCLID : public ConfigurePCBase
-{
-public :
-    ConfigurePCHYPRE_EUCLID( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
-                             std::string const& sub, std::string const& prefix, std::vector<std::string> const& prefixOverwrite );
-
-private :
-    void run( PC& pc );
-
-private :
-    int M_levels;
-};
-
-/**
  * ConfigurePCHYPRE_BOOMERAMG
  */
 class ConfigurePCHYPRE_BOOMERAMG : public ConfigurePCBase
@@ -683,15 +701,15 @@ private :
     void run( PC& pc );
 
 private :
-    int M_max_iter;
-    double M_tol;
-    int M_cycle_type;
-    int M_max_levels;
-    int M_coarsen_type;
-    double M_strong_threshold;
-    int M_agg_nl;
-    int M_relax_type_all;
-    int M_interp_type;
+    std::optional<int> M_max_iter;
+    std::optional<double> M_tol;
+    std::optional<std::string> M_cycle_type;
+    std::optional<int> M_max_levels;
+    std::optional<std::string> M_coarsen_type;
+    std::optional<double> M_strong_threshold;
+    std::optional<int> M_agg_nl;
+    std::optional<std::string> M_relax_type_all;
+    std::optional<std::string> M_interp_type;
 };
 
 /**
@@ -707,14 +725,14 @@ private :
     void run( PC& pc );
 
 private :
-    int M_print_level;
-    int M_max_iter;
-    int M_cycle_type;
-    double M_tol;
-    int M_relax_type;
-    int M_relax_times;
-    double M_relax_weight;
-    double M_omega;
+    std::optional<int> M_print_level;
+    std::optional<int> M_max_iter;
+    std::optional<int> M_cycle_type;
+    std::optional<double> M_tol;
+    std::optional<int> M_relax_type;
+    std::optional<int> M_relax_times;
+    std::optional<double> M_relax_weight;
+    std::optional<double> M_omega;
     //Mat M_G;
     //Vec M_vx;
     //Vec M_vy;

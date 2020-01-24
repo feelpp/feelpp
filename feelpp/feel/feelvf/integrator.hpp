@@ -3738,7 +3738,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             if ( faceCur.isGhostFace() )
             {
-                LOG(INFO) << "face id : " << faceCur.id() << " is a ghost face";
+                VLOG(3) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
 
@@ -6576,8 +6576,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  template<typename Args>
  struct integrate_type
  {
-     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
-     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
+     typedef clean2_type<Args,tag::expr,Expr<Cst<double> > > _expr_type;
+     typedef typename Feel::detail::quadptlocrangetype<clean_type<Args,tag::range>>::type _range_type;
      typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
      static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
      using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
@@ -6598,8 +6598,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      //using _value_type = typename _expr_type::value_type;
      using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
 
-     typedef typename clean2_type<Args,tag::quad, im_default_type>::type __quad_type;
-     typedef typename clean2_type<Args,tag::quad1, im_default_type >::type __quad1_type;
+     typedef clean2_type<Args,tag::quad, im_default_type> __quad_type;
+     typedef clean2_type<Args,tag::quad1, im_default_type > __quad1_type;
      using _im_type = integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
      using _quad_type = typename _im_type::_quad_type;
      using _quad1_type = typename _im_type::_quad1_type;

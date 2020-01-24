@@ -33,9 +33,11 @@
 #include <memory>
 
 #include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
+#include <boost/signals2/signal.hpp>
+
 #include <boost/format.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -61,10 +63,10 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
-#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -75,7 +77,6 @@
 #include <hwloc.h>
 #endif
 
-#include <feel/feelcore/mongocxx.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -574,7 +575,7 @@ public:
         }
 
     //! \return the root repository (default: \c $HOME/feel)
-    static std::string rootRepository();
+    static std::string const& rootRepository();
 
     /**
      * Find a file. The lookup is as follows:
@@ -587,7 +588,7 @@ public:
      * If \p filename is not found, then the empty string is returned.
      * \return the string containing the filename path
      */
-    static std::string findFile( std::string const& filename );
+    static std::string findFile( std::string const& filename, std::vector<std::string> paths = {} );
 
     /**
      * \return the list of paths where Feel++ looks into to find a Gmsh Geo file
@@ -797,6 +798,13 @@ public:
      */
     static std::string expand( std::string const& expr );
 
+    /**
+     * try find remotely the file \p fname 
+     * \param fname filename 
+     * \param subdir ubdirectory to store the file that may be downloaded
+     * @return the filename
+     */ 
+    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" ); 
     //@}
 
 private:
@@ -846,6 +854,7 @@ private:
 
     static std::vector<fs::path> S_paths;
 
+    static fs::path S_rootdir;
     static fs::path S_appdir;
     static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
@@ -1097,5 +1106,4 @@ BOOST_PARAMETER_FUNCTION(
 } // Feel
 
 #include <feel/feelcore/feelio.hpp>
-
 #endif /* FEELPP_ENVIRONMENT_HPP */

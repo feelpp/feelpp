@@ -87,7 +87,7 @@ public:
 
     typedef Ones<M,N> this_type;
     typedef double value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,M,N>;
 
     //@}
 
@@ -145,6 +145,10 @@ public:
 
     //blitz::Array<value_type,2> ones() const { return M_values; }
     Eigen::Matrix<double,M,N> const& ones() const
+    {
+        return M_values;
+    }
+    constexpr evaluate_type evaluate( bool, worldcomm_ptr_t const& ) const
     {
         return M_values;
     }

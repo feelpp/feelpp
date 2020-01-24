@@ -97,32 +97,47 @@ target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 #
 # Eigen
 #
-add_subdirectory(eigen)
 if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
-  FIND_PACKAGE(Eigen3)
+  FIND_PACKAGE(Eigen3 REQUIRED)
   MESSAGE(STATUS "Eigen3 system found:")
-  MESSAGE("EIGEN_INCLUDE_DIR=${EIGEN_INCLUDE_DIR}")
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-  MESSAGE(STATUS "Adding unsupported headers to EIGEN3_INCLUDE_DIR:")
-  set( EIGEN3_INCLUDE_DIR ${EIGEN3_INCLUDE_DIR} ${EIGEN3_INCLUDE_DIR}/unsupported)
-  MESSAGE("EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}")
-endif()
-if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
-  option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
-  
-  set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
-
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
-elseif( EIGEN3_FOUND )
-  SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/System" )
 else()
-  find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
-    PATHS
-    $ENV{FEELPP_DIR}/include/feelpp
-    NO_DEFAULT_PATH
-    )
+
+  set(EIGEN_LEAVE_TEST_IN_ALL_TARGET 1)
+  set( EIGEN_INCLUDE_INSTALL_DIR "include/feelpp/eigen" )
+  add_subdirectory(eigen)
+
+  if (NOT EIGEN3_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/feel AND EXISTS ${CMAKE_SOURCE_DIR}/feelpp/contrib )
+    option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" OFF)
+    
+    set( EIGEN3_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen ${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported )
+    target_include_directories( feelpp_contrib BEFORE
+      INTERFACE
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/contrib/eigen/>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/feelpp/contrib/eigen/unsupported>
+      $<INSTALL_INTERFACE:include/feelpp/eigen>
+      $<INSTALL_INTERFACE:include/feelpp/eigen/unsupported>
+      )
+
+    SET(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Eigen3/Contrib" )
+  else()
+    message(FATAL_ERROR "Eigen contrib not found" )
+    # find_path(EIGEN3_INCLUDE_DIR NAMES signature_of_eigen3_matrix_library
+    #   PATHS
+    #   $ENV{FEELPP_DIR}/include/feelpp
+    #   NO_DEFAULT_PATH
+    #   )
+  endif()
+
 endif()
 
+# there is an issue with eigen+mkl
+if ( 0 ) #MKL_FOUND )
+  target_compile_definitions(eigen INTERFACE EIGEN_USE_MKL_ALL)
+  target_link_libraries(eigen INTERFACE ${MKL_LIBRARIES})  # error with cmake < 3.13, see CMP0079, use instead feelpp_contrib
+  #target_link_libraries(feelpp_contrib INTERFACE ${MKL_LIBRARIES})
+  target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
+  target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
+endif()
 target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE eigen )
 
@@ -282,8 +297,8 @@ set(KWSYS_USE_SystemInformation 1 CACHE INTERNAL "")
 #  set(KWSYS_USE_ConsoleBuf 1)
 
 # install rules.
-set(KWSYS_INSTALL_BIN_DIR bin CACHE INTERNAL "")
-set(KWSYS_INSTALL_LIB_DIR lib CACHE INTERNAL "")
+set(KWSYS_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
+set(KWSYS_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
 set(KWSYS_INSTALL_INCLUDE_DIR include/feelpp CACHE INTERNAL "")
 set(KWSYS_INSTALL_COMPONENT_NAME_RUNTIME Runtime CACHE INTERNAL "")
 set(KWSYS_INSTALL_COMPONENT_NAME_DEVELOPMENT Development CACHE INTERNAL "")
@@ -301,10 +316,55 @@ if ( FEELPP_ENABLE_KWSYS )
   endif()
 endif()
 
-if ( FEELPP_HAS_GMSH )
-  add_subdirectory(gmsh)
+
+option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
+# FMILib configure
+# install rules.
+set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
+set(FMILIB_INSTALL_INCLUDE_DIR include/feelpp/fmilib CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_RUNTIME Runtime CACHE INTERNAL "")
+set(FMILIB_INSTALL_COMPONENT_NAME_DEVELOPMENT Development CACHE INTERNAL "")
+set(FMILIB_INSTALL_EXPORT_NAME feelpp-contrib-export-targets CACHE INTERNAL "")
+if ( FEELPP_ENABLE_FMILIB )
+  feelppContribPrepare( fmilib )
+  if ( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    add_subdirectory(fmilib)
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_FMILIB )
+    target_link_libraries(feelpp_contrib INTERFACE feelpp_fmilib )
+    target_include_directories(feelpp_contrib INTERFACE
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/fmilib/>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/contrib/fmilib/>
+      $<INSTALL_INTERFACE:include/feelpp/fmilib> )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} FmiLib/Contrib")
+  endif()
 endif()
 
+if ( FEELPP_HAS_GMSH )
+  add_subdirectory(gmsh)
+  if( FEELPP_HAS_GMSH_LIBRARY AND ( NOT FEELPP_HAS_GMSH_API OR FEELPP_GMSH_API_MISSING_HEADERS ) )
+    if ( TARGET feelpp_gmsh_get_files )
+      add_dependencies( feelpp_contrib feelpp_gmsh_get_files )
+    endif()
+    if ( DEFINED FEELPP_GMSH_MISSING_HEADERS_DIR )
+      target_include_directories(feelpp_contrib INTERFACE
+        $<BUILD_INTERFACE:${FEELPP_GMSH_MISSING_HEADERS_DIR}>
+        $<INSTALL_INTERFACE:include/feelpp/gmsh> )
+    endif()
+  endif()
+endif()
+
+feelppContribPrepare( tabulate )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( tabulate )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_TABULATE )
+  target_link_libraries(feelpp_contrib INTERFACE tabulate )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/tabulate/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
+endif()
+  
 add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)

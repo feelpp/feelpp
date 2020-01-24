@@ -102,7 +102,7 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
     typedef ComponentsExpr<ExprT> this_type;
 
     //@}
@@ -138,10 +138,10 @@ public:
         return M_expr;
     }
 
-    auto
+    evaluate_type
     evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
         {
-            return M_expr.evaluate( p, worldcomm ); // TODO : take into composant
+            return evaluate_type::Constant( M_expr.evaluate( p, worldcomm )(M_c1,M_c2) );
         }
     /** @name Operator overloads
      */
@@ -337,6 +337,29 @@ size_type dynamicContext( T const& t )
     }
 }
 
+
+
+template <typename T, typename = void>
+struct has_evaluate_without_context : std::false_type {};
+template <typename T>
+struct has_evaluate_without_context<T, std::void_t<decltype(std::declval<T>().evaluate( true,Feel::worldcomm_ptr_t{} )) >>
+    : std::true_type {};
+template <typename T>
+constexpr bool has_evaluate_without_context_v = has_evaluate_without_context<T>::value;
+
+template <typename T, typename = void>
+struct evaluate_expression_type
+{
+    using type = Eigen::Matrix<typename T::value_type,Eigen::Dynamic,Eigen::Dynamic>;
+};
+template <typename T>
+struct evaluate_expression_type<T, std::void_t<typename T::evaluate_type>>
+{
+    using type = typename T::evaluate_type;
+};
+template <typename T>
+using evaluate_expression_t = typename evaluate_expression_type<T>::type;
+
 /*!
   \class Expr
   \brief Variational Formulation Expression
@@ -376,9 +399,10 @@ public:
 
     typedef ExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef typename expression_type::evaluate_type evaluate_type;
+    using evaluate_type = evaluate_expression_t<expression_type>;
     typedef Expr<ExprT> this_type;
     typedef std::shared_ptr<this_type> this_ptrtype;
+
     //@}
 
     /** @name Constructors, destructor
@@ -692,6 +716,27 @@ public:
     template<typename Geo_t>
     tensorPermutation<Geo_t> evaluatorWithPermutation( Geo_t geo ) const { return tensorPermutation<Geo_t>( *this, geo ); }
 
+
+private :
+    template<typename ElementType>
+    struct EvaluatorTraits
+    {
+    private :
+        typedef ElementType element_type;
+        typedef typename element_type::gm_type gm_type;
+        typedef typename gm_type::template Context<this_type::context, element_type> gmc_type;
+        typedef std::shared_ptr<gmc_type> gmc_ptrtype;
+        typedef fusion::map<fusion::pair<Feel::vf::detail::gmc<0>, gmc_ptrtype> > map_gmc_type;
+        typedef typename this_type::template tensor<map_gmc_type> eval_expr_type;
+        //typedef typename eval_expr_type::shape shape;
+    public :
+        typedef eval_expr_type type;
+    };
+
+public :
+    template<typename ElementType>
+    using evaluator_t = typename EvaluatorTraits<ElementType>::type;
+
 #if 0
     class Diff
     {
@@ -794,7 +839,13 @@ public:
     evaluate_type
     evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const
     {
-        return M_expr.evaluate( parallel,worldcomm );
+        if constexpr ( has_evaluate_without_context_v<expression_type> )
+                         return M_expr.evaluate( parallel,worldcomm );
+        else
+        {
+            CHECK( false ) << "expression can not be evaluated without context";
+            return evaluate_type{};
+        }
     }
     template<typename T, int M, int N=1>
     decltype(auto)

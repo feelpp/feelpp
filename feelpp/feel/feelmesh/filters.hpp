@@ -33,6 +33,7 @@
 
 #include <utility>
 #include <unordered_set>
+#include <any>
 #if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
 #else
@@ -40,6 +41,7 @@
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/rank.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
@@ -48,6 +50,12 @@
 
 namespace Feel
 {
+template <typename T> struct is_filter: std::false_type {};
+
+template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+template <typename... T>
+constexpr bool is_filter_v = is_filter<T...>::value;
+
 /**
  * a RangeType can be one or more filter/range objects of the same type, we
  * extract the underlying type by first casting everything to a list and then
@@ -237,6 +245,7 @@ struct marked3elements
 
 } // meta
 #endif
+
 /**
  * \ingroup MeshIterators
  * \return a pair of iterators to iterate over elements with pid \p flag
@@ -306,6 +315,7 @@ elements( MeshType const& mesh, vf::Expr<ExprType> const& expr )
                 myelts->push_back(boost::cref(elt));
         }
     }
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(), myelts->end(),
                               myelts );
@@ -392,7 +402,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh )
 {
@@ -405,13 +415,13 @@ markedelements( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker \p flag
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 1, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -423,13 +433,13 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& m
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 2, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -441,18 +451,52 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
 }
+
+
+
+/**
+ *
+ * \ingroup MeshIterators
+ * \return a mapping between a id and pair of iterators to iterate over elements of the
+ * mesh with marker \p flag
+ */
+template<typename MeshType>
+std::map<int,markedelements_t<MeshType> >
+collectionOfMarkedelements( MeshType const& mesh, std::any const& collectionOfMarkersFlag )
+{
+    std::map<int,std::set<flag_type>> collectionOfMarkerFlagSet;
+    if ( auto argCasted = std::any_cast<std::map<int,int>>( &collectionOfMarkersFlag) )
+    {
+        for ( auto const& [part,markersFlag] : *argCasted )
+            collectionOfMarkerFlagSet[part] = Feel::unwrap_ptr( mesh ).markersId( markersFlag );
+    }
+    else
+        CHECK( false ) << "TODO : others cast";
+
+    uint16_type markerType = 1;
+    rank_type pid = rank( mesh );
+    auto collectionOfRangeElement = Feel::unwrap_ptr( mesh ).collectionOfElementsWithMarkerByType( markerType, collectionOfMarkerFlagSet, pid );
+    std::map<int,markedelements_t<MeshType> > res;
+    for ( auto const& [part,rangeElementsWithMarker] : collectionOfRangeElement )
+        res[part] = boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
+                                       std::get<0>( rangeElementsWithMarker ),
+                                       std::get<1>( rangeElementsWithMarker ),
+                                       std::get<2>( rangeElementsWithMarker ) );
+    return res;
+}
+
 
 /**
  *
@@ -477,7 +521,7 @@ idedelements( MeshType const& mesh, flag_type flag )
  *
  * @return a pair of face iterators (begin,end)
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 faces_pid_t<MeshType>
 faces( MeshType const& mesh )
 {
@@ -1075,7 +1119,7 @@ elements( MeshType const& imesh, EntityProcessType entity )
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1121,7 +1165,7 @@ boundaryelements( MeshType const& imesh, EntityProcessType entity )
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1175,7 +1219,7 @@ elementsWithMarkedFaces( MeshType const& imesh, boost::any const& flag, EntityPr
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1223,7 +1267,7 @@ markedelements( MeshType const& imesh, boost::any const& flag, EntityProcessType
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1270,7 +1314,7 @@ marked2elements( MeshType const& imesh, boost::any const& flag, EntityProcessTyp
             eltGhostDone.insert( eltOffProc.id() );
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1312,7 +1356,7 @@ faces( MeshType const& imesh, EntityProcessType entity )
             }
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1356,7 +1400,7 @@ boundaryfaces( MeshType const& imesh, EntityProcessType entity )
             }
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1401,7 +1445,7 @@ marked2faces( MeshType const& imesh, boost::any flag, EntityProcessType entity )
             }
         }
     }
-
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_FACES>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1464,7 +1508,7 @@ interprocessedges( MeshType const& imesh, rank_type neighbor_pid = invalid_rank_
             }
         }
     }
-
+    myedges->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_EDGES>(),
                               myedges->begin(),
                               myedges->end(),
@@ -1502,6 +1546,7 @@ idelements( MeshType const& imesh, IteratorType begin, IteratorType end )
         if ( mesh.hasElement( eltId ) )
             myelts->push_back( boost::cref( mesh.element( eltId ) ) );
     }
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(),
                               myelts->end(),
@@ -1591,6 +1636,7 @@ elements( MeshType const& mesh, elements_reference_wrapper_t<MeshType> const& ra
         if ( addElt )
             myelts->push_back(boost::cref(elt));
     }
+    myelts->shrink_to_fit();
     return boost::make_tuple( mpl::size_t<MESH_ELEMENTS>(),
                               myelts->begin(), myelts->end(),
                               myelts );

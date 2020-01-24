@@ -106,7 +106,7 @@ public:
 
     typedef T value_type;
     typedef Convex convex_type;
-    typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim>::type mesh_convex_type;
+    typedef typename convex_type::template shape<convex_type::nDim, 1, convex_type::nDim> mesh_convex_type;
 
     typedef PointSet<convex_type, value_type> pointset_type;
 

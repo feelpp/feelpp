@@ -202,10 +202,10 @@ Jacobi<N, T>::operator()( value_type const& x ) const
     const value_type one = 1.0;
     const value_type two = 2.0;
 
-    if ( N == 0 )
+    if constexpr ( N == 0 )
         return one;
 
-    else if ( N == 1 )
+    else if constexpr ( N == 1 )
         return 0.5 * ( M_a - M_b + ( M_a + M_b + two ) * x );
 
     else  // N >= 2
@@ -238,12 +238,14 @@ template<int N, typename T>
 typename Jacobi<N, T>::value_type
 Jacobi<N, T>::derivate( value_type const& x ) const
 {
-    if (  N == 0 )
+    if constexpr (  N == 0 )
         return 0.0;
-
-    Jacobi<N-1, T> dp( M_a + 1.0, M_b + 1.0 );
-    value_type Nv = value_type( N );
-    return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
+    else
+    {
+        Jacobi<N-1, T> dp( M_a + 1.0, M_b + 1.0 );
+        value_type Nv = value_type( N );
+        return 0.5 * ( M_a  + M_b + Nv + 1.0 ) * dp( x );
+    }
 }
 namespace dyna
 {
@@ -538,7 +540,7 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 1.0 );
 
-    if ( N > 0 )
+    if constexpr ( N > 0 )
     {
         ublas::row( res, 1 ) = 0.5 * ( ublas::scalar_vector<value_type>( res.size2(), a - b ) + ( a + b + 2.0 ) * __pts );
         value_type apb = a + b;

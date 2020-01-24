@@ -44,7 +44,7 @@ namespace crbplugin_details
 
 struct DofTablesComposite
 {
-    DofTablesComposite( std::vector<std::shared_ptr<DofTableBase>> & doftables )
+    DofTablesComposite( std::vector<std::shared_ptr<DofTableBase<>>> & doftables )
         :
         M_doftables( doftables )
         {}
@@ -55,22 +55,22 @@ struct DofTablesComposite
             M_doftables.push_back( x->dof() );
         }
 private :
-    std::vector<std::shared_ptr<DofTableBase>> & M_doftables;
+    std::vector<std::shared_ptr<DofTableBase<>>> & M_doftables;
 };
 
 template <typename SpaceType>
-std::vector<std::shared_ptr<DofTableBase>>
+std::vector<std::shared_ptr<DofTableBase<>>>
 doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< !SpaceType::is_composite >::type* = nullptr )
 {
-    std::vector<std::shared_ptr<DofTableBase>> dt;
+    std::vector<std::shared_ptr<DofTableBase<>>> dt;
     dt.push_back( space->dof() );
     return dt;
 }
 template <typename SpaceType>
-std::vector<std::shared_ptr<DofTableBase>>
+std::vector<std::shared_ptr<DofTableBase<>>>
 doftables( std::shared_ptr<SpaceType> const& space, typename std::enable_if< SpaceType::is_composite >::type* = nullptr )
 {
-    std::vector<std::shared_ptr<DofTableBase>> dt;
+    std::vector<std::shared_ptr<DofTableBase<>>> dt;
     boost::fusion::for_each( space->functionSpaces(), Feel::crbplugin_details::DofTablesComposite( dt ) );
     return dt;
 }
@@ -189,14 +189,14 @@ public:
         }
 
 
-    std::pair<std::vector<std::shared_ptr<DofTableBase>>,std::shared_ptr<DataMap>> doftables() const override
+    std::pair<std::vector<std::shared_ptr<DofTableBase<>>>,std::shared_ptr<DataMap<>>> doftables() const override
         {
             DCHECK( M_crb ) << "DB not loaded";
             if ( M_crb->model() && M_crb->model()->rBFunctionSpace() && M_crb->model()->rBFunctionSpace()->functionSpace() )
                 return std::make_pair( Feel::crbplugin_details::doftables( M_crb->model()->rBFunctionSpace()->functionSpace() ),
                                        M_crb->model()->rBFunctionSpace()->functionSpace()->dof() );
             else
-                return std::make_pair( std::vector<std::shared_ptr<DofTableBase>>(), std::shared_ptr<DataMap>() );
+                return std::make_pair( std::vector<std::shared_ptr<DofTableBase<>>>(), std::shared_ptr<DataMap<>>() );
         }
 
     std::shared_ptr<Vector<double>> feElement() const override

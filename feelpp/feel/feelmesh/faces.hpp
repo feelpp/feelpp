@@ -318,6 +318,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
     /**
@@ -344,6 +345,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
     /**
@@ -410,6 +412,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -433,6 +436,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -460,6 +464,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -483,6 +488,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 
@@ -504,6 +510,7 @@ public:
                     continue;
                 myfaces->push_back( boost::cref( face ) );
             }
+            myfaces->shrink_to_fit();
             return std::make_tuple( myfaces->begin(), myfaces->end(), myfaces );
         }
 

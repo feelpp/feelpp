@@ -401,13 +401,13 @@ public:
      * \param list_p list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomials( std::vector<uint16_type> const& list_p  ) const
+    PolynomialSet<Poly, PolySetType> polynomials( std::vector<int> const& list_p  ) const
     {
         size_type dim_p = this->polynomialDimension();
         size_type new_dim_p = nComponents*list_p.size();
         matrix_type coeff( nComponents*nComponents*list_p.size(), M_coeff.size2() );
         int j = 0;
-        BOOST_FOREACH( uint16_type i, list_p )
+        for( int i: list_p )
         {
             for ( int c = 0; c < nComponents; ++c )
             {
@@ -819,6 +819,7 @@ public:
             M_nodes( __pts ),
             M_mean(__ref_ele->nbDof()),
             M_phi(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
+            M_phi_eigen( __ref_ele->nbDof(), __pts.size2() ),
             M_grad(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
             M_hessian(boost::extents[__ref_ele->nbDof()][__pts.size2()])
         {
@@ -828,6 +829,17 @@ public:
                 M_mean[i] = fm(i,0);
             }
             init( M_ref_ele, __pts, rank_t<rank>() );
+            if constexpr ( rank == 0  )
+            {
+                for ( int q = 0; q < __pts.size2(); ++q )
+                {
+                    for ( int i = 0; i < __ref_ele->nbDof(); ++i )
+                    {
+                        M_phi_eigen( i, q ) = M_phi[i][q]( 0,0 );
+                    }
+                }
+            }
+                
         }
 
         /** copy constructor (deep copy) */
@@ -925,6 +937,10 @@ public:
             {
                 return &M_phi;
             }
+        eigen_matrix_xx_col_type<value_type> const& phiEigen() const
+            {
+                return M_phi_eigen;
+            }        
         /**
          * Returns the value of the q-th node of the i-th basis
          * functions.
@@ -1279,6 +1295,7 @@ public:
         matrix_node_t_type M_nodes;
         mean_value_type M_mean;
         functionvalue_type M_phi;
+        eigen_matrix_xx_col_type<value_type> M_phi_eigen;
         grad_type M_grad;
         hessian_type M_hessian;
     }; /** class PreCompute **/

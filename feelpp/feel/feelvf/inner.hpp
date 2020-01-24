@@ -99,7 +99,7 @@ class Product : public ExprDynamicBase
     typedef ExprL left_expression_type;
     typedef ExprR right_expression_type;
     typedef typename left_expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
     typedef Product<ExprL, ExprR, Type, Props> this_type;
 
     //@}
@@ -164,10 +164,38 @@ class Product : public ExprDynamicBase
         return M_right_expr;
     }
 
-    auto
-    evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
         {
-            return M_left_expr.evaluate(p,worldcomm) * M_right_expr.evaluate(p,worldcomm); // TODO : take into account Eigen::Matrix
+            value_type res = 0;
+            if constexpr ( Type == 1 )
+            {
+                auto leval = M_left_expr.evaluate(p,worldcomm);
+                if constexpr( IsSame )
+                    {
+                        for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
+                            for ( uint16_type c1 = 0; c1 < leval.rows(); ++c1 )
+                            {
+                                value_type val = leval( c1, c2 );
+                                res += val * val;
+                            }
+
+                    }
+                else
+                {
+                    auto reval = M_right_expr.evaluate(p,worldcomm);
+                    for ( uint16_type c2 = 0; c2 < leval.cols(); ++c2 )
+                        for ( uint16_type c1 = 0; c1 < leval.rows(); ++c1 )
+                        {
+                            res += leval( c1, c2 ) * reval( c1, c2 );
+                        }
+                }
+            }
+
+            if ( ApplySqrt )
+                return evaluate_type::Constant( math::sqrt( res ) );
+            else
+                return evaluate_type::Constant( res );
         }
     //@}
 
@@ -224,38 +252,38 @@ class Product : public ExprDynamicBase
         void init( IM const& im )
         {
             M_l_tensor_expr.init( im );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.init( im );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
             M_l_tensor_expr.update( geom, fev, feu );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, fev, feu );
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             M_l_tensor_expr.update( geom, fev );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, fev );
         }
         void update( Geo_t const& geom )
         {
             M_l_tensor_expr.update( geom );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom );
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             M_l_tensor_expr.update( geom, face );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.update( geom, face );
         }
         template <typename... CTX>
         void updateContext( CTX const&... ctx )
         {
             M_l_tensor_expr.updateContext( ctx... );
-            if ( !IsSame )
+            if constexpr ( !IsSame )
                 M_r_tensor_expr.updateContext( ctx... );
         }
 
@@ -263,7 +291,7 @@ class Product : public ExprDynamicBase
         evalijq( uint16_type i, uint16_type j, uint16_type cc1, uint16_type cc2, uint16_type q ) const
         {
             value_type res = evalijq( i, j, cc1, cc2, q, mpl::bool_<IsSame>() );
-            if ( ApplySqrt )
+            if constexpr ( ApplySqrt )
                 return math::sqrt( res );
             else
                 return res;

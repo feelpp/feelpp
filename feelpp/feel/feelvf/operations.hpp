@@ -379,7 +379,7 @@
             mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
                                   mpl::identity<VF_VALUE_TYPE(L)>,      \
                                   mpl::identity<VF_VALUE_TYPE(R)> >::type::type value_type; \
-        typedef value_type evaluate_type;                               \
+        using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
             :                                                           \
@@ -426,8 +426,8 @@
             typedef this_type expression_type;                          \
             typedef typename L_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type; \
             typedef typename R_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type; \
-            typedef typename strongest_numeric_type<typename l_type::value_type, \
-                typename r_type::value_type>::type value_type;          \
+            typedef strongest_numeric_type<typename l_type::value_type, \
+                                           typename r_type::value_type> value_type; \
             typedef typename VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::type shape; \
             static const int shape_op = VF_OP_SHAPE( O )<typename l_type::shape, typename r_type::shape>::op; \
                                                                         \
@@ -655,10 +655,34 @@
             l_type M_left;                                             \
             r_type M_right;                                            \
         }; /* tensor */                                                 \
-        auto/*double*/                                                  \
-            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  noexcept \
+        evaluate_type                                                   \
+            evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
         {                                                               \
-            return M_left.evaluate(p,worldcomm) VF_OP_SYMBOL( O ) M_right.evaluate(p,worldcomm); \
+            auto leval = M_left.evaluate(p,worldcomm);                  \
+            auto reval = M_right.evaluate(p,worldcomm);                 \
+            if ( leval.rows() == 1 && leval.cols() == 1 )               \
+            {                                                           \
+                if ( reval.rows() == 1 && reval.cols() == 1 )           \
+                    return Eigen::Matrix<value_type,1,1>::Constant( leval(0,0) VF_OP_SYMBOL( O ) reval(0,0) ); \
+                else                                                    \
+                    return leval(0,0) VF_OP_SYMBOL( O ) reval;          \
+            }                                                           \
+            else if ( reval.rows() == 1 && reval.cols() == 1 )          \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval(0,0);              \
+            }                                                           \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
+                               R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) \
+                                 return leval VF_OP_SYMBOL( O ) reval;  \
+            else if constexpr( L_type::evaluate_type::SizeAtCompileTime > 1 && R_type::evaluate_type::SizeAtCompileTime > 1 ) \
+            {                                                           \
+                return leval VF_OP_SYMBOL( O ) reval;                   \
+            }                                                           \
+            else                                                        \
+            {                                                           \
+                CHECK( false ) << "should notx go here";                 \
+                return Eigen::Matrix<value_type,1,1>::Constant( 0 );    \
+            }                                                           \
         }                                                               \
                                                                         \
         std::string expressionStr() const                               \

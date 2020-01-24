@@ -212,15 +212,15 @@ endif()
 
 
 # on APPLE enfore the use of macports openmpi version
-if ( APPLE )
-  if ( EXISTS /opt/local/lib/openmpi/bin/mpic++ )
-    set(MPI_COMPILER /opt/local/lib/openmpi/bin/mpic++)
-  endif()
+ if ( APPLE )
+   if ( EXISTS /usr/local/bin/mpic++ )
+     set(MPI_COMPILER /usr/local/bin/mpic++)
+   endif()
 
-  #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
-  MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
+#   #  set(MPI_LIBRARY "MPI_LIBRARY-NOTFOUND" )
+   MESSAGE(STATUS "[feelpp] Use mpi compiler ${MPI_COMPILER}")
 
-endif( APPLE )
+ endif( APPLE )
 FIND_PACKAGE(MPI REQUIRED)
 IF ( MPI_FOUND )
   #SET(CMAKE_REQUIRED_INCLUDES "${MPI_INCLUDE_PATH};${CMAKE_REQUIRED_INCLUDES}")
@@ -370,41 +370,38 @@ endif()
 #
 # Intel MKL
 #
-OPTION( FEELPP_ENABLE_MKL "Enable the Intel MKL library" OFF )
+if (NOT DEFINED FEELPP_ENABLE_MKL ) # not necessary with cmake >= 3.13
+  OPTION( FEELPP_ENABLE_MKL "Enable the Intel MKL library" OFF )
+endif()
 if ( FEELPP_ENABLE_MKL )
   find_package(MKL)
   if ( MKL_FOUND )
 
     message(STATUS "[feelpp] MKL Includes: ${MKL_INCLUDE_DIRS}")
     message(STATUS "[feelpp] MKL Libraries: ${MKL_LIBRARIES}")
-    set(FEELPP_HAS_MKL 1)
     SET(FEELPP_ENABLED_OPTIONS "${FEELPP_ENABLED_OPTIONS} Intel(MKL)" )
-    INCLUDE_DIRECTORIES( ${MKL_INCLUDE_DIRS} )
-    SET(FEELPP_LIBRARIES ${MKL_LIBRARIES} ${FEELPP_LIBRARIES})
-    #  enable MKL wherever possible for eigen3
-    add_definitions(-DEIGEN_USE_MKL_ALL=1)
-  else( MKL_FOUND )
-    #
-    # Blas and Lapack
-    #
-    if (APPLE)
-      # FIND_LIBRARY(ATLAS_LIBRARY
-      #   NAMES
-      #   atlas
-      #   PATHS
-      #   /opt/local/lib/lib
-      #   NO_DEFAULT_PATH
-      #   )
-      # message(STATUS "[feelpp] ATLAS: ${ATLAS_LIBRARY}" )
-      # IF( ATLAS_LIBRARY )
-      #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
-      # ENDIF()
-      FIND_PACKAGE(LAPACK)
-    else (APPLE)
-      FIND_PACKAGE(LAPACK)
-    endif (APPLE)
-    SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
-  endif(MKL_FOUND)
+ #  else( MKL_FOUND )
+#     #
+#     # Blas and Lapack
+#     #
+#     if (APPLE)
+#       # FIND_LIBRARY(ATLAS_LIBRARY
+#       #   NAMES
+#       #   atlas
+#       #   PATHS
+#       #   /opt/local/lib/lib
+#       #   NO_DEFAULT_PATH
+#       #   )
+#       # message(STATUS "[feelpp] ATLAS: ${ATLAS_LIBRARY}" )
+#       # IF( ATLAS_LIBRARY )
+#       #   SET(FEELPP_LIBRARIES ${ATLAS_LIBRARY} ${FEELPP_LIBRARIES})
+#       # ENDIF()
+#       FIND_PACKAGE(LAPACK)
+#     else (APPLE)
+#       FIND_PACKAGE(LAPACK)
+#     endif (APPLE)
+#     SET(FEELPP_LIBRARIES  ${LAPACK_LIBRARIES} ${FEELPP_LIBRARIES})
+   endif(MKL_FOUND) 
 endif(FEELPP_ENABLE_MKL)
 
 # HDF5
@@ -543,7 +540,7 @@ endif()
 option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
 
 # Boost
-SET(BOOST_MIN_VERSION "1.61.0")
+SET(BOOST_MIN_VERSION "1.65.0")
 
 # Making consecutive calls to find_package for Boost to find optional components (boost_python for now)
 # Making only one call to find_package and having one of the component not installed will mark Boost as not found
@@ -565,8 +562,9 @@ endif()
 if ( NOT Boost_ARCHITECTURE )
   set(Boost_ARCHITECTURE "-x64")
 endif()
-set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69")
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams )
+set(Boost_ADDITIONAL_VERSIONS "1.61" "1.62" "1.63" "1.64" "1.65" "1.66" "1.67" "1.68" "1.69" "1.70")
+set(BOOST_COMPONENTS_REQUIRED date_time filesystem system program_options unit_test_framework ${FEELPP_BOOST_MPI} regex serialization iostreams ) 
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS ${BOOST_COMPONENTS_REQUIRED})
 if(Boost_FOUND)
   IF(Boost_MAJOR_VERSION EQUAL "1" AND Boost_MINOR_VERSION GREATER "51")
     #add_definitions(-DBOOST_RESULT_OF_USE_TR1)
@@ -1063,8 +1061,10 @@ if ( FEELPP_ENABLE_VTK )
         PATHS $ENV{PARAVIEW_DIR} ${MACHINE_PARAVIEW_DIR} )
 
     if(ParaView_FOUND)
+      if ( PARAVIEW_USE_FILE )
         message(STATUS "[ParaView] Use file: ${PARAVIEW_USE_FILE}")
         INCLUDE(${PARAVIEW_USE_FILE})
+      endif()
         # trying to load a minimal vtk
         IF (TARGET vtkParallelMPI)
         FIND_PACKAGE(ParaView QUIET COMPONENTS vtkParallelMPI NO_MODULE
@@ -1342,10 +1342,10 @@ if( FEELPP_ENABLE_OMC )
   include( feelpp.module.omc )
 endif()
 
-option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
-if( FEELPP_ENABLE_FMILIB )
-  include( feelpp.module.fmilib )
-endif()
+#option( FEELPP_ENABLE_FMILIB "Enable FMILib in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+#if( FEELPP_ENABLE_FMILIB )
+#  include( feelpp.module.fmilib )
+#endif()
 
 option( FEELPP_ENABLE_LIBCURL "Enable libcurl in Feel++" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_LIBCURL )

@@ -28,8 +28,8 @@
    \author Alexandre Ancel <alexandre.ancel@cemosis.fr>
    \date 2006-11-26
  */
-#ifndef __ExporterEnsightGold_H
-#define __ExporterEnsightGold_H 1
+#ifndef FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP
+#define FEELPP_FILTERS_EXPORTERENSIGHTGOLD_HPP 1
 
 #include <iostream>
 #include <fstream>
@@ -40,6 +40,8 @@
 #include <boost/filesystem/operations.hpp>
 
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feelfilters/detail/fileindex.hpp>
+#include <feel/feelfilters/detail/meshcontiguousnumberingmapping.hpp>
 
 namespace Feel
 {
@@ -69,12 +71,16 @@ public:
     typedef MeshType mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     using index_type = typename mesh_type::index_type;
-    using size_type = typename mesh_type::size_type;
     typedef typename super::timeset_type timeset_type;
     typedef typename super::timeset_ptrtype timeset_ptrtype;
     typedef typename super::timeset_iterator timeset_iterator;
     typedef typename super::timeset_const_iterator timeset_const_iterator;
-
+protected :
+    using mesh_contiguous_numbering_mapping_type = Feel::detail::MeshContiguousNumberingMapping<mesh_type,float>;
+    using mesh_contiguous_numbering_mapping_ptrtype = std::shared_ptr<mesh_contiguous_numbering_mapping_type>;
+    using step_ptrtype = typename super::step_ptrtype;
+    using steps_write_on_disk_type = typename super::steps_write_on_disk_type;
+public :
     //@}
 
     /** @name Constructors, destructor
@@ -125,10 +131,9 @@ public:
     */
     explicit ExporterEnsightGold( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ExporterEnsightGold( std::string const& __p = "default", int freq = 1, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
-    ExporterEnsightGold( po::variables_map const& vm=Environment::vm(), std::string const& exp_prefix = "", worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() ) FEELPP_DEPRECATED;
-    ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    explicit ExporterEnsightGold( std::string const& exp_prefix, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
 
-    ExporterEnsightGold( ExporterEnsightGold const & __ex );
+    ExporterEnsightGold( ExporterEnsightGold const & __ex ) = default;
 
     ~ExporterEnsightGold();
 
@@ -160,33 +165,13 @@ public:
      */
     //@{
 
-    Exporter<MeshType,N>* setOptions( po::variables_map const& vm, std::string const& exp_prefix = "" ) FEELPP_DEPRECATED
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
-    Exporter<MeshType,N>* setOptions( std::string const& exp_prefix = "" )
-    {
-        super::setOptions( exp_prefix );
-
-        return this;
-    }
-
-
     //@}
 
     /** @name  Methods
      */
     //@{
 
-    /**
-       save the timeset
-    */
-    void save() const;
-
-    void visit( mesh_type* mesh );
+    void visit( mesh_type* mesh ) override;
 
     //@}
 
@@ -194,76 +179,60 @@ public:
 
 protected:
 
+     //! save the timeset
+    void save( steps_write_on_disk_type const& stepsToWriteOnDisk ) const override;
+
 private:
 
-    /**
-     * init the ensight exporter
-     */
+    //! init the ensight exporter
     FEELPP_NO_EXPORT void init();
 
-    /**
-       write the '' file for ensight
-    */
+    //! write the '' file for ensight
     FEELPP_NO_EXPORT void writeSoSFile() const;
 
-    /**
-     * write case file variables
-     */
+    //! write case file variables
     template<typename Iterator, typename TSt>
     void writeCaseFileVariables( Iterator it, Iterator end,
                                  std::string const& loc,
-                                 std::string const& type,
-                                 std::string const& ext,
                                  TSt const& __ts,
                                  std::ostream& __out ) const;
-    /**
-       write the 'case' file for ensight
-    */
+
+    //! write the 'case' file for ensight
     FEELPP_NO_EXPORT void writeCaseFile() const;
 
-    /**
-       updates the markers to be written by he exporters
-    */
-    FEELPP_NO_EXPORT void computeMarkersToWrite(mesh_ptrtype mesh) const;
-
-    /**
-       write the 'geo' file for ensight
-    */
-    FEELPP_NO_EXPORT void writeGeoFiles() const;
-    FEELPP_NO_EXPORT void writeGeoMarkers(MPI_File fh, mesh_ptrtype mesh) const;
-    FEELPP_NO_EXPORT void writeGeoHeader(MPI_File fh) const;
+    //! write the 'geo' file for ensight
+    FEELPP_NO_EXPORT void writeGeoFiles( timeset_ptrtype __ts, mesh_ptrtype mesh, int timeIndex, bool isFirstStep ) const;
+    FEELPP_NO_EXPORT void writeGeoMarkers( MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, bool writeHeaderBeginFile, bool writeBeginEndTimeSet, Feel::detail::FileIndex & index ) const;
     FEELPP_NO_EXPORT void writeGeoMarkedFaces(MPI_File fh, mesh_ptrtype mesh, std::pair<const std::string, std::vector<index_type> > & m) const;
-    FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_ptrtype mesh, size_type markerid) const;
+    FEELPP_NO_EXPORT void writeGeoMarkedElements(MPI_File fh, mesh_contiguous_numbering_mapping_type const& mp, int part ) const;
 
-    /**
-       write the variables file for ensight
-    */
-    FEELPP_NO_EXPORT void writeVariableFiles() const;
-
-    template<typename Iterator>
-    FEELPP_NO_EXPORT void saveNodal( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __var, Iterator en ) const;
-
-    template<typename Iterator>
-    FEELPP_NO_EXPORT void saveElement( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool isFirstStep, Iterator __evar, Iterator __evaren ) const;
+    //! write the variables file for ensight
+    FEELPP_NO_EXPORT void writeVariableFiles( timeset_ptrtype __ts, step_ptrtype step ) const;
+    template<bool IsNodal,typename Iterator>
+    FEELPP_NO_EXPORT void saveFields( timeset_ptrtype __ts, typename timeset_type::step_ptrtype __step, bool writeNewFile, std::string const& filenameStepIndex, bool isFirstStep, Iterator __var, Iterator en ) const;
 
 private:
     mutable std::string M_filename;
     std::string M_element_type;
     std::string M_face_type;
-    mutable std::set<int> M_markersToWrite;
+    bool M_mergeTimeSteps;
+    int M_packTimeSteps;
+
     /* Number of digits used in timesteps */
     /* Set to 4 by default: range [0000; 9999] for timesteps */
     mutable int M_timeExponent;
     // file position for explicit pointers
     mutable MPI_Offset posInFile;
-    mutable std::unordered_map<int, Feel::detail::MeshPoints<float>> M_cache_mp;
+    mutable std::map<std::string, mesh_contiguous_numbering_mapping_ptrtype > M_cache_mp;
+    mutable std::map<int,std::vector<size_type>> M_mapNodalArrayToDofId;
+    mutable std::map<int,std::vector<size_type>> M_mapElementArrayToDofId;
 };
 
 
 } // Feel
 
 //#if !defined( FEELPP_INSTANTIATION_MODE )
-# include <feel/feelfilters/exporterensightgold_impl.hpp>
+#include <feel/feelfilters/exporterensightgold_impl.hpp>
 //#endif // FEELPP_INSTANTIATION_MODE
 
 #endif /* __ExporterEnsightGold_H */

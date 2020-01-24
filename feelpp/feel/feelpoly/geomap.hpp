@@ -54,6 +54,8 @@
 #include <feel/feelalg/svd.hpp>
 
 #include <feel/feelmesh/marker.hpp>
+#include <feel/feelmesh/traits.hpp>
+#include <feel/feelmesh/entitymarkers.hpp>
 #include <feel/feelpoly/context.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
 #include <feel/feelpoly/fekete.hpp>
@@ -75,7 +77,6 @@ enum class GeomapStrategyType
     GEOMAP_O1 = 1,
     GEOMAP_HO = 2
 };
-
 namespace detail
 {
 template <typename RangeType>
@@ -813,7 +814,7 @@ class GeoMap
 
         typedef ElementType element_type;
         //typedef typename element_type::permutation_type permutation_type;
-        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim>::type permutation_type;
+        typedef typename element_type::template PermutationSubEntity<SubEntityCoDim> permutation_type;
 
         using eigen_matrix_nx_type = eigen_matrix_type<NDim,Eigen::Dynamic,value_type>;
         using eigen_matrix_xn_type = eigen_matrix_type<Eigen::Dynamic,NDim,value_type>;
@@ -882,7 +883,8 @@ class GeoMap
               M_perm(),
               M_dynamic_context( dynctx )
         {
-
+            if ( this->isOnSubEntity() )
+                M_f_markers = entityMarkers<SubEntityCoDim>( __e, __f );
             if ( is_linear )
             {
                 M_gm->gradient( node_t_type(), M_g_linear );
@@ -996,6 +998,8 @@ class GeoMap
             M_G = ( gm_type::nNodes == element_type::numVertices ) ? __e.vertices() : __e.G();
             M_id = __e.id();
             M_e_markers = __e.markers();
+            if ( this->isOnSubEntity() )
+                M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
             M_xrefq = M_pc->nodes();
 
             FEELPP_ASSERT( M_G.size2() == M_gm->nbPoints() )
@@ -1134,6 +1138,8 @@ class GeoMap
                 M_id = __e.id();
                 M_e_markers = __e.markers();
                 M_face_id = __f;
+                if ( this->isOnSubEntity() )
+                    M_f_markers = entityMarkers<subEntityCoDim>( __e, __f );
                 if ( this->isOnSubEntity() && updatePC )
                 {
                     M_perm = __e.permutation( M_face_id, mpl::int_<subEntityCoDim>() );
@@ -1714,6 +1720,22 @@ class GeoMap
         }
 
         /**
+         * get the marker of the face of the element
+         *
+         * @return the marker of the face of the  element
+         */
+        Marker1 entityMarker( uint16_type k = 1 ) const
+            {
+                if ( !isOnSubEntity() || !M_f_markers )
+                    return Marker1();
+                auto itFindMarker = M_f_markers->find( k );
+                if ( itFindMarker!= M_f_markers->end() )
+                    return itFindMarker->second;
+                else
+                    return Marker1();
+            }
+
+        /**
          * get the id of the first element containing the element
          *
          * @return the id of the first element containing the element
@@ -2004,18 +2026,9 @@ class GeoMap
             {
                 if ( vm::has_point_v<CTX> || ( vm::has_dynamic_v<CTX> &&  hasPOINT( M_dynamic_context ) ) )
                 {
-                    //ublas::axpy_prod( M_G, pc->phi(), M_xrealq, true );
-                    std::fill( M_xrealq.data().begin(), M_xrealq.data().end(), value_type( 0 ) );
-                    const uint16_type size1 = M_G.size1();
-                    const uint16_type size3 = M_G.size2();
-                    const uint16_type size2 = M_pc->nPoints();
-
-                    for ( uint16_type i = 0; i < size1; ++i )
-                        for ( uint16_type j = 0; j < size2; ++j )
-                        {
-                            for ( uint16_type k = 0; k < size3; ++k )
-                                M_xrealq( i, j ) += M_G( i, k ) * M_pc->phi()[k][j]( 0, 0 );
-                        }
+                    em_matrix_col_type<value_type> Xreal( M_xrealq.data().begin(), M_xrealq.size1(), M_xrealq.size2() );
+                    em_matrix_col_type<value_type> Pts( M_G.data().begin(), M_G.size1(), M_G.size2() );
+                    Xreal.noalias() = Pts * M_pc->phiEigen();
                 }
             }
 
@@ -2346,6 +2359,7 @@ class GeoMap
 
         size_type M_id;
         std::map<uint16_type,Marker1> M_e_markers;
+        std::optional<std::map<uint16_type,Marker1>> M_f_markers;
         size_type M_elem_id_1;
         uint16_type M_pos_in_elem_id_1;
         size_type M_elem_id_2;
@@ -2403,7 +2417,7 @@ class GeoMap
     template <size_type Context_v, int SubEntityCoDim_v = 1, typename ElementType_t>
     std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>
     context( ElementType_t const& e,
-             std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>::type, precompute_ptrtype>>& pc,
+             std::vector<std::map<typename ElementType_t::template PermutationSubEntity<SubEntityCoDim_v>, precompute_ptrtype>>& pc,
              uint16_type f, size_type dynctx = 0 )
     {
         return std::shared_ptr<Context<Context_v, ElementType_t, SubEntityCoDim_v>>(

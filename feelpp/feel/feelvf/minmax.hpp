@@ -60,8 +60,8 @@ public:
     typedef OpMax<ExprT1, ExprT2> this_type;
     typedef ExprT1 expression_1_type;
     typedef ExprT2 expression_2_type;
-    typedef typename strongest_numeric_type<typename expression_1_type::value_type,
-            typename expression_2_type::value_type>::type value_type;
+    typedef strongest_numeric_type<typename expression_1_type::value_type,
+                                   typename expression_2_type::value_type> value_type;
     typedef value_type evaluate_type;
     explicit OpMax( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
@@ -101,8 +101,7 @@ public:
         typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type;
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
-        typedef typename strongest_numeric_type<typename l_type::value_type,
-                typename r_type::value_type>::type value_type;
+        typedef strongest_numeric_type<typename l_type::value_type,typename r_type::value_type> value_type;
 
         using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
@@ -262,8 +261,8 @@ public:
     typedef OpMin<ExprT1, ExprT2> this_type;
     typedef ExprT1 expression_1_type;
     typedef ExprT2 expression_2_type;
-    typedef typename strongest_numeric_type<typename expression_1_type::value_type,
-            typename expression_2_type::value_type>::type value_type;
+    typedef strongest_numeric_type<typename expression_1_type::value_type,
+                                   typename expression_2_type::value_type> value_type;
     typedef value_type evaluate_type;
     explicit OpMin( expression_1_type const& __expr1, expression_2_type const& __expr2  )
         :
@@ -303,8 +302,8 @@ public:
         typedef typename expression_1_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type;
         typedef typename expression_2_type::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
 
-        typedef typename strongest_numeric_type<typename l_type::value_type,
-                typename r_type::value_type>::type value_type;
+        typedef strongest_numeric_type<typename l_type::value_type,
+                                       typename r_type::value_type> value_type;
 
         using key_type = key_t<Geo_t>;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;

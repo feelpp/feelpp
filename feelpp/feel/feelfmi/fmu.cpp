@@ -50,7 +50,11 @@ int FMU::load( std::string _path )
 {
     std::string path = _path;
     if ( path=="" )
-        path = Environment::expand( soption( _name="fmu.filename", _prefix=M_prefix ) );
+    {
+        std::string fmuname = Environment::findFileRemotely(soption( _name="fmu.filename", _prefix=M_prefix ), "fmus"  );
+        path = Environment::expand( fmuname );
+    }
+        
     CHECK( path!="" ) << "No filename specified to load FMU. Either pass argument to the function load() or set the option fmu.filename\n";
 
     // Read fmu version
@@ -60,7 +64,7 @@ int FMU::load( std::string _path )
                                                 << std::endl;
 
     if ( version == fmi_version_2_0_enu )
-        M_model = fmumodel_ptrtype( new FmuModel2( M_context, M_tmp_dir, M_callbacks ) );
+        M_model = std::make_shared<FmuModel2>( M_context, M_tmp_dir, M_callbacks );
     else
     {
         Feel::cerr << "Error only version 2.0 FMU is supported for now\n";

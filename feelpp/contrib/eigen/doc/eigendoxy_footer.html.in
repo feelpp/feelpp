@@ -5,30 +5,34 @@
     $navpath
     <li class="footer">$generatedby
     <a href="http://www.doxygen.org/index.html">
-    <img class="footer" src="$relpath$doxygen.png" alt="doxygen"/></a> $doxygenversion </li>
+    <img class="footer" src="$relpath^doxygen.png" alt="doxygen"/></a> $doxygenversion </li>
   </ul>
 </div>
 <!--END GENERATE_TREEVIEW-->
 <!--BEGIN !GENERATE_TREEVIEW-->
 <hr class="footer"/><address class="footer"><small>
 $generatedby &#160;<a href="http://www.doxygen.org/index.html">
-<img class="footer" src="$relpath$doxygen.png" alt="doxygen"/>
+<img class="footer" src="$relpath^doxygen.png" alt="doxygen"/>
 </a> $doxygenversion
 </small></address>
 <!--END !GENERATE_TREEVIEW-->
 
-<!-- Piwik -->
+<!-- Matomo -->
 <script type="text/javascript">
-var pkBaseURL = (("https:" == document.location.protocol) ? "https://stats.sylphide-consulting.com/piwik/" : "http://stats.sylphide-consulting.com/piwik/");
-document.write(unescape("%3Cscript src='" + pkBaseURL + "piwik.js' type='text/javascript'%3E%3C/script%3E"));
-</script><script type="text/javascript">
-try {
-var piwikTracker = Piwik.getTracker(pkBaseURL + "piwik.php", 20);
-piwikTracker.trackPageView();
-piwikTracker.enableLinkTracking();
-} catch( err ) {}
-</script><noscript><p><img src="http://stats.sylphide-consulting.com/piwik/piwik.php?idsite=20" style="border:0" alt="" /></p></noscript>
-<!-- End Piwik Tracking Code -->
+  var _paq = _paq || [];
+  /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="//stats.sylphide-consulting.com/matomo/";
+    _paq.push(['setTrackerUrl', u+'piwik.php']);
+    _paq.push(['setSiteId', '20']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.defer=true; g.src=u+'piwik.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript><p><img src="//stats.sylphide-consulting.com/matomo/piwik.php?idsite=20&rec=1" style="border:0;" alt="" /></p></noscript>
+<!-- End Matomo Code -->
 
 </body>
 </html>

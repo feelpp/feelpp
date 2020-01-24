@@ -65,7 +65,7 @@ public:
 
     typedef PrintExprT expression_type;
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = typename expression_type::evaluate_type;
     typedef PrintExpr<PrintExprT> this_type;
 
     //@}
@@ -91,6 +91,12 @@ public:
 
     //! expression is polynomial?
     bool isPolynomial() const { return M_expr.isPolynomial(); }
+
+    //! evaluate the expression without context
+    evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
+        {
+            return M_expr.evaluate(p,worldcomm);
+        }
 
     /** @name Operator overloads
      */

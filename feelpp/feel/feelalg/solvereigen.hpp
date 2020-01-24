@@ -61,7 +61,9 @@ public:
 
     typedef SolverEigen<value_type> solvereigen_type;
     typedef std::shared_ptr<solvereigen_type> solvereigen_ptrtype;
-
+    typedef DataMap<> datamap_type;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
+    using size_type = typename datamap_type::size_type;
     typedef boost::tuple<size_type, size_type, std::vector<double> > solve_return_type;
 
     typedef Vector<value_type> vector_type;
@@ -72,8 +74,6 @@ public:
     typedef boost::tuple<real_type, real_type, vector_ptrtype> eigenpair_type;
     typedef std::map<real_type, eigenpair_type> eigenmodes_type;
 
-    typedef DataMap datamap_type;
-    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
 
     //@}
 
@@ -557,7 +557,7 @@ BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
                                    ( problem,( EigenProblemType ), GHEP )
                                    ( transform,( SpectralTransformType ), SHIFT )
                                    ( spectrum,( PositionOfSpectrum ), LARGEST_MAGNITUDE )
-                                   ( maxit,( size_type ), ioption(_name="solvereigen.maxiter") )
+                                   ( maxit,( int ), ioption(_name="solvereigen.maxiter") )
                                    ( tolerance,( double ), doption(_name="solvereigen.tolerance") )
                                    ( verbose,( bool ), boption(_name="solvereigen.verbose") )
                                  )
@@ -571,7 +571,7 @@ BOOST_PARAMETER_FUNCTION( ( typename SolverEigen<double>::eigenmodes_type ),
     eigen->setPositionOfSpectrum( spectrum );
     eigen->setNumberOfEigenValues( nev );
     eigen->setNumberOfEigenValuesConverged( ncv );
-    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_v<size_type> );
+    eigen->setMaximumProjectedDimension( (mpd>0)?mpd:invalid_v<uint32_type> );
     eigen->setInterval( interval_a, interval_b );
     eigen->setMaxIterations( maxit );
     eigen->setSpectralTransform( transform );
@@ -641,6 +641,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_eigs_return_type<Args>::type ),
 {
     typedef std::shared_ptr<Vector<double> > vector_ptrtype;
     //std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build(  backend );
+    using size_type = typename SolverEigen<double>::size_type;
     std::shared_ptr<SolverEigen<double> > eigen = SolverEigen<double>::build();
     eigen->setEigenSolverType( (EigenSolverType)EigenMap[solver] );
     eigen->setEigenProblemType( (EigenProblemType)EigenMap[problem] );
