@@ -215,7 +215,7 @@ public:
     static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<fe_type>::value;
     static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<fe_type>::value;
 
-    static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
+    //static const uint16_type nDofPerEdge = fe_type::nDofPerEdge;
 
     typedef PeriodicityType periodicity_type;
     static const bool is_periodic = periodicity_type::is_periodic;
@@ -413,10 +413,10 @@ public:
 
             infos.is_hdiv_conforming = is_hdiv_conforming;
             infos.is_hcurl_conforming = is_hcurl_conforming;
-
+#if 0 // TODO
             infos.nDofPerEdge = nDofPerEdge;
             infos.nDofPerElement = nDofPerElement;
-
+#endif
             infos.is_periodic = is_periodic;
 
             infos.nDofComponents = this->nDofComponents();
@@ -433,6 +433,14 @@ public:
     constexpr size_type nLocalDofOnFace( bool per_component = false ) const
         {
             return M_fe->numberOfDofOnFace();
+        }
+    constexpr uint16_type nDofPerEdge() const
+        {
+            return fe_type::nDofPerEdge;
+        }
+    constexpr uint16_type nDofPerElement() const
+        {
+            return mpl::if_<mpl::bool_<is_product>, mpl::int_<FEType::nLocalDof*nComponents>, mpl::int_<FEType::nLocalDof> >::type::value;
         }
     local_dof_set_type const&
     localDofSet( size_type eid ) const
@@ -1781,13 +1789,12 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::initDofMap( mesh_type& 
     // values that will allow to check whether we have a new dof or
     // not when building the table
     const size_type nV = numMeshElements;
-    int ntldof = is_product?nComponents*nldof:nldof;//this->getIndicesSize();
 
     //M_locglob_indices.resize( nV, localglobal_indices_type::Zero( nDofPerElement ) );
     M_locglob_indices.reserve( nV );
     this->initNumberOfDofIdToContainerId( 1 );
 
-    if ( is_hdiv_conforming || is_hcurl_conforming )
+    if constexpr ( is_hdiv_conforming || is_hcurl_conforming )
     {
         //M_locglob_signs.resize( nV, localglobal_indices_type::Ones( nDofPerElement ) );
         M_locglob_signs.reserve( nV );
@@ -1823,6 +1830,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
 {
+#if 1 //`o0 //TODO
     tic();
     M_mesh = boost::addressof( M );
 
@@ -1867,7 +1875,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
     toc("DofTable::call buildDofMap", FLAGS_v>1);
     tic();
 
-#if !defined(NDEBUG)
+#warning TODO
+#if 0 //!defined(NDEBUG)
     VLOG(2) << "[build] check that all elements dof were assigned()\n";
     element_const_iterator fit, fen;
     boost::tie( fit, fen ) = M.elementsRange();
@@ -2082,6 +2091,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::build( mesh_type& M )
         this->buildIndexSplitWithComponents( nRealComponents );
 
     toc("DofTable::build", FLAGS_v>1);
+#endif     // TODO
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
@@ -2681,7 +2691,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildBoundaryDofMap( me
                 DVLOG(4) << "[buildBoundaryDofMap] global face id : " << face.id() << "\n";
 
 #endif
-            M_face_l2g[ __face_it->id()].resize( nLocalDofOnFace() );
+            M_face_l2g[ face.id()].resize( nLocalDofOnFace() );
             dfb.add( face );
         }
     }
@@ -2866,6 +2876,7 @@ template<typename MeshType, typename FEType, typename PeriodicityType, typename 
 void
 DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mesh_type& M, bool buildMinimalParallel, mpl::bool_<false> ) const
 {
+#if 0 // TODO
     if ( M_hasBuiltDofPoints )// !M_dof_points.empty() )
         return;
 
@@ -2948,7 +2959,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
                         {
                             find2 = find2 && (std::abs( dofpointFromGmc[d]-dofpointStored[d] )<1e-9);
                         }
-                        CHECK(find2) << " error localToGlobal for "<< l <<" with " << dofpointFromGmc << " and " << dofpointStored <<"\n" ;
+                    //TODO: CHECK(find2) << " error localToGlobal for "<< l <<" with " << dofpointFromGmc << " and " << dofpointStored <<"\n" ;
                 }
 #endif
             }
@@ -2977,6 +2988,7 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::generateDofPoints(  mes
 #endif
     }
     DVLOG(2) << "[Dof::generateDofPoints] generating dof coordinates done\n";
+#endif    
 }
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>
 void

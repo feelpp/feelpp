@@ -1947,7 +1947,7 @@ public:
 
     // dof
     typedef typename mpl::if_<mpl::bool_<is_composite>,
-            mpl::identity<DofComposite>,
+                              mpl::identity<DofComposite>,
                               mpl::identity<DofTable<mesh_type, basis_type, periodicity_0_type, mortar_0_type> > >::type::type dof_type;
 
     typedef std::shared_ptr<dof_type> dof_ptrtype;

@@ -83,7 +83,7 @@ private:
     
 };
 
-std::ostream&
+inline std::ostream&
 operator<<( std::ostream& os, FiniteElementDof const& d )
 {
     os << "{" << d.id() << "," << d.idInEntity() << "," << d.entityTopologicalDimension() << "," << d.entityId() << "," << d.component() << "}";

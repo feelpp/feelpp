@@ -69,9 +69,9 @@ public DualBasis<Basis>
 {
     typedef DualBasis<Basis> super;
 public:
-
-    static const uint16_type nDim = super::nDim;
-    static const uint16_type nOrder= super::nOrder;
+    
+    inline static const uint16_type nDim = super::nDim;
+    inline static const uint16_type nOrder= super::nOrder;
 
     typedef typename super::primal_space_type primal_space_type;
     typedef typename primal_space_type::value_type value_type;
@@ -124,7 +124,7 @@ public:
     static const uint16_type nDofPerVolume = nbPtsPerVolume;
 
     /** Total number of degrees of freedom (equal to refEle::nDof) */
-    static const uint16_type nLocalDof = numPoints;
+    inline static const uint16_type nLocalDof = numPoints;
 
     static const uint16_type nFacesInConvex = mpl::if_< mpl::equal_to<mpl::int_<nDim>, mpl::int_<1> >,
                              mpl::int_<nVertices>,
@@ -743,38 +743,6 @@ private:
     face_basis_ptrtype M_bdylag;
     std::vector<uint16_type> M_unsymm2symm;
 };
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nDim;
-
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nOrder;
-
-template<uint16_type N,
-         uint16_type RealDim,
-         uint16_type O,
-         template<uint16_type Dim> class PolySetType,
-         typename ContinuityType,
-         typename T,
-         template<uint16_type, uint16_type, uint16_type> class Convex,
-         template<class, uint16_type, class> class Pts,
-         uint16_type TheTAG >
-const uint16_type Lagrange<N,RealDim,O,PolySetType,ContinuityType,T,Convex,Pts,TheTAG>::nLocalDof;
 
 } // namespace fem
 template<uint16_type Order,
