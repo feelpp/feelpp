@@ -59,7 +59,11 @@ void check_sparse_solving(Solver& solver, const typename Solver::MatrixType& A, 
     x = solver.solve(b);
     if (solver.info() != Success)
     {
-      std::cerr << "WARNING | sparse solver testing: solving failed (" << typeid(Solver).name() << ")\n";
+      std::cerr << "WARNING: sparse solver testing: solving failed (" << typeid(Solver).name() << ")\n";
+      // dump call stack:
+      g_test_level++; 
+      VERIFY(solver.info() == Success);
+      g_test_level--;
       return;
     }
     VERIFY(oldb.isApprox(b) && "sparse solver testing: the rhs should not be modified!");
@@ -67,7 +71,7 @@ void check_sparse_solving(Solver& solver, const typename Solver::MatrixType& A, 
 
     x.setZero();
     solve_with_guess(solver, b, x, x);
-    VERIFY(solver.info() == Success && "solving failed when using analyzePattern/factorize API");
+    VERIFY(solver.info() == Success && "solving failed when using solve_with_guess API");
     VERIFY(oldb.isApprox(b) && "sparse solver testing: the rhs should not be modified!");
     VERIFY(x.isApprox(refX,test_precision<Scalar>()));
     
@@ -266,7 +270,7 @@ std::string solver_stats(const SparseSolverBase<Derived> &/*solver*/)
 }
 #endif
 
-template<typename Solver> void check_sparse_spd_solving(Solver& solver, int maxSize = 300, int maxRealWorldSize = 100000)
+template<typename Solver> void check_sparse_spd_solving(Solver& solver, int maxSize = (std::min)(300,EIGEN_TEST_MAX_SIZE), int maxRealWorldSize = 100000)
 {
   typedef typename Solver::MatrixType Mat;
   typedef typename Mat::Scalar Scalar;
@@ -429,8 +433,7 @@ template<typename Solver> void check_sparse_square_solving(Solver& solver, int m
     // check only once
     if(i==0)
     {
-      b = DenseVector::Zero(size);
-      check_sparse_solving(solver, A, b, dA, b);
+      CALL_SUBTEST(b = DenseVector::Zero(size); check_sparse_solving(solver, A, b, dA, b));
     }
     // regression test for Bug 792 (structurally rank deficient matrices):
     if(checkDeficient && size>1) {
