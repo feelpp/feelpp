@@ -370,6 +370,15 @@ public:
                 std::make_pair( "distance-curvature", this->distanceCurvature() )
                 );
     }
+    // Measures quantities
+    auto allMeasuresQuantities() const
+    {
+        return hana::make_tuple(
+                std::make_pair( "volume", this->volume() ),
+                std::make_pair( "perimeter", this->perimeter() ),
+                std::make_pair( "position-com", this->positionCOM() )
+                );
+    }
     //--------------------------------------------------------------------//
     // Curvature diffusion
     bool useCurvatureDiffusion() const { return M_useCurvatureDiffusion; }
@@ -445,14 +454,14 @@ public:
     virtual std::set<std::string> postProcessExportsAllFieldsAvailable() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    virtual void exportResults( double time ) { this->exportResults( time, this->symbolsExpr(), this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() ); }
-    template<typename SymbolsExpr, typename... TupleFieldsType>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields );
+    virtual void exportResults( double time );
+    //template<typename SymbolsExpr, typename... TupleFieldsType>
+    //void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields );
 
     bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
-    void executePostProcessMeasures( double time );
-    template<typename TupleFieldsType, typename SymbolsExpr>
-    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    //void executePostProcessMeasures( double time );
+    //template<typename TupleFieldsType, typename SymbolsExpr>
+    //void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
     template<typename TupleFieldsType, typename SymbolsExpr>
     bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
@@ -772,47 +781,47 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 //;
 
 //----------------------------------------------------------------------------//
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename SymbolsExpr, typename... TupleFieldsType>
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields )
-{
-    this->log("LevelSetBase","exportResults", "start");
-    this->timerTool("PostProcessing").start();
+//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+//template<typename SymbolsExpr, typename... TupleFieldsType>
+//void
+//LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields )
+//{
+    //this->log("LevelSetBase","exportResults", "start");
+    //this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    //this->modelProperties().parameters().updateParameterValues();
+    //auto paramValues = this->modelProperties().parameters().toParameterValues();
+    //this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->executePostProcessExports( M_exporter, time, fields... );
-    // TODO executePostProcessMeasures should be variadic
-    this->executePostProcessMeasures( time, this->allFields(), symbolsExpr );
+    //this->executePostProcessExports( M_exporter, time, fields... );
+    //// TODO executePostProcessMeasures should be variadic
+    //this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, fields... );
 
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("LevelSetBase","exportResults", "finish");
-}
+    //this->timerTool("PostProcessing").stop("exportResults");
+    //if ( this->scalabilitySave() )
+    //{
+        //if ( !this->isStationary() )
+            //this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        //this->timerTool("PostProcessing").save();
+    //}
+    //this->log("LevelSetBase","exportResults", "finish");
+//}
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename TupleFieldsType, typename SymbolsExpr>
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
-{
-    bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
+//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+//template<typename TupleFieldsType, typename SymbolsExpr>
+//void
+//LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+//{
+    //bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
 
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
-}
+    //if ( hasMeasure )
+    //{
+        //if ( !this->isStationary() )
+            //this->postProcessMeasuresIO().setMeasure( "time", time );
+        //this->postProcessMeasuresIO().exportMeasures();
+        //this->upload( this->postProcessMeasuresIO().pathFile() );
+    //}
+//}
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 template<typename TupleFieldsType, typename SymbolsExpr>

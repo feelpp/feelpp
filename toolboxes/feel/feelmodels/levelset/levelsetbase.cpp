@@ -400,6 +400,31 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    this->log("LevelSetBase","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    this->executePostProcessExports( M_exporter, time, this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+    this->updatePostProcessMeasuresQuantities( this->allMeasuresQuantities() );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, this->symbolsExpr(), this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("LevelSetBase","exportResults", "finish");
+}
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
 {
     // Update post-process expressions
@@ -2129,12 +2154,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasuresQuantities(
     return M_postProcessMeasuresQuantities.find(q) != M_postProcessMeasuresQuantities.end();
 }
 
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
-{
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
-}
+//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+//void
+//LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
+//{
+    //this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+//}
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
