@@ -530,7 +530,7 @@ endif()
 
 configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-if(BUILD_TESTING)
+if(0)#BUILD_TESTING)
   ei_testing_print_summary()
 endif()
 
