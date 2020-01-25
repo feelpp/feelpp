@@ -463,7 +463,7 @@ endif()
 
 option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
 message(STATUS "[eigen] BUILD_TESTING set to ${BUILD_TESTING}")
-if(BUILD_TESTING)
+if(0)#BUILD_TESTING)
   include(EigenConfigureTesting)
 
   if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
@@ -514,7 +514,7 @@ endif()
 
 add_subdirectory(unsupported)
 
-add_subdirectory(demos EXCLUDE_FROM_ALL)
+#add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # must be after test and unsupported, for configuring buildtests.in
 add_subdirectory(scripts EXCLUDE_FROM_ALL)
