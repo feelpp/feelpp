@@ -946,7 +946,6 @@ template<typename X1,  typename X2, typename RangeItTestType, typename RangeExte
 void
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraph( int row, int col, graph_ptrtype g )
 {
-    boost::timer tim;
     DVLOG(2) << "[merge graph] for composite bilinear form\n";
     DVLOG(2) << "[mergeGraph] row = " << row << "\n";
     DVLOG(2) << "[mergeGraph] col = " << col << "\n";
@@ -1032,7 +1031,7 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::mergeGraph( int 
         } // for( ; it != en; ++it )
     }
 
-    DVLOG(2) << " -- merge_graph (" << row << "," << col << ") in " << tim.elapsed() << "\n";
+    DVLOG(2) << " -- merge_graph (" << row << "," << col << ")\n";
     DVLOG(2) << "merge graph for composite bilinear form done\n";
 }
 
@@ -1128,16 +1127,17 @@ template<typename X1,  typename X2, typename RangeItTestType, typename RangeExte
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraph( size_type hints, multiple_spaces_t )
 {
-    boost::timer t;
+#if !defined( NDEBUG )
+    tic();
+#endif
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
 
     auto graph = computeGraph( hints, type_space_t( _M_X1 ), type_space_t( _M_X2 ) );
-
-    DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
-    t.restart();
     //graph->close();
-    DVLOG(2) << "compute graph for composite bilinear form done in " << t.elapsed() << "s\n";
 
+#if !defined( NDEBUG )
+    toc("closing graph for composite bilinear form with interpolation", FLAGS_v>1);
+#endif
     return graph;
 }
 
@@ -1172,13 +1172,18 @@ template<typename X1,  typename X2,typename RangeItTestType, typename RangeExten
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphInCaseOfInterpolate( size_type hints, multiple_spaces_t )
 {
-    boost::timer t;
+#if !defined( NDEBUG )
+    tic();
+#endif
     DVLOG(2) << "compute graph for composite bilinear form with interpolation\n";
     auto graph = computeGraphInCaseOfInterpolate( hints,
                                                   type_space_t( _M_X1 ),
                                                   type_space_t( _M_X2 ));
 
-    DVLOG(2) << "closing graph for composite bilinear form with interpolation done in " << t.elapsed() << "s\n";
+#if !defined( NDEBUG )
+    toc("closing graph for composite bilinear form with interpolation", FLAGS_v>1);
+#endif
+
     return graph;
 }
 
@@ -1482,7 +1487,10 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
     static const bool hasNotFindRangeStandard = rangeiteratorType<0, 0>::hasnotfindrange_type::value;
     static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0, 0>::hasnotfindrange_type::value;
 
-    boost::timer t;
+#if !defined( NDEBUG )
+    tic();
+#endif
+
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear
@@ -1766,7 +1774,9 @@ Stencil<X1, X2, RangeItTestType, RangeExtendedItType, QuadSetType>::computeGraph
         }     // if ( iDimRangeExtended == ElementsType::MESH_FACES )
     }         // if ( graph.test( Pattern::EXTENDED ) && !hasNotFindRangeExtended )
 
-    DVLOG( 2 ) << "[computeGraph<true>] done in " << t.elapsed() << "s\n";
+#if !defined( NDEBUG )
+    toc( "[computeGraph<true>]", FLAGS_v > 1 );
+#endif
     return sparsity_graph;
 }
 #endif
@@ -1789,13 +1799,11 @@ Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG(
 template<typename X1,  typename X2,typename RangeItTestType, typename RangeExtendedItType, typename QuadSetType>
 typename Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::graph_ptrtype
 Stencil<X1,X2,RangeItTestType,RangeExtendedItType,QuadSetType>::computeGraphHDG( size_type hints, single_spaces_t )
-                                                                                 
 {
 
     static const bool hasNotFindRangeStandard = rangeiteratorType<0,0>::hasnotfindrange_type::value;
     static const bool hasNotFindRangeExtended = rangeExtendedIteratorType<0,0>::hasnotfindrange_type::value;
 
-    boost::timer t;
     // Compute the sparsity structure of the global matrix.  This can be
     // fed into a PetscMatrix to allocate exacly the number of nonzeros
     // necessary to store the matrix.  This algorithm should be linear

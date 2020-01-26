@@ -107,8 +107,8 @@ public:
 
     typedef Storage vector_type;
     typedef typename vector_type::difference_type difference_type;
-    typedef ublas::basic_range<size_type, difference_type> range_type;
-    typedef ublas::basic_slice<size_type, difference_type> slice_type;
+    typedef ublas::basic_range<typename vector_type::size_type, difference_type> range_type;
+    typedef ublas::basic_slice<typename vector_type::size_type, difference_type> slice_type;
     typedef Vector<value_type> clone_type;
     typedef std::shared_ptr<clone_type> clone_ptrtype;
     typedef VectorUblas<value_type, Storage> this_type;
