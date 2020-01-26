@@ -110,7 +110,7 @@ public:
      */
     //@{
 
-    static const size_type context = Expr::context|vm::JACOBIAN;
+    static const Feel::size_type context = Expr::context|vm::JACOBIAN;
     static const bool is_terminal = false;
 
     //static const uint16_type imorder = 0;
@@ -134,7 +134,7 @@ public:
     using test_basis = typename Expr::test_basis;
     using trial_basis = typename Expr::trial_basis;
 
-    static const size_type iDim = boost::tuples::template element<0, Elements>::type::value;
+    static const Feel::size_type iDim = boost::tuples::template element<0, Elements>::type::value;
     //@}
 
     /** @name Typedefs
