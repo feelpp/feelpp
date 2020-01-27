@@ -556,7 +556,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
 
 template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename TupleFieldsType, typename TupleQuantitiesType>
 void 
-ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities )
+ModelNumerical::executePostProcessMeasures( double time, std::shared_ptr<MeshType> mesh, RangeType const& range, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities )
 {
     bool hasMeasure = this->updatePostProcessMeasures( mesh, range, measurePointsEvaluation, symbolsExpr, tupleFields, tupleQuantities );
 
@@ -583,14 +583,14 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                     {
                         if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                         {
-                            if constexpr( std::is_arithmetic_v<decltype(quantityValue)> )
-                            {
-                                this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
-                            }
-                            else
+                            if constexpr( is_iterable_v<decltype(quantityValue)> )
                             {
                                 std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
                                 this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                            }
+                            else
+                            {
+                                this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
                             }
                             hasMeasure = true;
                         }
@@ -602,14 +602,14 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                     auto const& quantityValue = e.second;
                     if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                     {
-                        if constexpr( std::is_arithmetic_v<decltype(quantityValue)> )
-                        {
-                            this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
-                        }
-                        else
+                        if constexpr( is_iterable_v<decltype(quantityValue)> )
                         {
                             std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
                             this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                        }
+                        else
+                        {
+                            this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
                         }
                         hasMeasure = true;
                     }
