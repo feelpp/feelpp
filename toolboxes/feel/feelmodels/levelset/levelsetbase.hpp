@@ -367,16 +367,23 @@ public:
                 std::make_pair( "modgradphi", this->modGradPhi() ),
                 std::make_pair( "distance", this->distance() ),
                 std::make_pair( "distance-normal", this->distanceNormal() ),
-                std::make_pair( "distance-curvature", this->distanceCurvature() )
+                std::make_pair( "distance-curvature", this->distanceCurvature() ),
+                this->fieldsUserScalar(),
+                this->fieldsUserVectorial()
                 );
     }
     // Measures quantities
     auto allMeasuresQuantities() const
     {
+        // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
+        // the begin and end iterators used in ModelNumerical::588 are only implemented from
+        // Eigen v3.4 on (not released yet).
+        std::vector<double> vecPositionCOM( this->positionCOM().size() );
+        Eigen::Matrix<value_type, nDim, 1>::Map( &vecPositionCOM[0], vecPositionCOM.size() ) = this->positionCOM();
         return hana::make_tuple(
                 std::make_pair( "volume", this->volume() ),
                 std::make_pair( "perimeter", this->perimeter() ),
-                std::make_pair( "position-com", this->positionCOM() )
+                std::make_pair( "position-com", vecPositionCOM )
                 );
     }
     //--------------------------------------------------------------------//
@@ -454,9 +461,9 @@ public:
     virtual std::set<std::string> postProcessExportsAllFieldsAvailable() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    virtual void exportResults( double time );
-    //template<typename SymbolsExpr, typename... TupleFieldsType>
-    //void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields );
+    void exportResults( double time );
+    template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
     bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
     //void executePostProcessMeasures( double time );
@@ -781,31 +788,30 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 //;
 
 //----------------------------------------------------------------------------//
-//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-//template<typename SymbolsExpr, typename... TupleFieldsType>
-//void
-//LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& ... fields )
-//{
-    //this->log("LevelSetBase","exportResults", "start");
-    //this->timerTool("PostProcessing").start();
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+void
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
+{
+    this->log("LevelSetBase","exportResults", "start");
+    this->timerTool("PostProcessing").start();
 
-    //this->modelProperties().parameters().updateParameterValues();
-    //auto paramValues = this->modelProperties().parameters().toParameterValues();
-    //this->modelProperties().postProcess().setParameterValues( paramValues );
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    //this->executePostProcessExports( M_exporter, time, fields... );
-    //// TODO executePostProcessMeasures should be variadic
-    //this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, fields... );
+    this->executePostProcessExports( M_exporter, time, tupleFields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, tupleFields, tupleMeasuresQuantities );
 
-    //this->timerTool("PostProcessing").stop("exportResults");
-    //if ( this->scalabilitySave() )
-    //{
-        //if ( !this->isStationary() )
-            //this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        //this->timerTool("PostProcessing").save();
-    //}
-    //this->log("LevelSetBase","exportResults", "finish");
-//}
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("LevelSetBase","exportResults", "finish");
+}
 
 //LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 //template<typename TupleFieldsType, typename SymbolsExpr>
