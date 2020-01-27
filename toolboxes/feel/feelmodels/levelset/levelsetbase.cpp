@@ -402,25 +402,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("LevelSetBase","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    this->executePostProcessExports( M_exporter, time, this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
-    this->updatePostProcessMeasuresQuantities( this->allMeasuresQuantities() );
-    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, this->symbolsExpr(), this->allFields(), this->fieldsUserScalar(), this->fieldsUserVectorial() );
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("LevelSetBase","exportResults", "finish");
+    this->exportResults( time, this->symbolsExpr(), this->allFields(), this->allMeasuresQuantities() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
