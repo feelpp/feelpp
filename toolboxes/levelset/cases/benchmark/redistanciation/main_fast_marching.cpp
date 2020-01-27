@@ -49,8 +49,9 @@ runLevelsetApplication()
     int nDof = LS->functionSpace()->nDof();
     int nElements = LS->mesh()->numGlobalElements();
     double redistTime;
-    std::string timeFileName( soption( _name="levelset.redistanciation-timer-file" ) );
 
+    std::string timeFileNewName = timeFileBaseName + "_" + geoBaseName + "_" + jsonBaseName + "_" + str(hSize) + "." + timeFileExtension;
+    
     Feel::cout << "Redistanciation started. Will write results to " << timeFileName << std::endl;
     tic();
     LS->redistanciate();
@@ -87,7 +88,7 @@ int main( int argc, char** argv )
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
         ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
-        ("levelset.redistanciation-timer-file", Feel::po::value<std::string>()->default_value( "redistanciation_d_timer.csv" ), "Path to a file to write the redistanciation time" )
+        ("levelset.redistanciation-timer-file", Feel::po::value<std::string>()->default_value( "redistanciation_FEELPP_DIMd_timer.csv" ), "Path to a file to write the redistanciation time" )
         ;
 
     Environment env( 
