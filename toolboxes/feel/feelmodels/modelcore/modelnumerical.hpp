@@ -121,7 +121,7 @@ class ModelNumerical : public ModelAlgebraic
 
 
         template<typename SpaceType>
-        auto createBdf( std::shared_ptr<SpaceType> space, std::string const& name, int bdfOrder, int nConsecutiveSave, std::string myFileFormat )
+        auto createBdf( std::shared_ptr<SpaceType> space, std::string const& name, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat ) const
             {
                 std::string suffixName = "";
                 if ( myFileFormat == "binary" )

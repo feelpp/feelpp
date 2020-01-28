@@ -518,21 +518,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "VolumicForces" );
 
 
-    
-    M_hasNoSlipRigidParticlesBC = false;
+
     if ( auto _bcPTree = this->modelProperties().pTree().get_child_optional("BoundaryConditions") )
     {
         if ( auto _fluidPTree = _bcPTree->get_child_optional("fluid") )
         {
-            if ( auto _particlesPtree = _fluidPTree->get_child_optional("particles") )
+            if ( auto _particlesPtree = _fluidPTree->get_child_optional("body-particles") )
             {
-                if ( this->worldComm().isMasterRank() )
-                    std::cout << "use oSlipRigidParticlesBC" << std::endl;
-                M_hasNoSlipRigidParticlesBC = true;
+                for ( auto const& item : *_particlesPtree )
+                {
+                    std::string particleName = item.first;
+                    BodyParticleBoundaryCondition bpbc;
+                    bpbc.setup( particleName, item.second, *this/*this->mesh()*/ );
+                    if ( true ) // check if setup is enough
+                    {
+                        M_bodyParticlesBC.emplace(bpbc.name(), bpbc );
+                        for( std::string const& bcMarker : bpbc.markers() )
+                            this->addMarkerALEMeshBC("moving",bcMarker);
+                    }
+                }
             }
         }
     }
-    
+
     // Dirichlet bc using a lagrange multiplier
     if (this->hasMarkerDirichletBClm())
     {
@@ -565,18 +573,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
-
-    if ( M_hasNoSlipRigidParticlesBC )
-    {
-        M_meshNoSlipRigidParticles = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"wall2"}),_view=true );
-        M_XhNoSlipRigidParticlesTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_meshNoSlipRigidParticles );
-        if constexpr ( nDim == 2 )
-            M_XhNoSlipRigidParticlesAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_meshNoSlipRigidParticles ); //M_XhNoSlipRigidParticlesTranslationalVelocity->compSpace();
-        else
-            M_XhNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity;
-        M_fieldNoSlipRigidParticlesTranslationalVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity->elementPtr();
-        M_fieldNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesAngularVelocity->elementPtr();
-    }
+    // bc body particles
+    M_bodyParticlesBC.updateForUse( *this );
 
 
     this->updateBoundaryConditionsForUse();
@@ -1093,6 +1091,39 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         if ( M_stabilizationGLS )
             M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
     }
+
+
+    if ( !M_bodyParticlesBC.empty() )
+    {
+        int nBlock = this->nBlockMatrixGraph();
+        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+        for (int i=0;i<nBlock;++i)
+            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
+
+        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        {
+            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.angular-velocity") ) << " start dof index for particles-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
+
+            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+            auto rangeParticle = bpbc.rangeMarkedFacesOnFluid();
+            auto dofsParticle = this->functionSpaceVelocity()->dofs( rangeParticle );
+            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+            for ( auto dofid : dofsParticle )
+                matFI_Id->set( dofid,dofid, 0.);
+            matFI_Id->close();
+        }
+
+        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+        M_algebraicFactory->initSolverPtAP( matP );
+    }
+
+
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1202,12 +1233,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     M_savetsPressure->setfileFormat( myFileFormat );
     M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
 
-    if ( M_hasNoSlipRigidParticlesBC )
-    {
-        M_bdfNoSlipRigidParticlesTranslationalVelocity = this->createBdf( M_XhNoSlipRigidParticlesTranslationalVelocity, "NoSlipRigidParticlesTranslationalVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
-        M_bdfNoSlipRigidParticlesAngularVelocity = this->createBdf( M_XhNoSlipRigidParticlesAngularVelocity, "NoSlipRigidParticlesAngularVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
-    }
-
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
@@ -1219,8 +1244,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         // start time step
         double tir = M_bdfVelocity->restart();
         M_savetsPressure->restart();
-        if ( M_hasNoSlipRigidParticlesBC )
-            CHECK( false ) << "TODO";
         // load a previous solution as current solution
         *M_fieldVelocity = M_bdfVelocity->unknown(0);
         *M_fieldPressure = M_savetsPressure->unknown(0);
@@ -1231,6 +1254,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
+
+    M_bodyParticlesBC.initTimeStep( *this, bdfOrder, nConsecutiveSave, myFileFormat );
+
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
     this->log("FluidMechanics","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -1584,7 +1610,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         {
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
-#if 0
+#if 1
             auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 #else
@@ -1718,10 +1744,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    //if ( M_hasNoSlipRigidParticlesBC )
     {
-        this->setStartSubBlockSpaceIndex( "particles-bc.translational-velocity", currentStartIndex++ );
-        this->setStartSubBlockSpaceIndex( "particles-bc.angular-velocity", currentStartIndex++ );
+        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        {
+            this->setStartSubBlockSpaceIndex( "particles-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
+            this->setStartSubBlockSpaceIndex( "particles-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
+        }
     }
 
     return currentStartIndex;
@@ -1772,10 +1801,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         }
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    if ( !M_bodyParticlesBC.empty() )
     {
-        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesTranslationalVelocity;
-        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesAngularVelocity;
+        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        {
+            M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
+            M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
+        }
     }
 
     return cptBlock;
@@ -1848,6 +1880,57 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
         M_operatorPCD = opPCD;
     }
 
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::setup( std::string const& particleName, pt::ptree const& pt, self_type const& fluidToolbox /* mesh_ptrtype meshFluid,*/ )
+{
+    if ( auto ptmarkers = pt.get_child_optional("markers") )
+        M_markers.setPTree(*ptmarkers/*, indexes*/);
+    else
+        M_markers.insert( particleName );
+
+    M_massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    M_momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    M_massCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+
+    M_translationalVelocityExpr.setExpr( "translational-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    M_angularVelocityExpr.setExpr( "angular-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::updateForUse( self_type const& fluidToolbox )
+{
+    auto rangeParticle = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
+    M_rangeMarkedFacesOnFluid = rangeParticle;
+    M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeParticle,_view=true );
+    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    if constexpr ( nDim == 2 )
+                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    else
+        M_XhAngularVelocity = M_XhTranslationalVelocity;
+    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
+    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+
+    auto const& w = *M_fieldAngularVelocity;
+    auto massCenter = M_massCenterExpr.template expr<nDim,1>();// //expr<nDim,1>( "{0.2,0.2}" );
+
+    auto XhV = fluidToolbox.functionSpaceVelocity();
+    auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=rangeParticle );
+    M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
+    if constexpr (nDim == 2 )
+                 {
+                     auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=rangeParticle,
+                                                                 _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ) );
+                     M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+                 }
+    else
+    {
+        CHECK( false ) << "TODO" << std::endl;
+    }
+    
 }
 
 } // namespace FeelModels
