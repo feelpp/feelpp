@@ -372,7 +372,7 @@
             static const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
         template<typename Func>                                         \
             static const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
-        using test_basis = std::nullptr_t;                              \
+        using test_basis =  typename mpl::if_< std::is_null_pointer<typename L_type::test_basis >, typename R_type::test_basis , typename L_type::test_basis >::type; \
         using trial_basis = std::nullptr_t;                             \
                                                                         \
         typedef typename mpl::if_<mpl::greater<mpl::sizeof_<VF_VALUE_TYPE(L)>, \
