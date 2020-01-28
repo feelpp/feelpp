@@ -461,7 +461,7 @@ public:
     virtual std::set<std::string> postProcessExportsAllFieldsAvailable() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
-    void exportResults( double time );
+    virtual void exportResults( double time );
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 

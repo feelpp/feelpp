@@ -355,10 +355,12 @@ public:
                 );
     }
     // Fields
-    auto genericFields() const
+    auto allFields() const
     {
         return hana::concat( super_type::allFields(), hana::make_tuple(
-                std::make_pair( "advection-velocity", M_advectionToolbox->fieldAdvectionVelocityPtr() )
+                std::make_pair( "advection-velocity", M_advectionToolbox->fieldAdvectionVelocityPtr() ),
+                this->optionalScalarFields(),
+                this->optionalVectorialFields()
                 ) );
     }
     auto optionalScalarFields() const
@@ -387,8 +389,13 @@ public:
     // Measures quantities
     auto allMeasuresQuantities() const
     {
+        // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
+        // the begin and end iterators used in ModelNumerical::588 are only implemented from
+        // Eigen v3.4 on (not released yet).
+        std::vector<double> vecVelocityCOM( this->velocityCOM().size() );
+        Eigen::Matrix<value_type, nDim, 1>::Map( &vecVelocityCOM[0], vecVelocityCOM.size() ) = this->velocityCOM();
         return hana::concat( super_type::allMeasuresQuantities(), hana::make_tuple(
-                    std::make_pair( "velocity-com", this->velocityCOM() )
+                    std::make_pair( "velocity-com", vecVelocityCOM )
                     ) );
     }
     //--------------------------------------------------------------------//
@@ -397,9 +404,7 @@ public:
     std::set<std::string> postProcessExportsAllFieldsAvailable() const override;
 
     using super_type::exportResults;
-    void exportResults( double time ) override { 
-        super_type::exportResults( time, this->symbolsExpr(), this->genericFields(), this->optionalScalarFields(), this->optionalVectorialFields(), this->fieldsUserScalar(), this->fieldsUserVectorial(), this->allMeasuresQuantities() );
-    }
+    void exportResults( double time ) override;
     //template<typename SymbolsExpr>
     //void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
