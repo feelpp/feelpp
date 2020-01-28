@@ -4,7 +4,7 @@
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
 # :toc: macro
 :toclevels: 2
-:stem:latexmath
+:stem: latexmath
 :uri-rel-file-base: link:
 :uri-rel-tree-base: link:
 ifdef::env-site[]
