@@ -362,6 +362,12 @@ public:
 
     virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
+    virtual sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 )
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return sparse_matrix_ptrtype{};
+    }
+
     /**
      * helper function
      */
