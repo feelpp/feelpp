@@ -1055,9 +1055,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSET_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
+LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->executePostProcessMeasures( time, this->genericFields(), this->symbolsExpr() );
+    this->exportResults( time, this->symbolsExpr(), this->allFields(), this->allMeasuresQuantities() );
 }
 
 //----------------------------------------------------------------------------//
