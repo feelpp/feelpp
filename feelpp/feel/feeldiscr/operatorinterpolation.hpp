@@ -44,7 +44,7 @@ using nonconforming_t = mpl::bool_<false>;
 template<typename C>
 constexpr bool is_conforming = C::value;
 
-enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV };
+enum class interpolation_operand_type { ID = 0, GRADIENT, CURL, DIV, EXPR };
 
 inline std::ostream&
 operator<<( std::ostream& os, interpolation_operand_type const& o )
@@ -57,32 +57,31 @@ operator<<( std::ostream& os, interpolation_operand_type const& o )
         os << "CURL";
     if ( o == interpolation_operand_type::DIV )
         os << "DIV";
+    if ( o == interpolation_operand_type::EXPR )
+        os << "EXPR";
     return os;
 }
 
+
 template<bool C, interpolation_operand_type O>
-class InterpolationTypeBase
+class InterpolationTypeBaseBase
 {
 public :
     static constexpr bool is_conforming = C;
     static constexpr interpolation_operand_type interpolation_operand = O;
     using operand_t = mpl::int_<static_cast<int>( interpolation_operand )>;
-    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
-    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
-    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
-    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
 
-    constexpr InterpolationTypeBase()
+    constexpr InterpolationTypeBaseBase()
         :
         M_searchWithCommunication( true ),
         M_componentsAreSamePoint( true ),
         M_onlyLocalizeOnBoundary( false ),
         M_nbNearNeighborInKdTree( 15)
         {}  
-    constexpr InterpolationTypeBase( bool useComm, 
-                                     bool compAreSamePt=true, 
-                                     bool onlyLocalizeOnBoundary=false, 
-                                     int nbNearNeighborInKdTree=15 )
+    constexpr InterpolationTypeBaseBase( bool useComm, 
+                                         bool compAreSamePt=true, 
+                                         bool onlyLocalizeOnBoundary=false, 
+                                         int nbNearNeighborInKdTree=15 )
     :
         M_searchWithCommunication( useComm ),
         M_componentsAreSamePoint( compAreSamePt ),
@@ -90,11 +89,11 @@ public :
         M_nbNearNeighborInKdTree( nbNearNeighborInKdTree )
     {}
 
-    InterpolationTypeBase( InterpolationTypeBase const& a) = default;
-    InterpolationTypeBase( InterpolationTypeBase && a) = default;
+    InterpolationTypeBaseBase( InterpolationTypeBaseBase const& a) = default;
+    InterpolationTypeBaseBase( InterpolationTypeBaseBase && a) = default;
 
-    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
-    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
+    InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase const& a) = default;
+    InterpolationTypeBaseBase& operator=( InterpolationTypeBaseBase && a) = default;
 
     constexpr bool searchWithCommunication() const noexcept { return M_searchWithCommunication; }
     constexpr bool componentsAreSamePoint() const noexcept { return M_componentsAreSamePoint; }
@@ -103,6 +102,44 @@ public :
 
     static constexpr bool isConforming() noexcept { return is_conforming; }
     static constexpr interpolation_operand_type interpolationOperand() noexcept { return interpolation_operand; }
+
+private :
+
+    bool M_searchWithCommunication;
+    bool M_componentsAreSamePoint;
+    bool M_onlyLocalizeOnBoundary;
+    int M_nbNearNeighborInKdTree;
+};
+
+
+template<bool C, interpolation_operand_type O >
+class InterpolationTypeBase : public InterpolationTypeBaseBase<C,O>
+{
+    using super_type = InterpolationTypeBaseBase<C,O>;
+public :
+    static constexpr bool is_conforming = super_type::is_conforming;
+    static constexpr interpolation_operand_type interpolation_operand = super_type::interpolation_operand;
+    using operand_t = typename super_type::operand_t; //mpl::int_<static_cast<int>( interpolation_operand )>;
+    using id_t = mpl::int_<static_cast<int>( interpolation_operand_type::ID )>;
+    using gradient_t = mpl::int_<static_cast<int>( interpolation_operand_type::GRADIENT )>;
+    using curl_t = mpl::int_<static_cast<int>( interpolation_operand_type::CURL )>;
+    using div_t = mpl::int_<static_cast<int>( interpolation_operand_type::DIV )>;
+
+    constexpr InterpolationTypeBase() = default;
+    constexpr InterpolationTypeBase( bool useComm, 
+                                     bool compAreSamePt=true, 
+                                     bool onlyLocalizeOnBoundary=false, 
+                                     int nbNearNeighborInKdTree=15 )
+        :
+        super_type( useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree )
+    {}
+
+    InterpolationTypeBase( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase( InterpolationTypeBase && a) = default;
+
+    InterpolationTypeBase& operator=( InterpolationTypeBase const& a) = default;
+    InterpolationTypeBase& operator=( InterpolationTypeBase && a) = default;
+
     static constexpr bool requiresDerivatives() noexcept 
         { 
             return interpolation_operand == interpolation_operand_type::GRADIENT || 
@@ -136,12 +173,12 @@ private:
         {
             return vf::div( std::forward<Elt>(e) );
         }
-private :
+    /*private :
 
     bool M_searchWithCommunication;
     bool M_componentsAreSamePoint;
     bool M_onlyLocalizeOnBoundary;
-    int M_nbNearNeighborInKdTree;
+     int M_nbNearNeighborInKdTree;*/
 };
 
 struct InterpolationNonConforming : public InterpolationTypeBase<false,interpolation_operand_type::ID>
@@ -260,6 +297,36 @@ struct InterpolationDiv : public InterpolationTypeBase<is_conforming<C>,interpol
     InterpolationDiv& operator=( InterpolationDiv const& ) = default;
 };
 
+template<typename ExprType,typename C>
+struct InterpolationExpr : public InterpolationTypeBaseBase<is_conforming<C>,interpolation_operand_type::EXPR>
+{
+    using super = InterpolationTypeBaseBase<is_conforming<C>,interpolation_operand_type::EXPR>;
+    using expr_type = ExprType;
+    constexpr InterpolationExpr() = default;
+    constexpr InterpolationExpr(expr_type const& expr,
+                                C c,
+                                bool useComm = true,
+                                bool compAreSamePt=true,
+                                bool onlyLocalizeOnBoundary=false,
+                                int nbNearNeighborInKdTree=15 )
+        :
+        super(useComm,compAreSamePt,onlyLocalizeOnBoundary,nbNearNeighborInKdTree),
+        M_expr( expr )
+        {}
+    InterpolationExpr( InterpolationExpr const& ) = default;
+    InterpolationExpr( InterpolationExpr && ) = default;
+    //InterpolationExpr& operator=( InterpolationExpr const& ) = default;
+
+    template<typename Elt>
+    constexpr decltype(auto) operand( Elt&& e ) 
+        {
+            return M_expr;
+        }
+
+private :
+    expr_type M_expr;
+};
+
 template<typename C, typename ...Args>
 InterpolationID<C>
 makeInterpolation( C&& c, Args&&... args )
@@ -286,6 +353,13 @@ InterpolationDiv<C>
 makeDivInterpolation( C&& c, Args&&... args )
 {
     return InterpolationDiv<C>( std::forward<C>(c), std::forward<Args>(args)... );
+}
+
+template<typename ExprType, typename C, typename ...Args>
+InterpolationExpr<ExprType,C>
+makeExprInterpolation( ExprType const& expr, C&& c, Args&&... args )
+{
+    return InterpolationExpr<ExprType,C>( expr, std::forward<C>(c), std::forward<Args>(args)... );
 }
 
 
@@ -681,6 +755,8 @@ struct PrecomputeDomainBasisFunction
     typedef typename DomainSpaceType::mesh_type::element_type geoelement_type;
     typedef typename DomainSpaceType::basis_type fe_type;
     typedef typename ImageSpaceType::basis_type image_fe_type;
+    typedef typename image_fe_type::template ChangeDim<fe_type::nDim>::type image_fe_changedim_type;
+
     typedef ExprType expression_type;
 
     // geomap context
@@ -720,7 +796,7 @@ struct PrecomputeDomainBasisFunction
 
     void update( geoelement_type const& elt )
     {
-        if constexpr ( !vm::has_grad_v<context> && !vm::has_curl_v<context> && !vm::has_div_v<context> && 
+        if constexpr ( !vm::has_grad_v<context> && !vm::has_curl_v<context> && !vm::has_div_v<context> && !vm::has_point_v<context> && !vm::has_dynamic_v<context> &&
              !is_hdiv_conforming_v<typename DomainSpaceType::fe_type> && !is_hcurl_conforming_v<typename DomainSpaceType::fe_type> &&
              !is_hdiv_conforming_v<typename ImageSpaceType::fe_type> && !is_hcurl_conforming_v<typename ImageSpaceType::fe_type> )
             return;
@@ -728,11 +804,17 @@ struct PrecomputeDomainBasisFunction
         {
             M_gmc->update( elt );
             M_fec->update( M_gmc );
-
-            t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
-
-            M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
-        } 
+            //t_expr_type texpr( M_expr, mapgmc( M_gmc), mapfec( M_fec ) );
+            M_tensorExpr->update( mapgmc( M_gmc), mapfec( M_fec ) );
+            if constexpr ( DomainSpaceType::nDim == ImageSpaceType::nDim )
+            {
+                M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+            }
+            else
+            {
+                M_imageFeChangeDim->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
+            }
+        }
     }
 
     Eigen::MatrixXd const& interpolant() const { return M_IhLoc; }
@@ -761,22 +843,24 @@ private :
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
           map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-          t_expr_type texpr( M_expr, mapgmc, mapfec );
+          //t_expr_type texpr( M_expr, mapgmc, mapfec );
+          M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
           using shape = typename t_expr_type::shape;
           M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
                                            image_fe_type::is_product ? image_fe_type::nComponents * image_fe_type::nLocalDof : image_fe_type::nLocalDof );
 
-          M_XhImage->fe()->interpolateBasisFunction( texpr, M_IhLoc );
+          M_XhImage->fe()->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
       }
       else
       {
-          typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
-          new_basis_type newImageBasis;
+          //typedef typename ImageSpaceType::basis_type::template ChangeDim<DomainSpaceType::basis_type::nDim>::type new_basis_type;
+          //new_basis_type newImageBasis;
+          M_imageFeChangeDim = std::make_shared<image_fe_changedim_type>();
 
           // auto const& elt = *M_XhDomain->mesh()->beginElementWithProcessId();
           gm_ptrtype gm = M_XhDomain->gm();
 
-          auto refPts = newImageBasis.dual().points(); //M_XhImage->fe()->dual().points();
+          auto refPts = M_imageFeChangeDim->dual().points(); //M_XhImage->fe()->dual().points();
           auto geopc = gm->preCompute( gm, refPts );
           auto fepc = M_XhDomain->fe()->preCompute( M_XhDomain->fe(), refPts /*gmc->xRefs()*/ );
 
@@ -788,12 +872,13 @@ private :
 
           map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( M_gmc ) );
           map_fec_type mapfec( fusion::make_pair<vf::detail::gmc<0>>( M_fec ) );
-          t_expr_type texpr( M_expr, mapgmc, mapfec );
+          //t_expr_type texpr( M_expr, mapgmc, mapfec );
+          M_tensorExpr = std::make_shared<t_expr_type>( M_expr, mapgmc, mapfec );
 
           using shape = typename t_expr_type::shape;
           M_IhLoc = Eigen::MatrixXd::Zero( fe_type::is_product ? fe_type::nComponents * fe_type::nLocalDof : fe_type::nLocalDof,
-                                           new_basis_type::is_product ? new_basis_type::nComponents * new_basis_type::nLocalDof : new_basis_type::nLocalDof );
-          newImageBasis.interpolateBasisFunction( texpr, M_IhLoc );
+                                           image_fe_changedim_type::is_product ? image_fe_changedim_type::nComponents * image_fe_changedim_type::nLocalDof : image_fe_changedim_type::nLocalDof );
+          M_imageFeChangeDim->interpolateBasisFunction( *M_tensorExpr, M_IhLoc );
       }
   }
 
@@ -801,7 +886,8 @@ private:
   domain_space_ptrtype M_XhDomain;
   image_space_ptrtype M_XhImage;
   expression_type const& M_expr;
-
+  std::shared_ptr<t_expr_type> M_tensorExpr;
+  std::shared_ptr<image_fe_changedim_type> M_imageFeChangeDim;
   gmc_ptrtype M_gmc;
   fecontext_ptrtype M_fec;
   Eigen::MatrixXd M_IhLoc;
@@ -1173,7 +1259,8 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // done for each element
 
     auto uDomain = this->domainSpace()->element();
-    auto expr = interpolation_type::operand(uDomain);
+    //auto expr = interpolation_type::operand(uDomain);
+    auto expr = M_interptype.operand(uDomain);
     auto MlocEvalBasisNEW = Feel::detail::precomputeDomainBasisFunction( this->domainSpace(), this->dualImageSpace(), expr );
     Eigen::MatrixXd IhLoc;
 
