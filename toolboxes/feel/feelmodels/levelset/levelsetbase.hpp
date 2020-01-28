@@ -466,11 +466,6 @@ public:
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
     bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
-    //void executePostProcessMeasures( double time );
-    //template<typename TupleFieldsType, typename SymbolsExpr>
-    //void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
-    template<typename TupleFieldsType, typename SymbolsExpr>
-    bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     //--------------------------------------------------------------------//
     // User-defined fields
@@ -767,26 +762,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
     {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
 };
 
-//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-//const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype
-//LEVELSETBASE_CLASS_TEMPLATE_TYPE::DerivationMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::derivationmethod_maptype::relation >
-    //( "nodal-projection", DerivationMethod::NODAL_PROJECTION )
-    //( "l2-projection", DerivationMethod::L2_PROJECTION )
-    //( "smooth-projection", DerivationMethod::SMOOTH_PROJECTION )
-    //( "pn-nodal-projection", DerivationMethod::PN_NODAL_PROJECTION )
-//;
-
-//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-//const typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype
-//LEVELSETBASE_CLASS_TEMPLATE_TYPE::CurvatureMethodMap = boost::assign::list_of< typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvaturemethod_maptype::relation >
-    //( "nodal-projection", CurvatureMethod::NODAL_PROJECTION )
-    //( "l2-projection", CurvatureMethod::L2_PROJECTION )
-    //( "smooth-projection", CurvatureMethod::SMOOTH_PROJECTION )
-    //( "pn-nodal-projection", CurvatureMethod::PN_NODAL_PROJECTION )
-    //( "diffusion-order1", CurvatureMethod::DIFFUSION_ORDER1 )
-    //( "diffusion-order2", CurvatureMethod::DIFFUSION_ORDER2 )
-//;
-
 //----------------------------------------------------------------------------//
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
@@ -811,59 +786,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
         this->timerTool("PostProcessing").save();
     }
     this->log("LevelSetBase","exportResults", "finish");
-}
-
-//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-//template<typename TupleFieldsType, typename SymbolsExpr>
-//void
-//LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
-//{
-    //bool hasMeasure = this->updatePostProcessMeasures( time, tupleFields, symbolsExpr );
-
-    //if ( hasMeasure )
-    //{
-        //if ( !this->isStationary() )
-            //this->postProcessMeasuresIO().setMeasure( "time", time );
-        //this->postProcessMeasuresIO().exportMeasures();
-        //this->upload( this->postProcessMeasuresIO().pathFile() );
-    //}
-//}
-
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename TupleFieldsType, typename SymbolsExpr>
-bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
-{
-    bool hasMeasure = false;
-
-    // compute measures
-    if( this->hasPostProcessMeasuresQuantities( "volume" ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "volume", this->volume() );
-        hasMeasure = true;
-    }
-    if( this->hasPostProcessMeasuresQuantities( "perimeter" ) )
-    {
-        this->postProcessMeasuresIO().setMeasure( "perimeter", this->perimeter() );
-        hasMeasure = true;
-    }
-    if( this->hasPostProcessMeasuresQuantities( "position-com" ) )
-    {
-        auto com = this->positionCOM();
-        std::vector<double> vecCOM = { com(0,0) };
-        if( nDim > 1 ) vecCOM.push_back( com(1,0) );
-        if( nDim > 2 ) vecCOM.push_back( com(2,0) );
-        this->postProcessMeasuresIO().setMeasureComp( "position_com", vecCOM );
-        hasMeasure = true;
-    }
-
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, tupleFields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, tupleFields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
-    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
-        hasMeasure = true;
-
-    return hasMeasure;
 }
 
 } // namespace FeelModels

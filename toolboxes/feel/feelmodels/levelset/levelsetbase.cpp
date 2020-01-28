@@ -1806,58 +1806,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
         break;
         case LevelSetDistanceMethod::FASTMARCHING:
         {
-            //switch (M_fastMarchingInitializationMethod)
-            //{
-                //case FastMarchingInitializationMethod::ILP_NODAL :
-                //{
-                    //phiRedist->on( 
-                            //_range=this->rangeMeshElements(), 
-                            //_expr=idv(phi)/sqrt( inner( gradv(phi), gradv(phi) ) )
-                            //);
-                //}
-                //break;
-
-                //case FastMarchingInitializationMethod::ILP_L2 :
-                //{
-                    //auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::L2_PROJECTION );
-                    ///[>phiRedist = phi;
-                    //phiRedist->on( 
-                            //_range=this->rangeMeshElements(), 
-                            //_expr=idv(phi)/idv(modGradPhi) 
-                            //);
-                //}
-                //break;
-
-                //case FastMarchingInitializationMethod::ILP_SMOOTH :
-                //{
-                    //auto const modGradPhi = this->modGrad( phi, LevelSetDerivationMethod::SMOOTH_PROJECTION );
-                    ///[>phiRedist = phi;
-                    //phiRedist->on( 
-                            //_range=this->rangeMeshElements(), 
-                            //_expr=idv(phi)/idv(modGradPhi) 
-                            //);
-                //}
-                //break;
-
-                //case FastMarchingInitializationMethod::HJ_EQ :
-                //{
-                    //CHECK(false) << "TODO\n";
-                    ///[>phi = *explicitHJ(max_iter, dtau, tol);
-                //}
-                //break;
-                //case FastMarchingInitializationMethod::IL_HJ_EQ :
-                //{
-                    //CHECK(false) << "TODO\n";
-                    ///[>phi = *explicitHJ(max_iter, dtau, tol);
-                //}
-                //break;
-                //case FastMarchingInitializationMethod::NONE :
-                //{
-                    //*phiRedist = phi;
-                //}
-                //break;
-            //} // switch M_fastMarchingInitializationMethod
-
             this->log("LevelSetBase", "redistanciate", "run fast-marching");
             *phiRedist = this->redistanciationFM()->run( phi );
         } // Fast Marching
@@ -2135,13 +2083,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasuresQuantities(
 {
     return M_postProcessMeasuresQuantities.find(q) != M_postProcessMeasuresQuantities.end();
 }
-
-//LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-//void
-//LEVELSETBASE_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
-//{
-    //this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
-//}
 
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
