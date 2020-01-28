@@ -261,10 +261,8 @@ The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud
 
 Here is a full example to solve
 
-[stem]
-++++
--\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega
-++++
+
+$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
 
 [source,cpp]
 ----
