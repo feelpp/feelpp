@@ -45,7 +45,7 @@
         },
         "Measures":
         {
-            "Volume":""
+            "quantities": ["volume"]
         }
     }
 }
