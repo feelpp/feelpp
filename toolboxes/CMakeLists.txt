@@ -71,6 +71,7 @@ include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 INCLUDE(CTest)
 ENABLE_TESTING()
 
+add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
 
@@ -113,4 +114,10 @@ if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
   add_subdirectory( maxwell )
+endif()
+
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()
