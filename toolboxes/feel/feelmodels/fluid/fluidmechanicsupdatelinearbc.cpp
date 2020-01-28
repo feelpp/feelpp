@@ -402,187 +402,91 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     }
 
     //--------------------------------------------------------------------------------------------------//
-#if 0
-    juste un test
-    if ( !M_hasNoSlipRigidParticlesBC && BuildNonCstPart )
+
+    if ( !M_bodyParticlesBC.empty() )
     {
-        auto viscousStressTensor = 2*idv(mu)*deft;
-        auto rangeFaceParticle = markedfaces(this->mesh(),{"wall2"});
-        form2( _test=XhV,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+0,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( viscousStressTensor*N(), id(v) ),
-                       _geomap=this->geomap() );
-        form2( _test=XhV,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+0,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( idt(p)*N(), id(v) ),
-                       _geomap=this->geomap() );
-    }
-#endif
-    
-    if ( M_hasNoSlipRigidParticlesBC && BuildNonCstPart )
-    {
-        this->log("FluidMechanics","updateLinearPDE","M_hasNoSlipRigidParticlesBC");
-        CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
-        CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.angular-velocity") ) << " start dof index for particles-bc.angular-velocity is not present\n";
-        size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc.translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc.angular-velocity");
+        this->log("FluidMechanics","updateLinearPDE","assembly of body particles");
 
-        auto rangeFaceParticle = markedfaces(this->mesh(),{"wall2"});
-        double massParticle = 1;
-        double momentOfInertia = 1;
-        auto massCenter = expr<2,1>( "{0.2,0.2}" );
-
-        auto viscousStressTensor = 2*idv(mu)*deft;
-#if 0
-#if 0
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( viscousStressTensor*N(), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( idt(p)*N(), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-
-        form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexAngularVelocity,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( id(M_fieldNoSlipRigidParticlesAngularVelocity), cross(P()-massCenter,viscousStressTensor*N() ) ),
-                       _geomap=this->geomap() );
-        form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexAngularVelocity,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( id(M_fieldNoSlipRigidParticlesAngularVelocity), cross(P()-massCenter,idt(p)*N() ) ),
-                       _geomap=this->geomap() );
-#else
-        form2( _test=XhV,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+0,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( viscousStressTensor*N(), id(v) ),
-                       _geomap=this->geomap() );
-        form2( _test=XhV,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+0,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( idt(p)*N(), id(v) ),
-                       _geomap=this->geomap() );
-#endif
-#endif
-
-        // equation on translational velocity
-#if 0
-        // this is not good, not use an integrate but currently all row are eliminated
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-               _colstart=colStartInMatrix+startBlockIndexTranslationalVelocity ) +=
-            integrate( _range=elements(M_meshNoSlipRigidParticles),
-                       _expr= M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDerivCoefficient(0)*massParticle*inner( idt(M_fieldNoSlipRigidParticlesTranslationalVelocity), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-        form1( _test=M_XhNoSlipRigidParticlesTranslationalVelocity, _vector=F,
-               _rowstart=rowStartInVector+startBlockIndexTranslationalVelocity ) +=
-            integrate( _range=elements(M_meshNoSlipRigidParticles),
-                       _expr= massParticle*inner( idv(M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDeriv()),id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-#else
-        bool hasActiveDofTranslationalVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity->nLocalDofWithoutGhost() > 0;
-        if ( hasActiveDofTranslationalVelocity )
+        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
         {
-            auto const& basisToContainerGpTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
-            auto const& basisToContainerGpTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocity );
-            for (int d=0;d<nDim;++d)
-            {
-                A->add( basisToContainerGpTranslationalVelocityRow[d], basisToContainerGpTranslationalVelocityCol[d],
-                        M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDerivCoefficient(0)*massParticle );
-            }
-            auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
-            std::vector<double> _gravity = { 0., 2. };
-            double massTilde = 0.5;
-            for (int d=0;d<nDim;++d)
-            {
-                auto translationalVelocityPolyDeriv = M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDeriv();
-                F->add( basisToContainerGpTranslationalVelocityVector[d],
-                        massParticle*translationalVelocityPolyDeriv(d) );
-                F->add( basisToContainerGpTranslationalVelocityVector[d],
-                        massTilde*_gravity[d] );
-            }
-        }
-#endif
 
-#if 0
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( viscousStressTensor*N(), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( idt(p)*N(), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                       _geomap=this->geomap() );
-#endif
+            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.angular-velocity") ) << " start dof index for particles-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
 
-        // equation on angular velocity
+            // equation on translational velocity
 #if 0
-        // this is not good, not use an integrate but currently all row are eliminated
-        form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexAngularVelocity,
-               _colstart=colStartInMatrix+startBlockIndexAngularVelocity ) +=
-            integrate( _range=elements(M_meshNoSlipRigidParticles),
-                       _expr= M_bdfNoSlipRigidParticlesAngularVelocity->polyDerivCoefficient(0)*momentOfInertia*inner( idt(M_fieldNoSlipRigidParticlesAngularVelocity), id(M_fieldNoSlipRigidParticlesAngularVelocity) ),
-                       _geomap=this->geomap() );
-        form1( _test=M_XhNoSlipRigidParticlesAngularVelocity, _vector=F,
-               _rowstart=rowStartInVector+startBlockIndexAngularVelocity ) +=
-            integrate( _range=elements(M_meshNoSlipRigidParticles),
-                       _expr= momentOfInertia*inner( idv(M_bdfNoSlipRigidParticlesAngularVelocity->polyDeriv()),id(M_fieldNoSlipRigidParticlesAngularVelocity) ),
-                       _geomap=this->geomap() );
-#else
-        int nLocalDofAngularVelocity = M_XhNoSlipRigidParticlesAngularVelocity->nLocalDofWithoutGhost();
-        bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
-        if ( hasActiveDofAngularVelocity )
-        {
-            auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
-            auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
-            for (int d=0;d<nLocalDofAngularVelocity;++d)
-            {
-                A->add( basisToContainerGpAngularVelocityRow[d], basisToContainerGpAngularVelocityCol[d],
-                        M_bdfNoSlipRigidParticlesAngularVelocity->polyDerivCoefficient(0)*momentOfInertia );
-            }
-            auto const& basisToContainerGpAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-            for (int d=0;d<nLocalDofAngularVelocity;++d)
-            {
-                auto translationalVelocityPolyDeriv = M_bdfNoSlipRigidParticlesAngularVelocity->polyDeriv();
-                F->add( basisToContainerGpAngularVelocityVector[d],
-                        momentOfInertia*translationalVelocityPolyDeriv(d) );
-            }
-        }
+            // this is not good, not use an integrate but currently all row are eliminated
+            form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                   _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
+                   _colstart=colStartInMatrix+startBlockIndexTranslationalVelocity ) +=
+                integrate( _range=elements(M_meshNoSlipRigidParticles),
+                           _expr= M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDerivCoefficient(0)*massParticle*inner( idt(M_fieldNoSlipRigidParticlesTranslationalVelocity), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
+                           _geomap=this->geomap() );
+            form1( _test=M_XhNoSlipRigidParticlesTranslationalVelocity, _vector=F,
+                   _rowstart=rowStartInVector+startBlockIndexTranslationalVelocity ) +=
+                integrate( _range=elements(M_meshNoSlipRigidParticles),
+                           _expr= massParticle*inner( idv(M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDeriv()),id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
+                           _geomap=this->geomap() );
 #endif
-#if 0
-        form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexAngularVelocity,
-               _colstart=colStartInMatrix+0 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= inner( id(M_fieldNoSlipRigidParticlesAngularVelocity), cross(P()-massCenter,viscousStressTensor*N() ) ),
-                       _geomap=this->geomap() );
-        form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhP,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-               _rowstart=rowStartInMatrix+startBlockIndexAngularVelocity,
-               _colstart=colStartInMatrix+1 ) +=
-            integrate( _range=rangeFaceParticle,
-                       _expr= -inner( id(M_fieldNoSlipRigidParticlesAngularVelocity), cross(P()-massCenter,idt(p)*N() ) ),
-                       _geomap=this->geomap() );
-#endif
+            double massParticle = bpbc.massExpr().evaluate()(0,0);
+            double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
+            bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+            int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
+            bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+            if ( BuildCstPart)
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
+                    auto const& basisToContainerGpTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocity );
+                    for (int d=0;d<nDim;++d)
+                    {
+                        A->add( basisToContainerGpTranslationalVelocityRow[d], basisToContainerGpTranslationalVelocityCol[d],
+                                bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massParticle );
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
+                    auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
+                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    {
+                        A->add( basisToContainerGpAngularVelocityRow[d], basisToContainerGpAngularVelocityCol[d],
+                                bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia );
+                    }
+                }
+            }
+
+            if ( BuildNonCstPart )
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
+                    //std::vector<double> _gravity = { 0., 2. };
+                    //double massTilde = 0.5;
+                    for (int d=0;d<nDim;++d)
+                    {
+                        auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
+                        F->add( basisToContainerGpTranslationalVelocityVector[d],
+                                massParticle*translationalVelocityPolyDeriv(d) );
+                        //F->add( basisToContainerGpTranslationalVelocityVector[d],
+                        //        massTilde*_gravity[d] );
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    {
+                        auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
+                        F->add( basisToContainerGpAngularVelocityVector[d],
+                                momentOfInertia*angularVelocityPolyDeriv(d) );
+                    }
+                }
+            }
+        } //  for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
 
     }
     //--------------------------------------------------------------------------------------------------//

@@ -743,6 +743,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcMovingBoundaryImposed.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
+    M_bodyParticlesBC.setParameterValues( paramValues );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -757,7 +758,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
-    if ( M_applyMovingMeshBeforeSolve && !M_bcMovingBoundaryImposed.empty() )
+    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || M_bodyParticlesBC.knowNextParticlesPosition() ) )
         this->updateALEmesh();
 
     if ( this->startBySolveStokesStationary() &&
@@ -840,9 +841,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
-    
-    //M_fieldNoSlipRigidParticlesTranslationalVelocity->setConstant(1.);
-    
     //--------------------------------------------------
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -1226,11 +1224,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     {
         M_bdfVelocity->start( *M_fieldVelocity );
         M_savetsPressure->start( *M_fieldPressure );
-        if ( M_hasNoSlipRigidParticlesBC )
-        {
-            M_bdfNoSlipRigidParticlesTranslationalVelocity->start();
-            M_bdfNoSlipRigidParticlesAngularVelocity->start();
-        }
+        M_bodyParticlesBC.startTimeStep();
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1306,11 +1300,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_meshALE->updateTimeStep();
 #endif
 
-    if ( M_hasNoSlipRigidParticlesBC )
-    {
-        M_bdfNoSlipRigidParticlesTranslationalVelocity->next(*M_fieldNoSlipRigidParticlesTranslationalVelocity);
-        M_bdfNoSlipRigidParticlesAngularVelocity->next(*M_fieldNoSlipRigidParticlesAngularVelocity);
-    }
+    M_bodyParticlesBC.updateTimeStep();
 
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )
@@ -1539,7 +1529,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() )
+    if ( !M_bcMovingBoundaryImposed.empty() /*||  M_bodyParticlesBC.knowNextParticlesPosition()*/ )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
@@ -1551,9 +1541,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                                                _expr=expression(d,this->symbolsExpr()),
                                                _geomap=this->geomap() );
         }
+#if 0
+        if ( M_bodyParticlesBC.knowNextParticlesPosition() )
+        {
+            for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+            {
+                this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+            }
+        }
+#endif
+        
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
     }
+#if 1
+    if ( M_bodyParticlesBC.knowNextParticlesPosition() )
+    {
+        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        {
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+        }
+    }
+#endif
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
@@ -1915,8 +1924,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
-    if ( M_hasNoSlipRigidParticlesBC )
-        nBlock += 2;
+    nBlock += 2*M_bodyParticlesBC.size();
     return nBlock;
 }
 
@@ -2035,30 +2043,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
     {
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhV,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhP,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhV,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhP,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
 

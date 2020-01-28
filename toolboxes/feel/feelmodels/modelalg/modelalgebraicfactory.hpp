@@ -97,6 +97,7 @@ namespace FeelModels
                    graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
         void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
 
+        void initSolverPtAP( sparse_matrix_ptrtype matP );
 #if 0
         template <typename SpaceType>
         void
@@ -252,6 +253,12 @@ namespace FeelModels
         sparse_matrix_ptrtype M_CstJ;
         sparse_matrix_ptrtype M_Prec;
         sparse_matrix_ptrtype M_Extended;
+
+        bool M_useSolverPtAP;
+        sparse_matrix_ptrtype M_solverPtAP_matP;
+        sparse_matrix_ptrtype M_solverPtAP_matPtAP;
+        preconditioner_ptrtype M_solverPtAP_prec;
+        backend_ptrtype M_solverPtAP_backend;
 
         double M_dofElimination_valueOnDiagonal;
         Feel::Context M_dofElimination_strategy;

@@ -398,9 +398,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     vector_ptrtype& F = data.rhs();
     auto XhV = this->functionSpaceVelocity();
     auto mesh = this->mesh();
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
     auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                 _rowstart=this->rowStartInMatrix(),
-                                 _colstart=this->colStartInMatrix() );
+                                 _rowstart=this->rowStartInMatrix()+startBlockIndexVelocity,
+                                 _colstart=this->colStartInMatrix()+startBlockIndexVelocity );
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
@@ -512,36 +513,35 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                     _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
         }
     }
-#if 0
-    if ( M_hasNoSlipRigidParticlesBC )
+
+    for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
     {
-        this->log("FluidMechanics","updateLinearPDEDofElimination","M_hasNoSlipRigidParticlesBC");
-        size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc.translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc.angular-velocity");
-        auto vTranslation = expr<2,1>( "{0.2,0.5}" );
-#if 0
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,
-               _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
-               _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
-            on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
-                _element=*M_fieldNoSlipRigidParticlesTranslationalVelocity, _expr=vTranslation/*vf::zero<nDim,1>()*/);
-#endif
-        if constexpr ( nDim == 2 )
+        if ( bpbc.hasTranslationalVelocityExpr() )
         {
-#if 0
-            form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,_matrix=A,
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
+            form2( _test= bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),_matrix=A,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
+                   _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
+                on( _range=elements(bpbc.mesh()), _rhs=F,
+                    _element=*bpbc.fieldTranslationalVelocityPtr(), _expr=bpbc.translationalVelocityExpr() );
+        }
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
+            form2( _test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),_matrix=A,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexAngularVelocity,
                    _colstart=this->colStartInMatrix()+startBlockIndexAngularVelocity ) +=
-                on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
-                    _element=*M_fieldNoSlipRigidParticlesAngularVelocity, _expr=cst(0.));
-#endif
+                on( _range=elements(bpbc.mesh()), _rhs=F,
+                    _element=*bpbc.fieldAngularVelocityPtr(), _expr=bpbc.angularVelocityExpr() );
         }
-        else
-        {
-            //TODO
-        }
+        // remove these rows (because keep in P with PtAP)
+        form2( _test=XhV,_trial=XhV,_matrix=A,
+               _rowstart=this->rowStartInMatrix()+startBlockIndexVelocity,
+               _colstart=this->colStartInMatrix()+startBlockIndexVelocity ) +=
+            on( _range=bpbc.rangeMarkedFacesOnFluid(), _rhs=F,
+                _element=u, _expr=vf::zero<nDim,1>() );
+
     }
-#endif
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDEDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );
