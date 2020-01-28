@@ -294,6 +294,18 @@ public:
         return mat;
     }
 
+    sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& domainmap, datamap_ptrtype const& imagemap )
+    {
+        graph_ptrtype sparsity_graph( new graph_type( imagemap,imagemap ) );
+        sparsity_graph->addMissingZeroEntriesDiagonal();
+        sparsity_graph->close();
+        sparse_matrix_ptrtype mat = this->newMatrix(0,0,0,0,sparsity_graph);
+        auto vecDiag = this->newVector( imagemap );
+        vecDiag->setConstant( 1. );
+        mat->setDiagonal( vecDiag );
+        return mat;
+    }
+
     template<typename SpaceT>
     static vector_ptrtype newVector( SpaceT const& space )
     {
