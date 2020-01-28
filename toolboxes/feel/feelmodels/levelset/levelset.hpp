@@ -405,14 +405,6 @@ public:
 
     using super_type::exportResults;
     void exportResults( double time ) override;
-    //template<typename SymbolsExpr>
-    //void exportResults( double time, SymbolsExpr const& symbolsExpr );
-
-    //void executePostProcessMeasures( double time );
-    //template<typename TupleFieldsType, typename SymbolsExpr>
-    //void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
-    //template<typename TupleFieldsType, typename SymbolsExpr>
-    //bool updatePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
     //--------------------------------------------------------------------//
     // Physical quantities
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 
