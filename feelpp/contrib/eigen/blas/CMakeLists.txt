@@ -30,6 +30,7 @@ endif()
 
 add_library(eigen_blas_static ${EigenBlas_SRCS})
 add_library(eigen_blas SHARED ${EigenBlas_SRCS})
+set_target_properties(eigen_blas PROPERTIES SOVERSION 1)
 
 if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
   target_link_libraries(eigen_blas_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
