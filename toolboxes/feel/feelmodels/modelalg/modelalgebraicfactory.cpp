@@ -187,19 +187,26 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
         M_useSolverPtAP = true;
         M_solverPtAP_matP = matP;
-        M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
+
+        // if already built we assume that the new matP as the same stencil
+        if ( !M_solverPtAP_backend )
+        {
+            M_solverPtAP_backend = backend_type::build( soption( _name="backend" ), this->model()->prefix(), this->model()->worldCommPtr() );
 
 
-        M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapRowPtr() );
-        M_solverPtAP_matPtAP->clear();
-        M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
+            M_solverPtAP_matPtAP = M_solverPtAP_backend->newZeroMatrix( M_solverPtAP_matP->mapColPtr(), M_solverPtAP_matP->mapRowPtr() );
+            M_solverPtAP_matPtAP->clear();
+            M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
-        M_solverPtAP_prec = preconditioner(_pc=(PreconditionerType) M_solverPtAP_backend->pcEnumType() /*LU_PRECOND*/,
-                                           _matrix=M_solverPtAP_matPtAP,
-                                           _backend= M_solverPtAP_backend,
-                                           _pcfactormatsolverpackage=(MatSolverPackageType) M_solverPtAP_backend->matSolverPackageEnumType(),
-                                           _worldcomm=M_solverPtAP_backend->comm(),
-                                           _prefix=M_solverPtAP_backend->prefix() );
+            M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
+
+            M_solverPtAP_prec = preconditioner(_pc=(PreconditionerType) M_solverPtAP_backend->pcEnumType() /*LU_PRECOND*/,
+                                               _matrix=M_solverPtAP_matPtAP,
+                                               _backend= M_solverPtAP_backend,
+                                               _pcfactormatsolverpackage=(MatSolverPackageType) M_solverPtAP_backend->matSolverPackageEnumType(),
+                                               _worldcomm=M_solverPtAP_backend->comm(),
+                                               _prefix=M_solverPtAP_backend->prefix() );
+        }
     }
 //---------------------------------------------------------------------------------------------------------------//
     void
@@ -546,63 +553,83 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
-        // dof elimination
-        this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
-        for ( auto const& func : M_addFunctionLinearDofElimination )
-            func.second( dataLinearNonCst );
 
-        // post-assembly
-        for ( auto const& func : M_addFunctionLinearPostAssembly )
-            func.second( dataLinearNonCst );
-
-        // assembling matrix used for preconditioner
-        //this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
-
-        // add extended term (important : after updatePreconditioner !)
-        // and only do if shared_ptr M_J != M_Extended
-        //if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond() )
-        //    M_J->addMatrix(1.0, M_Extended );
-
-        double mpiTimerAssembly = this->model()->timerTool("Solve").elapsed("algebraic-assembly");
-
-        if (this->model()->verboseSolverTimer())
-          Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver",
-                         (boost::format("finish assembling in %1% s") % mpiTimerAssembly ).str(),
-                         this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
-
-        this->model()->timerTool("Solve").restart();
-
-        // set preconditioner
-        //M_PrecondManage->setMatrix(M_Prec);
-
-        this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
 
+        if ( M_useSolverPtAP )
+        {
+            *M_solverPtAP_solution = *U;
+            M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
+#if 1
+            ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_R,false,M_Extended,true);
+            // dof elimination
+            this->model()->updateLinearPDEDofElimination( dataLinearPtAP );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( dataLinearPtAP );
+#endif
+            if ( M_solverPtAP_dofEliminationIds )
+            {
+                // we assume that all shared dofs are present, not need to appy a sync
+                std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
+                auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );//dataJacobianNonCst.vectorUsedInStrongDirichlet();
+                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+            }
+
+            // post-assembly
+            for ( auto const& func : M_addFunctionLinearPostAssembly )
+                func.second( dataLinearPtAP );
+        }
+        else
+        {
+            // dof elimination
+            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( dataLinearNonCst );
+
+            // post-assembly
+            for ( auto const& func : M_addFunctionLinearPostAssembly )
+                func.second( dataLinearNonCst );
+
+            // assembling matrix used for preconditioner
+            //this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
+
+            // add extended term (important : after updatePreconditioner !)
+            // and only do if shared_ptr M_J != M_Extended
+            //if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond() )
+            //    M_J->addMatrix(1.0, M_Extended );
+        }
+
+        double mpiTimerAssembly = this->model()->timerTool("Solve").elapsed("algebraic-assembly");
+        if (this->model()->verboseSolverTimer())
+            Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver",
+                                  (boost::format("finish assembling in %1% s") % mpiTimerAssembly ).str(),
+                                  this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
+        this->model()->timerTool("Solve").restart();
+
+        //-------------------------------------------------//
+        // solve linear system
+        //-------------------------------------------------//
         typename backend_type::solve_return_type solveStat;
         if ( M_useSolverPtAP )
         {
-            M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
-            auto UBIS = M_solverPtAP_backend->newVector( U->mapPtr() );
-#if 0
-            ModelAlgebraic::DataUpdateLinear dataLinearNonCst2(UBIS,M_solverPtAP_matPtAP,M_R,false,M_Extended,true);
-            // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearNonCst2 );
-#endif
-
             solveStat = M_solverPtAP_backend->solve( _matrix=M_solverPtAP_matPtAP,
-                                                     _solution=UBIS,
+                                                     _solution=M_solverPtAP_solution,
                                                      _rhs=M_R,
                                                      _prec=M_solverPtAP_prec,
                                                      _pre=pre_solve,
                                                      _post=post_solve );
 
-            M_solverPtAP_matP->multVector( UBIS, U );
-
+            M_solverPtAP_matP->multVector( M_solverPtAP_solution, U );
         }
         else
         {
+            // set preconditioner
+            //M_PrecondManage->setMatrix(M_Prec);
+
+            this->model()->updateInHousePreconditioner( dataLinearNonCst );
+
             // solve linear system
             solveStat = M_backend->solve( _matrix=M_J,
                                           _solution=U,

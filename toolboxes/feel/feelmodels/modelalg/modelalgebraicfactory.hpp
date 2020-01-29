@@ -47,6 +47,7 @@ namespace FeelModels
         typedef std::shared_ptr<model_type> model_ptrtype;
         typedef std::weak_ptr<model_type> model_weakptrtype;
 
+        using index_type = typename model_type::index_type;
         typedef typename model_type::value_type value_type;
         typedef typename model_type::backend_type backend_type;
         typedef typename model_type::backend_ptrtype backend_ptrtype;
@@ -98,6 +99,7 @@ namespace FeelModels
         void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
 
         void initSolverPtAP( sparse_matrix_ptrtype matP );
+        void solverPtAP_setDofEliminationIds( std::set<index_type> const& dofId ) { M_solverPtAP_dofEliminationIds = dofId; }
 #if 0
         template <typename SpaceType>
         void
@@ -257,8 +259,10 @@ namespace FeelModels
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;
         sparse_matrix_ptrtype M_solverPtAP_matPtAP;
+        vector_ptrtype M_solverPtAP_solution;
         preconditioner_ptrtype M_solverPtAP_prec;
         backend_ptrtype M_solverPtAP_backend;
+        std::optional<std::set<index_type>> M_solverPtAP_dofEliminationIds;
 
         double M_dofElimination_valueOnDiagonal;
         Feel::Context M_dofElimination_strategy;

@@ -1101,6 +1101,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
 
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+        std::set<size_type> dofsAllParticles;
         for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
         {
             //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
@@ -1115,12 +1116,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             auto dofsParticle = this->functionSpaceVelocity()->dofs( rangeParticle );
             auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
             for ( auto dofid : dofsParticle )
+            {
                 matFI_Id->set( dofid,dofid, 0.);
+                dofsAllParticles.insert( dofid );
+            }
             matFI_Id->close();
         }
 
         auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
         M_algebraicFactory->initSolverPtAP( matP );
+
+        this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllParticles );
+        std::set<size_type> dofEliminationIdsPtAP;
+        matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllParticles, dofEliminationIdsPtAP );
+        M_algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
     }
 
 
@@ -1614,8 +1623,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 #else
-            auto rangeTrace = markedfaces(this->mesh(),{"wall2"});
-            M_meshTrace = M_meshNoSlipRigidParticles;
+            auto rangeTrace = M_bodyParticlesBC.begin()->second.rangeMarkedFacesOnFluid();
+            M_meshTrace = M_bodyParticlesBC.begin()->second.mesh();
 #endif
             this->updateRangeDistributionByMaterialName( "trace_mesh", rangeTrace );
             std::string geoExportType = "static";//change_coords_only, change, static
@@ -1886,6 +1895,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::setup( std::string const& particleName, pt::ptree const& pt, self_type const& fluidToolbox /* mesh_ptrtype meshFluid,*/ )
 {
+    M_name = particleName;
     if ( auto ptmarkers = pt.get_child_optional("markers") )
         M_markers.setPTree(*ptmarkers/*, indexes*/);
     else
@@ -1903,26 +1913,36 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::updateForUse( self_type const& fluidToolbox )
 {
-    auto rangeParticle = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
-    M_rangeMarkedFacesOnFluid = rangeParticle;
-    M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeParticle,_view=true );
-    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
-    if constexpr ( nDim == 2 )
-                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
-    else
-        M_XhAngularVelocity = M_XhTranslationalVelocity;
-    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
-    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+    if ( !M_mesh )
+    {
+        auto rangeParticle = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
+        M_rangeMarkedFacesOnFluid = rangeParticle;
+        M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeParticle,_view=true );
+        M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+        if constexpr ( nDim == 2 )
+                         M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+        else
+            M_XhAngularVelocity = M_XhTranslationalVelocity;
+        M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
+        M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+    }
 
     auto const& w = *M_fieldAngularVelocity;
-    auto massCenter = M_massCenterExpr.template expr<nDim,1>();// //expr<nDim,1>( "{0.2,0.2}" );
+    auto massCenter = M_massCenterExpr.template expr<nDim,1>();
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
-    auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=rangeParticle );
-    M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
+
+    // matrix interpolation of translational velocity
+    if ( !M_matrixPTilde_translational )
+    {
+        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
+        M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
+    }
+
+    // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
     if constexpr (nDim == 2 )
                  {
-                     auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=rangeParticle,
+                     auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
                                                                  _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ) );
                      M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
                  }
@@ -1930,7 +1950,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::updateForUse(
     {
         CHECK( false ) << "TODO" << std::endl;
     }
-    
 }
 
 } // namespace FeelModels

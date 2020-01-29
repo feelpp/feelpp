@@ -534,12 +534,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                 on( _range=elements(bpbc.mesh()), _rhs=F,
                     _element=*bpbc.fieldAngularVelocityPtr(), _expr=bpbc.angularVelocityExpr() );
         }
+#if 0
         // remove these rows (because keep in P with PtAP)
         form2( _test=XhV,_trial=XhV,_matrix=A,
                _rowstart=this->rowStartInMatrix()+startBlockIndexVelocity,
                _colstart=this->colStartInMatrix()+startBlockIndexVelocity ) +=
             on( _range=bpbc.rangeMarkedFacesOnFluid(), _rhs=F,
                 _element=u, _expr=vf::zero<nDim,1>() );
+#endif
 
     }
 
