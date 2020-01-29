@@ -7,7 +7,7 @@ set -eo pipefail
 
 BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
 # default values
-CHANNEL=main
+CHANNEL=latest
 if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
     CHANNEL=latest
 fi
@@ -21,9 +21,10 @@ elif [ "$DIST" = "buster" ]; then
     FLAVOR=debian
 fi
 COMPONENT=${COMPONENT:-feelpp}
-if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
-    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
-fi
+#OTHERMIRROR=
+#if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
+#    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
+#fi
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
 PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
