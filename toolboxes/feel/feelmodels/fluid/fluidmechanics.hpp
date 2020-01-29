@@ -360,7 +360,6 @@ public:
         sparse_matrix_ptrtype matrixPTilde_translational() const { return M_matrixPTilde_translational; }
         sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
 
-
         void setParameterValues( std::map<std::string,double> const& mp )
             {
                 M_massExpr.setParameterValues( mp );
@@ -409,8 +408,6 @@ public:
                 for ( auto & [name,bpbc] : *this )
                     bpbc.updateForUse( fluidToolbox );
             }
-        bool knowNextParticlesPosition() { return true; }
-
         void setParameterValues( std::map<std::string,double> const& mp )
             {
                 for ( auto & [name,bpbc] : *this )
@@ -819,11 +816,12 @@ public :
             fields_normalstress[prefixvm(prefix,"trace.wall-shear-stress")] = this->fieldWallShearStressPtr();
 #if 0
             std::map<std::string,element_trace_p0c_vectorial_ptrtype> fields_NoSlipRigidParticlesTranslationalVelocity;
-            if ( M_fieldNoSlipRigidParticlesTranslationalVelocity )
-                fields_NoSlipRigidParticlesTranslationalVelocity[prefixvm(prefix,"trace.particles.translational-velocity")]= M_fieldNoSlipRigidParticlesTranslationalVelocity;
-            std::map<std::string,element_trace_angular_velocity_ptrtype> fields_NoSlipRigidParticlesAngularVelocity;
-            if ( M_fieldNoSlipRigidParticlesAngularVelocity )
-                fields_NoSlipRigidParticlesAngularVelocity[prefixvm(prefix,"trace.particles.angular-velocity")]=M_fieldNoSlipRigidParticlesAngularVelocity;
+            std::map<std::string,typename BodyParticleBoundaryCondition::element_trace_angular_velocity_ptrtype> fields_NoSlipRigidParticlesAngularVelocity;
+            if ( !M_bodyParticlesBC.empty() )
+            {
+                fields_NoSlipRigidParticlesTranslationalVelocity[prefixvm(prefix,"trace.particles.translational-velocity")]= M_bodyParticlesBC.begin()->second.fieldTranslationalVelocityPtr();
+                fields_NoSlipRigidParticlesAngularVelocity[prefixvm(prefix,"trace.particles.angular-velocity")]=M_bodyParticlesBC.begin()->second.fieldAngularVelocityPtr();
+            }
 #endif
             std::map<std::string, typename mesh_ale_type::ale_map_element_ptrtype> fields_disp;
             if ( this->isMoveDomain() )
@@ -832,8 +830,8 @@ public :
                                      std::make_pair( prefixvm( prefix,"pressure"),this->fieldPressurePtr() ),
                                      std::make_pair( prefixvm( prefix,"vorticity"),this->fieldVorticityPtr() ),
                                      fields_disp,
-                                     fields_normalstress//,
-                                     //fields_NoSlipRigidParticlesTranslationalVelocity,fields_NoSlipRigidParticlesAngularVelocity
+                                     fields_normalstress
+                                     //,fields_NoSlipRigidParticlesTranslationalVelocity,fields_NoSlipRigidParticlesAngularVelocity
                                      );
         }
 

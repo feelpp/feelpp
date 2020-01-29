@@ -47,7 +47,8 @@ public :
     typedef ModelBase super_type;
 
     typedef double value_type;
-    using size_type = uint32_type;
+    using index_type = uint32_type;
+    using size_type = index_type;
     typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
@@ -127,6 +128,23 @@ public :
 
     };
 
+    class DataDofEliminationIds
+    {
+    public :
+        DataDofEliminationIds() : M_hasDofEliminationIds( false ) {}
+        DataDofEliminationIds( DataDofEliminationIds const& d) = default;
+        DataDofEliminationIds( DataDofEliminationIds && d) = default;
+
+        bool hasDofEliminationIds() const { return M_hasDofEliminationIds; }
+        void setHasDofEliminationIds( bool b ) { M_hasDofEliminationIds = b; }
+        std::set<size_type> const& dofEliminationIds() const { return M_dofEliminationIds; }
+        std::set<size_type> & dofEliminationIds() { return M_dofEliminationIds; }
+
+    private:
+        bool M_hasDofEliminationIds;
+        std::set<size_type> M_dofEliminationIds;
+    };
+
     class DataUpdateLinear : public DataUpdateBase
     {
     public:
@@ -173,23 +191,6 @@ public :
 
         std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> M_matrixToAdd;
         std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> M_rhsToAddFromMatrixVectorProduct;
-    };
-
-    class DataDofEliminationIds
-    {
-    public :
-        DataDofEliminationIds() : M_hasDofEliminationIds( false ) {}
-        DataDofEliminationIds( DataDofEliminationIds const& d) = default;
-        DataDofEliminationIds( DataDofEliminationIds && d) = default;
-
-        bool hasDofEliminationIds() const { return M_hasDofEliminationIds; }
-        void setHasDofEliminationIds( bool b ) { M_hasDofEliminationIds = b; }
-        std::set<size_type> const& dofEliminationIds() const { return M_dofEliminationIds; }
-        std::set<size_type> & dofEliminationIds() { return M_dofEliminationIds; }
-
-    private:
-        bool M_hasDofEliminationIds;
-        std::set<size_type> M_dofEliminationIds;
     };
 
     class DataUpdateResidual : public DataUpdateBase, public DataDofEliminationIds
