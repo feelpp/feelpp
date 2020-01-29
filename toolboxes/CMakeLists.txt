@@ -27,6 +27,9 @@ cmake_minimum_required(VERSION 3.7.2)
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
 
+set(FEELPP_TOOLBOXES_SHARED_VERSION 1.0)
+set(FEELPP_TOOLBOXES_SHARED_SOVERSION 1.0)
+
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
