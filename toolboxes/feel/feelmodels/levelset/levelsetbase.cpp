@@ -418,31 +418,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
     this->setPostProcessSaveAllFieldsAvailable( this->postProcessSaveAllFieldsAvailable() );
     super_type::initPostProcess();
 
-    // Measures
-    // Physical quantities
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
-    {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
-        {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == "Volume" )
-            {
-                M_postProcessMeasuresQuantities["volume"] = "";
-            }
-            else if ( ptreeLevel1Name == "Perimeter" )
-            {
-                M_postProcessMeasuresQuantities["perimeter"] = "";
-            }
-            else if ( ptreeLevel1Name == "PositionCOM" )
-            {
-                M_postProcessMeasuresQuantities["position-com"] = "";
-            }
-        }
-    }
     // Point measures
     auto fieldNamesWithSpaceLevelset = std::make_pair( std::set<std::string>({"levelset"}), this->functionSpace() );
     auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceLevelset );
@@ -2072,16 +2047,6 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::submeshInner( double cut ) const
         M_doUpdateSubmeshInner = false;
     }
     return M_submeshInner;
-}
-
-//----------------------------------------------------------------------------//
-// Export results
-LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-bool
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::hasPostProcessMeasuresQuantities( 
-        std::string const& q ) const
-{
-    return M_postProcessMeasuresQuantities.find(q) != M_postProcessMeasuresQuantities.end();
 }
 
 //----------------------------------------------------------------------------//
