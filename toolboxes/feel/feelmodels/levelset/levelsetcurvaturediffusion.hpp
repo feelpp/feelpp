@@ -107,7 +107,12 @@ private:
 
     double M_timeStep;
 
-    backend_ptrtype M_backend;
+    // Note: the backends are duplicated to avoid a weird crash with PETSC/MUMPS
+    // which seems to hold information regarding the matrix, and crashes when solving
+    // both the alpha and beta systems with the same backend. 
+    // This should be investigated further...
+    backend_ptrtype M_backendAlpha;
+    backend_ptrtype M_backendBeta;
     matrix_ptrtype M_curvatureDiffusion_alphaDt;
     matrix_ptrtype M_curvatureDiffusion_betaDt;
     mutable vector_ptrtype M_vector;
@@ -126,7 +131,8 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::LevelSetCurvatureDiffusion( funct
         M_functionSpace( space ),
         M_rangeMeshElements( elements( space->mesh() ) ),
         M_rangeMeshBoundaryFaces( boundaryfaces( space->mesh() ) ),
-        M_backend( backend_type::build( soption( _name="backend", _prefix=prefix ), prefix, space->worldCommPtr() ) )
+        M_backendAlpha( backend_type::build( soption( _name="backend", _prefix=prefix ), prefix, space->worldCommPtr() ) ),
+        M_backendBeta( backend_type::build( soption( _name="backend", _prefix=prefix ), prefix, space->worldCommPtr() ) )
 {
     if( Environment::vm( _name="time-step", _prefix=this->prefix() ).defaulted() )
         M_timeStep = std::pow( this->functionSpace()->mesh()->hAverage()/Order, 2);
@@ -135,7 +141,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::LevelSetCurvatureDiffusion( funct
 
     this->initCurvatureDiffusionOrder1();
     this->initCurvatureDiffusionOrder2();
-    M_vector = M_backend->newVector( this->functionSpace() );
+    M_vector = M_backendAlpha->newVector( this->functionSpace() );
 }
 
 template<typename FunctionSpaceType>
@@ -156,7 +162,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::solveGalpha( element_type const& 
             );
     // Solve
     auto Galpha = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
 
     return Galpha;
 }
@@ -179,7 +185,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::solveGbeta( element_type const& p
             );
     // Solve
     auto Gbeta = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
+    M_backendBeta->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
 
     return Gbeta;
 }
@@ -202,7 +208,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder1( element_type con
 
     // Solve
     auto Galpha = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
             _expr=(idv(Galpha)-idv(phi))/(M_alpha*M_timeStep) 
@@ -228,7 +234,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder2( element_type con
 
     // Solve
     auto Galpha = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
     /* Gbeta */
     // Crank-Nicolson scheme
     linearForm = integrate(
@@ -243,7 +249,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder2( element_type con
 
     // Solve
     auto Gbeta = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
+    M_backendBeta->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
             _expr=(-idv(Galpha) + 4*idv(Gbeta) - 3*idv(phi))/(M_alpha*M_timeStep) 
@@ -255,7 +261,7 @@ void
 LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder1()
 {
     if( !M_curvatureDiffusion_alphaDt )
-        M_curvatureDiffusion_alphaDt = M_backend->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
+        M_curvatureDiffusion_alphaDt = M_backendAlpha->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
 
     auto bilinearForm_alphaDt = form2( 
             _trial=this->functionSpace(),
@@ -265,7 +271,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder1()
 
     auto phi = this->functionSpace()->element();
     // Heat equation with Crank-Nicolson scheme
-    bilinearForm_alphaDt += integrate(
+    bilinearForm_alphaDt = integrate(
             _range=this->rangeMeshElements(),
             _expr=idt(phi) * id(phi) / (M_alpha*M_timeStep) + 0.5 * inner(gradt(phi), grad(phi))
             );
@@ -276,7 +282,7 @@ void
 LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder2()
 {
     if( !M_curvatureDiffusion_betaDt )
-        M_curvatureDiffusion_betaDt = M_backend->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
+        M_curvatureDiffusion_betaDt = M_backendBeta->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
 
     auto bilinearForm_betaDt = form2( 
             _trial=this->functionSpace(),
@@ -286,7 +292,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder2()
 
     auto phi = this->functionSpace()->element();
     // Heat equation with Crank-Nicolson scheme
-    bilinearForm_betaDt += integrate(
+    bilinearForm_betaDt = integrate(
             _range=this->rangeMeshElements(),
             _expr=idt(phi) * id(phi) / (M_beta*M_timeStep) + 0.5 * inner(gradt(phi), grad(phi))
             );
@@ -310,7 +316,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::willmoreImpl( element_type const&
             );
     // Solve
     auto Galpha = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
     /* Gbeta */
     // Crank-Nicolson scheme
     linearForm = integrate(
@@ -324,7 +330,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::willmoreImpl( element_type const&
             );
     // Solve
     auto Gbeta = this->functionSpace()->element();
-    M_backend->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
+    M_backendBeta->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
             _expr=(idv(phi) + idv(Galpha) - 2*idv(Gbeta))/(M_timeStep*M_timeStep) 
