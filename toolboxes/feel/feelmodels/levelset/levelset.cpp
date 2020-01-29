@@ -198,22 +198,6 @@ void
 LEVELSET_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     super_type::initPostProcessExportsAndMeasures();
-    // Measures
-    pt::ptree ptree = this->modelProperties().postProcess().pTree( this->keyword() );
-    std::string ppTypeMeasures = "Measures";
-    for( auto const& ptreeLevel0 : ptree )
-    {
-        std::string ptreeLevel0Name = ptreeLevel0.first;
-        if ( ptreeLevel0Name != ppTypeMeasures ) continue;
-        for( auto const& ptreeLevel1 : ptreeLevel0.second )
-        {
-            std::string ptreeLevel1Name = ptreeLevel1.first;
-            if ( ptreeLevel1Name == "VelocityCOM" )
-            {
-                this->M_postProcessMeasuresQuantities["velocity-com"] = "";
-            }
-        }
-    }
     // Do not call the createPostProcess* functions here, this is done after time initial
 }
 

@@ -465,8 +465,6 @@ public:
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
-    bool hasPostProcessMeasuresQuantities( std::string const& q ) const;
-
     //--------------------------------------------------------------------//
     // User-defined fields
     std::map<std::string, element_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
@@ -617,7 +615,6 @@ protected:
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
-    std::map<std::string, std::string> M_postProcessMeasuresQuantities;
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
     //--------------------------------------------------------------------//
