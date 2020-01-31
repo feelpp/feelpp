@@ -259,6 +259,7 @@ namespace FeelModels
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;
         sparse_matrix_ptrtype M_solverPtAP_matPtAP;
+        vector_ptrtype M_solverPtAP_PtF;
         vector_ptrtype M_solverPtAP_solution;
         preconditioner_ptrtype M_solverPtAP_prec;
         backend_ptrtype M_solverPtAP_backend;

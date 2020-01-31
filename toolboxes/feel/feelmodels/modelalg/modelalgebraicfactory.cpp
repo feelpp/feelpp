@@ -199,6 +199,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
+            M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
 
             M_solverPtAP_prec = preconditioner(_pc=(PreconditionerType) M_solverPtAP_backend->pcEnumType() /*LU_PRECOND*/,
                                                _matrix=M_solverPtAP_matPtAP,
@@ -561,9 +562,12 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         if ( M_useSolverPtAP )
         {
             *M_solverPtAP_solution = *U;
+            // PtAP = P^T A P
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
+            // PtF = P^T F
+            M_solverPtAP_matP->multVector( *M_R, *M_solverPtAP_PtF, true );
 #if 1
-            ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_R,false,M_Extended,true);
+            ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF/* M_R*/,false,M_Extended,true);
             // dof elimination
             this->model()->updateLinearPDEDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
@@ -616,7 +620,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             solveStat = M_solverPtAP_backend->solve( _matrix=M_solverPtAP_matPtAP,
                                                      _solution=M_solverPtAP_solution,
-                                                     _rhs=M_R,
+                                                     _rhs=M_solverPtAP_PtF,//M_R,
                                                      _prec=M_solverPtAP_prec,
                                                      _pre=pre_solve,
                                                      _post=post_solve );
