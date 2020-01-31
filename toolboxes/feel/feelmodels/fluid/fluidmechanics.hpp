@@ -280,6 +280,7 @@ public:
         BodyParticleBoundaryCondition( BodyParticleBoundaryCondition && ) = default;
 
         void setup( std::string const& particleName, pt::ptree const& p, self_type const& fluidToolbox );
+        void init( self_type const& fluidToolbox );
         void updateForUse( self_type const& fluidToolbox );
 
 
@@ -324,7 +325,14 @@ public:
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
         auto const& massExpr() const { return M_massExpr.exprScalar(); }
         auto const& momentOfInertiaExpr() const { return M_momentOfInertiaExpr.template expr<1,1>(); } // NOT TRUE in 3D
-        auto const& massCenterExpr() const { return M_massCenterExpr.template expr<nDim,1>(); }
+        auto massCenterExpr() const
+            {
+                if constexpr ( nDim == 2 )
+                                 return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
+                else
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(1)) );
+                //return M_massCenterExpr.template expr<nDim,1>();
+            }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
         auto const& translationalVelocityExpr() const { return M_translationalVelocityExpr.template expr<nDim,1>(); }
@@ -364,7 +372,7 @@ public:
             {
                 M_massExpr.setParameterValues( mp );
                 M_momentOfInertiaExpr.setParameterValues( mp );
-                M_massCenterExpr.setParameterValues( mp );
+                M_initialMassCenterExpr.setParameterValues( mp );
                 M_translationalVelocityExpr.setParameterValues( mp );
                 M_angularVelocityExpr.setParameterValues( mp );
             }
@@ -381,8 +389,9 @@ public:
         bdf_trace_p0c_vectorial_ptrtype M_bdfTranslationalVelocity;
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
-        ModelExpression M_massExpr, M_momentOfInertiaExpr, M_massCenterExpr;
+        ModelExpression M_massExpr, M_momentOfInertiaExpr, M_initialMassCenterExpr;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
+        eigen_vector_type<nRealDim> M_massCenter, M_massCenterRef;
     };
 
     class BodyParticleSetBoundaryCondition : public std::map<std::string,BodyParticleBoundaryCondition>
@@ -407,6 +416,11 @@ public:
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.updateForUse( fluidToolbox );
+            }
+        void init( self_type const& fluidToolbox )
+            {
+                for ( auto & [name,bpbc] : *this )
+                    bpbc.init( fluidToolbox );
             }
         void setParameterValues( std::map<std::string,double> const& mp )
             {

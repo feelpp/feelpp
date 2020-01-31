@@ -574,7 +574,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->initFluidInlet();
 
     // bc body particles
-    M_bodyParticlesBC.updateForUse( *this );
+    M_bodyParticlesBC.init( *this );
 
 
     this->updateBoundaryConditionsForUse();
@@ -1019,6 +1019,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
     }
 
+    //-------------------------------------------------//
+    // bc body particles (call after meshALE->init() in case of restart)
+    M_bodyParticlesBC.updateForUse( *this );
 
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
@@ -1903,7 +1906,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::setup( std::s
 
     M_massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
     M_momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
-    M_massCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    M_initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
 
     M_translationalVelocityExpr.setExpr( "translational-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
     M_angularVelocityExpr.setExpr( "angular-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
@@ -1911,24 +1914,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::setup( std::s
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::init( self_type const& fluidToolbox )
+{
+    auto rangeParticle = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
+    M_rangeMarkedFacesOnFluid = rangeParticle;
+    M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeParticle,_view=true );
+    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    if constexpr ( nDim == 2 )
+                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    else
+        M_XhAngularVelocity = M_XhTranslationalVelocity;
+    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
+    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+
+    if ( M_initialMassCenterExpr.template hasExpr<nRealDim,1>() )
+    {
+        auto initMassCenter = M_initialMassCenterExpr.template expr<nRealDim,1>();
+        M_massCenterRef = initMassCenter.evaluate();
+        M_massCenter = M_massCenterRef;
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::updateForUse( self_type const& fluidToolbox )
 {
     if ( !M_mesh )
-    {
-        auto rangeParticle = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
-        M_rangeMarkedFacesOnFluid = rangeParticle;
-        M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeParticle,_view=true );
-        M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
-        if constexpr ( nDim == 2 )
-                         M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
-        else
-            M_XhAngularVelocity = M_XhTranslationalVelocity;
-        M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
-        M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
-    }
+        this->init( fluidToolbox );
 
     auto const& w = *M_fieldAngularVelocity;
-    auto massCenter = M_massCenterExpr.template expr<nDim,1>();
+
+    if (fluidToolbox.isMoveDomain())
+    {
+        auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
+        M_massCenter = M_massCenterRef + disp;
+        if ( fluidToolbox.worldComm().isMasterRank() )
+            std::cout << "M_massCenter=\n " << M_massCenter << std::endl;
+    }
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
 
@@ -1940,6 +1962,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyParticleBoundaryCondition::updateForUse(
     }
 
     // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
+    auto massCenter = this->massCenterExpr();
     if constexpr (nDim == 2 )
                  {
                      auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
