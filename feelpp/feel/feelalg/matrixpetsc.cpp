@@ -986,7 +986,7 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
     if ( !arg.closed() )
         const_cast<Vector<T>*>( &arg )->close();
     if ( !dest.isInitialized() )
-        dest.init( this->mapColPtr() );
+        dest.init( (transpose)? this->mapRowPtr() :this->mapColPtr() );
     else if ( !dest.closed() )
         dest.close();
 
