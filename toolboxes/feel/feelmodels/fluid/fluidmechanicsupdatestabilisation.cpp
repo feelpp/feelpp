@@ -32,8 +32,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _BuildCstPart = data.buildCstPart();
-    sparse_matrix_ptrtype& A_extended = data.matrixExtended();
-    bool _BuildExtendedPart = data.buildExtendedPart();
 
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("FluidMechanics","updateLinearPDEStabilisation", "start"+sc );
@@ -43,7 +41,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
 
     bool BuildNonCstPart = !_BuildCstPart;
     bool BuildCstPart = _BuildCstPart;
-    bool BuildExtendedPart = _BuildExtendedPart;
 
     bool BuildTermStabCIP = BuildNonCstPart;
     if (this->isMoveDomain() /*this->useFSISemiImplicitScheme()*/)
@@ -77,8 +74,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
                                                 _rowstart=rowStartInMatrix,
                                                 _colstart=colStartInMatrix );
     // a detail very important (A is cst or not)
-    sparse_matrix_ptrtype A_extendedReal = (this->buildMatrixPrecond())?A_extended:A;
-    auto bilinearFormVV_PatternExtended = form2( _test=XhV,_trial=XhV,_matrix=A_extendedReal/*A_extended*/,
+    auto bilinearFormVV_PatternExtended = form2( _test=XhV,_trial=XhV,_matrix=A,
                                                _pattern=size_type(Pattern::EXTENDED),
                                                _rowstart=rowStartInMatrix,
                                                _colstart=colStartInMatrix );
@@ -152,7 +148,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         auto Re = beta_abs*hFace()/idv(mu);
         auto cip_stab_coeff_expr =  gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)/max(beta_abs,cst(1e-6)); //last max in order to not divide by 0
 #endif
-        auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=A_extendedReal/*A_extended*/,
+        auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=A,
                                                      _pattern=size_type(Pattern::EXTENDED),
                                                      _rowstart=rowStartInMatrix+1,
                                                      _colstart=colStartInMatrix+1 );

@@ -122,53 +122,12 @@ void
 ModelAlgebraic::setPrintGraphFileName(std::string s) { M_printGraphFileName=s; }
 
 /**
- * return false
- */
-bool
-ModelAlgebraic::hasExtendedPattern() const { return false; }
-
-/**
  * return an empty blockPattern if not overhead
  */
 ModelAlgebraic::block_pattern_type
 ModelAlgebraic::blockPattern() const
 {
     return block_pattern_type(0,0);
-}
-
-bool
-ModelAlgebraic::buildMatrixPrecond() const
-{
-    return !( Environment::vm()[prefixvm(this->prefix(),"preconditioner.contribution")].as<std::string>() == "same_matrix" );
-}
-
-void
-ModelAlgebraic::updatePreconditioner(const vector_ptrtype& X,
-                                          sparse_matrix_ptrtype& A,
-                                          sparse_matrix_ptrtype& A_extended,
-                                          sparse_matrix_ptrtype& Prec) const
-{
-    std::string precType = option(_prefix=this->prefix(),_name="preconditioner.contribution").as<std::string>();
-
-    if( precType =="same_matrix")
-    {
-        // only copy shrared_ptr (normally already done in constructor)
-        Prec=A;
-    }
-    else if( precType =="standart")
-    {
-        // copy standart pattern
-        Prec->zero();
-        Prec->addMatrix(1.,A);
-    }
-    else if( precType =="extended" )
-    {
-        // copy standart and extended pattern
-        Prec->zero();
-        Prec->addMatrix(1.,A);
-        if (hasExtendedPattern())
-            Prec->addMatrix(1.,A_extended);
-    }
 }
 
 BlocksBaseGraphCSR
