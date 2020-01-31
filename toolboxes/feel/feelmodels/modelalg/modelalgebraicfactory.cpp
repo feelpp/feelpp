@@ -137,14 +137,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         if (this->model()->useCstMatrix())
             M_CstJ = M_backend->newMatrix(size1,size2,size1,size2,graph,indexSplit);
         else M_CstJ = M_J;
-        if (this->model()->buildMatrixPrecond())
-            M_Prec = M_backend->newMatrix( size1,size2,size1,size2,graph,indexSplit );
-        else M_Prec = M_J;
-        //matrix with extended pattern
-        if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond())
-            M_Extended = M_backend->newMatrix( size1,size2,size1,size2,graph,indexSplit );
-        else
-            M_Extended = M_J;
+        // matrix used for compute the preconditioner (the same)
+        M_Prec = M_J;
 
         if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".MethodNum","buildMatrixVector","build all matrix",
                                                            this->model()->worldComm(),this->model()->verboseAllProc());
@@ -497,7 +491,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             M_CstJ->zero();
             M_CstR->zero();
-            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
             dataLinearCst.copyInfos( this->dataInfos() );
             M_functionLinearAssembly( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
@@ -513,7 +507,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         {
             M_CstJ->zero();
             M_CstR->zero();
-            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
             dataLinearCst.copyInfos( this->dataInfos() );
             M_functionLinearAssembly( dataLinearCst );
             for ( auto const& func : M_addFunctionLinearAssembly )
@@ -537,12 +531,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_R->add(1.0, M_CstR );
         }
 
-        // set M_Extended to zero if really used and build
-        if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond() )
-            M_Extended->zero();
-
         // assembling non cst part
-        ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false);
         dataLinearNonCst.copyInfos( this->dataInfos() );
         M_functionLinearAssembly( dataLinearNonCst );
         for ( auto const& func : M_addFunctionLinearAssembly )
@@ -566,18 +556,18 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
             // PtF = P^T F
             M_solverPtAP_matP->multVector( *M_R, *M_solverPtAP_PtF, true );
-#if 1
-            ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF/* M_R*/,false,M_Extended,true);
+
+            ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,false);
             // dof elimination
             this->model()->updateLinearPDEDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearPtAP );
-#endif
+            // others dof eliminations (not need an expression)
             if ( M_solverPtAP_dofEliminationIds )
             {
                 // we assume that all shared dofs are present, not need to appy a sync
                 std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
-                auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );//dataJacobianNonCst.vectorUsedInStrongDirichlet();
+                auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );
                 M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
             }
 
@@ -595,14 +585,6 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             // post-assembly
             for ( auto const& func : M_addFunctionLinearPostAssembly )
                 func.second( dataLinearNonCst );
-
-            // assembling matrix used for preconditioner
-            //this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
-
-            // add extended term (important : after updatePreconditioner !)
-            // and only do if shared_ptr M_J != M_Extended
-            //if (this->model()->hasExtendedPattern() && this->model()->buildMatrixPrecond() )
-            //    M_J->addMatrix(1.0, M_Extended );
         }
 
         double mpiTimerAssembly = this->model()->timerTool("Solve").elapsed("algebraic-assembly");
@@ -689,14 +671,14 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         }
         else
         {
-            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true, M_Extended,false);
+            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true);
             dataJacobianCst.copyInfos( this->dataInfos() );
             M_functionJacobianAssembly( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
 
-        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false, M_Extended,false);
+        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false);
         dataJacobianNonCst.copyInfos( this->dataInfos() );
         if ( M_usePseudoTransientContinuation )
         {
@@ -838,7 +820,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             if (!M_hasBuildLinearJacobian)
             {
                 M_CstJ->zero();
-                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
                 dataJacobianCst.copyInfos( this->dataInfos() );
                 M_functionJacobianAssembly( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
@@ -849,7 +831,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             else if (model->rebuildLinearPartInJacobian() || model->needToRebuildCstPart())
             {
                 M_CstJ->zero();
-                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
                 dataJacobianCst.copyInfos( this->dataInfos() );
                 M_functionJacobianAssembly( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
@@ -857,7 +839,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_CstJ->close();
             }
         }
-        //model->updatePreconditioner(U,M_Prec);
+
         //---------------------------------------------------------------------//
         model->timerTool("Solve").elapsed("algebraic-jacobian");
         model->timerTool("Solve").restart();
@@ -993,7 +975,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     ModelAlgebraicFactory::rebuildCstJacobian( vector_ptrtype U )
     {
         M_CstJ->zero();
-        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true, M_Extended,false );
+        ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
         M_functionJacobianAssembly( dataJacobianCst );
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianCst );
@@ -1006,7 +988,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     {
         M_CstJ->zero();
         M_CstR->zero();
-        ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+        ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
         M_functionLinearAssembly(dataLinearCst);
         for ( auto const& func : M_addFunctionLinearAssembly )
             func.second( dataLinearCst );
@@ -1045,7 +1027,7 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
             M_CstJ->zero();
             M_CstR->zero();
-            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true,M_Extended,false);
+            ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
             M_functionLinearAssembly( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
 
@@ -1090,12 +1072,12 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
             {
                 M_J->zero();
                 M_R->zero();
-                ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true,M_Extended,false);
+                ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true);
                 M_functionLinearAssembly( dataLinearCst );
             }
 
             // assembling non cst part
-            ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+            ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false);
             M_functionLinearAssembly( dataLinearNonCst );
 
             // dof elimination
@@ -1143,9 +1125,6 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                     }
                 }
             }
-
-            // assembling matrix used for preconditioner
-            this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
 
             // update in-house preconditioners
             this->model()->updateInHousePreconditioner( dataLinearNonCst );

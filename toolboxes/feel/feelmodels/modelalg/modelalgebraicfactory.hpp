@@ -254,7 +254,6 @@ namespace FeelModels
         sparse_matrix_ptrtype M_J;
         sparse_matrix_ptrtype M_CstJ;
         sparse_matrix_ptrtype M_Prec;
-        sparse_matrix_ptrtype M_Extended;
 
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;

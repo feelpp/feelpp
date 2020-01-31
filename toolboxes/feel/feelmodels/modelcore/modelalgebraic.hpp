@@ -150,16 +150,13 @@ public :
     public:
         DataUpdateLinear( const vector_ptrtype& currentSolution,
                           sparse_matrix_ptrtype matrix, vector_ptrtype rhs,
-                          bool buildCstPart,
-                          sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
+                          bool buildCstPart )
             :
             DataUpdateBase(),
             M_matrix( matrix ),
             M_rhs( rhs ),
             M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
             M_doBCStrongDirichlet( true )
             {}
         DataUpdateLinear(DataUpdateLinear const& d) = default;
@@ -169,14 +166,12 @@ public :
         vector_ptrtype& rhs() { return M_rhs; }
         vector_ptrtype const& currentSolution() { return M_currentSolution; }
         bool buildCstPart() const { return M_buildCstPart; }
-        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
-        bool buildExtendedPart() const { return M_buildExtendedPart; }
-        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        FEELPP_DEPRECATED bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
         std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> const& matrixToAdd() const { return M_matrixToAdd; }
         std::vector<std::pair<sparse_matrix_ptrtype,vector_ptrtype>> const& rhsToAddFromMatrixVectorProduct() const { return M_rhsToAddFromMatrixVectorProduct; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
-        void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
+        FEELPP_DEPRECATED void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
         void addMatrixToAdd( sparse_matrix_ptrtype mat, Feel::MatrixStructure matStruc, double scaling ) { M_matrixToAdd[matStruc] = std::make_pair( mat, scaling ); }
         void addRhsToAdd( sparse_matrix_ptrtype mat, vector_ptrtype vec ) { M_rhsToAddFromMatrixVectorProduct.push_back( std::make_pair(mat,vec) ); }
     private :
@@ -185,8 +180,6 @@ public :
         const vector_ptrtype& M_currentSolution;
 
         bool M_buildCstPart;
-        sparse_matrix_ptrtype M_matrixExtended;
-        bool M_buildExtendedPart;
         bool M_doBCStrongDirichlet;
 
         std::map<Feel::MatrixStructure,std::pair<sparse_matrix_ptrtype,double>> M_matrixToAdd;
@@ -231,16 +224,13 @@ public :
     {
     public:
         DataUpdateJacobian( const vector_ptrtype& currentSolution, sparse_matrix_ptrtype jacobian,
-                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart,
-                            sparse_matrix_ptrtype matrixExtended, bool buildExtendedPart )
+                            vector_ptrtype vectorUsedInStrongDirichlet, bool buildCstPart )
             :
             DataUpdateBase(),
             M_jacobian( jacobian ),
             M_vectorUsedInStrongDirichlet( vectorUsedInStrongDirichlet ),
             M_currentSolution( currentSolution ),
             M_buildCstPart( buildCstPart ),
-            M_matrixExtended( matrixExtended ),
-            M_buildExtendedPart( buildExtendedPart ),
             M_doBCStrongDirichlet( true )
             {}
 
@@ -252,9 +242,7 @@ public :
         vector_ptrtype const& currentSolution() { return M_currentSolution; }
 
         bool buildCstPart() const { return M_buildCstPart; }
-        sparse_matrix_ptrtype& matrixExtended() { return M_matrixExtended; }
-        bool buildExtendedPart() const { return M_buildExtendedPart; }
-        bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
+        FEELPP_DEPRECATED bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
         void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
@@ -264,8 +252,6 @@ public :
         vector_ptrtype M_vectorUsedInStrongDirichlet;
         const vector_ptrtype& M_currentSolution;
         bool M_buildCstPart;
-        sparse_matrix_ptrtype M_matrixExtended;
-        bool M_buildExtendedPart;
         bool M_doBCStrongDirichlet;
     };
 
@@ -363,24 +349,11 @@ public :
     void setPrintGraphFileName(std::string s);
 
     //----------------------------------------------------------------------------------//
-    /**
-     * return false
-     */
-    virtual bool hasExtendedPattern() const;
 
     /**
      * return an empty blockPattern if not overhead
      */
     virtual block_pattern_type blockPattern() const;
-
-    bool buildMatrixPrecond() const;
-
-    virtual
-    void
-    updatePreconditioner(const vector_ptrtype& X,
-                         sparse_matrix_ptrtype& A,
-                         sparse_matrix_ptrtype& A_extended,
-                         sparse_matrix_ptrtype& Prec) const;
 
     virtual void updateInHousePreconditioner( DataUpdateLinear & data ) const;
     virtual void updateInHousePreconditioner( DataUpdateJacobian & data ) const;

@@ -58,8 +58,6 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"linearsystem-cst-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update matrix and rhs cst part")
         (prefixvm(prefix,"jacobian-linear-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the jacobian")
         (prefixvm(prefix,"residual-uselinearjac").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the residual with linear jacobian")
-        (prefixvm(prefix,"preconditioner.contribution").c_str(), Feel::po::value< std::string >()->default_value("same_matrix"),
-         "contribution in preconditioner : same_matrix, standart, extended ")
         (prefixvm(prefix,"use-cst-matrix").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-matrix")
         (prefixvm(prefix,"use-cst-vector").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-vector")
         (prefixvm(prefix,"error-if-solver-not-converged").c_str(), Feel::po::value< bool >()->default_value( false ), "error-if-solver-not-converged")
