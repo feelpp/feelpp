@@ -47,6 +47,7 @@
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 #include <feel/feelmodels/modelmesh/meshale.hpp>
@@ -65,6 +66,7 @@ template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
           typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
 class FluidMechanics : public ModelNumerical,
+                       public ModelPhysics<ConvexType::nDim>,
                        public std::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
@@ -194,8 +196,11 @@ public:
     static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
     typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
     // viscosity model desc
-    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type;
-    typedef std::shared_ptr<material_properties_type> material_properties_ptrtype;
+    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type; // TO REMOVE
+    typedef std::shared_ptr<material_properties_type> material_properties_ptrtype; // TO REMOVE
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
 
     typedef bases<Lagrange<nOrderVelocity, Vectorial,Continuous,PointSetFekete> > basis_vectorial_PN_type;
     typedef FunctionSpace<mesh_type, basis_vectorial_PN_type> space_vectorial_PN_type;
@@ -262,8 +267,50 @@ public:
 #endif
 
     //___________________________________________________________________________________//
-    // bc body particle
-    class BodyParticleBoundaryCondition
+
+    class Body : public ModelPhysics<nDim>
+    {
+    public :
+        Body()
+            :
+            ModelPhysics<nDim>( "body" )
+            {}
+        Body( Body const& ) = default;
+        Body( Body && ) = default;
+
+        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh, std::string const& exprRepository );
+
+        void updateForUse();
+
+        bool hasMaterialsProperties() const { return (M_materialsProperties? true : false); }
+
+        void setMass( double m ) { M_mass = m; }
+        void setMomentOfInertia( double m ) { M_momentOfInertia = m; }
+        void setMassCenter( eigen_vector_type<nRealDim> const& massCenter ) { M_massCenter = massCenter; }
+        double mass() const { return M_mass; }
+        double momentOfInertia() const { return M_momentOfInertia; }
+        eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
+
+        auto massExpr() const { return cst( M_mass ); }
+        auto momentOfInertiaExpr() const { return cst( M_momentOfInertia ); }
+        auto massCenterExpr() const
+            {
+                if constexpr ( nDim == 2 )
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
+                else
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
+            }
+
+
+    private :
+        materialsproperties_ptrtype M_materialsProperties;
+        eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
+        double M_mass;
+        double M_momentOfInertia;
+    };
+
+    // bc body
+    class BodyBoundaryCondition
     {
     public :
         typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
@@ -275,19 +322,19 @@ public:
         typedef Bdf<space_trace_angular_velocity_type> bdf_trace_angular_velocity_type;
         typedef std::shared_ptr<bdf_trace_angular_velocity_type> bdf_trace_angular_velocity_ptrtype;
 
-        BodyParticleBoundaryCondition() = default;
-        BodyParticleBoundaryCondition( BodyParticleBoundaryCondition const& ) = default;
-        BodyParticleBoundaryCondition( BodyParticleBoundaryCondition && ) = default;
+        BodyBoundaryCondition() = default;
+        BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
+        BodyBoundaryCondition( BodyBoundaryCondition && ) = default;
 
-        void setup( std::string const& particleName, pt::ptree const& p, self_type const& fluidToolbox );
+        void setup( std::string const& bodyName, pt::ptree const& p, self_type const& fluidToolbox );
         void init( self_type const& fluidToolbox );
         void updateForUse( self_type const& fluidToolbox );
 
 
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
             {
-                M_bdfTranslationalVelocity = fluidToolbox.createBdf( M_XhTranslationalVelocity, "body-particles."+M_name+".translational-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
-                M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body-particles."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                M_bdfTranslationalVelocity = fluidToolbox.createBdf( M_XhTranslationalVelocity, "body."+M_name+".translational-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+                M_bdfAngularVelocity = fluidToolbox.createBdf( M_XhAngularVelocity, "body."+M_name+".angular-velocity", bdfOrder, nConsecutiveSave, myFileFormat );
 
                 if ( fluidToolbox.doRestart() )
                 {
@@ -323,15 +370,18 @@ public:
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
-        auto const& massExpr() const { return M_massExpr.exprScalar(); }
-        auto const& momentOfInertiaExpr() const { return M_momentOfInertiaExpr.template expr<1,1>(); } // NOT TRUE in 3D
+        auto massExpr() const { return M_body.massExpr(); /* M_massExpr.exprScalar();*/ }
+        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); /*M_momentOfInertiaExpr.template expr<1,1>();*/ } // NOT TRUE in 3D
         auto massCenterExpr() const
             {
+                return M_body.massCenterExpr();
+#if 0
                 if constexpr ( nDim == 2 )
                                  return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
                 else
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(1)) );
+                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
                 //return M_massCenterExpr.template expr<nDim,1>();
+#endif
             }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
@@ -370,11 +420,13 @@ public:
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
+#if 0
                 M_massExpr.setParameterValues( mp );
                 M_momentOfInertiaExpr.setParameterValues( mp );
                 M_initialMassCenterExpr.setParameterValues( mp );
                 M_translationalVelocityExpr.setParameterValues( mp );
                 M_angularVelocityExpr.setParameterValues( mp );
+#endif
             }
 
     private :
@@ -389,12 +441,14 @@ public:
         bdf_trace_p0c_vectorial_ptrtype M_bdfTranslationalVelocity;
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
-        ModelExpression M_massExpr, M_momentOfInertiaExpr, M_initialMassCenterExpr;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
-        eigen_vector_type<nRealDim> M_massCenter, M_massCenterRef;
+
+        Body M_body;
+        //ModelExpression M_massExpr, M_momentOfInertiaExpr, M_initialMassCenterExpr;
+        eigen_vector_type<nRealDim> /*M_massCenter,*/ M_massCenterRef;
     };
 
-    class BodyParticleSetBoundaryCondition : public std::map<std::string,BodyParticleBoundaryCondition>
+    class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
     {
     public:
         void initTimeStep( self_type const& fluidToolbox, int bdfOrder, int nConsecutiveSave, std::string const& myFileFormat )
@@ -829,12 +883,12 @@ public :
             fields_normalstress[prefixvm(prefix,"trace.normal-stress")] = this->fieldNormalStressPtr();
             fields_normalstress[prefixvm(prefix,"trace.wall-shear-stress")] = this->fieldWallShearStressPtr();
 #if 0
-            std::map<std::string,element_trace_p0c_vectorial_ptrtype> fields_NoSlipRigidParticlesTranslationalVelocity;
-            std::map<std::string,typename BodyParticleBoundaryCondition::element_trace_angular_velocity_ptrtype> fields_NoSlipRigidParticlesAngularVelocity;
-            if ( !M_bodyParticlesBC.empty() )
+            std::map<std::string,element_trace_p0c_vectorial_ptrtype> fields_NoSlipRigidTranslationalVelocity;
+            std::map<std::string,typename BodyBoundaryCondition::element_trace_angular_velocity_ptrtype> fields_NoSlipRigidAngularVelocity;
+            if ( !M_bodySetBC.empty() )
             {
-                fields_NoSlipRigidParticlesTranslationalVelocity[prefixvm(prefix,"trace.particles.translational-velocity")]= M_bodyParticlesBC.begin()->second.fieldTranslationalVelocityPtr();
-                fields_NoSlipRigidParticlesAngularVelocity[prefixvm(prefix,"trace.particles.angular-velocity")]=M_bodyParticlesBC.begin()->second.fieldAngularVelocityPtr();
+                fields_NoSlipRigidTranslationalVelocity[prefixvm(prefix,"trace.body.translational-velocity")]= M_bodySetBC.begin()->second.fieldTranslationalVelocityPtr();
+                fields_NoSlipRigidAngularVelocity[prefixvm(prefix,"trace.body.angular-velocity")]=M_bodySetBC.begin()->second.fieldAngularVelocityPtr();
             }
 #endif
             std::map<std::string, typename mesh_ale_type::ale_map_element_ptrtype> fields_disp;
@@ -845,7 +899,7 @@ public :
                                      std::make_pair( prefixvm( prefix,"vorticity"),this->fieldVorticityPtr() ),
                                      fields_disp,
                                      fields_normalstress
-                                     //,fields_NoSlipRigidParticlesTranslationalVelocity,fields_NoSlipRigidParticlesAngularVelocity
+                                     //,fields_NoSlipRigidTranslationalVelocity,fields_NoSlipRigidAngularVelocity
                                      );
         }
 
@@ -1218,8 +1272,8 @@ protected:
     trace_mesh_ptrtype M_meshLagrangeMultiplierPressureBC;
     space_trace_velocity_component_ptrtype M_spaceLagrangeMultiplierPressureBC;
     element_trace_velocity_component_ptrtype M_fieldLagrangeMultiplierPressureBC1, M_fieldLagrangeMultiplierPressureBC2;
-    // body particles bc (no-slip on rigid particles)
-    BodyParticleSetBoundaryCondition M_bodyParticlesBC;
+    // body bc
+    BodySetBoundaryCondition M_bodySetBC;
     // time discrtisation fluid
     std::string M_timeStepping;
     bdf_velocity_ptrtype M_bdfVelocity;
@@ -1246,7 +1300,8 @@ protected:
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
-    material_properties_ptrtype M_materialProperties;
+    material_properties_ptrtype M_materialProperties; // TO REMOVE
+    materialsproperties_ptrtype M_materialsProperties;
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;
     std::map<ComponentType,map_scalar_field<2> > M_bcDirichletComponents;
