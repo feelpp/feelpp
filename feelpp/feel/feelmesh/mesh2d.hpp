@@ -30,7 +30,6 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/timer.hpp>
 
 #include <boost/foreach.hpp>
 #include <boost/mpl/print.hpp>

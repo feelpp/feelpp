@@ -34,7 +34,13 @@ add_library(Feelpp::feelpp_toolbox_electric_lib ALIAS feelpp_toolbox_electric_li
 set_target_properties(feelpp_toolbox_electric_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_electric_lib")
 target_link_libraries(feelpp_toolbox_electric_lib ${FEELPP_MODELS_LIBRARIES_ELECTRIC})
 set_property(TARGET feelpp_toolbox_electric_lib PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_toolbox_electric_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+set_target_properties(feelpp_toolbox_electric_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_electric_lib
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/electric COMPONENT Devel)

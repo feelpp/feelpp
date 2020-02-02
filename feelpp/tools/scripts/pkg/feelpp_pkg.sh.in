@@ -5,13 +5,14 @@ set -eo pipefail
 
 # this script must be executed at the top level of the Feel++ directories
 
+BUILDKITE_AGENT_NAME=${BUILDKITE_AGENT_NAME:-default}
 # default values
-COMPONENT=main
+CHANNEL=latest
 if [ "$BUILDKITE_BRANCH" = "develop" -o  "$BRANCH" = "develop" ]; then
-    COMPONENT=latest
+    CHANNEL=latest
 fi
 if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
-    COMPONENT=stable
+    CHANNEL=stable
 fi 
 DIST=${DIST:-focal}
 if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
@@ -19,9 +20,14 @@ if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
 elif [ "$DIST" = "buster" ]; then
     FLAVOR=debian
 fi
-echo "Building $FLAVOR/$DIST packages for channel $COMPONENT Feel++ "
+COMPONENT=${COMPONENT:-feelpp}
+#OTHERMIRROR=
+#if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
+#    OTHERMIRROR="deb https://dl.bintray.com/feelpp/ubuntu $DIST $CHANNEL"
+#fi
+echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result
+PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
@@ -41,33 +47,37 @@ pbuilder-dist $DIST update
 echo "--- setting directory build-$DIST to build source tarball"
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
 mkdir build-$DIST
-cd build-$DIST && ../configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
+if [ "$COMPONENT" = "feelpp" ]; then
+    cd build-$DIST && ../configure -r --enable-toolboxes --enable-mor --cmakeflags="-DFEELPP_ENABLE_GIT=OFF -DLIBBSON_DIR=/usr -DLIBMONGOC_DIR=/usr"
+elif [ "$COMPONENT" = "feelpp-toolboxes" ]; then
+    cd build-$DIST && ../configure -r --root=../toolboxes
+fi
 make package_source
 echo "--- cloning feelpp.pkg"
 git clone -q https://github.com/feelpp/feelpp.pkg.git
 
 
 
-main_version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g')
-extra_version=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g')
+main_version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g")
+extra_version=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\2/g")
 
 if [ -z $extra_version ]; then
-    version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g' )
-    rename_archive=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/feelpp_\1.orig.tar.gz/g' )
+    version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1/g" )
+    rename_archive=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1.orig.tar.gz/g" )
 else
-    rename_archive=$(echo feelpp-*.tar.gz | sed 's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/feelpp_\1~\2.orig.tar.gz/g' )
-    version=$(echo feelpp-*.tar.gz | sed  's/feelpp-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g' )
+    rename_archive=$(echo ${COMPONENT}-*.tar.gz | sed "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/${COMPONENT}_\1~\2.orig.tar.gz/g")
+    version=$(echo ${COMPONENT}-*.tar.gz | sed  "s/${COMPONENT}-\([0-9.]*\)-*\([a-z.0-9]*\).tar.gz/\1~\2/g" )
 fi
 echo "--- building archive $rename_archive for debian"
-cp feelpp-*.tar.gz feelpp.pkg/feelpp/$rename_archive
-cd feelpp.pkg/feelpp/$DIST && tar xzf ../$rename_archive --strip 1
+cp ${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
+cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
-echo "--- building feelpp debian version $version-1"
+echo "--- building ${COMPONENT} debian version $version-1"
 dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
 dpkg-source -b .
-pbuilder-dist $DIST build ../feelpp_${version}-1.dsc
+pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${version}-1.dsc
 
-echo "+++ uploading ${PBUILDER_RESULTS} to bintray $FLAVOR/$DIST"
+echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
-../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $COMPONENT
+../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
 

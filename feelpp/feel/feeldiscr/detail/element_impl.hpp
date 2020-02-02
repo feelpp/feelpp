@@ -2317,8 +2317,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     //
     // start
     //
-    boost::timer __timer;
-
     std::vector<int> dofs;
     std::vector<value_type> values;
     auto it = r.first;
