@@ -10,12 +10,24 @@ version_min="v#{version_minor}"
 
 @template = Liquid::Template.parse(File.read(__dir__+"/template.adoc"))
 
-toolboxes = [ "solid", "fluid", "fsi", "hdg", "heat", "heatfluid", "electric", "thermoelectric" ]
+toolboxes =
+  { "solid" => "solid",
+    "fluid" => "fluid",
+    "fsi" => "fsi",
+    "hdg_poisson" => "hdg",
+    "hdg_coupledpoisson" => "hdg",
+    "hdg_elasticity" => "hdg",
+    "heat" => "heat",
+    "heatfluid" => "heatfluid",
+    "electric" => "electric",
+    "thermoelectric" => "thermoelectric"}
 
 toolbox_default_cases={ "solid" => "github:{path:toolboxes/solid/cantilever}",
                         "fluid" => "github:{path:toolboxes/fluid/TurekHron}",
                         "fsi" => "github:{path:toolboxes/fsi/TurekHron}",
-                        "hdg" => "github:{path:toolboxes/hdg/poisson/red}",
+                        "hdg_poisson" => "github:{path:toolboxes/hdg/poisson/red}",
+                        "hdg_coupledpoisson" => "github:{path:toolboxes/hdg/coupledpoisson/1-linear/}",
+                        "hdg_elasticity" => "github:{path:toolboxes/hdg/elasticity/quarterturn}",
                         "heat" => "github:{path:toolboxes/heat/Building/ThermalBridgesENISO10211}",
                         "electric" => "github:{path:toolboxes/electric/ElectroMagnets/HL-31_H1}",
                         "heatfluid" => "github:{path:toolboxes/heatfluid/NaturalConvection/cavity}",
@@ -25,7 +37,9 @@ toolbox_default_cases={ "solid" => "github:{path:toolboxes/solid/cantilever}",
 toolbox_default_cli_cases={ "solid" => "",
                             "fluid" => "",
                             "fsi" => "",
-                            "hdg" => "",
+                            "hdg_poisson" => "",
+                            "hdg_coupledpoisson" => "",
+                            "hdg_elasticity" => "",
                             "heat" => "",
                             "electric" => "",
                             "heatfluid" => "",
@@ -34,7 +48,9 @@ toolbox_default_cli_cases={ "solid" => "",
 toolbox_desc={ "solid" => "solid mechanics",
                "fluid" => "fluid mechanics",
                "fsi" => "fluid structure interaction",
-               "hdg" => "hybridized discontinuous Galerkin",
+               "hdg_poisson" => "hybridized discontinuous Galerkin Poisson",
+               "hdg_coupledpoisson" => "hybridized discontinuous Galerkin Coupled Poisson(3D0D)",
+               "hdg_elasticity" => "hybridized discontinuous Galerkin elasticity",
                "heat" => "heat transfer",
                "electric" => "electric",
                "heatfluid" => "heat and fluid",
@@ -43,7 +59,9 @@ toolbox_desc={ "solid" => "solid mechanics",
 toolbox_default_option_values ={ "solid" => ["3",""],
                                  "fluid" => ["3",""],
                                  "fsi" => ["3",""],
-                                 "hdg" => ["3"],
+                                 "hdg_poisson" => ["3"],
+                                 "hdg_coupledpoisson" => ["3"],
+                                 "hdg_elasticity" => ["3"],
                                  "heat" => ["3","P1"],
                                  "electric" => ["3","P1"],
                                  "heatfluid" => ["3","P1"],
@@ -52,25 +70,26 @@ toolbox_default_option_values ={ "solid" => ["3",""],
 toolbox_possible_option_values ={ "solid" => ["2,3",""],
                                   "fluid" => ["2,3",""],
                                   "fsi" => ["2,3",""],
-                                  "hdg" => ["2,3"],
+                                  "hdg_poisson" => ["2,3"],
+                                  "hdg_coupledpoisson" => ["2,3"],
+                                  "hdg_elasticity" => ["2,3"],
                                   "heat" => ["2,3","P1"],
                                   "electric" => ["2,3","P1"],
                                   "heatfluid" => ["2,3","P1"],
                                   "thermoelectric" => ["2,3","P1"] }
 
-for l in toolboxes
-  #puts l
-  puts ("toolbox #{l}: write #{l}/#{l}.adoc")
-  File.delete( "#{l}/feelpp_toolbox_#{l}.adoc" ) if File.exist?( "#{l}/feelpp_toolbox_#{l}.adoc" )
-  File.delete( "#{l}/#{l}.adoc" ) if File.exist?( "#{l}/#{l}.adoc" )
-  File.write("#{l}/#{l}.adoc", @template.render(
+toolboxes.each do |app, prefix|
+  puts ("toolbox #{app}: write #{prefix}/#{app}.adoc")
+  File.delete( "#{prefix}/feelpp_toolbox_#{app}.adoc" ) if File.exist?( "#{prefix}/feelpp_toolbox_#{app}.adoc" )
+  File.delete( "#{prefix}/#{app}.adoc" ) if File.exist?( "#{prefix}/#{app}.adoc" )
+  File.write("#{prefix}/#{app}.adoc", @template.render(
                "version_min" => "#{version_min}",
-               "toolbox_app" => "feelpp_toolbox_#{l}",
-               "toolbox" => "#{l}",
-               "toolbox_desc" => toolbox_desc["#{l}"],
-               "toolbox_default_case" => '"'+toolbox_default_cases["#{l}"]+'"',
-               "toolbox_default_cli" => toolbox_default_cli_cases["#{l}"],
-               "toolbox_default_option_values" => toolbox_default_option_values["#{l}"],
-               "toolbox_possible_option_values" => toolbox_possible_option_values["#{l}"],
+               "toolbox_app" => "feelpp_toolbox_#{app}",
+               "toolbox" => "#{app}",
+               "toolbox_desc" => toolbox_desc["#{app}"],
+               "toolbox_default_case" => '"'+toolbox_default_cases["#{app}"]+'"',
+               "toolbox_default_cli" => toolbox_default_cli_cases["#{app}"],
+               "toolbox_default_option_values" => toolbox_default_option_values["#{app}"],
+               "toolbox_possible_option_values" => toolbox_possible_option_values["#{app}"],
              ))
 end
