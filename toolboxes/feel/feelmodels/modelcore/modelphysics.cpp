@@ -20,6 +20,14 @@ ModelPhysics<Dim>::ModelPhysics( std::string const& physic )
     {
         M_physics = { "electric" };
     }
+    else if ( M_physic == "fluid" )
+    {
+        M_physics = { "fluid" };
+    }
+    else if ( M_physic == "body" )
+    {
+        M_physics = { "body" };
+    }
     else if ( M_physic == "thermo-electric" )
     {
         M_physics = { "heat", "electric", "thermo-electric" };

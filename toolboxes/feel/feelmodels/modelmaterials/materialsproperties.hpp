@@ -88,7 +88,9 @@ public :
 
     MaterialsProperties( MaterialsProperties const& ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics )
+    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics,
+                       std::set<std::string> const& onlyTheseMaterialNames = std::set<std::string>{},
+                       std::set<std::string> const& onlyTheseMarkers = std::set<std::string>{} )
         {
             std::set<std::string> eltMarkersInMesh;
             for (auto const& markPair : mesh->markerNames() )
@@ -109,6 +111,8 @@ public :
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
+                if ( !onlyTheseMaterialNames.empty() && (onlyTheseMaterialNames.find( matName ) == onlyTheseMaterialNames.end()) )
+                    continue;
                 auto const& mat = m.second;
 
                 std::set<std::string> currentPhysicsReaded;
@@ -140,6 +144,8 @@ public :
 
                 for ( std::string const& matmarker : mat.meshMarkers() )
                 {
+                    if ( !onlyTheseMarkers.empty() && (onlyTheseMarkers.find( matName ) == onlyTheseMarkers.end()) )
+                        continue;
                     if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
                         continue;
                     for ( std::string const& p : currentPhysics )
@@ -158,6 +164,8 @@ public :
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
+                if ( !onlyTheseMaterialNames.empty() && (onlyTheseMaterialNames.find( matName ) == onlyTheseMaterialNames.end()) )
+                    continue;
                 auto const& mat = m.second;
                 auto itFindMat = markersByMaterial.find( matName );
                 if ( itFindMat == markersByMaterial.end() )

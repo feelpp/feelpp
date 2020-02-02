@@ -743,7 +743,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcMovingBoundaryImposed.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
-    M_bodyParticlesBC.setParameterValues( paramValues );
+    M_bodySetBC.setParameterValues( paramValues );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -758,7 +758,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
-    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodyParticlesBC.empty() ) )
+    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
 
     if ( this->startBySolveStokesStationary() &&
@@ -1224,7 +1224,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     {
         M_bdfVelocity->start( *M_fieldVelocity );
         M_savetsPressure->start( *M_fieldPressure );
-        M_bodyParticlesBC.startTimeStep();
+        M_bodySetBC.startTimeStep();
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1300,7 +1300,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_meshALE->updateTimeStep();
 #endif
 
-    M_bodyParticlesBC.updateTimeStep();
+    M_bodySetBC.updateTimeStep();
 
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )
@@ -1545,7 +1545,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
             this->meshALE()->revertMovingMesh( false );
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
@@ -1579,33 +1579,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     }
 
 
-    if ( this->algebraicFactory() && !M_bodyParticlesBC.empty() )
+    if ( this->algebraicFactory() && !M_bodySetBC.empty() )
     {
         this->functionSpaceVelocity()->rebuildDofPoints();
         // not very nice, we need to update direclty P, not rebuild
-        
+
         int nBlock = this->nBlockMatrixGraph();
         BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
         for (int i=0;i<nBlock;++i)
             myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
 
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
-        for ( auto & [bpname,bpbc] : M_bodyParticlesBC )
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
         {
             // rebuild matrixPTilde_angular
             bpbc.updateForUse( *this );
-            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
-            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.angular-velocity") ) << " start dof index for particles-bc.angular-velocity is not present\n";
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
 
             myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
             myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
 
-            auto rangeParticle = bpbc.rangeMarkedFacesOnFluid();
-            auto dofsParticle = this->functionSpaceVelocity()->dofs( rangeParticle );
+            auto dofsBody = this->functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
             auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
-            for ( auto dofid : dofsParticle )
+            for ( auto dofid : dofsBody )
                 matFI_Id->set( dofid,dofid, 0.);
             matFI_Id->close();
         }
@@ -1951,7 +1950,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
-    nBlock += 2*M_bodyParticlesBC.size();
+    nBlock += 2*M_bodySetBC.size();
     return nBlock;
 }
 
@@ -2070,7 +2069,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),
                                                       _diag_is_nonzero=false,_close=false)->graph();

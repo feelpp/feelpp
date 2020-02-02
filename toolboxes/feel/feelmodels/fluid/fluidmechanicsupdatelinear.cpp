@@ -514,11 +514,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         }
     }
 
-    for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
             form2( _test= bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),_matrix=A,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
                    _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
@@ -527,22 +527,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
         }
         if ( bpbc.hasAngularVelocityExpr() )
         {
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
             form2( _test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),_matrix=A,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexAngularVelocity,
                    _colstart=this->colStartInMatrix()+startBlockIndexAngularVelocity ) +=
                 on( _range=elements(bpbc.mesh()), _rhs=F,
                     _element=*bpbc.fieldAngularVelocityPtr(), _expr=bpbc.angularVelocityExpr() );
         }
-#if 0
-        // remove these rows (because keep in P with PtAP)
-        form2( _test=XhV,_trial=XhV,_matrix=A,
-               _rowstart=this->rowStartInMatrix()+startBlockIndexVelocity,
-               _colstart=this->colStartInMatrix()+startBlockIndexVelocity ) +=
-            on( _range=bpbc.rangeMarkedFacesOnFluid(), _rhs=F,
-                _element=u, _expr=vf::zero<nDim,1>() );
-#endif
-
     }
 
     double timeElapsed = this->timerTool("Solve").stop();

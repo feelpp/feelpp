@@ -403,17 +403,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
 
     //--------------------------------------------------------------------------------------------------//
 
-    if ( !M_bodyParticlesBC.empty() )
+    if ( !M_bodySetBC.empty() )
     {
-        this->log("FluidMechanics","updateLinearPDE","assembly of body particles");
+        this->log("FluidMechanics","updateLinearPDE","assembly of body bc");
 
-        for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
-
-            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.translational-velocity") ) << " start dof index for particles-bc.translational-velocity is not present\n";
-            //CHECK( this->hasStartSubBlockSpaceIndex("particles-bc.angular-velocity") ) << " start dof index for particles-bc.angular-velocity is not present\n";
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc."+bpbc.name()+".angular-velocity");
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
 
             // equation on translational velocity
 #if 0
@@ -430,7 +429,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                            _expr= massParticle*inner( idv(M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDeriv()),id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
                            _geomap=this->geomap() );
 #endif
-            double massParticle = bpbc.massExpr().evaluate()(0,0);
+            double massBody = bpbc.massExpr().evaluate()(0,0);
             double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
             int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
@@ -444,7 +443,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     for (int d=0;d<nDim;++d)
                     {
                         A->add( basisToContainerGpTranslationalVelocityRow[d], basisToContainerGpTranslationalVelocityCol[d],
-                                bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massParticle );
+                                bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massBody );
                     }
                 }
                 if ( hasActiveDofAngularVelocity )
@@ -470,7 +469,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     {
                         auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                         F->add( basisToContainerGpTranslationalVelocityVector[d],
-                                massParticle*translationalVelocityPolyDeriv(d) );
+                                massBody*translationalVelocityPolyDeriv(d) );
 #if 0
                         F->add( basisToContainerGpTranslationalVelocityVector[d],
                                 massTilde*_gravity[d] );
@@ -488,7 +487,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     }
                 }
             }
-        } //  for ( auto const& [bpname,bpbc] : M_bodyParticlesBC )
+        } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
 
     }
     //--------------------------------------------------------------------------------------------------//
