@@ -98,6 +98,9 @@ namespace FeelModels
                    graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
         void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
 
+        void initExplictPartOfSolution();
+        vector_ptrtype explictPartOfSolution() { return M_explictPartOfSolution; }
+
         void initSolverPtAP( sparse_matrix_ptrtype matP );
         void solverPtAP_setDofEliminationIds( std::set<index_type> const& dofId ) { M_solverPtAP_dofEliminationIds = dofId; }
 #if 0
@@ -254,6 +257,8 @@ namespace FeelModels
         sparse_matrix_ptrtype M_J;
         sparse_matrix_ptrtype M_CstJ;
         sparse_matrix_ptrtype M_Prec;
+
+        vector_ptrtype M_explictPartOfSolution;
 
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;

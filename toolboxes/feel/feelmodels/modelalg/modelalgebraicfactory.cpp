@@ -174,6 +174,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
 
 //---------------------------------------------------------------------------------------------------------------//
 
+void ModelAlgebraicFactory::initExplictPartOfSolution()
+{
+    M_explictPartOfSolution = M_backend->newVector( M_R->mapPtr() );
+}
+
     void ModelAlgebraicFactory::initSolverPtAP( sparse_matrix_ptrtype matP )
     {
         CHECK ( matP ) << "invalid matP";
@@ -545,6 +550,12 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                 M_R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
 
+        if ( M_explictPartOfSolution )
+        {
+            M_explictPartOfSolution->scale( -1. );
+            M_R->addVector(*M_explictPartOfSolution, *M_J );
+            M_explictPartOfSolution->scale( -1. );
+        }
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
         post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
@@ -623,6 +634,11 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
                                           _prec=M_PrecondManage,
                                           _pre=pre_solve,
                                           _post=post_solve );
+        }
+
+        if ( M_explictPartOfSolution )
+        {
+            U->add( 1.0, M_explictPartOfSolution );
         }
 
         if ( this->model()->errorIfSolverNotConverged() )
