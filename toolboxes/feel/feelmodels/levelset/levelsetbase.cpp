@@ -130,13 +130,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     //if( !this->doRestart() )
     //{
     // Set levelset initial value
-    // Note: we initialise the levelset even in case of restart to be able to
+    // Note: we initialise the levelset even in case of restart to
     // compute the initial geometrical quantities (volume, perimeter, ...)
     this->initLevelsetValue();
     //}
-
-    M_initialVolume = this->volume();
-    M_initialPerimeter = this->perimeter();
 
     // Init user-defined functions
     this->initUserFunctions();
@@ -196,6 +193,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initLevelsetValue()
     }
 
     this->updateInterfaceQuantities();
+
+    M_initialVolume = this->volume();
+    M_initialPerimeter = this->perimeter();
 
     this->log("LevelSetBase", "initLevelsetValue", "finish");
 }
