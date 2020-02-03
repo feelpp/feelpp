@@ -43,6 +43,12 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
+option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+
+if ( FEELPP_ENABLE_ASCIIDOCTOR )
+  include( feelpp.adoc )
+endif()
+
 option(FEELPP_TOOLBOXES_ENABLE_MESHALE "Enable/Disable mesh ALE" ON)
 if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
   set(FEELPP_MODELS_HAS_MESHALE 1)

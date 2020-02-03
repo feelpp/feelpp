@@ -30,6 +30,7 @@ feelpp_add_application( heatfluid SRCS main_heatfluid.cpp
   feelpp_toolbox_heatfluid_lib_3dP1G1_3dP2P1G1
   feelpp_toolbox_heatfluid_lib_3dP1G1_3dP1P1G1
   INSTALL
+  MAN heatfluid
   )
 
 feelpp_add_testcase(NaturalConvection CATEGORY HeatFluid)

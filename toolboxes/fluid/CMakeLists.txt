@@ -32,6 +32,7 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   feelpp_toolbox_fluid_lib_2dP1P1G1
   feelpp_toolbox_fluid_lib_3dP1P1G1
   INSTALL TESTS
+  MAN fluid
 )
 
 feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)
