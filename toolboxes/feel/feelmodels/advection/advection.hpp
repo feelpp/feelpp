@@ -267,9 +267,6 @@ public :
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue( bc_map_field_type const& icVal ) { M_icValue = icVal; }
-    void setInitialValue( std::initializer_list<typename bc_map_field_type::value_type> icVal ) { M_icValue = icVal; }
-    void setInitialValue( typename bc_map_field_type::mapped_type const& expr, std::string const& mark = "" ) { M_icValue[mark] = expr; }
     element_advection_ptrtype const& initialValue() const { return M_initialValue; }
     void setInitialValue( element_advection_ptrtype const& ival ) { M_initialValue = ival; }
 
@@ -437,7 +434,6 @@ public :
     //--------------------------------------------------------------------//
 protected:
     void loadParametersFromOptionsVm();
-    void loadConfigICFile();
     void loadConfigBCFile();
 
     virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
@@ -508,7 +504,6 @@ protected:
     std::list<std::string> M_bcInflowMarkers;
     // Initial conditions
     element_advection_ptrtype M_initialValue;
-    bc_map_field_type M_icValue;
     // body forces
     bc_map_field_type M_sources;
     //--------------------------------------------------------------------//

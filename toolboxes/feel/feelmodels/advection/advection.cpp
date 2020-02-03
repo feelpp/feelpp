@@ -78,13 +78,11 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->setModelName( advection_model );
     }
 
-    // Initial value
-    this->loadConfigICFile();
     // Boundary conditions
     this->loadConfigBCFile();
 
     // Mesh
-    if( !M_mesh)
+    if( !M_mesh )
         this->createMesh();
     // Function spaces
     this->initFunctionSpaces();
@@ -197,14 +195,6 @@ map_vector_field<Dim, 1, 2> getBCFields(
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigICFile()
-{
-    this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().initialConditionsDeprecated(), this->prefix(), "InitialValue" );
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
@@ -249,6 +239,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createMesh()
     createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
     CHECK( M_mesh ) << "mesh generation failed";
     M_isUpdatedForUse = false;
+    M_rangeMeshElements = elements( M_mesh );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("AdvDiffReac","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
