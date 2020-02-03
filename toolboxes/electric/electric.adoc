@@ -1,0 +1,112 @@
+:feelpp: Feel++
+= feelpp_toolbox_electric(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_toolbox_electric
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+{manmanual} - electric toolbox application
+
+
+== SYNOPSIS
+
+{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization P1] 
+
+== DESCRIPTION
+
+{manmanual} is an application which can run electric model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+
+The step are as follows:
+
+* load the model
+* load the mesh
+* setup model (materials, initial and boundary condition)
+* execute the steady or unsteady simulation
+* post-process the results, viewable in paraview or ensight 
+
+=== Options
+
+{manmanual} requires some options.
+
+.Table of command-line {manmanual} options
+|===
+| Name | Description | Default value | Possible Values
+
+| case.dim | dimension of problem  | 3 | 2,3
+| case.discretization | discretization of problem  | P1 | P1
+
+|===
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+
+[source,shell]
+.Starting the docker `feelpp/feelpp-toolboxes:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+----
+
+[source,shell]
+.Explanations about the command line
+----
+docker run <1>
+--rm <2>
+-ti <3>
+-v $HOME/feel:/feel <4>
+feelpp/feelpp-toolboxes <5>
+----
+<1> run docker executable
+<2> remove container from docker once execution is done
+<3> run in interactive mode and enter the docker container
+<4> mount `$HOME/feel` on host to `/feel/` in docker: the results will be exported there
+<5> the docker container to execute, by default it uses the `latest` tag
+
+
+.Example of a command line to execute feelpp_toolbox_electric
+----
+mpirun --bind-to core -np 10 feelpp_toolbox_electric --case "github:{path:toolboxes/electric/ElectroMagnets/HL-31_H1}"
+----
+
+.Explantion of the command line to execute feelpp_toolbox_electric
+----
+mpirun --bind-to core <1>
+  -np 10 <2>
+  <3>
+  --case "github:{path:toolboxes/electric/ElectroMagnets/HL-31_H1}" <4>
+----
+<1> execute in parallel using MPI with processes bound to cores
+<2> execute in parallel usisng 10 processes
+<3> the name of the toolbox application
+<4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
+
+== RESOURCES
+
+{feelpp} Docs::
+http://docs.feelpp.org/toolboxes/0.v107/
+
+{feelpp} Cases for feelpp_toolbox_electric::
+http://docs.feelpp.org/cases/0.107//
+
+{feelpp} Toolbox Docs for feelpp_toolbox_electric::
+http://docs.feelpp.org/toolboxes/0.v107/
+
+== SEE ALSO
+
+{feelpp} Mesh Partitioner::
+Mesh partitioner for {feelpp} Toolboxes
+http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
+
+
+{feelpp} Remote Tool::
+Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
+http://docs.feelpp.org/user/0.v107/using/remotedata/
+
+
+== COPYING
+
+Copyright \(C) 2020 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+

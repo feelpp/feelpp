@@ -463,6 +463,25 @@ Environment::Environment( int argc, char** argv,
     CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
+
+    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
+    {
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( !fs::exists( p ) )
+                fs::create_directories( p );
+            else if ( !fs::is_directory( p ) )
+                continue;
+            S_rootdir = p;
+            break;
+        }
+    }
+
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
@@ -519,24 +538,6 @@ Environment::Environment( int argc, char** argv,
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
-
-    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( !fs::exists( p ) )
-                fs::create_directories( p );
-            else if ( !fs::is_directory( p ) )
-                continue;
-            S_rootdir = p;
-            break;
-        }
-    }
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
