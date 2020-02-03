@@ -246,7 +246,7 @@ public :
     void initExporters();
     void initOthers();
 
-    void initInitialValue();
+    void initInitialConditions();
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -304,6 +304,32 @@ public :
 
     element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const;
     element_advection_velocity_type const& fieldAdvectionVelocity() const { return *(this->fieldAdvectionVelocityPtr()); }
+
+    //--------------------------------------------------------------------//
+    // Symbols
+    auto symbolsExpr( std::string const& prefix_symbol = "adr_" ) const { 
+        return this->symbolsExpr( this->fieldSolution(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExpr( FieldType const& f, std::string const& prefix_symbol = "adr_" ) const
+    {
+        auto seField = this->symbolsExprField( f, prefix_symbol );
+        return Feel::vf::symbolsExpr( seField );
+    }
+
+    auto symbolsExprField( std::string const& prefix_symbol = "adr_" ) const { 
+        return this->symbolsExprField( this->fieldSolution(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExprField( FieldType const& f, std::string const& prefix_symbol = "adr_" ) const
+    {
+        // generate symbols adr_phi, adr_grad_phi(_x,_y,_z), adr_dn_phi
+        return Feel::vf::symbolsExpr( 
+                symbolExpr( (boost::format("%1%phi")%prefix_symbol).str(),idv(f) ),
+                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
+                );
+    }
 
     //--------------------------------------------------------------------//
     // Algebraic data
