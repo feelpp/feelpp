@@ -6,6 +6,7 @@ feelpp_add_application( fsi_2d SRCS main_fsi.cpp
   #feelpp_toolbox_fsi_lib_2dP1P1G1_2dP1G1
   DEFS FEELPP_DIM=2 FEELPP_GEO_ORDER=1
   INSTALL
+  MAN fsi
   )
 
 feelpp_add_application( fsi_3d SRCS main_fsi.cpp
