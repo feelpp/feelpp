@@ -1144,6 +1144,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         std::set<size_type> dofEliminationIdsPtAP;
         matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
         M_algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
+
+        if ( M_bodySetBC.hasElasticVelocity() )
+            M_algebraicFactory->initExplictPartOfSolution();
     }
 
 
@@ -1980,6 +1983,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
 
     M_translationalVelocityExpr.setExpr( "translational-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
     M_angularVelocityExpr.setExpr( "angular-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+
+    M_elasticVelocityExpr.setExpr( "elastic-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1996,6 +2001,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
         M_XhAngularVelocity = M_XhTranslationalVelocity;
     M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
     M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+
+    if ( this->hasElasticVelocityFromExpr() )
+    {
+        M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
+        M_fieldElasticVelocity = M_XhElasticVelocity->elementPtr();
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2026,6 +2037,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
 
+    XhV->rebuildDofPoints(); // TODO REMOVE this line, interpolation operator must not use dofPoint!!!
+
     // matrix interpolation of translational velocity
     if ( !M_matrixPTilde_translational )
     {
@@ -2045,7 +2058,73 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     {
         CHECK( false ) << "TODO" << std::endl;
     }
+
+
+    if ( this->hasElasticVelocityFromExpr() )
+    {
+        bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
+        if ( !meshIsOnRefAtBegin )
+            fluidToolbox.meshALE()->revertReferenceMesh( false );
+        M_fieldElasticVelocity->on(_range=elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/,_expr=this->elasticVelocityExpr() ); // TODO crash if use here markedfaces of fluid with partial mesh support
+        if ( !meshIsOnRefAtBegin )
+            fluidToolbox.meshALE()->revertMovingMesh( false );
+    }
+
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateForUse( self_type const& fluidToolbox )
+{
+    for ( auto & [name,bpbc] : *this )
+        bpbc.updateForUse( fluidToolbox );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory )
+{
+    if ( this->empty() )
+        return;
+
+    // not very nice, we need to update direclty P, not rebuild
+
+    int nBlock = fluidToolbox.nBlockMatrixGraph();
+    BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+    for (int i=0;i<nBlock;++i)
+        myblockMat(i,i) = fluidToolbox.backend()->newIdentityMatrix( fluidToolbox.blockVectorSolution()(i)->mapPtr(),fluidToolbox.blockVectorSolution()(i)->mapPtr() );
+
+    size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
+    for ( auto & [bpname,bpbc] : *this )
+    {
+        //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+        //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+        size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+        size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+        myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+        myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+        auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
+        auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+        for ( auto dofid : dofsBody )
+            matFI_Id->set( dofid,dofid, 0.);
+        matFI_Id->close();
+    }
+
+    auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+    algebraicFactory->initSolverPtAP( matP );
+
+
+    if ( this->hasElasticVelocity() )
+    {
+        auto uExplictiPart = fluidToolbox.functionSpaceVelocity()->element( algebraicFactory->explictPartOfSolution(), fluidToolbox.rowStartInVector()+0);
+        for ( auto const& [bpname,bpbc] : *this )
+            uExplictiPart.on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=idv(bpbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
+    }
+
+}
+
 
 } // namespace FeelModels
 } // namespace Feel

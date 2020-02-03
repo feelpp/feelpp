@@ -761,6 +761,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
 
+    M_bodySetBC.updateForUse( *this );
+    M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
+
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
@@ -1550,7 +1553,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
         else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExprFromFields(), bpbc.rangeMarkedFacesOnFluid() );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.velocityExprFromFields()*/, bpbc.rangeMarkedFacesOnFluid() );
     }
 
 
@@ -1578,7 +1581,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         myOpPCD->assemble();
     }
 
-
+#if 0
     if ( this->algebraicFactory() && !M_bodySetBC.empty() )
     {
         this->functionSpaceVelocity()->rebuildDofPoints();
@@ -1612,6 +1615,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
         M_algebraicFactory->initSolverPtAP( matP );
     }
+#endif
 
     this->log("FluidMechanics","updateALEmesh", "finish");
 }

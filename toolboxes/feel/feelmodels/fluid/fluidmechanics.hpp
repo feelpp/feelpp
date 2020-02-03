@@ -370,18 +370,11 @@ public:
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
-        auto massExpr() const { return M_body.massExpr(); /* M_massExpr.exprScalar();*/ }
-        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); /*M_momentOfInertiaExpr.template expr<1,1>();*/ } // NOT TRUE in 3D
+        auto massExpr() const { return M_body.massExpr(); }
+        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); } // NOT TRUE in 3D
         auto massCenterExpr() const
             {
                 return M_body.massCenterExpr();
-#if 0
-                if constexpr ( nDim == 2 )
-                                 return vec( cst(M_massCenter(0)), cst(M_massCenter(1)) );
-                else
-                    return vec( cst(M_massCenter(0)), cst(M_massCenter(1)), cst(M_massCenter(2)) );
-                //return M_massCenterExpr.template expr<nDim,1>();
-#endif
             }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
@@ -418,15 +411,21 @@ public:
         sparse_matrix_ptrtype matrixPTilde_translational() const { return M_matrixPTilde_translational; }
         sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
 
+
+        bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
+
+        bool hasElasticVelocityFromExpr() const { return M_elasticVelocityExpr.template hasExpr<nDim,1>(); }
+
+        auto const& elasticVelocityExpr() const { return M_elasticVelocityExpr.template expr<nDim,1>(); }
+
+        element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
+
+
         void setParameterValues( std::map<std::string,double> const& mp )
             {
-#if 0
-                M_massExpr.setParameterValues( mp );
-                M_momentOfInertiaExpr.setParameterValues( mp );
-                M_initialMassCenterExpr.setParameterValues( mp );
                 M_translationalVelocityExpr.setParameterValues( mp );
                 M_angularVelocityExpr.setParameterValues( mp );
-#endif
+                M_elasticVelocityExpr.setParameterValues( mp );
             }
 
     private :
@@ -442,10 +441,13 @@ public:
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
+        ModelExpression M_elasticVelocityExpr;
 
         Body M_body;
-        //ModelExpression M_massExpr, M_momentOfInertiaExpr, M_initialMassCenterExpr;
-        eigen_vector_type<nRealDim> /*M_massCenter,*/ M_massCenterRef;
+        eigen_vector_type<nRealDim> M_massCenterRef;
+
+        space_trace_velocity_ptrtype M_XhElasticVelocity;
+        element_trace_velocity_ptrtype M_fieldElasticVelocity;
     };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
@@ -466,11 +468,9 @@ public:
                 for ( auto & [name,bpbc] : *this )
                     bpbc.updateTimeStep();
             }
-        void updateForUse( self_type const& fluidToolbox )
-            {
-                for ( auto & [name,bpbc] : *this )
-                    bpbc.updateForUse( fluidToolbox );
-            }
+        void updateForUse( self_type const& fluidToolbox );
+        void updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
+
         void init( self_type const& fluidToolbox )
             {
                 for ( auto & [name,bpbc] : *this )
@@ -480,6 +480,13 @@ public:
             {
                 for ( auto & [name,bpbc] : *this )
                     bpbc.setParameterValues( mp );
+            }
+        bool hasElasticVelocity() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasElasticVelocity() )
+                        return true;
+                return false;
             }
     private:
 
