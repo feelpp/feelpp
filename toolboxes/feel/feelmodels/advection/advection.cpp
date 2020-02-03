@@ -116,11 +116,8 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Vector solution
     this->buildVectorSolution();
 
-    // Initial value
-    if( !this->doRestart() )
-    {
-        this->initInitialValue();
-    }
+    // Initial conditions
+    this->initInitialConditions();
 
     // Time step
     this->initTimeStep();
@@ -398,35 +395,30 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initOthers()
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialValue()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialConditions()
 {
-    this->modelProperties().parameters().updateParameterValues();
-    if( !M_initialValue )
+    if( !this->doRestart() )
     {
-        M_initialValue.reset( new element_advection_type(this->functionSpace(), "initialValue") );
-
-        if( !this->M_icValue.empty() )
+        if( !M_initialValue )
         {
-            this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-            for( auto const& iv : this->M_icValue )
-            {
-                if( markers(iv).empty() )
-                {
-                    M_initialValue->on( _range=elements(this->mesh()),
-                            _expr=expression(iv),
-                            _geomap=this->geomap() );
-                }
-                else
-                {
-                    M_initialValue->on( _range=markedelements(this->mesh(), markers(iv)),
-                            _expr=expression(iv),
-                            _geomap=this->geomap() );
-                }
-            }
-        }
-    }
+            M_initialValue.reset( new element_advection_type(this->functionSpace(), "initialValue") );
+            std::vector<element_advection_ptrtype> icADRFields;
+            if ( this->isStationary() )
+                icADRFields = { M_initialValue };
+            else
+                icADRFields = M_bdf->unknowns();
 
-    *(this->fieldSolutionPtr()) = *M_initialValue;
+            auto paramValues = this->modelProperties().parameters().toParameterValues();
+            this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+            this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icADRFields );
+        }
+
+        if( !this->isStationary() )
+            *M_initialValue = M_bdf->unknown(0);
+
+        *this->fieldSolutionPtr() = *M_initialValue;
+    }
 }
 
 //----------------------------------------------------------------------------//
