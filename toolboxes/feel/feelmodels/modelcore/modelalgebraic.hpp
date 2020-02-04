@@ -436,7 +436,7 @@ public :
     void updateDofEliminationIds( std::string const& spaceName, std::shared_ptr<SpaceType> thespace, RangeType const& therange, ComponentType c1 = ComponentType::NO_COMPONENT )
         {
             ElementsType et = (ElementsType)boost::get<0>( therange ).value;
-            auto dofsToAdd = thespace->dofs( therange );
+            auto dofsToAdd = thespace->dofs( therange, c1 );
             thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
             this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
             auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
