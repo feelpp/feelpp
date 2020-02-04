@@ -750,6 +750,14 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
         }
 
+        if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+        {
+            // we assume that all shared dofs are present, not need to appy a sync
+            std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
+            auto tmp = dataJacobianDofElimination.vectorUsedInStrongDirichlet();
+            JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+        }
+
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
             func.second( dataJacobianDofElimination );
 
@@ -830,6 +838,11 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
                 RR->set( k, 0. );
             // we assume that all shared dofs are present, not need to appy a sync
+        }
+        if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+        {
+            for ( size_type k : *M_solverPtAP_dofEliminationIds )
+                RR->set( k, 0. );
         }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
@@ -1100,6 +1113,11 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
         bool useConvergenceAlgebraic = true;
 
+        auto dataLinear = std::make_shared<ModelAlgebraic::DataUpdateLinear>(U,M_J,M_R,false);
+        std::shared_ptr<ModelAlgebraic::DataUpdateLinear> dataLinearPtAP;
+        if ( M_useSolverPtAP )
+            dataLinearPtAP = std::make_shared<ModelAlgebraic::DataUpdateLinear>(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,true);
+
         // assembling cst part
         if ( !M_hasBuildLinearSystemCst ||
              this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -1154,20 +1172,51 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             {
                 M_J->zero();
                 M_R->zero();
-                ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true);
-                M_functionLinearAssembly( dataLinearCst );
+                dataLinear->setBuildCstPart( true );
+                //ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_J,M_R,true);
+                M_functionLinearAssembly( *dataLinear );
             }
 
             // assembling non cst part
-            ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false);
-            M_functionLinearAssembly( dataLinearNonCst );
+            dataLinear->setBuildCstPart( false );
+            //ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false);
+            M_functionLinearAssembly( *dataLinear );
+
+            if ( M_explictPartOfSolution )
+            {
+                M_explictPartOfSolution->scale( -1. );
+                M_R->addVector(*M_explictPartOfSolution, *M_J );
+                M_explictPartOfSolution->scale( -1. );
+            }
+
+            std::shared_ptr<ModelAlgebraic::DataUpdateLinear> dataDofElimination = dataLinear;
+            if ( M_useSolverPtAP )
+            {
+                *M_solverPtAP_solution = *U;
+                // PtAP = P^T A P
+                M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
+                // PtF = P^T F
+                M_solverPtAP_matP->multVector( *M_R, *M_solverPtAP_PtF, true );
+
+                dataDofElimination = dataLinearPtAP;
+            }
 
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+            this->model()->updateLinearPDEDofElimination( *dataDofElimination );
+
+            // others dof eliminations (not need an expression)
+            if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+            {
+                // we assume that all shared dofs are present, not need to appy a sync
+                std::vector<int> _dofs;_dofs.assign( M_solverPtAP_dofEliminationIds->begin(), M_solverPtAP_dofEliminationIds->end());
+                auto tmp = M_solverPtAP_backend->newVector( U->mapPtr() );
+                M_solverPtAP_matPtAP->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+            }
 
             // post-assembly
             for ( auto const& func : M_addFunctionLinearPostAssembly )
-                func.second( dataLinearNonCst );
+                func.second( *dataDofElimination );
+
 
             double tAssemblyElapsed = this->model()->timerTool("Solve").elapsed();
             this->model()->timerTool("Solve").addDataValue("algebraic-assembly",tAssemblyElapsed);
@@ -1179,14 +1228,24 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
             this->model()->timerTool("Solve").restart();
 
+            auto themat = dataDofElimination->matrix();
+            auto therhs = dataDofElimination->rhs();
+            auto thesol = dataDofElimination->currentSolution();
+
             if ( useConvergenceAlgebraic )
             {
-                M_J->close();
-                M_R->close();
+                themat->close();
+                therhs->close();
                 residual->zero();
-                residual->addVector( U,M_J );
-                residual->add( -1., M_R );
-                residual->close();
+                residual->addVector( thesol, themat );//U,M_J );
+                residual->add( -1., therhs /*M_R*/ );
+                if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
+                {
+                    for ( size_type k : *M_solverPtAP_dofEliminationIds )
+                        residual->set( k, 0. );
+                    residual->close();
+                }
+                //residual->close();
                 double nomResidual = residual->l2Norm();
                 //double normRhs = M_R->l2Norm();
                 if (this->model()->verboseSolverTimer())
@@ -1209,18 +1268,32 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             }
 
             // update in-house preconditioners
-            this->model()->updateInHousePreconditioner( dataLinearNonCst );
+            this->model()->updateInHousePreconditioner( *dataDofElimination );
 
             // set pre/post solve functions
             pre_solve_type pre_solve = std::bind(&model_type::preSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);
             post_solve_type post_solve = std::bind(&model_type::postSolvePicard, this->model(), std::placeholders::_1, std::placeholders::_2);
+
+            backend_ptrtype thebackend = M_useSolverPtAP? M_solverPtAP_backend : M_backend;
+            preconditioner_ptrtype theprec = M_useSolverPtAP? M_solverPtAP_prec : M_PrecondManage;
+
             // solve linear system
-            auto const solveStat = M_backend->solve( _matrix=M_J,
-                                                     _solution=U,
-                                                     _rhs=M_R,
-                                                     _prec=M_PrecondManage,
-                                                     _pre=pre_solve,
-                                                     _post=post_solve );
+            auto const solveStat = thebackend->solve( _matrix=themat,
+                                                      _solution=thesol,
+                                                      _rhs=therhs,
+                                                      _prec=theprec,
+                                                      _pre=pre_solve,
+                                                      _post=post_solve );
+
+            if ( M_useSolverPtAP )
+            {
+                M_solverPtAP_matP->multVector( thesol, U );
+            }
+
+            if ( M_explictPartOfSolution )
+            {
+                U->add( 1.0, M_explictPartOfSolution );
+            }
 
             if ( this->model()->errorIfSolverNotConverged() )
                 CHECK( solveStat.isConverged() ) << "the linear solver has not converged in "
