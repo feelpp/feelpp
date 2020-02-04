@@ -2205,39 +2205,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // on topological faces
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
     if ( !listMarkedFacesVelocity.empty() )
-    {
         this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces( mesh,listMarkedFacesVelocity ) );
-#if 0
-        auto therange = markedfaces( mesh,listMarkedFacesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-#endif
-    }
     // on marked edges (only 3d)
-    auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-    if ( !listMarkedEdgesVelocity.empty() )
+    if constexpr ( nDim == 3)
     {
-        auto therange = markededges(mesh,listMarkedEdgesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
+        if ( !listMarkedEdgesVelocity.empty() )
+            this->updateDofEliminationIds( "velocity", XhVelocity, markededges( mesh,listMarkedEdgesVelocity ) );
     }
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
     if ( !listMarkedPointsVelocity.empty() )
-    {
-        auto therange = markedpoints(mesh,listMarkedPointsVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints( mesh,listMarkedPointsVelocity ) );
+
     //-------------------------------------//
     // on velocity components
     for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
@@ -2245,46 +2225,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = meshMarkersPair.first;
         auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
         if ( !listMarkedFacesCompVelocity.empty() )
-        {
-            auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces(mesh,listMarkedFacesCompVelocity ), comp );
         // edges (only 3d)
-        auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-        if ( !listMarkedEdgesCompVelocity.empty() )
+        if constexpr ( nDim == 3)
         {
-            auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+            auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
+            if ( !listMarkedEdgesCompVelocity.empty() )
+                this->updateDofEliminationIds( "velocity", XhVelocity, markededges(mesh,listMarkedEdgesCompVelocity ), comp );
         }
         // points
         auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
         if ( !listMarkedPointsCompVelocity.empty() )
-        {
-            auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints(mesh,listMarkedPointsCompVelocity ), comp );
     }
 
     if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
     {
-        auto therange = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
-        auto dofsToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange );
-        M_spaceLagrangeMultiplierPressureBC->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("pressurebc-lm",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
     }
 
     // body bc
