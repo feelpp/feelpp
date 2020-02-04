@@ -487,18 +487,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     }
                 }
 
-#if 0
-                if ( bpbc.hasElasticVelocity() )
-                {
-                    //auto defElasticVelocity = sym(grad(bpbc.elasticVelocityExpr()));
-                    auto defElasticVelocity = sym( gradv( bpbc.fieldElasticVelocityPtr() ) );
-                    auto myViscousStressTensor = 2*idv(mu)*defElasticVelocity;
-                    form1( _test=XhV, _vector=F,
-                           _rowstart= rowStartInVector+0 ) +=
-                        integrate( _range= bpbc.rangeMarkedFacesOnFluid(),
-                                   _expr= inner( myViscousStressTensor*N(),id(v) ) );
-                }
-#endif
             }
         } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
 

@@ -200,12 +200,20 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
             M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
 
+            M_solverPtAP_Psolution = M_solverPtAP_backend->newVector( M_solverPtAP_matP->mapRowPtr() );
+
             M_solverPtAP_prec = preconditioner(_pc=(PreconditionerType) M_solverPtAP_backend->pcEnumType() /*LU_PRECOND*/,
                                                _matrix=M_solverPtAP_matPtAP,
                                                _backend= M_solverPtAP_backend,
                                                _pcfactormatsolverpackage=(MatSolverPackageType) M_solverPtAP_backend->matSolverPackageEnumType(),
                                                _worldcomm=M_solverPtAP_backend->comm(),
                                                _prefix=M_solverPtAP_backend->prefix() );
+
+            // necessary to use the nonlinear solver
+            M_solverPtAP_backend->nlSolver()->jacobian = std::bind( &self_type::updateJacobian,
+                                                                    std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
+            M_solverPtAP_backend->nlSolver()->residual = std::bind( &self_type::updateResidual,
+                                                                    std::ref( *this ), std::placeholders::_1, std::placeholders::_2 );
         }
     }
 //---------------------------------------------------------------------------------------------------------------//
@@ -557,8 +565,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_explictPartOfSolution->scale( -1. );
         }
 
-        pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
-        post_solve_type post_solve = std::bind(&model_type::postSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
+        pre_solve_type pre_solve = std::bind(&self_type::preSolveLinear, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
+        post_solve_type post_solve = std::bind(&self_type::postSolveLinear, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
 
         if ( M_useSolverPtAP )
         {
@@ -611,6 +619,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         typename backend_type::solve_return_type solveStat;
         if ( M_useSolverPtAP )
         {
+            ModelAlgebraic::DataUpdateLinear dataLinearSolverPtAP(U,M_solverPtAP_matPtAP,M_solverPtAP_PtF,false);
+            this->model()->updateInHousePreconditioner( dataLinearSolverPtAP );
+
             solveStat = M_solverPtAP_backend->solve( _matrix=M_solverPtAP_matPtAP,
                                                      _solution=M_solverPtAP_solution,
                                                      _rhs=M_solverPtAP_PtF,//M_R,
@@ -624,7 +635,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         {
             // set preconditioner
             //M_PrecondManage->setMatrix(M_Prec);
-
             this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
             // solve linear system
@@ -672,29 +682,39 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
 
     void
-    ModelAlgebraicFactory::updateJacobian(const vector_ptrtype& X, sparse_matrix_ptrtype& J/*, vector_ptrtype& R*/ )
+    ModelAlgebraicFactory::updateJacobian(const vector_ptrtype& XX, sparse_matrix_ptrtype& JJ/*, vector_ptrtype& R*/ )
     {
         auto model = this->model();
         model->timerTool("Solve").start();
 
-        auto R = this->backend()->newVector(X->mapPtr());
+        auto R = this->backend()->newVector(XX->mapPtr()); // TO REMOVE
 
-        J->zero();
+        vector_ptrtype currentSolution = XX;
+        sparse_matrix_ptrtype currentJacobian = JJ;
+        if ( M_useSolverPtAP )
+        {
+            currentSolution = M_solverPtAP_Psolution;
+            currentJacobian = M_J;
+            M_solverPtAP_matP->multVector( XX, currentSolution );
+        }
+
+
+        currentJacobian->zero();
 
         if ( model->useCstMatrix())
         {
-            J->addMatrix(1.0, M_CstJ );
+            currentJacobian->addMatrix(1.0, M_CstJ );
         }
         else
         {
-            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(X, J, R, true);
+            ModelAlgebraic::DataUpdateJacobian dataJacobianCst(currentSolution, currentJacobian, R, true);
             dataJacobianCst.copyInfos( this->dataInfos() );
             M_functionJacobianAssembly( dataJacobianCst );
             for ( auto const& func : M_addFunctionJacobianAssembly )
                 func.second( dataJacobianCst );
         }
 
-        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(X,J,R,false);
+        ModelAlgebraic::DataUpdateJacobian dataJacobianNonCst(currentSolution, currentJacobian,R,false);
         dataJacobianNonCst.copyInfos( this->dataInfos() );
         if ( M_usePseudoTransientContinuation )
         {
@@ -707,23 +727,33 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         for ( auto const& func : M_addFunctionJacobianAssembly )
             func.second( dataJacobianNonCst );
 
-        // dof elimination
-        model->updateJacobianDofElimination( dataJacobianNonCst );
-        for ( auto const& func : M_addFunctionJacobianDofElimination )
-            func.second( dataJacobianNonCst );
+        currentJacobian->close();
+        if ( M_useSolverPtAP )
+        {
+            // PtAP = P^T A P
+            M_J->PtAP( *M_solverPtAP_matP, *JJ );
+        }
 
-        if ( dataJacobianNonCst.hasDofEliminationIds() )
+        ModelAlgebraic::DataUpdateJacobian dataJacobianDofElimination(XX,JJ,R,false);
+        dataJacobianDofElimination.copyInfos( this->dataInfos() );
+
+        // dof elimination
+        model->updateJacobianDofElimination( dataJacobianDofElimination );
+        for ( auto const& func : M_addFunctionJacobianDofElimination )
+            func.second( dataJacobianDofElimination );
+
+        if ( dataJacobianDofElimination.hasDofEliminationIds() )
         {
             // we assume that all shared dofs are present, not need to appy a sync
-            std::vector<int> _dofs;_dofs.assign( dataJacobianNonCst.dofEliminationIds().begin(), dataJacobianNonCst.dofEliminationIds().end());
-            auto tmp = dataJacobianNonCst.vectorUsedInStrongDirichlet();
-            J->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
+            std::vector<int> _dofs;_dofs.assign( dataJacobianDofElimination.dofEliminationIds().begin(), dataJacobianDofElimination.dofEliminationIds().end());
+            auto tmp = dataJacobianDofElimination.vectorUsedInStrongDirichlet();
+            JJ->zeroRows( _dofs, *tmp, *tmp, M_dofElimination_strategy, M_dofElimination_valueOnDiagonal );
         }
 
         for ( auto const& func : M_addFunctionJacobianPostAssembly )
-            func.second( dataJacobianNonCst );
+            func.second( dataJacobianDofElimination );
 
-        model->updateInHousePreconditioner( dataJacobianNonCst );
+        model->updateInHousePreconditioner( dataJacobianDofElimination );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-jacobian",tElapsed);
@@ -731,61 +761,79 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::updateResidual(const vector_ptrtype& X, vector_ptrtype& R)
+    ModelAlgebraicFactory::updateResidual(const vector_ptrtype& XX, vector_ptrtype& RR)
     {
         auto model = this->model();
         model->timerTool("Solve").start();
 
-        R->zero();
+        vector_ptrtype currentSolution = XX;
+        vector_ptrtype currentResidual = RR;
+        if ( M_useSolverPtAP )
+        {
+            currentSolution = M_solverPtAP_Psolution;
+            currentResidual = M_R;
+            M_solverPtAP_matP->multVector( XX, currentSolution );
+        }
+
+        currentResidual->zero();
 
         if ( model->useCstVector())
         {
-            R->add(1.0, M_CstR );
+            currentResidual->add(1.0, M_CstR );
         }
         else
         {
-            ModelAlgebraic::DataUpdateResidual dataResidualCst( X, R, true, true );
+            ModelAlgebraic::DataUpdateResidual dataResidualCst( currentSolution, currentResidual, true, true );
             dataResidualCst.copyInfos( this->dataInfos() );
             M_functionResidualAssembly( dataResidualCst );
             for ( auto const& func : M_addFunctionResidualAssembly )
                 func.second( dataResidualCst );
-            R->close();
+            currentResidual->close();
             for ( auto const& av : M_addVectorResidualAssembly )
                 if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
-                    R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+                    RR/*M_R*/->add( std::get<1>( av.second ), std::get<0>( av.second ) );
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
         // add linear contribution from jacobian terms
         if (doOptimization)
-            R->addVector(*X, *M_CstJ );
+            currentResidual->addVector(*currentSolution, *M_CstJ );
 
-        ModelAlgebraic::DataUpdateResidual dataResidualNonCst( X, R, false, doOptimization );
+        ModelAlgebraic::DataUpdateResidual dataResidualNonCst( currentSolution, currentResidual, false, doOptimization );
         dataResidualNonCst.copyInfos( this->dataInfos() );
         M_functionResidualAssembly( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
 
-        R->close();
+        currentResidual->close();
 
         for ( auto const& av : M_addVectorResidualAssembly )
             if ( !std::get<2>( av.second ) && std::get<3>( av.second ) )
-                R->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+                currentResidual->add( std::get<1>( av.second ), std::get<0>( av.second ) );
 
-        // dof elimination
-        model->updateResidualDofElimination( dataResidualNonCst );
-        for ( auto const& func : M_addFunctionResidualDofElimination )
-            func.second( dataResidualNonCst );
 
-        if ( dataResidualNonCst.hasDofEliminationIds() )
+        if ( M_useSolverPtAP )
         {
-            for ( size_type k : dataResidualNonCst.dofEliminationIds() )
-                R->set( k, 0. );
+            // PtF = P^T F
+            M_solverPtAP_matP->multVector( *M_R, *RR, true );
+        }
+
+        ModelAlgebraic::DataUpdateResidual dataResidualDofElimination( XX,RR, false, doOptimization );
+        dataResidualDofElimination.copyInfos( this->dataInfos() );
+        // dof elimination
+        model->updateResidualDofElimination( dataResidualDofElimination );
+        for ( auto const& func : M_addFunctionResidualDofElimination )
+            func.second( dataResidualDofElimination );
+
+        if ( dataResidualDofElimination.hasDofEliminationIds() )
+        {
+            for ( size_type k : dataResidualDofElimination.dofEliminationIds() )
+                RR->set( k, 0. );
             // we assume that all shared dofs are present, not need to appy a sync
         }
 
         for ( auto const& func : M_addFunctionResidualPostAssembly )
-            func.second( dataResidualNonCst );
+            func.second( dataResidualDofElimination );
 
         double tElapsed = model->timerTool("Solve").stop();
         model->timerTool("Solve").addDataValue("algebraic-residual",tElapsed);
@@ -902,13 +950,31 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         post_solve_type post_solve = std::bind(&model_type::postSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
         update_nlsolve_type update_nlsolve = std::bind(&self_type::updateNewtonIteration, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3,std::placeholders::_4 );
 
-        auto const solveStat = M_backend->nlSolve( _jacobian=M_J,
-                                                   _solution=U,
-                                                   _residual=M_R,
-                                                   _prec=M_PrecondManage,
-                                                   _pre=pre_solve,
-                                                   _post=post_solve,
-                                                   _update=update_nlsolve );
+        typename backend_type::nl_solve_return_type solveStat;
+        if ( M_useSolverPtAP )
+        {
+            *M_solverPtAP_solution = *U; // actually always same size
+            solveStat = M_solverPtAP_backend->nlSolve( _jacobian=M_solverPtAP_matPtAP,
+                                                       _solution=M_solverPtAP_solution,
+                                                       _residual=M_solverPtAP_PtF,
+                                                       _prec=M_solverPtAP_prec,
+                                                       _pre=pre_solve,
+                                                       _post=post_solve,
+                                                       _update=update_nlsolve );
+
+            M_solverPtAP_matP->multVector( M_solverPtAP_solution, U );
+        }
+        else
+        {
+            solveStat = M_backend->nlSolve( _jacobian=M_J,
+                                            _solution=U,
+                                            _residual=M_R,
+                                            _prec=M_PrecondManage,
+                                            _pre=pre_solve,
+                                            _post=post_solve,
+                                            _update=update_nlsolve );
+        }
+
         if ( false )
             Feel::FeelModels::Log(model->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
                                   "solver stat :\n" +
@@ -1274,6 +1340,40 @@ ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual,
         }
         //std::cout << "CFL="<<M_pseudoTransientContinuationDeltaAndResidual.back().first<<"\n";
     }
+}
+
+
+
+
+void
+ModelAlgebraicFactory::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->preSolveNewton( rhs, sol );
+}
+void
+ModelAlgebraicFactory::postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->postSolveNewton( rhs, sol );
+}
+void
+ModelAlgebraicFactory::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->preSolvePicard( rhs, sol );
+}
+void
+ModelAlgebraicFactory::postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->postSolvePicard( rhs, sol );
+}
+void
+ModelAlgebraicFactory::preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->preSolveLinear( rhs, sol );
+}
+void
+ModelAlgebraicFactory::postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
+{
+    this->model()->postSolveLinear( rhs, sol );
 }
 
 

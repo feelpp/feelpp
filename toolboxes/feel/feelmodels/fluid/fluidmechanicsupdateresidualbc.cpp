@@ -372,6 +372,58 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     }
 
     //--------------------------------------------------------------------------------------------------//
+
+    if ( !M_bodySetBC.empty() )
+    {
+        this->log("FluidMechanics","updateJacobianWeakBC","assembly of body bc");
+
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+            double massBody = bpbc.massExpr().evaluate()(0,0);
+            double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
+            bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+            int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
+            bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+
+            if ( !BuildCstPart && !UseJacobianLinearTerms )
+            {
+                CHECK( false ) << "TODO";
+            }
+            if ( BuildCstPart )
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
+                    //std::vector<double> _gravity = { 0., 2. };
+                    //double massTilde = 10;
+                    for (int d=0;d<nDim;++d)
+                    {
+                        auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
+                        R->add( basisToContainerGpTranslationalVelocityVector[d],
+                                -massBody*translationalVelocityPolyDeriv(d) );
+#if 0
+                        F->add( basisToContainerGpTranslationalVelocityVector[d],
+                                -massTilde*_gravity[d] );
+#endif
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    {
+                        auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
+                        R->add( basisToContainerGpAngularVelocityVector[d],
+                                -momentOfInertia*angularVelocityPolyDeriv(d) );
+                    }
+                }
+            }
+        }
+    }
+
     //--------------------------------------------------------------------------------------------------//
 
     double timeElapsed = thetimer.elapsed();
