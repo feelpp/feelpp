@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-22
 */
-#ifndef __FunctionSpace_H
-#define __FunctionSpace_H 1
+#ifndef FEELPP_DISCR_FUNCTIONSPACE_H
+#define FEELPP_DISCR_FUNCTIONSPACE_H 1
 
 #include <type_traits>
 
@@ -88,6 +88,7 @@
 #include <feel/feelpoly/geomap.hpp>
 
 
+#include <feel/feeldiscr/enums.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/periodic.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
@@ -1521,27 +1522,6 @@ struct FunctionSpaceMeshSupport
 
 } // detail
 
-enum class ComponentType
-{
-    NO_COMPONENT = -1,
-    X = 0,
-    Y,
-    Z,
-    NX,
-    NY,
-    NZ,
-    TX,
-    TY,
-    TZ
-};
-using Component = ComponentType;
-enum FunctionSpaceType
-{
-    SCALAR = 0,
-    VECTORIAL = 1,
-    TENSOR2,
-    TENSOR2_SYMM
-};
 
 template<uint16_type PN,
          uint16_type GN = 1>
@@ -6509,4 +6489,4 @@ support( std::shared_ptr<SpaceT> const& X )
     return X->template meshSupport<0>();
 }
 
-#endif /* __FunctionSpace_H */
+#endif /* FEELPP_DISCR_FUNCTIONSPACE_H */
