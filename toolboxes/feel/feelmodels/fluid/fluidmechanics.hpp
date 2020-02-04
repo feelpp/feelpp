@@ -481,6 +481,20 @@ public:
                 for ( auto & [name,bpbc] : *this )
                     bpbc.setParameterValues( mp );
             }
+        bool hasTranslationalVelocityExpr() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasTranslationalVelocityExpr() )
+                        return true;
+                return false;
+            }
+        bool hasAngularVelocityExpr() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasAngularVelocityExpr() )
+                        return true;
+                return false;
+            }
         bool hasElasticVelocity() const
             {
                 for ( auto const& [name,bpbc] : *this )

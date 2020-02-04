@@ -2206,12 +2206,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
     if ( !listMarkedFacesVelocity.empty() )
     {
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces( mesh,listMarkedFacesVelocity ) );
+#if 0
         auto therange = markedfaces( mesh,listMarkedFacesVelocity );
         auto dofsToAdd = XhVelocity->dofs( therange );
         XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
         this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+#endif
     }
     // on marked edges (only 3d)
     auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
@@ -2282,6 +2285,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         this->dofEliminationIdsAll("pressurebc-lm",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
         auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
         this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+    }
+
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
+    }
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
     }
 }
 

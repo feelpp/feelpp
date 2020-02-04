@@ -203,6 +203,14 @@ namespace FeelModels
         void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
         void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
 
+        void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+
+
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
 
@@ -265,6 +273,7 @@ namespace FeelModels
         sparse_matrix_ptrtype M_solverPtAP_matPtAP;
         vector_ptrtype M_solverPtAP_PtF;
         vector_ptrtype M_solverPtAP_solution;
+        vector_ptrtype M_solverPtAP_Psolution;
         preconditioner_ptrtype M_solverPtAP_prec;
         backend_ptrtype M_solverPtAP_backend;
         std::optional<std::set<index_type>> M_solverPtAP_dofEliminationIds;

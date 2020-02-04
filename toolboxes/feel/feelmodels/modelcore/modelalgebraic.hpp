@@ -35,6 +35,7 @@
 #include <feel/feelalg/backend.hpp>
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelmesh/enums.hpp>
+#include <feel/feeldiscr/enums.hpp>
 
 namespace Feel
 {
@@ -431,6 +432,16 @@ public :
         }
     bool hasDofEliminationIds( std::string const& spaceName ) const { return M_dofEliminationIds.find( spaceName ) != M_dofEliminationIds.end(); }
 
+    template <typename SpaceType, typename RangeType>
+    void updateDofEliminationIds( std::string const& spaceName, std::shared_ptr<SpaceType> thespace, RangeType const& therange, ComponentType c1 = ComponentType::NO_COMPONENT )
+        {
+            ElementsType et = (ElementsType)boost::get<0>( therange ).value;
+            auto dofsToAdd = thespace->dofs( therange );
+            thespace->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
+            this->dofEliminationIdsAll(spaceName,et).insert( dofsToAdd.begin(), dofsToAdd.end() );
+            auto dofsMultiProcessToAdd = thespace->dofs( therange, c1, true );
+            this->dofEliminationIdsMultiProcess(spaceName,MESH_ELEMENTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        }
 private :
     // verbose
     bool M_verboseSolverTimer,M_verboseSolverTimerAllProc;
