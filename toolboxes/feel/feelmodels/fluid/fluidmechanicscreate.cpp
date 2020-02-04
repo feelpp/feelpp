@@ -1219,6 +1219,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         M_timeStepping = "BDF";
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+#if 0
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
@@ -1227,11 +1228,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     double ti = this->timeInitial();
     double tf = this->timeFinal();
     double dt = this->timeStep();
-
+#endif
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+#if 0
     M_bdfVelocity = bdf( _space=this->functionSpaceVelocity(),
                          _name="velocity"+suffixName,
                          _prefix=this->prefix(),
@@ -1258,7 +1260,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _n_consecutive_save=nConsecutiveSave );
     M_savetsPressure->setfileFormat( myFileFormat );
     M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
+#else
+    M_bdfVelocity = this->createBdf( this->functionSpaceVelocity(),"velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+    M_savetsPressure = this->createBdf( this->functionSpacePressure(),"pressure", 1, nConsecutiveSave, myFileFormat );
+#endif
+    double tir = M_bdfVelocity->timeInitial();
+    if ( this->doRestart() )
+    {
+        // start time step
+        tir = M_bdfVelocity->restart();
+        M_savetsPressure->restart();
+        // load a previous solution as current solution
+        *M_fieldVelocity = M_bdfVelocity->unknown(0);
+        *M_fieldPressure = M_savetsPressure->unknown(0);
+    }
 
+    M_bodySetBC.initTimeStep( *this, bdfOrder, nConsecutiveSave, myFileFormat );
+
+    if ( this->doRestart() )
+        this->setTimeInitial( tir );
+
+    this->updateTime( tir );
+
+#if 0
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
@@ -1280,8 +1304,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
-
-    M_bodySetBC.initTimeStep( *this, bdfOrder, nConsecutiveSave, myFileFormat );
+#endif
 
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
