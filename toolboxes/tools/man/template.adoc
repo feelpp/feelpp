@@ -16,7 +16,7 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == DESCRIPTION
 
-{manmanual} is an application which can run {{ toolbox_desc }} model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+{manmanual} is an application which can run {{ toolbox_desc }} model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
 The step are as follows:
 
@@ -41,7 +41,7 @@ The step are as follows:
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.107/install/containers/#_docker[] to demonstrate {manmanual} usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -81,6 +81,8 @@ mpirun --bind-to core <1>
 <2> execute in parallel usisng 10 processes
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
+
+Other test cases can be found in /usr/share/feelpp/data/testcases/toolboxes/{{ toolbox }}.
 
 == RESOURCES
 
