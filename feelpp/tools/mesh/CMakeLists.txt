@@ -42,7 +42,7 @@ endif(NOT FEELPP_MINIMAL_BUILD)
 project(mesh)
 
 message(STATUS "compiling feelpp_mesh_exporter...")
-feelpp_add_application( exporter SRCS mesh_exporter.cpp  INSTALL  )
+feelpp_add_application( exporter SRCS mesh_exporter.cpp  PROJECT mesh INSTALL  MAN exporter )
 
 feelpp_get_compile_definition(Feelpp::feelpp FEELPP_HAS_HDF5)
 if (FEELPP_HAS_HDF5)
