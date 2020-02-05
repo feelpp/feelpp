@@ -700,7 +700,7 @@ macro (feelpp_add_man NAME MAN SECT)
       install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
         COMPONENT Bin
         )
       endif()
@@ -726,7 +726,7 @@ macro (feelpp_add_man NAME MAN SECT)
         install(CODE "execute_process(COMMAND bash \"-c\"  \"${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
         install (
           FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf
-          DESTINATION ${CMAKE_INSTALL_DOCDIR}
+          DESTINATION  ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
           COMPONENT Bin
           )
       endif()
