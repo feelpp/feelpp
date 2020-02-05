@@ -403,10 +403,10 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialConditions()
             this->modelProperties().initialConditions().setParameterValues( paramValues );
 
             this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icADRFields );
-        }
 
-        if( !this->isStationary() )
-            *M_initialValue = M_bdf->unknown(0);
+            if( !this->isStationary() )
+                *M_initialValue = M_bdf->unknown(0);
+        }
 
         *this->fieldSolutionPtr() = *M_initialValue;
     }
