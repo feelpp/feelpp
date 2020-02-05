@@ -337,8 +337,8 @@ private:
     // Penalty method gamma
     std::map<std::string, double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
-    // Reinitialization
-    std::map<std::string, int> M_levelsetReinitEvery;
+    // Redistanciation
+    std::map<std::string, int> M_levelsetRedistEvery;
 
     //--------------------------------------------------------------------//
     // Post-process

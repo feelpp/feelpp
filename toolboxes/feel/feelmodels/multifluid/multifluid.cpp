@@ -216,7 +216,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     {
         std::string const lsName = levelsetName(n);
         auto levelset_prefix = prefixvm(this->prefix(), lsName);
-        M_levelsetReinitEvery[lsName] = ioption( _name="reinit-every", _prefix=levelset_prefix );
+        M_levelsetRedistEvery[lsName] = ioption( _name="redist-every", _prefix=levelset_prefix );
     }
 }
 
@@ -250,10 +250,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     *_ostr << "\n   Level Sets Parameters";
-    for( auto const& lsReinitEvery: M_levelsetReinitEvery )
+    for( auto const& lsRedistEvery: M_levelsetRedistEvery )
     {
-    *_ostr << "\n     -- level set " << "\"" << lsReinitEvery.first << "\""
-           << "\n       * reinit every : " << lsReinitEvery.second;
+    *_ostr << "\n     -- level set " << "\"" << lsRedistEvery.first << "\""
+           << "\n       * redist every : " << lsRedistEvery.second;
     }
 
     *_ostr << "\n   Forces Parameters";
@@ -559,9 +559,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     // Redistantiate
     for( auto const& ls: M_levelsets )
     {
-        if( M_levelsetReinitEvery.at(ls.first) > 0 
-                && (ls.second->iterSinceReinit()+1) % M_levelsetReinitEvery.at(ls.first) == 0 )
-            ls.second->reinitialize();
+        if( M_levelsetRedistEvery.at(ls.first) > 0 
+                && (ls.second->iterSinceRedistanciation()+1) % M_levelsetRedistEvery.at(ls.first) == 0 )
+            ls.second->redistanciate();
     }
 
     double timeElapsed = this->timerTool("Solve").stop();
