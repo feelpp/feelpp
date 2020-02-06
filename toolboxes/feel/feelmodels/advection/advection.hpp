@@ -353,8 +353,8 @@ public :
     backend_ptrtype const& backend() const { return M_backend; }
     size_type matrixPattern() const;
     virtual int nBlockMatrixGraph() const;
-    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
-    graph_ptrtype buildMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    graph_ptrtype buildMatrixGraph() const override;
     virtual int buildBlockVectorSolution();
     void buildVectorSolution();
     //indexsplit_ptrtype buildIndexSplit() const;
@@ -382,7 +382,7 @@ public :
     //--------------------------------------------------------------------//
     // Algebraic model updates
     // Linear PDE
-    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
     virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
     virtual void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const;
