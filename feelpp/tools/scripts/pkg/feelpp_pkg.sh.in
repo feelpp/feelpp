@@ -43,6 +43,12 @@ fi
 
 echo "--- update base for pbuilder $DIST"
 pbuilder-dist $DIST update
+if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
+    echo "--- add bintray key"
+    export DIST
+    export CHANNEL
+    feelpp/tools/scripts/pkg/add_key.sh
+fi
 
 echo "--- setting directory build-$DIST to build source tarball"
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
