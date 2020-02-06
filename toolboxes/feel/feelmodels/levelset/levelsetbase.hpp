@@ -372,19 +372,19 @@ public:
                 );
     }
     // Fields
-    auto allFields() const
+    auto allFields( std::string const& prefix = "" ) const
     {
         return hana::make_tuple(
-                std::make_pair( "phi", this->phiPtr() ),
-                std::make_pair( "dirac", this->dirac() ),
-                std::make_pair( "heaviside", this->heaviside() ),
-                std::make_pair( "normal", this->normal() ),
-                std::make_pair( "curvature", this->curvature() ),
-                std::make_pair( "gradphi", this->gradPhi() ),
-                std::make_pair( "modgradphi", this->modGradPhi() ),
-                std::make_pair( "distance", this->distance() ),
-                std::make_pair( "distance-normal", this->distanceNormal() ),
-                std::make_pair( "distance-curvature", this->distanceCurvature() ),
+                std::make_pair( prefixvm( prefix, "phi" ), this->phiPtr() ),
+                std::make_pair( prefixvm( prefix, "dirac" ), this->dirac() ),
+                std::make_pair( prefixvm( prefix, "heaviside" ), this->heaviside() ),
+                std::make_pair( prefixvm( prefix, "normal" ), this->normal() ),
+                std::make_pair( prefixvm( prefix, "curvature" ), this->curvature() ),
+                std::make_pair( prefixvm( prefix, "gradphi" ), this->gradPhi() ),
+                std::make_pair( prefixvm( prefix, "modgradphi" ), this->modGradPhi() ),
+                std::make_pair( prefixvm( prefix, "distance" ), this->distance() ),
+                std::make_pair( prefixvm( prefix, "distance-normal" ), this->distanceNormal() ),
+                std::make_pair( prefixvm( prefix, "distance-curvature" ), this->distanceCurvature() ),
                 this->fieldsUserScalar(),
                 this->fieldsUserVectorial()
                 );
