@@ -267,6 +267,7 @@ namespace FeelModels
         sparse_matrix_ptrtype M_Prec;
 
         vector_ptrtype M_explictPartOfSolution;
+        vector_ptrtype M_contributionsExplictPartOfSolutionWithNewton;
 
         bool M_useSolverPtAP;
         sparse_matrix_ptrtype M_solverPtAP_matP;

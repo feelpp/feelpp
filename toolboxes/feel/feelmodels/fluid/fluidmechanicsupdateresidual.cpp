@@ -34,6 +34,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
+    bool doAssemblyRhs = !data.hasInfo( "ignore-assembly.rhs" );
+    // if ( !doAssemblyRhs )
+    //     std::cout << "hola \n";
+
+
     double timeSteppingScaling = 1.;
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationaryModel() )
@@ -55,20 +60,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto XhV = this->functionSpaceVelocity();
     auto XhP = this->functionSpacePressure();
 
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     size_type rowStartInVector = this->rowStartInVector();
     auto linearFormV_PatternDefault = form1( _test=XhV, _vector=R,
                                             _pattern=size_type(Pattern::DEFAULT),
-                                            _rowstart=rowStartInVector );
+                                            _rowstart=rowStartInVector+startBlockIndexVelocity );
     auto linearFormV_PatternCoupled = form1( _test=XhV, _vector=R,
                                              _pattern=size_type(Pattern::COUPLED),
-                                             _rowstart=rowStartInVector );
+                                             _rowstart=rowStartInVector+startBlockIndexVelocity );
     auto linearFormP = form1( _test=XhP, _vector=R,
                               _pattern=size_type(Pattern::COUPLED),
-                              _rowstart=rowStartInVector+1 );
+                              _rowstart=rowStartInVector+startBlockIndexPressure );
 
-    auto u = XhV->element(XVec, rowStartInVector+0);
+    auto u = XhV->element(XVec, rowStartInVector+startBlockIndexVelocity);
     auto const& v = u;
-    auto p = XhP->element(XVec, rowStartInVector+1);
+    auto p = XhP->element(XVec, rowStartInVector+startBlockIndexPressure);
     auto const& q = p;
 
     //--------------------------------------------------------------------------------------------------//
@@ -120,6 +127,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         }
     }
 
+
+    if ( !BuildCstPart && !UseJacobianLinearTerms && this->modelName() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
+    {
+        auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+         linearFormV_PatternCoupled +=
+             integrate( _range=M_rangeMeshElements,
+                        _expr= timeSteppingScaling*val( idv(rho)*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
+                        _geomap=this->geomap() );
+    }
+
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
     this->log("FluidMechanics","updateResidual","build convective--1-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
@@ -165,7 +182,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // take into account that div u != 0
-    if (!this->velocityDivIsEqualToZero() && BuildCstPart)
+    if (!this->velocityDivIsEqualToZero() && BuildCstPart && doAssemblyRhs )
     {
         linearFormP +=
             integrate( _range=M_rangeMeshElements,
@@ -193,7 +210,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     // body forces
-    if (BuildCstPart)
+    if (BuildCstPart && doAssemblyRhs)
     {
         if ( this->M_overwritemethod_updateSourceTermResidual != NULL )
         {
@@ -243,7 +260,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _geomap=this->geomap() );
         }
 
-        if (BuildCstPart)
+        if (BuildCstPart && doAssemblyRhs)
         {
             auto buzz = M_bdfVelocity->polyDeriv();
             linearFormV_PatternDefault +=
@@ -288,7 +305,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 }
             }
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
-            if ( BuildCstPart )
+            if ( BuildCstPart && doAssemblyRhs )
             {
                 for ( int k=0;k<M_XhMeanPressureLM.size();++k )
                 {

@@ -27,6 +27,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
     bool BuildNonCstPart = !BuildCstPart;
 
+    bool doAssemblyRhs = !data.hasInfo( "ignore-assembly.rhs" );
+
     double timeSteppingScaling = 1.;
     if ( !this->isStationaryModel() )
         timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
@@ -51,7 +53,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition
-    if ( BuildCstPart )
+    if ( BuildCstPart && doAssemblyRhs )
     {
         for( auto const& d : this->M_bcNeumannScalar )
             linearFormV +=
@@ -76,7 +78,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     {
         if ( this->hasFluidOutletWindkesselExplicit() )
         {
-            if ( BuildCstPart )
+            if ( BuildCstPart && doAssemblyRhs )
             {
                 auto const beta = M_bdfVelocity->poly();
 
@@ -153,7 +155,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     //const size_type rowStartInVectorWindkessel = rowStartInVector + rowStartWindkessel;
                     ++cptOutletUsed;
                     //----------------------------------------------------//
-                    if ( BuildCstPart  && hasWindkesselActiveDof )
+                    if ( BuildCstPart  && hasWindkesselActiveDof && doAssemblyRhs )
                     {
                         double pressureDistalOld  = 0;
                         for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
@@ -251,7 +253,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                            /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( idv(u),id(v) )/hFace(),
                            _geomap=this->geomap() );
         }
-        if ( BuildCstPart )
+        if ( BuildCstPart && doAssemblyRhs )
         {
             for( auto const& d : this->M_bcDirichlet )
                 linearFormV +=
@@ -285,7 +287,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                            _expr= inner(idv(u),id(lambdaBC) ) );
         }
 #if 1
-        if ( BuildCstPart )
+        if ( BuildCstPart && doAssemblyRhs )
         {
             auto lambdaBC = this->XhDirichletLM()->element();
             for( auto const& d : this->M_bcDirichlet )
@@ -358,7 +360,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                _geomap=this->geomap() );
             }
         }
-        if ( BuildCstPart )
+        if ( BuildCstPart && doAssemblyRhs )
         {
             for( auto const& d : this->M_bcPressure )
             {
@@ -390,9 +392,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
             if ( !BuildCstPart && !UseJacobianLinearTerms )
             {
-                CHECK( false ) << "TODO";
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto uTranslationalVelocity = bpbc.spaceTranslationalVelocity()->element( XVec, rowStartInVector+startBlockIndexTranslationalVelocity );
+                    auto const& basisToContainerGpTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
+                    for (int d=0;d<nDim;++d)
+                    {
+                        R->add( basisToContainerGpTranslationalVelocityVector[d],
+                                uTranslationalVelocity(d)*bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massBody );
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto uAngularVelocity = bpbc.spaceAngularVelocity()->element( XVec, rowStartInVector+startBlockIndexAngularVelocity );
+                    auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    {
+                        R->add( basisToContainerGpAngularVelocityVector[d],
+                                uAngularVelocity(d)*bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia );
+                    }
+                }
             }
-            if ( BuildCstPart )
+            if ( BuildCstPart && doAssemblyRhs )
             {
                 if ( hasActiveDofTranslationalVelocity )
                 {
