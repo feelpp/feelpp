@@ -5,7 +5,7 @@
 version_major=0
 version_minor=107
 version_micro=0
-version_string="v#{version_major}.#{version_minor}.#{version_micro}"
+version_string="#{version_major}.#{version_minor}"
 version_min="v#{version_minor}"
 
 @template = Liquid::Template.parse(File.read(__dir__+"/template.adoc"))
@@ -56,26 +56,38 @@ toolbox_desc={ "solid" => "solid mechanics",
                "heatfluid" => "heat and fluid",
                "thermoelectric" => "thermoelectric" }
 
-toolbox_default_option_values ={ "solid" => ["3",""],
-                                 "fluid" => ["3",""],
-                                 "fsi" => ["3",""],
+toolbox_docs =
+  { "solid" => "csm",
+    "fluid" => "cfd",
+    "fsi" => "fsi",
+    "hdg_poisson" => "",
+    "hdg_coupledpoisson" => "",
+    "hdg_elasticity" => "",
+    "heat" => "heat",
+    "heatfluid" => "heatfluid",
+    "electric" => "electric",
+    "thermoelectric" => "thermoelectric"}
+
+toolbox_default_option_values ={ "solid" => ["3","P1"],
+                                 "fluid" => ["3","P2P1G1"],
+                                 "fsi" => ["3","P2P1"],
                                  "hdg_poisson" => ["3"],
                                  "hdg_coupledpoisson" => ["3"],
                                  "hdg_elasticity" => ["3"],
                                  "heat" => ["3","P1"],
                                  "electric" => ["3","P1"],
-                                 "heatfluid" => ["3","P1"],
+                                 "heatfluid" => ["3","P1-P2P1"],
                                  "thermoelectric" => ["3","P1"] }
 
-toolbox_possible_option_values ={ "solid" => ["2,3",""],
-                                  "fluid" => ["2,3",""],
-                                  "fsi" => ["2,3",""],
+toolbox_possible_option_values ={ "solid" => ["2,3","P1,P2"],
+                                  "fluid" => ["2,3","P2P1G1,P2P1G2"],
+                                  "fsi" => ["2,3","P2P1"],
                                   "hdg_poisson" => ["2,3"],
                                   "hdg_coupledpoisson" => ["2,3"],
                                   "hdg_elasticity" => ["2,3"],
-                                  "heat" => ["2,3","P1"],
-                                  "electric" => ["2,3","P1"],
-                                  "heatfluid" => ["2,3","P1"],
+                                  "heat" => ["2,3","P1,P2,P3"],
+                                  "electric" => ["2,3","P1,P2,P3"],
+                                  "heatfluid" => ["2,3","P1-P2P1"],
                                   "thermoelectric" => ["2,3","P1"] }
 
 toolboxes.each do |app, prefix|
@@ -84,9 +96,11 @@ toolboxes.each do |app, prefix|
   File.delete( "#{prefix}/#{app}.adoc" ) if File.exist?( "#{prefix}/#{app}.adoc" )
   File.write("#{prefix}/#{app}.adoc", @template.render(
                "version_min" => "#{version_min}",
+               "version_string" => "#{version_string}",
                "toolbox_app" => "feelpp_toolbox_#{app}",
                "toolbox" => "#{app}",
                "toolbox_desc" => toolbox_desc["#{app}"],
+               "toolbox_docs" => toolbox_docs["#{app}"],
                "toolbox_default_case" => '"'+toolbox_default_cases["#{app}"]+'"',
                "toolbox_default_cli" => toolbox_default_cli_cases["#{app}"],
                "toolbox_default_option_values" => toolbox_default_option_values["#{app}"],
