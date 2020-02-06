@@ -382,15 +382,15 @@ public:
         return fields;
     }
     // Measures quantities
-    auto allMeasuresQuantities() const
+    auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
         std::vector<double> vecVelocityCOM( this->velocityCOM().size() );
         Eigen::Matrix<value_type, nDim, 1>::Map( &vecVelocityCOM[0], vecVelocityCOM.size() ) = this->velocityCOM();
-        return hana::concat( super_type::allMeasuresQuantities(), hana::make_tuple(
-                    std::make_pair( "velocity-com", vecVelocityCOM )
+        return hana::concat( super_type::allMeasuresQuantities( prefix ), hana::make_tuple(
+                    std::make_pair( prefixvm( prefix, "velocity-com" ), vecVelocityCOM )
                     ) );
     }
     //--------------------------------------------------------------------//

@@ -390,7 +390,7 @@ public:
                 );
     }
     // Measures quantities
-    auto allMeasuresQuantities() const
+    auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
@@ -398,9 +398,9 @@ public:
         std::vector<double> vecPositionCOM( this->positionCOM().size() );
         Eigen::Matrix<value_type, nDim, 1>::Map( &vecPositionCOM[0], vecPositionCOM.size() ) = this->positionCOM();
         return hana::make_tuple(
-                std::make_pair( "volume", this->volume() ),
-                std::make_pair( "perimeter", this->perimeter() ),
-                std::make_pair( "position-com", vecPositionCOM )
+                std::make_pair( prefixvm( prefix, "volume" ), this->volume() ),
+                std::make_pair( prefixvm( prefix, "perimeter" ), this->perimeter() ),
+                std::make_pair( prefixvm( prefix, "position-com" ), vecPositionCOM )
                 );
     }
     //--------------------------------------------------------------------//
