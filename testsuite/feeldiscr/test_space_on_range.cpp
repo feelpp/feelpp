@@ -31,6 +31,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/concatenate.hpp>
+#include <feel/feelfilters/unitcube.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -286,6 +288,20 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     double int1b = integrate(_range=elements(submesh),_expr=cst(1.)).evaluate()(0,0);
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
+{
+    using namespace Feel;
+    auto mesh = unitCube();
+    auto submesh = createSubmesh(_mesh=mesh, _range=faces(mesh));
+    auto Vh = Pdhv<1>(mesh,markedelements(mesh, "toto"));
+    auto v = Vh->element();
+    auto Xh = Pdh<1>(submesh);
+    auto u = Xh->element();
+
+    auto a = form2(_test=Xh, _trial=Vh);
+    a = integrate(_range=boundaryfaces(mesh), _expr=idt(u)*normal(v));
 }
 BOOST_AUTO_TEST_SUITE_END()
 
