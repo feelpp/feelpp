@@ -7,16 +7,16 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == NAME
 
-{manmanual} - fluid mechanics toolbox application
+feelpp_toolbox_fluid - fluid mechanics toolbox application
 
 
 == SYNOPSIS
 
-{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization ] 
+feelpp_toolbox_fluid --case <directory to model case> [--case.dim 3] [--case.discretization P2P1G1] 
 
 == DESCRIPTION
 
-{manmanual} is an application which can run fluid mechanics model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+feelpp_toolbox_fluid is an application which can run fluid mechanics model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
 The step are as follows:
 
@@ -28,20 +28,29 @@ The step are as follows:
 
 === Options
 
-{manmanual} requires some options.
+feelpp_toolbox_fluid requires some options.
 
-.Table of command-line {manmanual} options
+.Table of command-line feelpp_toolbox_fluid options
 |===
 | Name | Description | Default value | Possible Values
 
 | case.dim | dimension of problem  | 3 | 2,3
-| case.discretization | discretization of problem  |  | 
+| case.discretization | discretization of problem  | P2P1G1 | P2P1G1,P2P1G2
+| fluid.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
+| fluid.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
+| fluid.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| fluid.pc-view | view the Krylov Subspace structure  | 0 | 0,1
+| fluid.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| fluid.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
+| fluid.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
 
 |===
 
+NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.107/install/containers/#_docker[] to demonstrate feelpp_toolbox_fluid usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -82,27 +91,29 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
+Other test cases can be found in /usr/share/feelpp/data/testcases/toolboxes/fluid.
+
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.107/
 
 {feelpp} Cases for feelpp_toolbox_fluid::
-http://docs.feelpp.org/cases/0.107//
+http://docs.feelpp.org/cases/0.107/cfd/README
 
 {feelpp} Toolbox Docs for feelpp_toolbox_fluid::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.107/cfd/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.107/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.v107/using/remotedata/
+http://docs.feelpp.org/user/0.107/using/remotedata/
 
 
 == COPYING
