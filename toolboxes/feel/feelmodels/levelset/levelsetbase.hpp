@@ -348,10 +348,27 @@ public:
 
     //--------------------------------------------------------------------//
     // Symbols expressions
-    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField() ); }
-    constexpr auto symbolsExprField() const {
-        return Feel::vf::symbolsExpr(
-                symbolExpr( "levelset_phi", idv( this->phiElt() ) )
+    auto symbolsExpr( std::string const& prefix_symbol = "levelset_" ) const {
+        return this->symbolsExpr( this->phiElt(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExpr( FieldType const& f, std::string const& prefix_symbol = "adr_" ) const
+    {
+        auto seField = this->symbolsExprField( f, prefix_symbol );
+        return Feel::vf::symbolsExpr( seField );
+    }
+
+    auto symbolsExprField( std::string const& prefix_symbol = "levelset_" ) const { 
+        return this->symbolsExprField( this->fieldSolution(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExprField( FieldType const& f, std::string const& prefix_symbol = "levelset_" ) const
+    {
+        // generate symbols levelset_phi, levelset_grad_phi(_x,_y,_z), levelset_dn_phi
+        return Feel::vf::symbolsExpr( 
+                symbolExpr( (boost::format("%1%phi")%prefix_symbol).str(),idv(f) ),
+                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
                 );
     }
     // Fields
