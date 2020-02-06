@@ -359,7 +359,7 @@ public:
     }
 
     auto symbolsExprField( std::string const& prefix_symbol = "levelset_" ) const { 
-        return this->symbolsExprField( this->fieldSolution(), prefix_symbol ); 
+        return this->symbolsExprField( this->phiElt(), prefix_symbol ); 
     }
     template <typename FieldType>
     auto symbolsExprField( FieldType const& f, std::string const& prefix_symbol = "levelset_" ) const
