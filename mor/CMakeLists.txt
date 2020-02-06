@@ -70,10 +70,12 @@ OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ${FEELPP_ENABLE_MOR_ALL})
 
 
 if ( NOT FEELPP_TOOLBOXES_FOUND )
   set( FEELPP_ENABLE_MOR_THERMOELECTRIC OFF )
+  set( FEELPP_ENABLE_MOR_TOOLBOX OFF )
 endif()
 
 set(FEELPP_MOR_LIBRARIES)
@@ -181,6 +183,9 @@ if ( FEELPP_ENABLE_MOR_THERMOELECTRIC )
 endif()
 if ( FEELPP_ENABLE_MOR_GREPLDEIM )
   add_subdirectory(grepldeim)
+endif()
+if ( FEELPP_ENABLE_MOR_TOOLBOX )
+  add_subdirectory(toolbox-mor)
 endif()
 
 add_subdirectory(pyfeelpp-mor)

@@ -453,14 +453,8 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::solveLinear( vector_ptrtype& U )
+    ModelAlgebraicFactory::assembleLinear( vector_ptrtype& U )
     {
-        auto model = this->model();
-        if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
-                                                            this->model()->worldComm(),this->model()->verboseAllProc());
-
-        this->model()->timerTool("Solve").start();
-
         // assembling cst part
         if (!M_hasBuildLinearSystemCst)
         {
@@ -531,6 +525,18 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // post-assembly
         for ( auto const& func : M_addFunctionLinearPostAssembly )
             func.second( dataLinearNonCst );
+    }
+
+    void
+    ModelAlgebraicFactory::solveLinear( vector_ptrtype& U )
+    {
+        auto model = this->model();
+        if (this->model()->verbose()) Feel::FeelModels::Log(this->model()->prefix()+".ModelAlgebraicFactory","linearSolver", "start",
+                                                            this->model()->worldComm(),this->model()->verboseAllProc());
+
+        this->model()->timerTool("Solve").start();
+
+        this->assembleLinear(U);
 
         // assembling matrix used for preconditioner
         this->model()->updatePreconditioner(U,M_J,M_Extended,M_Prec);
@@ -552,6 +558,9 @@ ModelAlgebraicFactory::init( backend_ptrtype const& backend, graph_ptrtype const
         // set preconditioner
         //M_PrecondManage->setMatrix(M_Prec);
 
+        ModelAlgebraic::DataUpdateLinear dataLinearNonCst(U,M_J,M_R,false,M_Extended,true);
+        dataLinearNonCst.copyInfos( this->dataInfos() );
+        // M_functionLinearAssembly( dataLinearNonCst );
         this->model()->updateInHousePreconditioner( dataLinearNonCst );
 
         pre_solve_type pre_solve = std::bind(&model_type::preSolveLinear, model, std::placeholders::_1, std::placeholders::_2);
