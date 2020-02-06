@@ -476,8 +476,6 @@ protected:
     void updateLinearPDEStabilizationSGS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
 
     virtual std::string geoExportType() const { return "static"; }
-    virtual void exportResultsImpl( double time );
-    virtual void exportMeasuresImpl( double time );
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
