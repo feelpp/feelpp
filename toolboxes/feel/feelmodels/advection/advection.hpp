@@ -243,7 +243,6 @@ public :
     void initFunctionSpaces();
     void initAlgebraicData();
     void initTimeDiscretization();
-    void initExporters();
     void initOthers();
 
     void initInitialConditions();
@@ -326,6 +325,23 @@ public :
                 symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
                 symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
                 );
+    }
+    // Fields
+    auto allFields( std::string const& prefix = "" ) const
+    {
+        return hana::make_tuple(
+                std::make_pair( prefixvm( prefix, "phi" ), this->fieldSolutionPtr() ),
+                std::make_pair( prefixvm( prefix, "advection-velocity" ), this->fieldAdvectionVelocityPtr() ),
+                std::make_pair( prefixvm( prefix, "diffusion-coeff" ), this->diffusionReactionModel()->fieldDiffusionCoeffPtr() ),
+                std::make_pair( prefixvm( prefix, "reaction-coeff" ), this->diffusionReactionModel()->fieldReactionCoeffPtr() ),
+                std::make_pair( prefixvm( prefix, "source" ), M_fieldSource )
+                );
+    }
+
+    // Measures quantities
+    auto allMeasuresQuantities() const
+    {
+        return hana::make_tuple();
     }
 
     //--------------------------------------------------------------------//
@@ -418,9 +434,11 @@ public :
 
     //--------------------------------------------------------------------//
     // Export results
-    void initPostProcess();
+    void initPostProcess() override;
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+    template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
     void exportMeasures( double time );
 
     exporter_ptrtype getExporter() { return M_exporter; }
@@ -435,6 +453,9 @@ public :
 protected:
     void loadParametersFromOptionsVm();
     void loadConfigBCFile();
+    void createPostProcessExporters();
+    void createPostProcessMeasures();
+    void initPostProcessExportsAndMeasures();
 
     virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
 
@@ -528,17 +549,18 @@ protected:
 
 };//AdvDiffReac
 
+#define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
+template< typename FunctionSpaceType, typename FunctionSpaceAdvectionVelocityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType > \
+        /**/
+#define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
+    AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
+        /**/
 //----------------------------------------------------------------------------//
 // Advection velocity update
-template< 
-    typename FunctionSpaceType,
-    typename FunctionSpaceAdvectionVelocityType,
-    typename BasisDiffusionCoeffType,
-    typename BasisReactionCoeffType
-        >
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void
-AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
     M_functionAssemblyLinearAdvection = [v_expr, this]( DataUpdateLinear & data ) { 
@@ -554,15 +576,10 @@ AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusio
     M_doProjectFieldAdvectionVelocity = true;
 }
 
-template< 
-    typename FunctionSpaceType,
-    typename FunctionSpaceAdvectionVelocityType,
-    typename BasisDiffusionCoeffType,
-    typename BasisReactionCoeffType
-        >
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void
-AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity )
 {
     using namespace Feel::vf;
 
@@ -587,16 +604,10 @@ AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusio
 
 //----------------------------------------------------------------------------//
 // Source update
-template< 
-    typename FunctionSpaceType,
-    typename FunctionSpaceAdvectionVelocityType,
-    typename BasisDiffusionCoeffType,
-    typename BasisReactionCoeffType
-        >
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void 
-AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
-        vf::Expr<ExprT> const& f_expr)
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceAdded( vf::Expr<ExprT> const& f_expr )
 {
     if (!M_fieldSource)
     {
@@ -604,6 +615,35 @@ AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusio
     }
     M_fieldSource->on(_range=elements( this->mesh() ), _expr=f_expr );
     M_hasSourceAdded=true;
+}
+
+//----------------------------------------------------------------------------//
+// Exports
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
+{
+    this->log("AdvDiffReac","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    this->executePostProcessExports( M_exporter, time, tupleFields, symbolsExpr );
+    this->executePostProcessMeasures( time, tupleFields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, tupleFields, tupleMeasuresQuantities );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdf->iteration(), fields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("AdvDiffReac","exportResults", "finish");
 }
 
 } // namespace FeelModels
