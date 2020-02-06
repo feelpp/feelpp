@@ -348,17 +348,12 @@ public:
 
     //--------------------------------------------------------------------//
     // Symbols expressions
-    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField() ); }
-    constexpr auto symbolsExprField() const {
-        return Feel::vf::symbolsExpr(
-                symbolExpr( "levelset_phi", idv( this->phiElt() ) )
-                );
-    }
+    using super_type::symbolsExpr;
     // Fields
-    auto allFields() const
+    auto allFields( std::string const& prefix = "" ) const
     {
-        return hana::concat( super_type::allFields(), hana::make_tuple(
-                std::make_pair( "advection-velocity", M_advectionToolbox->fieldAdvectionVelocityPtr() ),
+        return hana::concat( super_type::allFields( prefix ), hana::make_tuple(
+                std::make_pair( prefixvm( prefix, "advection-velocity" ), M_advectionToolbox->fieldAdvectionVelocityPtr() ),
                 this->optionalScalarFields(),
                 this->optionalVectorialFields()
                 ) );
