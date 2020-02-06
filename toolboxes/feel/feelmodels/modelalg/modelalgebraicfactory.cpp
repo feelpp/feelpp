@@ -698,7 +698,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_solverPtAP_matP->multVector( XX, currentSolution );
         }
 
-
         currentJacobian->zero();
 
         if ( model->useCstMatrix())
@@ -799,7 +798,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             currentResidual->close();
             for ( auto const& av : M_addVectorResidualAssembly )
                 if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
-                    RR/*M_R*/->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+                    currentResidual->add( std::get<1>( av.second ), std::get<0>( av.second ) );
+            if ( M_explictPartOfSolution )
+                currentResidual->add(1.0,M_contributionsExplictPartOfSolutionWithNewton);
         }
 
         bool doOptimization = this->model()->useLinearJacobianInResidual() && this->model()->useCstMatrix();
@@ -809,6 +810,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
         ModelAlgebraic::DataUpdateResidual dataResidualNonCst( currentSolution, currentResidual, false, doOptimization );
         dataResidualNonCst.copyInfos( this->dataInfos() );
+        if ( M_explictPartOfSolution )
+            dataResidualNonCst.addVectorInfo( "explicit-part-of-solution", M_explictPartOfSolution );
         M_functionResidualAssembly( dataResidualNonCst );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidualNonCst );
@@ -891,29 +894,25 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
         model->timerTool("Solve").elapsed("algebraic-newton-initial-guess");
         model->timerTool("Solve").restart();
+
+        if ( M_explictPartOfSolution )
+            M_solverPtAP_solution->add( -1.0, M_explictPartOfSolution );
+
         //---------------------------------------------------------------------//
         if (model->useCstMatrix())
         {
-            if (!M_hasBuildLinearJacobian)
+            if (!M_hasBuildLinearJacobian || model->rebuildLinearPartInJacobian() || model->needToRebuildCstPart() )
             {
                 M_CstJ->zero();
                 ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
                 dataJacobianCst.copyInfos( this->dataInfos() );
+                if ( M_explictPartOfSolution )
+                    dataJacobianCst.addVectorInfo( "explicit-part-of-solution", M_explictPartOfSolution );
                 M_functionJacobianAssembly( dataJacobianCst );
                 for ( auto const& func : M_addFunctionJacobianAssembly )
                     func.second( dataJacobianCst );
                 M_CstJ->close();
                 M_hasBuildLinearJacobian = true;
-            }
-            else if (model->rebuildLinearPartInJacobian() || model->needToRebuildCstPart())
-            {
-                M_CstJ->zero();
-                ModelAlgebraic::DataUpdateJacobian dataJacobianCst(U, M_CstJ, M_R, true );
-                dataJacobianCst.copyInfos( this->dataInfos() );
-                M_functionJacobianAssembly( dataJacobianCst );
-                for ( auto const& func : M_addFunctionJacobianAssembly )
-                    func.second( dataJacobianCst );
-                M_CstJ->close();
             }
         }
 
@@ -923,7 +922,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         //---------------------------------------------------------------------//
         if (model->useCstVector())
         {
-            if (!M_hasBuildResidualCst)
+            // model->rebuildCstPartInResidual() is not an option (just optimisation with fsi semi-implicit) TODO REMOVE THIS OPTION!!!
+            if (!M_hasBuildResidualCst || model->rebuildCstPartInResidual() || model->needToRebuildCstPart())
             {
                 M_CstR->zero();
                 // Warning : the second true is very important in order to build M_CstR!!!!!!
@@ -938,20 +938,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
                         M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
                 M_hasBuildResidualCst = true;
             }
-            else if (model->rebuildCstPartInResidual() || model->needToRebuildCstPart() ) // first if is not an option (just optimisation with fsi semi-implicit)
-            {
-                M_CstR->zero();
-                // Warning : the second true is very important in order to build M_CstR!!!!!!
-                ModelAlgebraic::DataUpdateResidual dataResidualCst( U, M_CstR, true, true );
-                dataResidualCst.copyInfos( this->dataInfos() );
-                M_functionResidualAssembly( dataResidualCst );
-                for ( auto const& func : M_addFunctionResidualAssembly )
-                    func.second( dataResidualCst );
-                M_CstR->close();
-                for ( auto const& av : M_addVectorResidualAssembly )
-                    if ( std::get<2>( av.second ) && std::get<3>( av.second ) )
-                        M_CstR->add( std::get<1>( av.second ), std::get<0>( av.second ) );
-            }
         }
         model->setNeedToRebuildCstPart(false);
         //---------------------------------------------------------------------//
@@ -959,8 +945,26 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         model->timerTool("Solve").restart();
         //---------------------------------------------------------------------//
 
-        pre_solve_type pre_solve = std::bind(&model_type::preSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
-        post_solve_type post_solve = std::bind(&model_type::postSolveNewton, model, std::placeholders::_1, std::placeholders::_2);
+        if ( M_explictPartOfSolution )
+        {
+            std::vector<std::string> infoAdded = { "ignore-assembly.rhs" };
+            if (model->useCstVector())
+            {
+                this->evaluateResidual( M_explictPartOfSolution, M_CstR, infoAdded, false );
+                M_CstR->close();
+            }
+            else
+            {
+                if ( !M_contributionsExplictPartOfSolutionWithNewton )
+                    M_contributionsExplictPartOfSolutionWithNewton = M_backend->newVector( M_R->mapPtr() );
+                M_contributionsExplictPartOfSolutionWithNewton->zero();
+                this->evaluateResidual( M_explictPartOfSolution, M_contributionsExplictPartOfSolutionWithNewton, infoAdded, false );
+                M_contributionsExplictPartOfSolutionWithNewton->close();
+            }
+        }
+
+        pre_solve_type pre_solve = std::bind(&self_type::preSolveNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
+        post_solve_type post_solve = std::bind(&self_type::postSolveNewton, std::ref( *this ), std::placeholders::_1, std::placeholders::_2);
         update_nlsolve_type update_nlsolve = std::bind(&self_type::updateNewtonIteration, std::ref( *this ), std::placeholders::_1, std::placeholders::_2,std::placeholders::_3,std::placeholders::_4 );
 
         typename backend_type::nl_solve_return_type solveStat;
@@ -987,6 +991,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
                                             _post=post_solve,
                                             _update=update_nlsolve );
         }
+
+        if ( M_explictPartOfSolution )
+            U->add( 1.0, M_explictPartOfSolution );
 
         if ( false )
             Feel::FeelModels::Log(model->prefix()+".ModelAlgebraicFactory","NonLinearSolverNewton",
@@ -1034,7 +1041,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         dataResidual.setBuildCstPart( true );
         dataResidual.setUseJacobianLinearTerms( false );
         vector_ptrtype& R = dataResidual.residual();
-        R->zero();
+        //R->zero();
         M_functionResidualAssembly( dataResidual );
         for ( auto const& func : M_addFunctionResidualAssembly )
             func.second( dataResidual );

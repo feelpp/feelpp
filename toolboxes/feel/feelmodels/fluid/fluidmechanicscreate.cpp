@@ -1927,12 +1927,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
         }
     }
 
-    for ( std::string s : matNames )
-        std::cout << "load matName : " << s << std::endl;
+   ModelMarkers onlyMarkers;
+    if ( auto ptmarkers = p.get_child_optional("markers") )
+        onlyMarkers.setPTree(*ptmarkers/*, indexes*/);
 
-    std::set<std::string> onlyMarkers; // TODO : if markers is given only use these ones
-
-    M_materialsProperties.reset( new materialsproperties_type( "",""/*this->prefix(), this->repository().expr()*/ ) );
+    M_materialsProperties.reset( new materialsproperties_type( "",exprRepository/*this->prefix(), this->repository().expr()*/ ) );
     M_materialsProperties->updateForUse( mesh, mats, *this, matNames, onlyMarkers );
 
     this->updateForUse();
@@ -2007,7 +2006,32 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
     M_translationalVelocityExpr.setExpr( "translational-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
     M_angularVelocityExpr.setExpr( "angular-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
 
-    M_elasticVelocityExpr.setExpr( "elastic-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    if ( auto ptElasticVelocity = pt.get_child_optional("elastic-velocity") )
+    {
+        if ( ptElasticVelocity->empty() )
+        {
+            std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+            std::get<0>( dataExpr ).setExpr( "elastic-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+            if ( std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                M_elasticVelocityExprBC.emplace( "", dataExpr );
+        }
+        else
+        {
+            for ( auto const& item : *ptElasticVelocity )
+            {
+                std::string bcElasticVelocityName = item.first;
+                std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+                std::get<0>( dataExpr ).setExpr( "expr", item.second, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+                if ( !std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                    continue;
+                ModelMarkers bcElasticVelocityMarkers;
+                if ( auto ptmarkers = item.second.get_child_optional("markers") )
+                    bcElasticVelocityMarkers.setPTree(*ptmarkers/*, indexes*/);
+                std::get<1>( dataExpr ) = bcElasticVelocityMarkers;
+                M_elasticVelocityExprBC.emplace( bcElasticVelocityName, dataExpr );
+            }
+        }
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2054,8 +2078,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
             M_body.setMassCenter( M_massCenterRef + disp );
         }
 
-        if ( fluidToolbox.worldComm().isMasterRank() )
-            std::cout << "M_massCenter=\n " << M_body.massCenter() << std::endl;
+        //if ( fluidToolbox.worldComm().isMasterRank() )
+        //    std::cout << "M_massCenter=\n " << M_body.massCenter() << std::endl;
     }
 
     auto XhV = fluidToolbox.functionSpaceVelocity();
@@ -2088,7 +2112,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
         bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
         if ( !meshIsOnRefAtBegin )
             fluidToolbox.meshALE()->revertReferenceMesh( false );
-        M_fieldElasticVelocity->on(_range=elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/,_expr=this->elasticVelocityExpr() ); // TODO crash if use here markedfaces of fluid with partial mesh support
+        for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
+        {
+            auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
+            auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
+            M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
+        }
         if ( !meshIsOnRefAtBegin )
             fluidToolbox.meshALE()->revertMovingMesh( false );
     }

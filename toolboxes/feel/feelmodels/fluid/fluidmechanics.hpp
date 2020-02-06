@@ -414,9 +414,7 @@ public:
 
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
-        bool hasElasticVelocityFromExpr() const { return M_elasticVelocityExpr.template hasExpr<nDim,1>(); }
-
-        auto const& elasticVelocityExpr() const { return M_elasticVelocityExpr.template expr<nDim,1>(); }
+        bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
 
         element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
 
@@ -425,7 +423,8 @@ public:
             {
                 M_translationalVelocityExpr.setParameterValues( mp );
                 M_angularVelocityExpr.setParameterValues( mp );
-                M_elasticVelocityExpr.setParameterValues( mp );
+                for ( auto & [bcName,eve] : M_elasticVelocityExprBC )
+                    std::get<0>( eve ).setParameterValues( mp );
             }
 
     private :
@@ -441,13 +440,13 @@ public:
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
-        ModelExpression M_elasticVelocityExpr;
 
         Body M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
 
         space_trace_velocity_ptrtype M_XhElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
+        std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
     };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>

@@ -47,6 +47,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto XhV = this->functionSpaceVelocity();
     auto XhP = this->functionSpacePressure();
 
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
     size_type rowStartInVector = this->rowStartInVector();
@@ -91,32 +93,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // convection terms
-    if ( BuildNonCstPart )
+    if ( this->modelName() == "Navier-Stokes" )
     {
-        if (this->doStabConvectionEnergy())
+        if ( BuildNonCstPart )
         {
-            // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
-            // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
-            // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
+            if (this->doStabConvectionEnergy())
+            {
+                // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
+                // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
+                // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
 
-            auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
-            bilinearFormVV_PatternCoupled +=
-                //bilinearForm_PatternDefault +=
-                integrate ( _range=M_rangeMeshElements,
-                            _expr=timeSteppingScaling*convecTerm,
-                            _geomap=this->geomap() );
-        }
-        else
-        {
+                auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
+                bilinearFormVV_PatternCoupled +=
+                    //bilinearForm_PatternDefault +=
+                    integrate ( _range=M_rangeMeshElements,
+                                _expr=timeSteppingScaling*convecTerm,
+                                _geomap=this->geomap() );
+            }
+            else
+            {
 #if 0
-            auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
+                auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
 #else
-            auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
+                auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
 #endif
+                bilinearFormVV_PatternCoupled +=
+                    //bilinearForm_PatternDefault +=
+                    integrate ( _range=M_rangeMeshElements,
+                                _expr=timeSteppingScaling*convecTerm,
+                                _geomap=this->geomap() );
+            }
+        }
+        if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
+        {
+            auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
             bilinearFormVV_PatternCoupled +=
-                //bilinearForm_PatternDefault +=
                 integrate ( _range=M_rangeMeshElements,
-                            _expr=timeSteppingScaling*convecTerm,
+                            _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
                             _geomap=this->geomap() );
         }
     }
