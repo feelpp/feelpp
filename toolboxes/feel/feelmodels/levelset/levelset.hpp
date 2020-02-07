@@ -354,30 +354,30 @@ public:
     {
         return hana::concat( super_type::allFields( prefix ), hana::make_tuple(
                 std::make_pair( prefixvm( prefix, "advection-velocity" ), M_advectionToolbox->fieldAdvectionVelocityPtr() ),
-                this->optionalScalarFields(),
-                this->optionalVectorialFields()
+                this->optionalScalarFields( prefix ),
+                this->optionalVectorialFields( prefix )
                 ) );
     }
-    auto optionalScalarFields() const
+    auto optionalScalarFields( std::string const& prefix = "" ) const
     {
         std::map<std::string, element_scalar_ptrtype> fields;
         if( M_useStretchAugmented )
         {
-            fields["stretch"] = this->stretch();
+            fields[prefixvm( prefix, "stretch" )] = this->stretch();
         }
         if( M_useCauchyAugmented )
         {
-            fields["cauchygreeninvariant1"] = this->cauchyGreenInvariant1();
-            fields["cauchygreeninvariant2"] = this->cauchyGreenInvariant2();
+            fields[prefixvm( prefix, "cauchygreeninvariant1" )] = this->cauchyGreenInvariant1();
+            fields[prefixvm( prefix, "cauchygreeninvariant2" )] = this->cauchyGreenInvariant2();
         }
         return fields;
     }
-    auto optionalVectorialFields() const
+    auto optionalVectorialFields( std::string const& prefix = "" ) const
     {
         std::map<std::string, element_vectorial_ptrtype> fields;
         if( M_useCauchyAugmented )
         {
-            fields["backwardcharacteristics"] = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
+            fields[prefixvm( prefix, "backwardcharacteristics" )] = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
         }
         return fields;
     }
