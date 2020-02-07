@@ -400,6 +400,8 @@ public:
 
     using super_type::exportResults;
     void exportResults( double time ) override;
+    template<typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->allFields(), this->allMeasuresQuantities() ); }
     //--------------------------------------------------------------------//
     // Physical quantities
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 

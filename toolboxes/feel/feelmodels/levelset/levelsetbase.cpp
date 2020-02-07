@@ -402,7 +402,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr(), this->allFields(), this->allMeasuresQuantities() );
+    this->exportResults( time, this->symbolsExpr() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
