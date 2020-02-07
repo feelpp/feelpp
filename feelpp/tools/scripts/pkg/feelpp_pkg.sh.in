@@ -47,6 +47,7 @@ if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
     echo "--- add bintray key"
     export DIST
     export CHANNEL
+    export FLAVOR
     feelpp/tools/scripts/pkg/add_key.sh
 fi
 
