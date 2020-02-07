@@ -22,5 +22,6 @@ feelpp_add_application( cvg_maxwell_3d SRCS cvg_maxwell.cpp
   INSTALL
   )
 
-feelpp_add_testcase(test PREFIX maxwell CATEGORY maxwell )
-feelpp_add_testcase(cvg PREFIX maxwell CATEGORY maxwell )
+foreach( _testcase IN ITEMS "test" "cvg" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_maxwell CATEGORY toolboxes/maxwell)
+endforeach()

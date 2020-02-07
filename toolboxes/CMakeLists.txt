@@ -27,6 +27,9 @@ cmake_minimum_required(VERSION 3.7.2)
 project(toolboxes)
 set(PROJECT_SHORTNAME "toolbox")
 
+set(FEELPP_TOOLBOXES_SHARED_VERSION 1.0)
+set(FEELPP_TOOLBOXES_SHARED_SOVERSION 1.0)
+
 # with this it is possible to compile applications/models from an installed
 # version of feel++. This is useful also for staged compilation for docker
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
@@ -38,6 +41,12 @@ else()
   feelpp_get_environment()
   # usefull for pyfeelpp-toolboxes
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
+endif()
+
+option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
+
+if ( FEELPP_ENABLE_ASCIIDOCTOR )
+  include( feelpp.adoc )
 endif()
 
 option(FEELPP_TOOLBOXES_ENABLE_MESHALE "Enable/Disable mesh ALE" ON)
@@ -71,6 +80,7 @@ include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 INCLUDE(CTest)
 ENABLE_TESTING()
 
+add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
 
@@ -113,4 +123,10 @@ if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
 endif()
 if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
   add_subdirectory( maxwell )
+endif()
+
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-toolboxes.package.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
 endif()

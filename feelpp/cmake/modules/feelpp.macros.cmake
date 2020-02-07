@@ -647,10 +647,12 @@ endif()
 if (NOT TARGET html)
   add_custom_target (html)
 endif()
+if (NOT TARGET pdf)
+  add_custom_target (pdf)
+endif()
 macro (feelpp_add_man NAME MAN SECT)
-   if (NOT FEELPP_HAS_ASCIIDOCTOR )
-     return()
-   endif()
+  if (FEELPP_HAS_ASCIIDOCTOR )
+    message(STATUS "building manuals for ${NAME}")
     message(STATUS "building manual page ${NAME}.${SECT}")
 
     if ( FEELPP_HAS_ASCIIDOCTOR_MANPAGE )
@@ -698,11 +700,37 @@ macro (feelpp_add_man NAME MAN SECT)
       install(CODE "execute_process(COMMAND bash \"-c\"  \"${FEELPP_A2H_STR} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
       install (
         FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html
-        DESTINATION ${CMAKE_INSTALL_DOCDIR}
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
         COMPONENT Bin
         )
       endif()
 
+
+      if ( FEELPP_HAS_ASCIIDOCTOR_PDF )
+        message(STATUS "${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc" )
+        add_custom_target(${NAME}.pdf)
+        add_custom_command (
+          TARGET ${NAME}.pdf
+          COMMAND ${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+          DEPENDS ${FEELPP_STYLESHEET}
+          MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc
+          )
+        #add_custom_target(${NAME}.${SECT}.html DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.${SECT}.html)
+        if (TARGET pdf)
+          add_dependencies(pdf ${NAME}.pdf)
+        endif()
+        if ( TARGET ${NAME} )
+          add_dependencies(${NAME} ${NAME}.pdf)
+          
+        endif()
+        install(CODE "execute_process(COMMAND bash \"-c\"  \"${ASCIIDOCTOR_PDF_EXECUTABLE} -o ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf ${CMAKE_CURRENT_SOURCE_DIR}/${MAN}.adoc\" )" COMPONENT Bin)
+        install (
+          FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAME}.pdf
+          DESTINATION  ${CMAKE_INSTALL_DATAROOTDIR}/doc/feelpp/${PROJECT_NAME}
+          COMPONENT Bin
+          )
+      endif()
+   endif()
 endmacro (feelpp_add_man)
 
 # CRB cmake macros
