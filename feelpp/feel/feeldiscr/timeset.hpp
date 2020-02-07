@@ -66,7 +66,6 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
-#include <feel/feeldiscr/subelements.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -416,23 +415,6 @@ public:
             add( str, func );
         }
 
-
-        template<typename TSet>
-        struct AddFunctionProduct
-        {
-            AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
-            TSet& M_tset;
-
-            template<typename T>
-            void
-            operator()( T const& fun ) const
-                {
-                    LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( fun.name(), fun );
-                }
-        };
-
-
         template<typename FunctionType>
         void add( std::variant<std::string,std::vector<std::string>> const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
@@ -462,7 +444,13 @@ public:
                     for(int i=0; i<nSpaces; i++)
                         names[i] = (boost::format("%1%_%2%")%nameGiven %i).str();
                 }
-                fusion::for_each( subelements(func,names), AddFunctionProduct<step_type>( *this ) );
+
+                hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSpaces> ), [this,&names,&func,&reps]( auto const& e )
+                                 {
+                                     constexpr int subId = std::decay_t<decltype(e)>::value;
+                                     auto const& subFunc = func.template element<subId>();
+                                     this->add( names[subId], names[subId], subFunc, reps );
+                                 } );
             }
             else
             {
