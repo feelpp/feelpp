@@ -479,6 +479,8 @@ public:
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     virtual void exportResults( double time );
+    template<typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->allFields(), this->allMeasuresQuantities() ); }
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
