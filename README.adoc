@@ -4,6 +4,7 @@
 Feel++ Consortium <https://github.com/feelpp[@feelpp]>
 # :toc: macro
 :toclevels: 2
+:stem: latexmath
 :uri-rel-file-base: link:
 :uri-rel-tree-base: link:
 ifdef::env-site[]
@@ -261,10 +262,8 @@ The project was initiated in 2006 by https://github.com/prudhomm[Christophe Prud
 
 Here is a full example to solve
 
-[stem]
-++++
--\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega
-++++
+
+$$-\Delta u = f \mbox{ in } \Omega,\quad u=g \mbox{ on } \partial \Omega$$
 
 [source,cpp]
 ----

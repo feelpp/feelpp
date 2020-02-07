@@ -1,0 +1,123 @@
+:feelpp: Feel++
+= feelpp_toolbox_hdg_elasticity(1)
+Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabannes <https://github.com/vincentchabannes[@vincentchabannes]>
+:manmanual: feelpp_toolbox_hdg_elasticity
+:man-linkstyle: pass:[blue R < >]
+
+
+== NAME
+
+feelpp_toolbox_hdg_elasticity - hybridized discontinuous Galerkin elasticity toolbox application
+
+
+== SYNOPSIS
+
+feelpp_toolbox_hdg_elasticity --case <directory to model case> [--case.dim 3] [--case.discretization ] 
+
+== DESCRIPTION
+
+feelpp_toolbox_hdg_elasticity is an application which can run hybridized discontinuous Galerkin elasticity model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+
+The step are as follows:
+
+* load the model
+* load the mesh
+* setup model (materials, initial and boundary condition)
+* execute the steady or unsteady simulation
+* post-process the results, viewable in paraview or ensight 
+
+=== Options
+
+feelpp_toolbox_hdg_elasticity requires some options.
+
+.Table of command-line feelpp_toolbox_hdg_elasticity options
+|===
+| Name | Description | Default value | Possible Values
+
+| case.dim | dimension of problem  | 3 | 2,3
+| case.discretization | discretization of problem  |  | 
+| hdg_elasticity.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
+| hdg_elasticity.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
+| hdg_elasticity.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| hdg_elasticity.pc-view | view the Krylov Subspace structure  | 0 | 0,1
+| hdg_elasticity.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| hdg_elasticity.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
+| hdg_elasticity.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
+
+|===
+
+NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+
+== EXAMPLES
+
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.107/install/containers/#_docker[] to demonstrate feelpp_toolbox_hdg_elasticity usage.
+
+[source,shell]
+.Starting the docker `feelpp/feelpp-toolboxes:latest`
+----
+docker run --rm -ti -v $HOME/feel:/feel feelpp/feelpp-toolboxes
+----
+
+[source,shell]
+.Explanations about the command line
+----
+docker run <1>
+--rm <2>
+-ti <3>
+-v $HOME/feel:/feel <4>
+feelpp/feelpp-toolboxes <5>
+----
+<1> run docker executable
+<2> remove container from docker once execution is done
+<3> run in interactive mode and enter the docker container
+<4> mount `$HOME/feel` on host to `/feel/` in docker: the results will be exported there
+<5> the docker container to execute, by default it uses the `latest` tag
+
+
+.Example of a command line to execute feelpp_toolbox_hdg_elasticity
+----
+mpirun --bind-to core -np 10 feelpp_toolbox_hdg_elasticity --case "github:{path:toolboxes/hdg/elasticity/quarterturn}"
+----
+
+.Explantion of the command line to execute feelpp_toolbox_hdg_elasticity
+----
+mpirun --bind-to core <1>
+  -np 10 <2>
+  <3>
+  --case "github:{path:toolboxes/hdg/elasticity/quarterturn}" <4>
+----
+<1> execute in parallel using MPI with processes bound to cores
+<2> execute in parallel usisng 10 processes
+<3> the name of the toolbox application
+<4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
+
+Other test cases can be found in /usr/share/feelpp/data/testcases/toolboxes/hdg_elasticity.
+
+== RESOURCES
+
+{feelpp} Docs::
+http://docs.feelpp.org/toolboxes/0.107/
+
+{feelpp} Cases for feelpp_toolbox_hdg_elasticity::
+http://docs.feelpp.org/cases/0.107//README
+
+{feelpp} Toolbox Docs for feelpp_toolbox_hdg_elasticity::
+http://docs.feelpp.org/toolboxes/0.107//
+
+== SEE ALSO
+
+{feelpp} Mesh Partitioner::
+Mesh partitioner for {feelpp} Toolboxes
+http://docs.feelpp.org/user/0.107/using/mesh_partitioner/
+
+
+{feelpp} Remote Tool::
+Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
+http://docs.feelpp.org/user/0.107/using/remotedata/
+
+
+== COPYING
+
+Copyright \(C) 2020 {feelpp} Consortium. +
+Free use of this software is granted under the terms of the GPLv3 License.
+
