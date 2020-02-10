@@ -41,6 +41,9 @@ straightenMesh( std::shared_ptr<MeshType> m,
                 bool refine = false,
                 bool save = false );
 
+#define FEELPP_INSTANTIATE_STRAIGHTENMESH 
+#include <feel/feelfilters/straightenmesh_impl.hpp>
+
 #if !defined(FEELPP_INSTANTIATE_STRAIGHTENMESH)
 // 1D
 extern template std::shared_ptr<Mesh<Simplex<1,1>>>
