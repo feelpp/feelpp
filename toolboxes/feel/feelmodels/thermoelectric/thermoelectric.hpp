@@ -112,6 +112,10 @@ public :
     electric_model_ptrtype const& electricModel() const { return M_electricModel; }
     electric_model_ptrtype electricModel() { return M_electricModel; }
 
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
 
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
@@ -173,7 +177,7 @@ private :
     mesh_ptrtype M_mesh;
     //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     // materials range
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    //std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     // physical parameter
     std::string M_modelName;

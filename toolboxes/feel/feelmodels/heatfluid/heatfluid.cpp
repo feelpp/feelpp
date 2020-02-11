@@ -44,7 +44,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
                                           std::string const& subPrefix,
                                           ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<mesh_type::nDim>( "aerothermal" )
 {
     this->log("HeatFluid","constructor", "start" );
 
@@ -163,15 +164,32 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_mesh )
         this->initMesh();
 
+    // physical properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
+
+
     M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                                     this->subPrefix(), this->repository() );
+    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
+                                                       this->subPrefix(), this->repository() );
+
+
     if ( !M_heatModel->modelPropertiesPtr() )
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
     M_heatModel->setMesh( this->mesh() );
+    M_heatModel->setMaterialsProperties( M_materialsProperties );
+    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_x,%1%_U_y}:%1%_U_x:%1%_U_y":"{%1%_U_x,%1%_U_y,%1%_U_z}:%1%_U_x:%1%_U_y:%1%_U_z"  )%M_fluidModel->keyword() ).str();
+    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
+    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
+        M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
     M_heatModel->init( false );
 
-    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
-                                                       this->subPrefix(), this->repository() );
     if ( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
     M_fluidModel->setMesh( this->mesh() );
@@ -188,10 +206,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
     {
         // init velocity convection (TODO : the initial velocity from the fluid)
-        M_heatModel->setFieldVelocityConvectionIsUsed( true );
-        M_heatModel->updateForUseFunctionSpacesVelocityConvection();
+        //M_heatModel->setFieldVelocityConvectionIsUsed( true );
+        //M_heatModel->updateForUseFunctionSpacesVelocityConvection();
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
+                                                                                 boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
+                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Heat,
+                                                                                   boost::ref( *this ), _1 ) );
+
         if ( M_useSemiImplicitTimeScheme )
         {
             M_fluidModel->setSolverName("Oseen");
@@ -217,6 +242,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         //     M_fluidModel->setSolverName("Oseen");
     }
 
+#if 0
     for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
@@ -224,7 +250,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             continue;
         M_rangeMeshElementsByMaterial[matName] = rangeData.second;
     }
-
+#endif
     // post-process
     this->initPostProcess();
 
@@ -471,18 +497,21 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     if ( !M_useNaturalConvection )
     {
         M_fluidModel->solve();
+#if 0
         M_heatModel->setFieldVelocityConvectionIsUsed( true );
         for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
         {
             auto const& range = rangeData.second;
             M_heatModel->updateFieldVelocityConvection( range,idv(M_fluidModel->fieldVelocity()) );
         }
+#endif
         M_heatModel->solve();
     }
     else
     {
         if ( M_useSemiImplicitTimeScheme )
         {
+#if 0
             M_heatModel->setFieldVelocityConvectionIsUsed( true );
             auto const& uConvection = *M_fluidModel->fieldConvectionVelocityExtrapolatedPtr();
             for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
@@ -490,6 +519,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
                 auto const& range = rangeData.second;
                 M_heatModel->updateFieldVelocityConvection( range,idv(uConvection) );
             }
+#endif
             M_heatModel->solve();
             M_fluidModel->solve();
         }
@@ -686,8 +716,20 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
     auto mesh = this->mesh();
 
-    M_heatModel->updateJacobian( data );
-    M_fluidModel->updateJacobian( data );
+    auto XhT = this->heatModel()->spaceTemperature();
+    auto XhV = this->fluidModel()->functionSpaceVelocity();
+    auto XhP = this->fluidModel()->functionSpacePressure();
+    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    size_type blockIndexVelocity = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("velocity");
+    size_type blockIndexPressure = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
+    auto const t = XhT->element(XVec, blockIndexTemperature );
+    auto const u = XhV->element(XVec, blockIndexVelocity );
+    auto const p = XhP->element(XVec, blockIndexPressure );
+
+    auto symbolsExpr = this->symbolsExpr(t,u,p);
+
+    M_heatModel->updateJacobian( data, symbolsExpr );
+    M_fluidModel->updateJacobian( data/*, symbolsExpr*/ );
 
     if ( buildNonCstPart )
     {
@@ -698,36 +740,35 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         if ( !M_heatModel->isStationary() )
             timeSteppingScaling_heat = data.doubleInfo( prefixvm(M_heatModel->prefix(),"time-stepping.scaling") );
 
-        auto XhV = M_fluidModel->functionSpaceVelocity();
-        auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
+        //auto XhV = M_fluidModel->functionSpaceVelocity();
+        //auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
 
-        auto XhT = M_heatModel->spaceTemperature();
-        auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
-        auto const& thermalProperties = M_heatModel->thermalProperties();
+        //auto XhT = M_heatModel->spaceTemperature();
+        //auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
+        //auto const& thermalProperties = M_heatModel->thermalProperties();
 
         auto bfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
                             _rowstart=M_fluidModel->rowStartInMatrix(),
                             _colstart=M_heatModel->colStartInMatrix() );
 
-        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& rho = M_heatModel->thermalProperties()->rho( matName );
-            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
-            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
 
             auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
             auto rhoExpr = rho.expr();
             auto beta = thermalExpansion.expr();
-
+#if 0
             form2( _test=XhT,_trial=XhT,_matrix=J,
                    _rowstart=M_heatModel->rowStartInMatrix(),
                    _colstart=M_heatModel->colStartInMatrix() ) +=
                 integrate( _range=range,
                            _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
                            _geomap=this->geomap() );
-
+#endif
             form2( _test=XhT,_trial=XhV,_matrix=J,
                    _rowstart=M_heatModel->rowStartInMatrix(),
                    _colstart=M_fluidModel->colStartInMatrix() ) +=
@@ -742,12 +783,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
             if ( M_heatModel->stabilizationGLS() )
             {
+#if 0
                 auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
                 if ( thermalConductivity.isMatrix() )
                     CHECK( false ) << "TODO";
                 else
                     M_heatModel->updateJacobianStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
-
+#endif
 #if 0
                 auto rhocp = rhoHeatCapacityExpr;
                 auto tau = idv( M_heatModel->stabilizationGLSParameter()->fieldTauPtr() );
@@ -832,10 +874,23 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     //auto mesh = this->mesh();
 
+    auto XhT = this->heatModel()->spaceTemperature();
+    auto XhV = this->fluidModel()->functionSpaceVelocity();
+    auto XhP = this->fluidModel()->functionSpacePressure();
+    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    size_type blockIndexVelocity = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("velocity");
+    size_type blockIndexPressure = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
+    auto const t = XhT->element(XVec, blockIndexTemperature );
+    auto const u = XhV->element(XVec, blockIndexVelocity );
+    auto const p = XhP->element(XVec, blockIndexPressure );
+
+    auto symbolsExpr = this->symbolsExpr(t,u,p);
+
+
     if ( doAssemblyHeat )
-        M_heatModel->updateResidual( data );
+        M_heatModel->updateResidual( data, symbolsExpr );
     if ( doAssemblyFluid )
-        M_fluidModel->updateResidual( data );
+        M_fluidModel->updateResidual( data/*,symbolsExpr*/ );
 
     double timeSteppingScaling_fluid = 1.;
     if ( !M_fluidModel->isStationaryModel() && doAssemblyFluid )
@@ -846,22 +901,22 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     if ( buildNonCstPart )
     {
-        auto XhV = M_fluidModel->functionSpaceVelocity();
-        auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
-        auto XhT = M_heatModel->spaceTemperature();
-        auto const t = XhT->element(XVec, M_heatModel->rowStartInVector()+0 );
+        //auto XhV = M_fluidModel->functionSpaceVelocity();
+        //auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
+        //auto XhT = M_heatModel->spaceTemperature();
+        //auto const t = XhT->element(XVec, M_heatModel->rowStartInVector()+0 );
         auto mylfT = form1( _test=XhT, _vector=R,
                             _rowstart=M_heatModel->rowStartInVector()+0 );
         auto mylfV = form1( _test=XhV, _vector=R,
                             _rowstart=M_fluidModel->rowStartInVector()+0 );
 
 
-        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
             auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+#if 0
             if ( doAssemblyHeat )
             {
                 mylfT +=
@@ -869,6 +924,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
                                _geomap=this->geomap() );
             }
+#endif
             auto const& rho = M_heatModel->thermalProperties()->rho( matName );
             auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
             auto rhoExpr = rho.expr();
@@ -882,7 +938,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                _geomap=this->geomap() );
             }
 
-
+#if 0 // TODO VINCENT
             if ( M_heatModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
                 auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
@@ -899,6 +955,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 else
                     M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
             }
+#endif
 
             if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
@@ -951,6 +1008,58 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual 
 }
 
 
+
+
+
+
+
+
+
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) const
+{
+    auto const& t = this->heatModel()->fieldTemperature();
+    auto const& u = this->fluidModel()->fieldVelocity();
+    auto const& p = this->fluidModel()->fieldPressure();
+    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    M_heatModel->updateLinearPDE( data,symbolsExpr );
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto XhT = this->heatModel()->spaceTemperature();
+    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    auto const t = XhT->element(XVec, blockIndexTemperature );
+    auto const& u = this->fluidModel()->fieldVelocity();
+    auto const& p = this->fluidModel()->fieldPressure();
+
+    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    M_heatModel->updateResidual( data,symbolsExpr );
+
+}
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Heat( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto XhT = this->heatModel()->spaceTemperature();
+    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    auto const t = XhT->element(XVec, blockIndexTemperature );
+    auto const& u = this->fluidModel()->fieldVelocity();
+    auto const& p = this->fluidModel()->fieldPressure();
+
+    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    M_heatModel->updateJacobian( data,symbolsExpr );
+}
+
+
+
+
+
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data ) const
@@ -978,10 +1087,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
     auto mylfV = form1( _test=XhV, _vector=F,
                         _rowstart=M_fluidModel->rowStartInVector() );
 
-    for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
 
         auto const& rho = M_heatModel->thermalProperties()->rho( matName );
@@ -1047,10 +1155,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
     auto mylfV = form1( _test=XhV, _vector=R,
                         _rowstart=M_fluidModel->rowStartInVector() );
 
-    for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
 
         auto const& rho = M_heatModel->thermalProperties()->rho( matName );

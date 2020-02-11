@@ -25,7 +25,6 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<nDim>( "heat" )
-    //M_thermalProperties( new thermalproperties_type( prefix, this->repository().expr() ) )
 {
     this->log("Heat","constructor", "start" );
 
@@ -92,6 +91,17 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
 
+    if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
+    {
+        auto theExpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
+                                     "",this->worldComm(),this->repository().expr() );
+        for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
+            this->setVelocityConvectionExpr( matName,theExpr );
+        //M_exprVelocityConvection[matName] = theExpr;
+    }
+
+
+
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
 }
@@ -117,8 +127,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
 
-    if ( this->fieldVelocityConvectionIsUsed() )
-        this->updateForUseFunctionSpacesVelocityConvection();
+    //if ( this->fieldVelocityConvectionIsUsed() )
+    //this->updateForUseFunctionSpacesVelocityConvection();
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
@@ -128,6 +138,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
 {
+#if 0
     if ( !M_XhVelocityConvection )
     {
         if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
@@ -147,12 +158,14 @@ HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
             this->updateFieldVelocityConvection();
         }
     }
+#endif
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
 {
+#if 0
     if ( M_exprVelocityConvection.get_ptr() == 0 )
         return;
 
@@ -162,6 +175,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSy
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     M_exprVelocityConvection->setParameterValues( paramValues );
     M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
+#endif
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -433,21 +447,21 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     // Physical Model
     pt::ptree subPt, subPt2;
     subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
+    //subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
     p.put_child( "Physical Model", subPt );
 
     // Boundary Conditions
     subPt.clear();
     subPt2.clear();
-    this->updateInformationObjectDirichletBC( subPt2 );
+    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectNeumannBC( subPt2 );
+    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectRobinBC( subPt2 );
+    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
@@ -463,8 +477,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     M_mesh->putInformationObject( subPt );
     p.put( "Mesh",  M_mesh->journalSectionName() );
     p.put( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-        p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
+    //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
+    //    p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
     if ( M_stabilizationGLS )
     {
         subPt.clear();
@@ -498,12 +512,12 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
-           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient")
-           << "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
+           << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
+        //<< "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
     *_ostr << "\n   Boundary conditions"
-           << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoRobinBC();
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
@@ -512,9 +526,9 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Space Temperature Discretization"
            << "\n     -- order         : " << nOrderPoly
            << "\n     -- number of dof : " << M_Xh->nDof() << " (" << M_Xh->nLocalDof() << ")";
-    if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-        *_ostr << "\n   Space Velocity Convection Discretization"
-               << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
+    //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
+    //     *_ostr << "\n   Space Velocity Convection Discretization"
+    //            << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
     if ( !this->isStationary() )
     {
         *_ostr << "\n   Time Discretization"
@@ -553,26 +567,28 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
+    for ( auto & [matName, velConvExpr] : M_exprVelocityConvection )
+        velConvExpr.setParameterValues( paramValues );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
+    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
+    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
+    M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
+        M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( name(d),markers(d) );
+        M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
@@ -583,7 +599,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on temperature from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
+        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         temperatureMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, temperatureMarkers );
@@ -591,14 +607,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // on topological faces
     auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
     if ( !listMarkedFacesTemperature.empty() )
-    {
-        auto therange = markedfaces(mesh,listMarkedFacesTemperature );
-        auto dofsToAdd = XhTemperature->dofs( therange );
-        XhTemperature->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("temperature",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhTemperature->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("temperature",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "temperature", XhTemperature, markedfaces( mesh,listMarkedFacesTemperature ) );
+
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -736,6 +746,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         {
             auto & dataInfos = M_algebraicFactory->dataInfos();
             *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+#if 0 // TODO VINCENT
             if ( this->fieldVelocityConvectionIsUsedAndOperational() )
             {
                 std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field" );
@@ -743,6 +754,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
                     dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( this->fieldVelocityConvection().mapPtr() ) );
                 *dataInfos.vectorInfo( convectionOseenEntry ) = this->fieldVelocityConvection();
             }
+#endif
         }
     }
 }
@@ -769,7 +781,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & dat
     for( auto const& d : M_bcDirichlet )
     {
         auto theExpr = expression(d,this->symbolsExpr());
-        u.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
+        u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=theExpr );
     }
 
@@ -800,8 +812,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
 {
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
 
     this->log("Heat","updateResidualDofElimination","start" );
 
@@ -814,8 +825,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
 {
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
 
     this->log("Heat","updateJacobianDofElimination","start" );
 
@@ -829,8 +839,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    if ( !this->hasMarkerDirichletBCelimination() ) return;
-    //if ( this->M_bcDirichlet.empty() ) return;
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
 
     this->log("Heat","updateLinearPDEDofElimination","start" );
 
@@ -848,7 +857,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data
     {
         auto theExpr = expression(d,this->symbolsExpr());
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
+            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=u,_rhs=F,_expr=theExpr );
     }
 

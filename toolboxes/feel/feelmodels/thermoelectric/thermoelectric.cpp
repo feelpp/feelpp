@@ -196,7 +196,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_modelName = "ThermoElectric";
     if ( M_solverName == "automatic" )
     {
-        if ( M_electricModel->electricProperties()->hasElectricConductivityDependingOnSymbol( "heat_T" ) )
+        if ( this->materialsProperties()->hasElectricConductivityDependingOnSymbol( "heat_T" ) )
             M_solverName = "Newton";
         else
             M_solverName = "Linear";
@@ -225,13 +225,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         intersect( M_heatModel->rangeMeshElements(), M_electricModel->rangeMeshElements() );
 #endif
 
-    for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
-            continue;
-        M_rangeMeshElementsByMaterial[matName] = rangeData.second;
-    }
+    // for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
+    // {
+    //     std::string const& matName = rangeData.first;
+    //     if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
+    //         continue;
+    //     M_rangeMeshElementsByMaterial[matName] = rangeData.second;
+    // }
     // post-process
     this->initPostProcess();
 
@@ -526,11 +526,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                              _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature ,
                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             if ( M_modelUseJouleEffect )
             {
                 auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
@@ -589,11 +588,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
         auto myLinearForm = form1( _test=XhT,_vector=F,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
             myLinearForm +=
                 integrate( _range=range,
@@ -627,11 +625,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
         auto myLinearForm = form1( _test=XhT,_vector=R,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
             myLinearForm +=
                 integrate( _range=range,
@@ -695,11 +692,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                              _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                              _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             std::string symbolStr = "heat_T";
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
             if ( M_modelUseJouleEffect )
@@ -767,11 +763,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto mylfV = form1( _test=XhV, _vector=R,
                             _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
 
-        for ( auto const& rangeData : M_rangeMeshElementsByMaterial )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& electricConductivity = M_electricModel->electricProperties()->electricConductivity( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
             if ( M_modelUseJouleEffect )
             {

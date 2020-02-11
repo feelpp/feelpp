@@ -31,7 +31,6 @@
 #define FEELPP_TOOLBOXES_ELECTRIC_HPP 1
 
 #include <feel/feelmodels/heat/heat.hpp>
-//#include <feel/feelmodels/electric/electricpropertiesdescription.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
@@ -184,13 +183,12 @@ public :
             auto const& v = this->fieldElectricPotential();
             typedef std::decay_t<decltype(-_expr_scalar_type{}*trans(gradv(v)))> expr_current_density_type;
             std::map<std::string,std::vector<std::tuple< expr_current_density_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprCurrentDensity;
-            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
             {
-                std::string const& _matName = rangeData.first;
-                auto const& range = rangeData.second;
-                if ( this->electricProperties()->hasElectricConductivity( _matName ) )
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                if ( this->materialsProperties()->hasElectricConductivity( matName ) )
                 {
-                    auto const& electricConductivity = this->electricProperties()->electricConductivity( _matName );
+                    auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
                     auto electricConductivityExpr = expr( electricConductivity.expr(), se );
                     mapExprScalar[prefixvm(prefix,"electric-conductivity")].push_back( std::make_tuple( electricConductivityExpr, range, "element" ) );
 
@@ -251,7 +249,7 @@ public :
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-    materialsproperties_ptrtype const& electricProperties() const { return M_materialsProperties; } // DEPRECATED  
+    //materialsproperties_ptrtype const& electricProperties() const { return M_materialsProperties; } // DEPRECATED  
 
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -296,11 +294,10 @@ private :
     void updateCurrentDensity( SymbolsExpr const& symbolsExpr )
         {
             auto const& v = this->fieldElectricPotential();
-            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
             {
-                std::string const& matName = rangeData.first;
-                auto const& range = rangeData.second;
-                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
                 auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
                 M_fieldCurrentDensity->on(_range=range, _expr=-sigmaExpr*trans(gradv(v)) );
             }
@@ -309,11 +306,10 @@ private :
     void updateJoulesLosses( SymbolsExpr const& symbolsExpr )
         {
             auto const& v = this->fieldElectricPotential();
-            for ( auto const& rangeData : this->electricProperties()->rangeMeshElementsByMaterial() )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
             {
-                std::string const& matName = rangeData.first;
-                auto const& range = rangeData.second;
-                auto const& electricConductivity = this->electricProperties()->electricConductivity( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
                 auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
                 M_fieldJoulesLosses->on(_range=range, _expr=sigmaExpr*inner(gradv(v)) );
             }

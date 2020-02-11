@@ -142,6 +142,9 @@ public :
                 if ( currentPhysics.empty() )
                     continue;
 
+                for ( std::string const& p : currentPhysics )
+                    M_materialsNames[p].insert( matName );
+
                 for ( std::string const& matmarker : mat.meshMarkers() )
                 {
                     if ( !onlyTheseMarkers.empty() && (onlyTheseMarkers.find( matName ) == onlyTheseMarkers.end()) )
@@ -164,8 +167,11 @@ public :
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
-                if ( !onlyTheseMaterialNames.empty() && (onlyTheseMaterialNames.find( matName ) == onlyTheseMaterialNames.end()) )
+                if ( !this->hasMaterial( matName ) )
                     continue;
+                //if ( !onlyTheseMaterialNames.empty() && (onlyTheseMaterialNames.find( matName ) == onlyTheseMaterialNames.end()) )
+                //continue;
+
                 auto const& mat = m.second;
                 auto itFindMat = markersByMaterial.find( matName );
                 if ( itFindMat == markersByMaterial.end() )
@@ -211,6 +217,25 @@ public :
             M_exprSelectorByMeshElementMapping->template updateForUse<mesh_type>( this->rangeMeshElementsByMaterial() );
         }
 
+    //! return true if the material matName has been defined
+    bool hasMaterial( std::string const& matName ) const
+        {
+            for ( auto const& [physic, matNames] : M_materialsNames )
+                if ( matNames.find( matName ) != matNames.end() )
+                    return true;
+            return false;
+        }
+
+    //! return the materials name from a physic
+    std::set<std::string> physicToMaterials( std::string const& physic ) const
+        {
+            auto itFindMat = M_materialsNames.find( physic );
+            if( itFindMat != M_materialsNames.end() )
+                return itFindMat->second;
+            return std::set<std::string>{};
+        }
+
+
     std::set<std::string> /*const&*/ markers( std::string const& p ) const
         {
             auto itFindMarkers = M_markers.find( p );
@@ -236,7 +261,7 @@ public :
             return M_rangeMeshElementsByMaterial.find( matName )->second;
         }
 
-    bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
+    //bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> exprSelectorByMeshElementMapping() const { return M_exprSelectorByMeshElementMapping; }
 
@@ -548,6 +573,7 @@ private :
     std::string M_exprRepository;
     std::map<std::string,std::set<std::string>> M_markers; // physic -> markers
     std::map<std::string,bool> M_isDefinedOnWholeMesh; // physics -> bool
+    std::map<std::string,std::set<std::string>> M_materialsNames; // physic -> matNames
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial; // matName -> range
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> M_exprSelectorByMeshElementMapping;
 
