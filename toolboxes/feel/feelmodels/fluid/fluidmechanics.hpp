@@ -880,7 +880,14 @@ public :
     auto symbolsExpr() const { return this->symbolsExpr( this->fieldVelocity(),  this->fieldPressure() ); }
 
     template <typename FieldVelocityType, typename FieldPressureType>
-    constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p ) const { return this->symbolsExprField( u,p, hana::int_<nDim>() ); }
+    constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_"  ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%U")%prefix_symbol).str(), idv(u), SymbolExprComponentSuffix( nDim, 1, true ) ),
+                                          symbolExpr( (boost::format("%1%P")%prefix_symbol).str(), idv(p) ),
+                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) ),
+                                          this->symbolsExprUserFunctions()
+                                          );
+        }
 
     template <typename SymbExprType>
     auto symbolsExprMaterial( SymbExprType const& se ) const
@@ -1212,6 +1219,7 @@ public :
 private :
     void updateBoundaryConditionsForUse();
 
+#if 0
     template <typename FieldVelocityType, typename FieldPressureType>
     constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p, hana::int_<2> /**/ ) const
         {
@@ -1233,6 +1241,7 @@ private :
                                           this->symbolsExprUserFunctions()
                                           );
         }
+#endif
     //auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
 
     template <typename SymbExprType>

@@ -55,10 +55,7 @@ namespace FeelModels
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
              public ModelPhysics<ConvexType::nDim>,
-             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
-             public MarkerManagementDirichletBC,
-             public MarkerManagementNeumannBC,
-             public MarkerManagementRobinBC
+             public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >
     {
     public:
         typedef ModelNumerical super_type;
@@ -84,14 +81,17 @@ class Heat : public ModelNumerical,
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
         typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
         // function space velocity convection
-        typedef FunctionSpace<mesh_type, bases<basis_velocityconvection_type> > space_velocityconvection_type;
-        typedef std::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
-        typedef typename space_velocityconvection_type::element_type element_velocityconvection_type;
-        typedef std::shared_ptr<element_velocityconvection_type> element_velocityconvection_ptrtype;
+        //typedef FunctionSpace<mesh_type, bases<basis_velocityconvection_type> > space_velocityconvection_type;
+        //typedef std::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
+        //typedef typename space_velocityconvection_type::element_type element_velocityconvection_type;
+        //typedef std::shared_ptr<element_velocityconvection_type> element_velocityconvection_ptrtype;
+
+        using velocity_convection_expr_type = vector_field_expression<nDim>;
+        
         // mechanical properties desc
-        typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
-        typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-        typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+        //typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
+        //typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
+        //typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
         typedef MaterialsProperties<mesh_type> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
         // time scheme
@@ -128,15 +128,24 @@ class Heat : public ModelNumerical,
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
         element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
-        element_velocityconvection_ptrtype const& fieldVelocityConvectionPtr() const { return M_fieldVelocityConvection; }
-        element_velocityconvection_ptrtype & fieldVelocityConvectionPtr() { return M_fieldVelocityConvection; }
-        element_velocityconvection_type const& fieldVelocityConvection() const { return *M_fieldVelocityConvection; }
-        bool fieldVelocityConvectionIsUsed() const { return M_fieldVelocityConvectionIsUsed; }
-        bool fieldVelocityConvectionIsIncompressible() const { return M_fieldVelocityConvectionIsIncompressible; }
-        void setFieldVelocityConvectionIsUsed(bool b) { M_fieldVelocityConvectionIsUsed=b; }
-        bool fieldVelocityConvectionIsOperational() const { return (M_fieldVelocityConvection.use_count() > 0); }
-        bool fieldVelocityConvectionIsUsedAndOperational() const { return this->fieldVelocityConvectionIsUsed() && this->fieldVelocityConvectionIsOperational(); }
-        void setFieldVelocityConvectionIsIncompressible(bool b) { M_fieldVelocityConvectionIsIncompressible=b; }
+        //element_velocityconvection_ptrtype const& fieldVelocityConvectionPtr() const { return M_fieldVelocityConvection; }
+        //element_velocityconvection_ptrtype & fieldVelocityConvectionPtr() { return M_fieldVelocityConvection; }
+        //element_velocityconvection_type const& fieldVelocityConvection() const { return *M_fieldVelocityConvection; }
+        //bool fieldVelocityConvectionIsUsed() const { return M_fieldVelocityConvectionIsUsed; }
+        //bool fieldVelocityConvectionIsIncompressible() const { return M_fieldVelocityConvectionIsIncompressible; }
+        //void setFieldVelocityConvectionIsUsed(bool b) { M_fieldVelocityConvectionIsUsed=b; }
+        //bool fieldVelocityConvectionIsOperational() const { return (M_fieldVelocityConvection.use_count() > 0); }
+        //bool fieldVelocityConvectionIsUsedAndOperational() const { return this->fieldVelocityConvectionIsUsed() && this->fieldVelocityConvectionIsOperational(); }
+        //void setFieldVelocityConvectionIsIncompressible(bool b) { M_fieldVelocityConvectionIsIncompressible=b; }
+
+        bool hasVelocityConvectionExpr( std::string const& matName ) const { return M_exprVelocityConvection.find( matName ) != M_exprVelocityConvection.end(); }
+        velocity_convection_expr_type const& velocityConvectionExpr( std::string const& matName ) const
+            {
+                auto itFindVel = M_exprVelocityConvection.find( matName );
+                CHECK( itFindVel != M_exprVelocityConvection.end() ) << "no velocity convection with material " << matName << std::endl;
+                return itFindVel->second;
+            }
+        void setVelocityConvectionExpr( std::string const& matName, velocity_convection_expr_type const& thexpr ) { M_exprVelocityConvection.emplace( matName, thexpr ); }
         // stabilization
         bool stabilizationGLS() const { return M_stabilizationGLS; }
         std::string const& stabilizationGLSType() const { return M_stabilizationGLSType; }
@@ -218,8 +227,8 @@ class Heat : public ModelNumerical,
 
         auto allFields( std::string const& prefix = "" ) const
             {
-                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() ),
-                                         std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() )
+                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() )
+                                         //std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() )
                                          );
             }
 
@@ -306,7 +315,7 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
         // apply assembly and solver
-        /*virtual*/ void solve();
+        void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const override;
         template <typename SymbolsExpr>
@@ -340,6 +349,7 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
         // update field from expr
         void updateFieldVelocityConvection( bool onlyExprWithTimeSymbol = false );
+#if 0
         template < typename ExprT >
         void updateFieldVelocityConvection( vf::Expr<ExprT> const& expr )
         {
@@ -353,7 +363,7 @@ class Heat : public ModelNumerical,
             M_exprVelocityConvection.reset();// symbolic expression is remove
             M_fieldVelocityConvection->on(_range=range, _expr=expr );
         }
-
+#endif
     private :
         void updateTimeStepCurrentResidual();
 
@@ -367,9 +377,10 @@ class Heat : public ModelNumerical,
         space_temperature_ptrtype M_Xh;
         element_temperature_ptrtype M_fieldTemperature;
         bool M_fieldVelocityConvectionIsUsed, M_fieldVelocityConvectionIsIncompressible;
-        space_velocityconvection_ptrtype M_XhVelocityConvection;
-        element_velocityconvection_ptrtype M_fieldVelocityConvection; // only define with convection effect
-        boost::optional<vector_field_expression<nDim,1,2> > M_exprVelocityConvection;
+        //space_velocityconvection_ptrtype M_XhVelocityConvection;
+        //element_velocityconvection_ptrtype M_fieldVelocityConvection; // only define with convection effect
+        //boost::optional<velocity_convection_expr_type> M_exprVelocityConvection;
+        std::map<std::string,velocity_convection_expr_type> M_exprVelocityConvection;
 
         // time discretisation
         std::string M_timeStepping;
@@ -378,7 +389,7 @@ class Heat : public ModelNumerical,
         vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
         // physical parameter
-        space_scalar_P0_ptrtype M_XhScalarP0;
+        //space_scalar_P0_ptrtype M_XhScalarP0;
         //thermalproperties_ptrtype M_thermalProperties;
         materialsproperties_ptrtype M_materialsProperties;
 
@@ -387,6 +398,9 @@ class Heat : public ModelNumerical,
         map_scalar_field<2> M_bcNeumann;
         map_scalar_fields<2> M_bcRobin;
         map_scalar_field<2> M_volumicForcesProperties;
+        MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
+        MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
+        MarkerManagementRobinBC M_bcRobinMarkerManagement;
 
         // stabilization
         bool M_stabilizationGLS;

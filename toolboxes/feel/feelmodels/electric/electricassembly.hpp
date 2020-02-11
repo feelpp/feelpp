@@ -33,10 +33,9 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    for ( auto const& rangeData : this->materialsProperties()->rangeMeshElementsByMaterial() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
 
         auto sigma = expr( electricConductivity.expr(), symbolsExpr);
@@ -120,10 +119,9 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                                               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-    for ( auto const& rangeData :  this->materialsProperties()->rangeMeshElementsByMaterial() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
         bool buildDiffusion = ( electricConductivity.isConstant() )? buildCstPart : buildNonCstPart;
         if ( buildDiffusion )
@@ -176,10 +174,9 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
 
-    for ( auto const& rangeData :  this->materialsProperties()->rangeMeshElementsByMaterial() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
 
         bool buildDiffusion = ( electricConductivity.isConstant() )? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;

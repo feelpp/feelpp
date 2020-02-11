@@ -36,6 +36,7 @@ namespace FeelModels
 
 template< typename HeatType, typename FluidType>
 class HeatFluid : public ModelNumerical,
+                  public ModelPhysics<HeatType::convex_type::nDim>,
                   public std::enable_shared_from_this< HeatFluid<HeatType,FluidType> >
 {
 
@@ -56,6 +57,11 @@ public:
     typedef mesh_fluid_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     static const uint16_type nDim = mesh_type::nDim;
+
+    // materials properties
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
     typedef std::shared_ptr<export_type> export_ptrtype;
@@ -100,7 +106,11 @@ public :
     fluid_model_ptrtype const& fluidModel() const { return M_fluidModel; }
     fluid_model_ptrtype fluidModel() { return M_fluidModel; }
 
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    //std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     backend_ptrtype const& backend() const { return M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -148,7 +158,12 @@ public :
 
     void updateLinearFluidSolver( DataUpdateLinear & data ) const;
     void updateResidualFluidSolver( DataUpdateResidual & data ) const;
+
 private :
+    void updateLinear_Heat( DataUpdateLinear & data ) const;
+    void updateResidual_Heat( DataUpdateResidual & data ) const;
+    void updateJacobian_Heat( DataUpdateJacobian & data ) const;
+
     void updateTimeStepCurrentResidual();
 
 private :
@@ -161,12 +176,13 @@ private :
     mesh_ptrtype M_mesh;
     //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     // materials range
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
+    //std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     // physical parameter
     bool M_useNaturalConvection;
     double M_BoussinesqRefTemperature;
     vector_field_expression<nDim,1,2> M_gravityForce;
+    materialsproperties_ptrtype M_materialsProperties;
 
     // solver
     //std::string M_solverName;
