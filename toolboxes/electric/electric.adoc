@@ -13,7 +13,16 @@ feelpp_toolbox_electric - electric toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_electric --case <directory to model case> [--case.dim 3] [--case.discretization P1] [--electric.ksp-monitor=<0,1>] [--electric.ksp-view=<0,1>] [--electric.ksp-type=<see below>] [--electric.pc-view=<0,1>] [--electric.pc-type=<see below>] [--electric.snes-monitor=<0,1>] [--electric.ksp-type=<see below>]
+feelpp_toolbox_electric --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--electric.ksp-monitor=<0,1>]
+  [--electric.ksp-view=<0,1>]
+  [--electric.ksp-type=<see below>]
+  [--electric.pc-view=<0,1>]
+  [--electric.pc-type=<see below>]
+  [--electric.snes-monitor=<0,1>]
+  [--electric.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

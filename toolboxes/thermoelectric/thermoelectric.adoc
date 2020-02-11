@@ -13,7 +13,16 @@ feelpp_toolbox_thermoelectric - thermoelectric toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_thermoelectric --case <directory to model case> [--case.dim 3] [--case.discretization P1] [--thermoelectric.ksp-monitor=<0,1>] [--thermoelectric.ksp-view=<0,1>] [--thermoelectric.ksp-type=<see below>] [--thermoelectric.pc-view=<0,1>] [--thermoelectric.pc-type=<see below>] [--thermoelectric.snes-monitor=<0,1>] [--thermoelectric.ksp-type=<see below>]
+feelpp_toolbox_thermoelectric --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--thermoelectric.ksp-monitor=<0,1>]
+  [--thermoelectric.ksp-view=<0,1>]
+  [--thermoelectric.ksp-type=<see below>]
+  [--thermoelectric.pc-view=<0,1>]
+  [--thermoelectric.pc-type=<see below>]
+  [--thermoelectric.snes-monitor=<0,1>]
+  [--thermoelectric.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

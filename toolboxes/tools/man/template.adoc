@@ -13,7 +13,16 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 == SYNOPSIS
 
 ----
-{{ toolbox_app }} --case <directory to model case> [--case.dim {{ toolbox_default_option_values[0] }}] [--case.discretization {{ toolbox_default_option_values[1] }}] [--{{ toolbox }}.ksp-monitor=<0,1>] [--{{ toolbox }}.ksp-view=<0,1>] [--{{ toolbox }}.ksp-type=<see below>] [--{{ toolbox }}.pc-view=<0,1>] [--{{ toolbox }}.pc-type=<see below>] [--{{ toolbox }}.snes-monitor=<0,1>] [--{{ toolbox }}.ksp-type=<see below>]
+{{ toolbox_app }} --case <directory to model case>
+  [--case.dim {{ toolbox_default_option_values[0] }}]
+  [--case.discretization {{ toolbox_default_option_values[1] }}]
+  [--{{ toolbox }}.ksp-monitor=<0,1>]
+  [--{{ toolbox }}.ksp-view=<0,1>]
+  [--{{ toolbox }}.ksp-type=<see below>]
+  [--{{ toolbox }}.pc-view=<0,1>]
+  [--{{ toolbox }}.pc-type=<see below>]
+  [--{{ toolbox }}.snes-monitor=<0,1>]
+  [--{{ toolbox }}.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

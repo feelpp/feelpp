@@ -13,7 +13,16 @@ feelpp_toolbox_hdg_elasticity - hybridized discontinuous Galerkin elasticity too
 == SYNOPSIS
 
 ----
-feelpp_toolbox_hdg_elasticity --case <directory to model case> [--case.dim 3] [--case.discretization ] [--hdg_elasticity.ksp-monitor=<0,1>] [--hdg_elasticity.ksp-view=<0,1>] [--hdg_elasticity.ksp-type=<see below>] [--hdg_elasticity.pc-view=<0,1>] [--hdg_elasticity.pc-type=<see below>] [--hdg_elasticity.snes-monitor=<0,1>] [--hdg_elasticity.ksp-type=<see below>]
+feelpp_toolbox_hdg_elasticity --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization ]
+  [--hdg_elasticity.ksp-monitor=<0,1>]
+  [--hdg_elasticity.ksp-view=<0,1>]
+  [--hdg_elasticity.ksp-type=<see below>]
+  [--hdg_elasticity.pc-view=<0,1>]
+  [--hdg_elasticity.pc-type=<see below>]
+  [--hdg_elasticity.snes-monitor=<0,1>]
+  [--hdg_elasticity.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

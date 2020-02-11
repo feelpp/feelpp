@@ -13,7 +13,16 @@ feelpp_toolbox_solid - solid mechanics toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_solid --case <directory to model case> [--case.dim 3] [--case.discretization P1] [--solid.ksp-monitor=<0,1>] [--solid.ksp-view=<0,1>] [--solid.ksp-type=<see below>] [--solid.pc-view=<0,1>] [--solid.pc-type=<see below>] [--solid.snes-monitor=<0,1>] [--solid.ksp-type=<see below>]
+feelpp_toolbox_solid --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--solid.ksp-monitor=<0,1>]
+  [--solid.ksp-view=<0,1>]
+  [--solid.ksp-type=<see below>]
+  [--solid.pc-view=<0,1>]
+  [--solid.pc-type=<see below>]
+  [--solid.snes-monitor=<0,1>]
+  [--solid.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

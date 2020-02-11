@@ -13,7 +13,16 @@ feelpp_toolbox_hdg_coupledpoisson - hybridized discontinuous Galerkin Coupled Po
 == SYNOPSIS
 
 ----
-feelpp_toolbox_hdg_coupledpoisson --case <directory to model case> [--case.dim 3] [--case.discretization ] [--hdg_coupledpoisson.ksp-monitor=<0,1>] [--hdg_coupledpoisson.ksp-view=<0,1>] [--hdg_coupledpoisson.ksp-type=<see below>] [--hdg_coupledpoisson.pc-view=<0,1>] [--hdg_coupledpoisson.pc-type=<see below>] [--hdg_coupledpoisson.snes-monitor=<0,1>] [--hdg_coupledpoisson.ksp-type=<see below>]
+feelpp_toolbox_hdg_coupledpoisson --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization ]
+  [--hdg_coupledpoisson.ksp-monitor=<0,1>]
+  [--hdg_coupledpoisson.ksp-view=<0,1>]
+  [--hdg_coupledpoisson.ksp-type=<see below>]
+  [--hdg_coupledpoisson.pc-view=<0,1>]
+  [--hdg_coupledpoisson.pc-type=<see below>]
+  [--hdg_coupledpoisson.snes-monitor=<0,1>]
+  [--hdg_coupledpoisson.ksp-type=<see below>]
 ----
 
 == DESCRIPTION
