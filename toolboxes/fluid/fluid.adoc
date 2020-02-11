@@ -13,7 +13,16 @@ feelpp_toolbox_fluid - fluid mechanics toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_fluid --case <directory to model case> [--case.dim 3] [--case.discretization P2P1G1] [--fluid.ksp-monitor=<0,1>] [--fluid.ksp-view=<0,1>] [--fluid.ksp-type=<see below>] [--fluid.pc-view=<0,1>] [--fluid.pc-type=<see below>] [--fluid.snes-monitor=<0,1>] [--fluid.ksp-type=<see below>]
+feelpp_toolbox_fluid --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P2P1G1]
+  [--fluid.ksp-monitor=<0,1>]
+  [--fluid.ksp-view=<0,1>]
+  [--fluid.ksp-type=<see below>]
+  [--fluid.pc-view=<0,1>]
+  [--fluid.pc-type=<see below>]
+  [--fluid.snes-monitor=<0,1>]
+  [--fluid.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

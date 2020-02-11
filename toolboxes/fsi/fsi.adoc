@@ -13,7 +13,16 @@ feelpp_toolbox_fsi - fluid structure interaction toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_fsi --case <directory to model case> [--case.dim 3] [--case.discretization P2P1] [--fsi.ksp-monitor=<0,1>] [--fsi.ksp-view=<0,1>] [--fsi.ksp-type=<see below>] [--fsi.pc-view=<0,1>] [--fsi.pc-type=<see below>] [--fsi.snes-monitor=<0,1>] [--fsi.ksp-type=<see below>]
+feelpp_toolbox_fsi --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P2P1]
+  [--fsi.ksp-monitor=<0,1>]
+  [--fsi.ksp-view=<0,1>]
+  [--fsi.ksp-type=<see below>]
+  [--fsi.pc-view=<0,1>]
+  [--fsi.pc-type=<see below>]
+  [--fsi.snes-monitor=<0,1>]
+  [--fsi.ksp-type=<see below>]
 ----
 
 == DESCRIPTION

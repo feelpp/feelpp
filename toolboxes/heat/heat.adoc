@@ -13,7 +13,16 @@ feelpp_toolbox_heat - heat transfer toolbox application
 == SYNOPSIS
 
 ----
-feelpp_toolbox_heat --case <directory to model case> [--case.dim 3] [--case.discretization P1] [--heat.ksp-monitor=<0,1>] [--heat.ksp-view=<0,1>] [--heat.ksp-type=<see below>] [--heat.pc-view=<0,1>] [--heat.pc-type=<see below>] [--heat.snes-monitor=<0,1>] [--heat.ksp-type=<see below>]
+feelpp_toolbox_heat --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--heat.ksp-monitor=<0,1>]
+  [--heat.ksp-view=<0,1>]
+  [--heat.ksp-type=<see below>]
+  [--heat.pc-view=<0,1>]
+  [--heat.pc-type=<see below>]
+  [--heat.snes-monitor=<0,1>]
+  [--heat.ksp-type=<see below>]
 ----
 
 == DESCRIPTION
