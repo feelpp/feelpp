@@ -151,7 +151,7 @@ ModelIndexes::generateAllCases( pt::ptree const& pt, int startIndex )
             std::vector<ModelIndexes> crsfiOnIndex;
 
             std::vector<std::string> listTags;
-            int sizeOfSubArray;
+            int sizeOfSubArray{0};
             for ( auto const& [ indexTag, indexes ] : tagToReplaceStrings )
             {
                 listTags.push_back( indexTag );

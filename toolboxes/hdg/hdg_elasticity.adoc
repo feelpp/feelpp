@@ -12,13 +12,24 @@ feelpp_toolbox_hdg_elasticity - hybridized discontinuous Galerkin elasticity too
 
 == SYNOPSIS
 
-feelpp_toolbox_hdg_elasticity --case <directory to model case> [--case.dim 3] [--case.discretization ] 
+----
+feelpp_toolbox_hdg_elasticity --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization ]
+  [--hdg_elasticity.ksp-monitor=<0,1>]
+  [--hdg_elasticity.ksp-view=<0,1>]
+  [--hdg_elasticity.ksp-type=<see below>]
+  [--hdg_elasticity.pc-view=<0,1>]
+  [--hdg_elasticity.pc-type=<see below>]
+  [--hdg_elasticity.snes-monitor=<0,1>]
+  [--hdg_elasticity.ksp-type=<see below>]
+----
 
 == DESCRIPTION
 
 feelpp_toolbox_hdg_elasticity is an application which can run hybridized discontinuous Galerkin elasticity model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
-The step are as follows:
+The execution steps are as follows:
 
 * load the model
 * load the mesh
@@ -50,7 +61,7 @@ NOTE:: 0 as option value means that the option is not enable, 1 means it is enab
 
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.107/install/containers/#_docker[] to demonstrate feelpp_toolbox_hdg_elasticity usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_hdg_elasticity usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -91,29 +102,33 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
-Other test cases can be found in /usr/share/feelpp/data/testcases/toolboxes/hdg_elasticity.
+Other test cases can be found
+
+- locally in /usr/share/feelpp/data/testcases/toolboxes/hdg_elasticity.
+- on-line http://docs.feelpp.org/cases/0.108//README
+
 
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.107/
+http://docs.feelpp.org/toolboxes/0.108/
 
 {feelpp} Cases for feelpp_toolbox_hdg_elasticity::
-http://docs.feelpp.org/cases/0.107//README
+http://docs.feelpp.org/cases/0.108//README
 
 {feelpp} Toolbox Docs for feelpp_toolbox_hdg_elasticity::
-http://docs.feelpp.org/toolboxes/0.107//
+http://docs.feelpp.org/toolboxes/0.108//
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.107/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.107/using/remotedata/
+http://docs.feelpp.org/user/0.108/using/remotedata/
 
 
 == COPYING
