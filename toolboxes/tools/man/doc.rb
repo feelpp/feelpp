@@ -3,7 +3,7 @@
 #require 'Liquid'
 
 version_major=0
-version_minor=107
+version_minor=108
 version_micro=0
 version_string="#{version_major}.#{version_minor}"
 version_min="v#{version_minor}"
