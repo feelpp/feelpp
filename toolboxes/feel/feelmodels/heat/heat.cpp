@@ -97,7 +97,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
                                      "",this->worldComm(),this->repository().expr() );
         for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
             this->setVelocityConvectionExpr( matName,theExpr );
-        //M_exprVelocityConvection[matName] = theExpr;
     }
 
 
@@ -127,55 +126,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 
     M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
 
-    //if ( this->fieldVelocityConvectionIsUsed() )
-    //this->updateForUseFunctionSpacesVelocityConvection();
-
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("Heat","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateForUseFunctionSpacesVelocityConvection()
-{
-#if 0
-    if ( !M_XhVelocityConvection )
-    {
-        if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
-            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-        else
-            M_XhVelocityConvection = space_velocityconvection_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(), _range=M_rangeMeshElements );
-    }
-
-    if ( !M_fieldVelocityConvection )
-    {
-        M_fieldVelocityConvection.reset( new element_velocityconvection_type(M_XhVelocityConvection,"VelocityConvection"));
-        // load the field velocity convection from a math expr
-        if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
-        {
-            M_exprVelocityConvection = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
-                                                     "",this->worldComm(),this->repository().expr() );
-            this->updateFieldVelocityConvection();
-        }
-    }
-#endif
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::updateFieldVelocityConvection( bool onlyExprWithTimeSymbol )
-{
-#if 0
-    if ( M_exprVelocityConvection.get_ptr() == 0 )
-        return;
-
-    if ( onlyExprWithTimeSymbol && !M_exprVelocityConvection->expression().hasSymbol("t") )
-        return;
-
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    M_exprVelocityConvection->setParameterValues( paramValues );
-    M_fieldVelocityConvection->on(_range=M_rangeMeshElements,_expr=*M_exprVelocityConvection);
-#endif
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -230,9 +182,6 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
-
-    // update fields
-    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
@@ -347,9 +296,10 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Heat","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection"} );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
     this->setPostProcessExportsPidName( "pid" );
-    this->setPostProcessSaveAllFieldsAvailable( {"temperature","velocity-convection","thermal-conductivity","density"} );
+    this->setPostProcessSaveAllFieldsAvailable( {"temperature" } );
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
@@ -526,9 +476,6 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Space Temperature Discretization"
            << "\n     -- order         : " << nOrderPoly
            << "\n     -- number of dof : " << M_Xh->nDof() << " (" << M_Xh->nLocalDof() << ")";
-    //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-    //     *_ostr << "\n   Space Velocity Convection Discretization"
-    //            << "\n     -- number of dof : " << M_XhVelocityConvection->nDof() << " (" << M_XhVelocityConvection->nLocalDof() << ")";
     if ( !this->isStationary() )
     {
         *_ostr << "\n   Time Discretization"
@@ -631,8 +578,6 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 
     M_blockVectorSolution.localize();
 
-    this->updateFields( this->symbolsExpr() );
-
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
     {
@@ -705,9 +650,6 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_bdfTemperature->next( this->fieldTemperature() );
         this->updateTime( this->timeStepBdfTemperature()->time() );
     }
-
-    // update velocity convection id symbolic expr exist and  depend only of time
-    this->updateFieldVelocityConvection( true );
 
     // maybe rebuild cst jacobian or linear
     if ( M_algebraicFactory && rebuildCstAssembly )

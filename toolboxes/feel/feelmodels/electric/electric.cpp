@@ -51,7 +51,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<nDim>( "electric" )
-    //M_electricProperties( new electricproperties_type( prefix ) )
 {
     this->log("Electric","constructor", "start" );
 
@@ -141,18 +140,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
         M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
-    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
-    M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
-    M_fieldJoulesLosses.reset( new element_component_electricfield_type(M_XhElectricField->compSpace(),"joules-losses"));
 
     this->initBoundaryConditions();
 
@@ -160,9 +154,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
-
-    // update fields
-    this->updateFields( this->symbolsExpr() );
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -258,7 +249,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","current-density","joules-losses"} );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();
@@ -280,8 +272,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // point measures
     auto fieldNamesWithSpaceElectricPotential = std::make_pair( std::set<std::string>({"electric-potential"}), this->spaceElectricPotential() );
-    auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential, fieldNamesWithSpaceElectricField );
+    //auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential/*, fieldNamesWithSpaceElectricField*/ );
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
@@ -410,7 +402,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->exportResults( time, this->symbolsExpr() );
 }
-
+#if 0
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
@@ -424,7 +416,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
-
+#endif
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
@@ -454,8 +446,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.updateVectorFromSubVectors();
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
-
-    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )

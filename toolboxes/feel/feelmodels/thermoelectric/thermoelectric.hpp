@@ -175,9 +175,6 @@ private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
-    //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    // materials range
-    //std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     // physical parameter
     std::string M_modelName;

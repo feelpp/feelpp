@@ -51,7 +51,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
         if ( thermalConductivity.isMatrix() )
         {
             auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
@@ -80,7 +80,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 
         if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
         {
-            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
             auto const& rhoHeatCapacityExpr = expr( rhoHeatCapacity.expr(), symbolsExpr );
             if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
@@ -260,7 +260,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         std::string symbolStr = "heat_T";
         bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
@@ -305,7 +305,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
 
         if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
         {
-            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
             auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),symbolsExpr);
 
             if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
@@ -412,7 +412,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& thermalConductivity = this->thermalProperties()->thermalConductivity( matName );
+        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         std::string symbolStr = "heat_T";
         bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
@@ -442,7 +442,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
 
         if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
         {
-            auto const& rhoHeatCapacity = this->thermalProperties()->rhoHeatCapacity( matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
             auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),symbolsExpr);
             if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {

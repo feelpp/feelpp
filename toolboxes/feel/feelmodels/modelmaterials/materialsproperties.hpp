@@ -561,12 +561,80 @@ public :
                 }
                 else if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
                 {
-                    auto propExpr = materialPropertyExprScalarOrMatrix<nDim>( propName,se );
+                    auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName,se );
                     matPropSymbsScalarOrMatrixSelector.push_back( std::make_tuple( (boost::format("%1%%2%")% prefix_symbol %symbolProp).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
                 }
             }
 
             return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrix ), symbolExpr(matPropSymbsScalarSelector), symbolExpr( matPropSymbsScalarOrMatrixSelector ) );
+        }
+
+        template <typename SymbExprType>
+        auto exprPostProcessExports( std::string const& physic, SymbExprType const& se, std::string const& prefix = "materials" ) const
+        {
+            typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se) ) _expr_scalar_type;
+            std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
+
+            typedef decltype(expr(ModelExpression{}.template expr<nDim,nDim>(),se)) _expr_tensor2_type;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2;
+
+            auto Id = eye<nDim,nDim>();
+            typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
+
+            auto setOfMatNameUsed = this->physicToMaterials( physic );
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
+                    continue;
+                auto range = this->rangeMeshElementsByMaterial( matName );
+                for ( auto const& [propName,matProp] : matProps )
+                {
+                    auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+                        continue;
+
+                    if ( this->materialPropertyIsScalarInAllMaterials( propName ) )
+                    {
+                        auto matPropExpr = expr( matProp.exprScalar(), se );
+                        mapExprScalar[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr, range, "element" ) );
+                    }
+                    else if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
+                    {
+                        if ( matProp.template hasExpr<nDim,nDim>() )
+                        {
+                            auto matPropExpr = expr( matProp.template expr<nDim,nDim>(), se );
+                            mapExprTensor2[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr, range, "element" ) );
+                        }
+                        else
+                        {
+                            auto matPropExpr = expr( matProp.exprScalar(), se );
+                            mapExprTensor2FromScalar[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr*Id, range, "element" ) );
+                        }
+                    }
+                }
+            }
+            return hana::make_tuple( mapExprScalar,mapExprTensor2,mapExprTensor2FromScalar );
+        }
+
+    std::set<std::string> postProcessExportsAllFieldsAvailable( std::string const& physic, std::string const& prefix = "materials" ) const
+        {
+            std::set<std::string> res;
+            auto setOfMatNameUsed = this->physicToMaterials( physic );
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
+                    continue;
+                auto range = this->rangeMeshElementsByMaterial( matName );
+                for ( auto const& [propName,matProp] : matProps )
+                {
+                    auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+                        continue;
+                    res.insert(prefixvm(prefix,propName));
+                }
+            }
+            return res;
         }
 
 private :

@@ -225,19 +225,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         intersect( M_heatModel->rangeMeshElements(), M_electricModel->rangeMeshElements() );
 #endif
 
-    // for ( auto const& rangeData : M_electricModel->electricProperties()->rangeMeshElementsByMaterial() )
-    // {
-    //     std::string const& matName = rangeData.first;
-    //     if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
-    //         continue;
-    //     M_rangeMeshElementsByMaterial[matName] = rangeData.second;
-    // }
     // post-process
     this->initPostProcess();
 
-    // update fields
-    M_heatModel->updateFields( this->symbolsExpr() );
-    M_electricModel->updateFields( this->symbolsExpr() );
 
     // backend
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -298,6 +288,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     for ( auto const& s : M_electricModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_electricModel->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -425,7 +416,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_electricModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
-    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) );
+    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physic(),symbolExpr ),
+                                     hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
+                                                   M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -478,9 +471,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
         M_algebraicFactoryMonolithic->solve( M_solverName, M_blockVectorSolutionMonolithic.vectorMonolithic() );
         M_blockVectorSolutionMonolithic.localize();
     }
-
-    M_heatModel->updateFields( this->symbolsExpr() );
-    M_electricModel->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
