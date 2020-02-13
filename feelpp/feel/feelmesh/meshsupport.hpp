@@ -134,7 +134,9 @@ public :
                 return M_rangeMeshElementsGhostIdsPartialSupport.find( eltId ) != M_rangeMeshElementsGhostIdsPartialSupport.end();
         }
 
-    bool isGhostFace( face_type const& face ) const
+    template <typename FaceType>
+    bool isGhostFace( FaceType const& face,
+                      typename std::enable_if_t<std::is_same_v<FaceType,face_type> >* = nullptr ) const
         {
             if ( M_isFullSupport )
                 return face.isGhostFace();
@@ -155,6 +157,13 @@ public :
                 else
                     return true;
             }
+        }
+
+    template <typename FaceType>
+    bool isGhostFace( FaceType const& face,
+                      typename std::enable_if_t<!std::is_same_v<FaceType,face_type> >* = nullptr ) const
+        {
+            return false;
         }
 
     std::unordered_set<size_type> const& rangeMeshElementsIdsPartialSupport() const override { return M_rangeMeshElementsIdsPartialSupport; }

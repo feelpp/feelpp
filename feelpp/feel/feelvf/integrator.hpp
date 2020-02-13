@@ -1732,6 +1732,434 @@ updateGmcWithRelationDifferentMeshType( std::shared_ptr<SpaceType> const& space,
 }
 
 
+template<typename SpaceTestType, typename SpaceTrialType, typename RangeType>
+struct ManageRelationDifferentMeshType
+{
+    using index_type = typename SpaceTestType::index_type;
+    //using entity_iterator_type = typename boost::tuples::template element<1,range_t<RangeType> >::type;
+    static const int range_idim_type = boost::tuples::template element<0,range_t<RangeType> >::type::value;
+    ManageRelationDifferentMeshType( std::shared_ptr<SpaceTestType> const& spaceTest, std::shared_ptr<SpaceTrialType> const& spaceTrial, RangeType const& range )
+        :
+        M_spaceTest( spaceTest ),
+        M_spaceTrial( spaceTrial ),
+        M_hasMeshSupportPartialTest( spaceTest->dof()->hasMeshSupport() && spaceTest->dof()->meshSupport()->isPartialSupport() ),
+        M_hasMeshSupportPartialTrial( spaceTrial->dof()->hasMeshSupport() && spaceTrial->dof()->meshSupport()->isPartialSupport() ),
+        M_rangeIsSubMeshFromTest( false ), M_rangeIsSubMeshFromTrial( false ), M_testIsSubMeshFromRange( false ), M_trialIsSubMeshFromRange( false ), M_rangeAndTestUseSameMesh( false ), M_rangeAndTrialUseSameMesh( false ),
+        M_rangeEntityInit( nullptr ), M_eltIndexInitTest( invalid_v<index_type> ),  M_eltIndexInitTrial( invalid_v<index_type> )
+        {
+            if ( M_hasMeshSupportPartialTest )
+                M_meshSupportTest = spaceTest->dof()->meshSupport();
+            if ( M_hasMeshSupportPartialTrial )
+                M_meshSupportTrial = spaceTrial->dof()->meshSupport();
+
+            bool doCheckRelation = false;
+            for ( auto const& entityWrap : range )
+            {
+                auto const& entity = unwrap_ref( entityWrap );
+                if ( !doCheckRelation )
+                {
+                    M_rangeIsSubMeshFromTest = entity.mesh()->isSubMeshFrom( M_spaceTest->mesh() );
+                    M_rangeIsSubMeshFromTrial = entity.mesh()->isSubMeshFrom( M_spaceTrial->mesh() );
+                    M_testIsSubMeshFromRange = M_spaceTest->mesh()->isSubMeshFrom( entity.mesh() );
+                    M_trialIsSubMeshFromRange = M_spaceTrial->mesh()->isSubMeshFrom( entity.mesh() );
+                    M_rangeAndTestUseSameMesh = entity.mesh()->isSameMesh( M_spaceTest->mesh() );
+                    M_rangeAndTrialUseSameMesh = entity.mesh()->isSameMesh( M_spaceTrial->mesh() );
+
+                    doCheckRelation = true;
+                }
+
+                auto eltInitIds = this->eltIds( entity );
+                if ( eltInitIds.empty() )
+                    continue;
+                M_faceConnectionIdInit = std::get<0>( eltInitIds.front() ); // only for range of faces
+                M_eltIndexInitTest = std::get<1>( eltInitIds.front() );
+                M_eltIndexInitTrial = std::get<2>( eltInitIds.front() );
+                M_rangeEntityInit = &entity;
+
+                break;
+            }
+
+        }
+
+    std::vector<std::tuple<uint16_type,index_type,index_type>>
+    eltIds( entity_range_t<RangeType> const& entity )
+        {
+            std::vector<std::tuple<uint16_type,index_type,index_type>> res;
+            if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value ) // case range of faces
+                {
+                    if ( !entity.isConnectedTo0() )
+                        return res;
+                    index_type idEntityRangeInit = entity.id();
+
+                    std::set<uint16_type> entityFaceConnectionAvailable;
+                    if ( entity.isConnectedTo0() )
+                        entityFaceConnectionAvailable.insert( 0 );
+                    if ( entity.isConnectedTo1() )
+                        entityFaceConnectionAvailable.insert( 1 );
+                    if ( entityFaceConnectionAvailable.empty() )
+                        return res;
+#if 0
+                    // check if the face is not at interprocess dof, else need to select one side
+                    if ( M_rangeAndTrialUseSameMesh )
+                    {
+                        if ( M_hasMeshSupportPartialTrial )
+                        {
+                            if ( M_meshSupportTrial->isGhostFace( entity ) )
+                            {
+#if 1
+                                return res;
+#else
+                                index_type idEltTestInit = M_spaceTest->mesh()->meshToSubMesh( idEntityRangeInit );
+                                if( idEltTestInit == invalid_v<index_type> )
+                                    return res;
+                                if ( M_spaceTest->mesh()->element( idEltTestInit ).isGhostCell() )
+                                    return res;
+#endif
+                            }
+                        }
+                        else if ( entity.isGhostFace() )
+                            return res;
+                    }
+                    else
+                    {
+                        // TODO
+                        if ( entity.isGhostFace() )
+                            return res;
+                    }
+#endif
+
+
+                    std::map<uint16_type,index_type> eltTest;
+                    if ( M_rangeAndTestUseSameMesh )
+                    {
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                            eltTest[faceConnectionId] = entity.element( faceConnectionId ).id();
+                    }
+                    else if ( M_testIsSubMeshFromRange )
+                    {
+                        index_type idEltTestInit = M_spaceTest->mesh()->meshToSubMesh( idEntityRangeInit );
+                        if( idEltTestInit == invalid_v<index_type> )
+                            return res;
+                        eltTest[invalid_v<uint16_type>] = idEltTestInit;
+                    }
+                    else if ( M_rangeIsSubMeshFromTest )
+                    {
+                        CHECK( false ) << "TODO";
+                        index_type idEltTestInit = entity.mesh()->subMeshToMesh( idEntityRangeInit );
+                    }
+
+                    for ( uint16_type faceConnectionId : std::vector<uint16_type>({invalid_v<uint16_type>,0,1}) )
+                        {
+                            auto itFindConnection = eltTest.find( faceConnectionId );
+                            if ( itFindConnection == eltTest.end() )
+                                continue;
+                            index_type idEltTestInit = itFindConnection->second;
+                            bool insertEltId = true;
+                            if ( M_hasMeshSupportPartialTest )
+                            {
+                                if ( !M_meshSupportTest->hasElement( idEltTestInit ) )
+                                    insertEltId = false;
+                                if ( M_meshSupportTest->hasGhostElement( idEltTestInit ) && false ) // TODO case dof table extended ???
+                                    insertEltId = false;
+                            }
+                            else
+                            {
+                                if ( M_spaceTest->mesh()->element( idEltTestInit ).isGhostCell() && false ) //NNNNNEEWW
+                                    insertEltId = false;
+                            }
+                            if ( !insertEltId )
+                                eltTest.erase( faceConnectionId );
+                        }
+
+
+
+                    std::map<uint16_type,index_type> eltTrial;
+                    if ( M_rangeAndTrialUseSameMesh )
+                    {
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                            eltTrial[faceConnectionId] = entity.element( faceConnectionId ).id();
+                    }
+                    else if ( M_trialIsSubMeshFromRange )
+                    {
+                        index_type idEltTrialInit = M_spaceTrial->mesh()->meshToSubMesh( idEntityRangeInit );
+                        if( idEltTrialInit == invalid_v<index_type> )
+                            return res;
+                        eltTrial[invalid_v<uint16_type>] = idEltTrialInit;
+                    }
+                    else if ( M_rangeIsSubMeshFromTrial )
+                    {
+                        CHECK( false ) << "TODO";
+                        index_type idEltTrialInit = entity.mesh()->subMeshToMesh( idEntityRangeInit );
+                    }
+
+                    for ( uint16_type faceConnectionId : std::vector<uint16_type>({invalid_v<uint16_type>,0,1}) )
+                        {
+                            auto itFindConnection = eltTrial.find( faceConnectionId );
+                            if ( itFindConnection == eltTrial.end() )
+                                continue;
+                            index_type idEltTrialInit = itFindConnection->second;
+                            bool insertEltId = true;
+                            if ( M_hasMeshSupportPartialTrial )
+                            {
+                                if ( !M_meshSupportTrial->hasElement( idEltTrialInit ) )
+                                    insertEltId = false;
+                                if ( M_meshSupportTrial->hasGhostElement( idEltTrialInit ) && false ) // TODO case dof table extended ???
+                                    insertEltId = false;
+                            }
+                            else
+                            {
+                                if ( M_spaceTrial->mesh()->element( idEltTrialInit ).isGhostCell() && false ) //NNNNNEEWW
+                                    insertEltId = false;
+                            }
+
+                            if ( !insertEltId )
+                                eltTrial.erase( faceConnectionId );
+                        }
+
+                    if ( eltTest.empty() || eltTrial.empty() )
+                        return res;
+                    bool eltTestHasNoFaceConnection = eltTest.find( invalid_v<uint16_type> ) != eltTest.end();
+                    bool eltTrialHasNoFaceConnection = eltTrial.find( invalid_v<uint16_type> ) != eltTrial.end();
+                    CHECK( eltTestHasNoFaceConnection || eltTrialHasNoFaceConnection ) << "at least one space should not have a connection";
+                    if ( eltTestHasNoFaceConnection && eltTrialHasNoFaceConnection )
+                    {
+                        if ( entity.isGhostFace() ) // test/trial are not connected, do the integration on one proc from the range face property
+                            return res;
+                        index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
+                        index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
+                        //res.push_back( std::make_tuple( *(entityFaceConnectionAvailable.begin()), eltIdTest, eltIdTrial ) );
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable ) // really integrate both side here?
+                            res.push_back( std::make_tuple( faceConnectionId, eltIdTest, eltIdTrial ) );
+                    }
+                    else
+                    {
+
+                        if ( eltTestHasNoFaceConnection )
+                        {
+                            if ( entityFaceConnectionAvailable.size() == 2 /*&& eltTrial.size() == 2*/ )
+                            {
+                                bool isGhostFace = entity.isGhostFace();
+                                if ( M_rangeAndTrialUseSameMesh )
+                                {
+                                    if ( M_hasMeshSupportPartialTrial )
+                                        isGhostFace =  M_meshSupportTrial->isGhostFace( entity );
+                                }
+                                else if ( M_rangeIsSubMeshFromTrial )
+                                {
+                                    CHECK( false ) << "TODO";
+                                }
+                                if ( isGhostFace )
+                                    return res;
+                            }
+
+                            for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                            {
+                                auto itFindTrialConnection = eltTrial.find( faceConnectionId );
+                                if ( itFindTrialConnection != eltTrial.end() )
+                                {
+                                    index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
+                                    res.push_back( std::make_tuple( faceConnectionId, eltIdTest, itFindTrialConnection->second ) );
+                                }
+                            }
+                        }
+                        else if ( eltTrialHasNoFaceConnection )
+                        {
+                            if ( entityFaceConnectionAvailable.size() == 2 /*&& eltTest.size() == 2*/ )
+                            {
+                                bool isGhostFace = entity.isGhostFace();
+                                if ( M_rangeAndTestUseSameMesh )
+                                {
+                                    if ( M_hasMeshSupportPartialTest )
+                                        isGhostFace =  M_meshSupportTest->isGhostFace( entity );
+                                }
+                                else if ( M_rangeIsSubMeshFromTest )
+                                {
+                                    CHECK( false ) << "TODO";
+                                }
+                                if ( isGhostFace )
+                                    return res;
+                            }
+
+                            for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                            {
+                                auto itFindTestConnection = eltTest.find( faceConnectionId );
+                                if ( itFindTestConnection != eltTest.end() )
+                                {
+                                    index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
+                                    res.push_back( std::make_tuple( faceConnectionId, itFindTestConnection->second, eltIdTrial ) );
+                                }
+                            }
+
+                        }
+
+#if 0
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable /*std::vector<uint16_type>({0,1})*/ )
+                        {
+                            if ( eltTestHasNoFaceConnection )
+                            {
+                                auto itFindTrialConnection = eltTrial.find( faceConnectionId );
+                                if ( itFindTrialConnection != eltTrial.end() )
+                                {
+                                    index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
+                                    res.push_back( std::make_tuple( faceConnectionId, eltIdTest, itFindTrialConnection->second ) );
+                                }
+                            }
+                            else if ( eltTrialHasNoFaceConnection )
+                            {
+                                auto itFindTestConnection = eltTest.find( faceConnectionId );
+                                if ( itFindTestConnection != eltTest.end() )
+                                {
+                                    index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
+                                    res.push_back( std::make_tuple( faceConnectionId, itFindTestConnection->second, eltIdTrial ) );
+                                }
+                            }
+                        }
+
+#endif
+                    }
+                } // if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value )
+            return res;
+        }
+
+    template <typename GeoPcExprType, typename ExprType, typename ImTestType, typename ImTrialType, typename GmcExprType, typename GmcTestType, typename GmcTrialType>
+    void initGmc( GeoPcExprType & __geopc, ExprType const& expr, ImTestType const& imTest, ImTrialType const& imTrial,
+                  std::shared_ptr<GmcExprType>  & gmcExpr, std::shared_ptr<GmcTestType> & gmcFormTest, std::shared_ptr<GmcTrialType> & gmcFormTrial  )
+        {
+            if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value ) // case range of faces
+            {
+                auto const& faceInit = *M_rangeEntityInit;
+                uint16_type faceIdInElt = (M_faceConnectionIdInit==0)? faceInit.idInElement0() : faceInit.idInElement1() ;
+                gmcExpr.reset( new GmcExprType( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, faceIdInElt, expr.dynamicContext() ) );
+
+                if ( M_rangeAndTestUseSameMesh )
+                {
+                    if constexpr ( std::is_same_v<GmcExprType,GmcTestType> )
+                        {
+                            gmcFormTest = gmcExpr;
+                        }
+                    else
+                        CHECK( false ) << "not allowed";
+                }
+                else if ( M_testIsSubMeshFromRange )
+                {
+                    typedef typename GmcTestType::gm_type::precompute_type geopc_test_type;
+                    auto geopcTest = std::make_shared<geopc_test_type>( M_spaceTest->gm(), imTest.points() );
+                    CHECK( M_spaceTest->mesh()->hasElement( M_eltIndexInitTest ) ) << " mesh doesnt have an element id " << M_eltIndexInitTest;
+                    auto const& eltInit = M_spaceTest->mesh()->element( M_eltIndexInitTest );
+                    gmcFormTest = std::make_shared<GmcTestType>( M_spaceTest->gm(), eltInit, geopcTest );
+                }
+                else if ( M_rangeIsSubMeshFromTest )
+                {
+                    CHECK( false ) << "TODO";
+                }
+
+
+                if ( M_rangeAndTrialUseSameMesh )
+                {
+                    if constexpr ( std::is_same_v<GmcExprType,GmcTrialType> )
+                        {
+                            gmcFormTrial = gmcExpr;
+                        }
+                    else
+                        CHECK( false ) << "not allowed";
+                }
+                else if ( M_trialIsSubMeshFromRange )
+                {
+                    typedef typename GmcTrialType::gm_type::precompute_type geopc_trial_type;
+                    auto geopcTrial = std::make_shared<geopc_trial_type>( M_spaceTrial->gm(), imTrial.points() );
+                    CHECK( M_spaceTrial->mesh()->hasElement( M_eltIndexInitTrial ) ) << " mesh doesnt have an element id " << M_eltIndexInitTrial;
+                    auto const& eltInit = M_spaceTrial->mesh()->element( M_eltIndexInitTrial );
+                    gmcFormTrial = std::make_shared<GmcTrialType>( M_spaceTrial->gm(), eltInit, geopcTrial );
+                }
+                else if ( M_rangeIsSubMeshFromTrial )
+                {
+                    CHECK( false ) << "TODO";
+                }
+            }
+        }
+
+
+
+    
+    template < typename GmcExprType, typename GmcTestType, typename GmcTrialType>
+    void updateGmc( entity_range_t<RangeType> const& entity, std::tuple<uint16_type,index_type,index_type> const& eltsTrialTestRelated,
+                    std::shared_ptr<GmcExprType> gmcExpr, std::shared_ptr<GmcTestType> gmcFormTest, std::shared_ptr<GmcTrialType> gmcFormTrial )
+        {
+            if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value ) // case range of faces
+            {
+                uint16_type faceConnection =  std::get<0>( eltsTrialTestRelated );
+                uint16_type faceIdInElement = faceConnection==0? entity.idInElement0():entity.idInElement1();
+                if ( M_testIsSubMeshFromRange )
+                {
+                    index_type idElt = std::get<1>( eltsTrialTestRelated );
+                    CHECK( M_spaceTest->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
+                    auto const& theelt = M_spaceTest->mesh()->element( idElt );
+                    CHECK( gmcFormTest ) << "no gmc defined";
+                    gmcFormTest->update(theelt);
+                }
+                if ( M_trialIsSubMeshFromRange )
+                {
+                    index_type idElt = std::get<2>( eltsTrialTestRelated );
+                    CHECK( M_spaceTrial->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
+                    auto const& theelt = M_spaceTrial->mesh()->element( idElt );
+                    gmcFormTrial->update(theelt);
+#if 0
+                    if constexpr ( std::is_same_v<GmcExprType,GmcTestType> )
+                        {
+                            //if ( M_rangeAndTestUseSameMesh )
+                        }
+                    else
+                        CHECK( false ) << "not allowed";
+#endif
+                }
+
+                // update gmc of the expr on the face
+                if ( M_testIsSubMeshFromRange )
+                {
+                    bool found = gmcExpr->updateFromNeighborMatchingFace( entity.element( faceConnection ), faceIdInElement, gmcFormTest );
+                    CHECK(found) << "the permutation of quad point was not found";
+                }
+                else if ( M_trialIsSubMeshFromRange )
+                {
+                    bool found = gmcExpr->updateFromNeighborMatchingFace( entity.element( faceConnection ), faceIdInElement, gmcFormTrial );
+                    CHECK(found) << "the permutation of quad point was not found";
+                }
+                else
+                {
+                    CHECK( false ) << "not allowed";
+                }
+
+            }
+
+        }
+
+    bool hasFoundEntityToInit() const { return M_rangeEntityInit != nullptr; }
+    auto const& entityToInit() const { return *M_rangeEntityInit; }
+
+    index_type eltIndexInitTest() const { return M_eltIndexInitTest; }
+    index_type eltIndexInitTrial() const { return M_eltIndexInitTrial; }
+
+private :
+    std::shared_ptr<SpaceTestType> M_spaceTest;
+    std::shared_ptr<SpaceTrialType> M_spaceTrial;
+    bool M_hasMeshSupportPartialTest, M_hasMeshSupportPartialTrial;
+    bool M_rangeIsSubMeshFromTest, M_rangeIsSubMeshFromTrial, M_testIsSubMeshFromRange, M_trialIsSubMeshFromRange, M_rangeAndTestUseSameMesh, M_rangeAndTrialUseSameMesh;
+    typename SpaceTestType::dof_type::mesh_support_ptrtype M_meshSupportTest;
+    typename SpaceTrialType::dof_type::mesh_support_ptrtype M_meshSupportTrial;
+
+    entity_range_t<RangeType> const * M_rangeEntityInit;
+    uint16_type M_faceConnectionIdInit;
+    index_type M_eltIndexInitTest, M_eltIndexInitTrial;
+};
+
+template<typename SpaceTestType, typename SpaceTrialType, typename RangeType>
+auto
+manageRelationDifferentMeshType( std::shared_ptr<SpaceTestType> const& spaceTest, std::shared_ptr<SpaceTrialType> const& spaceTrial, RangeType const& range )
+{
+    return ManageRelationDifferentMeshType<SpaceTestType,SpaceTrialType,RangeType>( spaceTest, spaceTrial, range );
+}
+
+
 template<typename SpaceType,typename ImType,typename GmcType,typename GmcExprType>
 std::shared_ptr<GmcType>
 buildGmcWithRelationDifferentMeshType2( std::shared_ptr<SpaceType> const& /*space*/,typename GmcType::gm_ptrtype const& /*gm*/, ImType const& im,
@@ -3607,8 +4035,12 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
     typedef fusion::map<fusion::pair<vf::detail::gmc<0>, gmc_formTest_ptrtype>,fusion::pair<vf::detail::gmc<1>, gmc_formTest_ptrtype> > map2_gmc_formTest_type;
     typedef typename FormType::template Context<map2_gmc_formTest_type, expression_type, face_im_type, map2_gmc_expr_type, map2_gmc_formTrial_type> form2_context_type;
     typedef std::shared_ptr<form2_context_type> form2_context_ptrtype;
-    form2_context_ptrtype form2;
 
+    std::vector<gmc_expr_ptrtype> gmcExpr( 2 );
+    std::vector<gmc_formTest_ptrtype> gmcFormTest( 2 );
+    std::vector<gmc_formTrial_ptrtype> gmcFormTrial( 2 );
+    form_context_ptrtype form;
+    form2_context_ptrtype form2;
 
     for( auto lit = M_elts.begin(), len = M_elts.end(); lit != len; ++lit )
     {
@@ -3616,21 +4048,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         auto const elt_en = lit->template get<2>();
         DLOG(INFO) << "face/element integrating over " << std::distance( elt_it, elt_en )  << " elements\n";
 
-        // check that we have elements to iterate over
-        if ( elt_it == elt_en )
+        auto mrdmt = Feel::vf::detail::manageRelationDifferentMeshType( __form.testSpace(),__form.trialSpace(), *lit );
+        if ( !mrdmt.hasFoundEntityToInit() )
             continue;
-        auto const& faceInit0 = boost::unwrap_ref( *elt_it );
-        if ( faceInit0.isConnectedTo0() == false )
-            continue;
-        auto it = elt_it;
-        for( ; it != elt_en; ++it )
-        {
-            auto const& faceInit1 = boost::unwrap_ref( *it );
-            if ( !faceInit1.isGhostFace() )
-                break;
-        }
-        auto const& faceInit = boost::unwrap_ref( *it );
-        //-----------------------------------------------//
+        auto const& faceInit = mrdmt.entityToInit();
 
         if (!hasInitGeoPc)
         {
@@ -3650,192 +4071,73 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
             hasInitGeoPc=true;
         }
 
-        //-----------------------------------------------//
 
-        const bool rangeIsSubMeshFromTest = faceInit.mesh()->isSubMeshFrom( __form.testSpace()->mesh() );
-        const bool rangeIsSubMeshFromTrial = faceInit.mesh()->isSubMeshFrom( __form.trialSpace()->mesh() );
-        const bool testIsSubMeshFromRange = __form.testSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
-        const bool trialIsSubMeshFromRange = __form.trialSpace()->mesh()->isSubMeshFrom( faceInit.mesh() );
-
-        const size_type idEltRangeInit = faceInit.id();
-        size_type idEltTestInit  = idEltRangeInit;
-        if ( rangeIsSubMeshFromTest )
-            idEltTestInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
-        else if ( testIsSubMeshFromRange )
-            idEltTestInit = __form.testSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-        size_type idEltTrialInit = idEltRangeInit;
-        if ( rangeIsSubMeshFromTrial )
-            idEltTrialInit = faceInit.mesh()->subMeshToMesh( idEltRangeInit );
-        else if ( trialIsSubMeshFromRange )
-            idEltTrialInit = __form.trialSpace()->mesh()->meshToSubMesh( idEltRangeInit );
-
-        //-----------------------------------------------//
-        // get the geometric mapping associated with element 0
-        uint16_type __face_id_in_elt_0 = faceInit.pos_first();
-        gmc_expr_ptrtype gmcExpr0( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0, this->expression().dynamicContext() ) );
-        gmc_expr_ptrtype gmcExpr1( new gmc_expr_type( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0, this->expression().dynamicContext() ) );
-
-        auto gmcFormTest = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
-                                                                           gmc_formTest_type,gmc_expr_type>( __form.testSpace(), __form.testSpace()->gm(), imTest,
-                                                                                                             idEltTestInit, gmcExpr0, mpl::int_<gmTestRangeRelation>() );
-
-        auto gmcFormTrial = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
-                                                                           gmc_formTrial_type,gmc_expr_type>( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
-                                                                                                              idEltTrialInit, gmcExpr0, mpl::int_<gmTrialRangeRelation>() );
-
-        gmc_formTest_ptrtype gmcFormTest1;
-        gmc_formTrial_ptrtype gmcFormTrial1;
-        //-----------------------------------------------//
-
-        map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr0 ) );
-        map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest ) );
-        map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial ) );
-        form_context_ptrtype form;
-        form1_context_ptrtype form1;
-
-
-        bool isInitConnectionTo0=false;
-        bool isInitConnectionTo1=false;
-
-        // true if connected to another element, false otherwise
-        if ( faceInit.isConnectedTo1() )
-        {
-            uint16_type __face_id_in_elt_1 = faceInit.pos_second();
-            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 1 ).gm(), faceInit.element( 1 ), __geopc, __face_id_in_elt_1 );
-        }
-        else
-            gmcExpr1 = std::make_shared<gmc_expr_type>( faceInit.element( 0 ).gm(), faceInit.element( 0 ), __geopc, __face_id_in_elt_0 );
-
-        gmcFormTest1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_1_type,im_formtest_type,
-                                                                       gmc_formTest_type,gmc_expr_type>
-            ( __form.testSpace(), __form.testSpace()->gm(), imTest,
-              idEltTestInit, gmcExpr1, mpl::int_<gmTestRangeRelation>() );
-        gmcFormTrial1 = detail::buildGmcWithRelationDifferentMeshType2< typename FormType::space_2_type,im_formtrial_type,
-                                                                        gmc_formTrial_type,gmc_expr_type>
-            ( __form.trialSpace(), __form.trialSpace()->gm(), imTrial,
-              idEltTrialInit, gmcExpr1, mpl::int_<gmTrialRangeRelation>() );
-
-        auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
-        auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
-        auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
-
-        form2 = form2_context_ptrtype( new form2_context_type( __form,
-                                                               mapgmctest2, mapgmctrial2, mapgmcexpr2,
-                                                               this->expression(),
-                                                               face_ims[__face_id_in_elt_0],
-                                                               imRange, imTest, imTrial,
-                                                               mpl::int_<2>() ) );
-        isInitConnectionTo1=true;
-
-        form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
-                                                            this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest,imTrial ) );
-        //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
-        isInitConnectionTo0=true;
+        mrdmt.initGmc( __geopc, this->expression(), imTest, imTrial, gmcExpr[0], gmcFormTest[0], gmcFormTrial[0] );
 
         for ( ; elt_it != elt_en; ++elt_it )
         {
             auto const& faceCur = boost::unwrap_ref( *elt_it );
 
-            if ( faceCur.isGhostFace() )
-            {
-                VLOG(3) << "face id : " << faceCur.id() << " is a ghost face";
+            auto eltsTrialTestRelated = mrdmt.eltIds( faceCur );
+            if ( eltsTrialTestRelated.empty() )
                 continue;
-            }
 
-            const size_type idEltRange = faceCur.id();
-            size_type idEltTest = idEltRange;
-            if ( rangeIsSubMeshFromTest )
-                idEltTest = faceCur.mesh()->subMeshToMesh( idEltRange );
-            else if ( testIsSubMeshFromRange )
-                idEltTest = __form.testSpace()->mesh()->meshToSubMesh( idEltRange );
-            size_type idEltTrial = idEltRange;
-            if ( rangeIsSubMeshFromTrial )
-                idEltTrial = faceCur.mesh()->subMeshToMesh( idEltRange );
-            else if ( trialIsSubMeshFromRange )
-                idEltTrial = __form.trialSpace()->mesh()->meshToSubMesh( idEltRange );
-
-
-            if ( faceCur.isConnectedTo1() )
+            if ( eltsTrialTestRelated.size() == 1 ) // integrate on boundary faces (one side)
             {
-                __face_id_in_elt_0 = faceCur.pos_first();
-                uint16_type __face_id_in_elt_1 = faceCur.pos_second();
-                size_type test_elt_0 = invalid_v<size_type>;
-                size_type test_elt_1 = invalid_v<size_type>;
-                size_type trial_elt_0 = invalid_v<size_type>;
-                size_type trial_elt_1 = invalid_v<size_type>;
-                // update gmc
-                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
-                                                                                                  idEltTest, mpl::int_<gmTestRangeRelation>() );
+                mrdmt.updateGmc( faceCur, eltsTrialTestRelated[0], gmcExpr[0], gmcFormTest[0], gmcFormTrial[0] );
 
-                test_elt_1 = detail::updateGmcWithRelationDifferentMeshType21<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
-                                                                 gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest1, gmcExpr1,
-                                                                                                   idEltTest, mpl::int_<gmTestRangeRelation>() );
+                uint16_type faceIdInElt = (std::get<0>( eltsTrialTestRelated[0] ) == 0)? faceCur.idInElement0():faceCur.idInElement1();
+                map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr[0] ) );
+                map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest[0] ) );
+                map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial[0] ) );
+                index_type test_elt_0 = std::get<1>( eltsTrialTestRelated[0] );
+                index_type trial_elt_0 = std::get<2>( eltsTrialTestRelated[0] );
 
-                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
-                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-                trial_elt_1 = detail::updateGmcWithRelationDifferentMeshType21<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial1, gmcExpr1,
-                                                                                                   idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-
-                if ( test_elt_0 == invalid_v<size_type> )
-                {
-                    test_elt_0 = gmcExpr0->id();
-                    test_elt_1 = gmcExpr1->id();
-                }
-                if ( trial_elt_0 == invalid_v<size_type> )
-                {
-                    trial_elt_0 = gmcExpr0->id();
-                    trial_elt_1 = gmcExpr1->id();
-                }
-                auto mapgmctest2 = mapgmc( gmcFormTest, gmcFormTest1 );
-                auto mapgmctrial2 = mapgmc( gmcFormTrial, gmcFormTrial1 );
-                auto mapgmcexpr2 = mapgmc( gmcExpr0, gmcExpr1 );
-                form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[__face_id_in_elt_0] );
-                form2->integrate();
-                form2->assemble( std::make_pair(test_elt_0, trial_elt_0),
-                                 std::make_pair(test_elt_1, trial_elt_1)  );
-            }
-            else
-            {
-                __face_id_in_elt_0 = faceCur.pos_first();
-
-                if ( !isInitConnectionTo0 )
+                if ( !form )
                 {
                     form = form_context_ptrtype( new form_context_type( __form, mapgmcFormTest, mapgmcFormTrial, mapgmcExpr,
-                                                                        this->expression(), face_ims[__face_id_in_elt_0], imRange,imTest,imTrial ) );
-                    //form1 = form1_context_ptrtype( new form1_context_type( __form, mapgmc1, mapgmc1, mapgmc1, expression(), face_ims2[__face_id_in_elt_0], this->im2() ) );
-                    isInitConnectionTo0=true;
+                                                                        this->expression(), face_ims[faceIdInElt], imRange,imTest,imTrial ) );
                 }
 
-                size_type test_elt_0 = invalid_v<size_type>;
-                size_type trial_elt_0 = invalid_v<size_type>;
-                // update gmc
-                test_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type, typename FormType::space_1_type,im_range_type,
-                                                                gmc_formTest_type,gmc_expr_type>( faceCur,__form.testSpace(), gmcFormTest, gmcExpr0,
-                                                                                                 idEltTest, mpl::int_<gmTestRangeRelation>() );
 
-                trial_elt_0 = detail::updateGmcWithRelationDifferentMeshType2<typename boost::unwrap_reference<typename element_iterator::value_type>::type,typename FormType::space_2_type,im_range_type,
-                                                                gmc_formTrial_type,gmc_expr_type>( faceCur,__form.trialSpace(), gmcFormTrial, gmcExpr0,
-                                                                                                  idEltTrial, mpl::int_<gmTrialRangeRelation>() );
-
-                if ( test_elt_0 == invalid_v<size_type> )
-                {
-                    test_elt_0 = gmcExpr0->id();
-                }
-                if ( trial_elt_0 == invalid_v<size_type> )
-                {
-                    trial_elt_0 = gmcExpr0->id();
-                }
-                form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[__face_id_in_elt_0] );
+                form->update( mapgmcFormTest,mapgmcFormTrial,mapgmcExpr, face_ims[faceIdInElt] );
                 form->integrate();
                 form->assemble( std::make_pair(test_elt_0, trial_elt_0) );
+
             }
+            else if ( eltsTrialTestRelated.size() == 2 ) // integrate on internal faces (on both sides)
+            {
+                if ( !gmcExpr[1] )
+                    mrdmt.initGmc( __geopc, this->expression(), imTest, imTrial, gmcExpr[1], gmcFormTest[1], gmcFormTrial[1] );
 
+                mrdmt.updateGmc( faceCur, eltsTrialTestRelated[0], gmcExpr[0], gmcFormTest[0], gmcFormTrial[0] );
+                mrdmt.updateGmc( faceCur, eltsTrialTestRelated[1], gmcExpr[1], gmcFormTest[1], gmcFormTrial[1] );
+
+                uint16_type faceIdInElt = (std::get<0>( eltsTrialTestRelated[0] ) == 0)? faceCur.idInElement0():faceCur.idInElement1();
+                auto mapgmctest2 = mapgmc( gmcFormTest[0], gmcFormTest[1] );
+                auto mapgmctrial2 = mapgmc( gmcFormTrial[0], gmcFormTrial[1] );
+                auto mapgmcexpr2 = mapgmc( gmcExpr[0], gmcExpr[1] );
+                index_type test_elt_0 = std::get<1>( eltsTrialTestRelated[0] );
+                index_type trial_elt_0 = std::get<2>( eltsTrialTestRelated[0] );
+                index_type test_elt_1 = std::get<1>( eltsTrialTestRelated[1] );
+                index_type trial_elt_1 = std::get<2>( eltsTrialTestRelated[1] );
+
+                if ( !form2 )
+                {
+                    form2 = form2_context_ptrtype( new form2_context_type( __form, mapgmctest2, mapgmctrial2, mapgmcexpr2,
+                                                                           this->expression(), face_ims[faceIdInElt],
+                                                                           imRange, imTest, imTrial,
+                                                                           mpl::int_<2>() ) );
+                }
+
+                form2->update( mapgmctest2,mapgmctrial2,mapgmcexpr2, face_ims[faceIdInElt] );
+                form2->integrate();
+                form2->assemble( std::make_pair(test_elt_0, trial_elt_0),
+                                 std::make_pair(test_elt_1, trial_elt_1) );
+
+            }
         }
-
-    } // for( auto lit = ... )
+    }
 
 }
 
