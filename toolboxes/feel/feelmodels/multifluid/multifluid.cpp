@@ -1225,62 +1225,58 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("MultiFluid","exportResults", "start");
+    this->timerTool("PostProcessing").start();
 
-    if( M_exporter && M_exporter->doExport() )
-    {
-        bool hasFieldToExportFluid = this->fluidModel()->updateExportedFields( M_exporter, M_postProcessFieldsExportedFluid, time );
-        // Export forces
-        for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
-        {
-            std::string const lsName = lsInterfaceForces.first;
-            auto levelset_prefix = prefixvm(this->prefix(), lsName);
-            for( auto const& force: lsInterfaceForces.second )
-            {
-                M_exporter->step(time)->add( prefixvm(levelset_prefix, force.first),
-                        prefixvm(levelset_prefix, force.first),
-                        force.second->lastInterfaceForce() );
-            }
-        }
-        for( auto const& force: M_additionalInterfaceForcesModel )
-        {
-            M_exporter->step(time)->add( prefixvm("additional", force.first),
-                    prefixvm("additional", force.first),
-                    force.second->lastInterfaceForce() );
-        }
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
-        bool hasFieldToExport = !M_levelsetInterfaceForcesModels.empty() || !M_additionalInterfaceForcesModel.empty();
-
-        if( this->nLevelsets() > 1 )
-        {
-            M_exporter->step( time )->add(
-                    prefixvm(this->prefix(),"GlobalLevelset.Phi"),
-                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GlobalLevelset.Phi")),
-                    *this->globalLevelsetElt()
-                    );
-            hasFieldToExport = true;
-        }
-
-        if( hasFieldToExportFluid || hasFieldToExport )
-        {
-            this->upload( M_exporter->path() );
-            M_exporter->save();
-        }
-    }
-
-    // Export fluid
-    this->fluidModel()->exportResults(time);
-    // Export levelsets
+    auto const symbolsExpr = this->symbolsExpr();
+    M_fluidModel->exportResults( time, symbolsExpr );
     for( auto const& ls: M_levelsets)
+        ls.second->exportResults( time, symbolsExpr );
+
+    std::map<std::string, typename interfaceforces_model_type::element_ptrtype> interfaceForcesFields;
+    for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
     {
-        ls.second->exportResults(time);
+        std::string const lsName = lsInterfaceForces.first;
+        std::string levelset_prefix = prefixvm(this->prefix(), lsName);
+        for( auto const& force: lsInterfaceForces.second )
+        {
+            interfaceForcesFields[prefixvm(levelset_prefix, force.first)] = force.second->lastInterfaceForce();
+        }
     }
+    for( auto const& force: M_additionalInterfaceForcesModel )
+    {
+        interfaceForcesFields[prefixvm("additional", force.first)] = force.second->lastInterfaceForce();
+    }
+
+    auto fields = hana::flatten( hana::make_tuple( 
+            M_fluidModel->allFields( M_fluidModel->keyword() ), 
+            M_levelsets->begin()->second->allFields( M_levelsets->begin()->second.keyword() ), 
+            hana::make_tuple( 
+                std::make_pair( prefixvm(this->prefix(),"global-levelset.phi"), this->globalLevelsetElt() ),
+                interfaceForcesFields
+                ) 
+            ) );
+    //TODO: support fields for ALL levelsets
+    auto exprExport = M_fluidModel->exprPostProcessExports( symbolsExpr, M_fluidModel->keyword() );
+    // TODO: add exprPostProcessExports support in LevelSet
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exprExport );
 
     // Export measures
     this->exportMeasures( time );
 
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
     this->log("MultiFluid", "exportResults", "finish");
 }
 
