@@ -70,7 +70,7 @@
         {
             "Exports":
             {
-                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","pid"]
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","pid","materials.electric-conductivity","materials.thermal-conductivity"]
             }
         },
         "heat":
@@ -152,19 +152,19 @@
                     "Intensity0":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-electric_Cu_sigma*electric_dn_P:electric_Cu_sigma:electric_dn_P",
                         "markers":"V0"
                     },
                     "Intensity1":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-electric_Cu_sigma*electric_dn_P:electric_Cu_sigma:electric_dn_P",
                         "markers":"V1"
                     },
                     "Power":
                     {
                         "type":"integrate",
-                        "expr":"electric_Cu_sigma*(electric_dxP^2+electric_dyP^2+electric_dzP^2):electric_Cu_sigma:electric_dxP:electric_dyP:electric_dzP",
+                        "expr":"electric_Cu_sigma*(electric_grad_P_x^2+electric_grad_P_y^2+electric_grad_P_z^2):electric_Cu_sigma:electric_grad_P_x:electric_grad_P_y:electric_grad_P_z",
                         "markers":"Cu"
                     }
                 },
