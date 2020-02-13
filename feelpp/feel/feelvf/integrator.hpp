@@ -1736,8 +1736,13 @@ template<typename SpaceTestType, typename SpaceTrialType, typename RangeType>
 struct ManageRelationDifferentMeshType
 {
     using index_type = typename SpaceTestType::index_type;
-    //using entity_iterator_type = typename boost::tuples::template element<1,range_t<RangeType> >::type;
+
+    using element_mesh_test_type = typename MeshTraits<typename SpaceTestType::mesh_type>::element_type;
+    using element_mesh_trial_type = typename MeshTraits<typename SpaceTrialType::mesh_type>::element_type;
+    using element_wrapper_test_type = typename MeshTraits<typename SpaceTestType::mesh_type>::elements_reference_wrapper_type::value_type;
+    using element_wrapper_trial_type = typename MeshTraits<typename SpaceTrialType::mesh_type>::elements_reference_wrapper_type::value_type;
     static const int range_idim_type = boost::tuples::template element<0,range_t<RangeType> >::type::value;
+
     ManageRelationDifferentMeshType( std::shared_ptr<SpaceTestType> const& spaceTest, std::shared_ptr<SpaceTrialType> const& spaceTrial, RangeType const& range )
         :
         M_spaceTest( spaceTest ),
@@ -1768,12 +1773,12 @@ struct ManageRelationDifferentMeshType
                     doCheckRelation = true;
                 }
 
-                auto eltInitIds = this->eltIds( entity );
-                if ( eltInitIds.empty() )
+                auto eltsInit = this->eltsRelatedToRange( entity );
+                if ( eltsInit.empty() )
                     continue;
-                M_faceConnectionIdInit = std::get<0>( eltInitIds.front() ); // only for range of faces
-                M_eltIndexInitTest = std::get<1>( eltInitIds.front() );
-                M_eltIndexInitTrial = std::get<2>( eltInitIds.front() );
+                M_faceConnectionIdInit = std::get<0>( eltsInit.front() ); // only for range of faces
+                M_eltIndexInitTest = unwrap_ref( std::get<1>( eltsInit.front() ) ).id();
+                M_eltIndexInitTrial = unwrap_ref( std::get<2>( eltsInit.front() ) ).id();
                 M_rangeEntityInit = &entity;
 
                 break;
@@ -1781,10 +1786,10 @@ struct ManageRelationDifferentMeshType
 
         }
 
-    std::vector<std::tuple<uint16_type,index_type,index_type>>
-    eltIds( entity_range_t<RangeType> const& entity )
+    std::vector<std::tuple<uint16_type, element_wrapper_test_type, element_wrapper_trial_type>>
+    eltsRelatedToRange( entity_range_t<RangeType> const& entity )
         {
-            std::vector<std::tuple<uint16_type,index_type,index_type>> res;
+            std::vector<std::tuple<uint16_type,element_wrapper_test_type, element_wrapper_trial_type>> res;
             if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value ) // case range of faces
                 {
                     if ( !entity.isConnectedTo0() )
@@ -1798,49 +1803,24 @@ struct ManageRelationDifferentMeshType
                         entityFaceConnectionAvailable.insert( 1 );
                     if ( entityFaceConnectionAvailable.empty() )
                         return res;
-#if 0
-                    // check if the face is not at interprocess dof, else need to select one side
-                    if ( M_rangeAndTrialUseSameMesh )
-                    {
-                        if ( M_hasMeshSupportPartialTrial )
-                        {
-                            if ( M_meshSupportTrial->isGhostFace( entity ) )
-                            {
-#if 1
-                                return res;
-#else
-                                index_type idEltTestInit = M_spaceTest->mesh()->meshToSubMesh( idEntityRangeInit );
-                                if( idEltTestInit == invalid_v<index_type> )
-                                    return res;
-                                if ( M_spaceTest->mesh()->element( idEltTestInit ).isGhostCell() )
-                                    return res;
-#endif
-                            }
-                        }
-                        else if ( entity.isGhostFace() )
-                            return res;
-                    }
-                    else
-                    {
-                        // TODO
-                        if ( entity.isGhostFace() )
-                            return res;
-                    }
-#endif
 
-
-                    std::map<uint16_type,index_type> eltTest;
+                    std::map<uint16_type,element_wrapper_test_type> eltsRelatedTest;
                     if ( M_rangeAndTestUseSameMesh )
                     {
-                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
-                            eltTest[faceConnectionId] = entity.element( faceConnectionId ).id();
+                        if constexpr ( std::is_same_v< element_mesh_test_type,std::decay_t<decltype(entity.element(0))> > )
+                            {
+                                for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                                    eltsRelatedTest.emplace( faceConnectionId, boost::cref( entity.element( faceConnectionId ) ) );
+                            }
+                        else
+                            CHECK( false ) << "something wrong";
                     }
                     else if ( M_testIsSubMeshFromRange )
                     {
-                        index_type idEltTestInit = M_spaceTest->mesh()->meshToSubMesh( idEntityRangeInit );
-                        if( idEltTestInit == invalid_v<index_type> )
+                        index_type eltIdTest = M_spaceTest->mesh()->meshToSubMesh( idEntityRangeInit );
+                        if( eltIdTest == invalid_v<index_type> )
                             return res;
-                        eltTest[invalid_v<uint16_type>] = idEltTestInit;
+                        eltsRelatedTest.emplace( invalid_v<uint16_type>, boost::cref( M_spaceTest->mesh()->element( eltIdTest) ) );
                     }
                     else if ( M_rangeIsSubMeshFromTest )
                     {
@@ -1850,41 +1830,38 @@ struct ManageRelationDifferentMeshType
 
                     for ( uint16_type faceConnectionId : std::vector<uint16_type>({invalid_v<uint16_type>,0,1}) )
                         {
-                            auto itFindConnection = eltTest.find( faceConnectionId );
-                            if ( itFindConnection == eltTest.end() )
+                            auto itFindConnection = eltsRelatedTest.find( faceConnectionId );
+                            if ( itFindConnection == eltsRelatedTest.end() )
                                 continue;
-                            index_type idEltTestInit = itFindConnection->second;
-                            bool insertEltId = true;
+                            bool insertElt = true;
                             if ( M_hasMeshSupportPartialTest )
                             {
-                                if ( !M_meshSupportTest->hasElement( idEltTestInit ) )
-                                    insertEltId = false;
-                                if ( M_meshSupportTest->hasGhostElement( idEltTestInit ) && false ) // TODO case dof table extended ???
-                                    insertEltId = false;
+                                index_type eltIdTest = unwrap_ref( itFindConnection->second ).id();
+                                if ( !M_meshSupportTest->hasElement( eltIdTest ) )
+                                    insertElt = false;
                             }
-                            else
-                            {
-                                if ( M_spaceTest->mesh()->element( idEltTestInit ).isGhostCell() && false ) //NNNNNEEWW
-                                    insertEltId = false;
-                            }
-                            if ( !insertEltId )
-                                eltTest.erase( faceConnectionId );
+                            if ( !insertElt )
+                                eltsRelatedTest.erase( faceConnectionId );
                         }
 
 
-
-                    std::map<uint16_type,index_type> eltTrial;
+                    std::map<uint16_type,element_wrapper_trial_type> eltsRelatedTrial;
                     if ( M_rangeAndTrialUseSameMesh )
                     {
-                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
-                            eltTrial[faceConnectionId] = entity.element( faceConnectionId ).id();
+                        if constexpr ( std::is_same_v< element_mesh_trial_type,std::decay_t<decltype(entity.element(0))> > )
+                            {
+                                for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                                    eltsRelatedTrial.emplace( faceConnectionId, boost::cref( entity.element( faceConnectionId ) ) );
+                            }
+                        else
+                            CHECK( false ) << "something wrong";
                     }
                     else if ( M_trialIsSubMeshFromRange )
                     {
-                        index_type idEltTrialInit = M_spaceTrial->mesh()->meshToSubMesh( idEntityRangeInit );
-                        if( idEltTrialInit == invalid_v<index_type> )
+                        index_type eltIdTrial = M_spaceTrial->mesh()->meshToSubMesh( idEntityRangeInit );
+                        if( eltIdTrial == invalid_v<index_type> )
                             return res;
-                        eltTrial[invalid_v<uint16_type>] = idEltTrialInit;
+                        eltsRelatedTrial.emplace( invalid_v<uint16_type>, boost::cref( M_spaceTrial->mesh()->element( eltIdTrial ) ) );
                     }
                     else if ( M_rangeIsSubMeshFromTrial )
                     {
@@ -1894,129 +1871,97 @@ struct ManageRelationDifferentMeshType
 
                     for ( uint16_type faceConnectionId : std::vector<uint16_type>({invalid_v<uint16_type>,0,1}) )
                         {
-                            auto itFindConnection = eltTrial.find( faceConnectionId );
-                            if ( itFindConnection == eltTrial.end() )
+                            auto itFindConnection = eltsRelatedTrial.find( faceConnectionId );
+                            if ( itFindConnection == eltsRelatedTrial.end() )
                                 continue;
-                            index_type idEltTrialInit = itFindConnection->second;
                             bool insertEltId = true;
                             if ( M_hasMeshSupportPartialTrial )
                             {
-                                if ( !M_meshSupportTrial->hasElement( idEltTrialInit ) )
-                                    insertEltId = false;
-                                if ( M_meshSupportTrial->hasGhostElement( idEltTrialInit ) && false ) // TODO case dof table extended ???
-                                    insertEltId = false;
-                            }
-                            else
-                            {
-                                if ( M_spaceTrial->mesh()->element( idEltTrialInit ).isGhostCell() && false ) //NNNNNEEWW
+                                index_type eltIdTrial = unwrap_ref( itFindConnection->second ).id();
+                                if ( !M_meshSupportTrial->hasElement( eltIdTrial ) )
                                     insertEltId = false;
                             }
 
                             if ( !insertEltId )
-                                eltTrial.erase( faceConnectionId );
+                                eltsRelatedTrial.erase( faceConnectionId );
                         }
 
-                    if ( eltTest.empty() || eltTrial.empty() )
+                    if ( eltsRelatedTest.empty() || eltsRelatedTrial.empty() )
                         return res;
-                    bool eltTestHasNoFaceConnection = eltTest.find( invalid_v<uint16_type> ) != eltTest.end();
-                    bool eltTrialHasNoFaceConnection = eltTrial.find( invalid_v<uint16_type> ) != eltTrial.end();
+                    bool eltTestHasNoFaceConnection = eltsRelatedTest.find( invalid_v<uint16_type> ) != eltsRelatedTest.end();
+                    bool eltTrialHasNoFaceConnection = eltsRelatedTrial.find( invalid_v<uint16_type> ) != eltsRelatedTrial.end();
                     CHECK( eltTestHasNoFaceConnection || eltTrialHasNoFaceConnection ) << "at least one space should not have a connection";
                     if ( eltTestHasNoFaceConnection && eltTrialHasNoFaceConnection )
                     {
                         if ( entity.isGhostFace() ) // test/trial are not connected, do the integration on one proc from the range face property
                             return res;
-                        index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
-                        index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
-                        //res.push_back( std::make_tuple( *(entityFaceConnectionAvailable.begin()), eltIdTest, eltIdTrial ) );
+                        auto const& eltTest = eltsRelatedTest.find( invalid_v<uint16_type> )->second;
+                        auto const& eltTrial = eltsRelatedTrial.find( invalid_v<uint16_type> )->second;
                         for ( uint16_type faceConnectionId : entityFaceConnectionAvailable ) // really integrate both side here?
-                            res.push_back( std::make_tuple( faceConnectionId, eltIdTest, eltIdTrial ) );
+                            res.push_back( std::make_tuple( faceConnectionId, eltTest,eltTrial ) );
                     }
-                    else
+                    else if ( eltTestHasNoFaceConnection )
                     {
-
-                        if ( eltTestHasNoFaceConnection )
+                        // check if the face is not at interprocess dof, else need to select one side
+                        if ( entityFaceConnectionAvailable.size() == 2 )
                         {
-                            if ( entityFaceConnectionAvailable.size() == 2 /*&& eltTrial.size() == 2*/ )
+                            bool isGhostFace = entity.isGhostFace();
+                            if ( M_rangeAndTrialUseSameMesh )
                             {
-                                bool isGhostFace = entity.isGhostFace();
-                                if ( M_rangeAndTrialUseSameMesh )
-                                {
-                                    if ( M_hasMeshSupportPartialTrial )
-                                        isGhostFace =  M_meshSupportTrial->isGhostFace( entity );
-                                }
-                                else if ( M_rangeIsSubMeshFromTrial )
-                                {
-                                    CHECK( false ) << "TODO";
-                                }
-                                if ( isGhostFace )
-                                    return res;
+                                if ( M_hasMeshSupportPartialTrial )
+                                    isGhostFace = M_meshSupportTrial->isGhostFace( entity );
                             }
-
-                            for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                            else if ( M_rangeIsSubMeshFromTrial )
                             {
-                                auto itFindTrialConnection = eltTrial.find( faceConnectionId );
-                                if ( itFindTrialConnection != eltTrial.end() )
-                                {
-                                    index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
-                                    res.push_back( std::make_tuple( faceConnectionId, eltIdTest, itFindTrialConnection->second ) );
-                                }
+                                CHECK( false ) << "TODO";
                             }
-                        }
-                        else if ( eltTrialHasNoFaceConnection )
-                        {
-                            if ( entityFaceConnectionAvailable.size() == 2 /*&& eltTest.size() == 2*/ )
-                            {
-                                bool isGhostFace = entity.isGhostFace();
-                                if ( M_rangeAndTestUseSameMesh )
-                                {
-                                    if ( M_hasMeshSupportPartialTest )
-                                        isGhostFace =  M_meshSupportTest->isGhostFace( entity );
-                                }
-                                else if ( M_rangeIsSubMeshFromTest )
-                                {
-                                    CHECK( false ) << "TODO";
-                                }
-                                if ( isGhostFace )
-                                    return res;
-                            }
-
-                            for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
-                            {
-                                auto itFindTestConnection = eltTest.find( faceConnectionId );
-                                if ( itFindTestConnection != eltTest.end() )
-                                {
-                                    index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
-                                    res.push_back( std::make_tuple( faceConnectionId, itFindTestConnection->second, eltIdTrial ) );
-                                }
-                            }
-
+                            if ( isGhostFace )
+                                return res;
                         }
 
-#if 0
-                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable /*std::vector<uint16_type>({0,1})*/ )
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
                         {
-                            if ( eltTestHasNoFaceConnection )
+                            auto itFindTrialConnection = eltsRelatedTrial.find( faceConnectionId );
+                            if ( itFindTrialConnection != eltsRelatedTrial.end() )
                             {
-                                auto itFindTrialConnection = eltTrial.find( faceConnectionId );
-                                if ( itFindTrialConnection != eltTrial.end() )
-                                {
-                                    index_type eltIdTest = eltTest.find( invalid_v<uint16_type> )->second;
-                                    res.push_back( std::make_tuple( faceConnectionId, eltIdTest, itFindTrialConnection->second ) );
-                                }
-                            }
-                            else if ( eltTrialHasNoFaceConnection )
-                            {
-                                auto itFindTestConnection = eltTest.find( faceConnectionId );
-                                if ( itFindTestConnection != eltTest.end() )
-                                {
-                                    index_type eltIdTrial = eltTrial.find( invalid_v<uint16_type> )->second;
-                                    res.push_back( std::make_tuple( faceConnectionId, itFindTestConnection->second, eltIdTrial ) );
-                                }
+                                auto const& eltTest = eltsRelatedTest.find( invalid_v<uint16_type> )->second;
+                                auto const& eltTrial = itFindTrialConnection->second;
+                                res.push_back( std::make_tuple( faceConnectionId, eltTest, eltTrial ) );
                             }
                         }
-
-#endif
                     }
+                    else if ( eltTrialHasNoFaceConnection )
+                    {
+                        // check if the face is not at interprocess dof, else need to select one side
+                        if ( entityFaceConnectionAvailable.size() == 2 /*&& eltTest.size() == 2*/ )
+                        {
+                            bool isGhostFace = entity.isGhostFace();
+                            if ( M_rangeAndTestUseSameMesh )
+                            {
+                                if ( M_hasMeshSupportPartialTest )
+                                    isGhostFace =  M_meshSupportTest->isGhostFace( entity );
+                            }
+                            else if ( M_rangeIsSubMeshFromTest )
+                            {
+                                CHECK( false ) << "TODO";
+                            }
+                            if ( isGhostFace )
+                                return res;
+                        }
+
+                        for ( uint16_type faceConnectionId : entityFaceConnectionAvailable )
+                        {
+                            auto itFindTestConnection = eltsRelatedTest.find( faceConnectionId );
+                            if ( itFindTestConnection != eltsRelatedTest.end() )
+                            {
+                                auto const& eltTest = itFindTestConnection->second;
+                                auto const& eltTrial =  eltsRelatedTrial.find( invalid_v<uint16_type> )->second;
+                                res.push_back( std::make_tuple( faceConnectionId, eltTest, eltTrial ) );
+                            }
+                        }
+
+                    }
+
                 } // if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value )
             return res;
         }
@@ -2079,10 +2024,8 @@ struct ManageRelationDifferentMeshType
         }
 
 
-
-    
     template < typename GmcExprType, typename GmcTestType, typename GmcTrialType>
-    void updateGmc( entity_range_t<RangeType> const& entity, std::tuple<uint16_type,index_type,index_type> const& eltsTrialTestRelated,
+    void updateGmc( entity_range_t<RangeType> const& entity, std::tuple<uint16_type,element_wrapper_test_type, element_wrapper_trial_type> const& eltsTrialTestRelated,
                     std::shared_ptr<GmcExprType> gmcExpr, std::shared_ptr<GmcTestType> gmcFormTest, std::shared_ptr<GmcTrialType> gmcFormTrial )
         {
             if constexpr ( range_idim_type == mpl::size_t<MESH_FACES>::value ) // case range of faces
@@ -2091,17 +2034,14 @@ struct ManageRelationDifferentMeshType
                 uint16_type faceIdInElement = faceConnection==0? entity.idInElement0():entity.idInElement1();
                 if ( M_testIsSubMeshFromRange )
                 {
-                    index_type idElt = std::get<1>( eltsTrialTestRelated );
-                    CHECK( M_spaceTest->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
-                    auto const& theelt = M_spaceTest->mesh()->element( idElt );
+                    auto const& theelt = unwrap_ref( std::get<1>( eltsTrialTestRelated ) );
                     CHECK( gmcFormTest ) << "no gmc defined";
                     gmcFormTest->update(theelt);
                 }
+                // TODO optimize if test/trial gmc are the same
                 if ( M_trialIsSubMeshFromRange )
                 {
-                    index_type idElt = std::get<2>( eltsTrialTestRelated );
-                    CHECK( M_spaceTrial->mesh()->hasElement( idElt ) ) << " mesh doesnt have an element id " << idElt;
-                    auto const& theelt = M_spaceTrial->mesh()->element( idElt );
+                    auto const& theelt = unwrap_ref( std::get<2>( eltsTrialTestRelated ) );
                     gmcFormTrial->update(theelt);
 #if 0
                     if constexpr ( std::is_same_v<GmcExprType,GmcTestType> )
@@ -4078,7 +4018,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
         {
             auto const& faceCur = boost::unwrap_ref( *elt_it );
 
-            auto eltsTrialTestRelated = mrdmt.eltIds( faceCur );
+            auto eltsTrialTestRelated = mrdmt.eltsRelatedToRange( faceCur );
             if ( eltsTrialTestRelated.empty() )
                 continue;
 
@@ -4090,8 +4030,8 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 map_gmc_expr_type mapgmcExpr( fusion::make_pair<vf::detail::gmc<0> >( gmcExpr[0] ) );
                 map_gmc_formTest_type mapgmcFormTest( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTest[0] ) );
                 map_gmc_formTrial_type mapgmcFormTrial( fusion::make_pair<vf::detail::gmc<0> >( gmcFormTrial[0] ) );
-                index_type test_elt_0 = std::get<1>( eltsTrialTestRelated[0] );
-                index_type trial_elt_0 = std::get<2>( eltsTrialTestRelated[0] );
+                index_type test_elt_0 = unwrap_ref( std::get<1>( eltsTrialTestRelated[0] ) ).id();
+                index_type trial_elt_0 = unwrap_ref( std::get<2>( eltsTrialTestRelated[0] ) ).id();
 
                 if ( !form )
                 {
@@ -4117,10 +4057,10 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
                 auto mapgmctest2 = mapgmc( gmcFormTest[0], gmcFormTest[1] );
                 auto mapgmctrial2 = mapgmc( gmcFormTrial[0], gmcFormTrial[1] );
                 auto mapgmcexpr2 = mapgmc( gmcExpr[0], gmcExpr[1] );
-                index_type test_elt_0 = std::get<1>( eltsTrialTestRelated[0] );
-                index_type trial_elt_0 = std::get<2>( eltsTrialTestRelated[0] );
-                index_type test_elt_1 = std::get<1>( eltsTrialTestRelated[1] );
-                index_type trial_elt_1 = std::get<2>( eltsTrialTestRelated[1] );
+                index_type test_elt_0 = unwrap_ref( std::get<1>( eltsTrialTestRelated[0] ) ).id();
+                index_type trial_elt_0 = unwrap_ref( std::get<2>( eltsTrialTestRelated[0] ) ).id();
+                index_type test_elt_1 = unwrap_ref( std::get<1>( eltsTrialTestRelated[1] ) ).id();
+                index_type trial_elt_1 = unwrap_ref( std::get<2>( eltsTrialTestRelated[1] ) ).id();
 
                 if ( !form2 )
                 {
