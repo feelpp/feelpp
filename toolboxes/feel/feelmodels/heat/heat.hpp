@@ -189,7 +189,7 @@ class Heat : public ModelNumerical,
         template <typename SymbolsExpr>
         void exportResults( double time, SymbolsExpr const& symbolsExpr )
             {
-                this->exportResults( time, symbolsExpr, hana::concat( this->materialsProperties()->exprPostProcessExports( this->physic(),symbolsExpr ),
+                this->exportResults( time, symbolsExpr, hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),symbolsExpr ),
                                                                       this->exprPostProcessExports( symbolsExpr ) ) );
             }
         template <typename SymbolsExpr,typename ExportsExprType>

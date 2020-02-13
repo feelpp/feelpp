@@ -319,7 +319,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -457,7 +457,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_fluidModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physic(),symbolExpr ),
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
                                     hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );

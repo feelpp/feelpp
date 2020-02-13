@@ -226,15 +226,24 @@ public :
             return false;
         }
 
-    //! return the materials name from a physic
-    std::set<std::string> physicToMaterials( std::string const& physic ) const
+    //! return the materials names used with a set of physic
+    std::set<std::string> physicToMaterials( std::set<std::string> const& physics ) const
         {
-            auto itFindMat = M_materialsNames.find( physic );
-            if( itFindMat != M_materialsNames.end() )
-                return itFindMat->second;
-            return std::set<std::string>{};
+            std::set<std::string> res;
+            for ( std::string const& physic : physics )
+            {
+                auto itFindMat = M_materialsNames.find( physic );
+                if( itFindMat != M_materialsNames.end() )
+                    res.insert( itFindMat->second.begin(), itFindMat->second.end() );
+            }
+            return res;
         }
 
+    //! return the materials names used with a physic
+    std::set<std::string> physicToMaterials( std::string const& physic ) const
+        {
+            return this->physicToMaterials( std::set<std::string>({ physic }) );
+        }
 
     std::set<std::string> /*const&*/ markers( std::string const& p ) const
         {
@@ -570,7 +579,7 @@ public :
         }
 
         template <typename SymbExprType>
-        auto exprPostProcessExports( std::string const& physic, SymbExprType const& se, std::string const& prefix = "materials" ) const
+        auto exprPostProcessExports( std::set<std::string> const& physics, SymbExprType const& se, std::string const& prefix = "materials" ) const
         {
             typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se) ) _expr_scalar_type;
             std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
@@ -582,7 +591,7 @@ public :
             typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
             std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
 
-            auto setOfMatNameUsed = this->physicToMaterials( physic );
+            auto setOfMatNameUsed = this->physicToMaterials( physics );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
                 if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
@@ -617,10 +626,10 @@ public :
             return hana::make_tuple( mapExprScalar,mapExprTensor2,mapExprTensor2FromScalar );
         }
 
-    std::set<std::string> postProcessExportsAllFieldsAvailable( std::string const& physic, std::string const& prefix = "materials" ) const
+    std::set<std::string> postProcessExportsAllFieldsAvailable( std::set<std::string> const& physics, std::string const& prefix = "materials" ) const
         {
             std::set<std::string> res;
-            auto setOfMatNameUsed = this->physicToMaterials( physic );
+            auto setOfMatNameUsed = this->physicToMaterials( physics );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
                 if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
