@@ -19,24 +19,24 @@ template <uint16_type Dim>
 class ModelPDE
 {
 protected:
-    using material_property_shape_dim_type = std::pair<uint16_type,uint16_type>;
 public :
+    using material_property_shape_dim_type = std::pair<uint16_type,uint16_type>;
     using material_property_description_type = std::tuple<std::string,std::vector<material_property_shape_dim_type>>;
 
     ModelPDE() = default;
     ModelPDE( ModelPDE const& ) = default;
     ModelPDE( ModelPDE && ) = default;
 
-    std::map<std::string,std::tuple<std::string,std::vector<material_property_shape_dim_type>>> const& matertialPropertyDescription() const { return M_matertialPropertyDescription; }
+    std::map<std::string,std::tuple<std::string,std::vector<material_property_shape_dim_type>>> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
 
 protected :
-    void addMatertialPropertyDescription( std::string const& propName, std::string const& symbol, std::initializer_list<material_property_shape_dim_type> const& shapes )
+    void addMaterialPropertyDescription( std::string const& propName, std::string const& symbol, std::initializer_list<material_property_shape_dim_type> const& shapes )
         {
-            M_matertialPropertyDescription[propName] = std::make_tuple( symbol, std::vector< material_property_shape_dim_type>( shapes ) );
+            M_materialPropertyDescription[propName] = std::make_tuple( symbol, std::vector< material_property_shape_dim_type>( shapes ) );
         }
 
 private :
-    std::map<std::string,material_property_description_type> M_matertialPropertyDescription; // name -> (symbol, shapes.. )
+    std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
 };
 
 } // namespace FeelModels

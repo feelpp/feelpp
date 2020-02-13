@@ -36,6 +36,7 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
 {
@@ -274,7 +275,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init",(boost::format("finish in %1% s")%tElapsedInit).str() );
 }
 
-
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
@@ -282,22 +282,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("ThermoElectric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::set<std::string> ppExportsAllFieldsAvailable;
+
     // need to not include export fields of material of subphysics
-    std::set<std::string> fieldsAvailableIgnoredHeat = this->materialsProperties()->postProcessExportsAllFieldsAvailable( M_heatModel->physics() );
-    std::set<std::string> fieldsAvailableIgnoredElectric = this->materialsProperties()->postProcessExportsAllFieldsAvailable( M_electricModel->physics() );
-    for ( auto const& s : M_heatModel->postProcessExportsAllFieldsAvailable() )
-    {
-        std::string exportFieldName = prefixvm( M_heatModel->keyword(), s);
-        if ( fieldsAvailableIgnoredHeat.find( exportFieldName ) == fieldsAvailableIgnoredHeat.end() )
-            ppExportsAllFieldsAvailable.insert( exportFieldName );
-    }
-    for ( auto const& s : M_electricModel->postProcessExportsAllFieldsAvailable() )
-    {
-        std::string exportFieldName = prefixvm( M_electricModel->keyword(), s);
-        if ( fieldsAvailableIgnoredElectric.find( exportFieldName ) == fieldsAvailableIgnoredElectric.end() )
-            ppExportsAllFieldsAvailable.insert( exportFieldName );
-    }
+    std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physics() ) );
+    std::set<std::string> ppExportsAllFieldsAvailableElectric = Feel::FeelModels::detail::set_difference( this->electricModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->electricModel()->physics() ) );
+    std::set<std::string> ppExportsAllFieldsAvailable;
+    for ( auto const& s : ppExportsAllFieldsAvailableHeat )
+        ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
+    for ( auto const& s : ppExportsAllFieldsAvailableElectric )
+        ppExportsAllFieldsAvailable.insert( prefixvm( this->electricModel()->keyword(), s) );
+
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
     this->setPostProcessExportsPidName( "pid" );
@@ -423,6 +419,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto symbolExpr = this->symbolsExpr();
+    //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
 

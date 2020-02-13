@@ -31,6 +31,7 @@
  #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
+#include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
 {
@@ -313,11 +314,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("HeatFluid","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    std::set<std::string> ppExportsAllFieldsAvailable;
-    for ( auto const& s : M_heatModel->postProcessExportsAllFieldsAvailable() )
-        ppExportsAllFieldsAvailable.insert( prefixvm( M_heatModel->keyword(), s) );
-    for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
-        ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s) );
+    // need to not include export fields of material of subphysics
+    std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physics() ) );
+    std::set<std::string> ppExportsAllFieldsAvailablefluid = Feel::FeelModels::detail::set_difference( this->fluidModel()->postProcessExportsAllFieldsAvailable(),
+                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->fluidModel()->physics() ) );
+   std::set<std::string> ppExportsAllFieldsAvailable;
+   for ( auto const& s : ppExportsAllFieldsAvailableHeat )
+       ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
+   for ( auto const& s : ppExportsAllFieldsAvailablefluid )
+       ppExportsAllFieldsAvailable.insert( prefixvm( this->fluidModel()->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
     this->setPostProcessExportsPidName( "pid" );

@@ -135,9 +135,9 @@ public :
         {
             auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
             auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-            //auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ), prefix_symbol );
-            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
-                                                             M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) );
+            //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+            //                                                  M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
             return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
         }
     //___________________________________________________________________________________//
