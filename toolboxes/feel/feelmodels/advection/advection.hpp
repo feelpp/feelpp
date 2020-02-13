@@ -443,11 +443,8 @@ public :
     void exportResults( double time );
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
-    void exportMeasures( double time );
 
-    exporter_ptrtype getExporter() { return M_exporter; }
-    exporter_ptrtype const& getExporter() const { return M_exporter; }
-
+    void setDoExport( bool b );
     //--------------------------------------------------------------------//
     void addMarkerInflowBC( std::string const& markerName );
 
@@ -475,6 +472,8 @@ protected:
     template<typename ADRT, typename ExprT>
     void updateLinearPDEStabilizationSGS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
 
+    exporter_ptrtype getExporter() { return M_exporter; }
+    exporter_ptrtype const& getExporter() const { return M_exporter; }
     virtual std::string geoExportType() const { return "static"; }
 
     //--------------------------------------------------------------------//

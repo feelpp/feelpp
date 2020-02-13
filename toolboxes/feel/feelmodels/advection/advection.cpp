@@ -1132,6 +1132,14 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setDoExport( bool b )
+{
+    if( M_exporter )
+        M_exporter->setDoExport( b );
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::addMarkerInflowBC( std::string const& markerName )
 {
     if( std::find(this->M_bcInflowMarkers.begin(), this->M_bcInflowMarkers.end(), markerName) == this->M_bcInflowMarkers.end() )

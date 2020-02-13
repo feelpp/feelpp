@@ -95,7 +95,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::init()
     this->initBoundaryConditions();
     // Init advection toolbox
     M_advectionToolbox->init();
-    M_advectionToolbox->getExporter()->setDoExport( this->M_doExportAdvection );
+    M_advectionToolbox->setDoExport( this->M_doExportAdvection );
 
     this->updateTime( M_advectionToolbox->currentTime() );
     if (this->doRestart())
@@ -229,7 +229,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_modGradPhiAdvection->setFunctionSpace( this->functionSpace() );
         M_modGradPhiAdvection->setTimeOrder( this->timeOrder() );
         M_modGradPhiAdvection->init();
-        M_modGradPhiAdvection->getExporter()->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
+        M_modGradPhiAdvection->setDoExport( boption( _name="do_export_modgradphi-advection", _prefix=this->prefix() ) );
     }
     if( M_useStretchAugmented )
     {
@@ -241,7 +241,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_stretchAdvection->setFunctionSpace( this->functionSpace() );
         M_stretchAdvection->setTimeOrder( this->timeOrder() );
         M_stretchAdvection->init();
-        M_stretchAdvection->getExporter()->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
+        M_stretchAdvection->setDoExport( boption( _name="do_export_stretch-advection", _prefix=this->prefix() ) );
     }
     if( M_useCauchyAugmented )
     {
@@ -253,7 +253,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
         M_backwardCharacteristicsAdvection->setFunctionSpace( this->functionSpaceVectorial() );
         M_backwardCharacteristicsAdvection->setTimeOrder( this->timeOrder() );
         M_backwardCharacteristicsAdvection->init();
-        M_backwardCharacteristicsAdvection->getExporter()->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
+        M_backwardCharacteristicsAdvection->setDoExport( boption( _name="do_export_backward-characteristics-advection", _prefix=this->prefix() ) );
 
         M_leftCauchyGreenTensor.reset( new element_tensor2symm_type(this->functionSpaceTensor2Symm(), "LeftCauchyGreenTensor") );
         M_cauchyGreenInvariant1.reset( new element_cauchygreen_invariant_type(this->functionSpace(), "CauchyGreenI1(TrC)") );
