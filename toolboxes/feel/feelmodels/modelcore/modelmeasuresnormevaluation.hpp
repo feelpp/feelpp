@@ -8,7 +8,7 @@
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/normsemih1.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
-#include <feel/feelcore/for_each.hpp>
+#include <feel/feelcore/tuple_utils.hpp>
 
 namespace Feel
 {
