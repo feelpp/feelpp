@@ -294,14 +294,45 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
 {
     using namespace Feel;
     auto mesh = unitCube();
-    auto submesh = createSubmesh(_mesh=mesh, _range=faces(mesh));
-    auto Vh = Pdhv<1>(mesh,markedelements(mesh, "toto"));
-    auto v = Vh->element();
-    auto Xh = Pdh<1>(submesh);
-    auto u = Xh->element();
+    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5) ), true );
+    //auto Vh = Pdhv<1>(mesh);
+    auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
+    //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
+    auto Xh = Pdh<1>(submesh,true);
 
+    auto u = Vh->element();
+    auto v = Xh->element();
+    v.setConstant(2.);
+    u.setConstant(3.);
+
+    auto rangeIntegrateBoundary = intersect(boundaryfaces(support(Vh)),boundaryfaces(mesh)); // there is a problem
     auto a = form2(_test=Xh, _trial=Vh);
-    a = integrate(_range=boundaryfaces(mesh), _expr=idt(u)*normal(v));
+    //a = integrate(_range=boundaryfaces(mesh), _expr=idt(v)*normal(u));
+    //a = integrate(_range=boundaryfaces(mesh), _expr=id(v)*inner(idt(u),N()));
+    a = integrate(_range=rangeIntegrateBoundary, _expr=id(v)*inner(idt(u),one()));
+    a.matrixPtr()->close();
+    double theMatEnergyA = a(v,u);
+    std::cout << "theMatEnergyA=" << theMatEnergyA << std::endl;
+    auto submeshBoundarySupport = createSubmesh(_mesh=mesh, _range=rangeIntegrateBoundary/*,_update=0*/);
+    double evalIntegrateA = integrate(_range=elements(submeshBoundarySupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
+    std::cout << "evalIntegrateA=" << evalIntegrateA << std::endl;
+
+    BOOST_CHECK_CLOSE( theMatEnergyA, evalIntegrateA, 1e-9 );
+
+
+    auto b = form2(_test=Xh, _trial=Vh);
+    b = integrate(_range=internalfaces(support(Vh)/*mesh*/), _expr=id(v)*inner(idt(u),one()));
+    b.matrixPtr()->close();
+    double theMatEnergyB = b(v,u);
+    std::cout << "theMatEnergyB=" << theMatEnergyB << std::endl;
+
+    auto submeshInternalSupport = createSubmesh(_mesh=mesh, _range=internalfaces(support(Vh)),_update=0);
+    double evalIntegrateB = integrate(_range=elements(submeshInternalSupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
+    std::cout << "evalIntegrateB=" << evalIntegrateB << std::endl;
+
+    BOOST_CHECK_CLOSE( theMatEnergyB, 2*evalIntegrateB, 1e-9 );
+
 }
+
 BOOST_AUTO_TEST_SUITE_END()
 
