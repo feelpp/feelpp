@@ -3,12 +3,16 @@
 #include <feel/feelmodels/levelset/levelsetbase.cpp>
 
 // Scalar advection required for ReinitializerHJ
+#ifndef ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 #define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
     template< typename FunctionSpaceType, typename FunctionSpaceAdvectionVelocityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType> \
         /**/
+#endif
+#ifndef ADVDIFFREAC_CLASS_TEMPLATE_TYPE
 #define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
     AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
         /**/
+#endif
 //#include <feel/feelmodels/advection/advection.cpp>
 
 namespace Feel {
