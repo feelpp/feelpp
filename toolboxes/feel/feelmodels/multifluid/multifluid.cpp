@@ -1256,7 +1256,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     auto fields = hana::flatten( hana::make_tuple( 
             M_fluidModel->allFields( M_fluidModel->keyword() ), 
-            M_levelsets->begin()->second->allFields( M_levelsets->begin()->second.keyword() ), 
+            M_levelsets.begin()->second->allFields( M_levelsets.begin()->second->keyword() ), 
             hana::make_tuple( 
                 std::make_pair( prefixvm(this->prefix(),"global-levelset.phi"), this->globalLevelsetElt() ),
                 interfaceForcesFields
