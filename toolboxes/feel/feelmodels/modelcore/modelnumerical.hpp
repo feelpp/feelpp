@@ -47,7 +47,7 @@
 #include <feel/feelfit/fit.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 
-#include <feel/feelcore/for_each.hpp>
+#include <feel/feelcore/tuple_utils.hpp>
 
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
