@@ -283,6 +283,27 @@ struct SymbolsExpr
         tupleExpr( SymbolsExprTraits::template apply( exprs... ) )
         {}
 
+    std::map<std::string,std::set<std::string>> names() const
+        {
+            std::map<std::string,std::set<std::string>> res;
+            hana::for_each( tupleExpr, [&res]( auto const& e )
+                            {
+                                for ( auto const& se : e )
+                                {
+                                    std::string const& symbolNameBase = std::get<0>( se );
+                                    SymbolExprComponentSuffix const& symbolSuffix = std::get<2>( se );
+                                    if ( symbolSuffix.empty() )
+                                        res[symbolNameBase].insert( symbolNameBase );
+                                    else
+                                    {
+                                        for ( auto const& [_suffix,compArray] : symbolSuffix )
+                                            res[symbolNameBase].insert( symbolNameBase+ _suffix );
+                                    }
+                                }
+                            });
+            return res;
+        }
+
     tuple_type tupleExpr;
 };
 template <>
@@ -291,6 +312,8 @@ struct SymbolsExpr<>
     using tuple_type = hana::tuple<>;
     using feelpp_tag = SymbolsExprTag;
     tuple_type tupleExpr;
+
+    std::map<std::string,std::set<std::string>> names() const { return std::map<std::string,std::set<std::string>>{}; }
 };
 
 //! build a SymbolsExpr object
