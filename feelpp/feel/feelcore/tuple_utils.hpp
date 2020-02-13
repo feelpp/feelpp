@@ -66,7 +66,10 @@ struct zip_with_impl
         auto const at = []( auto const t ) { 
             return hana::at_c<N>( t );
         };
-        return static_cast<F&&>(f)( iter::transform_iterator( static_cast<ItT1&&>(itBegin), at ), iter::transform_iterator( static_cast<ItT2&&>(itEnd), at ) );
+        return static_cast<F&&>(f)( 
+                boost::iterators::transform_iterator( static_cast<ItT1&&>(itBegin), at ), 
+                boost::iterators::transform_iterator( static_cast<ItT2&&>(itEnd), at ) 
+                );
     }
 
     template <std::size_t ...N, typename F, typename ItT1, typename ItT2>
@@ -87,7 +90,7 @@ struct zip_with_impl
 template <typename F, typename ItT1, typename ItT2>
 static auto
 zip_with( F&& f, ItT1&& itBegin, ItT2&& itEnd ) {
-    return detail::zip_with_impl<typename hana::tag_of<decltype(*itBegin)>::type>::apply(
+    return Feel::detail::zip_with_impl<typename hana::tag_of<decltype(*itBegin)>::type>::apply(
             static_cast<F&&>(f), static_cast<ItT1&&>(itBegin), static_cast<ItT2&&>(itEnd)
             );
 }
