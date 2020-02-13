@@ -222,7 +222,7 @@ class Heat : public ModelNumerical,
         {
             auto seField = this->symbolsExprField( t, prefix_symbol );
             auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ), prefix_symbol );
+            auto seMat = this->materialsProperties()->symbolsExpr(Feel::vf::symbolsExpr( seField, seFit ) );
             return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
 
@@ -236,13 +236,6 @@ class Heat : public ModelNumerical,
                                               symbolExpr( (boost::format("%1%dn_T")%prefix_symbol).str(),dnv(t) )
                                               );
             }
-
-
-        template <typename SymbExprType>
-        auto symbolsExprMaterial( SymbExprType const& se, std::string const& prefix_symbol = "heat_" ) const
-        {
-            return this->materialsProperties()->symbolsExpr( se, prefix_symbol );
-        }
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//

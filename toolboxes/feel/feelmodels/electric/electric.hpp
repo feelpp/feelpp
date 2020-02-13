@@ -180,7 +180,7 @@ public :
         {
             auto seField = this->symbolsExprField( v, prefix_symbol );
             auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ), prefix_symbol );
+            auto seMat = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( seField, seFit ) );
             return Feel::vf::symbolsExpr( seField, seFit, seMat );
         }
     auto symbolsExpr( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExpr( this->fieldElectricPotential(), prefix_symbol ); }
@@ -194,12 +194,6 @@ public :
                                           symbolExpr( (boost::format("%1%grad_P")%prefix_symbol).str(),gradv(v), SymbolExprComponentSuffix( 1,nDim,true ) ),
                                           symbolExpr( (boost::format("%1%dn_P")%prefix_symbol).str(),dnv(v) )
                                           );
-        }
-
-    template <typename SymbExprType>
-    auto symbolsExprMaterial( SymbExprType const& se, std::string const& prefix_symbol = "electric_" ) const
-        {
-            return this->materialsProperties()->symbolsExpr( se, prefix_symbol );
         }
 
     template <typename FieldElectricPotentialType, typename SymbExprType>

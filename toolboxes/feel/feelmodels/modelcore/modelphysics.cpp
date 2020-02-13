@@ -43,16 +43,16 @@ ModelPhysics<Dim>::ModelPhysics( std::string const& physic )
     material_property_shape_dim_type scalarShape = std::make_pair(1,1);
     material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
-    this->addMatertialPropertyDescription( "density", "rho", { scalarShape } );
+    this->addMaterialPropertyDescription( "density", "rho", { scalarShape } );
     if ( M_physic == "heat" ||  M_physic == "thermo-electric" || M_physic == "aerothermal" )
     {
-        this->addMatertialPropertyDescription( "specific-heat-capacity", "Cp", { scalarShape } );
-        this->addMatertialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
-        this->addMatertialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
+        this->addMaterialPropertyDescription( "specific-heat-capacity", "Cp", { scalarShape } );
+        this->addMaterialPropertyDescription( "thermal-expansion", "beta", { scalarShape } );
+        this->addMaterialPropertyDescription( "thermal-conductivity", "k", { scalarShape,matrixShape } );
     }
     if ( M_physic == "electric" || M_physic == "thermo-electric" )
     {
-        this->addMatertialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
+        this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
 
 }
