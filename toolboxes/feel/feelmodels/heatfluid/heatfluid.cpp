@@ -242,15 +242,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         //     M_fluidModel->setSolverName("Oseen");
     }
 
-#if 0
-    for ( auto const& rangeData : M_fluidModel->materialProperties()->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        if ( !M_heatModel->thermalProperties()->hasMaterial( matName ) )
-            continue;
-        M_rangeMeshElementsByMaterial[matName] = rangeData.second;
-    }
-#endif
     // post-process
     this->initPostProcess();
 
@@ -328,6 +319,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
         ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -465,7 +457,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_fluidModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ), M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) );
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physic(),symbolExpr ),
+                                    hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
+                                                  M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
@@ -754,7 +748,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
+            auto const& rho = this->materialsProperties()->rho( matName );
             auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
             auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
 
@@ -925,8 +919,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                _geomap=this->geomap() );
             }
 #endif
-            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
-            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+            auto const& rho = this->materialsProperties()->rho( matName );
+            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
             auto rhoExpr = rho.expr();
             auto beta = thermalExpansion.expr();
             double T0 = M_BoussinesqRefTemperature;
@@ -941,7 +935,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 #if 0 // TODO VINCENT
             if ( M_heatModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
             {
-                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
                 CHECK ( !thermalConductivity.isMatrix() ) << "TODO";
 
                 if ( M_heatModel->timeStepping() == "Theta" )
@@ -1090,10 +1084,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+        auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
 
-        auto const& rho = M_heatModel->thermalProperties()->rho( matName );
-        auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+        auto const& rho = this->materialsProperties()->rho( matName );
+        auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
         auto const& rhoExpr = rho.expr();
         auto const& betaExpr = thermalExpansion.expr();
         double T0 = M_BoussinesqRefTemperature;
@@ -1158,10 +1152,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
+        auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
 
-        auto const& rho = M_heatModel->thermalProperties()->rho( matName );
-        auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
+        auto const& rho = this->materialsProperties()->rho( matName );
+        auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
         auto const& rhoExpr = rho.expr();
         auto const& betaExpr = thermalExpansion.expr();
         double T0 = M_BoussinesqRefTemperature;

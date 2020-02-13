@@ -42,7 +42,6 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-//#include <feel/feelmodels/heat/thermalpropertiesdescription.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
@@ -80,18 +79,9 @@ class Heat : public ModelNumerical,
         typedef typename space_temperature_type::element_type element_temperature_type;
         typedef std::shared_ptr<element_temperature_type> element_temperature_ptrtype;
         typedef typename space_temperature_type::element_external_storage_type element_temperature_external_storage_type;
-        // function space velocity convection
-        //typedef FunctionSpace<mesh_type, bases<basis_velocityconvection_type> > space_velocityconvection_type;
-        //typedef std::shared_ptr<space_velocityconvection_type> space_velocityconvection_ptrtype;
-        //typedef typename space_velocityconvection_type::element_type element_velocityconvection_type;
-        //typedef std::shared_ptr<element_velocityconvection_type> element_velocityconvection_ptrtype;
-
+        // velocity convection expression
         using velocity_convection_expr_type = vector_field_expression<nDim>;
-        
-        // mechanical properties desc
-        //typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_type;
-        //typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-        //typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+        // materials properties
         typedef MaterialsProperties<mesh_type> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
         // time scheme
@@ -119,7 +109,7 @@ class Heat : public ModelNumerical,
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
         std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
-        //std::string physic() const { return "heat"; }
+
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -128,15 +118,6 @@ class Heat : public ModelNumerical,
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
         element_temperature_ptrtype const& fieldTemperaturePtr() const { return M_fieldTemperature; }
         element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
-        //element_velocityconvection_ptrtype const& fieldVelocityConvectionPtr() const { return M_fieldVelocityConvection; }
-        //element_velocityconvection_ptrtype & fieldVelocityConvectionPtr() { return M_fieldVelocityConvection; }
-        //element_velocityconvection_type const& fieldVelocityConvection() const { return *M_fieldVelocityConvection; }
-        //bool fieldVelocityConvectionIsUsed() const { return M_fieldVelocityConvectionIsUsed; }
-        //bool fieldVelocityConvectionIsIncompressible() const { return M_fieldVelocityConvectionIsIncompressible; }
-        //void setFieldVelocityConvectionIsUsed(bool b) { M_fieldVelocityConvectionIsUsed=b; }
-        //bool fieldVelocityConvectionIsOperational() const { return (M_fieldVelocityConvection.use_count() > 0); }
-        //bool fieldVelocityConvectionIsUsedAndOperational() const { return this->fieldVelocityConvectionIsUsed() && this->fieldVelocityConvectionIsOperational(); }
-        //void setFieldVelocityConvectionIsIncompressible(bool b) { M_fieldVelocityConvectionIsIncompressible=b; }
 
         bool hasVelocityConvectionExpr( std::string const& matName ) const { return M_exprVelocityConvection.find( matName ) != M_exprVelocityConvection.end(); }
         velocity_convection_expr_type const& velocityConvectionExpr( std::string const& matName ) const
@@ -155,9 +136,7 @@ class Heat : public ModelNumerical,
         materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
         materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
         void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-        materialsproperties_ptrtype const& thermalProperties() const { return M_materialsProperties; } // DEPRECATED
-        //thermalproperties_ptrtype const& thermalProperties() const { return M_thermalProperties; }
-        //thermalproperties_ptrtype & thermalProperties() { return M_thermalProperties; }
+
         // boundary condition + body forces
         map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
         map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
@@ -204,12 +183,17 @@ class Heat : public ModelNumerical,
         BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
         int nBlockMatrixGraph() const { return 1; }
         void init( bool buildModelAlgebraicFactory=true );
-        void updateForUseFunctionSpacesVelocityConvection();
 
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
         template <typename SymbolsExpr>
-        void exportResults( double time, SymbolsExpr const& symbolsExpr );
+        void exportResults( double time, SymbolsExpr const& symbolsExpr )
+            {
+                this->exportResults( time, symbolsExpr, hana::concat( this->materialsProperties()->exprPostProcessExports( this->physic(),symbolsExpr ),
+                                                                      this->exprPostProcessExports( symbolsExpr ) ) );
+            }
+        template <typename SymbolsExpr,typename ExportsExprType>
+        void exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
 
         void executePostProcessMeasures( double time );
         template <typename TupleFieldsType,typename SymbolsExpr>
@@ -218,12 +202,6 @@ class Heat : public ModelNumerical,
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
-
-        template <typename SymbolsExpr>
-        void updateFields( SymbolsExpr const& symbolsExpr )
-            {
-                //this->thermalProperties()->updateFields( symbolsExpr );
-            }
 
         auto allFields( std::string const& prefix = "" ) const
             {
@@ -235,53 +213,7 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                //std::map<std::string,std::vector<std::tuple<ModelExpression, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExpr;
-                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se) ) _expr_scalar_type;
-                std::map<std::string,std::vector<std::tuple<_expr_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprScalar;
-
-                typedef decltype(expr(ModelExpression{}.template expr<nDim,nDim>(),se)) _expr_tensor2_type;
-                std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2;
-
-                auto Id = eye<nDim,nDim>();
-                typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
-                std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
-
-                bool onlyScalarThermalConductivity = this->materialsProperties()->allThermalConductivitiesAreScalar();
-
-                for ( auto const& rangeData : this->materialsProperties()->rangeMeshElementsByMaterial() )
-                {
-                    std::string const& _matName = rangeData.first;
-                    auto const& range = rangeData.second;
-                    if ( this->materialsProperties()->hasThermalConductivity( _matName ) )
-                    {
-                        auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( _matName );
-                        if ( thermalConductivity.isMatrix() )
-                        {
-                            auto thermalConductivityExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se);
-                            mapExprTensor2[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
-                        }
-                        else
-                        {
-                            auto thermalConductivityExpr = expr( thermalConductivity.exprScalar(), se );
-                            if ( onlyScalarThermalConductivity )
-                            {
-                                mapExprScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr, range, "element" ) );
-                            }
-                            else
-                            {
-                                mapExprTensor2FromScalar[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivityExpr*Id, range, "element" ) );
-                            }
-                        }
-                    }
-                    //mapExpr[prefixvm(prefix,"thermal-conductivity")].push_back( std::make_tuple( thermalConductivity, range, "element" ) );
-
-                    if ( this->materialsProperties()->hasRho( _matName ) )
-                    {
-                        auto densityExpr = expr( this->materialsProperties()->rho( _matName ).expr(), se );
-                        mapExprScalar[prefixvm(prefix,"density")].push_back( std::make_tuple( densityExpr, range, "element" ) );
-                    }
-                }
-                return hana::make_tuple( mapExprScalar,mapExprTensor2,mapExprTensor2FromScalar );
+                return hana::make_tuple();
             }
 
         auto symbolsExpr( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExpr( this->fieldTemperature(), prefix_symbol ); }
@@ -298,7 +230,7 @@ class Heat : public ModelNumerical,
         template <typename FieldTemperatureType>
         auto symbolsExprField( FieldTemperatureType const& t, std::string const& prefix_symbol = "heat_" ) const
             {
-                // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dnT
+                // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
                 return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%T")%prefix_symbol).str(),idv(t) ),
                                               symbolExpr( (boost::format("%1%grad_T")%prefix_symbol).str(),gradv(t), SymbolExprComponentSuffix( 1,nDim,true ) ),
                                               symbolExpr( (boost::format("%1%dn_T")%prefix_symbol).str(),dnv(t) )
@@ -347,23 +279,6 @@ class Heat : public ModelNumerical,
 
         //___________________________________________________________________________________//
         //___________________________________________________________________________________//
-        // update field from expr
-        void updateFieldVelocityConvection( bool onlyExprWithTimeSymbol = false );
-#if 0
-        template < typename ExprT >
-        void updateFieldVelocityConvection( vf::Expr<ExprT> const& expr )
-        {
-            this->updateFieldVelocityConvection( elements(this->mesh()), expr );
-        }
-        template < typename ExprT >
-        void updateFieldVelocityConvection( elements_reference_wrapper_t<mesh_type> const& range, vf::Expr<ExprT> const& expr )
-        {
-            if ( !M_fieldVelocityConvection )
-                this->updateForUseFunctionSpacesVelocityConvection();
-            M_exprVelocityConvection.reset();// symbolic expression is remove
-            M_fieldVelocityConvection->on(_range=range, _expr=expr );
-        }
-#endif
     private :
         void updateTimeStepCurrentResidual();
 
@@ -377,9 +292,6 @@ class Heat : public ModelNumerical,
         space_temperature_ptrtype M_Xh;
         element_temperature_ptrtype M_fieldTemperature;
         bool M_fieldVelocityConvectionIsUsed, M_fieldVelocityConvectionIsIncompressible;
-        //space_velocityconvection_ptrtype M_XhVelocityConvection;
-        //element_velocityconvection_ptrtype M_fieldVelocityConvection; // only define with convection effect
-        //boost::optional<velocity_convection_expr_type> M_exprVelocityConvection;
         std::map<std::string,velocity_convection_expr_type> M_exprVelocityConvection;
 
         // time discretisation
@@ -389,8 +301,6 @@ class Heat : public ModelNumerical,
         vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
         // physical parameter
-        //space_scalar_P0_ptrtype M_XhScalarP0;
-        //thermalproperties_ptrtype M_thermalProperties;
         materialsproperties_ptrtype M_materialsProperties;
 
         // boundary conditions
@@ -420,9 +330,9 @@ class Heat : public ModelNumerical,
 
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename SymbolsExpr>
+template <typename SymbolsExpr, typename ExportsExprType>
 void
-Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -432,7 +342,7 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fields = this->allFields();
-    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
 
