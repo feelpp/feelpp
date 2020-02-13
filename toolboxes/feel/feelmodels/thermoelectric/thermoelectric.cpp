@@ -283,12 +283,23 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     std::set<std::string> ppExportsAllFieldsAvailable;
+    // need to not include export fields of material of subphysics
+    std::set<std::string> fieldsAvailableIgnoredHeat = this->materialsProperties()->postProcessExportsAllFieldsAvailable( M_heatModel->physics() );
+    std::set<std::string> fieldsAvailableIgnoredElectric = this->materialsProperties()->postProcessExportsAllFieldsAvailable( M_electricModel->physics() );
     for ( auto const& s : M_heatModel->postProcessExportsAllFieldsAvailable() )
-        ppExportsAllFieldsAvailable.insert( prefixvm( M_heatModel->keyword(), s) );
+    {
+        std::string exportFieldName = prefixvm( M_heatModel->keyword(), s);
+        if ( fieldsAvailableIgnoredHeat.find( exportFieldName ) == fieldsAvailableIgnoredHeat.end() )
+            ppExportsAllFieldsAvailable.insert( exportFieldName );
+    }
     for ( auto const& s : M_electricModel->postProcessExportsAllFieldsAvailable() )
-        ppExportsAllFieldsAvailable.insert( prefixvm( M_electricModel->keyword(), s) );
+    {
+        std::string exportFieldName = prefixvm( M_electricModel->keyword(), s);
+        if ( fieldsAvailableIgnoredElectric.find( exportFieldName ) == fieldsAvailableIgnoredElectric.end() )
+            ppExportsAllFieldsAvailable.insert( exportFieldName );
+    }
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physic() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -416,7 +427,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_electricModel->exportResults( time, symbolExpr );
 
     auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
-    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physic(),symbolExpr ),
+    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
                                      hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
                                                    M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
