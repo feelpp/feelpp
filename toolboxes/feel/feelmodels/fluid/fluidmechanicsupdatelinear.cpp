@@ -182,12 +182,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 
         CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
         auto const& betaU = *fieldVelocityPressureExtrapolated;
+#if 0
+        //velocityExprFromFields
+        double myvelX=0;
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            myvelX = bpbc.fieldTranslationalVelocityPtr()->operator()( 0 );
+            break;
+        }
+        auto myVelXEXPR = vec( cst(myvelX), cst(0.) );
+#endif
         if ( this->isMoveDomain() )
         {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
             bilinearFormVV_PatternDefault +=
                 integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
+                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )   /*-  myVelXEXPR*/  ))*id(v),
                            _geomap=this->geomap() );
 #endif
         }

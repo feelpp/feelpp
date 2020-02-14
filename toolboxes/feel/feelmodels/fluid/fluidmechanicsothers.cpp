@@ -1532,7 +1532,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() )
+    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
@@ -1544,16 +1544,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                                                _expr=expression(d,this->symbolsExpr()),
                                                _geomap=this->geomap() );
         }
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            if ( bpbc.hasElasticVelocityFromExpr() )
+                bpbc.updateElasticVelocityFromExpr(*this);
+        }
+
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
     }
 
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
-        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.velocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+        else if ( bpbc.hasElasticVelocityFromExpr() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
         else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.velocityExprFromFields()*/, bpbc.rangeMarkedFacesOnFluid() );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, bpbc.rangeMarkedFacesOnFluid() );
+#if 0
+        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
+#endif
     }
 
 
