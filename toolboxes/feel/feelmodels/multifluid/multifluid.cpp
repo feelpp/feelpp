@@ -10,6 +10,8 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
+#include <boost/iterator/transform_iterator.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -1254,9 +1256,46 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
         interfaceForcesFields[prefixvm("additional", force.first)] = force.second->lastInterfaceForce();
     }
 
+    //auto const ls_fields = []( std::pair<std::string, levelset_model_ptrtype> const& p ) 
+        //-> decltype( p.second->allFields() )
+    //{
+        //return p.second->allFields( p.second->keyword() );
+    //};
+    struct ls_fields {
+        typedef decltype( std::declval<levelset_model_type>().allFields() ) result_type;
+        result_type operator()( std::pair<std::string, levelset_model_ptrtype> const& p ) const {
+            return p.second->allFields( p.second->keyword() );
+        }
+    };
+    auto levelsetsFields = Feel::zip_with( 
+            []( auto it1, auto it2 ) {
+                if constexpr( Feel::is_iterable_v<decltype(*it1)> )
+                {
+                    using key_type = decltype( it1->begin()->first );
+                    using value_type = decltype( it1->begin()->second );
+                    std::map<key_type, value_type> m;
+                    for( auto it = it1; it != it2; ++it )
+                    {
+                        auto const& itmap = *it;
+                        m.insert( itmap.begin(), itmap.end() );
+                    }
+                    return m;
+                }
+                else
+                {
+                    using key_type = decltype( it1->first );
+                    using value_type = decltype( it1->second );
+                    return std::map<key_type, value_type>( it1, it2 );
+                }
+            },
+            boost::iterators::transform_iterator( M_levelsets.begin(), ls_fields{} ),
+            boost::iterators::transform_iterator( M_levelsets.end(), ls_fields{} )
+            );
+
     auto fields = hana::flatten( hana::make_tuple( 
             M_fluidModel->allFields( M_fluidModel->keyword() ), 
-            M_levelsets.begin()->second->allFields( M_levelsets.begin()->second->keyword() ), 
+            //M_levelsets.begin()->second->allFields( M_levelsets.begin()->second->keyword() ), 
+            levelsetsFields,
             hana::make_tuple( 
                 std::make_pair( prefixvm(this->prefix(),"global-levelset.phi"), this->globalLevelsetElt() ),
                 interfaceForcesFields
