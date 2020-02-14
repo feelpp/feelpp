@@ -393,14 +393,14 @@ public:
                     return M_angularVelocityExpr.expr<nDim,1>();
             }
 
-        auto velocityExpr() const
+        auto rigidVelocityExpr() const
             {
                 if constexpr ( nDim == 2 )
                     return this->translationalVelocityExpr() + this->angularVelocityExpr()*vec(-Py()+this->massCenterExpr()(1,0),Px()-this->massCenterExpr()(0,0) );
                 else
                     return this->translationalVelocityExpr() + cross( this->angularVelocityExpr(), P()-this->massCenterExpr() );
             }
-        auto velocityExprFromFields() const
+        auto rigidVelocityExprFromFields() const
             {
                 if constexpr ( nDim == 2 )
                     return idv(M_fieldTranslationalVelocity) + idv(M_fieldAngularVelocity)*vec(-Py()+this->massCenterExpr()(1,0),Px()-this->massCenterExpr()(0,0) );
@@ -412,12 +412,20 @@ public:
         sparse_matrix_ptrtype matrixPTilde_angular() const { return M_matrixPTilde_angular; }
 
 
+        //---------------------------------------------------------------------------//
+        // elastic velocity
+        //---------------------------------------------------------------------------//
         bool hasElasticVelocity() const { return ( M_fieldElasticVelocity? true : false ); }
 
         bool hasElasticVelocityFromExpr() const { return !M_elasticVelocityExprBC.empty(); }
 
         element_trace_velocity_ptrtype fieldElasticVelocityPtr() const { return M_fieldElasticVelocity; }
 
+        auto elasticVelocityExpr() const { CHECK( this->hasElasticVelocity() ) << "no elastic velocity"; return idv(M_fieldElasticVelocity); }
+
+        void updateElasticVelocityFromExpr( self_type const& fluidToolbox );
+
+        //---------------------------------------------------------------------------//
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
@@ -498,6 +506,13 @@ public:
             {
                 for ( auto const& [name,bpbc] : *this )
                     if ( bpbc.hasElasticVelocity() )
+                        return true;
+                return false;
+            }
+        bool hasElasticVelocityFromExpr() const
+            {
+                for ( auto const& [name,bpbc] : *this )
+                    if ( bpbc.hasElasticVelocityFromExpr() )
                         return true;
                 return false;
             }
