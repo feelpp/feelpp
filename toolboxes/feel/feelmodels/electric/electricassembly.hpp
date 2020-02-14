@@ -71,7 +71,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                integrate( _range=markedfaces(mesh,M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
                            _expr= expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
@@ -80,12 +80,12 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
         {
             auto theExpr1 = expression1( d,symbolsExpr );
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= theExpr1*idt(v)*id(v),
                            _geomap=this->geomap() );
             auto theExpr2 = expression2( d,symbolsExpr );
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= theExpr1*theExpr2*id(v),
                            _geomap=this->geomap() );
         }
@@ -141,7 +141,7 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
         for( auto const& d : this->M_bcRobin )
         {
             bilinearForm_PatternCoupled +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= expression1(d,symbolsExpr)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
@@ -211,7 +211,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
         for( auto const& d : this->M_bcNeumann )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
+                integrate( _range=markedfaces(mesh,M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -expression(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }
@@ -221,14 +221,14 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
         if ( buildNonCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= expression1(d,symbolsExpr)*idv(v)*id(v),
                            _geomap=this->geomap() );
         }
         if ( buildCstPart )
         {
             myLinearForm +=
-                integrate( _range=markedfaces(mesh,this->markerRobinBC( name(d) ) ),
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= -expression1(d,symbolsExpr)*expression2(d,symbolsExpr)*id(v),
                            _geomap=this->geomap() );
         }

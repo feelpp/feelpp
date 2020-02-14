@@ -44,9 +44,6 @@ namespace FeelModels
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
-                 public MarkerManagementDirichletBC,
-                 public MarkerManagementNeumannBC,
-                 public MarkerManagementRobinBC,
                  public std::enable_shared_from_this< Electric<ConvexType,BasisPotentialType> >
 {
 
@@ -299,6 +296,9 @@ private :
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
     map_scalar_field<2> M_volumicForcesProperties;
+    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
+    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
+    MarkerManagementRobinBC M_bcRobinMarkerManagement;
 
     // algebraic data/tools
     backend_ptrtype M_backend;
