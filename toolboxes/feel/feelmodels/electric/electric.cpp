@@ -199,20 +199,20 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
+    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
+    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
+    M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
+        M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( name(d),markers(d) );
+         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
 
@@ -224,7 +224,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on electric-potential from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
+        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         electricPotentialMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
@@ -232,14 +232,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // on topological faces
     auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
     if ( !listMarkedFacesElectricPotential.empty() )
-    {
-        auto therange = markedfaces( mesh,listMarkedFacesElectricPotential );
-        auto dofsToAdd = XhElectricPotential->dofs( therange );
-        XhElectricPotential->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("potential-electric",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhElectricPotential->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("potential-electric",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "potential-electric", XhElectricPotential, markedfaces( mesh,listMarkedFacesElectricPotential ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -319,15 +312,15 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     // Boundary Conditions
     subPt.clear();
     subPt2.clear();
-    this->updateInformationObjectDirichletBC( subPt2 );
+    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectNeumannBC( subPt2 );
+    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectRobinBC( subPt2 );
+    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
@@ -373,9 +366,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
     *_ostr << "\n   Boundary conditions"
-           << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoRobinBC();
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
@@ -481,7 +474,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess &
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
     for( auto const& d : M_bcDirichlet )
     {
-        v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
+        v.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=expression(d) );
     }
 
@@ -555,7 +548,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & 
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
+            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=v,_rhs=F,_expr=expression(d) );
     }
 
