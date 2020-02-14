@@ -63,12 +63,17 @@ struct zip_with_impl
 {
     template <std::size_t N, typename F, typename ItT1, typename ItT2>
     static decltype(auto) transverse( F&& f, ItT1&& itBegin, ItT2&& itEnd ) {
-        auto const at = []( auto const t ) { 
-            return hana::at_c<N>( t );
+        //auto const at = []( auto const t ) { 
+            //return hana::at_c<N>( t );
+        //};
+        struct at {
+            typedef std::decay_t<decltype( *itBegin )> it_value_type;
+            typedef std::decay_t<decltype( hana::at_c<N>( *itBegin ) )> result_type;
+            result_type operator()( it_value_type const& t ) const { return hana::at_c<N>( t ); }
         };
         return static_cast<F&&>(f)( 
-                boost::iterators::transform_iterator( static_cast<ItT1&&>(itBegin), at ), 
-                boost::iterators::transform_iterator( static_cast<ItT2&&>(itEnd), at ) 
+                boost::iterators::transform_iterator( static_cast<ItT1&&>(itBegin), at{} ), 
+                boost::iterators::transform_iterator( static_cast<ItT2&&>(itEnd), at{} ) 
                 );
     }
 
