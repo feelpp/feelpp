@@ -545,9 +545,60 @@ endmacro(genLibAdvection)
 #############################################################################
 #############################################################################
 #############################################################################
+macro( genLibLevelsetBase )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR FEELMODELS_APP_LEVELSET_ORDER OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(LEVELSETBASE_DIM ${FEELMODELS_APP_DIM})
+  set(LEVELSETBASE_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
+  set(LEVELSETBASE_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+  #######################################################
+  if(FEELMODELS_APP_LEVELSET_PN_ORDER)
+      set(LEVELSETBASE_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_PN_ORDER})
+  else()
+      set(LEVELSETBASE_PN_ORDERPOLY ${FEELMODELS_APP_LEVELSET_ORDER})
+  endif()
+  #######################################################
+
+  set(LEVELSETBASE_LIB_VARIANTS ${LEVELSETBASE_DIM}dP${LEVELSETBASE_ORDERPOLY}G${LEVELSETBASE_ORDERGEO} )
+  set(LEVELSETBASE_LIB_NAME feelpp_toolbox_levelsetbase_lib_${LEVELSETBASE_LIB_VARIANTS})
+
+  if ( NOT TARGET ${LEVELSETBASE_LIB_NAME} )
+      # configure the lib
+      set(LEVELSETBASE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSETBASE_LIB_VARIANTS})
+      set(LEVELSETBASE_CODEGEN_FILES_TO_COPY
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbase_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_hj_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_fm_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
+      set(LEVELSETBASE_CODEGEN_SOURCES
+          ${LEVELSETBASE_LIB_DIR}/levelsetbase_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_hj_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_fm_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/parameter_map.cpp )
+      set(LEVELSETBASE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
+      # generate the lib target
+      genLibBase(
+          LIB_NAME ${LEVELSETBASE_LIB_NAME}
+          LIB_DIR ${LEVELSETBASE_LIB_DIR}
+          LIB_DEPENDS ${LEVELSETBASE_LIB_DEPENDS}
+          FILES_TO_COPY ${LEVELSETBASE_CODEGEN_FILES_TO_COPY}
+          FILES_SOURCES ${LEVELSETBASE_CODEGEN_SOURCES}
+          CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbaseconfig.h.in
+          )
+  endif()
+endmacro(genLibLevelsetBase)
+
 macro( genLibLevelset )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER;VELOCITY_ORDER;ADVECTION_DIFFUSION_REACTION_ORDER;ADVECTION_DIFFUSION_REACTION_CONTINUITY"
+    "DIM;LEVELSET_ORDER;LEVELSET_PN_ORDER;GEO_ORDER;VELOCITY_ORDER"
     ""
     ${ARGN}
     )
@@ -572,42 +623,38 @@ macro( genLibLevelset )
   set(LEVELSET_VELOCITY_ORDER ${FEELMODELS_APP_LEVELSET_ORDER})
   endif()
   #######################################################
-  if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER)
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_ORDER})
-  else()
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_ORDER ${LEVELSET_ORDERPOLY})
-  endif()
-  if(FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY)
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_ADVECTION_DIFFUSION_REACTION_CONTINUITY})
-  else()
-    set(LEVELSET_ADVECTION_DIFFUSION_REACTION_CONTINUITY Continuous)
-  endif()
-  #######################################################
 
   set(LEVELSET_LIB_VARIANTS ${LEVELSET_DIM}dP${LEVELSET_ORDERPOLY}P${LEVELSET_VELOCITY_ORDER}G${LEVELSET_ORDERGEO} )
   set(LEVELSET_LIB_NAME feelpp_toolbox_levelset_lib_${LEVELSET_LIB_VARIANTS})
 
-  if ( NOT TARGET ${LEVELSET_LIB_NAME} )
-    # configure the lib
-    set(LEVELSET_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSET_LIB_VARIANTS})
-    set(LEVELSET_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelset_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
-    set(LEVELSET_CODEGEN_SOURCES
-      ${LEVELSET_LIB_DIR}/levelset_inst.cpp
-      ${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
-      ${LEVELSET_LIB_DIR}/parameter_map.cpp )
-    set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
-    # generate the lib target
-    genLibBase(
-      LIB_NAME ${LEVELSET_LIB_NAME}
-      LIB_DIR ${LEVELSET_LIB_DIR}
-      LIB_DEPENDS ${LEVELSET_LIB_DEPENDS}
-      FILES_TO_COPY ${LEVELSET_CODEGEN_FILES_TO_COPY}
-      FILES_SOURCES ${LEVELSET_CODEGEN_SOURCES}
-      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetconfig.h.in
+  genLibLevelsetBase(
+      DIM               ${FEELMODELS_APP_DIM}
+      LEVELSET_ORDER    ${FEELMODELS_APP_LEVELSET_ORDER}
+      LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
+      GEO_ORDER         ${FEELMODELS_APP_GEO_ORDER}
       )
+
+  if ( NOT TARGET ${LEVELSET_LIB_NAME} )
+      # configure the lib
+      set(LEVELSET_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSET_LIB_VARIANTS})
+      set(LEVELSET_CODEGEN_FILES_TO_COPY
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelset_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetadvection_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
+      set(LEVELSET_CODEGEN_SOURCES
+          ${LEVELSET_LIB_DIR}/levelset_inst.cpp
+          ${LEVELSET_LIB_DIR}/levelsetadvection_inst.cpp
+          ${LEVELSET_LIB_DIR}/parameter_map.cpp )
+      set(LEVELSET_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore ${LEVELSETBASE_LIB_NAME} )
+      # generate the lib target
+      genLibBase(
+          LIB_NAME ${LEVELSET_LIB_NAME}
+          LIB_DIR ${LEVELSET_LIB_DIR}
+          LIB_DEPENDS ${LEVELSET_LIB_DEPENDS}
+          FILES_TO_COPY ${LEVELSET_CODEGEN_FILES_TO_COPY}
+          FILES_SOURCES ${LEVELSET_CODEGEN_SOURCES}
+          CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetconfig.h.in
+          )
   endif()
 endmacro(genLibLevelset)
 #############################################################################
@@ -616,9 +663,9 @@ endmacro(genLibLevelset)
 #############################################################################
 
 macro(genLibMultiFluid)
-  PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_PN_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY"
-    ""
+    PARSE_ARGUMENTS(FEELMODELS_APP
+        "DIM;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;GEO_ORDER;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;LEVELSET_ORDER;LEVELSET_PN_ORDER;LEVELSET_DIFFUSION_REACTION_ORDER;LEVELSET_DIFFUSION_REACTION_CONTINUITY"
+        ""
     ${ARGN}
     )
 
@@ -646,8 +693,8 @@ macro(genLibMultiFluid)
     LEVELSET_PN_ORDER ${FEELMODELS_APP_LEVELSET_PN_ORDER}
     GEO_ORDER ${FEELMODELS_APP_GEO_ORDER}
     VELOCITY_ORDER ${FEELMODELS_APP_FLUID_U_ORDER}
-    ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
-    ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
+    #ADVECTION_DIFFUSION_REACTION_ORDER ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_ORDER}
+    #ADVECTION_DIFFUSION_REACTION_CONTINUITY ${FEELMODELS_APP_LEVELSET_DIFFUSION_REACTION_CONTINUITY}
     )
   ###############################################################
   # multifluid lib

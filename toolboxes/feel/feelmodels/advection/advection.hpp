@@ -190,6 +190,12 @@ public :
     typedef typename model_algebraic_factory_type::indexsplit_ptrtype indexsplit_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Assembly
+    typedef std::function<void ( ModelAlgebraic::DataUpdateLinear& )> function_assembly_linear_type;
+    typedef std::function<void ( ModelAlgebraic::DataUpdateJacobian& )> function_assembly_jacobian_type;
+    typedef std::function<void ( ModelAlgebraic::DataUpdateResidual& )> function_assembly_residual_type;
+
+    //--------------------------------------------------------------------//
     // Time
     typedef Bdf<space_advection_type> bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
@@ -198,6 +204,10 @@ public :
     // Exporter
     typedef Exporter<mesh_type, nOrderGeo> exporter_type;
     typedef std::shared_ptr<exporter_type> exporter_ptrtype;
+
+    // Measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_advection_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //--------------------------------------------------------------------//
     typedef map_scalar_field<2> map_scalar_field_type;
@@ -237,10 +247,9 @@ public :
     void initFunctionSpaces();
     void initAlgebraicData();
     void initTimeDiscretization();
-    void initExporters();
     void initOthers();
 
-    void initInitialValue();
+    void initInitialConditions();
 
     //--------------------------------------------------------------------//
     // Mesh
@@ -261,9 +270,6 @@ public :
 
     //--------------------------------------------------------------------//
     // Initial value
-    void setInitialValue( bc_map_field_type const& icVal ) { M_icValue = icVal; }
-    void setInitialValue( std::initializer_list<typename bc_map_field_type::value_type> icVal ) { M_icValue = icVal; }
-    void setInitialValue( typename bc_map_field_type::mapped_type const& expr, std::string const& mark = "" ) { M_icValue[mark] = expr; }
     element_advection_ptrtype const& initialValue() const { return M_initialValue; }
     void setInitialValue( element_advection_ptrtype const& ival ) { M_initialValue = ival; }
 
@@ -296,16 +302,59 @@ public :
     element_advection_type & fieldSolution() { return *M_fieldSolution; }
     element_advection_type const& fieldSolution() const { return *M_fieldSolution; }
 
-    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *M_fieldAdvectionVelocity; }
-    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const { return M_fieldAdvectionVelocity; }
+    element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const;
+    element_advection_velocity_type const& fieldAdvectionVelocity() const { return *(this->fieldAdvectionVelocityPtr()); }
+
+    //--------------------------------------------------------------------//
+    // Symbols
+    auto symbolsExpr( std::string const& prefix_symbol = "adr_" ) const { 
+        return this->symbolsExpr( this->fieldSolution(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExpr( FieldType const& f, std::string const& prefix_symbol = "adr_" ) const
+    {
+        auto seField = this->symbolsExprField( f, prefix_symbol );
+        return Feel::vf::symbolsExpr( seField );
+    }
+
+    auto symbolsExprField( std::string const& prefix_symbol = "adr_" ) const { 
+        return this->symbolsExprField( this->fieldSolution(), prefix_symbol ); 
+    }
+    template <typename FieldType>
+    auto symbolsExprField( FieldType const& f, std::string const& prefix_symbol = "adr_" ) const
+    {
+        // generate symbols adr_phi, adr_grad_phi(_x,_y,_z), adr_dn_phi
+        return Feel::vf::symbolsExpr( 
+                symbolExpr( (boost::format("%1%phi")%prefix_symbol).str(),idv(f) ),
+                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
+                );
+    }
+    // Fields
+    auto allFields( std::string const& prefix = "" ) const
+    {
+        return hana::make_tuple(
+                std::make_pair( prefixvm( prefix, "phi" ), this->fieldSolutionPtr() ),
+                std::make_pair( prefixvm( prefix, "advection-velocity" ), this->fieldAdvectionVelocityPtr() ),
+                std::make_pair( prefixvm( prefix, "diffusion-coeff" ), this->diffusionReactionModel()->fieldDiffusionCoeffPtr() ),
+                std::make_pair( prefixvm( prefix, "reaction-coeff" ), this->diffusionReactionModel()->fieldReactionCoeffPtr() ),
+                std::make_pair( prefixvm( prefix, "source" ), M_fieldSource )
+                );
+    }
+
+    // Measures quantities
+    auto allMeasuresQuantities() const
+    {
+        return hana::make_tuple();
+    }
 
     //--------------------------------------------------------------------//
     // Algebraic data
     backend_ptrtype const& backend() const { return M_backend; }
     size_type matrixPattern() const;
     virtual int nBlockMatrixGraph() const;
-    virtual BlocksBaseGraphCSR buildBlockMatrixGraph() const;
-    graph_ptrtype buildMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
+    graph_ptrtype buildMatrixGraph() const override;
     virtual int buildBlockVectorSolution();
     void buildVectorSolution();
     //indexsplit_ptrtype buildIndexSplit() const;
@@ -333,7 +382,7 @@ public :
     //--------------------------------------------------------------------//
     // Algebraic model updates
     // Linear PDE
-    void updateLinearPDE( DataUpdateLinear & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
     virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
     virtual void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
     virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const;
@@ -389,14 +438,13 @@ public :
 
     //--------------------------------------------------------------------//
     // Export results
-    void initPostProcess();
+    void initPostProcess() override;
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    void exportMeasures( double time );
+    template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
-    exporter_ptrtype getExporter() { return M_exporter; }
-    exporter_ptrtype const& getExporter() const { return M_exporter; }
-
+    void setDoExport( bool b );
     //--------------------------------------------------------------------//
     void addMarkerInflowBC( std::string const& markerName );
 
@@ -405,14 +453,28 @@ public :
     //--------------------------------------------------------------------//
 protected:
     void loadParametersFromOptionsVm();
-    void loadConfigICFile();
     void loadConfigBCFile();
+    void createPostProcessExporters();
+    void createPostProcessMeasures();
+    void initPostProcessExportsAndMeasures();
 
     virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
 
+    template<typename ExprT>
+    void updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+
+    template<typename ExprT>
+    void updateLinearPDEStabilization( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationGLS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationSUPG( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+    template<typename ADRT, typename ExprT>
+    void updateLinearPDEStabilizationSGS( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
+
+    exporter_ptrtype getExporter() { return M_exporter; }
+    exporter_ptrtype const& getExporter() const { return M_exporter; }
     virtual std::string geoExportType() const { return "static"; }
-    virtual void exportResultsImpl( double time );
-    virtual void exportMeasuresImpl( double time );
 
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
@@ -443,7 +505,9 @@ protected:
     // Advection velocity
     space_advection_velocity_ptrtype M_XhAdvectionVelocity;
     element_advection_velocity_ptrtype M_fieldAdvectionVelocity;
-    boost::optional<vector_field_expression<nDim,1,2> > M_exprAdvectionVelocity;
+    function_assembly_linear_type M_functionAssemblyLinearAdvection;
+    bool M_doProjectFieldAdvectionVelocity;
+    std::function<void ()> M_functionProjectFieldAdvectionVelocity;
     //--------------------------------------------------------------------//
     // Physical parameters (diffusivity and reaction coefficient)
     diffusionreaction_model_ptrtype M_diffusionReactionModel;
@@ -462,12 +526,12 @@ protected:
     std::list<std::string> M_bcInflowMarkers;
     // Initial conditions
     element_advection_ptrtype M_initialValue;
-    bc_map_field_type M_icValue;
     // body forces
     bc_map_field_type M_sources;
     //--------------------------------------------------------------------//
     // Export
     exporter_ptrtype M_exporter;
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
     bool M_doExportAll;
     bool M_doExportAdvectionVelocity;
     bool M_doExportDiffusionCoefficient;
@@ -477,6 +541,7 @@ protected:
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
     AdvectionStabMethod M_stabMethod;
+    function_assembly_linear_type M_functionAssemblyLinearStabilization;
     double M_stabilizationCIPCoefficient;
     double M_gamma1;
     // stabilization
@@ -486,35 +551,69 @@ protected:
 
 };//AdvDiffReac
 
+#ifndef ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+#define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
+template< typename FunctionSpaceType, typename FunctionSpaceAdvectionVelocityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType > \
+        /**/
+#endif
+#ifndef ADVDIFFREAC_CLASS_TEMPLATE_TYPE
+#define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
+    AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
+        /**/
+#endif
 //----------------------------------------------------------------------------//
 // Advection velocity update
-template< 
-    typename FunctionSpaceType,
-    typename FunctionSpaceAdvectionVelocityType,
-    typename BasisDiffusionCoeffType,
-    typename BasisReactionCoeffType
-        >
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void
-AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateAdvectionVelocity(
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateAdvectionVelocity(
         vf::Expr<ExprT> const& v_expr)
 {
-    M_exprAdvectionVelocity.reset(); // remove symbolic expr
-    M_fieldAdvectionVelocity->on(_range=elements(this->mesh()), _expr=v_expr );
+    M_functionAssemblyLinearAdvection = [v_expr, this]( DataUpdateLinear & data ) { 
+        this->updateLinearPDEAdvection( data, v_expr );
+    };
+    M_functionAssemblyLinearStabilization = [v_expr, this]( DataUpdateLinear & data ) { 
+        this->updateLinearPDEStabilization( data, v_expr );
+    };
+
+    M_functionProjectFieldAdvectionVelocity = [v_expr, this]() {
+        this->M_fieldAdvectionVelocity->on(_range=this->rangeMeshElements(), _expr=v_expr );
+    };
+    M_doProjectFieldAdvectionVelocity = true;
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+template<typename ExprT>
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity )
+{
+    using namespace Feel::vf;
+
+    sparse_matrix_ptrtype& A = data.matrix();
+
+    auto mesh = this->mesh();
+    auto space = this->functionSpace();
+
+    auto const& phi = this->fieldSolution();
+    auto const& psi = this->fieldSolution();
+
+    // Forms
+    auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
+
+    // Advection
+    bilinearForm += integrate(
+            _range=this->rangeMeshElements(),
+            _expr=inner((gradt(phi)*advectionVelocity), id(psi)),
+            _geomap=this->geomap()
+            );
 }
 
 //----------------------------------------------------------------------------//
 // Source update
-template< 
-    typename FunctionSpaceType,
-    typename FunctionSpaceAdvectionVelocityType,
-    typename BasisDiffusionCoeffType,
-    typename BasisReactionCoeffType
-        >
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 template<typename ExprT>
 void 
-AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType>::updateSourceAdded(
-        vf::Expr<ExprT> const& f_expr)
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceAdded( vf::Expr<ExprT> const& f_expr )
 {
     if (!M_fieldSource)
     {
@@ -524,8 +623,40 @@ AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusio
     M_hasSourceAdded=true;
 }
 
+//----------------------------------------------------------------------------//
+// Exports
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
+{
+    this->log("AdvDiffReac","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    this->executePostProcessExports( M_exporter, time, tupleFields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, tupleFields, tupleMeasuresQuantities );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdf->iteration(), tupleFields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("AdvDiffReac","exportResults", "finish");
+}
+
 } // namespace FeelModels
 } // namespace Feel
+
+//----------------------------------------------------------------------------//
+// Stabilization
+#include <feel/feelmodels/advection/advectionstabilisation.cpp>
 
 
 #endif

@@ -191,6 +191,21 @@ public:
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
     //--------------------------------------------------------------------//
+    // Symbols expr
+    auto symbolsExpr() const { 
+        return this->symbolsExpr( M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); 
+        // TODO add levelsets symbols
+    }
+
+    template <typename FieldVelocityType, typename FieldPressureType>
+    auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
+    {
+        auto symbolExprField = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprField( u, p ) );
+        auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+        auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+        return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+    }
+    //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
@@ -218,6 +233,9 @@ public:
     //--------------------------------------------------------------------//
     // Solve
     void solve();
+    virtual void solveExplicitCoupling();
+    virtual void solveImplicitCoupling();
+    void solvePicard();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEInterfaceForces( DataUpdateLinear & data ) const;
@@ -247,8 +265,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Export
-    void exportResults( double time ) { this->exportResultsImpl( time ); }
     void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
     void exportMeasures( double time );
     // Measures
     force_type computeLevelsetForce( std::string const& name ) const;
@@ -271,9 +289,6 @@ protected:
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
-    //--------------------------------------------------------------------//
-    // Export
-    virtual void exportResultsImpl( double time );
 
     //--------------------------------------------------------------------//
     uint16_type M_nFluids;
@@ -334,8 +349,8 @@ private:
     // Penalty method gamma
     std::map<std::string, double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
-    // Reinitialization
-    std::map<std::string, int> M_levelsetReinitEvery;
+    // Redistanciation
+    std::map<std::string, int> M_levelsetRedistEvery;
 
     //--------------------------------------------------------------------//
     // Post-process
