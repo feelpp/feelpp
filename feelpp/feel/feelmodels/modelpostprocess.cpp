@@ -138,6 +138,26 @@ ModelPostprocessExports::setParameterValues( std::map<std::string,double> const&
 }
 
 void
+ModelPostprocessQuantities::setup( pt::ptree const& p )
+{
+    if ( auto fields = p.get_child_optional("quantities") )
+    {
+        if ( fields->empty() ) // value case
+            M_quantities.insert( fields->get_value<std::string>() );
+        else // array case
+        {
+            for ( auto const& item : *fields )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                M_quantities.insert( fieldName );
+                LOG(INFO) << "add to postprocess quantity  " << fieldName;
+            }
+        }
+    }
+}
+
+void
 ModelPostprocessSave::setup( pt::ptree const& p )
 {
     if ( auto fieldsPtree = p.get_child_optional("Fields") )
@@ -438,6 +458,11 @@ ModelPostprocess::setup( std::string const& name, pt::ptree const& p  )
 
     if ( auto measures = p.get_child_optional("Measures") )
     {
+        ModelPostprocessQuantities ppquantities;
+        ppquantities.setup( *measures );
+        if( !ppquantities.quantities().empty() )
+            M_measuresQuantities[name] = ppquantities;
+
         auto evalPoints = measures->get_child_optional("Points");
         if ( evalPoints )
         {
@@ -565,6 +590,12 @@ ModelPostprocess::hasSave( std::string const& name ) const
     return M_save.find( nameUsed ) != M_save.end();
 }
 bool
+ModelPostprocess::hasMeasuresQuantities( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    return M_measuresQuantities.find( nameUsed ) != M_measuresQuantities.end();
+}
+bool
 ModelPostprocess::hasMeasuresPoint( std::string const& name ) const
 {
     std::string nameUsed = (M_useModelName)? name : "";
@@ -608,6 +639,16 @@ ModelPostprocess::save( std::string const& name ) const
         return M_save.find( nameUsed )->second;
     else
         return M_emptySave;
+}
+ModelPostprocessQuantities const&
+ModelPostprocess::measuresQuantities( std::string const& name ) const
+{
+    std::string nameUsed = (M_useModelName)? name : "";
+    //CHECK( this->hasExports( nameUsed ) ) << "no measures quantities with name:"<<name;
+    if ( this->hasMeasuresQuantities( nameUsed ) )
+        return M_measuresQuantities.find( nameUsed )->second;
+    else
+        return M_emptyMeasuresQuantities;
 }
 std::vector<ModelPostprocessPointPosition> const&
 ModelPostprocess::measuresPoint( std::string const& name ) const

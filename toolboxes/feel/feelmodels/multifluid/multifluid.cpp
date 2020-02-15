@@ -10,6 +10,8 @@
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 
+#include <boost/iterator/transform_iterator.hpp>
+
 namespace Feel {
 namespace FeelModels {
 
@@ -97,10 +99,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Init mesh
     this->initMesh();
     // Init FluidMechanics
-    M_fluidModel->setMesh( this->mesh() );
-    M_fluidModel->init( false );
     if( !M_fluidModel->modelPropertiesPtr() )
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+    M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->init( false );
     // Init LevelSets
     this->initLevelsets();
     // Update current time
@@ -216,7 +218,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     {
         std::string const lsName = levelsetName(n);
         auto levelset_prefix = prefixvm(this->prefix(), lsName);
-        M_levelsetReinitEvery[lsName] = ioption( _name="reinit-every", _prefix=levelset_prefix );
+        M_levelsetRedistEvery[lsName] = ioption( _name="redist-every", _prefix=levelset_prefix );
     }
 }
 
@@ -250,10 +252,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     *_ostr << "\n   Level Sets Parameters";
-    for( auto const& lsReinitEvery: M_levelsetReinitEvery )
+    for( auto const& lsRedistEvery: M_levelsetRedistEvery )
     {
-    *_ostr << "\n     -- level set " << "\"" << lsReinitEvery.first << "\""
-           << "\n       * reinit every : " << lsReinitEvery.second;
+    *_ostr << "\n     -- level set " << "\"" << lsRedistEvery.first << "\""
+           << "\n       * redist every : " << lsRedistEvery.second;
     }
 
     *_ostr << "\n   Forces Parameters";
@@ -546,19 +548,33 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
     // Solve
     if( this->useImplicitCoupling() )
     {
-        this->updateParameterValues();
-
-        this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
-        //for( auto const& ls: M_levelsets )
-        //{
-            //ls.second->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( ls.first ) );
-        //}
-        CHECK(false) << "TODO: implicit coupling\n";
-
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        //TODO
+        this->solveImplicitCoupling();
     }
-    else if ( this->hasInextensibilityLM() ) /* inextensibility-lm block in fluid */
+    else /* explicit coupling */
+    {
+        if( M_usePicardIterations )
+            this->solvePicard();
+        else
+            this->solveExplicitCoupling();
+    }
+
+    // Redistantiate
+    for( auto const& ls: M_levelsets )
+    {
+        if( M_levelsetRedistEvery.at(ls.first) > 0 
+                && (ls.second->iterSinceRedistanciation()+1) % M_levelsetRedistEvery.at(ls.first) == 0 )
+            ls.second->redistanciate();
+    }
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveExplicitCoupling()
+{
+    if ( this->hasInextensibilityLM() ) /* inextensibility-lm block in fluid */
     {
         this->updateParameterValues();
 
@@ -587,60 +603,66 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::solve()
         // Solve fluid
         M_algebraicFactory->solve( this->fluidModel()->solverName(), M_blockVectorSolution.vectorMonolithic() );
         M_blockVectorSolution.localize();
-        // Solve levelsets
-        this->advectLevelsets();
     }
-    else /* explicit coupling */
+    else
     {
         // Solve fluid equations (with direct assembly of interface forces)
         this->solveFluid();
-        // Advect levelsets
-        this->advectLevelsets();
-        // Update density and viscosity
-        this->updateFluidDensityViscosity();
-
-        if( M_usePicardIterations )
-        {
-            double errorVelocityL2 = 0.;
-            int picardIter = 0;
-            auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
-            do
-            {
-                picardIter++;
-                u_old = this->fieldVelocity();
-                // Sub-solves
-                if( M_doUpdateInextensibilityLM )
-                    this->updateInextensibilityLM();
-                this->solveFluid();
-                this->advectLevelsets();
-                this->updateFluidDensityViscosity();
-                auto u = this->fieldVelocity();
-
-                double uOldL2Norm = integrate(
-                        _range=elements(this->mesh()),
-                        _expr=trans(idv(u_old))*idv(u_old)
-                        ).evaluate()(0,0);
-                errorVelocityL2 = integrate(
-                        _range=elements(this->mesh()),
-                        _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
-                        ).evaluate()(0,0);
-                errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
-
-                Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
-            } while( errorVelocityL2 > 0.01);
-        }
     }
+    // Advect levelsets
+    this->advectLevelsets();
+    // Update density and viscosity
+    this->updateFluidDensityViscosity();
+}
 
-    // Redistantiate
-    for( auto const& ls: M_levelsets )
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solveImplicitCoupling()
+{
+    this->updateParameterValues();
+
+    this->fluidModel()->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
+    //for( auto const& ls: M_levelsets )
+    //{
+        //ls.second->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( ls.first ) );
+    //}
+    CHECK(false) << "TODO: implicit coupling\n";
+
+    M_blockVectorSolution.updateVectorFromSubVectors();
+    //TODO
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::solvePicard()
+{
+    this->solveExplicitCoupling();
+
+    double errorVelocityL2 = 0.;
+    int picardIter = 0;
+    auto u_old = this->fluidModel()->functionSpaceVelocity()->element();
+    do
     {
-        if( M_levelsetReinitEvery.at(ls.first) > 0 
-                && (ls.second->iterSinceReinit()+1) % M_levelsetReinitEvery.at(ls.first) == 0 )
-            ls.second->reinitialize();
-    }
+        picardIter++;
+        u_old = this->fieldVelocity();
+        // Sub-solves
+        if( M_doUpdateInextensibilityLM )
+            this->updateInextensibilityLM();
+        this->solveExplicitCoupling();
+        auto u = this->fieldVelocity();
 
-    double timeElapsed = this->timerTool("Solve").stop();
-    this->log("MultiFluid","solve","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+        double uOldL2Norm = integrate(
+                _range=elements(this->mesh()),
+                _expr=trans(idv(u_old))*idv(u_old)
+                ).evaluate()(0,0);
+        errorVelocityL2 = integrate(
+                _range=elements(this->mesh()),
+                _expr=trans(idv(u)-idv(u_old))*(idv(u)-idv(u_old))
+                ).evaluate()(0,0);
+        errorVelocityL2 = std::sqrt(errorVelocityL2) / std::sqrt(uOldL2Norm);
+
+        Feel::cout << "Picard iteration " << picardIter << ": errorVelocityL2 = " << errorVelocityL2 << std::endl;
+    } while( errorVelocityL2 > 0.01);
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1205,62 +1227,95 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("MultiFluid","exportResults", "start");
+    this->timerTool("PostProcessing").start();
 
-    if( M_exporter && M_exporter->doExport() )
-    {
-        bool hasFieldToExportFluid = this->fluidModel()->updateExportedFields( M_exporter, M_postProcessFieldsExportedFluid, time );
-        // Export forces
-        for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
-        {
-            std::string const lsName = lsInterfaceForces.first;
-            auto levelset_prefix = prefixvm(this->prefix(), lsName);
-            for( auto const& force: lsInterfaceForces.second )
-            {
-                M_exporter->step(time)->add( prefixvm(levelset_prefix, force.first),
-                        prefixvm(levelset_prefix, force.first),
-                        force.second->lastInterfaceForce() );
-            }
-        }
-        for( auto const& force: M_additionalInterfaceForcesModel )
-        {
-            M_exporter->step(time)->add( prefixvm("additional", force.first),
-                    prefixvm("additional", force.first),
-                    force.second->lastInterfaceForce() );
-        }
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
 
-        bool hasFieldToExport = !M_levelsetInterfaceForcesModels.empty() || !M_additionalInterfaceForcesModel.empty();
-
-        if( this->nLevelsets() > 1 )
-        {
-            M_exporter->step( time )->add(
-                    prefixvm(this->prefix(),"GlobalLevelset.Phi"),
-                    prefixvm(this->prefix(),prefixvm(this->subPrefix(),"GlobalLevelset.Phi")),
-                    *this->globalLevelsetElt()
-                    );
-            hasFieldToExport = true;
-        }
-
-        if( hasFieldToExportFluid || hasFieldToExport )
-        {
-            this->upload( M_exporter->path() );
-            M_exporter->save();
-        }
-    }
-
-    // Export fluid
-    this->fluidModel()->exportResults(time);
-    // Export levelsets
+    auto const symbolsExpr = this->symbolsExpr();
+    M_fluidModel->exportResults( time, symbolsExpr );
     for( auto const& ls: M_levelsets)
+        ls.second->exportResults( time, symbolsExpr );
+
+    std::map<std::string, typename interfaceforces_model_type::element_ptrtype> interfaceForcesFields;
+    for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
     {
-        ls.second->exportResults(time);
+        std::string const lsName = lsInterfaceForces.first;
+        std::string levelset_prefix = prefixvm(this->prefix(), lsName);
+        for( auto const& force: lsInterfaceForces.second )
+        {
+            interfaceForcesFields[prefixvm(levelset_prefix, force.first)] = force.second->lastInterfaceForce();
+        }
     }
+    for( auto const& force: M_additionalInterfaceForcesModel )
+    {
+        interfaceForcesFields[prefixvm("additional", force.first)] = force.second->lastInterfaceForce();
+    }
+
+    //auto const ls_fields = []( std::pair<std::string, levelset_model_ptrtype> const& p ) 
+        //-> decltype( p.second->allFields() )
+    //{
+        //return p.second->allFields( p.second->keyword() );
+    //};
+    struct ls_fields {
+        typedef decltype( std::declval<levelset_model_type>().allFields() ) result_type;
+        result_type operator()( std::pair<std::string, levelset_model_ptrtype> const& p ) const {
+            return p.second->allFields( p.second->keyword() );
+        }
+    };
+    auto levelsetsFields = Feel::zip_with( 
+            []( auto it1, auto it2 ) {
+                if constexpr( Feel::is_iterable_v<decltype(*it1)> )
+                {
+                    using key_type = decltype( it1->begin()->first );
+                    using value_type = decltype( it1->begin()->second );
+                    std::map<key_type, value_type> m;
+                    for( auto it = it1; it != it2; ++it )
+                    {
+                        auto const& itmap = *it;
+                        m.insert( itmap.begin(), itmap.end() );
+                    }
+                    return m;
+                }
+                else
+                {
+                    using key_type = decltype( it1->first );
+                    using value_type = decltype( it1->second );
+                    return std::map<key_type, value_type>( it1, it2 );
+                }
+            },
+            boost::iterators::transform_iterator( M_levelsets.begin(), ls_fields{} ),
+            boost::iterators::transform_iterator( M_levelsets.end(), ls_fields{} )
+            );
+
+    auto fields = hana::flatten( hana::make_tuple( 
+            M_fluidModel->allFields( M_fluidModel->keyword() ), 
+            //M_levelsets.begin()->second->allFields( M_levelsets.begin()->second->keyword() ), 
+            levelsetsFields,
+            hana::make_tuple( 
+                std::make_pair( prefixvm(this->prefix(),"global-levelset.phi"), this->globalLevelsetElt() ),
+                interfaceForcesFields
+                ) 
+            ) );
+    //TODO: support fields for ALL levelsets
+    auto exprExport = M_fluidModel->exprPostProcessExports( symbolsExpr, M_fluidModel->keyword() );
+    // TODO: add exprPostProcessExports support in LevelSet
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exprExport );
 
     // Export measures
     this->exportMeasures( time );
 
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
     this->log("MultiFluid", "exportResults", "finish");
 }
 

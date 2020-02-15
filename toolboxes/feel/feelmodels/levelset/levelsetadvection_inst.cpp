@@ -47,7 +47,7 @@ template class AdvDiffReac<
     >;
 
 #if LEVELSET_ORDERPOLY != LEVELSET_VELOCITY_ORDER
-// Scalar iso advection (for reinitializerHJ)
+// Scalar iso advection (for HJ redistanciation)
 template class AdvDiffReac<
     typename LevelSetSpaceManager<
         Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>,

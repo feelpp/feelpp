@@ -78,8 +78,8 @@ main( int argc, char** argv )
             runApplicationMultiFluid<2,1,1>();
         else if( levelset_feapprox == "P2" )
             runApplicationMultiFluid<2,1,2>();
-        else if( levelset_feapprox == "P3" )
-            runApplicationMultiFluid<2,1,3>();
+        //else if( levelset_feapprox == "P3" )
+            //runApplicationMultiFluid<2,1,3>();
         else CHECK( false ) << "invalid levelset-feapprox " << levelset_feapprox;
     }
     /*#if FEELPP_DIM == 2

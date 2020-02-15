@@ -42,6 +42,8 @@ Feel::po::options_description maxwell_options(std::string const& prefix);
 Feel::po::options_description thermoElectric_options(std::string const& prefix);
 Feel::po::options_description heatFluid_options(std::string const& prefix);
 Feel::po::options_description advection_options(std::string const& prefix);
+Feel::po::options_description redistanciation_fm_options(std::string const& prefix, bool addProjectorsOpts = true );
+Feel::po::options_description redistanciation_hj_options(std::string const& prefix );
 Feel::po::options_description levelset_options(std::string const& prefix);
 
 Feel::po::options_description toolboxes_options(std::string const& type);
