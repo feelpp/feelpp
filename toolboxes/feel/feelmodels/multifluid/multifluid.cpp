@@ -1402,6 +1402,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initLevelsets()
         // Set global options if unspecified otherwise
         if( !Environment::vm().count( prefixvm(levelset_prefix,"thickness-interface").c_str() ) )
             levelset->setThicknessInterface( this->globalLevelsetThicknessInterface() );
+
+        // Set modelProperties if not already provided
+        if( !levelset->modelPropertiesPtr() )
+            levelset->setModelProperties( this->modelPropertiesPtr() );
         // Initialize LevelSets
         levelset->init();
 
