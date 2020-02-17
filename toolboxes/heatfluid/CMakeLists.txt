@@ -33,6 +33,7 @@ feelpp_add_application( heatfluid SRCS main_heatfluid.cpp
   MAN heatfluid
   )
 
-feelpp_add_testcase(NaturalConvection CATEGORY HeatFluid)
-feelpp_add_testcase(ForcedConvection CATEGORY HeatFluid)
+foreach( _testcase IN ITEMS "NaturalConvection" "ForcedConvection" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_heatfluid CATEGORY toolboxes/heatfluid)
+endforeach()
 

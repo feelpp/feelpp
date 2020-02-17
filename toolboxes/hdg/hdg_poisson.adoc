@@ -7,18 +7,29 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == NAME
 
-{manmanual} - hybridized discontinuous Galerkin Poisson toolbox application
+feelpp_toolbox_hdg_poisson - hybridized discontinuous Galerkin Poisson toolbox application
 
 
 == SYNOPSIS
 
-{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization ] 
+----
+feelpp_toolbox_hdg_poisson --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization ]
+  [--hdg_poisson.ksp-monitor=<0,1>]
+  [--hdg_poisson.ksp-view=<0,1>]
+  [--hdg_poisson.ksp-type=<see below>]
+  [--hdg_poisson.pc-view=<0,1>]
+  [--hdg_poisson.pc-type=<see below>]
+  [--hdg_poisson.snes-monitor=<0,1>]
+  [--hdg_poisson.ksp-type=<see below>]
+----
 
 == DESCRIPTION
 
-{manmanual} is an application which can run hybridized discontinuous Galerkin Poisson model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+feelpp_toolbox_hdg_poisson is an application which can run hybridized discontinuous Galerkin Poisson model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
-The step are as follows:
+The execution steps are as follows:
 
 * load the model
 * load the mesh
@@ -28,20 +39,29 @@ The step are as follows:
 
 === Options
 
-{manmanual} requires some options.
+feelpp_toolbox_hdg_poisson requires some options.
 
-.Table of command-line {manmanual} options
+.Table of command-line feelpp_toolbox_hdg_poisson options
 |===
 | Name | Description | Default value | Possible Values
 
 | case.dim | dimension of problem  | 3 | 2,3
 | case.discretization | discretization of problem  |  | 
+| hdg_poisson.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
+| hdg_poisson.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
+| hdg_poisson.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| hdg_poisson.pc-view | view the Krylov Subspace structure  | 0 | 0,1
+| hdg_poisson.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| hdg_poisson.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
+| hdg_poisson.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
 
 |===
 
+NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_hdg_poisson usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -82,27 +102,33 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
+Other test cases can be found
+
+- locally in /usr/share/feelpp/data/testcases/toolboxes/hdg_poisson.
+- on-line http://docs.feelpp.org/cases/0.108//README
+
+
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.108/
 
 {feelpp} Cases for feelpp_toolbox_hdg_poisson::
-http://docs.feelpp.org/cases/0.107//
+http://docs.feelpp.org/cases/0.108//README
 
 {feelpp} Toolbox Docs for feelpp_toolbox_hdg_poisson::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.108//
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.v107/using/remotedata/
+http://docs.feelpp.org/user/0.108/using/remotedata/
 
 
 == COPYING
