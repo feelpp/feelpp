@@ -1437,12 +1437,20 @@ MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    std::string modelName = "multifluid";
+    this->log("MultiFluid","initPostProcess", "start");
+    this->timerTool("Constructor").start();
 
-    auto const& exportsFields = this->modelProperties().postProcess().exports( modelName ).fields();
-    M_postProcessFieldsExportedFluid = this->fluidModel()->postProcessFieldExported( exportsFields, "fluid" );
+    std::set<std::string> ppExportsAllFieldsAvailable;
+    for ( auto const& s : M_fluidModel->postProcessExportsAllFieldsAvailable() )
+        ppExportsAllFieldsAvailable.insert( prefixvm( M_fluidModel->keyword(), s ) );
+    for ( auto const& ls : M_levelsets )
+        for ( auto const& s : ls.second->postProcessExportsAllFieldsAvailable() )
+            ppExportsAllFieldsAvailable.insert( prefixvm( ls.second->keyword(), s ) );
+    this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
+    this->setPostProcessExportsPidName( "pid" );
+    super_type::initPostProcess();
 
-    if( /*!M_postProcessFieldsExportedFluid.empty()*/true )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType="static";//change_coords_only, change, static
         M_exporter = exporter( _mesh=this->mesh(),
@@ -1457,6 +1465,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    std::string modelName = "multifluid";
     pt::ptree ptree = this->modelProperties().postProcess().pTree( modelName );
     std::string ppTypeMeasures = "Measures";
     for( auto const& ptreeLevel0 : ptree )
@@ -1491,6 +1500,17 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
             }
         }
     }
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just to have time in the first column
+    }
+
+    double tElpased = this->timerTool("Constructor").stop("initPostProcess");
+    this->log("MultiFluid","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
