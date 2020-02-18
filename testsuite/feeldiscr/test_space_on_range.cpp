@@ -38,7 +38,7 @@
 FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( space_on_range )
-#if 0
+
 BOOST_AUTO_TEST_CASE( test_2d )
 {
     using namespace Feel;
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
-#endif
+
 BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
 {
     using namespace Feel;
@@ -333,8 +333,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
     BOOST_CHECK_CLOSE( theMatEnergyB, 2*evalIntegrateB, 1e-9 );
 
     auto c = form1(_test=Xh);
-    auto ex = expr(soption("functions.c"));
-    c = integrate( _range=faces(support(Vh)), _expr=id(v)*ex );
+    c = integrate( _range=faces(support(Vh)), _expr=id(v) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
