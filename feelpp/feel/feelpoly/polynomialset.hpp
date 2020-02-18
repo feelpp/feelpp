@@ -829,7 +829,17 @@ public:
                 M_mean[i] = fm(i,0);
             }
             init( M_ref_ele, __pts, rank_t<rank>() );
-            initPhiEigen( M_ref_ele, __pts );
+            if constexpr ( rank == 0  )
+            {
+                for ( int q = 0; q < __pts.size2(); ++q )
+                {
+                    for ( int i = 0; i < __ref_ele->nbDof(); ++i )
+                    {
+                        M_phi_eigen( i, q ) = M_phi[i][q]( 0,0 );
+                    }
+                }
+            }
+                
         }
 
         /** copy constructor (deep copy) */
@@ -845,7 +855,6 @@ public:
         {
             M_nodes = __pts;
             init( M_ref_ele, __pts, rank_t<rank>() );
-            initPhiEigen( M_ref_ele, __pts );
         }
 
         //! \return the finite element
@@ -1026,23 +1035,6 @@ public:
             }
     private:
 
-        void initPhiEigen( reference_element_ptrtype const& M_ref_ele,
-                           matrix_node_t_type const& __pts )
-            {
-                if constexpr ( rank == 0  )
-                {
-                    if ( __pts.size2() != M_phi_eigen.cols() )
-                        M_phi_eigen.resize( M_ref_ele->nbDof(), __pts.size2() );
-
-                    for ( int q = 0; q < __pts.size2(); ++q )
-                    {
-                        for ( int i = 0; i < M_ref_ele->nbDof(); ++i )
-                        {
-                            M_phi_eigen( i, q ) = M_phi[i][q]( 0,0 );
-                        }
-                    }
-                }
-            }
         void
         init( reference_element_ptrtype const& M_ref_ele,
               matrix_node_t_type const& __pts,
@@ -1507,9 +1499,9 @@ public:
             if ( vm::has_normal_component_v<context> )
             {
                 M_normal_component.resize( boost::extents[ntdof][M_npoints] );
-                id_type i_n;
-                i_n.setConstant( 0. );
-                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n );
+                int n_components = (rank==2)?nComponents1:1;
+                Eigen::Tensor<value_type,2> i_n( n_components,1 );
+                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
             }
             if ( vm::has_trace_v<context> )
             {

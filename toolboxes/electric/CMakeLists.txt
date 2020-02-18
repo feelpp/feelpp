@@ -7,6 +7,4 @@ feelpp_add_application( electric SRCS main_electric.cpp
   MAN electric
   )
 
-foreach( _testcase IN ITEMS "ElectroMagnets" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_electric CATEGORY toolboxes/electric)
-endforeach()
+feelpp_add_testcase(ElectroMagnets CATEGORY Electric )

@@ -30,6 +30,12 @@ feelpp_add_application( solenoid_3d SRCS stress.cpp
   DEFS FEELPP_DIM=3 ELASTICITY_ANA
  )
 
-foreach( _testcase IN ITEMS "NAFEMS-LE1" "NAFEMS-LE10" "Solenoid" "TurekHron" "torsionbar" "cantilever" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_solid CATEGORY toolboxes/solid)
-endforeach()
+
+#feelpp_add_application( application_solid SRCS main_sm.cpp LINK_LIBRARIES feelpp_model_solidmechanics )
+
+feelpp_add_testcase(NAFEMS-LE1 CATEGORY CSM)
+feelpp_add_testcase(NAFEMS-LE10 CATEGORY CSM)
+feelpp_add_testcase(Solenoid CATEGORY CSM)
+feelpp_add_testcase(TurekHron PREFIX solid CATEGORY CSM)
+feelpp_add_testcase(torsionbar CATEGORY CSM)
+feelpp_add_testcase(cantilever CATEGORY CSM)

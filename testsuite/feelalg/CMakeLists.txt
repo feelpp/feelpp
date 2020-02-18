@@ -25,4 +25,3 @@ if ( FEELPP_HAS_SLEPC )
 endif()
 
 feelpp_add_test( ptap )
-feelpp_add_test( tensor )

@@ -23,6 +23,6 @@ feelpp_add_application( cvg_thermoelectric_3d SRCS cvg_thermoelectric.cpp
   INSTALL
   )
 
-foreach( _testcase IN ITEMS "test" "ElectroMagnets" "cvg" )
-  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_thermoelectric CATEGORY toolboxes/thermoelectric)
-endforeach()
+feelpp_add_testcase(test PREFIX thermoelectric CATEGORY ThermoElectric)
+feelpp_add_testcase(ElectroMagnets PREFIX thermoelectric CATEGORY ThermoElectric)
+feelpp_add_testcase(cvg PREFIX thermoelectric CATEGORY ThermoElectric)
