@@ -7,29 +7,18 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == NAME
 
-feelpp_toolbox_solid - solid mechanics toolbox application
+{manmanual} - solid mechanics toolbox application
 
 
 == SYNOPSIS
 
-----
-feelpp_toolbox_solid --case <directory to model case>
-  [--case.dim 3]
-  [--case.discretization P1]
-  [--solid.ksp-monitor=<0,1>]
-  [--solid.ksp-view=<0,1>]
-  [--solid.ksp-type=<see below>]
-  [--solid.pc-view=<0,1>]
-  [--solid.pc-type=<see below>]
-  [--solid.snes-monitor=<0,1>]
-  [--solid.ksp-type=<see below>]
-----
+{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization ] 
 
 == DESCRIPTION
 
-feelpp_toolbox_solid is an application which can run solid mechanics model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+{manmanual} is an application which can run solid mechanics model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
-The execution steps are as follows:
+The step are as follows:
 
 * load the model
 * load the mesh
@@ -39,29 +28,20 @@ The execution steps are as follows:
 
 === Options
 
-feelpp_toolbox_solid requires some options.
+{manmanual} requires some options.
 
-.Table of command-line feelpp_toolbox_solid options
+.Table of command-line {manmanual} options
 |===
 | Name | Description | Default value | Possible Values
 
 | case.dim | dimension of problem  | 3 | 2,3
-| case.discretization | discretization of problem  | P1 | P1,P2
-| solid.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
-| solid.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
-| solid.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
-| solid.pc-view | view the Krylov Subspace structure  | 0 | 0,1
-| solid.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
-| solid.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
-| solid.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
+| case.discretization | discretization of problem  |  | 
 
 |===
 
-NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
-
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_solid usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -102,33 +82,27 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
-Other test cases can be found
-
-- locally in /usr/share/feelpp/data/testcases/toolboxes/solid.
-- on-line http://docs.feelpp.org/cases/0.108/csm/README
-
-
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.108/
+http://docs.feelpp.org/toolboxes/0.v107/
 
 {feelpp} Cases for feelpp_toolbox_solid::
-http://docs.feelpp.org/cases/0.108/csm/README
+http://docs.feelpp.org/cases/0.107//
 
 {feelpp} Toolbox Docs for feelpp_toolbox_solid::
-http://docs.feelpp.org/toolboxes/0.108/csm/
+http://docs.feelpp.org/toolboxes/0.v107/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.108/using/remotedata/
+http://docs.feelpp.org/user/0.v107/using/remotedata/
 
 
 == COPYING

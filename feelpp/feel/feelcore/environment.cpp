@@ -464,10 +464,6 @@ Environment::Environment( int argc, char** argv,
     S_argc = argc;
     S_argv = argv;
 
-    S_worldcomm = worldcomm_type::New();
-    CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
-    S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
-
     // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
     for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
     {
@@ -477,20 +473,8 @@ Environment::Environment( int argc, char** argv,
             fs::path p{ senv };
             if ( !var.second.empty() )
                 p /= var.second;
-            if ( S_worldcomm->isMasterRank() )
-            {
-                if ( !fs::exists( p ) )
-                {
-                    try {
-                        fs::create_directories( p );
-                    }
-                    catch (...) {}
-                }
-            }
-            S_worldcomm->barrier();
-
             if ( !fs::exists( p ) )
-                continue;
+                fs::create_directories( p );
             else if ( !fs::is_directory( p ) )
                 continue;
             S_rootdir = p;
@@ -498,6 +482,9 @@ Environment::Environment( int argc, char** argv,
         }
     }
 
+    S_worldcomm = worldcomm_type::New();
+    CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
+    S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
 
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
@@ -2537,7 +2524,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
-fs::path Environment::S_rootdir = fs::current_path();
+fs::path Environment::S_rootdir;
 fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;

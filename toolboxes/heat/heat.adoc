@@ -7,29 +7,18 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == NAME
 
-feelpp_toolbox_heat - heat transfer toolbox application
+{manmanual} - heat transfer toolbox application
 
 
 == SYNOPSIS
 
-----
-feelpp_toolbox_heat --case <directory to model case>
-  [--case.dim 3]
-  [--case.discretization P1]
-  [--heat.ksp-monitor=<0,1>]
-  [--heat.ksp-view=<0,1>]
-  [--heat.ksp-type=<see below>]
-  [--heat.pc-view=<0,1>]
-  [--heat.pc-type=<see below>]
-  [--heat.snes-monitor=<0,1>]
-  [--heat.ksp-type=<see below>]
-----
+{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization P1] 
 
 == DESCRIPTION
 
-feelpp_toolbox_heat is an application which can run heat transfer model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+{manmanual} is an application which can run heat transfer model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
-The execution steps are as follows:
+The step are as follows:
 
 * load the model
 * load the mesh
@@ -39,29 +28,20 @@ The execution steps are as follows:
 
 === Options
 
-feelpp_toolbox_heat requires some options.
+{manmanual} requires some options.
 
-.Table of command-line feelpp_toolbox_heat options
+.Table of command-line {manmanual} options
 |===
 | Name | Description | Default value | Possible Values
 
 | case.dim | dimension of problem  | 3 | 2,3
-| case.discretization | discretization of problem  | P1 | P1,P2,P3
-| heat.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
-| heat.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
-| heat.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
-| heat.pc-view | view the Krylov Subspace structure  | 0 | 0,1
-| heat.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
-| heat.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
-| heat.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
+| case.discretization | discretization of problem  | P1 | P1
 
 |===
 
-NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
-
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_heat usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -102,33 +82,27 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
-Other test cases can be found
-
-- locally in /usr/share/feelpp/data/testcases/toolboxes/heat.
-- on-line http://docs.feelpp.org/cases/0.108/heat/README
-
-
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.108/
+http://docs.feelpp.org/toolboxes/0.v107/
 
 {feelpp} Cases for feelpp_toolbox_heat::
-http://docs.feelpp.org/cases/0.108/heat/README
+http://docs.feelpp.org/cases/0.107//
 
 {feelpp} Toolbox Docs for feelpp_toolbox_heat::
-http://docs.feelpp.org/toolboxes/0.108/heat/
+http://docs.feelpp.org/toolboxes/0.v107/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.108/using/remotedata/
+http://docs.feelpp.org/user/0.v107/using/remotedata/
 
 
 == COPYING
