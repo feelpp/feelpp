@@ -50,9 +50,9 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
-    M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
-        Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
-    M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
+    // M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
+    //     Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
+    // M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
 
     M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
     M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
@@ -214,29 +214,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->timerTool("Constructor").start();
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
-    std::string suffixName = "";
-    if ( myFileFormat == "binary" )
-        std::string suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
-    fs::path saveTsDir = fs::path(this->rootRepository())/fs::path( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"ts")) );
 
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
-    M_bdfTemperature = bdf( _space=this->spaceTemperature(),
-                            _name="temperature"+suffixName,
-                            _prefix=this->prefix(),
-                            _order=bdfOrder,
-                            // don't use the fluid.bdf {initial,final,step}time but the general bdf info, the order will be from fluid.bdf
-                            _initial_time=this->timeInitial(),
-                            _final_time=this->timeFinal(),
-                            _time_step=this->timeStep(),
-                            _restart=this->doRestart(),
-                            _restart_path=this->restartPath(),
-                            _restart_at_last_save=this->restartAtLastSave(),
-                            _save=this->tsSaveInFile(), _format=myFileFormat, _freq=this->tsSaveFreq(),
-                            _n_consecutive_save=nConsecutiveSave );
-    M_bdfTemperature->setPathSave( ( saveTsDir/"temperature" ).string() );
+
+    M_bdfTemperature = this->createBdf( this->spaceTemperature(),"temperature", bdfOrder, nConsecutiveSave, myFileFormat );
 
     if (!this->doRestart())
     {
