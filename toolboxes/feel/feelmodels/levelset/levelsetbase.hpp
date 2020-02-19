@@ -229,15 +229,24 @@ public:
     // Constructor
     LevelSetBase(
             std::string const& prefix,
+            std::string const& keyword = "levelset",
             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    LevelSetBase(
+            std::string const& prefix,
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+            std::string const& subPrefix = "",
+            ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        : LevelSetBase( prefix, prefix, _worldComm, subPrefix, modelRep )
+    {}
 
 
     LevelSetBase( self_type const& L ) = default;
 
     static self_ptrtype New( 
             std::string const& prefix,
+            std::string const& keyword = "levelset",
             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );

@@ -248,20 +248,25 @@ public:
 
     //--------------------------------------------------------------------//
     // Constructor
-    LevelSet(
-            std::string const& prefix,
-            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-            std::string const& subPrefix = "",
-            ModelBaseRepository const& modelRep = ModelBaseRepository() );
-
+    LevelSet( std::string const& prefix,
+              std::string const& keyword = "levelset",
+              worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+              std::string const& subPrefix = "",
+              ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    LevelSet( std::string const& prefix,
+              worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+              std::string const& subPrefix = "",
+              ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        : LevelSet( prefix, prefix, _worldComm, subPrefix, modelRep )
+    {}
 
     LevelSet( self_type const& L ) = default;
 
-    static self_ptrtype New( 
-            std::string const& prefix,
-            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-            std::string const& subPrefix = "",
-            ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    static self_ptrtype New( std::string const& prefix,
+                             std::string const& keyword = "levelset",
+                             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+                             std::string const& subPrefix = "",
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     std::shared_ptr<self_type> shared_from_this() { return std::dynamic_pointer_cast<self_type>( super_type::shared_from_this() ); }
     std::shared_ptr<self_type const> shared_from_this() const { return std::dynamic_pointer_cast<self_type const>( super_type::shared_from_this() ); }
