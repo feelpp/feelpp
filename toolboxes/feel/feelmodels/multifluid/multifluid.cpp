@@ -48,9 +48,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         std::string const lsName = levelsetName(i);
         auto levelset_prefix = prefixvm(this->prefix(), lsName);
         auto & levelset = M_levelsets[lsName];
-        levelset.reset(
-                new levelset_model_type( levelset_prefix, this->worldCommPtr(), "", this->repository().rootWithoutNumProc() )
-                );
+        M_levelsets[lsName] = std::make_shared<levelset_model_type>(
+                levelset_prefix, lsName, this->worldCommPtr(),
+                this->subPrefix(), this->repository() );
     }
 }
 

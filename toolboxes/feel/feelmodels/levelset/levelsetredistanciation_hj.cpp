@@ -38,7 +38,7 @@ LEVELSETREDISTANCIATIONHJ_CLASS_TEMPLATE_TYPE::LevelSetRedistanciationHJ(
         std::string const& prefix )
 : 
     super_type( space, prefix ),
-    M_advectionHJ( new advectionhj_type( prefix, space->worldCommPtr() ) ),
+    M_advectionHJ( new advectionhj_type( prefix, prefix, space->worldCommPtr() ) ),
     M_nGlobalIter(1)
 {
     this->loadParametersFromOptionsVm();
