@@ -29,6 +29,7 @@
 
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchm.hpp>
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/eig.hpp>
 
@@ -211,5 +212,15 @@ BOOST_AUTO_TEST_CASE( test1 )
     BOOST_CHECK_CLOSE( eval20(0,0), -1.0, tolerance );
     BOOST_CHECK_CLOSE( eval20(1,0), 1.0, tolerance );
     BOOST_CHECK_CLOSE( eval20(2,0), 2.0, tolerance );
+
+    auto VhP0m = Pchm<0>( mesh );
+    auto uP0m = VhP0m->element();
+    uP0m.on(_range=elements(mesh),_expr=mat<2,2>(cst(1.),cst(2.),cst(3.),cst(4.)));
+    auto eval21 = idv(uP0m).evaluate();
+    BOOST_CHECK( eval21.rows() == 2 && eval21.cols() == 2 );
+    BOOST_CHECK_CLOSE( eval21(0,0), 1.0, tolerance );
+    BOOST_CHECK_CLOSE( eval21(0,1), 2.0, tolerance );
+    BOOST_CHECK_CLOSE( eval21(1,0), 3.0, tolerance );
+    BOOST_CHECK_CLOSE( eval21(1,1), 4.0, tolerance );
 }
 BOOST_AUTO_TEST_SUITE_END()
