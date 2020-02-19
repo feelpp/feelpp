@@ -2096,14 +2096,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
     auto massCenter = this->massCenterExpr();
     if constexpr (nDim == 2 )
-                 {
-                     auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
-                                                                 _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ) );
-                     M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
-                 }
+    {
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ) );
+        M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+    }
     else
     {
-        CHECK( false ) << "TODO" << std::endl;
+        auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity,
+                                                    _imageSpace=XhV,
+                                                    _range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ) );
+        M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
     }
 
 
