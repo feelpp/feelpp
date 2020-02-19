@@ -100,21 +100,21 @@
                 "titi":
                 {
                     //"tag":"todo",
-                    "part":
-                    {
-                        "expr":"3*x*y:x:y",
-                        "markers":"Omega1"
-                    },
-                    "part":
-                    {
-                        "expr":"4*x*y:x:y",
-                        "markers":"Omega2"
-                    },
+                    "parts": [
+                        {
+                            "expr":"3*x*y:x:y",
+                            "markers":"Omega1"
+                        },
+                        {
+                            "expr":"4*x*y:x:y",
+                            "markers":"Omega2"
+                        }
+                    ],
                     "representation":["nodal","element"]
                 },
                 "tutu":
                 {
-                    "expr":"{heat_k_xx,heat_k_xy,heat_k_yx,heat_k_yy}:heat_k_xx:heat_k_xy:heat_k_yx:heat_k_yy",
+                    "expr":"{materials_k_xx,materials_k_xy,materials_k_yx,materials_k_yy}:materials_k_xx:materials_k_xy:materials_k_yx:materials_k_yy",
                     "representation":["nodal","element"]
                 }
             }
@@ -134,12 +134,25 @@
             },
             "Statistics":
             {
+                "fluxOnNeumann_1":
+                {
+                    "type":"integrate",
+                    "expr":"materials_mymat1_k*heat_dn_T:materials_mymat1_k:heat_dn_T",
+                    "markers":"MarkerNeumann_1"
+                },
                 "fluxOnRobin":
                 {
                     "type":"integrate",
-                    "expr":"heat_mymat2_k*heat_dn_T:heat_mymat2_k:heat_dn_T",
+                    "expr":"-(materials_mymat2_k_xx*heat_grad_T_x+materials_mymat2_k_xy*heat_grad_T_y)*nx - (materials_mymat2_k_yx*heat_grad_T_x+materials_mymat2_k_yy*heat_grad_T_y)*ny :materials_mymat2_k_xx:materials_mymat2_k_xy:materials_mymat2_k_yx:materials_mymat2_k_yy:heat_grad_T_x:heat_grad_T_y:nx:ny",
+                    "markers":"MarkerRobin"
+                },
+                "fluxOnRobinBIS":
+                {
+                    "type":"integrate",
+                    "expr":"heat_nflux:heat_nflux",
                     "markers":"MarkerRobin"
                 }
+
             },
             "Points":
             {
