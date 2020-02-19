@@ -688,7 +688,9 @@ public:
                     fieldsMap[ __fname].second.resize( nCompExpr );
                     for ( int c1 = 0; c1 < nCompExpr ;++c1 )
                     {
-                        fieldsMap[ __fname].second[c1] = { scalarSpace->elementPtr( __n ) };
+                        fieldsMap[ __fname].second[c1].resize( 1 );
+                        if ( !fieldsMap[ __fname].second[c1][0] )
+                            fieldsMap[ __fname].second[c1][0] = scalarSpace->elementPtr( __n );
                         if constexpr ( ExprShapeType::is_transposed )
                             fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(0,c1)); // TODO : optimize
                         else
@@ -705,7 +707,8 @@ public:
                         fieldsMap[ __fname].second[c1].resize( ExprShapeType::N );
                         for ( int c2 = 0; c2 < ExprShapeType::N ;++c2 )
                         {
-                            fieldsMap[ __fname].second[c1][c2] = scalarSpace->elementPtr( __n );
+                            if ( !fieldsMap[ __fname].second[c1][c2] )
+                                fieldsMap[ __fname].second[c1][c2] = scalarSpace->elementPtr( __n );
                             fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(c1,c2));  // TODO : optimize
                         }
                     }
