@@ -184,6 +184,10 @@ class Heat : public ModelNumerical,
         int nBlockMatrixGraph() const { return 1; }
         void init( bool buildModelAlgebraicFactory=true );
 
+        //___________________________________________________________________________________//
+        // post-processing
+        //___________________________________________________________________________________//
+
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
         template <typename SymbolsExpr>
@@ -203,17 +207,32 @@ class Heat : public ModelNumerical,
 
         void updateParameterValues();
 
+        //___________________________________________________________________________________//
+        // fields and symbols expressions
+        //___________________________________________________________________________________//
+
         auto allFields( std::string const& prefix = "" ) const
             {
-                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() )
-                                         //std::make_pair( prefixvm( prefix,"velocity-convection" ), this->fieldVelocityConvectionIsOperational()?this->fieldVelocityConvectionPtr() : element_velocityconvection_ptrtype() )
-                                         );
+                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() ) );
             }
 
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::make_tuple();
+                typedef decltype(expr(velocity_convection_expr_type{},se)) _expr_velocity_convection_type;
+                std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+                {
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                    auto itFindVelConv = M_exprVelocityConvection.find( matName );
+                    if ( itFindVelConv !=  M_exprVelocityConvection.end() )
+                    {
+                        auto velocityConvectionExpr = expr( itFindVelConv->second, se );
+                        mapExprVelocityConvection[prefixvm(prefix,"velocity-convection")].push_back( std::make_tuple( velocityConvectionExpr, range, "nodal" ) );
+                    }
+                }
+
+                return hana::make_tuple( mapExprVelocityConvection );
             }
 
         auto symbolsExpr( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExpr( this->fieldTemperature(), prefix_symbol ); }
@@ -223,7 +242,8 @@ class Heat : public ModelNumerical,
             auto seField = this->symbolsExprField( t, prefix_symbol );
             auto seFit = this->symbolsExprFit( seField );
             auto seMat = this->materialsProperties()->symbolsExpr(Feel::vf::symbolsExpr( seField, seFit ) );
-            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+            auto seOthers = this->symbolsExprOthers( t, Feel::vf::symbolsExpr( seField, seFit ), prefix_symbol );
+            return Feel::vf::symbolsExpr( seField, seFit, seMat, seOthers );
         }
 
         auto symbolsExprField( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExprField( this->fieldTemperature(), prefix_symbol ); }
@@ -235,6 +255,30 @@ class Heat : public ModelNumerical,
                                               symbolExpr( (boost::format("%1%grad_T")%prefix_symbol).str(),gradv(t), SymbolExprComponentSuffix( 1,nDim,true ) ),
                                               symbolExpr( (boost::format("%1%dn_T")%prefix_symbol).str(),dnv(t) )
                                               );
+            }
+
+        template <typename FieldTemperatureType, typename SymbExprType>
+        auto symbolsExprOthers( FieldTemperatureType const& t, SymbExprType const& se, std::string const& prefix_symbol = "heat_" ) const
+            {
+                // generate symbol heat_nflux
+                typedef decltype( this->normalHeatFluxExpr(t,se) ) _expr_nflux_type;
+                std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
+                std::string symbolNormalHeatFluxStr = (boost::format("%1%nflux")%prefix_symbol ).str();
+                auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t, se );
+                normalHeatFluxSymbs.push_back( std::make_tuple( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) ) );
+
+                return Feel::vf::symbolsExpr( symbolExpr( normalHeatFluxSymbs ) );
+            }
+
+        template <typename FieldTemperatureType, typename SymbolsExpr>
+        auto normalHeatFluxExpr( FieldTemperatureType const& t/*, std::string const& matName*/, SymbolsExpr const& symbolsExpr, bool isOutward = true ) const
+            {
+                double signFlux = isOutward? -1.0 : 1.0;
+                auto kappa = this->materialsProperties()->thermalConductivityExpr( symbolsExpr );
+                if constexpr ( std::decay_t<decltype(kappa)>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
+                                 return signFlux*kappa*gradv(t)*N();
+                else
+                    return signFlux*inner(kappa*trans(gradv(t)),N());
             }
 
         //___________________________________________________________________________________//
@@ -284,7 +328,6 @@ class Heat : public ModelNumerical,
 
         space_temperature_ptrtype M_Xh;
         element_temperature_ptrtype M_fieldTemperature;
-        bool M_fieldVelocityConvectionIsUsed, M_fieldVelocityConvectionIsIncompressible;
         std::map<std::string,velocity_convection_expr_type> M_exprVelocityConvection;
 
         // time discretisation
@@ -359,16 +402,9 @@ Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, 
     // compute measures
     for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        auto const& u = this->fieldTemperature();
-        double signFlux = (ppFlux.isOutward())? -1.0 : 1.0;
-        auto kappa = this->materialsProperties()->thermalConductivityExpr( symbolsExpr );
-        double heatFlux = 0;
-        if constexpr ( std::decay_t<decltype(kappa)>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
-                         heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
-                                              _expr=signFlux*kappa*gradv(u)*N() ).evaluate()(0,0);
-        else
-            heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
-                                 _expr=signFlux*inner(kappa*trans(gradv(u)),N()) ).evaluate()(0,0);
+        auto const& t = this->fieldTemperature();
+        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
+                                    _expr=this->normalHeatFluxExpr( t, symbolsExpr, ppFlux.isOutward() ) ).evaluate()(0,0);
         this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
         hasMeasure = true;
     }

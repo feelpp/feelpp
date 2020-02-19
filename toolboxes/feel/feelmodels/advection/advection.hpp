@@ -227,14 +227,23 @@ public :
     // Constructor
     AdvDiffReac( 
             std::string const& prefix,
+            std::string const& keyword = "adr",
             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    AdvDiffReac( 
+            std::string const& prefix,
+            worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+            std::string const& subPrefix = "",
+            ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        : AdvDiffReac( prefix, prefix, _worldComm, subPrefix, modelRep )
+    {}
 
     AdvDiffReac( self_type const& A ) = default;
 
     static self_ptrtype New( 
             std::string const& prefix,
+            std::string const& keyword = "adr",
             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
             std::string const& subPrefix = "",
             ModelBaseRepository const& modelRep = ModelBaseRepository() );

@@ -29,11 +29,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_doProjectFieldAdvectionVelocity( false ),
@@ -51,11 +52,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::self_ptrtype 
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
     
 //----------------------------------------------------------------------------//
