@@ -22,12 +22,13 @@ namespace FeelModels {
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep ) 
 :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
-    M_advectionToolbox( new advection_toolbox_type( prefix, worldComm, subPrefix, modelRep ) ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    M_advectionToolbox( new advection_toolbox_type( prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
     M_doUpdateCauchyGreenInvariant2(true),
@@ -55,11 +56,12 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSET_CLASS_TEMPLATE_TYPE::self_ptrtype
 LEVELSET_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
-    self_ptrtype new_ls( new self_type(prefix, worldComm, subPrefix, modelRep ) );
+    self_ptrtype new_ls( new self_type(prefix, keyword, worldComm, subPrefix, modelRep ) );
     return new_ls;
 }
 
@@ -223,6 +225,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_modGradPhiAdvection = modgradphi_advection_type::New(
                 prefixvm(this->prefix(), "modgradphi-advection"),
+                "modgradphi-advection",
                 this->worldCommPtr()
                 );
         M_modGradPhiAdvection->setModelName( "Advection-Reaction" );
@@ -235,6 +238,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_stretchAdvection = stretch_advection_type::New(
                 prefixvm(this->prefix(), "stretch-advection"),
+                "stretch-advection",
                 this->worldCommPtr()
                 );
         M_stretchAdvection->setModelName( "Advection-Reaction" );
@@ -247,6 +251,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::createInterfaceQuantities()
     {
         M_backwardCharacteristicsAdvection = backwardcharacteristics_advection_type::New(
                 prefixvm(this->prefix(), "backward-characteristics-advection"),
+                "backward-characteristics-advection",
                 this->worldCommPtr()
                 );
         M_backwardCharacteristicsAdvection->setModelName( "Advection" );
