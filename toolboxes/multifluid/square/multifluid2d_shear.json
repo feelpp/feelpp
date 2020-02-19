@@ -3,7 +3,15 @@
     "ShortName": "Square2d",
     "Models":
     {
-        "equations":"Navier-Stokes"
+        "use-model-name": 1,
+        "fluid":
+        {
+            "equations":"Navier-Stokes"
+        },
+        "levelset1":
+        {
+            "equations":"Advection"
+        }
     },
     "Materials":
     {
@@ -15,7 +23,23 @@
     },
     "Parameters":
     {
+        "x0": "0.",
+        "y0": "0.",
+        "r0": "0.2",
         "ubar":"0.2"
+    },
+    "InitialConditions":
+    {
+        "multifluid.levelset1":
+        {
+            "Expression":
+            {
+                "ic1":
+                {
+                    "expr":"sqrt( (x-x0)*(x-x0) + (y-y0)*(y-y0) ) - r0 :x:x0:y:y0:r0"
+                }
+            }
+        }
     },
     "BoundaryConditions":
     {
@@ -44,9 +68,19 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "use-model-name": 1,
+        "multifluid":
         {
-            "fields":["velocity","pressure","density", "viscosity", "pid"]
+            "Exports":
+            {
+                "fields":["fluid.velocity","fluid.pressure","fluid.density", "fluid.viscosity", "levelset1.phi", "pid"]
+            }
+        },
+        "fluid":
+        {
+        },
+        "levelset1":
+        {
         }
     }
 

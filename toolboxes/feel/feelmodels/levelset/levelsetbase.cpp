@@ -23,11 +23,12 @@ namespace FeelModels {
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep ) 
 :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),
@@ -71,11 +72,12 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::self_ptrtype
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::New(
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
-    self_ptrtype new_ls( new self_type(prefix, worldComm, subPrefix, modelRep ) );
+    self_ptrtype new_ls( new self_type(prefix, keyword, worldComm, subPrefix, modelRep ) );
     return new_ls;
 }
 
