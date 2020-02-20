@@ -381,6 +381,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
+    myBlockGraph.close();
+
     this->log("MultiFluid","buildBlockMatrixGraph", "finish" );
 
     return myBlockGraph;
