@@ -15,8 +15,12 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <boost/hana/tuple.hpp>
 
 #include <feel/feelmodels/hdg/enums.hpp>
 
@@ -146,10 +150,14 @@ public:
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<Wh_t,Vh_t> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //private:
 protected:
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     Vh_ptr_t M_Vh; // flux
     Wh_ptr_t M_Wh; // potential
@@ -194,6 +202,8 @@ protected:
 
     bool M_isPicard;
     std::map<std::string,value_type> M_paramValues;
+
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 
     int M_quadError;
     bool M_setZeroByInit;
@@ -310,6 +320,75 @@ public:
     void solvePostProcess();
     virtual void postProcess( bool isNL = false );
 
+    auto allFields() const
+        {
+            return hana::make_tuple( std::make_pair( this->potentialKey(), this->potentialField() ),
+                                     std::make_pair( this->fluxKey(), this->fluxField() )
+                                     );
+        }
+
+    auto symbolsExpr() const { return this->symbolsExpr( this->potentialField() ); }
+    template<typename PotentialFieldType>
+    auto symbolsExpr( PotentialFieldType const& p ) const
+        {
+            auto seField = this->symbolsExprField();
+            auto seFit = this->symbolsExprFit( seField );
+            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
+            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+        }
+    constexpr auto symbolsExprField() const { return this->symbolsExprField( boost::hana::int_<Dim>() ); }
+    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],idv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dx"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dxv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dy"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dyv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dn"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dnv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"],idv(this->fluxField()) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"x",idv(this->fluxField())(0) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"y",idv(this->fluxField())(1) )
+                                          );
+        }
+    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],idv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dx"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dxv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dy"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dyv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dz"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dzv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_dn"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dnv(this->potentialField()) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"],idv(this->fluxField()) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"x",idv(this->fluxField())(0) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"y",idv(this->fluxField())(1) ),
+                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"z",idv(this->fluxField())(2) )
+                                          );
+        }
+    template<typename SymbExprType>
+    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit(se); }
+    template<typename SymbExprType>
+    auto symbolsExprMaterial( SymbExprType const& se ) const
+        {
+            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
+            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
+            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ) );
+        }
+
+    template <typename TupleFieldsType,typename SymbolsExpr>
+    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+        {
+            bool hasMeasure = false;
+            bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+            bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
+            bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+            if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+                hasMeasure = true;
+
+            if ( hasMeasure )
+            {
+                if ( !this->isStationary() )
+                    this->postProcessMeasuresIO().setMeasure( "time", time );
+                this->postProcessMeasuresIO().exportMeasures();
+                this->upload( this->postProcessMeasuresIO().pathFile() );
+            }
+        }
 };
 
 template<int Dim, int Order, int G_Order, int E_Order>

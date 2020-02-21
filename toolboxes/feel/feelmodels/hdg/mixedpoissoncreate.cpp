@@ -16,7 +16,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
                                                 worldcomm_ptr_t const& worldComm,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
-    : super_type( prefix, worldComm, subPrefix, modelRep ),
+    : super_type( prefix, MixedPoissonPhysicsMap[physic]["keyword"], worldComm, subPrefix, modelRep ),
       M_physic(physic),
       M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
       M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
@@ -248,23 +248,24 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
         auto const& mat = m.second;
         if( mat.hasPhysics() )
         {
-            switch(M_physic)
-            {
-            case MixedPoissonPhysics::None:
-                break;
-            case MixedPoissonPhysics::Electric:
-                if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
-                    continue;
-                break;
-            case MixedPoissonPhysics::Heat:
-                if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
-                    continue;
-                break;
-            }
+            // switch(M_physic)
+            // {
+            // case MixedPoissonPhysics::None:
+            //     break;
+            // case MixedPoissonPhysics::Electric:
+            //     if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
+            //         continue;
+            //     break;
+            // case MixedPoissonPhysics::Heat:
+            //     if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
+            //         continue;
+            //     break;
+            // }
         }
         for ( std::string const& matmarker : mat.meshMarkers() )
             markers.insert( matmarker );
     }
+    M_rangeMeshElements = markedelements(M_mesh, markers);
     M_Vh = Pdhv<Order>( M_mesh, markedelements(M_mesh, markers) );
     M_Wh = Pdh<Order>( M_mesh, markedelements(M_mesh, markers) );
     M_Whp = Pdh<Order+1>( M_mesh, markedelements(M_mesh, markers) );
@@ -343,6 +344,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initExporter( mesh_ptrtype meshVisu )
                             _name="Export",
                             _geo=geoExportType,
                             _path=this->exporterPath() );
+
+    // point measures
+    auto fieldNamesWithSpacePotential = std::make_pair( std::set<std::string>({this->potentialKey()}), this->potentialSpace() );
+    auto fieldNamesWithSpaceFlux = std::make_pair( std::set<std::string>({this->fluxKey()}), this->fluxSpace() );
+    auto fieldNamesWithSpaces = boost::hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpaceFlux );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+       M_measurePointsEvaluation->init( evalPoints );
+    }
+
 }
 
 } // namespace FeelModels
