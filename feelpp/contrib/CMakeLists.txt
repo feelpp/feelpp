@@ -377,6 +377,38 @@ add_subdirectory( boost )
 #include(feelpp.module.paralution)
 #include(feelpp.module.jsonlab)
 
+feelppContribPrepare( mmg )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  set(MMG_CI OFF)
+  set(MMG2D_CI OFF)
+  set(MMG3D_CI OFF)
+  set(MMGS_CI OFF)
+  set(BUILD_SHARED_LIBS ON)
+  add_subdirectory( mmg )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MMG )
+  target_link_libraries(feelpp_contrib INTERFACE libfeelpp_mmg_so )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Mmg/Contrib")
+
+  if ( 0 )
+  # setup parmmg only if mmg is ok
+  feelppContribPrepare( parmmg )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    SET ( LIBPARMMG_STATIC OFF )
+    SET ( LIBPARMMG_SHARED ON )
+    SET( DOWNLOAD_MMG OFF )
+    SET( DOWNLOAD_METIS OFF )
+    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+    add_subdirectory( parmmg )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+    target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+    set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+  endif()
+  endif( 0 )
+endif()
+
+
+
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
   list( APPEND FEELPP_MESSAGE_INFO_END "Feel++ submodules already initialized!\nPlease make sure submodules are up to date (run `git submodule update --init --recursive` in source directory)" )
