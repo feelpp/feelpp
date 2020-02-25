@@ -73,10 +73,11 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, world
             M_physics.insert(M_p.get<std::string>("physics") );
     }
 
+
     std::map<std::string,double> constantMaterialProperty;
     for( auto const& [k,v] : M_p )
     {
-        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename")
+        if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename") && (k!="misc")
              && v.empty() && !v.data().empty() )
         {
             this->setProperty( k,M_p );
@@ -256,6 +257,11 @@ ModelMaterials::ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& world
 {
     setup();
 }
+
+ModelMaterials::ModelMaterials( super1 const& m )
+    :
+    super1(m)
+{}
 
 void
 ModelMaterials::setup()

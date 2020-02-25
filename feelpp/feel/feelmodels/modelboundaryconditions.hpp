@@ -82,11 +82,11 @@ class FEELPP_EXPORT ModelBoundaryCondition : public CommObject
     bool isExpression2Matrix() const { return M_modelExpr2.isMatrix(); }
 
     template<int M=1, int N=1>
-    auto expr() { return M_modelExpr1.expr<M,N>(); }
+    auto expr() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr1() { return M_modelExpr1.expr<M,N>(); }
+    auto expr1() const { return M_modelExpr1.expr<M,N>(); }
     template<int M=1, int N=1>
-    auto expr2() { return M_modelExpr2.expr<M,N>(); }
+    auto expr2() const { return M_modelExpr2.expr<M,N>(); }
 
 private:
     pt::ptree M_pt;
@@ -106,6 +106,9 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > boundaryConditions( std::string const& field ) const;
+    std::map<std::string,ModelBoundaryCondition> boundaryConditions( std::string const& field, std::string const& type ) const;
+
 private:
     void setup();
 

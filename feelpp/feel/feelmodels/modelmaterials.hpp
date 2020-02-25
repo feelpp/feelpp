@@ -59,6 +59,7 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
     std::set<std::string> const& meshMarkers() const { return M_meshMarkers; }
     std::set<std::string> const& physics() const { return M_physics; }
     std::string const physic() const { return M_physics.empty() ? "" : *(M_physics.begin()); }
+    std::map<std::string,std::string> const& miscellaneous() const { return M_misc; }
     //! return the property tree
     pt::ptree const& pTree() const { return M_p; }
     /*! Set Name
@@ -392,6 +393,8 @@ private:
     std::set<std::string> M_physics;
     //! mesh markers
     ModelMarkers M_meshMarkers;
+    //! miscellaneous
+    std::map<std::string, std::string> M_misc;
 
 };
 
@@ -405,10 +408,12 @@ std::ostream& operator<<( std::ostream& os, ModelMaterial const& m );
 class FEELPP_EXPORT ModelMaterials: public std::map<std::string,ModelMaterial>, public CommObject
 {
 public:
+    using super1 = std::map<std::string, ModelMaterial>;
     using super = CommObject;
     using value_type = std::map<std::string,ModelMaterial>::value_type;
     ModelMaterials( worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
     ModelMaterials( pt::ptree const& p, worldcomm_ptr_t const& worldComm = Environment::worldCommPtr() );
+    ModelMaterials( super1 const& m );
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
 
