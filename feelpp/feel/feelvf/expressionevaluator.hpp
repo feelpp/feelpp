@@ -179,7 +179,7 @@ protected:
 
 public:
     ExpressionEvaluatorParam( range_type const& r, expr_type const& ex,
-                              parameterelement_type const& mu, int comp = 0 ):
+                              parameterelement_type& mu, int comp = 0 ):
         super(r,ex,comp),
         M_mu(mu)
         {}
@@ -187,7 +187,7 @@ public:
     virtual bool update(parameterelement_type const& mu) override;
 
 protected:
-    parameterelement_type M_mu;
+    parameterelement_type& M_mu;
 };
 
 template<typename EltT, typename ExprT>

@@ -82,6 +82,7 @@ public:
     template<typename ExprT, typename FctT>
     void addExpression(ExprT& ex, parameterelement_type& mu, FctT& u, fct_type<ExprT,FctT> const& f, int comp = 0);
 
+    int verbosity() const { return M_verbosity; }
     void saveDatabase();
     bool loadDatabase();
     void initPoints();
@@ -89,7 +90,7 @@ public:
     double evaluate( parameterelement_type const& mu, int m = 0);
     double evaluateOffline( parameterelement_type const& mu, int m = 0);
 
-    int nbExpressions() const { return M_exprevals.size(); }
+    int nbExpressions() const { return M_M; }
     int dimension() const { return M_weights.size(); }
     int order() const { return M_order; }
     expressionevalbase_vectype const expressionEvaluators() const { return M_exprevals; }
@@ -121,6 +122,7 @@ private:
     int M_order;
     int M_maxOrder;
     double M_tolZero;
+    std::string M_sampleType;
 };
 
 template<typename RangeType>
@@ -141,7 +143,8 @@ EmpiricalQuadrature<RangeType>::EmpiricalQuadrature( range_type const& range,
     M_N(0),
     M_order(ioption(_prefix=M_prefix, _name="eq.order")),
     M_maxOrder(ioption(_prefix=M_prefix, _name="eq.max-order")),
-    M_tolZero(doption(_prefix=M_prefix, _name="eq.tolerance-zero"))
+    M_tolZero(doption(_prefix=M_prefix, _name="eq.tolerance-zero")),
+    M_sampleType(soption(_prefix=M_prefix, _name="eq.sampling-type"))
 {
 }
 
@@ -274,7 +277,8 @@ EmpiricalQuadrature<RangeType>::offline()
         return 0;
 
     M_trainset = M_Dmu->sampling();
-    M_trainset->randomize(M_J);
+    M_trainset->sample(M_J, M_sampleType );
+    M_J = M_trainset->nbElements();
 
     tic();
     auto const eltForInit = boost::unwrap_ref(*boost::get<1>(M_range));
@@ -381,7 +385,7 @@ EmpiricalQuadrature<RangeType>::solveLP( evaluation_type const& eval, local_resu
         Feel::cout << tc::red << glpk.check(e) << tc::reset << std::endl;
         throw FeelGlpkException(e);;
     }
-    toc("solve lop");
+    toc("solve lp");
 
     M_indexes.clear();
     for( int n = 1; n <= M_N; ++n)
