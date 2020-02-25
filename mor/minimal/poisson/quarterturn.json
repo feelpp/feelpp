@@ -1,0 +1,101 @@
+{
+    "Name": "nonlinear",
+    "ShortName": "nonlinear",
+    "Model": "nonlinear-crb",
+    "Parameters":
+    {
+        "sigma":
+        {
+            "value":55e+3,
+            "min":50e+3,
+            "max":60e+3
+        },
+        // "k":
+        // {
+        //     "value":0.38,
+        //     "min":0.36,
+        //     "max":0.4
+        // },
+        "alpha":
+        {
+            "value":3.6e-3,
+            "min":3.4e-3,
+            "max":3.8e-3
+        },
+        "L":
+        {
+            "value":2.47e-8,
+            "min":2.3e-8,
+            "max":2.7e-8
+        },
+        "current":
+        {
+            "value":0.025,
+            "min":0.015,
+            "max":0.05
+        },
+        "h":
+        {
+            "value":0.08,
+            "min":0.03,
+            "max":0.1
+        },
+        "Tw":
+        {
+            "value":283,
+            "min":270,
+            "max":300
+        }
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "physics":["electric","thermic"],
+            "misc":
+            {
+                "sigmaKey": "sigma",
+                "alphaKey": "alpha"
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "potential":
+        {
+            "Dirichlet":
+            {
+                "V0":
+                {
+                    "expr":"current:current",
+                    "material":"omega"
+                },
+                "V1":
+                {
+                    "expr":"0",
+                    "material":"omega"
+                }
+            }
+        },
+        "temperature":
+        {
+            "Robin":
+            {
+                "R":
+                {
+                    "expr1":"h:h",
+                    "expr2":"h*Tw:h:Tw"
+                }
+            }
+        }
+    },
+    "Outputs":
+    {
+        "average_temp":
+        {
+            "type":"averageTemp",
+            "range":"omega",
+            "topodim":3
+        }
+    }
+}
