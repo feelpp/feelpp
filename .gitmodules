@@ -31,3 +31,9 @@
 [submodule "feelpp/contrib/tabulate"]
 	path = feelpp/contrib/tabulate
 	url = https://github.com/feelpp/tabulate.git
+[submodule "feelpp/contrib/parmmg"]
+	path = feelpp/contrib/parmmg
+	url = https://github.com/feelpp/ParMmg
+[submodule "feelpp/contrib/mmg"]
+	path = feelpp/contrib/mmg
+	url = https://github.com/feelpp/mmg
