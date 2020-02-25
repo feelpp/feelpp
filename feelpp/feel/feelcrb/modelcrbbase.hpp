@@ -1688,13 +1688,8 @@ public :
     virtual std::vector< std::vector< element_ptrtype > >
     computeInitialGuessAffineDecomposition()
     {
+        throw std::logic_error("Your model is non linear so you MUST implement computeInitialGuessAffineDecomposition function");
         std::vector< std::vector<element_ptrtype> > q;
-        q.resize(1);
-        q[0].resize(1);
-        auto mesh = mesh_type::New();
-        auto Xh=space_type::New( mesh );
-        element_ptrtype elt ( new element_type ( Xh ) );
-        q[0][0] = elt;
         return q;
     }
 

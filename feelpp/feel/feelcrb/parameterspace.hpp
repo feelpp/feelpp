@@ -689,6 +689,8 @@ public:
                 if( all_procs_have_same_sampling )
                 {
                     boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                    for(auto& _mu : *this )
+                        _mu.setParameterSpace(M_space);
                 }
                 else
                 {
@@ -720,6 +722,8 @@ public:
             if( all_procs_have_same_sampling )
             {
                 boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                for(auto& _mu : *this )
+                    _mu.setParameterSpace(M_space);
             }
             else
             {
@@ -994,6 +998,8 @@ public:
                 if( all_procs_have_same_sampling )
                 {
                     boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                    for(auto& _mu : *this )
+                        _mu.setParameterSpace(M_space);
                 }
                 else
                 {
@@ -1023,6 +1029,8 @@ public:
             if( all_procs_have_same_sampling )
             {
                 boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                for(auto& _mu : *this )
+                    _mu.setParameterSpace(M_space);
             }
             else
             {
@@ -1077,6 +1085,8 @@ public:
             if( all_procs_have_same_sampling )
             {
                 boost::mpi::broadcast( M_space->worldComm() , /**this*/boost::serialization::base_object<super>( *this ) , M_space->worldComm().masterRank() );
+                for(auto& _mu : *this )
+                    _mu.setParameterSpace(M_space);
             }
             else
             {
