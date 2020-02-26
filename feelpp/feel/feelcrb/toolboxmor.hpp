@@ -142,4 +142,6 @@ private:
 
 } // namespace Feel
 
+#include "toolboxmor_impl.cpp"
+
 #endif
