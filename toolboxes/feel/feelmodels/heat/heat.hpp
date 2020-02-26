@@ -329,6 +329,10 @@ class Heat : public ModelNumerical,
             M_fieldVelocityConvection->on(_range=range, _expr=expr );
         }
 
+        void assembleLinear() { this->algebraicFactory()->assembleLinear(this->blockVectorSolution().vectorMonolithic()); }
+        vector_ptrtype rhs() { return this->algebraicFactory()->rhs(); }
+        sparse_matrix_ptrtype matrix() { return this->algebraicFactory()->matrix(); }
+
     private :
         void updateTimeStepCurrentResidual();
 
