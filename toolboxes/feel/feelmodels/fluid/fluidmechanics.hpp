@@ -955,6 +955,7 @@ public :
     //___________________________________________________________________________________//
     // boundary conditions + body forces
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     map_vector_field<nDim,1,2> const& bcDirichlet() const { return M_bcDirichlet; }
     map_vector_field<nDim,1,2>& bcDirichlet() { return M_bcDirichlet; }

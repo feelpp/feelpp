@@ -170,26 +170,34 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initMesh();
 
     // physical properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
 
     M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
                                            this->subPrefix(), this->repository() ) );
+    M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
+    {
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
+        M_heatModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
     M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
                                                    this->subPrefix(), this->repository() ) );
+    M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
+    {
         M_electricModel->setModelProperties( this->modelPropertiesPtr() );
+        M_electricModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_electricModel->setMesh( this->mesh() );
     M_electricModel->setMaterialsProperties( M_materialsProperties );
     M_electricModel->init( false );
@@ -229,6 +237,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
+    // update constant parameters into
+    this->updateParameterValues();
 
     // backend
     M_backendMonolithic = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -405,7 +415,23 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     return _ostr;
 }
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->heatModel()->startTimeStep();
+    this->updateTime( this->heatModel()->time() );
+    this->updateParameterValues();
+}
 
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->heatModel()->updateTimeStep();
+    this->updateTime( this->heatModel()->time() );
+    this->updateParameterValues();
+}
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -413,10 +439,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
-
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto symbolExpr = this->symbolsExpr();
     //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
@@ -443,8 +465,28 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    M_heatModel->updateParameterValues();
-    M_electricModel->updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+}
+
+THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+THERMOELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+    M_heatModel->setParameterValues( paramValues );
+    M_electricModel->setParameterValues( paramValues );
 }
 
 
@@ -454,8 +496,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("ThermoElectric","solve", "start");
     this->timerTool("Solve").start();
-
-    this->updateParameterValues();
 
     this->setStartBlockSpaceIndex( 0 );
 

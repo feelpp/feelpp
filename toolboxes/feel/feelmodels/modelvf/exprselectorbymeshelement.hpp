@@ -154,7 +154,7 @@ public :
     {
         struct TransformExprToTensor
         {
-            TransformExprToTensor( mapping_type const& mapping ) : M_mapping( mapping ) {}
+            explicit TransformExprToTensor( mapping_type const& mapping ) : M_mapping( mapping ) {}
 
             template <typename T>
             struct apply {

@@ -130,6 +130,7 @@ public :
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     auto allFields( std::string const& prefix = "" ) const
         {

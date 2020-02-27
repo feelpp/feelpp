@@ -16,7 +16,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralizedString( DataUpdateLin
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _buildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
 
     bool BuildNonCstPart = !_buildCstPart;

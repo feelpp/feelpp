@@ -166,10 +166,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initMesh();
 
     // physical properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
@@ -180,9 +180,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
                                                        this->subPrefix(), this->repository() );
 
-
+    M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
+    {
         M_heatModel->setModelProperties( this->modelPropertiesPtr() );
+        M_heatModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_x,%1%_U_y}:%1%_U_x:%1%_U_y":"{%1%_U_x,%1%_U_y,%1%_U_z}:%1%_U_x:%1%_U_y:%1%_U_z"  )%M_fluidModel->keyword() ).str();
@@ -191,8 +194,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
     M_heatModel->init( false );
 
+    M_fluidModel->setManageParameterValues( false );
     if ( !M_fluidModel->modelPropertiesPtr() )
+    {
         M_fluidModel->setModelProperties( this->modelPropertiesPtr() );
+        M_fluidModel->setManageParameterValuesOfModelProperties( false );
+    }
     M_fluidModel->setMesh( this->mesh() );
     M_fluidModel->init( false );
 
@@ -245,6 +252,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
+
+    // update constant parameters
+    this->updateParameterValues();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -405,6 +415,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::startTimeStep()
     this->heatModel()->startTimeStep();
     this->fluidModel()->startTimeStep();
     this->updateTime( this->fluidModel()->time() );
+    this->updateParameterValues();
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -415,6 +426,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->heatModel()->updateTimeStep();
     this->fluidModel()->updateTimeStep();
     this->updateTime( this->fluidModel()->time() );
+    this->updateParameterValues();
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -454,10 +466,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
     auto symbolExpr = this->symbolsExpr();
     M_heatModel->exportResults( time, symbolExpr );
     M_fluidModel->exportResults( time, symbolExpr );
@@ -482,10 +490,33 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    M_heatModel->updateParameterValues();
-    M_fluidModel->updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+
+    // M_heatModel->updateParameterValues();
+    // M_fluidModel->updateParameterValues();
 }
 
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+    M_heatModel->setParameterValues( paramValues );
+    M_fluidModel->setParameterValues( paramValues );
+    //M_fluidModel->updateParameterValues();
+}
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -525,8 +556,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
         }
         else
         {
-            this->updateParameterValues();
-
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 

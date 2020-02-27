@@ -127,10 +127,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initMesh();
 
     // physical properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
@@ -155,6 +155,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
+    // update constant parameters
+    this->updateParameterValues();
+
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
@@ -169,7 +172,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
-
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -191,6 +193,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initInitialConditions()
         std::vector<element_electricpotential_ptrtype> icElectricPotentialFields;
         CHECK( this->isStationary() ) << "TODO";
         icElectricPotentialFields = { this->fieldElectricPotentialPtr() };
+
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+
         this->updateInitialConditions( "electric-potential", M_rangeMeshElements, this->symbolsExpr(), icElectricPotentialFields );
     }
 }
@@ -410,18 +416,39 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
 #endif
+
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
+    if ( !this->manageParameterValues() )
+        return;
+
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
 
-    this->materialsProperties()->setParameterValues( paramValues );
+    this->setParameterValues( paramValues );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    this->log("Electric","setParameterValues", "start");
+
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
+
+    this->log("Electric","setParameterValues", "finish");
 }
 
 
@@ -431,8 +458,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("Electric","solve", "start");
     this->timerTool("Solve").start();
-
-    this->updateParameterValues();
 
     this->setStartBlockSpaceIndex( 0 );
 

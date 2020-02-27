@@ -206,6 +206,7 @@ class Heat : public ModelNumerical,
         void setDoExportResults( bool b ) { if (M_exporter) M_exporter->setDoExport( b ); }
 
         void updateParameterValues();
+        void setParameterValues( std::map<std::string,double> const& paramValues );
 
         //___________________________________________________________________________________//
         // fields and symbols expressions
@@ -372,11 +373,12 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
-
+#if 0
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
     this->modelProperties().postProcess().setParameterValues( paramValues );
-
+#endif
     auto fields = this->allFields();
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, fields, symbolsExpr );

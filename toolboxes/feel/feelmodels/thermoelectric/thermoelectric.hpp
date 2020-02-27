@@ -99,6 +99,7 @@ public :
     void exportResults( double time );
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //___________________________________________________________________________________//
 
@@ -125,8 +126,8 @@ public :
 
     std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
-    void startTimeStep() { this->heatModel()->startTimeStep(); }
-    void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
+    void startTimeStep();
+    void updateTimeStep();
 
     auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
 
