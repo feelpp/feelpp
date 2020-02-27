@@ -428,7 +428,7 @@ struct Tensor2Symm : public Tensor2SymmBase
  */
 template<typename T>
 struct is_symm
-    : mpl::bool_<std::is_base_of<Tensor2SymmBase,T>::value>
+    : mpl::bool_<std::is_base_of_v<Tensor2SymmBase,T>>
 {
 };
 
@@ -437,7 +437,20 @@ struct is_symm
  * orherwise
  */
 template<typename T>
-constexpr bool is_symm_v = std::is_base_of<Tensor2SymmBase,T>::value;
+constexpr bool is_symm_v = std::is_base_of_v<Tensor2SymmBase,T>;
+
+template<typename T>
+using is_scalar_t = mpl::bool_<std::is_base_of_v<ScalarBase,T>>;
+template<typename T>
+constexpr bool is_scalar_v = std::is_base_of_v<ScalarBase,T>;
+template<typename T>
+using is_vectorial_t = mpl::bool_<std::is_base_of_v<VectorialBase,T>>;
+template<typename T>
+constexpr bool is_vectorial_v = std::is_base_of_v<VectorialBase,T>;
+template<typename T>
+using is_tensor2_t = mpl::bool_<std::is_base_of_v<Tensor2Base,T>>;
+template<typename T>
+constexpr bool is_tensor2_v = std::is_base_of_v<Tensor2Base,T>;
 
 /**
  * Policy for rank 2 tensor polynomials or polynomial sets of
@@ -597,6 +610,8 @@ struct RankDown
             mpl::identity<Scalar<nDim> >,
             mpl::identity<_type> >::type::type type;
 };
+template<typename T>
+using rankdown_t = typename RankDown<T>::type;
 
 template<typename T>
 struct RankCurl

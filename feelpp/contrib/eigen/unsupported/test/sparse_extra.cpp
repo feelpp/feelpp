@@ -8,10 +8,26 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-// import basic and product tests for deprectaed DynamicSparseMatrix
+// import basic and product tests for deprecated DynamicSparseMatrix
+#if 0 // sparse_basic(DynamicSparseMatrix) does not compile at all -> disabled
+static long g_realloc_count = 0;
+#define EIGEN_SPARSE_COMPRESSED_STORAGE_REALLOCATE_PLUGIN g_realloc_count++;
+
+static long g_dense_op_sparse_count = 0;
+#define EIGEN_SPARSE_ASSIGNMENT_FROM_DENSE_OP_SPARSE_PLUGIN g_dense_op_sparse_count++;
+#define EIGEN_SPARSE_ASSIGNMENT_FROM_SPARSE_ADD_DENSE_PLUGIN g_dense_op_sparse_count+=10;
+#define EIGEN_SPARSE_ASSIGNMENT_FROM_SPARSE_SUB_DENSE_PLUGIN g_dense_op_sparse_count+=20;
+
+#define EIGEN_SPARSE_TEST_INCLUDED_FROM_SPARSE_EXTRA 1
+#endif
+
 #define EIGEN_NO_DEPRECATED_WARNING
-#include "sparse_basic.cpp"
 #include "sparse_product.cpp"
+
+#if 0 // sparse_basic(DynamicSparseMatrix) does not compile at all -> disabled
+#include "sparse_basic.cpp"
+#endif
+
 #include <Eigen/SparseExtra>
 
 template<typename SetterType,typename DenseType, typename Scalar, int Options>
@@ -142,7 +158,7 @@ void check_marketio()
   VERIFY_IS_EQUAL(DenseMatrix(m1),DenseMatrix(m2));
 }
 
-void test_sparse_extra()
+EIGEN_DECLARE_TEST(sparse_extra)
 {
   for(int i = 0; i < g_repeat; i++) {
     int s = Eigen::internal::random<int>(1,50);

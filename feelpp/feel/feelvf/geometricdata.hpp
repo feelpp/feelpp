@@ -193,7 +193,6 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
-        typedef value_type evaluate_type;                               \
                                                                         \
         VF_GD_NAME(O) ()                                                \
         {                                                               \
@@ -212,7 +211,6 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
         constexpr bool isPolynomial() const { return true; }            \
-        evaluate_type evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const { return 0; } \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
@@ -224,7 +222,6 @@ const size_type mctx = vm::MEASURE;
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \
-            typedef  value_type evaluate_type;                          \
             typedef VF_GD_RETURN(O)<gmc_type::NDim> return_value_type;  \
             typedef Shape<gmc_type::NDim, VF_GD_RETURN(O), false> shape; \
                                                                         \

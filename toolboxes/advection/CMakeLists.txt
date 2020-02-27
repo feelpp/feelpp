@@ -10,5 +10,6 @@ feelpp_add_application( advection_2d SRCS main_adv.cpp
   INSTALL
 )
 
-feelpp_add_testcase(ring PREFIX feelpp_advection CATEGORY advection)
-feelpp_add_testcase(square PREFIX feelpp_advection CATEGORY advection)
+foreach( _testcase IN ITEMS "ring" "square" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_advection CATEGORY toolboxes/advection)
+endforeach()

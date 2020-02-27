@@ -35,13 +35,18 @@ endif()
 feelpp_add_application( hdg_poisson
   SRCS mixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
+  INSTALL MAN hdg_poisson )
+
+feelpp_add_application( hdg_cvg_poisson
+  SRCS cvg_mixedpoisson.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
   INSTALL )
 
 feelpp_add_application( hdg_elasticity
   SRCS mixedelasticity_main.cpp
   INCLUDE_IN_ALL
   LINK_LIBRARIES feelpp_toolbox_hdg_elasticity_lib
-  INSTALL )
+  INSTALL MAN hdg_elasticity )
 
 feelpp_add_application( hdg_thermoelectric
   SRCS thermoelectric.hpp thermoelectric_main.cpp
@@ -49,14 +54,32 @@ feelpp_add_application( hdg_thermoelectric
   INSTALL
   )
 
+feelpp_add_application( hdg_cvg_thermoelectric
+  SRCS thermoelectric.hpp cvg_thermoelectric.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
+  INSTALL
+  )
+
+feelpp_add_application( hdg_poroelastic
+  SRCS poroelastic_main.cpp
+  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
+  INSTALL
+  )
+
+#feelpp_add_application(
+#  hdg_thermoelectricelasticity
+#  SRCS thermoelectric-elasticity.hpp thermoelectric-elasticity_main.cpp
+#  LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib feelpp_toolbox_hdg_elasticity_lib
+#  )
+
 if ( FEELPP_HAS_FMILIB )
 feelpp_add_application( hdg_coupledpoisson
   SRCS coupledmixedpoisson_main.cpp
   LINK_LIBRARIES feelpp_toolbox_hdg_poisson_lib
-  INSTALL )
+  INSTALL MAN hdg_coupledpoisson  )
 endif()
 
-feelpp_add_testcase(poisson PREFIX hdg CATEGORY HDG )
-feelpp_add_testcase(elasticity PREFIX hdg CATEGORY HDG )
-feelpp_add_testcase(thermoelectric PREFIX hdg CATEGORY HDG)
-feelpp_add_testcase(test3d0d_nonlinearR )
+
+foreach( _testcase IN ITEMS "poisson" "elasticity" "thermoelectric"  )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_hdg CATEGORY toolboxes/hdg)
+endforeach()

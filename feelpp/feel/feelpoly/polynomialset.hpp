@@ -401,13 +401,13 @@ public:
      * \param list_p list of indices of polynomials to extract
      * \return the polynomial set extracted
      */
-    PolynomialSet<Poly, PolySetType> polynomials( std::vector<uint16_type> const& list_p  ) const
+    PolynomialSet<Poly, PolySetType> polynomials( std::vector<int> const& list_p  ) const
     {
         size_type dim_p = this->polynomialDimension();
         size_type new_dim_p = nComponents*list_p.size();
         matrix_type coeff( nComponents*nComponents*list_p.size(), M_coeff.size2() );
         int j = 0;
-        BOOST_FOREACH( uint16_type i, list_p )
+        for( int i: list_p )
         {
             for ( int c = 0; c < nComponents; ++c )
             {
@@ -819,6 +819,7 @@ public:
             M_nodes( __pts ),
             M_mean(__ref_ele->nbDof()),
             M_phi(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
+            M_phi_eigen( __ref_ele->nbDof(), __pts.size2() ),
             M_grad(boost::extents[__ref_ele->nbDof()][__pts.size2()]),
             M_hessian(boost::extents[__ref_ele->nbDof()][__pts.size2()])
         {
@@ -828,6 +829,7 @@ public:
                 M_mean[i] = fm(i,0);
             }
             init( M_ref_ele, __pts, rank_t<rank>() );
+            initPhiEigen( M_ref_ele, __pts );
         }
 
         /** copy constructor (deep copy) */
@@ -843,6 +845,7 @@ public:
         {
             M_nodes = __pts;
             init( M_ref_ele, __pts, rank_t<rank>() );
+            initPhiEigen( M_ref_ele, __pts );
         }
 
         //! \return the finite element
@@ -925,6 +928,10 @@ public:
             {
                 return &M_phi;
             }
+        eigen_matrix_xx_col_type<value_type> const& phiEigen() const
+            {
+                return M_phi_eigen;
+            }        
         /**
          * Returns the value of the q-th node of the i-th basis
          * functions.
@@ -1019,6 +1026,23 @@ public:
             }
     private:
 
+        void initPhiEigen( reference_element_ptrtype const& M_ref_ele,
+                           matrix_node_t_type const& __pts )
+            {
+                if constexpr ( rank == 0  )
+                {
+                    if ( __pts.size2() != M_phi_eigen.cols() )
+                        M_phi_eigen.resize( M_ref_ele->nbDof(), __pts.size2() );
+
+                    for ( int q = 0; q < __pts.size2(); ++q )
+                    {
+                        for ( int i = 0; i < M_ref_ele->nbDof(); ++i )
+                        {
+                            M_phi_eigen( i, q ) = M_phi[i][q]( 0,0 );
+                        }
+                    }
+                }
+            }
         void
         init( reference_element_ptrtype const& M_ref_ele,
               matrix_node_t_type const& __pts,
@@ -1279,6 +1303,7 @@ public:
         matrix_node_t_type M_nodes;
         mean_value_type M_mean;
         functionvalue_type M_phi;
+        eigen_matrix_xx_col_type<value_type> M_phi_eigen;
         grad_type M_grad;
         hessian_type M_hessian;
     }; /** class PreCompute **/
@@ -1482,9 +1507,9 @@ public:
             if ( vm::has_normal_component_v<context> )
             {
                 M_normal_component.resize( boost::extents[ntdof][M_npoints] );
-                int n_components = (rank==2)?nComponents1:1;
-                Eigen::Tensor<value_type,2> i_n( n_components,1 );
-                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n.constant(0.) );
+                id_type i_n;
+                i_n.setConstant( 0. );
+                std::fill( M_normal_component.data(), M_normal_component.data()+M_normal_component.num_elements(), i_n );
             }
             if ( vm::has_trace_v<context> )
             {

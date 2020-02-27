@@ -17,13 +17,13 @@
 #endif
 
 #include "svd_fill.h"
+#include "solverbase.h"
 
 // Check that the matrix m is properly reconstructed and that the U and V factors are unitary
 // The SVD must have already been computed.
 template<typename SvdType, typename MatrixType>
 void svd_check_full(const MatrixType& m, const SvdType& svd)
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -101,7 +101,6 @@ void svd_least_square(const MatrixType& m, unsigned int computationOptions)
 {
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -168,7 +167,6 @@ template<typename MatrixType>
 void svd_min_norm(const MatrixType& m, unsigned int computationOptions)
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::Index Index;
   Index cols = m.cols();
 
   enum {
@@ -222,12 +220,33 @@ void svd_min_norm(const MatrixType& m, unsigned int computationOptions)
   VERIFY_IS_APPROX(x21, x3);
 }
 
+template<typename MatrixType, typename SolverType>
+void svd_test_solvers(const MatrixType& m, const SolverType& solver) {
+    Index rows, cols, cols2;
+
+    rows = m.rows();
+    cols = m.cols();
+
+    if(MatrixType::ColsAtCompileTime==Dynamic)
+    {
+      cols2 = internal::random<int>(2,EIGEN_TEST_MAX_SIZE);
+    }
+    else
+    {
+      cols2 = cols;
+    }
+    typedef Matrix<typename MatrixType::Scalar, MatrixType::ColsAtCompileTime, MatrixType::ColsAtCompileTime> CMatrixType;
+    check_solverbase<CMatrixType, MatrixType>(m, solver, rows, cols, cols2);
+}
+
 // Check full, compare_to_full, least_square, and min_norm for all possible compute-options
 template<typename SvdType, typename MatrixType>
 void svd_test_all_computation_options(const MatrixType& m, bool full_only)
 {
 //   if (QRPreconditioner == NoQRPreconditioner && m.rows() != m.cols())
 //     return;
+  STATIC_CHECK(( internal::is_same<typename SvdType::StorageIndex,int>::value ));
+
   SvdType fullSvd(m, ComputeFullU|ComputeFullV);
   CALL_SUBTEST(( svd_check_full(m, fullSvd) ));
   CALL_SUBTEST(( svd_least_square<SvdType>(m, ComputeFullU | ComputeFullV) ));
@@ -237,6 +256,9 @@ void svd_test_all_computation_options(const MatrixType& m, bool full_only)
   // remark #111: statement is unreachable
   #pragma warning disable 111
   #endif
+
+  svd_test_solvers(m, fullSvd);
+
   if(full_only)
     return;
 
@@ -261,7 +283,6 @@ void svd_test_all_computation_options(const MatrixType& m, bool full_only)
     CALL_SUBTEST(( svd_min_norm(m, ComputeThinU | ComputeThinV) ));
 
     // test reconstruction
-    typedef typename MatrixType::Index Index;
     Index diagSize = (std::min)(m.rows(), m.cols());
     SvdType svd(m, ComputeThinU | ComputeThinV);
     VERIFY_IS_APPROX(m, svd.matrixU().leftCols(diagSize) * svd.singularValues().asDiagonal() * svd.matrixV().leftCols(diagSize).adjoint());
@@ -437,7 +458,6 @@ template<typename SvdType,typename MatrixType>
 void svd_verify_assert(const MatrixType& m)
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -453,6 +473,8 @@ void svd_verify_assert(const MatrixType& m)
   VERIFY_RAISES_ASSERT(svd.singularValues())
   VERIFY_RAISES_ASSERT(svd.matrixV())
   VERIFY_RAISES_ASSERT(svd.solve(rhs))
+  VERIFY_RAISES_ASSERT(svd.transpose().solve(rhs))
+  VERIFY_RAISES_ASSERT(svd.adjoint().solve(rhs))
   MatrixType a = MatrixType::Zero(rows, cols);
   a.setZero();
   svd.compute(a, 0);

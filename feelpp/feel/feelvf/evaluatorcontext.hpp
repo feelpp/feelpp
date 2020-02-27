@@ -418,9 +418,9 @@ namespace detail
 template<typename Args>
 struct evaluate_context
 {
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
-    typedef typename clean_type<Args,tag::context>::type _context_type;
-    typedef typename clean2_type<Args, tag::context2,_context_type>::type _context2_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
+    typedef clean_type<Args,tag::context> _context_type;
+    typedef clean2_type<Args, tag::context2,_context_type> _context2_type;
     typedef details::EvaluatorContext<_context_type, Expr<_expr_type>, _context2_type > eval_t;
     typedef typename eval_t::element_type element_type;
 };

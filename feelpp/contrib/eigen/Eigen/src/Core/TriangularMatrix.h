@@ -65,6 +65,7 @@ template<typename Derived> class TriangularBase : public EigenBase<Derived>
     inline Index innerStride() const { return derived().innerStride(); }
     
     // dummy resize function
+    EIGEN_DEVICE_FUNC
     void resize(Index rows, Index cols)
     {
       EIGEN_UNUSED_VARIABLE(rows);
@@ -197,6 +198,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularView
     typedef typename internal::traits<TriangularView>::MatrixTypeNestedNonRef MatrixTypeNestedNonRef;
 
     typedef typename internal::remove_all<typename MatrixType::ConjugateReturnType>::type MatrixConjugateReturnType;
+    typedef TriangularView<typename internal::add_const<MatrixType>::type, _Mode> ConstTriangularView;
     
   public:
 
@@ -241,6 +243,18 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularView
     EIGEN_DEVICE_FUNC
     inline const ConjugateReturnType conjugate() const
     { return ConjugateReturnType(m_matrix.conjugate()); }
+
+    /** \returns an expression of the complex conjugate of \c *this if Cond==true,
+     *           returns \c *this otherwise.
+     */
+    template<bool Cond>
+    EIGEN_DEVICE_FUNC
+    inline typename internal::conditional<Cond,ConjugateReturnType,ConstTriangularView>::type
+    conjugateIf() const
+    {
+      typedef typename internal::conditional<Cond,ConjugateReturnType,ConstTriangularView>::type ReturnType;
+      return ReturnType(m_matrix.template conjugateIf<Cond>());
+    }
 
     typedef TriangularView<const typename MatrixType::AdjointReturnType,TransposeMode> AdjointReturnType;
     /** \sa MatrixBase::adjoint() const */
@@ -435,14 +449,14 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     TriangularViewType& operator=(const TriangularViewImpl& other)
     { return *this = other.derived().nestedExpression(); }
 
-    /** \deprecated */
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    /** \deprecated */
+    EIGEN_DEPRECATED EIGEN_DEVICE_FUNC
     void lazyAssign(const TriangularBase<OtherDerived>& other);
 
-    /** \deprecated */
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    /** \deprecated */
+    EIGEN_DEPRECATED EIGEN_DEVICE_FUNC
     void lazyAssign(const MatrixBase<OtherDerived>& other);
 #endif
 
@@ -470,7 +484,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
       * \a Side==OnTheLeft (the default), or the right-inverse-multiply  \a other * inverse(\c *this) if
       * \a Side==OnTheRight.
       *
-      * Note that the template parameter \c Side can be ommitted, in which case \c Side==OnTheLeft
+      * Note that the template parameter \c Side can be omitted, in which case \c Side==OnTheLeft
       *
       * The matrix \c *this must be triangular and invertible (i.e., all the coefficients of the
       * diagonal must be non zero). It works as a forward (resp. backward) substitution if \c *this
@@ -496,7 +510,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
       * \warning The parameter is only marked 'const' to make the C++ compiler accept a temporary expression here.
       * This function will const_cast it, so constness isn't honored here.
       *
-      * Note that the template parameter \c Side can be ommitted, in which case \c Side==OnTheLeft
+      * Note that the template parameter \c Side can be omitted, in which case \c Side==OnTheLeft
       *
       * See TriangularView:solve() for the details.
       */
@@ -522,10 +536,10 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
       call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
     }
 
-    /** \deprecated
-      * Shortcut for \code (*this).swap(other.triangularView<(*this)::Mode>()) \endcode */
+    /** Shortcut for \code (*this).swap(other.triangularView<(*this)::Mode>()) \endcode */
     template<typename OtherDerived>
-    EIGEN_DEVICE_FUNC
+    /** \deprecated */
+    EIGEN_DEPRECATED EIGEN_DEVICE_FUNC
     void swap(MatrixBase<OtherDerived> const & other)
     {
       EIGEN_STATIC_ASSERT_LVALUE(OtherDerived);
@@ -716,6 +730,7 @@ struct unary_evaluator<TriangularView<MatrixType,Mode>, IndexBased>
 {
   typedef TriangularView<MatrixType,Mode> XprType;
   typedef evaluator<typename internal::remove_all<MatrixType>::type> Base;
+  EIGEN_DEVICE_FUNC
   unary_evaluator(const XprType &xpr) : Base(xpr.nestedExpression()) {}
 };
 

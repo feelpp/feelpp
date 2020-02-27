@@ -218,13 +218,6 @@ if ( GMSH_FOUND )
   endif()
   # GMSH_EXTERNAL_LIBRARIES may contain the med / cgns libs if they have been found
   target_link_libraries( feelpp PUBLIC ${GMSH_LIBRARIES} ${GMSH_EXTERNAL_LIBRARIES})
-
-  if( ( NOT FEELPP_HAS_GMSH_API ) OR FEELPP_GMSH_API_MISSING_HEADERS )
-    target_include_directories( feelpp
-      PUBLIC
-      $<BUILD_INTERFACE:${FEELPP_BINARY_DIR}/feelpp/contrib/gmsh>
-      $<INSTALL_INTERFACE:include/feelpp/gmsh> )
-  endif()
 endif( GMSH_FOUND )
 
 # Paraview
