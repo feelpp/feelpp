@@ -13,6 +13,16 @@ makeToolboxMorOptions()
         ( "toolboxmor.test-deim", po::value<bool>()->default_value(false), "test deim decomposition" )
         ( "toolboxmor.sampling-size", po::value<int>()->default_value(0), "size of the sampling" )
         ;
+    options.add(crbOptions())
+        .add(crbSEROptions())
+        .add(eimOptions())
+        .add(podOptions())
+        .add(deimOptions("vec"))
+        .add(deimOptions("mat"))
+        .add(backend_options("backend-primal"))
+        .add(backend_options("backend-dual"))
+        .add(backend_options("backend-l2"))
+        .add(bdf_options("OpusHeatTB"));
     return options;
 }
 AboutData

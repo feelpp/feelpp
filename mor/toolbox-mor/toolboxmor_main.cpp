@@ -29,16 +29,6 @@ int main( int argc, char** argv)
     po::options_description opt("options");
     Environment env( _argc=argc, _argv=argv,
                      _desc=opt.add(makeToolboxMorOptions())
-                     .add(crbOptions())
-                     .add(crbSEROptions())
-                     .add(eimOptions())
-                     .add(podOptions())
-                     .add(deimOptions("vec"))
-                     .add(deimOptions("mat"))
-                     .add(backend_options("backend-primal"))
-                     .add(backend_options("backend-dual"))
-                     .add(backend_options("backend-l2"))
-                     .add(bdf_options("OpusHeatTB"))
                      .add(toolboxes_options("heat")) );
 
     using heat_tb_type = FeelModels::Heat<Simplex<2>, Lagrange<1, Scalar, Continuous, PointSetFekete> >;
