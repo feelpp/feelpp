@@ -23,7 +23,7 @@ class ModelPhysics : public ModelPDE<Dim>
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
     static const uint16_type nDim = Dim;
 public :
-    ModelPhysics( std::string const& physic );
+    explicit ModelPhysics( std::string const& physic );
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
 

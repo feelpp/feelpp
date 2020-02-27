@@ -84,10 +84,10 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     this->log("Heat","initMaterialProperties", "start" );
     this->timerTool("Constructor").start();
 
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
@@ -99,8 +99,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
         for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
             this->setVelocityConvectionExpr( matName,theExpr );
     }
-
-
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("Heat","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
@@ -183,6 +181,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // post-process
     this->initPostProcess();
+
+    // update constant parameters into
+    this->updateParameterValues();
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
@@ -490,17 +491,35 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
+    if ( !this->manageParameterValues() )
+        return;
+
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().parameters().setParameterValues( paramValues );
+    this->materialsProperties()->updateParameterValues( paramValues );
 
-    this->materialsProperties()->setParameterValues( paramValues );
+    this->setParameterValues( paramValues );
+}
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+void
+HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    this->log("Heat","setParameterValues", "start");
+
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
     for ( auto & [matName, velConvExpr] : M_exprVelocityConvection )
         velConvExpr.setParameterValues( paramValues );
+
+    this->log("Heat","setParameterValues", "finish");
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -549,8 +568,6 @@ HEAT_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("Heat","solve", "start");
     this->timerTool("Solve").start();
-
-    this->updateParameterValues();
 
     this->setStartBlockSpaceIndex( 0 );
 
@@ -636,15 +653,10 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( this->timeStepBdfTemperature()->time() );
     }
 
-    // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory && rebuildCstAssembly )
-    {
-        if (!this->rebuildCstPartInLinearSystem())
-        {
-            this->log("Heat","updateTimeStep", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE(this->blockVectorSolution().vectorMonolithic());
-        }
-    }
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
+
+    this->updateParameterValues();
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();

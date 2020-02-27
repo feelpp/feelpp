@@ -729,22 +729,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->modelProperties().parameters().updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
 
+    this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     //this->modelProperties().materials().setParameterValues( paramValues );
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
+
+    this->setParameterValues( paramValues );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        //this->materialsProperties()->setParameterValues( paramValues );
+    }
+
+    M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcPressure.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
     M_bcMovingBoundaryImposed.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
     this->updateFluidInletVelocity();
     M_bodySetBC.setParameterValues( paramValues );
+
 }
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -752,8 +771,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 {
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
-
-    this->updateParameterValues();
 
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
@@ -1322,6 +1339,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( M_bdfVelocity->time() );
     }
 
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
+
     if ( this->solverName() == "Oseen" )
         this->updateConvectionVelocityExtrapolated();
 
@@ -1329,21 +1349,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
-
-    // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory && rebuildCstAssembly )
-    {
-        if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
-            M_algebraicFactory->rebuildCstJacobian( this->blockVectorSolution().vectorMonolithic() );
-        }
-        else if (this->solverName() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE( this->blockVectorSolution().vectorMonolithic() );
-        }
-    }
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();

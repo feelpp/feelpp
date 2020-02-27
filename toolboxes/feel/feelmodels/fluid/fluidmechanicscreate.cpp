@@ -1034,6 +1034,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // bc body (call after meshALE->init() in case of restart)
     M_bodySetBC.updateForUse( *this );
 
+    // update constant parameters
+    this->updateParameterValues();
+
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
     this->initStartBlockIndexFieldsInMatrix();
@@ -1600,11 +1603,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    // update post-process expression
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
     this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress" /*, "trace.body.translational-velocity", "trace.body.angular-velocity"*/ } );

@@ -26,7 +26,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _buildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     this->log("SolidMechanics","updateLinearElasticityGeneralisedAlpha", "start" );
     this->timerTool("Solve").start();

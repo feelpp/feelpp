@@ -161,6 +161,11 @@ class ModelNumerical : public ModelAlgebraic
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
+        bool manageParameterValues() const { return M_manageParameterValues; }
+        void setManageParameterValues( bool b ) { M_manageParameterValues = b; }
+        bool manageParameterValuesOfModelProperties() const { return M_manageParameterValuesOfModelProperties; }
+        void setManageParameterValuesOfModelProperties( bool b ) { M_manageParameterValuesOfModelProperties = b; }
+
 
         GeomapStrategyType geomap() const { return M_geomap; }
 
@@ -295,6 +300,7 @@ class ModelNumerical : public ModelAlgebraic
         double M_timeCurrent;
 
         std::shared_ptr<ModelProperties> M_modelProps;
+        bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
 
         std::string M_meshFile, M_geoFile;

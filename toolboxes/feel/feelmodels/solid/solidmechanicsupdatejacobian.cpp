@@ -22,7 +22,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     const vector_ptrtype& X = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(BuildCstPart)?" (cst part)":" (non cst part)";
     this->log("SolidMechanics","updateJacobian", "start"+sc);

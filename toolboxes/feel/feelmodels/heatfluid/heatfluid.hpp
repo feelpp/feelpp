@@ -95,6 +95,7 @@ public :
     void exportResults( double time );
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //___________________________________________________________________________________//
 
