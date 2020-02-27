@@ -39,153 +39,89 @@ PoissonNL::assemble()
     auto bdConditions = M_modelProps->boundaryConditions2();
 
     /**********  left hand side *********/
-    int i = 0;
-    for( auto const& [key,mat] : M_therMaterials )
+    auto eim_k = this->scalarContinuousEim()[0];
+    for( int m = 0; m < eim_k->mMax(); ++m )
     {
-        auto eim_k = this->scalarContinuousEim()[i];
-        for( int m = 0; m < eim_k->mMax(); ++m )
-        {
-            auto a0 = form2(_test=Xh, _trial=Xh);
-            a0 = integrate( markedelements(M_mesh, mat.meshMarkers()),
-                            idv(eim_k->q(m))*inner(gradt(u2),grad(u2)) );
-            M_Aqm[i][m] = a0.matrixPtr();
-        }
-        ++i;
+        auto a0 = form2(_test=Xh, _trial=Xh);
+        a0 = integrate( elements(M_mesh),
+                        idv(eim_k->q(m))*inner(gradt(u2),grad(u2)) );
+        M_Aqm[0][m] = a0.matrixPtr();
     }
 
 
-    for( auto const& [key,mat] : M_elecMaterials )
+    auto eim_sigma = this->scalarContinuousEim()[1];
+    for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
-        auto eim_sigma = this->scalarContinuousEim()[i];
-        for( int m = 0; m < eim_sigma->mMax(); ++m )
-        {
-            auto a1 = form2( _test=Xh, _trial=Xh );
-            a1 = integrate( markedelements(M_mesh, mat.meshMarkers()),
-                            idv(eim_sigma->q(m))*inner(gradt(u1),grad(u1)) );
-            M_Aqm[i][m] = a1.matrixPtr();
-        }
-        ++i;
+        auto a1 = form2( _test=Xh, _trial=Xh );
+        a1 = integrate( elements(M_mesh),
+                        idv(eim_sigma->q(m))*inner(gradt(u1),grad(u1)) );
+        M_Aqm[1][m] = a1.matrixPtr();
     }
 
     // Dirichlet condition
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    for( auto const&[bdName, bd] : potentialDirichlet )
+    eim_sigma = this->scalarContinuousEim()[1];
+    for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
-        int index = this->indexOfElecMat(bd.material());
-        auto eim_sigma = this->scalarContinuousEim()[M_nbTherMat+index];
-        for( int m = 0; m < eim_sigma->mMax(); ++m )
-        {
-            auto a2 = form2( _test=Xh, _trial=Xh );
-            a2 += integrate( markedfaces(M_mesh,bd.markers()),
-                             idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
-                                                   -inner(gradt(u1)*N(),id(u1))
-                                                   -inner(grad(u1)*N(),idt(u1)) ) );
-            M_Aqm[i][m] = a2.matrixPtr();
-        }
-        ++i;
+        auto a2 = form2( _test=Xh, _trial=Xh );
+        a2 += integrate( markedfaces(M_mesh,"V0"),
+                         idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
+                                               -inner(gradt(u1)*N(),id(u1))
+                                               -inner(grad(u1)*N(),idt(u1)) ) );
+        M_Aqm[2][m] = a2.matrixPtr();
+    }
+    for( int m = 0; m < eim_sigma->mMax(); ++m )
+    {
+        auto a2 = form2( _test=Xh, _trial=Xh );
+        a2 += integrate( markedfaces(M_mesh,"V1"),
+                         idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
+                                               -inner(gradt(u1)*N(),id(u1))
+                                               -inner(grad(u1)*N(),idt(u1)) ) );
+        M_Aqm[3][m] = a2.matrixPtr();
     }
 
     // Robin
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto a3 = form2(_test=Xh, _trial=Xh);
-        a3 = integrate( markedfaces(M_mesh, bd.markers()), inner(idt(u2),id(u2)) );
-        M_Aqm[i][0] = a3.matrixPtr();
-        ++i;
-    }
+    auto a3 = form2(_test=Xh, _trial=Xh);
+    a3 = integrate( markedfaces(M_mesh, "R"), inner(idt(u2),id(u2)) );
+    M_Aqm[4][0] = a3.matrixPtr();
 
     /**********  right hand side *********/
-    i = 0;
     auto eim_grad = this->scalarDiscontinuousEim()[0];
-    for( auto const& [key,mat] : M_elecMaterials )
+    eim_sigma = this->scalarContinuousEim()[1];
+    for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
-        auto eim_sigma = this->scalarContinuousEim()[M_nbTherMat+i];
-        for( int m = 0; m < eim_sigma->mMax(); ++m )
+        for( int mm = 0; mm < eim_grad->mMax(); ++mm )
         {
-            for( int mm = 0; mm < eim_grad->mMax(); ++mm )
-            {
-                auto f0 = form1(_test=Xh);
-                f0 = integrate( markedelements(M_mesh, mat.meshMarkers()),
-                                idv(eim_grad->q(mm))*idv(eim_sigma->q(m))*id(u2) );
-                M_Fqm[0][i][mm+m*eim_grad->mMax()] = f0.vectorPtr();
-            }
+            auto f0 = form1(_test=Xh);
+            f0 = integrate( elements(M_mesh),
+                            idv(eim_grad->q(mm))*idv(eim_sigma->q(m))*id(u2) );
+            M_Fqm[0][0][mm+m*eim_grad->mMax()] = f0.vectorPtr();
         }
-        ++i;
     }
 
     // Dirichlet condition
-    for( auto const&[bdName, bd] : potentialDirichlet )
+    eim_sigma = this->scalarContinuousEim()[1];
+    for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
-        int index = this->indexOfElecMat(bd.material());
-        auto eim_sigma = this->scalarContinuousEim()[M_nbTherMat+index];
-        for( int m = 0; m < eim_sigma->mMax(); ++m )
-        {
-            auto f1 = form1(_test=Xh);
-            f1 = integrate( markedfaces(M_mesh, bd.markers()),
-                            idv(eim_sigma->q(m))*(gamma/hFace()*id(u1) - grad(u1)*N() ) );
-            M_Fqm[0][i][m] = f1.vectorPtr();
-        }
-        ++i;
+        auto f1 = form1(_test=Xh);
+        f1 = integrate( markedfaces(M_mesh, "V0"),
+                        idv(eim_sigma->q(m))*(gamma/hFace()*id(u1) - grad(u1)*N() ) );
+        M_Fqm[0][1][m] = f1.vectorPtr();
     }
 
     // Robin
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto f2 = form1(_test=Xh);
-        f2 = integrate( markedfaces(M_mesh,bd.markers()), id(u2) );
-        M_Fqm[0][i][0] = f2.vectorPtr();
-        ++i;
-    }
+    auto f2 = form1(_test=Xh);
+    f2 = integrate( markedfaces(M_mesh,"R"), id(u2) );
+    M_Fqm[0][2][0] = f2.vectorPtr();
 
-    /********* Outputs ********/
-    i = 1;
-    auto outputs = M_modelProps->outputs();
-    for( auto const& [key, output] : outputs )
-    {
-        if( output.type() == "averageTemp" )
-        {
-            auto dim = output.dim();
-            auto fAvgT = form1(_test=Xh);
-            if( dim == 3 )
-            {
-                auto range = markedelements(M_mesh, output.markers());
-                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
-                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
-            }
-            else if( dim == 2 )
-            {
-                auto range = markedfaces(M_mesh, output.markers() );
-                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
-                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
-            }
-            M_Fqm[i++][0][0] = fAvgT.vectorPtr();
-        }
-        else if( output.type() == "intensity" )
-        {
-            auto mat = output.getString("material");
-            auto eimSigma = this->scalarContinuousEim()[indexOfElecMat(mat)+M_nbTherMat];
-            for( int m = 0; m < eimSigma->mMax(); ++m )
-            {
-                auto fI = form1(_test=Xh);
-                fI = integrate( markedfaces(M_mesh,output.markers() ),
-                                -idv(eimSigma->q(m))*grad(u1)*N() );
-                M_Fqm[i][0][m] = fI.vectorPtr();
-            }
-            ++i;
-        }
-    }
 }
 
 PoissonNL::betaqm_type
 PoissonNL::computeBetaQm( parameter_type const& mu )
 {
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[M_nbTherMat+i]->beta(mu);
+    std::vector<vectorN_type> betaEimK(1);
+    betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu);
+    std::vector<vectorN_type> betaEimSigma(1);
+    betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu);
     auto betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
@@ -195,12 +131,10 @@ PoissonNL::computeBetaQm( parameter_type const& mu )
 PoissonNL::betaqm_type
 PoissonNL::computeBetaQm( element_type const& u, parameter_type const& mu)
 {
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, u);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[M_nbTherMat+i]->beta(mu, u);
+    std::vector<vectorN_type> betaEimK(1);
+    betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu, u);
+    std::vector<vectorN_type> betaEimSigma(1);
+    betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu, u);
     auto betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, u);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
@@ -210,12 +144,10 @@ PoissonNL::computeBetaQm( element_type const& u, parameter_type const& mu)
 PoissonNL::betaqm_type
 PoissonNL::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
 {
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, urb);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[M_nbTherMat+i]->beta(mu, urb);
+    std::vector<vectorN_type> betaEimK(1);
+    betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu, urb);
+    std::vector<vectorN_type> betaEimSigma(1);
+    betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu, urb);
     auto betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, urb);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
@@ -224,89 +156,24 @@ PoissonNL::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
 
 void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGrad, std::vector<vectorN_type> const& betaK, std::vector<vectorN_type> const& betaSigma )
 {
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
-
     /**********  left hand side *********/
-    int i = 0;
-    for( auto const& mat : M_therMaterials )
-    {
-        for( int m = 0; m < betaK[i].size(); ++m )
-            M_betaAqm[i][m] = betaK[i](m);
-        ++i;
-    }
-    for( auto const& mat : M_elecMaterials )
-    {
-        for( int m = 0; m < betaSigma[i-M_nbTherMat].size(); ++m )
-            M_betaAqm[i][m] = betaSigma[i-M_nbTherMat](m);
-        ++i;
-    }
-    for( auto const&[bdName, bd] : potentialDirichlet )
-    {
-        for( int m = 0; m < betaSigma[0].size(); ++m )
-            M_betaAqm[i][m] = betaSigma[0](m);
-        ++i;
-    }
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto e = bd.expr1();
-        for( auto const& param : M_modelProps->parameters() )
-            if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-
-        M_betaAqm[i][0] = e.evaluate()(0,0);
-        ++i;
-    }
+    for( int m = 0; m < betaK[0].size(); ++m )
+        M_betaAqm[0][m] = betaK[0](m);
+    for( int m = 0; m < betaSigma[0].size(); ++m )
+        M_betaAqm[1][m] = betaSigma[0](m);
+    for( int m = 0; m < betaSigma[0].size(); ++m )
+        M_betaAqm[2][m] = betaSigma[0](m);
+    for( int m = 0; m < betaSigma[0].size(); ++m )
+        M_betaAqm[3][m] = betaSigma[0](m);
+    M_betaAqm[4][0] = mu.parameterNamed("h");
 
     /**********  right hand side *********/
-    i = 0;
-    for( auto const& mat : M_elecMaterials )
-    {
-        for( int m = 0; m < betaSigma[i].size(); ++m )
-            for( int mm = 0; mm < betaGrad.size(); ++mm )
-                M_betaFqm[0][i][mm+m*betaGrad.size()] = betaGrad(mm)*betaSigma[i](m);
-        ++i;
-    }
-    for( auto const&[bdName, bd] : potentialDirichlet )
-    {
-        auto e = bd.expr();
-        for( auto const& param : M_modelProps->parameters() )
-            if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-
-        for( int m = 0; m < betaSigma[0].size(); ++m )
-            M_betaFqm[0][i][m] = e.evaluate()(0,0)*betaSigma[0](m);
-        ++i;
-    }
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto e = bd.expr2();
-        for( auto const& param : M_modelProps->parameters() )
-            if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-
-        M_betaFqm[0][i][0] = e.evaluate()(0,0);
-        ++i;
-    }
-
-    /**********  outputs *********/
-    i = 1;
-    auto outputs = M_modelProps->outputs();
-    for( auto const& [key, output] : outputs )
-    {
-        if( output.type() == "averageTemp" )
-        {
-            M_betaFqm[i][0][0] = 1;
-        }
-        else if( output.type() == "intensity" )
-        {
-            int index = indexOfElecMat(output.getString("material"));
-            for( int m = 0; m < betaSigma[index].size(); ++m )
-                M_betaFqm[i][0][m] = betaSigma[index](m);
-        }
-        ++i;
-    }
+    for( int m = 0; m < betaSigma[0].size(); ++m )
+        for( int mm = 0; mm < betaGrad.size(); ++mm )
+            M_betaFqm[0][0][mm+m*betaGrad.size()] = betaGrad(mm)*betaSigma[0](m);
+    for( int m = 0; m < betaSigma[0].size(); ++m )
+        M_betaFqm[0][1][m] = mu.parameterNamed("current")*betaSigma[0](m);
+    M_betaFqm[0][2][0] = mu.parameterNamed("h")*mu.parameterNamed("Tw");
 }
 
 
@@ -332,86 +199,46 @@ PoissonNL::computeLinearDecompositionA()
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
     auto gamma = doption("poisson.gamma");
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
     auto aqm = std::vector<std::vector<sparse_matrix_ptrtype> >(Qa(), std::vector<sparse_matrix_ptrtype>(1));
 
-    int i = 0;
-    for( auto const& mat : M_therMaterials )
-    {
-        auto a0 = form2(_test=Xh, _trial=Xh);
-        a0 = integrate( markedelements(M_mesh, mat.second.meshMarkers()),
-                        inner(gradt(u2),grad(u2)) );
-        aqm[i][0] = a0.matrixPtr();
-        ++i;
-    }
-    for( auto const& mat : M_elecMaterials )
-    {
-        auto a1 = form2(_test=Xh, _trial=Xh);
-        a1 = integrate( markedelements(M_mesh, mat.second.meshMarkers()),
-                        inner(gradt(u1),grad(u1)) );
-        aqm[i][0] = a1.matrixPtr();
-        ++i;
-    }
-    for( auto const&[bdName, bd] : potentialDirichlet )
-    {
-        auto a2 = form2(_test=Xh, _trial=Xh);
-        a2 += integrate( markedfaces(M_mesh, bd.markers()),
-                         gamma/hFace()*inner(idt(u1),id(u1))
-                         -inner(gradt(u1)*N(),id(u1))
-                         -inner(grad(u1)*N(),idt(u1)) );
-        aqm[i][0] = a2.matrixPtr();
-        ++i;
-    }
+    auto a0 = form2(_test=Xh, _trial=Xh);
+    a0 = integrate( elements(M_mesh),
+                    inner(gradt(u2),grad(u2)) );
+    aqm[0][0] = a0.matrixPtr();
+    auto a1 = form2(_test=Xh, _trial=Xh);
+    a1 = integrate( elements(M_mesh),
+                    inner(gradt(u1),grad(u1)) );
+    aqm[1][0] = a1.matrixPtr();
+    auto a2 = form2(_test=Xh, _trial=Xh);
+    a2 = integrate( markedfaces(M_mesh, "V0"),
+                    gamma/hFace()*inner(idt(u1),id(u1))
+                    -inner(gradt(u1)*N(),id(u1))
+                    -inner(grad(u1)*N(),idt(u1)) );
+    aqm[2][0] = a2.matrixPtr();
+    auto a22 = form2(_test=Xh, _trial=Xh);
+    a22 = integrate( markedfaces(M_mesh, "V1"),
+                     gamma/hFace()*inner(idt(u1),id(u1))
+                     -inner(gradt(u1)*N(),id(u1))
+                     -inner(grad(u1)*N(),idt(u1)) );
+    aqm[3][0] = a22.matrixPtr();
 
-
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto a3 = form2(_test=Xh, _trial=Xh);
-        a3 = integrate( markedfaces(M_mesh, bd.markers()), inner(idt(u2),id(u2)) );
-        aqm[i][0] = a3.matrixPtr();
-        i++;
-    }
+    auto a3 = form2(_test=Xh, _trial=Xh);
+    a3 = integrate( markedfaces(M_mesh, "R"), inner(idt(u2),id(u2)) );
+    aqm[4][0] = a3.matrixPtr();
     return aqm;
 }
 
 PoissonNL::beta_vector_type
 PoissonNL::computeBetaLinearDecompositionA( parameter_type const& mu, double time )
 {
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
-
     beta_vector_type beta(Qa(), std::vector<double>(1));
 
-    int i = 0;
-    for( auto const& [key,mat] : M_therMaterials )
-    {
-        beta[i][0] = mu.parameterNamed(mat.getString("misc.sigmaKey"))*mu.parameterNamed("L")*293;
-        ++i;
-    }
-    for( auto const& [key,mat] : M_elecMaterials )
-    {
-        beta[i][0] = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-        ++i;
-    }
-    for( auto const&[bdName, bd] : potentialDirichlet )
-    {
-        auto mat = M_elecMaterials[bd.material()];
-        beta[i][0] = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-        ++i;
-    }
-    for( auto const&[bdName, bd] : temperatureRobin )
-    {
-        auto e = bd.expr1();
-        for( auto const& param : M_modelProps->parameters() )
-            if( e.expression().hasSymbol(param.first) )
-                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-        beta[i][0] = e.evaluate()(0,0);
-        ++i;
-    }
+    beta[0][0] = mu.parameterNamed("sigma")*mu.parameterNamed("L")*293;
+    beta[1][0] = mu.parameterNamed("sigma");
+    beta[2][0] = mu.parameterNamed("sigma");
+    beta[3][0] = mu.parameterNamed("sigma");
+    beta[4][0] = mu.parameterNamed("h");
     return beta;
 }
 

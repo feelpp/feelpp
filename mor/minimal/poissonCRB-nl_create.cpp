@@ -59,84 +59,53 @@ PoissonNL::PoissonNL() : super_type("poissonmodel-nl_crb") {}
 
 int PoissonNL::Qa()
 {
-    return M_nbTherMat + M_nbElecMat + M_nbPotDir + M_nbTempRobin;
+    return 5;
 }
 
 int PoissonNL::mMaxA(int q)
 {
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    // correspondence between boundary conditions and eim
-    std::vector<int> indexOfPotDirMat;
-    for( auto const&[bdName, bd] : potentialDirichlet )
-        indexOfPotDirMat.push_back(indexOfElecMat(bd.material()));
-
-    if( q < M_nbTherMat )
-        return this->scalarContinuousEim()[q]->mMax();
-    if( q < M_nbTherMat + M_nbElecMat )
-        return this->scalarContinuousEim()[q]->mMax();
-    if( q < M_nbTherMat + M_nbElecMat + M_nbPotDir )
-        return this->scalarContinuousEim()[indexOfPotDirMat[q-(M_nbTherMat+M_nbElecMat)]+M_nbTherMat]->mMax();
-    if( q < M_nbTherMat + M_nbElecMat + M_nbPotDir + M_nbTempRobin )
+    if( q == 0 )
+        return this->scalarContinuousEim()[0]->mMax();
+    else if( q == 1 )
+        return this->scalarContinuousEim()[1]->mMax();
+    else if( q == 2 )
+        return this->scalarContinuousEim()[1]->mMax();
+    else if( q == 3 )
+        return this->scalarContinuousEim()[1]->mMax();
+    else if( q == 4 )
         return 1;
-    return 0;
+    else
+        return 0;
 }
 
 int PoissonNL::Nl()
 {
-    auto outputs = M_modelProps->outputs();
-    return 1 + outputs.size();
+    return 1;
 }
 
 int PoissonNL::Ql( int l)
 {
     if( l == 0 )
-        return M_nbElecMat + M_nbPotDir + M_nbTempRobin;
-    if( l < Nl() )
-    {
-        auto outputs = M_modelProps->outputs();
-        auto output = std::next(outputs.begin(), l-1)->second;
-        if( output.type() == "intensity" )
-            return QIntensity( output );
-        else if( output.type() == "averageTemp")
-            return QAverageTemp( output );
-        else
-            return 0;
-    }
-    return 0;
+        return 3;
+    else
+        return 0;
 }
 
 int PoissonNL::mMaxF(int l, int q)
 {
     if( l == 0 )
     {
-        auto bdConditions = M_modelProps->boundaryConditions2();
-        auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-        // correspondence between boundary conditions and eim
-        std::vector<int> indexOfPotDirMat;
-        for( auto const&[bdName, bd] : potentialDirichlet )
-            indexOfPotDirMat.push_back(indexOfElecMat(bd.material()));
-
-        if( q < M_nbElecMat )
-            return this->scalarContinuousEim()[q+M_nbTherMat]->mMax()*this->scalarDiscontinuousEim()[0]->mMax();
-        if( q < M_nbElecMat + M_nbPotDir )
-            return this->scalarContinuousEim()[indexOfPotDirMat[q-M_nbElecMat]+M_nbTherMat]->mMax();
-        if( q < M_nbElecMat + M_nbPotDir + M_nbTempRobin )
+        if( q == 0 )
+            return this->scalarContinuousEim()[1]->mMax()*this->scalarDiscontinuousEim()[0]->mMax();
+        else if( q == 1 )
+            return this->scalarContinuousEim()[1]->mMax();
+        else if( q == 2 )
             return 1;
-        return 0;
-    }
-    if( l < Nl() )
-    {
-        auto outputs = M_modelProps->outputs();
-        auto output = std::next(outputs.begin(), l-1)->second;
-        if( output.type() == "intensity" )
-            return mMaxIntensity(q, output);
-        else if( output.type() == "averageTemp")
-            return mMaxAverageTemp(q, output);
         else
             return 0;
     }
-    return 0;
+    else
+        return 0;
 }
 
 int PoissonNL::QIntensity( ModelOutput const& out ) const
@@ -207,11 +176,12 @@ int PoissonNL::indexOfTherMat(std::string const& mat ) const
 PoissonNL::functionspace_type::mesh_support_vector_type
 PoissonNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 {
-    auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
-    auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("thermic"));
-    auto suppElec = std::make_shared<MeshSupport<mesh_type>>(mesh,elecDomain);
-    auto suppTher = std::make_shared<MeshSupport<mesh_type>>(mesh,therDomain);
-    return fusion::make_vector(suppElec,suppTher);
+    return typename functionspace_type::mesh_support_vector_type();
+    // auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
+    // auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("thermic"));
+    // auto suppElec = std::make_shared<MeshSupport<mesh_type>>(mesh,elecDomain);
+    // auto suppTher = std::make_shared<MeshSupport<mesh_type>>(mesh,therDomain);
+    // return fusion::make_vector(suppElec,suppTher);
 }
 
 void PoissonNL::initModel()
@@ -295,50 +265,45 @@ void PoissonNL::initModel()
 
     // eim
     auto T0 = cst(293.0);
-    for( auto const& [key,mat] : M_therMaterials )
-    {
-        auto name = "eim_k_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto L = cst_ref(M_mu.parameterNamed("L"));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto k = sigma*L*_e1;
-        auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
-        // auto Eh = eim_space_type::New( _mesh=M_mesh );
+    auto name = "eim_k";
+    auto sigma0 = cst_ref(M_mu.parameterNamed("sigma"));
+    auto alpha = cst_ref(M_mu.parameterNamed("alpha"));
+    auto L = cst_ref(M_mu.parameterNamed("L"));
+    auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+    auto k = sigma*L*_e1;
+    // auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
+    auto Eh = eim_space_type::New( _mesh=M_mesh );
 
-        auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+    auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+                      _element=M_u.template element<1>(),
+                      _parameter=M_mu,
+                      _expr=k,
+                      _space=Eh,
+                      _name=name,
+                      _sampling=Pset );
+    this->addEim( eim_k );
+    Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
+
+    name = "eim_sigma";
+    // auto sigma0 = cst_ref(M_mu.parameterNamed("sigma"));
+    // auto alpha = cst_ref(M_mu.parameterNamed("alpha"));
+    // auto L = cst_ref(M_mu.parameterNamed("L"));
+    // auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+    // auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
+    // auto Eh = eim_space_type::New( _mesh=M_mesh );
+    auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
                           _element=M_u.template element<1>(),
                           _parameter=M_mu,
-                          _expr=k,
+                          _expr=sigma,
                           _space=Eh,
                           _name=name,
                           _sampling=Pset );
-        this->addEim( eim_k );
-        Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
-    }
-
-    for( auto const& [key,mat] : M_elecMaterials )
-    {
-        auto name = "eim_sigma_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto L = cst_ref(M_mu.parameterNamed("L"));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
-        // auto Eh = eim_space_type::New( _mesh=M_mesh );
-        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
-                              _element=M_u.template element<1>(),
-                              _parameter=M_mu,
-                              _expr=sigma,
-                              _space=Eh,
-                              _name=name,
-                              _sampling=Pset );
-        this->addEim( eim_sigma );
-        Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
-    }
+    this->addEim( eim_sigma );
+    Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
 
     auto gradgrad = _e2v*trans(_e2v);
-    auto Jh = eimd_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, M_materials.markersWithPhysic("electric")) );
+    // auto Jh = eimd_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, M_materials.markersWithPhysic("electric")) );
+    auto Jh = eimd_space_type::New( _mesh=M_mesh );
     auto eim_grad = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
                          _element=M_u.template element<0>(),
                          _parameter=M_mu,
@@ -377,49 +342,44 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
     this->scalarContinuousEim().clear();
     this->scalarDiscontinuousEim().clear();
     auto T0 = cst(293.0);
-    for( auto const& [key,mat] : M_therMaterials )
-    {
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto L = cst_ref(M_mu.parameterNamed("L"));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto k = sigma*L*_e1;
-        eim_space_ptrtype Eh;
-        auto name = "eim_k_"+key;
-        auto const& ptreeEimK = ptreeEim.get_child( name );
-        std::string dbNameEimK = ptreeEimK.template get<std::string>( "database-filename" );
-        auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+    auto sigma0 = cst_ref(M_mu.parameterNamed("sigma"));
+    auto alpha = cst_ref(M_mu.parameterNamed("alpha"));
+    auto L = cst_ref(M_mu.parameterNamed("L"));
+    auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+    auto k = sigma*L*_e1;
+    eim_space_ptrtype Eh;
+    auto name = "eim_k";
+    auto const& ptreeEimK = ptreeEim.get_child( name );
+    std::string dbNameEimK = ptreeEimK.template get<std::string>( "database-filename" );
+    auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+                      _element=M_u.template element<1>(),
+                      _parameter=M_mu,
+                      _expr=k,
+                      _space=Eh,
+                      _name=name,
+                      _filename=dbNameEimK,
+                      _directory=dbDir );
+    this->addEim( eim_k );
+    Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
+
+    name = "eim_sigma";
+    // eim_space_ptrtype Eh;
+    // auto sigma0 = cst_ref(M_mu.parameterNamed("sigma"));
+    // auto alpha = cst_ref(M_mu.parameterNamed("alpha"));
+    // auto L = cst_ref(M_mu.parameterNamed("L"));
+    // auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+    auto const& ptreeEimSigma = ptreeEim.get_child( name );
+    std::string dbNameEimSigma = ptreeEimSigma.template get<std::string>( "database-filename" );
+    auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
                           _element=M_u.template element<1>(),
                           _parameter=M_mu,
-                          _expr=k,
+                          _expr=sigma,
                           _space=Eh,
                           _name=name,
-                          _filename=dbNameEimK,
+                          _filename=dbNameEimSigma,
                           _directory=dbDir );
-        this->addEim( eim_k );
-        Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
-    }
-    for( auto const& [key,mat] : M_elecMaterials )
-    {
-        eim_space_ptrtype Eh;
-        auto name = "eim_sigma_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto L = cst_ref(M_mu.parameterNamed("L"));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto const& ptreeEimSigma = ptreeEim.get_child( name );
-        std::string dbNameEimSigma = ptreeEimSigma.template get<std::string>( "database-filename" );
-        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
-                              _element=M_u.template element<1>(),
-                              _parameter=M_mu,
-                              _expr=sigma,
-                              _space=Eh,
-                              _name=name,
-                              _filename=dbNameEimSigma,
-                              _directory=dbDir );
-        this->addEim( eim_sigma );
-        Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
-    }
+    this->addEim( eim_sigma );
+    Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
 
     auto const& ptreeEimGrad = ptreeEim.get_child( "eim_grad" );
     std::string dbNameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
