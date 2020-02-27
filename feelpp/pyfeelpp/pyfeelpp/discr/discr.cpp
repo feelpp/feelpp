@@ -39,10 +39,10 @@ using namespace Feel;
 //PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
 
 template<typename MeshT, int Order = 1>
-class MyElement: public Pch_type<MeshT,Order>::element_type
+class MyElement: public Pch_type<MeshT,Order,double,PointSetFekete>::element_type
 {
 public:
-    using base = typename Pch_type<MeshT,Order>::element_type;
+    using base = typename Pch_type<MeshT,Order,double,PointSetFekete>::element_type;
     MyElement() : base() {}
 };
 template<typename SpaceT>
@@ -156,37 +156,37 @@ PYBIND11_MODULE(_discr, m )
     py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
     
-    defDiscr<Pch_type<Mesh<Simplex<1>>,1>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1>>,2>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1>>,3>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,1,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,2,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1>>,3,double,PointSetFekete>>( m );
     
-    defDiscr<Pch_type<Mesh<Simplex<2>>,1>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2>>,2>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2>>,3>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2>>,1,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2>>,2,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2>>,3,double,PointSetFekete>>( m );
 
-    defDiscr<Pch_type<Mesh<Simplex<3>>,1>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3>>,2>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3>>,3>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3>>,1,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3>>,2,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3>>,3,double,PointSetFekete>>( m );
     
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,0>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,1>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,2>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,3>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,0,PointSetFekete>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,1,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,2,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2>>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,1>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,2>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,3>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,1,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,2,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2>>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,0>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,1>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,2>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,3>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,0,PointSetFekete>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,1,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,2,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3>>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,1>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,2>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,3>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,1,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,2,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3>>,3,PointSetFekete>>( m );
     //defDiscr<Mesh<Simplex<2>>,2>( m );
 }
 

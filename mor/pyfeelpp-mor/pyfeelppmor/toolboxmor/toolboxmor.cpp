@@ -18,6 +18,7 @@
 //!
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/functional.h>
 
 #include <feel/feelcrb/toolboxmor.hpp>
 
@@ -40,12 +41,13 @@ void defToolboxMor(py::module &m)
         .def("postInitModel", &mor_t::postInitModel, "finalize the init of the model")
         .def("setInitialized", &mor_t::setInitialized, "set the model to initialized", py::arg("b") )
         .def("functionSpace", &mor_t::functionSpace, "returns the function space" )
-        .def("setFunctionSpaces",&mor_t::setFunctionSpaces, "set the function spaces",py::arg("Vh"))
+        .def("setFunctionSpaces",&mor_t::setFunctionSpaces, "set the function spaces", py::arg("Vh"))
         .def("setAssembleDEIM", &mor_t::setAssembleDEIM, "set the function to assemble DEIM", py::arg("fct") )
         .def("setAssembleMDEIM", &mor_t::setAssembleMDEIM, "set the function to assemble MDEIM", py::arg("fct"))
         .def("setOnlineAssembleDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble DEIM for the online model", py::arg("fct"))
         .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
         ;
+
 }
 
 
@@ -56,5 +58,6 @@ PYBIND11_MODULE(_toolboxmor, m )
     defToolboxMor<2>(m);
     defToolboxMor<3>(m);
 
+    m.def("makeToolboxMorOptions", &makeToolboxMorOptions, "get options for the model" );
 }
 

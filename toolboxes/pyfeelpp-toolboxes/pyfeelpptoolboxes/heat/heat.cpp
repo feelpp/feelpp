@@ -34,12 +34,13 @@ void defSM(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = Heat< Simplex<nDim,1>,
+    using toolbox_t = Heat< Simplex<nDim>,
                            Lagrange<Order, Scalar,Continuous,PointSetFekete> >;
     using element_temperature_t = typename toolbox_t::element_temperature_type;
     using element_temperature_ptr_t = typename toolbox_t::element_temperature_ptrtype;
     using element_velocityconvection_t = typename toolbox_t::element_velocityconvection_type;
     using element_velocityconvection_ptr_t = typename toolbox_t::element_velocityconvection_ptrtype;
+    using space_temperature_ptr_t = typename toolbox_t::space_temperature_ptrtype;
 
     std::string pyclass_name = std::string("Heat_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
