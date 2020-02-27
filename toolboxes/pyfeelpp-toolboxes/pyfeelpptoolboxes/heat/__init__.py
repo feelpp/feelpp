@@ -23,4 +23,4 @@ def heat( dim=2, order=1, buildMesh=True, worldComm=None ):
         print(key)
     if key not in _heats:
         raise RuntimeError('Heat solver '+key+' not existing')
-    return _heats[key]( "heat", buildMesh, worldComm )
+    return _heats[key]( "heat", "heat", worldComm )
