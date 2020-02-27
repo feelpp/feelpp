@@ -18,6 +18,7 @@ if test "$tag_compiler" != "${tag_compiler%gcc*}"; then
 else
     tag=$(tag_from_target $TARGET $BRANCHTAG $FEELPP_VERSION)
 fi
+tagos=$(tag_from_os $TARGET $BRANCHTAG $FEELPP_VERSION)
 if test "$BUILDKITE_PIPELINE_SLUG" = "feelpp-debug"; then
     tag=${tag}-debug
 fi
@@ -30,7 +31,7 @@ echo "--- Building ${image}:${tag}"
 
 
 if [ "${component}" = "feelpp" ] ; then
-    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:latest" > docker/${image}/dockerfile.tmp
+    dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp-env:${tagos}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "toolboxes" -o "${component}" = "testsuite" ] ; then
     dockerfile_from "docker/${image}/Dockerfile.template" "feelpp/feelpp:${tag}" > docker/${image}/dockerfile.tmp
 elif [ "${component}" = "mor" ] ; then
@@ -42,7 +43,7 @@ fi
 if [ "${component}" = "feelpp" ] ; then
     CTEST_FLAGS="-R feelpp_qs_ -T test --no-compress-output"
 elif [ "${component}" = "toolboxes" ] ; then
-    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output"
+    CTEST_FLAGS="-R feelpp_toolbox_ -T test --no-compress-output -VV"
 elif [ "${component}" = "testsuite" ] ; then
     CTEST_FLAGS="-R feelpp_test_ -T test --no-compress-output"
 else

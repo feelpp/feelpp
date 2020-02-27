@@ -32,10 +32,9 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   feelpp_toolbox_fluid_lib_2dP1P1G1
   feelpp_toolbox_fluid_lib_3dP1P1G1
   INSTALL TESTS
+  MAN fluid
 )
 
-feelpp_add_testcase(lid-driven-cavity CATEGORY CFD)
-feelpp_add_testcase(TurekHron CATEGORY CFD)
-feelpp_add_testcase(TurekHronExt3d CATEGORY CFD)
-feelpp_add_testcase(backwardfacingstep CATEGORY CFD)
-feelpp_add_testcase(movingboundary CATEGORY CFD)
+foreach( _testcase IN ITEMS "lid-driven-cavity" "TurekHron" "TurekHronExt3d" "backwardfacingstep" "movingboundary" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
+endforeach()

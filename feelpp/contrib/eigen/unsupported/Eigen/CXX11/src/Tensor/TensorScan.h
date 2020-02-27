@@ -86,21 +86,29 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
 
   typedef TensorScanOp<Op, ArgType> XprType;
   typedef typename XprType::Index Index;
+  typedef const ArgType ChildType;
   static const int NumDims = internal::array_size<typename TensorEvaluator<ArgType, Device>::Dimensions>::value;
   typedef DSizes<Index, NumDims> Dimensions;
   typedef typename internal::remove_const<typename XprType::Scalar>::type Scalar;
   typedef typename XprType::CoeffReturnType CoeffReturnType;
   typedef typename PacketType<CoeffReturnType, Device>::type PacketReturnType;
   typedef TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> Self;
+  typedef StorageMemory<Scalar, Device> Storage;
+  typedef typename Storage::Type EvaluatorPointerType;
 
   enum {
     IsAligned = false,
-    PacketAccess = (internal::unpacket_traits<PacketReturnType>::size > 1),
+    PacketAccess = (PacketType<CoeffReturnType, Device>::size > 1),
     BlockAccess = false,
+    PreferBlockAccess = false,
     Layout = TensorEvaluator<ArgType, Device>::Layout,
     CoordAccess = false,
     RawAccess = true
   };
+
+  //===- Tensor block evaluation strategy (see TensorBlock.h) -------------===//
+  typedef internal::TensorBlockNotImplemented TensorBlock;
+  //===--------------------------------------------------------------------===//
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE TensorEvaluator(const XprType& op,
                                                         const Device& device)
@@ -109,7 +117,7 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
         m_exclusive(op.exclusive()),
         m_accumulator(op.accumulator()),
         m_size(m_impl.dimensions()[op.axis()]),
-        m_stride(1),
+        m_stride(1), m_consume_dim(op.axis()),
         m_output(NULL) {
 
     // Accumulating a scalar isn't supported.
@@ -123,7 +131,11 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
         m_stride = m_stride * dims[i];
       }
     } else {
-      for (int i = NumDims - 1; i > op.axis(); --i) {
+      // dims can only be indexed through unsigned integers,
+      // so let's use an unsigned type to let the compiler knows.
+      // This prevents stupid warnings: ""'*((void*)(& evaluator)+64)[18446744073709551615]' may be used uninitialized in this function"
+      unsigned int axis = internal::convert_index<unsigned int>(op.axis());
+      for (unsigned int i = NumDims - 1; i > axis; --i) {
         m_stride = m_stride * dims[i];
       }
     }
@@ -135,6 +147,10 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Index& stride() const {
     return m_stride;
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Index& consume_dim() const {
+    return m_consume_dim;
   }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Index& size() const {
@@ -157,7 +173,7 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
     return m_device;
   }
 
-  EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(Scalar* data) {
+  EIGEN_STRONG_INLINE bool evalSubExprsIfNeeded(EvaluatorPointerType data) {
     m_impl.evalSubExprsIfNeeded(NULL);
     ScanLauncher<Self, Op, Device> launcher;
     if (data) {
@@ -166,7 +182,7 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
     }
 
     const Index total_size = internal::array_prod(dimensions());
-    m_output = static_cast<CoeffReturnType*>(m_device.allocate(total_size * sizeof(Scalar)));
+    m_output = static_cast<EvaluatorPointerType>(m_device.get((Scalar*) m_device.allocate_temp(total_size * sizeof(Scalar))));
     launcher(*this, m_output);
     return true;
   }
@@ -176,7 +192,7 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
     return internal::ploadt<PacketReturnType, LoadMode>(m_output + index);
   }
 
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE typename Eigen::internal::traits<XprType>::PointerType data() const
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE EvaluatorPointerType data() const
   {
     return m_output;
   }
@@ -191,21 +207,29 @@ struct TensorEvaluator<const TensorScanOp<Op, ArgType>, Device> {
   }
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void cleanup() {
-    if (m_output != NULL) {
-      m_device.deallocate(m_output);
+    if (m_output) {
+      m_device.deallocate_temp(m_output);
       m_output = NULL;
     }
     m_impl.cleanup();
   }
 
+#ifdef EIGEN_USE_SYCL
+ // binding placeholder accessors to a command group handler for SYCL
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void bind(cl::sycl::handler &cgh) const {
+    m_impl.bind(cgh);
+    m_output.bind(cgh);
+  }
+#endif
 protected:
   TensorEvaluator<ArgType, Device> m_impl;
-  const Device& m_device;
+  const Device EIGEN_DEVICE_REF m_device;
   const bool m_exclusive;
   Op m_accumulator;
   const Index m_size;
   Index m_stride;
-  CoeffReturnType* m_output;
+  Index m_consume_dim;
+  EvaluatorPointerType m_output;
 };
 
 // CPU implementation of scan
@@ -242,7 +266,7 @@ struct ScanLauncher {
   }
 };
 
-#if defined(EIGEN_USE_GPU) && defined(EIGEN_CUDACC)
+#if defined(EIGEN_USE_GPU) && (defined(EIGEN_GPUCC))
 
 // GPU implementation of scan
 // TODO(ibab) This placeholder implementation performs multiple scans in
@@ -278,10 +302,11 @@ struct ScanLauncher<Self, Reducer, GpuDevice> {
      Index total_size = internal::array_prod(self.dimensions());
      Index num_blocks = (total_size / self.size() + 63) / 64;
      Index block_size = 64;
-     LAUNCH_CUDA_KERNEL((ScanKernel<Self, Reducer>), num_blocks, block_size, 0, self.device(), self, total_size, data);
+
+     LAUNCH_GPU_KERNEL((ScanKernel<Self, Reducer>), num_blocks, block_size, 0, self.device(), self, total_size, data);
   }
 };
-#endif  // EIGEN_USE_GPU && EIGEN_CUDACC
+#endif  // EIGEN_USE_GPU && (EIGEN_GPUCC)
 
 }  // end namespace Eigen
 

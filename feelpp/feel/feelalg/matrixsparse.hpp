@@ -108,10 +108,10 @@ public:
     typedef Vector<T> vector_type;
     typedef std::shared_ptr<Vector<T> > vector_ptrtype;
 
-    typedef DataMap datamap_type;
+    typedef DataMap<> datamap_type;
     typedef std::shared_ptr<datamap_type> datamap_ptrtype;
     using sparse_matrix_ptrtype = std::shared_ptr<MatrixSparse<T>>;
-
+    using size_type = typename datamap_type::size_type;
     typedef typename datamap_type::indexsplit_type indexsplit_type;
     typedef typename datamap_type::indexsplit_ptrtype indexsplit_ptrtype;
 
@@ -266,7 +266,7 @@ public:
     //!
     //! @return the number of allocated non-zero entries
     //!
-    virtual std::size_t nnz() const = 0;
+    virtual size_type nnz() const = 0;
 
     /**
      * set matrix properties, @see MatrixProperties

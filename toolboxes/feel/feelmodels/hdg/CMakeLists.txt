@@ -27,12 +27,14 @@ foreach(_DIM 2 3)
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDPOISSON ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
-    genLibMixedPoisson(
-      DIM     ${_DIM}
-      P_ORDER ${_P_ORDER}
-      GEO_ORDER 1
-      )
-    set(FEELPP_MODELS_LIBRARIES_MIXEDPOISSON ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON} ${MIXEDPOISSON_LIB_NAME} )
+    foreach( _G_ORDER RANGE 1 2 )
+      genLibMixedPoisson(
+        DIM     ${_DIM}
+        P_ORDER ${_P_ORDER}
+        GEO_ORDER ${_G_ORDER}
+        )
+      set(FEELPP_MODELS_LIBRARIES_MIXEDPOISSON ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON} ${MIXEDPOISSON_LIB_NAME} )
+    endforeach()
   endforeach()
 endforeach()
 
@@ -41,7 +43,13 @@ add_library(Feelpp::feelpp_toolbox_hdg_poisson_lib ALIAS feelpp_toolbox_hdg_pois
 set_target_properties(feelpp_toolbox_hdg_poisson_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_poisson_lib" )
 target_link_libraries(feelpp_toolbox_hdg_poisson_lib ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON})
 set_property(TARGET feelpp_toolbox_hdg_poisson_lib PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_toolbox_hdg_poisson_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+  set_target_properties(feelpp_toolbox_hdg_poisson_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_hdg_poisson_lib
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 foreach(_DIM 2 3)
   math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
@@ -62,7 +70,13 @@ add_library(Feelpp::feelpp_toolbox_hdg_elasticity_lib ALIAS feelpp_toolbox_hdg_e
 set_target_properties(feelpp_toolbox_hdg_elasticity_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_elasticity_lib" )
 target_link_libraries(feelpp_toolbox_hdg_elasticity_lib ${FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY})
 set_property(TARGET feelpp_toolbox_hdg_elasticity_lib PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_toolbox_hdg_elasticity_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+  set_target_properties(feelpp_toolbox_hdg_elasticity_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_hdg_elasticity_lib
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    COMPONENT Libs EXPORT feelpp-toolboxes-targets)
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/hdg COMPONENT Devel)

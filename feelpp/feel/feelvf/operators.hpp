@@ -270,7 +270,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             typedef typename functionspace_type::geoelement_type geoelement_type; \
             typedef typename functionspace_type::gm_type gm_type; \
             typedef typename functionspace_type::value_type value_type; \
-            typedef value_type evaluate_type;                           \
                                                                         \
             static const uint16_type rank = fe_type::rank;              \
             static const uint16_type nComponents1 = fe_type::nComponents1; \
@@ -305,6 +304,24 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             using test_basis = VF_OP_SWITCH( BOOST_PP_OR( VF_OP_TYPE_IS_TRIAL( T ), VF_OP_TYPE_IS_VALUE( T ) ), std::nullptr_t, basis_t); \
             using trial_basis = VF_OP_SWITCH( VF_OP_TYPE_IS_TRIAL( T ), basis_t, std::nullptr_t ); \
                                                                         \
+            template <uint16_type TheDim>                               \
+            struct EvaluateShape                                        \
+            {                                                           \
+                typedef typename element_type::polyset_type function_rank_type; \
+                typedef typename VF_OPERATOR_RANK( O )<function_rank_type>::type return_value_type; \
+                                                                        \
+                typedef typename mpl::if_<mpl::equal_to<mpl::int_<return_value_type::rank>, \
+                                                        mpl::int_<0> >, \
+                                          mpl::identity<Shape<TheDim, Scalar, false> >, \
+                                          typename mpl::if_<mpl::equal_to<mpl::int_<return_value_type::rank>, \
+                                                                          mpl::int_<1> >, \
+                                                            mpl::identity<Shape<TheDim, Vectorial, VF_OPERATOR_TRANSPOSE(O)> >, \
+                                                            mpl::identity<Shape<TheDim, Tensor2, false> > >::type>::type::type shape_type; \
+                using type = shape_type;                                \
+            };                                                          \
+            using evaluate_type = Eigen::Matrix<value_type,             \
+                                                EvaluateShape<functionspace_type::nRealDim>::type::M, \
+                                                EvaluateShape<functionspace_type::nRealDim>::type::N>; \
                                                                         \
             VF_OPERATOR_NAME( O ) ( element_type const& v, bool useInterpWithConfLoc=false ) \
               : M_v ( boost::cref(v) ),                                 \
@@ -340,11 +357,26 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
             element_type const& e() const { return M_v; }              \
             bool useInterpWithConfLoc() const { return M_useInterpWithConfLoc; } \
                                                                         \
-            evaluate_type                                               \
-                evaluate( bool, worldcomm_ptr_t const& ) const          \
+            template <typename TheFeType = fe_type>                     \
+            evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm, \
+                                   typename std::enable_if_t< isP0Continuous<TheFeType>::result && \
+                                   std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > && \
+                                   VF_OP_TYPE_IS_VALUE( T ) >* = nullptr ) const \
             {                                                           \
-                return 0;                                               \
+                evaluate_type res = evaluate_type::Constant( 0. );      \
+                if ( this->e().functionSpace()->nLocalDofWithGhost() ) \
+                    for ( uint16_type c1=0 ; c1<nComponents1 ; ++c1 )   \
+                        for ( uint16_type c2=0 ; c2<nComponents2 ; ++c2 ) \
+                            res( c1,c2 ) = (this->e()(c2+nComponents2*c1)); \
+                                                                        \
+                /* TODO : not apply broadcast if all proc have the dof */ \
+                /* TODO : check compatibility with arg worldcomm and the one used by the functionspace */ \
+                if ( p )                                                \
+                    mpi::broadcast( *worldcomm, res, this->e().map().procOnGlobalCluster( 0 ) ); \
+                return res;                                             \
             }                                                           \
+                                                                        \
+                                                                        \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \
@@ -376,16 +408,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typedef typename matrix_node<value_type>::type matrix_node_type; \
                                                                         \
                 typedef value_type result_type;                         \
-                typedef typename element_type::polyset_type function_rank_type; \
-                typedef typename VF_OPERATOR_RANK( O )<function_rank_type>::type return_value_type; \
-                                                                        \
-                typedef typename mpl::if_<mpl::equal_to<mpl::int_<return_value_type::rank>, \
-                    mpl::int_<0> >,                                     \
-                mpl::identity<Shape<gmc_type::NDim, Scalar, false> >,   \
-                typename mpl::if_<mpl::equal_to<mpl::int_<return_value_type::rank>, \
-                mpl::int_<1> >,                                         \
-                    mpl::identity<Shape<gmc_type::NDim, Vectorial, VF_OPERATOR_TRANSPOSE(O)> >, \
-                                  mpl::identity<Shape<gmc_type::NDim, Tensor2, false> > >::type>::type::type shape; \
+                using shape = typename EvaluateShape<gmc_type::NDim>::type; \
                 typedef typename fe_type::PreCompute pc_type;           \
                 typedef std::shared_ptr<pc_type> pc_ptrtype;          \
                 typedef typename fe_type::template Context<context, fe_type, gm_type,geoelement_type,gmc_type::context, gmc_type::subEntityCoDim> ctx_type; \
@@ -413,9 +436,6 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                     /*static const bool value = !(dim_ok && fe_ok);*/   \
                     static const bool value = false;                    \
                 };                                                      \
-                                                                        \
-                static const uint16_type rank = return_value_type::rank+1; \
-                static const uint16_type nComponents = return_value_type::nComponents; \
                                                                         \
                 static const bool isSameGeo = boost::is_same<typename gmc_type::element_type,geoelement_type>::value; \
                                                                         \

@@ -170,7 +170,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
     VLOG( 2 ) << "component        MESH_NO_UPDATE_MEASURES: " << this->components().test( MESH_NO_UPDATE_MEASURES ) << "\n";
     VLOG( 2 ) << "component         MESH_GEOMAP_NOT_CACHED: " << this->components().test( MESH_GEOMAP_NOT_CACHED ) << "\n";
 
-    boost::timer ti;
+    tic();
 
     VLOG( 2 ) << "is already updated? : " << this->isUpdatedForUse() << "\n";
     if ( !this->isUpdatedForUse() )
@@ -178,7 +178,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
         if ( this->components().test( MESH_RENUMBER ) )
         {
             //this->renumber();
-            VLOG( 2 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
+            //VLOG( 2 ) << "[Mesh::updateForUse] renumber : " << ti.elapsed() << "\n";
         }
 
         element_iterator iv, en;
@@ -391,9 +391,9 @@ void Mesh<Shape, T, Tag, IndexT>::updateForUse()
 
     this->setUpdatedForUse( true );
 
+    toc( "[Mesh::updateForUse] total time", FLAGS_v > 0 );
     if ( Environment::isMasterRank() && FLAGS_v >= 1 )
     {
-        std::cout << "[Mesh::updateForUse] total time : " << ti.elapsed() << "s\n";
         auto mem = Environment::logMemoryUsage( "memory usage after update for use" );
         std::cout << "[Mesh::updateForUse] resident memory : " << mem.memory_usage / 1.e9 << "GBytes\n";
     }
@@ -430,7 +430,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     if ( this->components().test( MESH_NO_UPDATE_MEASURES ) )
         return;
 
-    boost::timer ti;
+    tic();
 
     M_local_meas = 0;
     M_local_measbdy = 0;
@@ -533,11 +533,11 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
             eltModified.setMeasurePointElementNeighbors( meas );
         }
     }
-    VLOG( 1 ) << "[Mesh::updateMeasures] update measures : " << ti.elapsed() << "\n";
+    toc( "[Mesh::updateMeasures] update entity measures", FLAGS_v > 0 );
 
     // compute h information: average, min and max
     {
-        ti.restart();
+        tic();
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
@@ -562,7 +562,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
         LOG( INFO ) << "h average : " << this->hAverage() << "\n";
         LOG( INFO ) << "    h min : " << this->hMin() << "\n";
         LOG( INFO ) << "    h max : " << this->hMax() << "\n";
-        VLOG( 1 ) << "[Mesh::updateForUse] update measures : " << ti.elapsed() << "\n";
+        toc( "[Mesh::updateMeasures] update average, min and max", FLAGS_v > 0 );
     }
 }
 

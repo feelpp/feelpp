@@ -9,7 +9,7 @@
 
 #include "main.h"
 
-#include <Eigen/src/Core/arch/CUDA/Half.h>
+#include <Eigen/src/Core/arch/Default/Half.h>
 
 // Make sure it's possible to forward declare Eigen::half
 namespace Eigen {
@@ -20,7 +20,7 @@ using Eigen::half;
 
 void test_conversion()
 {
-  using Eigen::half_impl::__half;
+  using Eigen::half_impl::__half_raw;
 
   // Conversion from float.
   VERIFY_IS_EQUAL(half(1.0f).x, 0x3c00);
@@ -37,9 +37,9 @@ void test_conversion()
   VERIFY_IS_EQUAL(half(1.19209e-07f).x, 0x0002);
 
   // Verify round-to-nearest-even behavior.
-  float val1 = float(half(__half(0x3c00)));
-  float val2 = float(half(__half(0x3c01)));
-  float val3 = float(half(__half(0x3c02)));
+  float val1 = float(half(__half_raw(0x3c00)));
+  float val2 = float(half(__half_raw(0x3c01)));
+  float val3 = float(half(__half_raw(0x3c02)));
   VERIFY_IS_EQUAL(half(0.5f * (val1 + val2)).x, 0x3c00);
   VERIFY_IS_EQUAL(half(0.5f * (val2 + val3)).x, 0x3c02);
 
@@ -55,21 +55,21 @@ void test_conversion()
   VERIFY_IS_EQUAL(half(true).x, 0x3c00);
 
   // Conversion to float.
-  VERIFY_IS_EQUAL(float(half(__half(0x0000))), 0.0f);
-  VERIFY_IS_EQUAL(float(half(__half(0x3c00))), 1.0f);
+  VERIFY_IS_EQUAL(float(half(__half_raw(0x0000))), 0.0f);
+  VERIFY_IS_EQUAL(float(half(__half_raw(0x3c00))), 1.0f);
 
   // Denormals.
-  VERIFY_IS_APPROX(float(half(__half(0x8001))), -5.96046e-08f);
-  VERIFY_IS_APPROX(float(half(__half(0x0001))), 5.96046e-08f);
-  VERIFY_IS_APPROX(float(half(__half(0x0002))), 1.19209e-07f);
+  VERIFY_IS_APPROX(float(half(__half_raw(0x8001))), -5.96046e-08f);
+  VERIFY_IS_APPROX(float(half(__half_raw(0x0001))), 5.96046e-08f);
+  VERIFY_IS_APPROX(float(half(__half_raw(0x0002))), 1.19209e-07f);
 
   // NaNs and infinities.
   VERIFY(!(numext::isinf)(float(half(65504.0f))));  // Largest finite number.
   VERIFY(!(numext::isnan)(float(half(0.0f))));
-  VERIFY((numext::isinf)(float(half(__half(0xfc00)))));
-  VERIFY((numext::isnan)(float(half(__half(0xfc01)))));
-  VERIFY((numext::isinf)(float(half(__half(0x7c00)))));
-  VERIFY((numext::isnan)(float(half(__half(0x7c01)))));
+  VERIFY((numext::isinf)(float(half(__half_raw(0xfc00)))));
+  VERIFY((numext::isnan)(float(half(__half_raw(0xfc01)))));
+  VERIFY((numext::isinf)(float(half(__half_raw(0x7c00)))));
+  VERIFY((numext::isnan)(float(half(__half_raw(0x7c01)))));
 
 #if !EIGEN_COMP_MSVC
   // Visual Studio errors out on divisions by 0
@@ -79,12 +79,12 @@ void test_conversion()
 #endif
 
   // Exactly same checks as above, just directly on the half representation.
-  VERIFY(!(numext::isinf)(half(__half(0x7bff))));
-  VERIFY(!(numext::isnan)(half(__half(0x0000))));
-  VERIFY((numext::isinf)(half(__half(0xfc00))));
-  VERIFY((numext::isnan)(half(__half(0xfc01))));
-  VERIFY((numext::isinf)(half(__half(0x7c00))));
-  VERIFY((numext::isnan)(half(__half(0x7c01))));
+  VERIFY(!(numext::isinf)(half(__half_raw(0x7bff))));
+  VERIFY(!(numext::isnan)(half(__half_raw(0x0000))));
+  VERIFY((numext::isinf)(half(__half_raw(0xfc00))));
+  VERIFY((numext::isnan)(half(__half_raw(0xfc01))));
+  VERIFY((numext::isinf)(half(__half_raw(0x7c00))));
+  VERIFY((numext::isnan)(half(__half_raw(0x7c01))));
 
 #if !EIGEN_COMP_MSVC
   // Visual Studio errors out on divisions by 0
@@ -257,13 +257,31 @@ void test_array()
   ss << a1;
 }
 
-void test_half_float()
+void test_product()
 {
-  CALL_SUBTEST(test_conversion());
+  typedef Matrix<half,Dynamic,Dynamic> MatrixXh;
+  Index rows  = internal::random<Index>(1,EIGEN_TEST_MAX_SIZE);
+  Index cols  = internal::random<Index>(1,EIGEN_TEST_MAX_SIZE);
+  Index depth = internal::random<Index>(1,EIGEN_TEST_MAX_SIZE);
+  MatrixXh Ah = MatrixXh::Random(rows,depth);
+  MatrixXh Bh = MatrixXh::Random(depth,cols);
+  MatrixXh Ch = MatrixXh::Random(rows,cols);
+  MatrixXf Af = Ah.cast<float>();
+  MatrixXf Bf = Bh.cast<float>();
+  MatrixXf Cf = Ch.cast<float>();
+  VERIFY_IS_APPROX(Ch.noalias()+=Ah*Bh, (Cf.noalias()+=Af*Bf).cast<half>());
+}
+
+EIGEN_DECLARE_TEST(half_float)
+{
   CALL_SUBTEST(test_numtraits());
-  CALL_SUBTEST(test_arithmetic());
-  CALL_SUBTEST(test_comparison());
-  CALL_SUBTEST(test_basic_functions());
-  CALL_SUBTEST(test_trigonometric_functions());
-  CALL_SUBTEST(test_array());
+  for(int i = 0; i < g_repeat; i++) {
+    CALL_SUBTEST(test_conversion());
+    CALL_SUBTEST(test_arithmetic());
+    CALL_SUBTEST(test_comparison());
+    CALL_SUBTEST(test_basic_functions());
+    CALL_SUBTEST(test_trigonometric_functions());
+    CALL_SUBTEST(test_array());
+    CALL_SUBTEST(test_product());
+  }
 }

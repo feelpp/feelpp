@@ -17,16 +17,16 @@
 #    CMakeLists.txt:3 (enable_language)
 #
 # My workaround is to invoke cmake twice.  If both return codes are zero, 
-# it is safe to invoke ENABLE_LANGUAGE(Fortran OPTIONAL)
+# it is safe to invoke enable_language(Fortran OPTIONAL)
 
 function(workaround_9220 language language_works)
   #message("DEBUG: language = ${language}")
   set(text
     "project(test NONE)
-    cmake_minimum_required(VERSION 2.8.0)
+    cmake_minimum_required(VERSION 2.8.11)
     set (CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS}\")
     set (CMAKE_EXE_LINKER_FLAGS \"${CMAKE_EXE_LINKER_FLAGS}\")
-    enable_language(${language} OPTIONAL)
+    enable_language(${language})
   ")
   file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/language_tests/${language})
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/language_tests/${language})
@@ -51,13 +51,13 @@ function(workaround_9220 language language_works)
       )
     if(return_code EQUAL 0)
       set(${language_works} ON PARENT_SCOPE)
-    else(return_code EQUAL 0)
+    else()
       set(${language_works} OFF PARENT_SCOPE)
-    endif(return_code EQUAL 0)
-  else(return_code EQUAL 0)
+    endif()
+  else()
     set(${language_works} OFF PARENT_SCOPE)
-  endif(return_code EQUAL 0)
-endfunction(workaround_9220)
+  endif()
+endfunction()
 
 # Temporary tests of the above function.
 #workaround_9220(CXX CXX_language_works)

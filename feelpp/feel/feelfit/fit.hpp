@@ -63,7 +63,7 @@ public:
     using trial_basis = typename expression_type::trial_basis;
 
     typedef typename expression_type::value_type value_type;
-    typedef value_type evaluate_type;
+    using evaluate_type = Eigen::Matrix<value_type,1,1>;
 
     typedef Fit<ExprT,InterpOperator> this_type;
 
@@ -98,9 +98,9 @@ public:
     evaluate( bool parallel, worldcomm_ptr_t const& worldcomm ) const
         {
             if constexpr ( InterpOperator == 0 )
-                return this->interpolator()( M_expr.evaluate( parallel,worldcomm ) );
+                return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
             else
-                return this->interpolator().diff( M_expr.evaluate( parallel,worldcomm ) );
+                return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
         }
 
     // geo_t : transformation geométrique

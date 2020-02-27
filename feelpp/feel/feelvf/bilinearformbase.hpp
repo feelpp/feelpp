@@ -59,6 +59,8 @@ public:
     typedef std::shared_ptr<matrix_type> matrix_ptrtype;
     static const bool is_row_major = true;//matrix_type::is_row_major;
 
+    using size_type =  typename matrix_type::size_type;
+    
     typedef typename mpl::if_<mpl::equal_to<mpl::bool_<is_row_major>, mpl::bool_<true> >,
                               mpl::identity<ublas::row_major>,
                               mpl::identity<ublas::column_major> >::type::type layout_type;
@@ -506,8 +508,8 @@ BilinearFormBase<T>::BilinearFormBase( std::string name,
     if ( !M_matrix ) M_matrix = backend()->newMatrix( _test=Xh, _trial=Yh );
 
     M_lb.push_back( Feel::vf::Block ( 0, 0, 0, 0 ) );
-    datamap_ptrtype dmTest = M_matrix->mapRowPtr();
-    datamap_ptrtype dmTrial = M_matrix->mapColPtr();
+    auto dmTest = M_matrix->mapRowPtr();
+    auto dmTrial = M_matrix->mapColPtr();
     this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
     this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
 

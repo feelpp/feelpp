@@ -47,10 +47,10 @@ extern "C"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time_adjustor.hpp>
 #include <boost/date_time/c_local_time_adjustor.hpp>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
 
@@ -463,9 +463,41 @@ Environment::Environment( int argc, char** argv,
     CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
+
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
+
+    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
+    {
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( S_worldcomm->isMasterRank() )
+            {
+                if ( !fs::exists( p ) )
+                {
+                    try {
+                        fs::create_directories( p );
+                    }
+                    catch (...) {}
+                }
+            }
+            S_worldcomm->barrier();
+
+            if ( !fs::exists( p ) )
+                continue;
+            else if ( !fs::is_directory( p ) )
+                continue;
+            S_rootdir = p;
+            break;
+        }
+    }
+
 
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
@@ -1552,23 +1584,10 @@ Environment::finalized()
 }
 
 
-std::string
+std::string const&
 Environment::rootRepository()
 {
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( !fs::is_directory( p ) )
-                continue;
-            return p.string();
-        }
-    }
-    return std::string();
+    return S_rootdir.string();
 }
 std::string
 Environment::findFile( std::string const& filename, std::vector<std::string> paths )
@@ -2518,6 +2537,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
+fs::path Environment::S_rootdir = fs::current_path();
 fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;
