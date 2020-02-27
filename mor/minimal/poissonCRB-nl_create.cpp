@@ -84,17 +84,26 @@ int PoissonNL::mMaxA(int q)
 
 int PoissonNL::Nl()
 {
-    return 1;
+    auto outputs = M_modelProps->outputs();
+    return 1 + outputs.size();
 }
 
 int PoissonNL::Ql( int l)
 {
-    switch(l) {
-    case 0:
+    if( l == 0 )
         return M_nbElecMat + M_nbPotDir + M_nbTempRobin;
-    default:
-        return 0;
+    if( l < Nl() )
+    {
+        auto outputs = M_modelProps->outputs();
+        auto output = std::next(outputs.begin(), l-1)->second;
+        if( output.type() == "intensity" )
+            return QIntensity( output );
+        else if( output.type() == "averageTemp")
+            return QAverageTemp( output );
+        else
+            return 0;
     }
+    return 0;
 }
 
 int PoissonNL::mMaxF(int l, int q)
@@ -116,8 +125,40 @@ int PoissonNL::mMaxF(int l, int q)
             return 1;
         return 0;
     }
-    else
-        return 0;
+    if( l < Nl() )
+    {
+        auto outputs = M_modelProps->outputs();
+        auto output = std::next(outputs.begin(), l-1)->second;
+        if( output.type() == "intensity" )
+            return mMaxIntensity(q, output);
+        else if( output.type() == "averageTemp")
+            return mMaxAverageTemp(q, output);
+        else
+            return 0;
+    }
+    return 0;
+}
+
+int PoissonNL::QIntensity( ModelOutput const& out ) const
+{
+    return 1;
+}
+
+int PoissonNL::QAverageTemp( ModelOutput const& out ) const
+{
+    return 1;
+}
+
+int PoissonNL::mMaxIntensity(int q, ModelOutput const& out ) const
+{
+    auto mat = out.getString("material");
+    auto eimSigma = this->scalarContinuousEim()[indexOfElecMat(mat)+M_nbTherMat];
+    return eimSigma->mMax();
+}
+
+int PoissonNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
+{
+    return 1;
 }
 
 void PoissonNL::resize()
@@ -400,16 +441,24 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
 
 double PoissonNL::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
 {
-    auto mesh = Xh->mesh();
+    if ( need_to_solve )
+        u = this->solve( mu );
+
+    this->computeBetaQm( u, mu );
+
+
     double output=0;
-    if ( output_index == 0 )
+    if ( output_index < Nl() )
     {
-        for ( int q = 0; q < Ql(0); q++ )
+        for ( int q = 0; q < Ql(output_index); q++ )
         {
-            element_ptrtype eltF( new element_type( Xh ) );
-            *eltF = *M_Fq[output_index][q];
-            output += M_betaFq[output_index][q]*dot( *eltF, u );
-            //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+            for( int m = 0; m < mMaxF(output_index, q); ++m )
+            {
+                element_ptrtype eltF( new element_type( Xh ) );
+                *eltF = *M_Fqm[output_index][q][m];
+                output += M_betaFqm[output_index][q][m]*dot( *eltF, u );
+                //output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], U );
+            }
         }
     }
     else

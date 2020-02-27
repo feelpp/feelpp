@@ -132,6 +132,10 @@ public:
     int Nl();
     int Ql( int l );
     int mMaxF( int l, int q);
+    int QIntensity( ModelOutput const& out ) const;
+    int QAverageTemp( ModelOutput const& out ) const;
+    int mMaxIntensity( int q, ModelOutput const& out ) const;
+    int mMaxAverageTemp( int q, ModelOutput const& out ) const;
     void resize();
     int indexOfElecMat(std::string const& mat ) const;
     int indexOfTherMat(std::string const& mat ) const;

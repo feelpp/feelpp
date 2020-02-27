@@ -94,7 +94,7 @@
         "average_temp":
         {
             "type":"averageTemp",
-            "range":"omega",
+            "markers":"omega",
             "topodim":3
         }
     }

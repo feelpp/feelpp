@@ -38,6 +38,7 @@ PoissonNL::assemble()
     auto gamma = doption("poisson.gamma");
     auto bdConditions = M_modelProps->boundaryConditions2();
 
+    /**********  left hand side *********/
     int i = 0;
     for( auto const& [key,mat] : M_therMaterials )
     {
@@ -94,6 +95,7 @@ PoissonNL::assemble()
         ++i;
     }
 
+    /**********  right hand side *********/
     i = 0;
     auto eim_grad = this->scalarDiscontinuousEim()[0];
     for( auto const& [key,mat] : M_elecMaterials )
@@ -134,6 +136,44 @@ PoissonNL::assemble()
         f2 = integrate( markedfaces(M_mesh,bd.markers()), id(u2) );
         M_Fqm[0][i][0] = f2.vectorPtr();
         ++i;
+    }
+
+    /********* Outputs ********/
+    i = 1;
+    auto outputs = M_modelProps->outputs();
+    for( auto const& [key, output] : outputs )
+    {
+        if( output.type() == "averageTemp" )
+        {
+            auto dim = output.dim();
+            auto fAvgT = form1(_test=Xh);
+            if( dim == 3 )
+            {
+                auto range = markedelements(M_mesh, output.markers());
+                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
+                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
+            }
+            else if( dim == 2 )
+            {
+                auto range = markedfaces(M_mesh, output.markers() );
+                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
+                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
+            }
+            M_Fqm[i++][0][0] = fAvgT.vectorPtr();
+        }
+        else if( output.type() == "intensity" )
+        {
+            auto mat = output.getString("material");
+            auto eimSigma = this->scalarContinuousEim()[indexOfElecMat(mat)+M_nbTherMat];
+            for( int m = 0; m < eimSigma->mMax(); ++m )
+            {
+                auto fI = form1(_test=Xh);
+                fI = integrate( markedfaces(M_mesh,output.markers() ),
+                                -idv(eimSigma->q(m))*grad(u1)*N() );
+                M_Fqm[i][0][m] = fI.vectorPtr();
+            }
+            ++i;
+        }
     }
 }
 
@@ -188,6 +228,7 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
+    /**********  left hand side *********/
     int i = 0;
     for( auto const& mat : M_therMaterials )
     {
@@ -218,6 +259,7 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
         ++i;
     }
 
+    /**********  right hand side *********/
     i = 0;
     for( auto const& mat : M_elecMaterials )
     {
@@ -245,6 +287,24 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
 
         M_betaFqm[0][i][0] = e.evaluate()(0,0);
+        ++i;
+    }
+
+    /**********  outputs *********/
+    i = 1;
+    auto outputs = M_modelProps->outputs();
+    for( auto const& [key, output] : outputs )
+    {
+        if( output.type() == "averageTemp" )
+        {
+            M_betaFqm[i][0][0] = 1;
+        }
+        else if( output.type() == "intensity" )
+        {
+            int index = indexOfElecMat(output.getString("material"));
+            for( int m = 0; m < betaSigma[index].size(); ++m )
+                M_betaFqm[i][0][m] = betaSigma[index](m);
+        }
         ++i;
     }
 }
