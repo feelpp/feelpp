@@ -284,7 +284,12 @@ public:
     {
         this->shiftRight( u_curr );
 
-        return this->next();
+        double tcur = this->next();
+
+        // do here because M_order_cur can change in the call of next()
+        this->computePolyAndPolyDeriv();
+
+        return tcur;
     }
 
     /**
@@ -292,7 +297,7 @@ public:
      */
     double polyCoefficient( int i ) const
     {
-        CHECK( i >=0 && i < BDF_MAX_ORDER-1 ) <<  "[BDF] invalid index " << i;
+        CHECK( i >=0 && i < BDF_MAX_ORDER ) <<  "[BDF] invalid index " << i;
         return M_beta[this->timeOrder()-1][i];
     }
 
@@ -530,8 +535,46 @@ Bdf<SpaceType>::init()
     // in super::init() M_iteration is set back to 0
     super::init();
 
-    if ( this->isRestart() )
+    if ( !this->isRestart() )
     {
+        M_last_iteration_since_order_change = 1;
+        switch ( M_strategyHighOrderStart )
+        {
+        default :
+        case 0 : M_order_cur = M_order; break;
+        case 1 : M_order_cur = 1; break;
+        }
+    }
+    else
+    {
+        M_last_iteration_since_order_change = 1;
+
+        switch ( M_strategyHighOrderStart )
+        {
+        default :
+        case 0 :
+        {
+            M_order_cur = M_order;
+        }
+        break;
+        case 1 :
+        {
+            M_order_cur = 1;
+            for ( int i = 2; i<=M_iteration; ++i )
+            {
+                if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change ) &&
+                     M_order_cur < M_order )
+                {
+                    M_last_iteration_since_order_change = i;
+                    ++M_order_cur;
+                }
+                if ( M_order_cur == M_order )
+                    break;
+            }
+        }
+        break;
+        }
+
         fs::path dirPath = ( this->restartPath().empty() )? this->path() : this->restartPath()/this->path();
 
         const int niteration = this->iterationNumber();
@@ -639,13 +682,6 @@ Bdf<SpaceType>::start()
     this->init();
     this->initialize( unknowns_type(0) );
     double ti = super::start();
-    M_last_iteration_since_order_change = 1;
-    switch ( M_strategyHighOrderStart )
-    {
-    default :
-    case 0 : M_order_cur = M_order; break;
-    case 1 : M_order_cur = 1; break;
-    }
     return ti;
 }
 
@@ -659,13 +695,6 @@ Bdf<SpaceType>::start( element_type const& u0 )
     this->init();
     this->initialize( u0 );
     double ti = super::start();
-    M_last_iteration_since_order_change = 1;
-    switch ( M_strategyHighOrderStart )
-    {
-    default :
-    case 0 : M_order_cur = M_order; break;
-    case 1 : M_order_cur = 1; break;
-    }
     return ti;
 }
 
@@ -679,13 +708,6 @@ Bdf<SpaceType>::start( unknowns_type const& uv0 )
     this->init();
     this->initialize( uv0 );
     double ti = super::start();
-    M_last_iteration_since_order_change = 1;
-    switch ( M_strategyHighOrderStart )
-    {
-    default :
-    case 0 : M_order_cur = M_order; break;
-    case 1 : M_order_cur = 1; break;
-    }
     return ti;
 }
 
@@ -697,33 +719,6 @@ Bdf<SpaceType>::restart()
     this->computePolyAndPolyDeriv();
 
     double ti = super::restart();
-    M_last_iteration_since_order_change = 1;
-
-    switch ( M_strategyHighOrderStart )
-    {
-    default :
-    case 0 :
-    {
-        M_order_cur = M_order;
-    }
-    break;
-    case 1 :
-    {
-        M_order_cur = 1;
-        for ( int i = 2; i<=M_iteration; ++i )
-        {
-            if ( ( ( i - M_last_iteration_since_order_change ) == M_iterations_between_order_change ) &&
-                 M_order_cur < M_order )
-            {
-                M_last_iteration_since_order_change = i;
-                ++M_order_cur;
-            }
-            if ( M_order_cur == M_order )
-                break;
-        }
-    }
-    break;
-    }
 
     return ti;
 }
@@ -883,8 +878,6 @@ Bdf<SpaceType>::shiftRight( typename space_type::template Element<value_type, co
 
     // save newly stored bdf data
     this->saveCurrent();
-
-    this->computePolyAndPolyDeriv();
 }
 
 
