@@ -44,12 +44,11 @@ set_target_properties(feelpp_toolbox_heatfluid_lib PROPERTIES OUTPUT_NAME "feelp
 target_link_libraries(feelpp_toolbox_heatfluid_lib ${FEELPP_MODELS_LIBRARIES_HEATFLUID})
 set_property(TARGET feelpp_toolbox_heatfluid_lib PROPERTY MACOSX_RPATH ON)
 set_target_properties(feelpp_toolbox_heatfluid_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_heatfluid_lib
+install(TARGETS feelpp_toolbox_heatfluid_lib EXPORT feelpp-toolboxes-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/heatfluid COMPONENT Devel)
