@@ -34,8 +34,12 @@ void defToolbox(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = Thermoelectric< Simplex<nDim,1>,
-                           Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
+    using model_heat_type = FeelModels::Heat< Simplex<nDim,1>,
+                                              Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
+    using model_electric_type = FeelModels::Electric< Simplex<nDim,1>,
+                                                      Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
+
+    using toolbox_t = Thermoelectric< model_heat_type,model_electric_type >;
     using element_thermoelectricpotential_t = typename toolbox_t::element_thermoelectricpotential_type;
     using element_thermoelectricpotential_ptr_t = typename toolbox_t::element_thermoelectricpotential_ptrtype;
     using element_thermoelectricfield_t = typename toolbox_t::element_thermoelectricfield_type;

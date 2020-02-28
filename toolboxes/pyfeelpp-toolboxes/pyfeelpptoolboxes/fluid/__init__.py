@@ -9,7 +9,7 @@ _cfds={
     'fluid(3,3,2,1)':Fluid_3DP3P2G1,
 }
 
-def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, buildMesh=True, worldComm=None ):
+def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=None ):
     """create a fluid toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -25,4 +25,4 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, buildMesh=T
         print(key)
     if key not in _cfds:
         raise RuntimeError('Fluid solver '+key+' not existing')
-    return _cfds[key]( "fluid", buildMesh, worldComm )
+    return _cfds[key]( "fluid", "fluid", worldComm )
