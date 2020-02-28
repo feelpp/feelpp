@@ -30,20 +30,23 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 namespace Feel
 {
-holo3_image<float>
-readHBF( std::string const& s )
+
+std::pair<int32_t,int32_t>
+readHBFHeaderAndSizes( std::string const& s )
 {
-    #if 0
-        std::ifstream in( Environment::expand(s).c_str(), std::ios::binary );
-    #else
-        std::ifstream in( s, std::ios::binary );
-    #endif  
+    LOG(INFO) << "Reading Header and sizes " << s << std::endl;
+    std::ifstream in( s, std::ios::binary );
     if ( !in )
     {
-        std::cout << "Error opening file " << s.c_str() << std::endl;
-        exit(0);
+        using namespace std::string_literals;
+        throw std::invalid_argument ( "readHBFHeaderAndSizes - Error opening file "s + s.c_str() );
     }
-
+    return readHBFHeaderAndSizes( in );
+}
+std::pair<int32_t,int32_t>
+readHBFHeaderAndSizes( std::ifstream& in )
+{
+    LOG(INFO) << "Reading Header and sizes" << std::endl;
     std::string header;
     char ch;
     size_t count = 0;
@@ -52,7 +55,7 @@ readHBF( std::string const& s )
         header += ch;
         ++count;
     }
-    LOG(INFO) << "header: " << header << "\n";
+    LOG(INFO) << "header: " << header << std::endl;
     LOG(INFO) << count << std::endl;
 
     int32_t version = 0;
@@ -61,12 +64,25 @@ readHBF( std::string const& s )
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
     LOG(INFO) << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+    return {rows,cols};
+}
+holo3_image<float>
+readHBF( std::string const& s )
+{
+    std::ifstream in( s, std::ios::binary );
+    if ( !in )
+    {
+        using namespace std::string_literals;
+        throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
+    }
+    auto [rows,cols] = readHBFHeaderAndSizes( in );
     Eigen::MatrixXf x( cols, rows  );
     in.read( (char*)x.data(), x.size()*sizeof(float) );
     if(x.rows() <= 6 && x.cols() <= 6)
         LOG(INFO) << x << std::endl;
    // if ( Environment::isMasterRank() )
        // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
+    LOG(INFO) << "rows: " << x.transpose().rows() << " , cols: " << x.transpose().cols()  << std::endl;
     return x.transpose();
 }
    
@@ -82,8 +98,8 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
 #endif    
         if ( !out )
         {
-            Feel::cout << "Error opening file " << s.c_str() << std::endl;
-            exit(0);
+            using namespace std::string_literals;
+            throw std::invalid_argument ( "writeHBF - Error opening file "s + s.c_str() );
         }
         const char* header = "class CH3Array2D<float> *";
         out.write( header, strlen(header) );
@@ -103,7 +119,7 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
         LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
 
         if(x.rows() <= 6 && x.cols() <= 6)
-            Feel::cout << x << std::endl;
+            LOG(INFO) << x << std::endl;
         LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     }
 }
