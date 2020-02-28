@@ -368,6 +368,22 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
 endif()
+feelppContribPrepare( indicators )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( indicators )
+  install(TARGETS indicators EXPORT indicatorsTargets)
+  install(EXPORT indicatorsTargets
+    FILE indicatorsTargets.cmake
+    NAMESPACE indicators::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/indicators)
+
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_INDICATORS )
+  target_link_libraries(feelpp_contrib INTERFACE indicators )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/indicators/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Indicators/Contrib")
+endif()
   
 add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
