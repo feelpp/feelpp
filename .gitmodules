@@ -31,3 +31,6 @@
 [submodule "feelpp/contrib/tabulate"]
 	path = feelpp/contrib/tabulate
 	url = https://github.com/feelpp/tabulate.git
+[submodule "mor/contrib/mordicus"]
+	path = mor/contrib/mordicus
+	url = git@gitlab.pam-retd.fr:mordicus/mordicus.git
