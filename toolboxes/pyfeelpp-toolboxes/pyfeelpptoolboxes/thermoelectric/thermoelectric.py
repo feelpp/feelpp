@@ -1,14 +1,10 @@
-from pyfeelpp import core
 import sys
+from pyfeelpptoolboxes.thermoelectric import *
 
-import pyfeelpp.toolboxes.modelcore as modelcore
+e=core.Environment(sys.argv,opts=toolboxes_options("thermo-electric"))
 
-e=core.Environment(sys.argv,opts=modelcore.toolboxes_options("thermoelectric"))
 
-#from pyfeelpp import discr,ts,filters
-from pyfeelpp.toolboxes.thermoelectric import *
-
-f=thermoelectric(dim=2,orderDisp=1,worldComm=e.worldCommPtr())
+f=thermoelectric(dim=2,orderPotential=1,worldComm=e.worldCommPtr())
 f.init()
 f.printAndSaveInfo()
 f.solve()

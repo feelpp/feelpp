@@ -862,7 +862,7 @@ public:
      */
     void scale( value_type s ) { M_F->scale( s ); }
 
-    LinearForm& operator+=( LinearForm& f )
+    LinearForm& operator+=( LinearForm const& f )
         {
             if ( this == &f )
             {
@@ -1131,6 +1131,17 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 {
     this->assign( __expr, false, mpl::bool_<( space_type::nSpaces > 1 )>() );
     return *this;
+}
+
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+LinearForm<SpaceType, VectorType, ElemContType>
+operator+(LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          LinearForm<SpaceType, VectorType, ElemContType> const& b )
+{
+    LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c += b;
+
+    return c;
 }
 
 
