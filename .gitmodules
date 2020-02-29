@@ -34,3 +34,6 @@
 [submodule "mor/contrib/mordicus"]
 	path = mor/contrib/mordicus
 	url = git@gitlab.pam-retd.fr:mordicus/mordicus.git
+[submodule "feelpp/contrib/indicators"]
+	path = feelpp/contrib/indicators
+	url = https://github.com/feelpp/indicators.git

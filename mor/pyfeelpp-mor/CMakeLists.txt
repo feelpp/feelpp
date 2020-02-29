@@ -49,5 +49,9 @@ if (FEELPP_ENABLE_PYFEELPP_MOR)
   install(DIRECTORY DESTINATION ${PYFEELPP_MOR_INSTALL_DIR})
   install(
     CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_MOR_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
-    CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_MOR_PY} install --prefix ${CMAKE_INSTALL_PREFIX})")
+    CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_MOR_PY} install  --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )"
+    CODE "if(ret EQUAL \"1\")"
+    CODE "  message( FATAL_ERROR \"pyfeelpp-mor setup.py bad exit status\")"
+    CODE "endif()"
+    )
 endif()
