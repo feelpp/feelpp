@@ -10,6 +10,8 @@
 namespace Feel
 {
 
+namespace po = boost::program_options;
+
 FEELPP_EXPORT po::options_description
 makeToolboxMorOptions();
 FEELPP_EXPORT AboutData
