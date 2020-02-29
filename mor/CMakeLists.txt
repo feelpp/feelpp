@@ -21,8 +21,14 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.7.2)
+cmake_minimum_required(VERSION 3.13.0)
+if(DEFINED PROJECT_NAME)
+  set( MOR_SUBPROJECT ON )
+endif()
+
+
 project(mor)
+  
 
 set(FEELPP_MOR_SOURCE_DIR ${PROJECT_SOURCE_DIR})
 set(FEELPP_MOR_BINARY_DIR ${PROJECT_BINARY_DIR})
@@ -70,10 +76,12 @@ OPTION(FEELPP_ENABLE_MOR_CONVECTION "enable Convection testcase" ${FEELPP_ENABLE
 OPTION(FEELPP_ENABLE_MOR_STOKESDEIM "enable stokes with deim testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_THERMOELECTRIC "enable thermoelectric testcase" ${FEELPP_ENABLE_MOR_ALL})
 OPTION(FEELPP_ENABLE_MOR_GREPLDEIM "enable grepldeim testcase" ${FEELPP_ENABLE_MOR_ALL})
-OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ${FEELPP_ENABLE_MOR_ALL})
+OPTION(FEELPP_ENABLE_MOR_TOOLBOX "enable toolbox testcase" ON)
 
 
-if ( NOT FEELPP_TOOLBOXES_FOUND )
+if ( NOT MOR_SUBPROJECT  AND FEELPP_TOOLBOXES_FOUND )
+  message(STATUS "Feel++ Toolboxes not setup, disabling MOR_TOOLBOX...")
+  
   set( FEELPP_ENABLE_MOR_THERMOELECTRIC OFF )
   set( FEELPP_ENABLE_MOR_TOOLBOX OFF )
 endif()
