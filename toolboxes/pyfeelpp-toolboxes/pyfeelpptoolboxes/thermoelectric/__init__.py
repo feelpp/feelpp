@@ -9,7 +9,7 @@ _thermoelectrics={
     'thermoelectric(3,2)':Thermoelectric_3DP2,
 }
 
-def thermoelectric( dim=2, orderPotential=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def thermoelectric( dim=2, orderPotential=1, worldComm=core.Environment.worldCommPtr() ):
     """create a thermoelectric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -21,4 +21,4 @@ def thermoelectric( dim=2, orderPotential=1, buildMesh=True, worldComm=core.Envi
         print(key)
     if key not in _thermoelectrics:
         raise RuntimeError('Thermoelectric solver '+key+' not existing')
-    return _thermoelectrics[key]( "thermoelectric", buildMesh, worldComm )
+    return _thermoelectrics[key]( "thermo-electric", "thermo-electric", worldComm )
