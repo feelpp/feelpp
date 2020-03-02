@@ -421,11 +421,11 @@ else()
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/eigen3/cmake"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/pkgconfig"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/pkgconfig"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
     )
 

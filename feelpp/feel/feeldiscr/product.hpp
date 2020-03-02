@@ -511,7 +511,11 @@ using product_spaces_element_t = typename ProductSpaces<SpaceList...>::element_t
 template<typename... SpaceList>
 using product_spaces_element_ptr_t = typename ProductSpaces<SpaceList...>::element_ptrtype;
 
-
+/**
+ * compile time product of function spaces
+ * \param spaces expansion of arbitrary number of spaces
+ * \return the compile time product
+ */
 template<typename... SpaceList>
 ProductSpaces<SpaceList...>
 product( SpaceList... spaces )
@@ -528,11 +532,30 @@ using dyn_product_spaces_element_t = typename ProductSpaces2<SpaceT,SpaceList...
 template<typename SpaceT, typename... SpaceList>
 using dyn_product_spaces_element_ptr_t = typename ProductSpaces2<SpaceT,SpaceList...>::element_ptrtype;
 
+/**
+ * mixed compile time and runtime product of function space
+ * \param spaces expansion of arbitrary number of function spaces
+ * \param ps dynamic product of function spaces of the same type
+ * \return the space product
+ */
 template<typename T, typename... SpaceList>
 ProductSpaces2<T,SpaceList...>
 product2( std::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
 {
     return ProductSpaces2<T,SpaceList...>( ps, spaces... );
+}
+
+/**
+ * mixed compile time and runtime product of function space
+ * \param spaces expansion of arbitrary number of function spaces
+ * \param ps dynamic product of function spaces of the same type
+ * \return the space product
+ */
+template<typename T, typename... SpaceList>
+ProductSpaces2<T,SpaceList...>
+product2( SpaceList... spaces, std::shared_ptr<ProductSpace<T,true>> const& ps )
+{
+    return product2( ps, spaces... );
 }
 
 
