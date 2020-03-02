@@ -2,7 +2,7 @@ get_filename_component(FeelppContrib_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH
 include(CMakeFindDependencyMacro)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR})
-foreach( dep feelpp_gflags glog nlopt )
+foreach( dep feelpp_gflags glog nlopt eigen3 )
   if ( EXISTS ${FEELPP_DIR}/share/feelpp/${dep}/cmake )
     set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${FEELPP_DIR}/share/feelpp/${dep}/cmake )
   endif()
