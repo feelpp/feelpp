@@ -23,7 +23,7 @@
 #
 
 foreach(_DIM 2 3)
-  math(EXPR _P_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}')
+  math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDPOISSON ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
@@ -51,7 +51,7 @@ install(TARGETS feelpp_toolbox_hdg_poisson_lib EXPORT feelpp-toolboxes-targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 foreach(_DIM 2 3)
-  math(EXPR _P_ORDER '${FEELPP_INSTANTIATION_ORDER_MAX}')
+  math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDELASTICITY ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
