@@ -731,6 +731,52 @@ void runTest5()
     BOOST_CHECK_CLOSE( u.max(), 6.14, 1e-12 );
 }
 
+void runTest6()
+{
+    auto exprScalar1 = expr("2+u:u");
+    auto exprScalar2 = expr("3*u+v:u:v");
+    auto exprScalar3 = expr("v+w:v:w");
+    auto exprScalar4 = expr("xx+v+w:xx:v:w");
+    //v=2+3=5 w=3*3+5=14 xx=5+14=19 yy=19+5+14=38
+    auto thesymbolExprA = symbolsExpr( symbolExpr("u",cst(3.0)),
+                                       symbolExpr("v",exprScalar1),
+                                       symbolExpr("w",exprScalar2),
+                                       symbolExpr("xx",exprScalar3),
+                                       symbolExpr("yy",exprScalar4)
+                                       );
+    auto exprScalar3vf = expr(exprScalar3,thesymbolExprA);
+    BOOST_CHECK_CLOSE( exprScalar3vf.evaluate()(0,0), 19, 1e-12 );
+    auto exprScalar4vf = expr(exprScalar4,thesymbolExprA);
+    BOOST_CHECK_CLOSE( exprScalar4vf.evaluate()(0,0), 38, 1e-12 );
+
+    auto exprVectorial1 = expr<2,1>("{v+w,v-w}:v:w");
+    auto exprVectorial2 = expr<2,1>("{xx_x+v+w,xx_y+3*(v-w)}:xx_x:xx_y:v:w");
+    //v=2+3=5 w=3*3+5=14 xx_x=5+14=19 xx_y=5-14=-9   yy_x=19+5+14=38   yy_y=19+3*(5-14)=-36
+    auto thesymbolExprB = symbolsExpr( symbolExpr("u",cst(3.0)),
+                                       symbolExpr("v",exprScalar1),
+                                       symbolExpr("w",exprScalar2),
+                                       symbolExpr("xx",exprVectorial1, SymbolExprComponentSuffix( 2,1,true )),
+                                       symbolExpr("yy",exprVectorial2, SymbolExprComponentSuffix( 2,1,true ) )
+                                       );
+
+    auto exprVectorial1vf = expr(exprVectorial1,thesymbolExprB);
+    BOOST_CHECK_CLOSE( exprVectorial1vf.evaluate()(0,0), 19, 1e-12 );
+    BOOST_CHECK_CLOSE( exprVectorial1vf.evaluate()(1,0), -9, 1e-12 );
+    auto exprVectorial2vf = expr(exprVectorial2,thesymbolExprB);
+    BOOST_CHECK_CLOSE( exprVectorial2vf.evaluate()(0,0), 38, 1e-12 );
+    BOOST_CHECK_CLOSE( exprVectorial2vf.evaluate()(1,0), -36, 1e-12 );
+
+    using mesh_t = Mesh<Simplex<2>>;
+    auto mesh = loadMesh( _mesh = new mesh_t );
+    double evalIntegrate4 = integrate(_range=elements(mesh),_expr=exprScalar4vf ).evaluate()(0,0);
+    double evalIntegrate4_check = integrate(_range=elements(mesh),_expr=cst(38.) ).evaluate()(0,0);
+    BOOST_CHECK_CLOSE( evalIntegrate4, evalIntegrate4_check, 1e-12 );
+    auto evalIntegrateVectorial2 = integrate(_range=elements(mesh),_expr=exprVectorial2vf ).evaluate();
+    auto evalIntegrateVectorial2_check = integrate(_range=elements(mesh),_expr=vec(cst(38.),cst(-36.)) ).evaluate();
+    BOOST_CHECK_CLOSE( evalIntegrateVectorial2(0,0), evalIntegrateVectorial2_check(0,0), 1e-12 );
+    BOOST_CHECK_CLOSE( evalIntegrateVectorial2(1,0), evalIntegrateVectorial2_check(1,0), 1e-12 );
+}
+
 FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
 BOOST_AUTO_TEST_SUITE( inner_suite )
 BOOST_AUTO_TEST_CASE( test_0 )
@@ -756,5 +802,9 @@ BOOST_AUTO_TEST_CASE( test_4 )
 BOOST_AUTO_TEST_CASE( test_5 )
 {
     runTest5();
+}
+BOOST_AUTO_TEST_CASE( test_6 )
+{
+    runTest6();
 }
 BOOST_AUTO_TEST_SUITE_END()
