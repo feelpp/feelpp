@@ -200,12 +200,12 @@ class ModelNumerical : public ModelAlgebraic
         std::set<std::string> postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
         std::set<std::string> postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
 
-        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = SymbolsExpr<>, typename TupleExprOnRangeType = hana::tuple<> >
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = symbols_expression_empty_t, typename TupleExprOnRangeType = hana::tuple<> >
         void executePostProcessExports( std::shared_ptr<ExporterType> exporter, std::string const& tag, double time, TupleFieldsType const& tupleFields,
-                                        SymbolsExprType const& symbolsExpr = SymbolsExpr<>(), TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
-        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = SymbolsExpr<>, typename TupleExprOnRangeType = hana::tuple<> >
+                                        SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{}, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() );
+        template <typename ExporterType,typename TupleFieldsType, typename SymbolsExprType = symbols_expression_empty_t, typename TupleExprOnRangeType = hana::tuple<> >
         void executePostProcessExports( std::shared_ptr<ExporterType> exporter, double time, TupleFieldsType const& tupleFields,
-                                        SymbolsExprType const& symbolsExpr = SymbolsExpr<>(), TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
+                                        SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{}, TupleExprOnRangeType const& tupleExprOnRange = hana::make_tuple() )
             {
                 this->executePostProcessExports(exporter,"",time,tupleFields,symbolsExpr,tupleExprOnRange);
             }
