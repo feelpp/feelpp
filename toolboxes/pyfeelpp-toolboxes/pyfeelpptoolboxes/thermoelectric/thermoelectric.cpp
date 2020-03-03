@@ -34,12 +34,16 @@ void defToolbox(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = Thermoelectric< Simplex<nDim,1>,
-                           Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
-    using element_thermoelectricpotential_t = typename toolbox_t::element_thermoelectricpotential_type;
-    using element_thermoelectricpotential_ptr_t = typename toolbox_t::element_thermoelectricpotential_ptrtype;
-    using element_thermoelectricfield_t = typename toolbox_t::element_thermoelectricfield_type;
-    using element_thermoelectricfield_ptr_t = typename toolbox_t::element_thermoelectricfield_ptrtype;
+    using model_heat_type = FeelModels::Heat< Simplex<nDim,1>,
+                                              Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
+    using model_electric_type = FeelModels::Electric< Simplex<nDim,1>,
+                                                      Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
+
+    using toolbox_t = ThermoElectric< model_heat_type,model_electric_type >;
+    using element_thermoelectricpotential_t = typename toolbox_t::electric_model_type::element_electricpotential_type;
+    using element_thermoelectricpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
+    using element_thermoelectricfield_t = typename toolbox_t::electric_model_type::element_electricfield_type;
+    using element_thermoelectricfield_ptr_t = typename toolbox_t::electric_model_type::element_electricfield_ptrtype;
 
     std::string pyclass_name = std::string("Thermoelectric_") + std::to_string(nDim) + std::string("DP") + std::to_string(OrderPotential);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
@@ -55,8 +59,8 @@ void defToolbox(py::module &m)
 
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
-        .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
-        
+        //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
+#if 0
         // elements
         .def( "spaceThermoelectricPotential", &toolbox_t::spaceThermoelectricPotential, "get the potential function space")
         .def( "fieldThermoelectricPotential", static_cast<element_thermoelectricpotential_t const& (toolbox_t::*)() const>(&toolbox_t::fieldThermoelectricPotential), "returns the thermoelectric potential field" )
@@ -66,7 +70,7 @@ void defToolbox(py::module &m)
         .def( "fieldThermoelectricFieldPtr", static_cast<element_thermoelectricfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldThermoelectricFieldPtr), "returns the thermoelectric field shared_ptr" )
         .def( "fieldCurrentDensity", static_cast<element_thermoelectricfield_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensity), "returns the current density" )
         .def( "fieldCurrentDensityPtr", static_cast<element_thermoelectricfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensityPtr), "returns the current density shared_ptr" )
-        
+#endif
         // solve
         .def("solve",&toolbox_t::solve, "solve the thermoelectric mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the thermoelectric mechanics problem")
