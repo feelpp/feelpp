@@ -73,7 +73,7 @@ class FEELPP_EXPORT HDF5
 public:
     //! @name Public Types
     //@{
-    typedef WorldComm comm_type;
+    typedef /*WorldComm*/boost::mpi::communicator comm_type;
     //@}
 
     //! @name Constructors and Destructor

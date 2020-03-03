@@ -7,18 +7,29 @@ Christophe Prud'homme <https://github.com/prudhomm[@prudhomm]>; Vincent Chabanne
 
 == NAME
 
-{manmanual} - electric toolbox application
+feelpp_toolbox_electric - electric toolbox application
 
 
 == SYNOPSIS
 
-{manmanual} --case <directory to model case> [--case.dim 3] [--case.discretization P1] 
+----
+feelpp_toolbox_electric --case <directory to model case>
+  [--case.dim 3]
+  [--case.discretization P1]
+  [--electric.ksp-monitor=<0,1>]
+  [--electric.ksp-view=<0,1>]
+  [--electric.ksp-type=<see below>]
+  [--electric.pc-view=<0,1>]
+  [--electric.pc-type=<see below>]
+  [--electric.snes-monitor=<0,1>]
+  [--electric.ksp-type=<see below>]
+----
 
 == DESCRIPTION
 
-{manmanual} is an application which can run electric model defined by a sest of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
+feelpp_toolbox_electric is an application which can run electric model defined by a set of files : a geometry or mesh, a config file(`.cfg`) and  a model file(`.json`)
 
-The step are as follows:
+The execution steps are as follows:
 
 * load the model
 * load the mesh
@@ -28,20 +39,29 @@ The step are as follows:
 
 === Options
 
-{manmanual} requires some options.
+feelpp_toolbox_electric requires some options.
 
-.Table of command-line {manmanual} options
+.Table of command-line feelpp_toolbox_electric options
 |===
 | Name | Description | Default value | Possible Values
 
 | case.dim | dimension of problem  | 3 | 2,3
-| case.discretization | discretization of problem  | P1 | P1
+| case.discretization | discretization of problem  | P1 | P1,P2,P3
+| electric.ksp-monitor | monitor the Krylov Subspace iterations  | 0 | 0,1
+| electric.ksp-view | view the Krylov Subspace structure  | 0 | 0,1
+| electric.ksp-type | change the Krylov Subspace method  | `gmres` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| electric.pc-view | view the Krylov Subspace structure  | 0 | 0,1
+| electric.pc-type | change the Krylov Subspace strategy  | `lu` | link:https://www.mcs.anl.gov/petsc/documentation/linearsolvertable.html[see PETSc documentation]
+| electric.snes-monitor | if applicable, monitor the non-linear solver iterations  | 0 | 0,1
+| electric.snes-type | if applicable, change the non-linear solver iterations  | `newtonls` | link:https://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/SNES/SNESType.html[see PETSc documentation]
 
 |===
 
+NOTE:: 0 as option value means that the option is not enable, 1 means it is enabled.
+
 == EXAMPLES
 
-We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user-manual/#getting_started[] to demonstrate {manmanual} usage.
+We are now using the `feelpp/feelpp-toolboxes:latest` docker images as described in link:http://docs.feelpp.org/user/0.108/install/containers/#_docker[] to demonstrate feelpp_toolbox_electric usage.
 
 [source,shell]
 .Starting the docker `feelpp/feelpp-toolboxes:latest`
@@ -82,27 +102,33 @@ mpirun --bind-to core <1>
 <3> the name of the toolbox application
 <4> case directory containing the model files (geometry, config and json). This case file is available remotely on github.
 
+Other test cases can be found
+
+- locally in /usr/share/feelpp/data/testcases/toolboxes/electric.
+- on-line http://docs.feelpp.org/cases/0.108/electric/README
+
+
 == RESOURCES
 
 {feelpp} Docs::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.108/
 
 {feelpp} Cases for feelpp_toolbox_electric::
-http://docs.feelpp.org/cases/0.107//
+http://docs.feelpp.org/cases/0.108/electric/README
 
 {feelpp} Toolbox Docs for feelpp_toolbox_electric::
-http://docs.feelpp.org/toolboxes/0.v107/
+http://docs.feelpp.org/toolboxes/0.108/electric/
 
 == SEE ALSO
 
 {feelpp} Mesh Partitioner::
 Mesh partitioner for {feelpp} Toolboxes
-http://docs.feelpp.org/user/0.v107/using/mesh_partitioner/
+http://docs.feelpp.org/user/0.108/using/mesh_partitioner/
 
 
 {feelpp} Remote Tool::
 Access remote data(model cases, meshes) on Github and Girder in {feelpp} applications.
-http://docs.feelpp.org/user/0.v107/using/remotedata/
+http://docs.feelpp.org/user/0.108/using/remotedata/
 
 
 == COPYING

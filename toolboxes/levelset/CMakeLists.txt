@@ -7,5 +7,6 @@ feelpp_add_application( levelset_2d SRCS main_ls.cpp
   INSTALL
 )
 
-feelpp_add_testcase(square PREFIX feelpp_levelset CATEGORY levelset )
-feelpp_add_testcase(tube PREFIX feelpp_levelset CATEGORY levelset )
+foreach( _testcase IN ITEMS "square" "tube" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_levelset CATEGORY toolboxes/levelset)
+endforeach()
