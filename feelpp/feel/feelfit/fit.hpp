@@ -87,6 +87,7 @@ public:
     }
 
     Interpolator const& interpolator() const { return *M_interpolator; }
+    std::shared_ptr<Interpolator> const& interpolatorPtr() const { return M_interpolator; }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
@@ -101,6 +102,12 @@ public:
                 return evaluate_type::Constant( this->interpolator()( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
             else
                 return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return Fit<std::decay_t<decltype(M_expr.applySymbolsExpr( se ))>,InterpOperator>( M_expr.applySymbolsExpr( se ), this->interpolatorPtr() );
         }
 
     // geo_t : transformation geométrique
