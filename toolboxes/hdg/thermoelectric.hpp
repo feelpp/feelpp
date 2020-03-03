@@ -250,7 +250,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
         }
     }
     M_electro->assemblePotentialRHS( cst(0.), "");
+    tic();
     M_electro->solve();
+    toc("solve electro");
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
 
@@ -279,8 +281,8 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
                                {{"T",T0},{"k0",k0},{"T0",T0},{"alpha",alpha},{"Lorentz",L},{"sigma0",sigma0}});
         M_thermo->updateConductivityTerm( k, marker);
         M_k += vf::project( _space=M_electro->potentialSpace(),
-                               _range=markedelements(M_mesh,marker),
-                               _expr=k );
+                            _range=markedelements(M_mesh,marker),
+                            _expr=k );
     }
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
@@ -311,7 +313,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             M_thermo->assemblePotentialRHS( rhs, marker);
         }
     }
+    tic();
     M_thermo->solve();
+    toc("solve thermo");
     M_temperature = M_thermo->potentialField();
     M_tempflux = M_thermo->fluxField();
 
@@ -414,7 +418,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             toc("assembleElectro");
             tic();
             M_electro->solve();
-            toc("solveElectro");
+            toc("solve electro");
             M_potential = M_electro->potentialField();
             M_current = M_electro->fluxField();
 
@@ -466,7 +470,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             toc("assembleThermo");
             tic();
             M_thermo->solve();
-            toc("solveThermo");
+            toc("solve thermo");
             M_temperature = M_thermo->potentialField();
             M_tempflux = M_thermo->fluxField();
 
