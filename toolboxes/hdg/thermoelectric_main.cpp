@@ -29,7 +29,9 @@ runApplicationThermoElectric()
 
     auto te = std::make_shared<thermoelectric_type>();
     te->init();
+    tic();
     te->solve();
+    toc("solve picard");
     te->exportResults();
 }
 
@@ -102,5 +104,10 @@ int main(int argc, char *argv[])
                             }
                         );
     }
+
+    std::ofstream os ( "timers.md" );
+    Environment::saveTimersMD(os);
+    os.close();
+
     return 0;
 }
