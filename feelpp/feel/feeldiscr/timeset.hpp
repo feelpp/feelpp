@@ -362,11 +362,11 @@ public:
                 M_state.clear( STEP_ON_DISK );
             }
 
-        void addComplex( std::string const& name, complex_type const& __s )
+        void addComplex( std::string const& name, complex_type const& __s, bool cst = false )
         {
             if ( this->isIgnored() )
                 return;
-            M_complex[sanitize(name)] =  __s;
+            M_complex[sanitize(name)] =  std::pair{__s,cst};
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
