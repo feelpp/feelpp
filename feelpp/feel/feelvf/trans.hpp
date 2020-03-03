@@ -116,6 +116,14 @@ class Trans : public ExprDynamicBase
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e ) { return typename Lambda<TheExpr...>::type( M_expr( e... ) ); }
 
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return Trans<new_expr_type>( newExpr );
+        }
+
     template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

@@ -376,6 +376,11 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 return res;                                             \
             }                                                           \
                                                                         \
+            template <typename SymbolsExprType>                         \
+                self_type applySymbolsExpr( SymbolsExprType const& se ) const \
+            {                                                           \
+                return *this;                                           \
+            }                                                           \
                                                                         \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \

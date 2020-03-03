@@ -197,6 +197,28 @@ class Product : public ExprDynamicBase
             else
                 return evaluate_type::Constant( res );
         }
+
+
+        template <typename SymbolsExprType>
+        auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newLeftExpr =  M_left_expr.applySymbolsExpr( se );
+            using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+            if constexpr( IsSame )
+                {
+                    using new_expr_type = Product<new_expr_left_type, new_expr_left_type, Type, Props>;
+                    return new_expr_type( newLeftExpr, newLeftExpr );
+                }
+            else
+            {
+                auto newRightExpr =  M_right_expr.applySymbolsExpr( se );
+                using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+                using new_expr_type = Product<new_expr_left_type, new_expr_right_type, Type, Props>;
+                return new_expr_type( newLeftExpr, newRightExpr );
+            }
+        }
+
+
     //@}
 
     template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>

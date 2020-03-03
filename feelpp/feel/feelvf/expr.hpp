@@ -143,6 +143,14 @@ public:
         {
             return evaluate_type::Constant( M_expr.evaluate( p, worldcomm )(M_c1,M_c2) );
         }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr =  M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return ComponentsExpr<new_expr_type>( newExpr, M_c1, M_c2 );
+        }
     /** @name Operator overloads
      */
     //@{
@@ -360,6 +368,14 @@ struct evaluate_expression_type<T, std::void_t<typename T::evaluate_type>>
 template <typename T>
 using evaluate_expression_t = typename evaluate_expression_type<T>::type;
 
+// forward declarations
+template<typename ExprT>
+class Expr;
+
+template <typename ExprT>
+Expr<ExprT>
+expr( ExprT const& exprt );
+
 /*!
   \class Expr
   \brief Variational Formulation Expression
@@ -537,6 +553,12 @@ public:
         {
             //std::cout << "dynctx:" << Feel::vf::dynamicContext( M_expr ) << " hasp:" << vm::hasPOINT(Feel::vf::dynamicContext( M_expr )) << std::endl;
             return Feel::vf::dynamicContext( M_expr );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
         }
     
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>

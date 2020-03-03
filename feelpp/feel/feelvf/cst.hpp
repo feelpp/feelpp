@@ -133,6 +133,13 @@ public:
 
     void setParameterValues( std::map<std::string,value_type> const& mp ) {}
 
+    template <typename SymbolsExprType>
+    expression_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
