@@ -148,6 +148,19 @@ public :
     mapping_type const& mapping() const { return *M_mapping; }
     tuple_vector_expr_type const& tupleExpressions() const { return M_exprs; }
 
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newTupleTensorExprs = hana::transform( this->tupleExpressions(), [&se](auto const& t)
+                                                        {
+                                                            using new_expr_type = std::decay_t<decltype( std::get<1>( t.front() ).applySymbolsExpr( se ) )>;
+                                                            std::vector<std::pair<std::string,new_expr_type>> res;
+                                                            for ( auto const&  [name,theexpr] : t )
+                                                                res.push_back( std::make_pair(name, theexpr.applySymbolsExpr( se ) ) );
+                                                            return res;
+                                                        } );
+            return ExprSelectorByMeshElement<IndexType, std::decay_t<decltype(newTupleTensorExprs)> >( M_mapping,newTupleTensorExprs );
+        }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
