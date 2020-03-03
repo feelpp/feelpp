@@ -850,6 +850,13 @@ public:
             return res;
         }
 
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            // TODO !!!!!!!!
+            return *this;
+        }
+
     //@}
 
     template<typename Geo_t, typename Basis_i_t = boost::none_t, typename Basis_j_t = Basis_i_t>
@@ -1155,6 +1162,13 @@ public:
             evaluate_type res;
             fusion::for_each( M_expr,vf::detail::evaluate_expression<evaluate_type>( res ) );
             return res;
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            // TODO !!!!!!!!
+            return *this;
         }
 
     //@}
