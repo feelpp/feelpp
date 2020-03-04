@@ -30,7 +30,7 @@ namespace vf
 {
 
 template <typename IndexType>
-class ExprSelectorByMeshElementMapping
+class ExprSelectorByMeshElementMapping : public Feel::vf::ExprDynamicBase
 {
 public :
     using tag_type = uint16_type;
@@ -81,7 +81,7 @@ public :
 
     using first_expression_type = typename std::decay_t<decltype(hana::at_c<0>( tuple_vector_expr_type{} ))>::value_type::second_type;
 
-    static const size_type context = std::decay_t<decltype( hana::fold( tuple_vector_expr_type{}, hana::integral_constant<size_type,0>{}, typename GinacExVF<>::FunctorsVariadicExpr::Context{} ) )>::value;
+    static const size_type context = vm::DYNAMIC;
     static const bool is_terminal = false;
 
     template<typename Func>
@@ -141,6 +141,17 @@ public :
                             {
                                 for ( auto const& [name,expr] : e )
                                     res = res && expr.isPolynomial();
+                            });
+            return res;
+        }
+
+    size_type dynamicContext() const
+        {
+            size_type res = 0;
+            hana::for_each( M_exprs, [&res]( auto const& e )
+                            {
+                                for ( auto const& [name,expr] : e )
+                                    res = res | Feel::vf::dynamicContext( expr );
                             });
             return res;
         }
