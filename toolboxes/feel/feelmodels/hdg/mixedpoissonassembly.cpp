@@ -1127,53 +1127,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
 
                 }
             }
-            else if ( field != "state variable" )
-            {
-                // Import data
-                LOG(INFO) << "importing " << field << " at time " << time;
-                double extra_export = 0.0;
-                auto itField = modelProperties().boundaryConditions().find( "Other quantities");
-                if ( itField != modelProperties().boundaryConditions().end() )
-                {
-                    auto mapField = (*itField).second;
-                    auto itType = mapField.find( field );
-                    if ( itType != mapField.end() )
-                    {
-                        for ( auto const& exAtMarker : (*itType).second )
-                        {
-                            if ( exAtMarker.isExpression() )
-                            {
-                                LOG(INFO) << "WARNING: you are trying to export a single expression";
-                            }
-                            else if ( exAtMarker.isFile() )
-                            {
-                                if ( !this->isStationary() )
-                                {
-                                    extra_export = exAtMarker.data(M_bdf_mixedpoisson->time());
-                                }
-                                else
-                                    extra_export = exAtMarker.data(0.1);
-                            }
-                        }
-                    }
-                }
-                // Transform data if necessary
-                LOG(INFO) << "transforming " << field << "at time " << time;
-                std::string field_k = field;
-                field_k += "_k";
-                double kk = 0.0;
-                for( auto const& pairMat : modelProperties().materials() )
-                {
-                    auto material = pairMat.second;
-                    kk = material.getDouble( field_k );
-                }
-                if (std::abs(kk) > 1e-10)
-                    extra_export *= kk;
-
-                // Export data
-                LOG(INFO) << "exporting " << field << " at time " << time;
-                M_exporter->step( time )->add(prefixvm(prefix(), field), extra_export);
-            }
         }
     }
 
