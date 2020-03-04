@@ -312,10 +312,10 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     a = integrate(_range=rangeIntegrateBoundary, _expr=id(v)*inner(idt(u),one()));
     a.matrixPtr()->close();
     double theMatEnergyA = a(v,u);
-    //std::cout << "theMatEnergyA=" << theMatEnergyA << std::endl;
+    BOOST_TEST_MESSAGE( "theMatEnergyA=" << theMatEnergyA );
     auto submeshBoundarySupport = createSubmesh(_mesh=mesh, _range=rangeIntegrateBoundary/*,_update=0*/);
     double evalIntegrateA = integrate(_range=elements(submeshBoundarySupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
-    //std::cout << "evalIntegrateA=" << evalIntegrateA << std::endl;
+    BOOST_TEST_MESSAGE( "evalIntegrateA=" << evalIntegrateA );
 
     BOOST_CHECK_CLOSE( theMatEnergyA, evalIntegrateA, 1e-9 );
 
@@ -324,11 +324,11 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     b = integrate(_range=internalfaces(support(Vh)/*mesh*/), _expr=id(v)*inner(idt(u),one()));
     b.matrixPtr()->close();
     double theMatEnergyB = b(v,u);
-    //std::cout << "theMatEnergyB=" << theMatEnergyB << std::endl;
+    BOOST_TEST_MESSAGE( "theMatEnergyB=" << theMatEnergyB );
 
     auto submeshInternalSupport = createSubmesh(_mesh=mesh, _range=internalfaces(support(Vh)),_update=0);
     double evalIntegrateB = integrate(_range=elements(submeshInternalSupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
-    //std::cout << "evalIntegrateB=" << evalIntegrateB << std::endl;
+    BOOST_TEST_MESSAGE( "evalIntegrateB=" << evalIntegrateB );
 
     BOOST_CHECK_CLOSE( theMatEnergyB, 2*evalIntegrateB, 1e-9 );
 
@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
     //+  2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);a
     double evalIntLF_check = 2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
     //double evalIntLF_check = 2*integrate(_range=elements(submeshBoundarySupport2),_expr=cst(2.)).evaluate()(0,0);
-    //std::cout << "evalIntLF= " << evalIntLF << std::endl;
+    BOOST_TEST_MESSAGE( "evalIntLF= " << evalIntLF );
     BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-12 );
 
 }
