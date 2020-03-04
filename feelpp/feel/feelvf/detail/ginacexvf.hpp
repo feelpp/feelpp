@@ -53,14 +53,6 @@ public:
 
     struct FunctorsVariadicExpr
     {
-        struct Context
-        {
-            template <typename T1,typename T2>
-            constexpr auto operator()( T1 const& res,T2 const& e ) const
-                {
-                    return hana::integral_constant<size_type, T1::value | std::tuple_element<1,typename T2::value_type>::type::context >{};
-                }
-        };
         template<typename Funct>
         struct HasTestFunction
         {
@@ -111,9 +103,7 @@ public:
     };
     using tuple_expand_symbols_expr_type = std::decay_t<decltype( hana::transform( symbols_expression_tuple_type{}, TransformSymbolsExprTupleToAny{} ) ) >;
 
-    //static const size_type context = vm::POINT|expression_type::context;
-    //static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::POINT|vm::JACOBIAN|vm::KB|vm::NORMAL>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
-    static const size_type context =  std::decay_t<decltype( hana::fold( symbols_expression_tuple_type{}, hana::integral_constant<size_type,vm::DYNAMIC>{}, typename FunctorsVariadicExpr::Context{} ) )>::value;
+    static const size_type context = vm::DYNAMIC;
 
     static const bool is_terminal = false;
 
@@ -653,6 +643,8 @@ private :
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
                                     evecExpand[k] = theexpr;
 
+                                    M_context = M_context | Feel::vf::dynamicContext( theexpr );
+
                                     if ( theexpr.isPolynomial() )
                                         symbTotalDegree.push_back( std::make_pair( M_syms[idx], theexpr.polynomialOrder() ) );
                                     else
@@ -666,6 +658,8 @@ private :
                                     auto const& theexprBase = std::get<1>( e );
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
                                     evecExpand[k] = theexpr;
+
+                                    M_context = M_context | Feel::vf::dynamicContext( theexpr );
 
                                     for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
                                     {
