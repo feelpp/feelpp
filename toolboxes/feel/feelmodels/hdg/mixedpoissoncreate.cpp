@@ -248,19 +248,19 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
         auto const& mat = m.second;
         if( mat.hasPhysics() )
         {
-            // switch(M_physic)
-            // {
-            // case MixedPoissonPhysics::None:
-            //     break;
-            // case MixedPoissonPhysics::Electric:
-            //     if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
-            //         continue;
-            //     break;
-            // case MixedPoissonPhysics::Heat:
-            //     if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
-            //         continue;
-            //     break;
-            // }
+            switch(M_physic)
+            {
+            case MixedPoissonPhysics::None:
+                break;
+            case MixedPoissonPhysics::Electric:
+                if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
+                    continue;
+                break;
+            case MixedPoissonPhysics::Heat:
+                if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
+                    continue;
+                break;
+            }
         }
         for ( std::string const& matmarker : mat.meshMarkers() )
             markers.insert( matmarker );

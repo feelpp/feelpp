@@ -24,6 +24,8 @@
 
 #include <feel/feelmodels/hdg/enums.hpp>
 
+#include <feel/feelmodels/hdg/enums.hpp>
+
 #define USE_SAME_MAT 1
 
 namespace Feel {
