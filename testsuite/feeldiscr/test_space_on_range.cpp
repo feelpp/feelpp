@@ -290,7 +290,7 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
 
-BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
+BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
 {
     using namespace Feel;
     auto mesh = unitCube();
@@ -312,10 +312,10 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
     a = integrate(_range=rangeIntegrateBoundary, _expr=id(v)*inner(idt(u),one()));
     a.matrixPtr()->close();
     double theMatEnergyA = a(v,u);
-    std::cout << "theMatEnergyA=" << theMatEnergyA << std::endl;
+    //std::cout << "theMatEnergyA=" << theMatEnergyA << std::endl;
     auto submeshBoundarySupport = createSubmesh(_mesh=mesh, _range=rangeIntegrateBoundary/*,_update=0*/);
     double evalIntegrateA = integrate(_range=elements(submeshBoundarySupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
-    std::cout << "evalIntegrateA=" << evalIntegrateA << std::endl;
+    //std::cout << "evalIntegrateA=" << evalIntegrateA << std::endl;
 
     BOOST_CHECK_CLOSE( theMatEnergyA, evalIntegrateA, 1e-9 );
 
@@ -324,16 +324,35 @@ BOOST_AUTO_TEST_CASE( test_integrate_different_mesh )
     b = integrate(_range=internalfaces(support(Vh)/*mesh*/), _expr=id(v)*inner(idt(u),one()));
     b.matrixPtr()->close();
     double theMatEnergyB = b(v,u);
-    std::cout << "theMatEnergyB=" << theMatEnergyB << std::endl;
+    //std::cout << "theMatEnergyB=" << theMatEnergyB << std::endl;
 
     auto submeshInternalSupport = createSubmesh(_mesh=mesh, _range=internalfaces(support(Vh)),_update=0);
     double evalIntegrateB = integrate(_range=elements(submeshInternalSupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
-    std::cout << "evalIntegrateB=" << evalIntegrateB << std::endl;
+    //std::cout << "evalIntegrateB=" << evalIntegrateB << std::endl;
 
     BOOST_CHECK_CLOSE( theMatEnergyB, 2*evalIntegrateB, 1e-9 );
 
+
+
+    // TODO :  need to work on boundaryfaces(support(Vh)) : the support information is lost with range
     auto c = form1(_test=Xh);
-    c = integrate( _range=faces(support(Vh)), _expr=id(v) );
+    //c = integrate( _range=faces(support(Vh)), _expr=id(v) );
+    //c = integrate( _range=boundaryfaces(support(Vh)), _expr=id(v) );
+    c = integrate( _range=internalfaces(support(Vh)), _expr=id(v) );
+    c.vectorPtr()->close();
+    double evalIntLF = inner_product( *c.vectorPtr(),v);
+    //double evalIntLF_check = integrate(_range=faces(support(Vh)),_expr=leftfacev(cst(2.))).evaluate()(0,0); // integrate only on one side
+    // double evalIntLF_check = integrate(_range=boundaryfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0)
+    //     +  2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
+
+    //auto submeshBoundarySupport2 = createSubmesh( _mesh=mesh, _range=internalfaces(support(Vh)), _update=0 );
+    //double evalIntLF_check = integrate(_range=elements(submeshBoundarySupport2)/*boundaryfaces(support(Vh))*/,_expr=cst(2.)).evaluate()(0,0);
+    //+  2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);a
+    double evalIntLF_check = 2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
+    //double evalIntLF_check = 2*integrate(_range=elements(submeshBoundarySupport2),_expr=cst(2.)).evaluate()(0,0);
+    //std::cout << "evalIntLF= " << evalIntLF << std::endl;
+    BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-12 );
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
