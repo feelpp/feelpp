@@ -326,6 +326,16 @@ public:
                  IM2 const& im2,
                  mpl::int_<2> );
 
+        template<typename IM2, typename IMTest>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2,
+                 IMTest const& imTest,
+                 mpl::int_<2> );
+
         size_type trialElementId( size_type trial_eid ) const { return invalid_v<size_type>; }
         bool trialElementIsOnBoundary( size_type trial_eid ) const { return false; }
 
