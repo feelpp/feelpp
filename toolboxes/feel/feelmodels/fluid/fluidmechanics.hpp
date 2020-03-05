@@ -885,29 +885,22 @@ public :
     //___________________________________________________________________________________//
     // symbols expression
     template <typename FieldVelocityType, typename FieldPressureType>
-    /*constexpr*/auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
+    /*constexpr*/auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_" ) const
         {
-            auto seField = this->symbolsExprField( u,p );
-            auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
-            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+            auto seToolbox = this->symbolsExprToolbox( u,p, prefix_symbol );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
         }
-    auto symbolsExpr() const { return this->symbolsExpr( this->fieldVelocity(),  this->fieldPressure() ); }
+    auto symbolsExpr( std::string const& prefix_symbol = "fluid_" ) const { return this->symbolsExpr( this->fieldVelocity(), this->fieldPressure(), prefix_symbol ); }
 
     template <typename FieldVelocityType, typename FieldPressureType>
-    constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_"  ) const
+    auto symbolsExprToolbox( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_"  ) const
         {
             return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%U")%prefix_symbol).str(), idv(u), SymbolExprComponentSuffix( nDim, 1, true ) ),
                                           symbolExpr( (boost::format("%1%P")%prefix_symbol).str(), idv(p) ),
-                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) ),
-                                          this->symbolsExprUserFunctions()
+                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) )
                                           );
-        }
-
-    template <typename SymbExprType>
-    auto symbolsExprMaterial( SymbExprType const& se ) const
-        {
-            return Feel::vf::symbolsExpr(); // TODO
         }
 
     //___________________________________________________________________________________//
@@ -1235,64 +1228,7 @@ public :
 private :
     void updateBoundaryConditionsForUse();
 
-#if 0
-    template <typename FieldVelocityType, typename FieldPressureType>
-    constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p, hana::int_<2> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(u)(0,0) ),
-                                          symbolExpr("fluid_Uy",idv(u)(1,0) ),
-                                          symbolExpr("fluid_P",idv(p) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(u),mpl::int_<InnerProperties::SQRT>()) ),
-                                          this->symbolsExprUserFunctions()
-                                          );
-        }
-    template <typename FieldVelocityType, typename FieldPressureType>
-    constexpr auto symbolsExprField( FieldVelocityType const& u, FieldPressureType const& p, hana::int_<3> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("fluid_Ux",idv(u)(0,0) ),
-                                          symbolExpr("fluid_Uy",idv(u)(1,0) ),
-                                          symbolExpr("fluid_Uz",idv(u)(2,0) ),
-                                          symbolExpr("fluid_P",idv(p) ),
-                                          symbolExpr("fluid_U_magnitude",inner(idv(u),mpl::int_<InnerProperties::SQRT>()) ),
-                                          this->symbolsExprUserFunctions()
-                                          );
-        }
-#endif
-    //auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
-
-    template <typename SymbExprType>
-    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
-
-
-    auto symbolsExprUserFunctions() const
-        {
-            std::vector<std::pair<std::string,decltype(idv(component_element_velocity_ptrtype())) > > seScalar;
-            std::vector<std::pair<std::string,decltype(idv(element_velocity_ptrtype())(0,0)) > > seVectorial;
-
-            for ( auto const& fieldUserScalar : this->fieldsUserScalar() )
-            {
-                 std::string const& userFieldName = fieldUserScalar.first;
-                 auto const& u = fieldUserScalar.second;
-                 seScalar.push_back( std::make_pair(userFieldName, idv(u) ) );
-            }
-            for ( auto const& fieldUserVectorial : this->fieldsUserVectorial() )
-            {
-                 std::string const& userFieldName = fieldUserVectorial.first;
-                 auto const& u = fieldUserVectorial.second;
-                 for ( int c=0;c<nDim;++c )
-                 {
-                     std::string compName = "_X";
-                     if ( c==1 )
-                         compName = "_Y";
-                     else if (c==2)
-                         compName = "_Z";
-                     seVectorial.push_back( std::make_pair(userFieldName+compName, idv(u)(c,0) ) );
-                 }
-            }
-            return Feel::vf::symbolsExpr( symbolExpr( seScalar ), symbolExpr( seVectorial ) );
-        }
-
-protected:
+    //protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
 

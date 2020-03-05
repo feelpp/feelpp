@@ -130,12 +130,11 @@ public :
     template <typename FieldTemperatureType,typename FieldVelocityType, typename FieldPressureType>
     auto symbolsExpr( FieldTemperatureType const& t, FieldVelocityType const& u, FieldPressureType const& p ) const
         {
-            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_fluidModel->symbolsExprField( u,p ) );
-            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-            auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) );
-            //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
-            //                                                 M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+            auto seHeat = this->heatModel()->symbolsExprToolbox( t );
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat );
         }
 
     //___________________________________________________________________________________//

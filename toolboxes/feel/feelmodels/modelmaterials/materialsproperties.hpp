@@ -421,13 +421,14 @@ public :
             return false;
         }
 
-    template <int TheDim, typename SymbolsExpr>
-    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+    template <int TheDim, typename SymbolsExpr = symbols_expression_empty_t>
+    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExpr const& se = symbols_expression_empty_t{} ) const
         {
             auto Id = eye<TheDim,TheDim>();
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)*Id) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar_as_matrix;
-            typedef decltype(expr(matrix_field_expression<TheDim,TheDim,2>{},symbolsExpr)) _expr_matrix_type;
+            using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
+            using _expr_matrix_type = std::decay_t< decltype( ModelExpression{}.template expr<TheDim,TheDim>() ) >;
+            using _expr_scalar_as_matrix_type = std::decay_t< decltype(_expr_scalar_type{}*Id) >;
+            std::vector<std::pair<std::string,_expr_scalar_as_matrix_type>> exprs_scalar_as_matrix;
             std::vector<std::pair<std::string,_expr_matrix_type>> exprs_matrix;
 
             for ( auto & [matName,matProps] : M_materialNameToProperties )
@@ -438,23 +439,26 @@ public :
 
                 if ( matProp.template hasExpr<TheDim,TheDim>() )
                 {
-                    auto matPropExpr = expr( matProp.template expr<TheDim,TheDim>(), symbolsExpr );
+                    auto const& matPropExpr = matProp.template expr<TheDim,TheDim>();
                     exprs_matrix.push_back( std::make_pair( matName, matPropExpr ) );
                 }
                 else if ( matProp.hasExprScalar() )
                 {
-                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
+                    auto const& matPropExpr = matProp.exprScalar();
                     exprs_scalar_as_matrix.push_back( std::make_pair( matName, matPropExpr*Id ) );
                 }
             }
 
-            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+            if constexpr ( std::is_same_v<SymbolsExpr,symbols_expression_empty_t> )
+                             return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+            else
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix ).applySymbolsExpr( se );
         }
 
-    template <typename SymbolsExpr>
-    auto materialPropertyExprScalar( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto materialPropertyExprScalar( std::string const& propName, SymbolsExpr const& se = symbols_expression_empty_t{} ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
+            using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
             std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar;
             for ( auto & [matName,matProps] : M_materialNameToProperties )
             {
@@ -464,14 +468,16 @@ public :
 
                 if ( matProp.isScalar() )
                 {
-                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
+                    auto const& matPropExpr =  matProp.exprScalar();
                     exprs_scalar.push_back( std::make_pair( matName, matPropExpr ) );
                 }
             }
 
-            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar );
+            if constexpr ( std::is_same_v<SymbolsExpr,symbols_expression_empty_t> )
+                             return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar );
+            else
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar ).applySymbolsExpr( se );
         }
-
 
     // thermal conductivity
     bool hasThermalConductivity( std::string const& matName ) const
@@ -492,14 +498,14 @@ public :
             return this->hasMaterialPropertyDependingOnSymbol( "thermal-conductivity", symbolStr );
         }
 
-    template <typename SymbolsExpr>
-    auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             return this->materialPropertyExprScalarOrMatrix<nDim>( "thermal-conductivity", symbolsExpr );
         }
 
-    template <typename SymbolsExpr>
-    auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             return this->materialPropertyExprScalar( "thermal-conductivity", symbolsExpr );
         }
@@ -630,12 +636,11 @@ public :
             }
         }
 
-    template <typename SymbExprType>
-    auto symbolsExpr( SymbExprType const& se, std::string const& prefix_symbol = "materials_" ) const
+    auto symbolsExpr( std::string const& prefix_symbol = "materials_" ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
+            using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
             std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
-            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)) _expr_matrix_type;
+            using _expr_matrix_type = std::decay_t< decltype( ModelExpression{}.template expr<nDim,nDim>() ) >;
             std::vector<std::tuple<std::string,_expr_matrix_type,SymbolExprComponentSuffix>> matPropSymbsMatrix;
 
             int nMat = this->numberOfMaterials();
@@ -656,29 +661,27 @@ public :
                     std::string symbolGlobalMatProp = (boost::format("%1%%2%")%prefix_symbol %symbolProp).str();
                     if ( matProp.template hasExpr<nDim,nDim>() )
                     {
-                        auto matPropExpr = expr( matProp.template expr<nDim,nDim>(), se );
+                        auto const& matPropExpr = matProp.template expr<nDim,nDim>();
                         matPropSymbsMatrix.push_back( std::make_tuple( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( nDim,nDim,true ) ) );
                         if ( nMat == 1 )
                             matPropSymbsMatrix.push_back( std::make_tuple( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( nDim,nDim,true ) ) );
                     }
-                    else if ( matProp.hasExprScalar() )
+                   else if ( matProp.template hasExpr<1,1>() )
                     {
                         if ( matProp.isConstant() )
                             continue;
-                        auto matPropExpr = expr( matProp.exprScalar(), se );
+                        auto const& matPropExpr = matProp.template expr<1,1>();
                         matPropSymbsScalar.push_back( std::make_pair( symbolPrefixMatProp, matPropExpr ) );
                         if ( nMat == 1 )
                             matPropSymbsScalar.push_back( std::make_pair( symbolGlobalMatProp, matPropExpr ) );
                     }
                     else CHECK( false ) << "TODO";
-
-
                 }
             }
 
-            typedef decltype( this->materialPropertyExprScalar( "", se ) ) _expr_scalar_selector_type;
+            typedef decltype( this->materialPropertyExprScalar( "" ) ) _expr_scalar_selector_type;
             std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
-            typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "", se ) ) _expr_scalar_or_matrix_selector_type;
+            typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "" ) ) _expr_scalar_or_matrix_selector_type;
             std::vector<std::tuple<std::string,_expr_scalar_or_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsScalarOrMatrixSelector;
 
             if ( nMat > 1 )
@@ -691,12 +694,12 @@ public :
                     //std::string const& propSymbol = std::get<0>( propDesc );
                     if ( this->materialPropertyIsScalarInAllMaterials( propName ) )
                     {
-                        auto propExpr = this->materialPropertyExprScalar( propName,se );
+                        auto propExpr = this->materialPropertyExprScalar( propName );
                         matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr ) );
                     }
                     else if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
                     {
-                        auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName,se );
+                        auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName );
                         matPropSymbsScalarOrMatrixSelector.push_back( std::make_tuple( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
                     }
                     else CHECK( false ) << "TODO";

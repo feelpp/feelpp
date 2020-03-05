@@ -96,16 +96,29 @@ public:
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( pt::ptree & p ) override;
 
+    mesh_ptrtype const& mesh() const { return M_mesh; }
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
+
+    space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
+    element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
+    element_electricpotential_type const& fieldElectricPotential() const { return *M_fieldElectricPotential; }
+
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
+    backend_ptrtype const& backend() const { return M_backend; }
+    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
+    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
+    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
+    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
     void initInitialConditions();
     void initBoundaryConditions();
     void initPostProcess() override;
-
-    template <typename SymbExprType>
-    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit( se ); }
-
 
 public :
     void setMesh(mesh_ptrtype const& mesh) { M_mesh = mesh; }
@@ -114,6 +127,13 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     void initAlgebraicFactory();
+
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    //___________________________________________________________________________________//
+    // execute post-processing
+    //___________________________________________________________________________________//
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -129,13 +149,18 @@ public :
     template <typename TupleFieldsType, typename SymbolsExpr>
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
-    void updateParameterValues();
-    void setParameterValues( std::map<std::string,double> const& paramValues );
+    //___________________________________________________________________________________//
+    // fields used in post-processing
+    //___________________________________________________________________________________//
 
     auto allFields( std::string const& prefix = "" ) const
         {
             return hana::make_tuple( std::make_pair( prefixvm(prefix,"electric-potential"),this->fieldElectricPotentialPtr() ) );
         }
+
+    //___________________________________________________________________________________//
+    // export expressions
+    //___________________________________________________________________________________//
 
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -172,64 +197,46 @@ public :
             return hana::make_tuple( mapExprElectricField, mapExprCurrentDensity, mapExprJoulesLosses );
         }
 
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
 
     template <typename FieldElectricPotentialType>
     auto symbolsExpr( FieldElectricPotentialType const& v, std::string const& prefix_symbol = "electric_" ) const
         {
-            auto seField = this->symbolsExprField( v, prefix_symbol );
-            auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( seField, seFit ) );
-            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+            auto seToolbox = this->symbolsExprToolbox( v, prefix_symbol );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
         }
     auto symbolsExpr( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExpr( this->fieldElectricPotential(), prefix_symbol ); }
 
-    constexpr auto symbolsExprField( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExprField( this->fieldElectricPotential(), prefix_symbol ); }
     template <typename FieldElectricPotentialType>
-    constexpr auto symbolsExprField( FieldElectricPotentialType const& v,  std::string const& prefix_symbol = "electric_" ) const
+    auto symbolsExprToolbox( FieldElectricPotentialType const& v,  std::string const& prefix_symbol = "electric_" ) const
         {
-            // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%P")%prefix_symbol).str(),idv(v) ),
-                                          symbolExpr( (boost::format("%1%grad_P")%prefix_symbol).str(),gradv(v), SymbolExprComponentSuffix( 1,nDim,true ) ),
-                                          symbolExpr( (boost::format("%1%dn_P")%prefix_symbol).str(),dnv(v) )
-                                          );
-        }
-
-    template <typename FieldElectricPotentialType, typename SymbExprType>
-    auto symbolsExprPostProcess( FieldElectricPotentialType const& v, SymbExprType const& se, std::string const& prefix_symbol = "electric_" ) const
-        {
-            typedef decltype( this->currentDensityExpr(v,"",se) ) _expr_currentdensity_type;
+            // generate symbol electric_matName_current_density
+            typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
-
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
             {
                 std::string symbolcurrentDensityStr = (boost::format("%1%%2%_current_density")%prefix_symbol %matName).str();
-                auto _currentDensityExpr = this->currentDensityExpr( v, matName, se );
+                auto _currentDensityExpr = this->currentDensityExpr( v, matName );
                 currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
             }
-            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
+
+            // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
+            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%P")%prefix_symbol).str(),idv(v) ),
+                                          symbolExpr( (boost::format("%1%grad_P")%prefix_symbol).str(),gradv(v), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                                          symbolExpr( (boost::format("%1%dn_P")%prefix_symbol).str(),dnv(v) ),
+                                          symbolExpr( currentDensitySymbs )
+                                          );
         }
-
-    //___________________________________________________________________________________//
-
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-
-    space_electricpotential_ptrtype const& spaceElectricPotential() const { return M_XhElectricPotential; }
-    element_electricpotential_ptrtype const& fieldElectricPotentialPtr() const { return M_fieldElectricPotential; }
-    element_electricpotential_type const& fieldElectricPotential() const { return *M_fieldElectricPotential; }
-
-    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
-    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
-    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-
-    backend_ptrtype const& backend() const { return M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+    auto symbolsExprToolbox( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExprToolbox( this->fieldElectricPotential(), prefix_symbol ); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
+    //___________________________________________________________________________________//
+
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
@@ -249,6 +256,8 @@ public :
 
 
     //___________________________________________________________________________________//
+    // toolbox expressions
+    //___________________________________________________________________________________//
 
     auto electricFieldExpr() const { return this->electricFieldExpr( this->fieldElectricPotential() ); }
 
@@ -258,22 +267,26 @@ public :
             return -trans(gradv( v ) );
         }
 
-    template <typename SymbolsExpr>
-    auto currentDensityExpr( std::string const& matName, SymbolsExpr const& symbolsExpr ) const { return this->currentDensityExpr( this->fieldElectricPotential(), matName, symbolsExpr ); }
-
-    template <typename FieldElectricPotentialType, typename SymbolsExpr>
-    auto currentDensityExpr( FieldElectricPotentialType const& v, std::string const& matName, SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto currentDensityExpr( std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+            return this->currentDensityExpr( this->fieldElectricPotential(), matName, symbolsExpr );
+        }
+    template <typename FieldElectricPotentialType, typename SymbolsExpr = symbols_expression_empty_t>
+    auto currentDensityExpr( FieldElectricPotentialType const& v, std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
             return -sigmaExpr*trans(gradv(v));
         }
 
-    template <typename SymbolsExpr>
-    auto joulesLossesExpr(std::string const& matName, SymbolsExpr const& symbolsExpr ) const { return this->joulesLossesExpr( this->fieldElectricPotential(), matName, symbolsExpr ); }
-
-    template <typename FieldElectricPotentialType, typename SymbolsExpr>
-    auto joulesLossesExpr( FieldElectricPotentialType const& v, std::string const& matName, SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExpr = symbols_expression_empty_t>
+    auto joulesLossesExpr(std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+        {
+            return this->joulesLossesExpr( this->fieldElectricPotential(), matName, symbolsExpr );
+        }
+    template <typename FieldElectricPotentialType, typename SymbolsExpr = symbols_expression_empty_t>
+    auto joulesLossesExpr( FieldElectricPotentialType const& v, std::string const& matName, SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );

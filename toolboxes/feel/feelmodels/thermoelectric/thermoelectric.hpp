@@ -129,18 +129,18 @@ public :
     void startTimeStep();
     void updateTimeStep();
 
-    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
 
     template <typename FieldTemperatureType,typename FieldElectricPotentialType>
     auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
         {
-            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
-            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-            auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) );
-            //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
-            //                                                  M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+            auto seHeat = this->heatModel()->symbolsExprToolbox( t );
+            auto seElectric = this->electricModel()->symbolsExprToolbox( v );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat );
         }
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
