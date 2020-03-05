@@ -112,6 +112,14 @@ public:
             return M_expr.evaluate(p,worldcomm);
         }
 
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return UnaryPlus<new_expr_type>( newExpr );
+        }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
@@ -319,6 +327,14 @@ public:
     evaluate_type evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const
         {
             return -M_expr.evaluate(p,worldcomm);
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newExpr = M_expr.applySymbolsExpr( se );
+            using new_expr_type = std::decay_t<decltype(newExpr)>;
+            return UnaryMinus<new_expr_type>( newExpr );
         }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
