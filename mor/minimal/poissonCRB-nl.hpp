@@ -54,7 +54,7 @@ public:
     using space_type = FunctionSpace<mesh_type, basis_type, value_type>;
     using element_type = typename space_type::element_type;
 
-    using basisd_type = bases<Lagrange<Order, Scalar, Discontinuous> >;
+    using basisd_type = bases<Lagrange<0, Scalar, Discontinuous> >;
     using spaced_type = FunctionSpace<mesh_type, basisd_type, Discontinuous, value_type>;
 };
 
@@ -121,6 +121,8 @@ private:
     parameter_type M_mu;
     element_type M_u;
 
+    double M_sigmaMax;
+
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
 public:
@@ -136,6 +138,8 @@ public:
     int QAverageTemp( ModelOutput const& out ) const;
     int mMaxIntensity( int q, ModelOutput const& out ) const;
     int mMaxAverageTemp( int q, ModelOutput const& out ) const;
+    int QInitialGuess() const override { return 2; }
+    int mMaxInitialGuess(int q) const override { return 1; }
     void resize();
     int indexOfElecMat(std::string const& mat ) const;
     int indexOfTherMat(std::string const& mat ) const;

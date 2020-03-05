@@ -4240,7 +4240,7 @@ CRB<TruthModelType>::computeProjectionInitialGuess( const parameter_type & mu, i
         }
     }
 
-    initial_guess = Mass.lu().solve( F );
+    initial_guess = Mass.fullPivLu().solve( F );
 
 #if 0
     export_ptrtype exporter;

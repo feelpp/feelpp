@@ -63,19 +63,19 @@ PoissonNL::assemble()
     for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
         auto a2 = form2( _test=Xh, _trial=Xh );
-        a2 += integrate( markedfaces(M_mesh,"V0"),
-                         idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
-                                               -inner(gradt(u1)*N(),id(u1))
-                                               -inner(grad(u1)*N(),idt(u1)) ) );
+        a2 = integrate( markedfaces(M_mesh,"V0"),
+                        idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
+                                              -inner(gradt(u1)*N(),id(u1))
+                                              -inner(grad(u1)*N(),idt(u1)) ) );
         M_Aqm[2][m] = a2.matrixPtr();
     }
     for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
         auto a2 = form2( _test=Xh, _trial=Xh );
-        a2 += integrate( markedfaces(M_mesh,"V1"),
-                         idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
-                                               -inner(gradt(u1)*N(),id(u1))
-                                               -inner(grad(u1)*N(),idt(u1)) ) );
+        a2 = integrate( markedfaces(M_mesh,"V1"),
+                        idv(eim_sigma->q(m))*(gamma/hFace()*inner(idt(u1),id(u1))
+                                              -inner(gradt(u1)*N(),id(u1))
+                                              -inner(grad(u1)*N(),idt(u1)) ) );
         M_Aqm[3][m] = a2.matrixPtr();
     }
 
@@ -85,14 +85,21 @@ PoissonNL::assemble()
     M_Aqm[4][0] = a3.matrixPtr();
 
     /**********  right hand side *********/
+    auto eim_grad = this->scalarDiscontinuousEim()[0];
+    // auto eim_grad = this->scalarContinuousEim()[2];
     eim_sigma = this->scalarContinuousEim()[1];
-    auto j = expr("4/(Pi*Pi)");
+    // auto j = expr("4/(Pi*Pi)");
+    int M = 0;
     for( int m = 0; m < eim_sigma->mMax(); ++m )
     {
-        auto f0 = form1(_test=Xh);
-        f0 = integrate( elements(M_mesh),
-                        idv(eim_sigma->q(m))*j*id(u2) );
-        M_Fqm[0][0][m] = f0.vectorPtr();
+        for( int mm = 0; mm < eim_grad->mMax(); ++mm )
+        {
+            auto f0 = form1(_test=Xh);
+            f0 = integrate( elements(M_mesh),
+                            M_sigmaMax*idv(eim_sigma->q(m))*idv(eim_grad->q(mm))*id(u2) );
+            // idv(eim_grad->q(m))*id(u2) );
+            M_Fqm[0][0][M++] = f0.vectorPtr();
+        }
     }
 
     // Dirichlet condition
@@ -156,7 +163,8 @@ PoissonNL::computeBetaQm( parameter_type const& mu )
     betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu);
     std::vector<vectorN_type> betaEimSigma(1);
     betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu);
-    vectorN_type betaEimGrad;
+    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu);
+    // vectorN_type betaEimGrad = this->scalarContinuousEim()[2]->beta(mu);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
@@ -169,7 +177,8 @@ PoissonNL::computeBetaQm( element_type const& u, parameter_type const& mu)
     betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu, u);
     std::vector<vectorN_type> betaEimSigma(1);
     betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu, u);
-    vectorN_type betaEimGrad;
+    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, u);
+    // vectorN_type betaEimGrad = this->scalarContinuousEim()[2]->beta(mu, u);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
@@ -182,7 +191,8 @@ PoissonNL::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
     betaEimK[0] = this->scalarContinuousEim()[0]->beta(mu, urb);
     std::vector<vectorN_type> betaEimSigma(1);
     betaEimSigma[0] = this->scalarContinuousEim()[1]->beta(mu, urb);
-    vectorN_type betaEimGrad;
+    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, urb);
+    // vectorN_type betaEimGrad = this->scalarContinuousEim()[2]->beta(mu, urb);
     this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
@@ -202,8 +212,12 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
     M_betaAqm[4][0] = mu.parameterNamed("h");
 
     /**********  right hand side *********/
+    int M = 0;
     for( int m = 0; m < betaSigma[0].size(); ++m )
-        M_betaFqm[0][0][m] = betaSigma[0](m)*mu.parameterNamed("current")*mu.parameterNamed("current");
+        for( int mm = 0; mm < betaGrad.size(); ++mm )
+            M_betaFqm[0][0][M++] = betaSigma[0](m)*betaGrad(mm);
+    // for( int m = 0; m < betaGrad.size(); ++m )
+    //     M_betaFqm[0][0][m] = betaGrad(m)*mu.parameterNamed("sigma");
     for( int m = 0; m < betaSigma[0].size(); ++m )
         M_betaFqm[0][1][m] = mu.parameterNamed("current")*betaSigma[0](m);
     M_betaFqm[0][2][0] = mu.parameterNamed("h")*mu.parameterNamed("Tw");
@@ -236,7 +250,6 @@ PoissonNL::computeInitialGuessAffineDecomposition()
 PoissonNL::beta_vector_type
 PoissonNL::computeBetaInitialGuess( parameter_type const& mu)
 {
-    auto mu0 = this->Dmu->min();
     M_betaInitialGuess[0][0] = 1;
     M_betaInitialGuess[1][0] = 1;
     return this->M_betaInitialGuess;
@@ -358,14 +371,16 @@ PoissonNL::solve(parameter_type const& mu)
         }
 
         auto f = form1(_test=Xh);
-        auto j = expr("4/(Pi*Pi)")*mu.parameterNamed("current")*mu.parameterNamed("current");
+        // auto j = expr("4/(Pi*Pi)");
         for( auto const& [key,mat] : M_elecMaterials )
         {
+            // auto sigma = mu.parameterNamed(mat.getString("misc.sigmaKey"));
             auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
             auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
             auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
             f += integrate( markedelements(M_mesh,mat.meshMarkers()),
-                            sigma*j*id(u2) );
+                            // mu.parameterNamed("current")*mu.parameterNamed("current")*sigma*j*id(u2) );
+                            sigma*inner(gradv(uOld1))*id(u2) );
         }
         // Dirichlet condition
         for( auto const&[bdName, bd] : potentialDirichlet )
@@ -396,6 +411,9 @@ PoissonNL::solve(parameter_type const& mu)
         a.solve(_solution=U, _rhs=f, _name="thermo-electro");
 
         increment = normL2(_range=elements(M_mesh), _expr=idv(u2)-idv(uOld2) + idv(u1) - idv(uOld1));
+        if( ioption("poisson.verbose") > 0 )
+            Feel::cout << "iteration " << it << " increment = " << increment << std::endl;
+
         uOld1 = u1;
         uOld2 = u2;
         ++it;
@@ -475,16 +493,17 @@ PoissonNL::solveLinear(parameter_type const& mu)
     }
 
     auto fT = form1(_test=XhT);
-    auto j = expr("4/(Pi*Pi)")*mu.parameterNamed("current")*mu.parameterNamed("current");
+    // auto j = expr("4/(Pi*Pi)");
     for( auto const& [key,mat] : M_elecMaterials )
     {
         auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
         fT += integrate( markedelements(M_mesh, mat.meshMarkers()),
-                         sigma0*j*id(u2) );
+                         // mu.parameterNamed("current")*mu.parameterNamed("current")*sigma0*j*id(u2) );
+                         sigma0*inner(gradv(u1))*id(u2) );
     }
     for( auto const&[bdName, bd] : temperatureRobin )
     {
-        auto e = bd.expr1();
+        auto e = bd.expr2();
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
