@@ -46,7 +46,8 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
           M_params( vec_type::Zero( M_syms.size() ) ),
           M_indexSymbolXYZ(),
           M_indexSymbolN(),
-          M_context( 0 )
+          M_context( 0 ),
+          M_isNumericExpression( false )
     {
         // detect if symbol x,y,z are present and get index access in M_params
         std::map<int, std::string> lstxyz{{0, "x"}, {1, "y"}, {2, "z"}};
@@ -110,6 +111,20 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     {
         return M_context;
     }
+
+    //! return true if the expression is numeric (i.e. not a symbolic expression)
+    bool isNumericExpression() const { return M_isNumericExpression; }
+
+    uint16_type index( std::string const& sname ) const
+        {
+            auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                    [=]( GiNaC::symbol const& s ) { return s.get_name() == sname; } );
+            if ( it != M_syms.end() )
+            {
+                return it-M_syms.begin();
+            }
+            return invalid_uint16_type_value;
+        }
 
     void setParameterFromOption()
     {
@@ -179,6 +194,13 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         }
     }
 
+    void eraseParameterValues( std::set<std::string> const& symbNames )
+        {
+            for ( std::string const& symbName : symbNames )
+                M_symbolNameToValue.erase( symbName );
+        }
+
+
   protected:
     std::vector<GiNaC::symbol> M_syms;
     vec_type M_params;
@@ -186,6 +208,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolN;
     std::map<std::string, value_type> M_symbolNameToValue;
     size_type M_context;
+    bool M_isNumericExpression;
 };
 
 } // namespace Feel::vf
