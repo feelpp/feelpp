@@ -200,10 +200,10 @@ public:
     template <typename FieldVelocityType, typename FieldPressureType>
     auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
     {
-        auto symbolExprField = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprField( u, p ) );
-        auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-        auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-        return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
+        auto seParam = this->symbolsExprParameter();
+        //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+        return Feel::vf::symbolsExpr( seFluid, seParam );
     }
     //--------------------------------------------------------------------//
     // Algebraic data

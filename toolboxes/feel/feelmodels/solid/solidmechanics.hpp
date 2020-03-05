@@ -502,8 +502,24 @@ public :
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
     // symbols expression
-    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
-    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+    template <typename FieldDispType>
+    auto symbolsExpr( FieldDispType const& u, std::string const& prefix_symbol = "solid_"  ) const
+        {
+            auto seToolbox = this->symbolsExprToolbox( u, prefix_symbol );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
+        }
+    auto symbolsExpr( std::string const& prefix_symbol = "solid_" ) const { return this->symbolsExpr( this->fieldDisplacement(), prefix_symbol ); }
+
+    template <typename FieldDispType>
+    auto symbolsExprToolbox( FieldDispType const& u, std::string const& prefix_symbol = "solid_"  ) const
+        {
+            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%U")%prefix_symbol).str(), idv(u), SymbolExprComponentSuffix( nDim, 1, true ) ),
+                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) )
+                                          );
+        }
+
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
@@ -638,25 +654,6 @@ private :
 
 private :
     void updateBoundaryConditionsForUse();
-
-    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
-        }
-    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("solid_Dz",idv(this->fieldDisplacement())(2,0) ),
-                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
-        }
-    auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
-
-protected:
 
     // model
     std::string M_modelName, M_solverName;

@@ -253,22 +253,12 @@ class ModelNumerical : public ModelAlgebraic
         void setPostProcessSaveAllFieldsAvailable( std::set<std::string> const& ifields ) { M_postProcessSaveAllFieldsAvailable = ifields; }
         virtual void initPostProcess();
 
-        template<typename SymbExprField>
-        auto symbolsExprFit( SymbExprField const& sef ) const
+        auto symbolsExprParameter() const
             {
-                typedef Expr< Fit<decltype(expr(scalar_field_expression<2>{},sef)),0> > fit_expr_type;
-                std::vector<std::pair<std::string,fit_expr_type>> fitSymbs;
                 if ( this->hasModelProperties() )
-                {
-                    for ( auto const& param : this->modelProperties().parameters() )
-                    {
-                        if ( param.second.type() != "fit" )
-                            continue;
-                        auto exprInFit = expr( param.second.expression(), sef );
-                        fitSymbs.push_back( std::make_pair( param.first, fit( exprInFit, param.second.fitInterpolator() ) ) );
-                    }
-                }
-                return Feel::vf::symbolsExpr( symbolExpr( fitSymbs ) );
+                    return this->modelProperties().parameters().symbolsExpr();
+                else
+                    return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
             }
 
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
