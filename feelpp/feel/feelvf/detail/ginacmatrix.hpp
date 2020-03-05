@@ -172,7 +172,6 @@ public:
         M_expr( expr ),
         M_isPolynomial( false ),
         M_polynomialOrder( Order ),
-        M_isNumericExpression( false ),
         M_numericValue( evaluate_type::Zero() )
         {
             this->updateNumericExpression();
@@ -213,7 +212,6 @@ public:
         M_expr( expr ),
         M_isPolynomial( false ),
         M_polynomialOrder( Order ),
-        M_isNumericExpression( false ),
         M_numericValue( evaluate_type::Zero() )
         {
             this->updateNumericExpression();
@@ -253,7 +251,6 @@ public:
         M_expr( expr ),
         M_isPolynomial( false ),
         M_polynomialOrder( Order ),
-        M_isNumericExpression( false ),
         M_numericValue( evaluate_type::Zero() )
         {
             this->updateNumericExpression();
@@ -326,21 +323,12 @@ public:
 
     std::string const& exprDesc() const { return M_exprDesc; }
 
-    bool isConstant() const
+    //! return true if the expression can be evaluated (TODO : iterate over symbols expression)
+    bool isEvaluable() const
     {
         return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
     }
-
-    uint16_type index( std::string const& sname ) const
-    {
-        auto it = std::find_if( M_syms.begin(), M_syms.end(),
-                                [=]( GiNaC::symbol const& s ) { return s.get_name() == sname; } );
-        if ( it != M_syms.end() )
-        {
-            return it-M_syms.begin();
-        }
-        return invalid_uint16_type_value;
-    }
+    bool isConstant() const { return this->isEvaluable(); }
 
     const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > >  indices() const
     {
@@ -843,7 +831,6 @@ private:
     tuple_expand_symbols_expr_type M_expandSymbolsExpr;
     bool M_isPolynomial;
     uint16_type M_polynomialOrder;
-    bool M_isNumericExpression;
     evaluate_type M_numericValue;
 
 }; // GinacMatrix
