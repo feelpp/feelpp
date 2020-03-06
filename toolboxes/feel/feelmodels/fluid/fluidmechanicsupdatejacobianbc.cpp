@@ -279,7 +279,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
             size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
             double massBody = bpbc.massExpr().evaluate()(0,0);
-            double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
+            auto const& momentOfInertia = bpbc.body().momentOfInertia();
+
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
             int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
             bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
@@ -299,10 +300,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                 {
                     auto const& basisToContainerGpAngularVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
                     auto const& basisToContainerGpAngularVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
-                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
-                        J->add( basisToContainerGpAngularVelocityRow[d], basisToContainerGpAngularVelocityCol[d],
-                                bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia );
+                        for (int j=0;j<nLocalDofAngularVelocity;++j)
+                        {
+                            J->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
+                                    bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                        }
                     }
                 }
             }

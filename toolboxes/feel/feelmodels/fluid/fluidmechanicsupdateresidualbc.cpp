@@ -385,7 +385,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
 
             double massBody = bpbc.massExpr().evaluate()(0,0);
-            double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
+            auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
+            auto const& momentOfInertia = bpbc.body().momentOfInertia();
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
             int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
             bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
@@ -406,10 +407,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                 {
                     auto uAngularVelocity = bpbc.spaceAngularVelocity()->element( XVec, rowStartInVector+startBlockIndexAngularVelocity );
                     auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    auto contribLhsAngularVelocity = bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*((momentOfInertiaExpr*idv(uAngularVelocity)).evaluate(false));
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
-                        R->add( basisToContainerGpAngularVelocityVector[d],
-                                uAngularVelocity(d)*bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia );
+                        R->add( basisToContainerGpAngularVelocityVector[i],
+                                //uAngularVelocity(d)*bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia
+                                contribLhsAngularVelocity(i,0)
+                                );
                     }
                 }
             }
@@ -420,13 +424,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     auto const& basisToContainerGpTranslationalVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
                     //std::vector<double> _gravity = { 0., 2. };
                     //double massTilde = 10;
+                    auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                     for (int d=0;d<nDim;++d)
                     {
-                        auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                         R->add( basisToContainerGpTranslationalVelocityVector[d],
                                 -massBody*translationalVelocityPolyDeriv(d) );
 #if 0
-                        F->add( basisToContainerGpTranslationalVelocityVector[d],
+                        R->add( basisToContainerGpTranslationalVelocityVector[d],
                                 -massTilde*_gravity[d] );
 #endif
                     }
@@ -434,11 +438,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                 if ( hasActiveDofAngularVelocity )
                 {
                     auto const& basisToContainerGpAngularVelocityVector = R->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
+                    auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
-                        auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
-                        R->add( basisToContainerGpAngularVelocityVector[d],
-                                -momentOfInertia*angularVelocityPolyDeriv(d) );
+                        R->add( basisToContainerGpAngularVelocityVector[i],
+                                -contribRhsAngularVelocity(i,0)
+                                //momentOfInertia*angularVelocityPolyDeriv(d)
+                                );
                     }
                 }
             }
