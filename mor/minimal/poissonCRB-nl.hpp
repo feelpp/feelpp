@@ -95,6 +95,7 @@ public:
     using eim_space_ptrtype = std::shared_ptr<eim_space_type>;
     using eimd_space_type = typename eim_definition_type::spaced_type;
     using eimd_space_ptrtype = std::shared_ptr<eimd_space_type>;
+    using map_eim_type = std::map<std::string, int>;
     using value_type = double;
     using element_type = super_type::element_type;
     using element_ptrtype = std::shared_ptr<element_type>;
@@ -117,6 +118,8 @@ private:
     int M_nbTherMat;
     int M_nbPotDir;
     int M_nbTempRobin;
+    map_eim_type M_elecEimIndex;
+    map_eim_type M_therEimIndex;
 
     parameter_type M_mu;
     element_type M_u;
