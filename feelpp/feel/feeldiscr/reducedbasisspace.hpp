@@ -30,16 +30,7 @@
 #ifndef __ReducedBasisSpace_H
 #define __ReducedBasisSpace_H 1
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-
-#include <feel/feel.hpp>
 #include <feel/feelcrb/crb.hpp>
-
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-#include <boost/timer.hpp>
 
 
 namespace Feel
