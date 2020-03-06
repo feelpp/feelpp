@@ -27,53 +27,16 @@
    \date 2013-04-07
 */
 
-#define USE_BOOST_TEST 1
-#if defined(USE_BOOST_TEST)
 #define BOOST_TEST_MODULE test_rbspace
 #include <feel/feelcore/testsuite.hpp>
-#endif
-#include <fstream>
 
-#include <feel/feel.hpp>
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
-#include <boost/timer.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testrbspace( "RBSpace test options" );
-    testrbspace.add_options()
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ;
-    return testrbspace.add( Feel::feel_options() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_rbspace" ,
-                     "test_rbspace" ,
-                     "0.2",
-                     "nD(n=1,2,3) test context of functionspace",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2013 Feel++ Consortium" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-
-}
-
 
 
 template<int Dim, int Order>
@@ -108,8 +71,8 @@ public :
 
         auto RbSpace = RbSpacePch( Xh  );
 
-        auto basis_x = vf::project( Xh , elements(mesh), Px() );
-        auto basis_y = vf::project( Xh , elements(mesh), Py() );
+        auto basis_x = vf::project( _space=Xh , _range=elements(mesh), _expr=Px() );
+        auto basis_y = vf::project( _space=Xh , _range=elements(mesh), _expr=Py() );
         RbSpace->addPrimalBasisElement( basis_x );
         RbSpace->addPrimalBasisElement( basis_y );
 
@@ -379,11 +342,8 @@ private :
 };
 
 
-/**
- * main code
- */
-#if defined(USE_BOOST_TEST)
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
 BOOST_AUTO_TEST_SUITE( rbspace )
 
 BOOST_AUTO_TEST_CASE( test_1 )
@@ -393,12 +353,3 @@ BOOST_AUTO_TEST_CASE( test_1 )
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-#else
-int main(int argc, char** argv )
-{
-    Feel::Environment env( _argc=argc, _argv=argv,
-                           _desc=feel_options() );
-    std::shared_ptr<Model<2,1> > model ( new Model<2,1>() );
-    model->run();
-}
-#endif
