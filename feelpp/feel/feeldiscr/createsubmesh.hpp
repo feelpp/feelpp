@@ -954,11 +954,22 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     cptRequest=0;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
+#if 0
         reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
         reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, dataToReRecv[neighborRank] );
+#else
+        int nSendData = dataToReSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 1, &(dataToReSend[neighborRank][0]), nSendData );
+
+        int nRecvData = dataToSend[neighborRank].size();
+        dataToReRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, &(dataToReRecv[neighborRank][0]), nRecvData );
+#endif
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     // delete reqs because finish comm
     delete [] reqs;
 
@@ -1049,32 +1060,39 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     for ( auto const& dataToRecvPair : dataToRecv )
     {
         rank_type rankRecv = dataToRecvPair.first;
-        std::vector<size_type> dataToReSend;
-        for ( size_type idEltRecv : dataToRecvPair.second )
+        int nData = dataToRecvPair.second.size();
+        if ( nData == 0 )
+            continue;
+        std::vector<size_type> dataToReSend( nData,invalid_v<size_type> );
+        for ( int k=0;k<nData;++k )
         {
+            size_type idEltRecv = dataToRecvPair.second[k];
             // search id
-            size_type idEltInNewMesh = invalid_v<size_type>;
             auto const itFindId = new_element_id.find(idEltRecv);
             if ( itFindId != new_element_id.end() )
             {
-                idEltInNewMesh = itFindId->second;
+                size_type idEltInNewMesh = itFindId->second;
                 // update NeighborPartition for this active elt
                 CHECK( newMesh->hasElement( idEltInNewMesh) ) << "mesh has not elt whit id " << idEltInNewMesh << "\n";
                 auto & eltToUpdate = newMesh->elementIterator( idEltInNewMesh )->second;
                 eltToUpdate.addNeighborPartitionId( rankRecv );
+                dataToReSend[k] = idEltInNewMesh;
             }
-            dataToReSend.push_back( idEltInNewMesh );
         }
         // second send
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv , 0, dataToReSend );
+        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, &(dataToReSend[0]), nData );
     }
     // second recv
-    for ( auto & dataToRecvPair : dataToRecv2 )
+
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( dataToRecvPair.first , 0, dataToRecvPair.second );
+        int nRecvData = dataToSend[neighborRank].size();
+        dataToRecv2[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, &(dataToRecv2[neighborRank][0]), nRecvData );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest/*nbRequest*/);
     // delete reqs because finish comm
     delete [] reqs;
 
