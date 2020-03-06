@@ -1980,7 +1980,7 @@ template <typename RangeType>
 typename Mesh<Shape, T, Tag, IndexT>::P1_mesh_ptrtype
 Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
-    if constexpr (nOrder == 1 )
+    if constexpr (false /*nOrder == 1*/ )
          return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
     else
     {
