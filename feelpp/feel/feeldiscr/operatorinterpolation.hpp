@@ -3686,7 +3686,7 @@ BOOST_PARAMETER_FUNCTION(
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
-    std::remove_const_t<decltype(type)> t( type );
+    std::decay_t<decltype(type)> t( type );
     return opInterpPtr( domainSpace,imageSpace,range,backend,std::move(t),ddmethod );
 
 } // opInterpolation

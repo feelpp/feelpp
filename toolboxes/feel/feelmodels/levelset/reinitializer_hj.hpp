@@ -244,10 +244,10 @@ REINITIALIZERHJ_CLASS_TEMPLATE_TYPE::run( element_type const& phi )
         //auto phi_sign = idv(phi_reinit) / vf::max( vf::sqrt(gradv(phi_reinit)*trans(gradv(phi_reinit))), 0.92 );
         auto phi_sign = idv(phi_reinit) / vf::sqrt( trans(idv(gradPhiReinit))*idv(gradPhiReinit) );
         auto H_reinit = vf::project(
-                space,
-                elements(mesh),
-                vf::abs(
-                    ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
+            _space=space,
+            _range=elements(mesh),
+            _expr=vf::abs(
+                ( phi_sign < -M_thicknessHeaviside )*vf::constant(0.0)
                     +
                     ( phi_sign >= -M_thicknessHeaviside && phi_sign <= M_thicknessHeaviside )*
                     0.5*(1 + phi_sign/M_thicknessHeaviside + 1/M_PI*vf::sin( M_PI*phi_sign/M_thicknessHeaviside ) )
