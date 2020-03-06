@@ -62,7 +62,7 @@ runApplicationSolid()
     auto u_cyl = C1*r + C2/r + up;
 
     auto Xh_vec = SM->functionSpaceDisplacement();
-    auto anal = vf::project( Xh_vec, elements(mesh), cos_theta*u_cyl*oneX() + sin_theta*u_cyl*oneY() + cst(0.)*oneZ() );
+    auto anal = vf::project( _space=Xh_vec, _range=elements(mesh), _expr=cos_theta*u_cyl*oneX() + sin_theta*u_cyl*oneY() + cst(0.)*oneZ() );
 #endif
 
     auto e = exporter( _mesh=mesh, _name="solidMec" );
