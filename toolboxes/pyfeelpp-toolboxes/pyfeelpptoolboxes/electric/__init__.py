@@ -9,7 +9,7 @@ _electrics={
     'electric(3,2)':Electric_3DP2,
 }
 
-def electric( dim=2, orderPotential=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def electric( dim=2, orderPotential=1, worldComm=core.Environment.worldCommPtr() ):
     """create a electric toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
@@ -21,4 +21,4 @@ def electric( dim=2, orderPotential=1, buildMesh=True, worldComm=core.Environmen
         print(key)
     if key not in _electrics:
         raise RuntimeError('Electric solver '+key+' not existing')
-    return _electrics[key]( "electric", buildMesh, worldComm )
+    return _electrics[key]( "electric", "electric", worldComm )

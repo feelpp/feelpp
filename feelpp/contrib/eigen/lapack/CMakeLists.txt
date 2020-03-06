@@ -99,7 +99,7 @@ if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
   target_link_libraries(eigen_lapack_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
   target_link_libraries(eigen_lapack        ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
 endif()
-
+set_target_properties(eigen_lapack PROPERTIES SOVERSION 1)
 add_dependencies(lapack eigen_lapack eigen_lapack_static)
 
 install(TARGETS eigen_lapack eigen_lapack_static

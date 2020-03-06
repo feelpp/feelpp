@@ -22,6 +22,8 @@ if( FEELPP_ENABLE_PCH_MODELS )
     add_precompiled_header( feelpp_modelmesh )
   endif()
   include(GNUInstallDirs)
+
+  set_target_properties(feelpp_modelmesh PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
 install(TARGETS feelpp_modelmesh EXPORT feelpp-toolboxes-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -62,6 +64,7 @@ if( FEELPP_MODELS_HAS_MESHALE )
     ${FEELPP_MODELS_MESHALE_LIB_DEPENDS}
     )
   set_property(TARGET feelpp_modelmeshale PROPERTY MACOSX_RPATH ON)
+  set_target_properties(feelpp_modelmeshale PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
   INSTALL(TARGETS feelpp_modelmeshale
     EXPORT feelpp-toolboxes-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
