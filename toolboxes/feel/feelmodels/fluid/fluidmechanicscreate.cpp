@@ -1956,7 +1956,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     }
     M_massCenter /= M_mass;
 
-    M_momentOfInertia = 0;
+    M_momentOfInertia = moment_of_inertia_type::Zero();
     for ( auto const& rangeData : M_materialsProperties->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
@@ -1964,7 +1964,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
         auto const& density = M_materialsProperties->density( matName );
         auto const& densityExpr = density.exprScalar();
 
-        M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(P()-this->massCenterExpr()) ) ).evaluate()(0,0);
+        if constexpr ( nDim == 2 )
+                     {
+                         M_momentOfInertia(0,0) += integrate(_range=range,_expr=densityExpr*( inner(P()-this->massCenterExpr()) ) ).evaluate()(0,0);
+                     }
+        else
+        {
+            auto rvec = P()-this->massCenterExpr();
+            M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
+        }
     }
 
 }
@@ -1990,8 +1998,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
         if ( massExpr.template hasExpr<1,1>() )
             M_body.setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
         momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
-        if (  momentOfInertiaExpr.template hasExpr<1,1>() )
-            M_body.setMass(  momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+        if constexpr ( nDim == 2 )
+        {
+            if ( momentOfInertiaExpr.template hasExpr<1,1>() )
+                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+        }
+        else
+        {
+            if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
+                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
+        }
         initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
         {

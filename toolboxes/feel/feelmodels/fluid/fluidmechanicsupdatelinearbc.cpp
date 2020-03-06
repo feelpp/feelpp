@@ -414,23 +414,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
             size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
 
-            // equation on translational velocity
-#if 0
-            // this is not good, not use an integrate but currently all row are eliminated
-            form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,_pattern=size_type(Pattern::COUPLED),
-                   _rowstart=rowStartInMatrix+startBlockIndexTranslationalVelocity,
-                   _colstart=colStartInMatrix+startBlockIndexTranslationalVelocity ) +=
-                integrate( _range=elements(M_meshNoSlipRigidParticles),
-                           _expr= M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDerivCoefficient(0)*massParticle*inner( idt(M_fieldNoSlipRigidParticlesTranslationalVelocity), id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                           _geomap=this->geomap() );
-            form1( _test=M_XhNoSlipRigidParticlesTranslationalVelocity, _vector=F,
-                   _rowstart=rowStartInVector+startBlockIndexTranslationalVelocity ) +=
-                integrate( _range=elements(M_meshNoSlipRigidParticles),
-                           _expr= massParticle*inner( idv(M_bdfNoSlipRigidParticlesTranslationalVelocity->polyDeriv()),id(M_fieldNoSlipRigidParticlesTranslationalVelocity) ),
-                           _geomap=this->geomap() );
-#endif
             double massBody = bpbc.massExpr().evaluate()(0,0);
-            double momentOfInertia = bpbc.momentOfInertiaExpr().evaluate()(0,0);// NOT TRUE in 3D
+            auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
+            auto const& momentOfInertia = bpbc.body().momentOfInertia();
+            //std::cout << "momentOfInertia = " << momentOfInertia<< std::endl;
             bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
             int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
             bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
@@ -450,10 +437,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                 {
                     auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
                     auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
-                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
-                        A->add( basisToContainerGpAngularVelocityRow[d], basisToContainerGpAngularVelocityCol[d],
-                                bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia );
+                        for (int j=0;j<nLocalDofAngularVelocity;++j)
+                        {
+                            A->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
+                                    bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                        }
                     }
                 }
             }
@@ -465,9 +455,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
                     //std::vector<double> _gravity = { 0., 2. };
                     //double massTilde = 10;
+                    auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                     for (int d=0;d<nDim;++d)
                     {
-                        auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                         F->add( basisToContainerGpTranslationalVelocityVector[d],
                                 massBody*translationalVelocityPolyDeriv(d) );
 #if 0
@@ -479,11 +469,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                 if ( hasActiveDofAngularVelocity )
                 {
                     auto const& basisToContainerGpAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
-                    for (int d=0;d<nLocalDofAngularVelocity;++d)
+                    auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
+                    auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
-                        auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
-                        F->add( basisToContainerGpAngularVelocityVector[d],
-                                momentOfInertia*angularVelocityPolyDeriv(d) );
+                        F->add( basisToContainerGpAngularVelocityVector[i],
+                                //momentOfInertia(0,0)*angularVelocityPolyDeriv(i)
+                                contribRhsAngularVelocity(i,0)
+                                );
                     }
                 }
 

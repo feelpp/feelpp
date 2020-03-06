@@ -271,6 +271,10 @@ public:
     class Body : public ModelPhysics<nDim>
     {
     public :
+        using moment_of_inertia_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
+                                                       eigen_matrix_type<nDim, nDim>,
+                                                       eigen_matrix_type<1, 1> >::type;
+
         Body()
             :
             ModelPhysics<nDim>( "body" )
@@ -285,14 +289,23 @@ public:
         bool hasMaterialsProperties() const { return (M_materialsProperties? true : false); }
 
         void setMass( double m ) { M_mass = m; }
-        void setMomentOfInertia( double m ) { M_momentOfInertia = m; }
+        void setMomentOfInertia( moment_of_inertia_type const& m ) { M_momentOfInertia = m; }
+        void setMomentOfInertia( double val ) { M_momentOfInertia = val*moment_of_inertia_type::Identity(); }
         void setMassCenter( eigen_vector_type<nRealDim> const& massCenter ) { M_massCenter = massCenter; }
         double mass() const { return M_mass; }
-        double momentOfInertia() const { return M_momentOfInertia; }
+        moment_of_inertia_type const& momentOfInertia() const { return M_momentOfInertia; }
         eigen_vector_type<nRealDim> const& massCenter() const { return M_massCenter; }
 
         auto massExpr() const { return cst( M_mass ); }
-        auto momentOfInertiaExpr() const { return cst( M_momentOfInertia ); }
+        auto momentOfInertiaExpr() const
+            {
+                if constexpr ( nDim == 2 )
+                    return cst(M_momentOfInertia(0,0));
+                else
+                    return mat<3,3>( cst(M_momentOfInertia(0,0)),cst(M_momentOfInertia(0,1)),cst(M_momentOfInertia(0,2)),
+                                     cst(M_momentOfInertia(1,0)),cst(M_momentOfInertia(1,1)),cst(M_momentOfInertia(1,2)),
+                                     cst(M_momentOfInertia(2,0)),cst(M_momentOfInertia(2,1)),cst(M_momentOfInertia(2,2)) );
+            }
         auto massCenterExpr() const
             {
                 if constexpr ( nDim == 2 )
@@ -306,7 +319,7 @@ public:
         materialsproperties_ptrtype M_materialsProperties;
         eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
         double M_mass;
-        double M_momentOfInertia;
+        moment_of_inertia_type M_momentOfInertia;
     };
 
     // bc body
@@ -370,8 +383,10 @@ public:
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
+
+        Body const& body() const { return M_body; }
         auto massExpr() const { return M_body.massExpr(); }
-        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); } // NOT TRUE in 3D
+        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); }
         auto massCenterExpr() const
             {
                 return M_body.massCenterExpr();
