@@ -242,8 +242,8 @@ TestMixed<Dim,Order>::run()
     p_element_type p( Yh, "p" );
     /** \endcode */
 
-    u = vf::project( Xh, elements( mesh ), P() );
-    p = vf::project( Yh, elements( mesh ), cst( 1. ) );
+    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=P() );
+    p = vf::project( _space=Yh, _range=elements( mesh ), _expr=cst( 1. ) );
 
     vector_ptrtype U = M_backend->newVector( Xh );
     *U = u;

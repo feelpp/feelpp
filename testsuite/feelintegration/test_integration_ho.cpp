@@ -370,24 +370,24 @@ struct test_integration_circle
         typename imesh<value_type,2,Order>::ptrtype mesh( createCircle<value_type,Order>( meshSize ) );
 
         t = 1.0;
-        value_type v0 = integrate( elements( mesh ), mycst, _Q<Order-1>() ).evaluate()( 0, 0 );
+        value_type v0 = integrate( _range=elements( mesh ), _expr=mycst, _quad=_Q<Order-1>() ).evaluate()( 0, 0 );
         std::cout.setf( std::ios::scientific );
         std::cout.precision( 15 );
         std::cout << "v0=" << v0 << "\n";
-        value_type v00 = ( integrate( boundaryelements( mesh ), mycst ).evaluate()( 0, 0 )+
-                           integrate( internalelements( mesh ), mycst ).evaluate()( 0, 0 ) );
+        value_type v00 = ( integrate( _range=boundaryelements( mesh ), _expr=mycst ).evaluate()( 0, 0 )+
+                           integrate( _range=internalelements( mesh ), _expr=mycst ).evaluate()( 0, 0 ) );
         std::cout << "v00=" << v00 << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces( mesh ), N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 0 = " << integrate( boundaryfaces( mesh ),  N() ).evaluate() << "\n";
-        std::cout << "[circle] v0 1 = " << integrate( boundaryfaces( mesh ),  vec( idf( f_Nx() ), idf( f_Ny() ) ) ).evaluate() << "\n";
-        std::cout << "[circle] v0 2 = " << integrate( boundaryfaces( mesh ),
-                  trans( vec( constant( 1 ),Ny() ) )*one() ).evaluate() << "\n";
+        std::cout << "[circle] v0 0 = " << integrate( _range=boundaryfaces( mesh ), _expr=N() ).evaluate() << "\n";
+        std::cout << "[circle] v0 0 = " << integrate( _range=boundaryfaces( mesh ),  _expr=N() ).evaluate() << "\n";
+        std::cout << "[circle] v0 1 = " << integrate( _range=boundaryfaces( mesh ),  _expr=vec( idf( f_Nx() ), idf( f_Ny() ) ) ).evaluate() << "\n";
+        std::cout << "[circle] v0 2 = " << integrate( _range=boundaryfaces( mesh ),
+                                                      _expr=trans( vec( constant( 1 ),Ny() ) )*one() ).evaluate() << "\n";
 
-        std::cout << "[circle] v0 3 = " << integrate( boundaryfaces( mesh ),
-                  mat<2,2>( Nx(),constant( 1 ),constant( 1 ),Ny() )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
-        std::cout << "[circle] v0 4 (==v0 3) = " << integrate( boundaryfaces( mesh ),
-                  mat<2,2>( idf( f_Nx() ),constant( 1 ),
-                            constant( 1 ),idf( f_Ny() ) )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
+        std::cout << "[circle] v0 3 = " << integrate( _range=boundaryfaces( mesh ),
+                                                      _expr=mat<2,2>( Nx(),constant( 1 ),constant( 1 ),Ny() )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
+        std::cout << "[circle] v0 4 (==v0 3) = " << integrate( _range=boundaryfaces( mesh ),
+                                                               _expr=mat<2,2>( idf( f_Nx() ),constant( 1 ),
+                                                                               constant( 1 ),idf( f_Ny() ) )*vec( constant( 1 ),constant( 1 ) ) ).evaluate() << "\n";
         value_type pi = 4.0*math::atan( 1.0 );
         const value_type eps = 1000*Feel::type_traits<value_type>::epsilon();
 #if defined(USE_BOOST_TEST)
@@ -405,8 +405,8 @@ struct test_integration_circle
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
-        v0 = integrate( elements( mesh ), idv( u ) ).evaluate()( 0, 0 );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=constant( 1.0 ) );
+        v0 = integrate( _range=elements( mesh ), _expr=idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v0 << "  (should be pi)\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize,2*Order ) );
@@ -414,7 +414,7 @@ struct test_integration_circle
         FEELPP_ASSERT( math::abs( v0-pi ) < math::pow( meshSize,2*Order ) )( v0 )( math::abs( v0-pi ) )( math::pow( meshSize,2*Order ) ).warn ( "v0 != pi" );
 #endif /* USE_BOOST_TEST */
 
-        u = vf::project( Xh, elements( mesh ), Px()+Py()+1 );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Px()+Py()+1 );
         node_type pt( 2 );
         pt[0] = 0.111;
         pt[1] = 0.111;
@@ -427,20 +427,20 @@ struct test_integration_circle
         pt3[0] = 0;
         pt3[1] = 1;
 
-        u = vf::project( Xh, elements( mesh ), Px() );
-        std::cout << "error x=" << integrate( elements( mesh ), ( idv( u )-Px() )*( idv( u )-Px() ) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Px() );
+        std::cout << "error x=" << integrate( _range=elements( mesh ), _expr=( idv( u )-Px() )*( idv( u )-Px() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements( mesh ), Py() );
-        std::cout << "error y=" << integrate( elements( mesh ), ( idv( u )-Py() )*( idv( u )-Py() ) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Py() );
+        std::cout << "error y=" << integrate( _range=elements( mesh ), _expr=( idv( u )-Py() )*( idv( u )-Py() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements( mesh ), Px()*Px() );
-        std::cout << "error x^2=" << integrate( elements( mesh ), ( idv( u )-Px()*Px() )*( idv( u )-Px()*Px() ) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Px()*Px() );
+        std::cout << "error x^2=" << integrate( _range=elements( mesh ), _expr=( idv( u )-Px()*Px() )*( idv( u )-Px()*Px() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements( mesh ), Px()*Py() );
-        std::cout << "error xy=" << integrate( elements( mesh ), ( idv( u )-Px()*Py() )*( idv( u )-Px()*Py() ) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Px()*Py() );
+        std::cout << "error xy=" << integrate( _range=elements( mesh ), _expr=( idv( u )-Px()*Py() )*( idv( u )-Px()*Py() ) ).evaluate()( 0, 0 ) << "\n";
 
-        u = vf::project( Xh, elements( mesh ), Py()*Py() );
-        std::cout << "error y^2=" << integrate( elements( mesh ), ( idv( u )-Py()*Py() )*( idv( u )-Py()*Py() ) ).evaluate()( 0, 0 ) << "\n";
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Py()*Py() );
+        std::cout << "error y^2=" << integrate( _range=elements( mesh ), _expr=( idv( u )-Py()*Py() )*( idv( u )-Py()*Py() ) ).evaluate()( 0, 0 ) << "\n";
 
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( ( u( pt )( 0,0,0 )-( 1+pt[0]+pt[1] ) ), math::pow( meshSize,2*Order ) );
@@ -449,7 +449,7 @@ struct test_integration_circle
         std::cout << "u(" << pt2 << ")-(1+pt2[0]+pt2[1]) = " << math::abs( u( pt2 )( 0,0,0 )-( 1+pt2[0]+pt2[1] ) ) << "\n";
         std::cout << "u(" << pt3 << ")-(1+pt3[0]+pt3[1]) = " << math::abs( u( pt3 )( 0,0,0 )-( 1+pt3[0]+pt3[1] ) ) << "\n";
 #endif
-        v0 = integrate( elements( mesh ), gradv( u )*vec( constant( 1.0 ),constant( 0. ) ) ).evaluate()( 0, 0 );
+        v0 = integrate( _range=elements( mesh ), _expr=gradv( u )*vec( constant( 1.0 ),constant( 0. ) ) ).evaluate()( 0, 0 );
         std::cout << "int( dx(Px()) )=" << v0 << " (should be pi)\n";
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v0-pi, math::pow( meshSize,2*Order ) );
@@ -497,11 +497,11 @@ struct test_integration_sin
         typename space_type::element_type u( Xh );
 
         // int ([-1,1],[-1,x]) 1 dx
-        u = vf::project( Xh, elements( mesh ), constant( 1.0 ) );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=constant( 1.0 ) );
         double v3 = integrate( _range=elements( mesh ), _expr=cst( 1.0 ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
         double v0 = integrate( _range=elements( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap ).evaluate()( 0, 0 );
         double v2 = integrate( _range=boundaryfaces( mesh ), _expr=idv( u ), _quad=15, _geomap=geomap  ).evaluate()( 0, 0 );
-        //double v0 = integrate( elements(mesh), idv( u ) ).evaluate()( 0, 0 );
+        //double v0 = integrate( _range=elements(mesh), _expr=idv( u ) ).evaluate()( 0, 0 );
         std::cout << "int( 1 )=" << v3 << "  (=pi) error= " << math::abs( v3 - M_PI ) << std::endl;
         std::cout << "int( u=1 )=" << v0 << "  (=pi) error= " << math::abs( v0 - M_PI ) << std::endl;
         std::cout << "int(boundary, 1 )=" << v2 << "  (=2*pi) error= " << math::abs( v2 - 2*M_PI ) << std::endl;
