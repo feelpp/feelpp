@@ -86,9 +86,9 @@ nsrQ( std::shared_ptr<MeshType> const& m )
         if constexpr ( dimension_v<MeshType> == 2 )
         {
             // use formula 3 in D Field paper
-            auto [l1, l2, l3] = elt.faceMeasures();
-            auto r = 2 * elt.measure() / (l1 + l2 + l3); // inradius
-            auto R = 0.25 * (l1 * l2 * l3) / elt.measure();  // circumradius
+            auto l = elt.faceMeasures();
+            auto r = 2 * elt.measure() / l.sum(); // inradius
+            auto R = 0.25 * l.prod() / elt.measure();  // circumradius
             Ihloc( 0 ) = 2*r/R;
         }
         else if constexpr ( dimension_v<MeshType> == 3 )
