@@ -29,7 +29,7 @@ runALEMesh()
     auto disp = alemesh->functionSpace()->elementPtr();
     auto exSave = [&ex]( double t, auto alemesh, auto disp ) {
                       ex->step( t )->setMesh( alemesh->movingMesh() );
-                      ex->step( t )->add( "disp", *disp );
+                      ex->step( t )->add( "disp", idv(*disp) );
                       ex->step( t )->add( "etaQ", etaQ( alemesh->movingMesh() ) );
                       ex->step( t )->add( "nsrQ", nsrQ( alemesh->movingMesh() ) );
                       ex->save();
@@ -54,7 +54,7 @@ runALEMesh()
         if ( Environment::vm().count( "displacement-imposed" ) )
         {
             auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-            disp->on(_range=elements(alemesh->movingMesh()),_expr=dispExpr);
+            disp->on(_range=elements(alemesh->movingMesh()),_expr=dispExpr*10*t);
         }
 
         alemesh->update( *disp );
