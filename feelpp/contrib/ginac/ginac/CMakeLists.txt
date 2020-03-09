@@ -149,6 +149,7 @@ set(ginaclib_private_headers
 )
 
 add_library(feelpp_ginac ${ginaclib_sources})
+set_property(TARGET feelpp_ginac PROPERTY CXX_STANDARD ${FEELPP_STD_CPP})
 add_definitions(-DLIBEXECDIR="${LIBEXECDIR}/")
 set_target_properties(feelpp_ginac PROPERTIES
 	SOVERSION ${ginaclib_soversion}
