@@ -41,20 +41,67 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
     M_space( space ),
     M_dofStatus( space->dof()->nLocalDofWithGhost() ),
     M_positiveCloseDofHeap(),
-    M_negativeCloseDofHeap()
+    M_negativeCloseDofHeap(),
+    M_nNewDofs( 0 )
 {
     auto const& dofTable = this->functionSpace()->dof();
     // Init shared dof map
+    // First find active dofs with sharing procs
     M_dofSharedOnCluster = dofTable->activeDofSharedOnCluster();
-    for( size_type dofId = 0; dofId < dofTable->nLocalDofWithGhost(); ++dofId )
+    // Then send this information with sharing procs so that
+    // they can also which are the other ghost-owning procs
+    rank_type const localPid = dofTable->worldCommPtr()->localRank();
+    int nRequests = 2 * dofTable->neighborSubdomains().size();
+    mpi::request * mpiRequests = new mpi::request[nRequests];
+    std::map< rank_type, std::vector< std::pair< size_type, std::set<rank_type> > > > dataToSend, dataToRecv;
+    for( auto const& activeDofShared: M_dofSharedOnCluster )
     {
-        if( dofTable->dofGlobalProcessIsGhost( dofId ) )
+        size_type const dofId = activeDofShared.first;
+        size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
+        for( rank_type const p : activeDofShared.second )
+            dataToSend[p].emplace_back( dofGCId, activeDofShared.second );
+    }
+    int cntRequests = 0;
+    for( rank_type const p: dofTable->neighborSubdomains() )
+    {
+        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().isend( p, 0, dataToSend[p] );
+        mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().irecv( p, 0, dataToRecv[p] );
+    }
+    mpi::wait_all( mpiRequests, mpiRequests + nRequests );
+    for( auto const& dataR: dataToRecv )
+    {
+        for( auto const& dofGCIdPids: dataR.second )
         {
-            size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
-            rank_type procId = dofTable->procOnGlobalCluster( dofGCId );
-            M_dofSharedOnCluster[dofId].insert( procId );
+            size_type const dofGCId = dofGCIdPids.first;
+            auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
+            DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
+            size_type const dofId = boost::get<1>( resSearchDof );
+            M_dofSharedOnCluster[dofId].insert( dataR.first );
+            for( rank_type const p : dofGCIdPids.second )
+                if( p != localPid )
+                    M_dofSharedOnCluster[dofId].insert( p );
         }
     }
+    //for( size_type dofId = 0; dofId < dofTable->nLocalDofWithGhost(); ++dofId )
+    //{
+        //if( dofTable->dofGlobalProcessIsGhost( dofId ) )
+        //{
+            //size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
+            //rank_type procId = dofTable->procOnGlobalCluster( dofGCId );
+            //M_dofSharedOnCluster[dofId].insert( procId );
+        //}
+    //}
+#if 0
+    std::cout << "["<<dofTable->worldCommPtr()->localRank()<<"]" << "dofSharedOnCluster = ";
+    for( auto const& dofShared: M_dofSharedOnCluster )
+    {
+        std::cout << " (" << dofShared.first << ", {" ;
+        for( rank_type p: dofShared.second )
+            std::cout << p << ",";
+        std::cout << "} )";
+    }
+    std::cout << std::endl;
+#endif
 }
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
@@ -117,7 +164,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
 
     // Perform parallel fast-marching
     bool closeDofHeapsAreEmptyOnAllProc = false;
-    while( !closeDofHeapsAreEmptyOnAllProc )
+    //while( !closeDofHeapsAreEmptyOnAllProc )
+    while( true )
     {
         this->marchNarrowBand( sol );
         this->syncDofs( sol );
@@ -129,6 +177,13 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
                 closeDofHeapsAreEmpty,
                 std::logical_and<bool>()
                 );
+        int maxNumberOfNewDofsOnAllProc = mpi::all_reduce(
+                this->functionSpace()->worldComm(),
+                M_nNewDofs,
+                mpi::maximum<int>()
+                );
+        if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
+            break;
     }
 
     sync( sol, "=" );
@@ -151,9 +206,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
         rank_type const eltPid = elt.processId();
 
         // process element dofs
-        std::vector< size_type > dofDoneIds, dofIdsToProcess;
+        std::vector< size_type > dofDoneIds, dofCloseIdsToProcess, dofDoneIdsToProcess;
         dofDoneIds.emplace_back( dofDoneId );
-        bool hasDofToProcess = false;
         for( auto const& [lid,gid]: this->functionSpace()->dof()->localDof( eltId ) )
         {
             size_type const dofId = gid.index();
@@ -162,27 +216,38 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
             if( M_dofStatus[dofId] != FastMarchingDofStatus::DONE_FIX 
                     && less_abs<value_type>()( dofDoneVal, sol(dofId) ) )
             {
-                dofIdsToProcess.emplace_back( dofId );
-                hasDofToProcess = true;
+                if( M_dofStatus[dofId] & FastMarchingDofStatus::DONE )
+                {
+                    dofDoneIdsToProcess.emplace_back( dofId );
+                }
+                else
+                {
+                    dofCloseIdsToProcess.emplace_back( dofId );
+                }
             }
-            else if( M_dofStatus[dofId] & FastMarchingDofStatus::DONE )
+            if( M_dofStatus[dofId] & FastMarchingDofStatus::DONE )
             {
                 dofDoneIds.emplace_back( dofId );
             }
         }
 
-        if( hasDofToProcess )
+        if( dofCloseIdsToProcess.size() != 0 )
+            this->updateCloseDofs( dofCloseIdsToProcess, dofDoneIds, eltId, sol );
+        for( size_type const dofDoneIdToProcess : dofDoneIdsToProcess )
         {
-            this->updateCloseDofs( dofIdsToProcess, dofDoneIds, eltId, sol );
+            std::vector< size_type > dofIdsToProcess = { dofDoneIdToProcess };
+            std::vector< size_type > dofDoneIdsWithoutIdToProcess( dofDoneIds.size() - 1 );
+            std::remove_copy( dofDoneIds.begin(), dofDoneIds.end(), dofDoneIdsWithoutIdToProcess.begin(), dofDoneIdToProcess );
+            this->updateCloseDofs( dofIdsToProcess, dofDoneIdsWithoutIdToProcess, eltId, sol );
         }
     }
 }
 
 template< typename FunctionSpaceType, template < typename > class LocalEikonalSolver >
 void
-FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vector< size_type > const& dofCloseIds, std::vector< size_type > const& dofDoneIds, size_type eltId, element_type & sol )
+FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vector< size_type > const& dofIdsToProcess, std::vector< size_type > const& dofDoneIds, size_type eltId, element_type & sol )
 {
-    auto const closeDofsIdVals = this->solveEikonal( dofCloseIds, dofDoneIds, eltId, sol );
+    auto const closeDofsIdVals = this->solveEikonal( dofIdsToProcess, dofDoneIds, eltId, sol );
     for( auto const& [closeDofId,closeDofVal]: closeDofsIdVals )
     {
         if( less_abs<value_type>()( closeDofVal, sol(closeDofId) ) )
@@ -193,17 +258,18 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
                 sol(closeDofId) = closeDofVal;
                 M_positiveCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, closeDofVal) );
                 M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
-
-                //std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
-                    //<< "updating dof(" << closeDofId << "," 
-                    //<< this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
-                    //<< " with value " << sol(closeDofId)
-                    //<< " using dofs {";
-                //for( auto dofId: dofDoneIds )
-                //std::cout << "(" << dofId << "," 
-                    //<< this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster(dofId) << "; "
-                    //<< sol(dofId) << "); ";
-                //std::cout << "}" << std::endl;
+#if 0
+                std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
+                    << "updating dof(" << closeDofId << "," 
+                    << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
+                    << " with value " << sol(closeDofId)
+                    << " using dofs {";
+                for( auto dofId: dofDoneIds )
+                std::cout << "(" << dofId << "," 
+                    << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster(dofId) << "; "
+                    << sol(dofId) << "); ";
+                std::cout << "}" << std::endl;
+#endif
             }
             else
             {
@@ -211,14 +277,6 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateCloseDofs( std::vec
                 sol(closeDofId) = -closeDofVal;
                 M_negativeCloseDofHeap.insert_or_assign( pair_dof_value_type(closeDofId, -closeDofVal) );
                 M_dofStatus[closeDofId] = FastMarchingDofStatus::CLOSE_NEW;
-
-                //std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
-                //<< "updating dof(" << closeDofId << "," << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( closeDofId ) << ")"
-                //<< " with value " << sol(closeDofId)
-                //<< " using dofs {";
-                //for( auto dofId: dofDoneIds )
-                //std::cout << "(" << dofId << "," << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster(dofId) << "); ";
-                //std::cout << "}" << std::endl;
             }
         }
     }
@@ -235,6 +293,14 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::marchNarrowBand( element_
         sol(nextDofDoneId) = nextDofDoneValue;
         if( M_dofStatus[nextDofDoneId] != FastMarchingDofStatus::DONE_OLD )
             M_dofStatus[nextDofDoneId] = FastMarchingDofStatus::DONE_NEW;
+#if 0
+        std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
+            << "updating dof(" << nextDofDoneId << "," 
+            << this->functionSpace()->dof()->mapGlobalProcessToGlobalCluster( nextDofDoneId ) << ")"
+            << " with value " << sol(nextDofDoneId)
+            << " and status " << int(M_dofStatus[nextDofDoneId])
+            << std::endl;
+#endif
         this->updateNeighborDofs( nextDofDoneId, sol );
     }
     while( !M_negativeCloseDofHeap.empty() )
@@ -262,6 +328,9 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
     mpi::request * mpiRequests = new mpi::request[nRequests];
     int cntRequests = 0;
 
+    // Reset local number of NEW dofs
+    M_nNewDofs = 0;
+
     // Send ghost dofs to the unique active dof
     std::map< rank_type, std::vector< std::pair<size_type, value_type> > > dataToSend, dataToRecv;
     for( auto const& dofShared: M_dofSharedOnCluster )
@@ -269,6 +338,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
         size_type const dofId = dofShared.first;
         if( M_dofStatus[dofId] & FastMarchingDofStatus::NEW )
         {
+            // Update local number of NEW dofs
+            M_nNewDofs += 1;
             // Set status to OLD
             M_dofStatus[dofId] &= ~FastMarchingDofStatus::NEW;
             M_dofStatus[dofId] |= FastMarchingDofStatus::OLD;
@@ -283,12 +354,14 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
     cntRequests = 0;
     for( rank_type p: dofTable->neighborSubdomains() )
     {
-        //std::cout << "["<<localPid<<"]" << "sending to " << p << ": ";
-        //for( auto const& dataS: dataToSend[p] )
-        //{
-            //std::cout << " (" << dataS.first << "," << dataS.second << "), ";
-        //}
-        //std::cout << std::endl;
+#if 0
+        std::cout << "["<<localPid<<"]" << "sending to " << p << ": ";
+        for( auto const& dataS: dataToSend[p] )
+        {
+            std::cout << " (" << dataS.first << "," << dataS.second << "), ";
+        }
+        std::cout << std::endl;
+#endif
         mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().isend( p, 0, dataToSend[p] );
         mpiRequests[cntRequests++] = dofTable->worldCommPtr()->localComm().irecv( p, 0, dataToRecv[p] );
     }
@@ -313,8 +386,10 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
                 sol.set( dofId, valNew );
                 closeDofHeap.insert_or_assign( pair_dof_value_type( dofId, valNew ) );
                 M_dofStatus[dofId] = FastMarchingDofStatus::DONE_OLD;
-                //std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")" 
-                    //<< std::endl;
+#if 0
+                std::cout << "["<<localPid<<"]" << "updating active dof(" << dofId << "," << dofGCId << ")" 
+                    << std::endl;
+#endif
             }
         }
     }
