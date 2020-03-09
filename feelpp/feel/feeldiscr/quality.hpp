@@ -63,4 +63,39 @@ etaQ( std::shared_ptr<MeshType> const& m )
     return q;
     
 }
+
+/**
+ * Return the normalized shape ratio (NSR) for a given element.
+ * it is referred as the radius ratio, as it is described by
+ * the ratio between the inradius (r) and the circumradius (R).
+ * \f$\rho = \frac{dr}{R}\f$ where d is the dimension
+ *
+ */
+template<typename MeshType>
+Pdh_element_t<MeshType,0>
+nsrQ( std::shared_ptr<MeshType> const& m )
+{
+    using value_type=value_t<MeshType>;
+    auto Xh = Pdh<0>( m );
+    auto q = Xh->element();
+
+    local_interpolant_t<decltype(Xh)> Ihloc( 1 );
+    for ( auto const& eltWrap : elements( m ) )
+    {
+        auto const& elt = unwrap_ref( eltWrap );
+        if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            // use formula 3 in D Field paper
+            auto [l1, l2, l3] = elt.faceMeasures();
+            auto r = 2 * elt.measure() / (l1 + l2 + l3); // inradius
+            auto R = 0.25 * (l1 * l2 * l3) / elt.measure();  // circumradius
+            Ihloc( 0 ) = 2*r/R;
+        }
+        else if constexpr ( dimension_v<MeshType> == 3 )
+            Ihloc( 0 ) = 0;
+        q.assign( elt, Ihloc );
+    }
+    return q;
+    
+}
 }
