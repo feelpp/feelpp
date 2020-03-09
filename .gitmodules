@@ -37,3 +37,6 @@
 [submodule "feelpp/contrib/mmg"]
 	path = feelpp/contrib/mmg
 	url = https://github.com/feelpp/mmg
+[submodule "feelpp/contrib/indicators"]
+	path = feelpp/contrib/indicators
+	url = https://github.com/feelpp/indicators.git

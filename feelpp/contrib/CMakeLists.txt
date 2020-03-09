@@ -322,6 +322,7 @@ option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
 # install rules.
 set(FMILIB_BUILD_STATIC_LIB OFF)
 set(FMILIB_BUILD_SHARED_LIB ON)
+set(FMILIB_BUILD_TESTS OFF)
 set(FMILIB_INSTALL_SUBLIBS ON)
 set(FMILIB_INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "")
 set(FMILIB_INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "")
@@ -366,6 +367,16 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/tabulate/include>
     $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
+endif()
+feelppContribPrepare( indicators )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( indicators )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_INDICATORS )
+  target_link_libraries(feelpp_contrib INTERFACE indicators )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/indicators/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Indicators/Contrib")
 endif()
   
 add_subdirectory( boost )

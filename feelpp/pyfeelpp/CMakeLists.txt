@@ -65,7 +65,12 @@ if (FEELPP_ENABLE_PYFEELPP_LIBFEELPP)
   install(DIRECTORY DESTINATION ${PYFEELPP_INSTALL_DIR})
   install(
     CODE "set(ENV{PYTHONPATH} \"${PYFEELPP_INSTALL_DIR}:$ENV{PYTHONPATH}\")"
-    CODE "execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX} )"
+    CODE "
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} ${SETUP_PY} install --prefix ${CMAKE_INSTALL_PREFIX} RESULT_VARIABLE ret )
+    if(ret EQUAL \"1\")
+       message( FATAL_ERROR \"pyfeelpp setup.py bad exit status\")
+    endif()
+    "
     )
 endif()
 

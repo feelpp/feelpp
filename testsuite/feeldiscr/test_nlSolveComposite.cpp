@@ -394,8 +394,8 @@ TestNLSolveComposite<Dim, OrderV, OrderT>::run()
     auto Xh = space_type::New(mesh);
     auto VT = Xh->element();
 
-    auto V = vf::project( VT.template element<0>().functionSpace(), elements(mesh), cst(1.) );
-    auto T = vf::project( VT.template element<1>().functionSpace(), elements(mesh), cst(293.) );
+    auto V = vf::project( _space=VT.template element<0>().functionSpace(), _range=elements(mesh), _expr=cst(1.) );
+    auto T = vf::project( _space=VT.template element<1>().functionSpace(), _range=elements(mesh), _expr=cst(293.) );
 
     VT.template element<0>() = V;
     VT.template element<1>() = T;

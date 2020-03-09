@@ -202,7 +202,7 @@ TestHDiv::exampleProblem1()
     // Solve problem (p)
     M_backend->solve( _matrix=M_l, _solution=p_l, _rhs=F_l );
     // Deduce u :
-    u_l = vf::project( Xhvec, elements(mesh), -K*trans(gradv(p_l)) );
+    u_l = vf::project( _space=Xhvec, _range=elements(mesh), _expr= -K*trans(gradv(p_l)) );
 
     std::cout << "[Darcy] Lagrange solve done" << std::endl;
 
