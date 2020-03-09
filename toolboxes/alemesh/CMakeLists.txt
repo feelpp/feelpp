@@ -29,3 +29,10 @@ feelpp_add_application( alemesh_2d SRCS main.cpp
   DEFS FEELPP_DIM=2
   INSTALL
 )
+
+feelpp_add_application( alemesh_remesh SRCS alemesh_remesh.cpp
+  LINK_LIBRARIES
+  feelpp_modelmeshale
+  DEFS FEELPP_DIM=2
+  INSTALL
+  )
