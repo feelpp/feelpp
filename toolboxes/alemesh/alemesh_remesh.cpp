@@ -19,7 +19,11 @@ runALEMesh()
        {
            std::string opt = (boost::format( "markers.%1%" ) %bctype).str();
            if ( Environment::vm().count( opt ) )
-               alemesh->addBoundaryFlags( bctype, Environment::vm()[opt].as<std::vector<std::string> >() );
+           {
+               for ( auto s : Environment::vm()[opt].as<std::vector<std::string> >() )
+                   std::cout << "Registering boundary flag " << s  << " to " << bctype << std::endl;
+               alemesh->addBoundaryFlags( bctype,  Environment::vm()[opt].as<std::vector<std::string> >() );
+           } 
        }
        alemesh->init();
        alemesh->printAndSaveInfo();
@@ -36,8 +40,9 @@ runALEMesh()
                   };
     exSave( 0, alemesh, disp );
     
-    double dt = 0.1;
-    for( double t = dt; t < 1; t += dt )
+    double dt = doption("dt");
+    double T = doption("Tfinal");
+    for( double t = dt, T0 = 0; t < T; t += dt )
     {
         std::cout << "------------------------------------------------------------" << std::endl;
         std::cout << "Time: " << t << std::endl;
@@ -54,11 +59,12 @@ runALEMesh()
         if ( Environment::vm().count( "displacement-imposed" ) )
         {
             auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-            disp->on(_range=elements(alemesh->movingMesh()),_expr=dispExpr*10*t);
+            dispExpr.setParameterValues( { {"t", t },{"T0", T0 } } );
+            disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
         }
 
         alemesh->update( *disp );
-        alemesh->updateTimeStep();
+
 
         if ( boption( "remesh" ) )
         {
@@ -67,8 +73,15 @@ runALEMesh()
             auto met = Xh->element();
             auto etaqmin = etaQ( moving_mesh ).min();
 
-            if ( etaqmin < 0.1 )
+            if ( etaqmin < doption("etaqtol") )
             {
+                auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
+                dispExpr.setParameterValues( { {"t", t }, {"T0", T0 } } );
+                disp->on(_range=elements(alemesh->referenceMesh()),_expr=-dispExpr);
+                alemesh->update( *disp );
+                dispExpr.setParameterValues( { {"t", t-dt }, {"T0", T0 } } );
+                disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
+                alemesh->update( *disp );
                 if ( !soption( "remesh.metric" ).empty() )
                     met.on( _range=elements(moving_mesh), _expr=expr(soption("remesh.metric")) );
                 else
@@ -85,7 +98,10 @@ runALEMesh()
                 mesh = out;
                 alemesh = genALEMesh( mesh );
                 disp = alemesh->functionSpace()->elementPtr();
-
+                T0 = t - dt;
+                dispExpr.setParameterValues( { {"t", t }, {"T0", T0 } } );
+                disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
+                alemesh->update( *disp );
             }
         }
         exSave( t, alemesh, disp );
@@ -108,6 +124,9 @@ main( int argc, char** argv )
         ("mesh-adaptation-function", Feel::po::value<std::string>(), "mesh-adaptation-function")
         ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
         ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
+        ( "dt", po::value<double>()->default_value( 0.1 ), "dt" )
+        ( "Tfinal", po::value<double>()->default_value( 1 ), "T" )
+        ( "etaqtol", po::value<double>()->default_value( 0.1 ), "etaqtol" )
         ;
 
 	Environment env( _argc=argc, _argv=argv,

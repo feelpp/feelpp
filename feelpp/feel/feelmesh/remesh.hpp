@@ -103,7 +103,6 @@ public:
             else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2  )
                 MMG2D_mmg2dlib(M_mmg_mesh,M_mmg_sol);
             auto r = this->mmg2Mesh();
-            r->updateForUse();
             return r;
         }
 
@@ -208,11 +207,11 @@ MMG5_pMesh
 Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
 {
     int nVertices       = m_in->numPoints();
-    int nTetrahedra     = ( dimension_v<MeshType> == 3 )?m_in->numElements():0;
+    int nTetrahedra     = ( dimension_v<MeshType> == 3 )?m_in->numGlobalElements():0;
     int nPrisms         = 0;
-    int nTriangles      = ( dimension_v<MeshType> == 3 )?m_in->numFaces():m_in->numElements();
+    int nTriangles      = ( dimension_v<MeshType> == 3 )?m_in->numGlobalFaces():m_in->numGlobalElements();
     int nQuadrilaterals = 0;
-    int nEdges          = 0;
+    int nEdges          = ( dimension_v<MeshType> == 2 )?m_in->numGlobalFaces():0;
     
     if constexpr ( dimension_v<MeshType> == 3 )
     {
@@ -308,19 +307,33 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
         k++;
     }
 
-    if constexpr ( dimension_v<MeshType> == 3 )
+    k = 1;
+    for( auto const& wface : m_in->faces() )
     {
-        int k = 1;
-        for( auto const& wface : m_in->faces() )
+        auto const& [key,face] = boost::unwrap_ref( wface );
+        if constexpr ( dimension_v<MeshType> == 3 )
         {
-            auto const& [key,face] = boost::unwrap_ref( wface ); 
+
             if ( MMG3D_Set_triangle(M_mmg_mesh,
                                     pt_id[face.point(0).id()],
                                     pt_id[face.point(1).id()],
                                     pt_id[face.point(2).id()],
                                     face.markerOr(0).value(), k++ ) != 1 )
             {
-            // TODO: hrow std::logic_error( "Error in MMG3D_Set_triangle" );
+                using namespace std::string_literals;
+                throw std::logic_error( "Error in MMG3D_Set_triangle "s + std::to_string( face.id() ) + " " + std::to_string(face.markerOr(0).value()) );
+            }
+        }
+        else if constexpr ( dimension_v<MeshType> == 2 )
+        {
+
+            if ( MMG2D_Set_edge(M_mmg_mesh,
+                                pt_id[face.point(0).id()],
+                                pt_id[face.point(1).id()],
+                                face.markerOr(0).value(), k++ ) != 1 )
+            {
+                using namespace std::string_literals;
+                throw std::logic_error( "Error in MMG2D_Set_edge "s + std::to_string( face.id() ) + " " + std::to_string(face.markerOr(0).value()) );
             }
         }
     }
@@ -424,6 +437,7 @@ Remesh<MeshType>::mmg2Mesh( MMG5_pMesh const& mesh )
             }
             using face_type = typename mesh_t::face_type;
             face_type newElem;
+            newElem.setId( k );
             newElem.setMarker( lab );
             newElem.setProcessIdInPartition( 0 );
             newElem.setProcessId( 0 );
@@ -451,11 +465,59 @@ Remesh<MeshType>::mmg2Mesh( MMG5_pMesh const& mesh )
         }
         
     }
-
+    for ( int k=1; k<=nEdges; k++ )
+    {
+        int iv[2], lab,isridge=0;
+        if constexpr ( dimension_v<MeshType> == 2 )
+        {
+            if ( MMG2D_Get_edge( M_mmg_mesh,
+                                 &(iv[0]),&(iv[1]),
+                                 &(lab), &(isridge),&(required)) != 1 )
+            {
+                std::cout << "Unable to get mesh triangle " << k << std::endl;
+                ier = MMG5_STRONGFAILURE;
+            }
+            using face_type = typename mesh_t::face_type;
+            face_type newElem;
+            newElem.setId( k );
+            newElem.setMarker( lab );
+            newElem.setProcessIdInPartition( 0 );
+            newElem.setProcessId( 0 );
+            for (int i=0; i<2; i++)
+                newElem.setPoint( i, out->point( iv[i] ) );
+            auto [ it, ins ] =  out->addFace( newElem );
+            
+        }
+    }
+    out->setMarkerNames( M_mesh->markerNames() );
+    out->updateForUse();
     std::cout << "vertices =" << nVertices << std::endl;
     std::cout << "tetrahedrons =" << nTetrahedra << std::endl;
     std::cout << "triangles =" << nTriangles << std::endl;
-    std::cout << "Mesh" << out->numPoints() << " " << out->numElements() << " " << out->numFaces() << std::endl;
+    std::cout << "edges =" << nEdges << std::endl;
+    std::cout << "Mesh" << out->numGlobalPoints() << " " << out->numGlobalElements() << " " << out->numGlobalFaces() << std::endl;
+    
+    for( auto marker: out->markerNames() )
+    {
+        auto [name,data] = marker;
+
+        if ( data[1] == out->dimension() )
+        {
+            size_type nelts = nelements( markedelements(out, name ), true );
+            std::cout << "      number of marked elements " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+        }
+    }
+    for( auto marker: out->markerNames() )
+    {
+        auto name = marker.first;
+        auto data = marker.second;
+        
+        if ( data[1] == out->dimension()-1 )
+        {
+            size_type nelts = nelements( markedfaces(out, name ), true );
+            std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
+        }
+    }
 
     return out;
 }
