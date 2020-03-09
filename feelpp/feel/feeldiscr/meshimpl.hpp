@@ -45,7 +45,7 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/simplex.hpp>
-#include <feel/feeldiscr/quality.hpp>
+#include <feel/feeldiscr/measures.hpp>
 
 namespace Feel
 {
