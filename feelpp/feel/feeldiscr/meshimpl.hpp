@@ -45,6 +45,7 @@
 #include <feel/feelmesh/geoentity.hpp>
 #include <feel/feelmesh/hypercube.hpp>
 #include <feel/feelmesh/simplex.hpp>
+#include <feel/feeldiscr/quality.hpp>
 
 namespace Feel
 {
@@ -538,6 +539,7 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
     // compute h information: average, min and max
     {
         tic();
+#if 0
         M_h_avg = 0;
         M_h_min = std::numeric_limits<value_type>::max();
         M_h_max = 0;
@@ -558,7 +560,12 @@ void Mesh<Shape, T, Tag, IndexT>::updateMeasures()
         M_h_avg = reduction[0];
         M_h_min = reduction[1];
         M_h_max = reduction[2];
-
+#else
+        auto [ havg, hmin, hmax ] = hMeasures( this->shared_from_this() );
+        M_h_avg = havg;
+        M_h_min = hmin;
+        M_h_max = hmax;
+#endif
         LOG( INFO ) << "h average : " << this->hAverage() << "\n";
         LOG( INFO ) << "    h min : " << this->hMin() << "\n";
         LOG( INFO ) << "    h max : " << this->hMax() << "\n";
