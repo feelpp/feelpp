@@ -27,14 +27,14 @@ COMPONENT=${COMPONENT:-feelpp}
 #fi
 echo "Building $FLAVOR/$DIST packages for channel $CHANNEL Feel++ component $COMPONENT"
 
-PBUILDER_RESULTS=$HOME/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
+PBUILDER_RESULTS=/var/lib/buildkite-agent/pbuilder/${DIST}_result_${BUILDKITE_AGENT_NAME}
 
 echo "--- start from clean slate"
 if [ -d build-$DIST ]; then rm -rf build-$DIST; fi
 
 if [ -n "$(ls -A ${PBUILDER_RESULTS}/ 2>/dev/null)" ];
 then
-    echo "removing previous builds";
+    echo "removing previous builds in $PBUILDER_RESULTS";
     ls -1 ${PBUILDER_RESULTS}/
     rm -f ${PBUILDER_RESULTS}/*;
 else
@@ -43,6 +43,13 @@ fi
 
 echo "--- update base for pbuilder $DIST"
 pbuilder-dist $DIST update
+if [ "$COMPONENT" = "feelpp-toolboxes" ]; then
+    echo "--- add bintray key"
+    export DIST
+    export CHANNEL
+    export FLAVOR
+    feelpp/tools/scripts/pkg/add_key.sh
+fi
 
 echo "--- setting directory build-$DIST to build source tarball"
 #git clone https://github.com/feelpp/feelpp /tmp/feelpp
@@ -72,9 +79,13 @@ echo "--- building archive $rename_archive for debian"
 cp ${COMPONENT}-*.tar.gz feelpp.pkg/${COMPONENT}/$rename_archive
 cd feelpp.pkg/${COMPONENT}/$DIST && tar xzf ../$rename_archive --strip 1
 
-echo "--- building ${COMPONENT} debian version $version-1"
+echo "--- update changelog ${COMPONENT}  $version-1"
 dch -v "$version-1" --distribution "unstable" -b "New upstream commits"
+
+echo "--- add source ${COMPONENT}  $version-1"
 dpkg-source -b .
+
+echo "--- building ${COMPONENT} debian version $version-1"
 pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${version}-1.dsc
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"

@@ -30,8 +30,7 @@
 #define FEELPP_STRAIGHTENMESH_HPP 1
 
 #include <feel/feeldiscr/mesh.hpp>
-
-
+#define FEELPP_INSTANTIATE_STRAIGHTENMESH 
 namespace Feel 
 { 
 template<typename MeshType>
@@ -40,6 +39,8 @@ straightenMesh( std::shared_ptr<MeshType> m,
                 worldcomm_ptr_t const& comm = Environment::worldCommPtr(),
                 bool refine = false,
                 bool save = false );
+
+
 
 #if !defined(FEELPP_INSTANTIATE_STRAIGHTENMESH)
 // 1D
@@ -96,4 +97,8 @@ straightenMesh<Mesh<Simplex<3,4>>>( std::shared_ptr<Mesh<Simplex<3,4>>>,
                                     worldcomm_ptr_t const& , bool, bool  );
 #endif
 }
+
+
+#include <feel/feelfilters/straightenmesh_impl.hpp>
+
 #endif /* FEELPP_STRAIGHTENMESH_HPP */

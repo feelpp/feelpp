@@ -139,9 +139,9 @@ InextensibilityForceModel<LevelSetType, FluidMechanicsType>::updateInterfaceRect
         ;
 
     *M_interfaceRectangularFunction = vf::project( 
-            this->levelset()->functionSpace(), 
-            elements(this->levelset()->mesh()),
-            R_expr
+        _space=this->levelset()->functionSpace(), 
+        _range=elements(this->levelset()->mesh()),
+        _expr=R_expr
             );
 }
 
