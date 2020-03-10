@@ -25,6 +25,6 @@
 if ( FEELPP_HAS_PYTHON )
   set_directory_properties(PROPERTIES LABEL testpython )
   foreach(TEST python_basic python_embed python1)
-    feelpp_add_test( ${TEST} )
+    feelpp_add_test( ${TEST} LINK_LIBRARIES ${PYTHON_LIBRARIES} )
   endforeach()
 endif()
