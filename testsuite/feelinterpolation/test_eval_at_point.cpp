@@ -60,7 +60,7 @@ void run()
         e_str = "{x*x*y*z,x*y*y*z,x*y*z*z}:x:y:z";
 
     auto e = expr<DimGeo,1>( e_str );
-    u = vf::project(Vh,elements(mesh), e );
+    u = vf::project(_space=Vh,_range=elements(mesh), _expr=e );
 
     node_type pt(DimGeo);
     pt[0] = 0.5;
