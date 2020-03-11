@@ -719,7 +719,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
 
 

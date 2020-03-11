@@ -122,11 +122,11 @@ measureStatisticsEvaluation( RangeType const& range,
 
     if ( ppStat.hasField() )
     {
-        ( Feel::for_each( fieldTuple, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tupleModelField, [&]( auto const& e )
                         {
                             if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    for ( auto const& [fieldName,fieldFunc] : e )
+                                    for ( auto const& [fieldName,fieldFunc,symbol,prefixSymb] : e )
                                     {
                                         if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
                                             {

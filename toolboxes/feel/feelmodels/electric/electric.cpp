@@ -513,8 +513,7 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
-    this->updateJacobian( data, this->symbolsExpr(v) );
+    this->updateJacobian( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -535,8 +534,7 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
-    this->updateResidual( data, this->symbolsExpr(v) );
+    this->updateResidual( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

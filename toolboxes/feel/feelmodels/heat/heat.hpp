@@ -204,15 +204,6 @@ class Heat : public ModelNumerical,
         void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
         //___________________________________________________________________________________//
-        // fields used in post-processing
-        //___________________________________________________________________________________//
-
-        auto allFields( std::string const& prefix = "" ) const
-            {
-                return hana::make_tuple( std::make_pair( prefixvm( prefix,"temperature" ),this->fieldTemperaturePtr() ) );
-            }
-
-        //___________________________________________________________________________________//
         // export expressions
         //___________________________________________________________________________________//
 
@@ -236,37 +227,53 @@ class Heat : public ModelNumerical,
             }
 
         //___________________________________________________________________________________//
+        // toolbox fields
+        //___________________________________________________________________________________//
+
+        auto modelFields( std::string const& prefix = "" ) const
+            {
+                return this->modelFields( this->fieldTemperaturePtr(), prefix );
+            }
+        auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+            {
+                auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector );
+                return this->modelFields( field_t, prefix );
+            }
+        template <typename TemperatureFieldType>
+        auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
+            {
+                return Feel::FeelModels::modelFields( modelField<FieldTag::heat_temperature,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"temperature" ), field_t, "T", this->keyword() ) );
+            }
+
+        //___________________________________________________________________________________//
         // symbols expressions
         //___________________________________________________________________________________//
 
-        template <typename FieldTemperatureType>
-        auto symbolsExpr( FieldTemperatureType const& t, std::string const& prefix_symbol = "heat_" ) const
+        template <typename ModelFieldsType>
+        auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( t, prefix_symbol );
+            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
         }
-        auto symbolsExpr( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExpr( this->fieldTemperature(), prefix_symbol ); }
+        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
-        template <typename FieldTemperatureType>
-        auto symbolsExprToolbox( FieldTemperatureType const& t, std::string const& prefix_symbol = "heat_" ) const
+        template <typename ModelFieldsType>
+        auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
             {
+                auto const& t = mfields.template field<FieldTag::heat_temperature>( prefixvm( prefix,"temperature" ) );
                 // generate symbol heat_nflux
                 typedef decltype( this->normalHeatFluxExpr(t) ) _expr_nflux_type;
                 std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
-                std::string symbolNormalHeatFluxStr = (boost::format("%1%nflux")%prefix_symbol ).str();
+                std::string symbolNormalHeatFluxStr = prefixvm( this->keyword(), "nflux", "_");
                 auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t );
                 normalHeatFluxSymbs.push_back( std::make_tuple( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) ) );
 
                 // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-                return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%T")%prefix_symbol).str(),idv(t) ),
-                                              symbolExpr( (boost::format("%1%grad_T")%prefix_symbol).str(),gradv(t), SymbolExprComponentSuffix( 1,nDim,true ) ),
-                                              symbolExpr( (boost::format("%1%dn_T")%prefix_symbol).str(),dnv(t) ),
-                                              symbolExpr( normalHeatFluxSymbs )
-                                              );
+                return Feel::vf::symbolsExpr( mfields.symbolsExpr(), symbolExpr( normalHeatFluxSymbs ) );
             }
-        auto symbolsExprToolbox( std::string const& prefix_symbol = "heat_" ) const { return this->symbolsExprToolbox( this->fieldTemperature(), prefix_symbol ); }
+        //auto symbolsExprToolbox( std::string const& prefix = "" ) const { return this->symbolsExprToolbox( this->modelFields(), prefix ); }
 
         //___________________________________________________________________________________//
         // toolbox expressions
@@ -375,13 +382,8 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
-#if 0
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->materialsProperties()->updateParameterValues( paramValues );
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-#endif
-    auto fields = this->allFields();
+
+    auto fields = this->modelFields();
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
@@ -401,6 +403,7 @@ template <typename TupleFieldsType, typename SymbolsExpr>
 void
 Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
+
     bool hasMeasure = false;
 
     // compute measures

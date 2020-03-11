@@ -113,11 +113,11 @@ public :
 
             hana::for_each( M_contextFields,
                             [this,&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple,
+                                hana::for_each( fieldTuple.tupleModelField,
                                                 [this,&x,&res](auto const& y) {
                                                     if constexpr ( is_iterable_v<decltype(y)> )
                                                     {
-                                                        for ( auto const& [fieldName,fieldFunc] : y )
+                                                        for ( auto const& [fieldName,fieldFunc,symbol,prefixSymb] : y )
                                                         {
                                                             this->evalFieldImpl( x,fieldName,fieldFunc,res );
                                                         }
