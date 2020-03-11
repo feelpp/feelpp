@@ -125,20 +125,43 @@ public :
     void updateTimeStep();
 
     //___________________________________________________________________________________//
-    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); }
+    // toolbox fields
+    //___________________________________________________________________________________//
 
-    template <typename FieldTemperatureType,typename FieldVelocityType, typename FieldPressureType>
-    auto symbolsExpr( FieldTemperatureType const& t, FieldVelocityType const& u, FieldPressureType const& p ) const
+    auto modelFields( std::string const& prefix = "" ) const
         {
-            auto seHeat = this->heatModel()->symbolsExprToolbox( t );
-            auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( sol, rowStartInVectorHeat, this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( sol, rowStartInVectorFluid, this->fluidModel()->keyword() ) );
+        }
+    template <typename ModelFieldsHeatType,typename ModelFieldsFluidType>
+    auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsFluidType const& mfieldsFluid, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsFluid );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            auto seHeat = this->heatModel()->symbolsExprToolbox( mfields, this->heatModel()->keyword() );
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields, this->fluidModel()->keyword() );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat );
         }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
+    //___________________________________________________________________________________//
     void solve();
 
     void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
