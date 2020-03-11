@@ -39,7 +39,14 @@ runALEMesh()
                       ex->save();
                   };
     exSave( 0, alemesh, disp );
-    
+
+    auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
+    auto updateDisp = []( auto alemesh, auto disp, auto dexpr, double t, double T0, double dt )
+                          {
+                              dexpr.setParameterValues( { {"t", t }, {"T0", T0 }, {"dt",dt } } );
+                              disp->on(_range=elements(alemesh->referenceMesh()),_expr=dexpr);
+                              alemesh->update( *disp );
+                          };
     double dt = doption("dt");
     double T = doption("Tfinal");
     for( double t = dt, T0 = 0; t < T; t += dt )
@@ -55,16 +62,7 @@ runALEMesh()
             alemesh->updateMetricMeshAdaptation( eScal );
         }
 
-
-        if ( Environment::vm().count( "displacement-imposed" ) )
-        {
-            auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-            dispExpr.setParameterValues( { {"t", t },{"T0", T0 } } );
-            disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
-        }
-
-        alemesh->update( *disp );
-
+        updateDisp( alemesh, disp, dispExpr, t, T0, dt );
 
         if ( boption( "remesh" ) )
         {
@@ -75,13 +73,11 @@ runALEMesh()
 
             if ( etaqmin < doption("etaqtol") )
             {
-                auto dispExpr = expr<FEELPP_DIM,1>( soption(_name="displacement-imposed") );
-                dispExpr.setParameterValues( { {"t", t }, {"T0", T0 } } );
-                disp->on(_range=elements(alemesh->referenceMesh()),_expr=-dispExpr);
-                alemesh->update( *disp );
-                dispExpr.setParameterValues( { {"t", t-dt }, {"T0", T0 } } );
-                disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
-                alemesh->update( *disp );
+                // revert to t-dt
+                updateDisp( alemesh, disp, -dispExpr, t, T0, dt );
+                updateDisp( alemesh, disp, dispExpr, t-dt, T0, dt );
+
+                // apply remesh
                 if ( !soption( "remesh.metric" ).empty() )
                     met.on( _range=elements(moving_mesh), _expr=expr(soption("remesh.metric")) );
                 else
@@ -98,10 +94,9 @@ runALEMesh()
                 mesh = out;
                 alemesh = genALEMesh( mesh );
                 disp = alemesh->functionSpace()->elementPtr();
-                T0 = t - dt;
-                dispExpr.setParameterValues( { {"t", t }, {"T0", T0 } } );
-                disp->on(_range=elements(alemesh->referenceMesh()),_expr=dispExpr);
-                alemesh->update( *disp );
+                // revert to t-dt
+                T0=t-dt;
+                updateDisp( alemesh, disp, dispExpr, t, T0, dt );
             }
         }
         exSave( t, alemesh, disp );
