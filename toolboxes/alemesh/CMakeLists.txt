@@ -36,3 +36,9 @@ feelpp_add_application( alemesh_remesh SRCS alemesh_remesh.cpp
   DEFS FEELPP_DIM=2
   INSTALL
   )
+
+
+foreach( _testcase IN ITEMS  "TurekHron" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_alemesh CATEGORY toolboxes/alemesh)
+endforeach()
+
