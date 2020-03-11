@@ -190,7 +190,7 @@ private :
     template<typename ResType, typename T1, typename... ExprT >
     static constexpr auto applyImpl2( ResType && res,  hana::tuple<T1,ExprT...> const& t )
         {
-            return applyImpl2( applyImpl( std::forward<ResType>( res ), hana::at( t, 0_c ) ),  hana::remove_at( t, 0_c ) );
+            return applyImpl2( applyImpl( std::forward<ResType>( res ), hana::at( t, 0_c ) ), hana::remove_at( t, 0_c ) );
         }
 
     template < typename T1, typename... ExprT >
@@ -225,7 +225,7 @@ private :
                     if constexpr ( std::decay_t<decltype(hana::size(t1.tupleExpr))>::value == 0 )
                                      return applyImpl( std::forward<ResType>( res ), exprs... );
                         else
-                            return applyImpl(  applyImpl2( std::forward<ResType>( res ), t1.tupleExpr ), exprs... );
+                            return applyImpl( applyImpl2( std::forward<ResType>( res ), t1.tupleExpr ), exprs... );
                 }
             else
                 return std::move( res );
