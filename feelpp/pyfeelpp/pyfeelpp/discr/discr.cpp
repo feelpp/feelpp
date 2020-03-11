@@ -157,37 +157,37 @@ PYBIND11_MODULE(_discr, m )
     py::class_<Periodicity<NoPeriodicity>>(m,pyclass_name.c_str()).def(py::init<>());
 
     
-    defDiscr<Pch_type<Mesh<Simplex<1>>,1,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1>>,2,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<1>>,3,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<1,1,1>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
     
-    defDiscr<Pch_type<Mesh<Simplex<2>>,1,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2>>,2,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<2>>,3,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
 
-    defDiscr<Pch_type<Mesh<Simplex<3>>,1,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3>>,2,double,PointSetFekete>>( m );
-    defDiscr<Pch_type<Mesh<Simplex<3>>,3,double,PointSetFekete>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,double,PointSetFekete,0>>( m );
+    defDiscr<Pch_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,double,PointSetFekete,0>>( m );
     
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,0,PointSetFekete>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2>>,0,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,1,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,2,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<2>>,3,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,0,PointSetFekete>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,0,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,1,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,2,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<2>>,3,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,1,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<2,1,2>,double,0,uint32_type>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,0,PointSetFekete>>( m );
-    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3>>,0,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,1,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,2,PointSetFekete>>( m );
-    defDiscr<Pdh_type<Mesh<Simplex<3>>,3,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,0,PointSetFekete>>( m );
+    defDiscrDiscontinuous<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,0,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,PointSetFekete>>( m );
+    defDiscr<Pdh_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,PointSetFekete>>( m );
 
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,1,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,2,PointSetFekete>>( m );
-    defDiscr<Pdhv_type<Mesh<Simplex<3>>,3,PointSetFekete>>( m );
-    //defDiscr<Mesh<Simplex<2>>,2>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,1,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,2,PointSetFekete>>( m );
+    defDiscr<Pdhv_type<Mesh<Simplex<3,1,3>,double,0,uint32_type>,3,PointSetFekete>>( m );
+    //defDiscr<Mesh<Simplex<2,1,2>,double,0,uint32_type>,2>( m );
 }
 
