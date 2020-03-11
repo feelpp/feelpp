@@ -193,6 +193,11 @@ PYBIND11_MODULE( _crb, m )
     m.def("factoryCRBPlugin", &factoryCRBPlugin, "Factory for CRB plugins",
           py::arg("name"),py::arg("libname")=std::string(""),py::arg("dirname")=Info::libdir() );
 
+    py::enum_<crb::stage>(m, "CRBStage")
+        .value("offline", crb::stage::offline)
+        .value("online", crb::stage::online)
+        ;
+
     py::enum_<crb::load>(m,"CRBLoad")
         .value("rb", crb::load::rb)
         .value("fe", crb::load::fe)

@@ -208,7 +208,6 @@ ToolboxMor<Dim>::initModel()
     M_deim = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetV, _prefix="vec");
     this->addDeim(M_deim);
     this->deim()->run();
-    // d->onlineModel()->setupOnlineModel();
     Feel::cout << tc::green << "Electric DEIM construction finished!!" << tc::reset << std::endl;
 
     auto PsetM = this->Dmu->sampling();
@@ -227,72 +226,7 @@ ToolboxMor<Dim>::initModel()
     M_mdeim = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=PsetM, _prefix="mat");
     this->addMdeim(M_mdeim);
     this->mdeim()->run();
-    // m->onlineModel()->setupOnlineModel();
     Feel::cout << tc::green << "Electric MDEIM construction finished!!" << tc::reset << std::endl;
-#if 0
-    if( boption("toolboxmor.test-deim") )
-    {
-        sampling_ptrtype sampling( new sampling_type( Dmu ) );
-        int size = ioption("toolboxmor.sampling-size");
-        sampling->clear();
-        sampling->randomize( size, true );
-        auto e = exporter(_mesh=M_heatBox->mesh(), _name="deimtest");
-        int i = 0;
-        for( auto const& mu : *sampling )
-        {
-            auto betaA = this->mdeim()->beta(mu);
-            auto betaF = deim()->beta(mu);
-            auto qa = mdeim()->q();
-            auto qf = deim()->q();
-            auto Am = backend()->newMatrix(Xh,Xh);
-            Am->zero();
-            for( int m = 0; m < mdeim()->size(); ++m )
-            {
-                Am->addMatrix( betaA(m), qa[m]);
-                Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
-            }
-            auto Fm = backend()->newVector(Xh);
-            Fm->zero();
-            for( int m = 0; m < deim()->size(); ++m )
-            {
-                Fm->add( betaF(m), qf[m]);
-                Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
-            }
-
-            auto TEIM = Xh->element();
-            backend()->solve( _matrix=Am, _rhs=Fm, _solution=TEIM);
-
-            for( int i = 0; i < mu.size(); ++i )
-                M_heatBox->addParameterInModelProperties(mu.parameterName(i), mu(i));
-            M_heatBox->updateParameterValues();
-            M_heatBox->updateFieldVelocityConvection();
-            M_heatBox->solve();
-            auto TBOX = M_heatBox->fieldTemperature();
-
-            auto errT = normL2(elements(M_heatBox->mesh()), idv(TBOX)-idv(TEIM) );
-            auto normT = normL2(elements(M_heatBox->mesh()), idv(TBOX) );
-            Feel::cout << "T: err = " << errT << " relative err = " << errT/normT << std::endl;
-
-            auto A = this->assembleForMDEIM(mu,0);
-            auto F = this->assembleForDEIM(mu,0);
-            Am->addMatrix(-1., A);
-            Fm->add(-1., F);
-            auto errA = Am->linftyNorm();
-            auto normA = A->linftyNorm();
-            auto errF = Fm->linftyNorm();
-            auto normF = F->linftyNorm();
-            Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
-                       << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
-
-            e->step(i)->add("t_box", TBOX);
-            e->step(i)->add("t_deim", TEIM);
-            i++;
-        }
-        e->save();
-    }
-#endif
-    // this->resizeQm();
-    // assembleData();
 
 } // ToolboxMor<Dim>::init
 

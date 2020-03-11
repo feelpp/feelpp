@@ -47,11 +47,36 @@ void defToolboxMor(py::module &m)
         .def("setAssembleDEIM", static_cast<void (mor_t::*)(std::function<vector_ptrtype(ParameterSpaceX::Element const&)> const&) >(&mor_t::setAssembleDEIM), "set the function to assemble DEIM", py::arg("fct") )
         .def("setAssembleMDEIM", &mor_t::setAssembleMDEIM, "set the function to assemble MDEIM", py::arg("fct"))
         .def("setOnlineAssembleDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble DEIM for the online model", py::arg("fct"))
-        .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
+        .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleMDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
         .def("getDEIMReducedMesh", &mor_t::getDEIMReducedMesh, "get the reduced mesh of DEIM" )
         .def("getMDEIMReducedMesh", &mor_t::getMDEIMReducedMesh, "get the reduced mesh of MDEIM" )
         ;
+    std::string modelnew_name = std::string("toolboxmor_") + std::to_string(nDim) +std::string("d");
+    m.def(modelnew_name.c_str(), []() { return std::make_shared<mor_t>(); }," return a pointer on model");
 
+    std::string crbmodelclass_name = std::string("CRBModel_") + pyclass_name;
+    py::class_<CRBModel<mor_t>,std::shared_ptr<CRBModel<mor_t> > >(m, crbmodelclass_name.c_str())
+        .def(py::init<>(), "init")
+        ;
+    std::string crbmodelnew_name = std::string("crbmodel_toolboxmor_") + std::to_string(nDim) +std::string("d");
+    m.def(crbmodelnew_name.c_str(), [](std::shared_ptr<mor_t>& m) { return std::make_shared<CRBModel<mor_t> >(m); }," return a pointer on crbmodel");
+
+    std::string crbclass_name = std::string("CRB_") + pyclass_name;
+    py::class_<CRB<CRBModel<mor_t> >,std::shared_ptr<CRB<CRBModel<mor_t> > > >(m, crbclass_name.c_str())
+        .def(py::init<std::string const&,
+             std::shared_ptr<CRBModel<mor_t>> const&,
+             crb::stage,
+             std::string const&>(),
+             py::arg("name"),
+             py::arg("model"),
+             py::arg("stage")=crb::stage::online,
+             py::arg("prefixExt")=std::string(""),
+             "init")
+        // get rid of the return
+        .def("offline", [](CRB<CRBModel<mor_t> >& c) { c.offline(); }, "run the offline step")
+        ;
+    std::string crbnew_name = std::string("crb_toolboxmor_") + std::to_string(nDim) +std::string("d");
+    m.def(crbnew_name.c_str(), [](std::shared_ptr<CRBModel<mor_t> >& m/*, crb::stage stage = crb::stage::online*/) { return std::make_shared<CRB<CRBModel<mor_t> > >("ToolboxMor", m, crb::stage::offline); }," return a pointer on crb");
 }
 
 

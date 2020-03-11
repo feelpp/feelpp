@@ -11,8 +11,7 @@ e=core.Environment(sys.argv,opts=o)
 
 heatBox=heat(dim=2,order=1)
 heatBox.init()
-model = toolboxmor(2)
-
+model = toolboxmor_2d()
 model.setFunctionSpaces( Vh=heatBox.spaceTemperature())
 
 def assembleDEIM(mu):
@@ -65,5 +64,10 @@ def assembleOnlineMDEIM(mu):
 
 model.setOnlineAssembleMDEIM(assembleOnlineMDEIM)
 
+model.postInitModel()
+model.setInitialized(True)
+crbmodel = crbmodel_toolboxmor_2d(model)
+crb = crb_toolboxmor_2d(crbmodel)
+crb.offline()
 
 print("cool")
