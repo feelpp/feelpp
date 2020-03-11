@@ -25,6 +25,7 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/heat/heat.hpp>
+#include <feel/feeldiscr/pch.hpp>
 
 namespace py = pybind11;
 using namespace Feel;
@@ -34,8 +35,8 @@ void defSM(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = Heat< Simplex<nDim>,
-                           Lagrange<Order, Scalar,Continuous,PointSetFekete> >;
+    using toolbox_t = Heat< Simplex<nDim,1,nDim>,
+                            Lagrange<Order, Scalar,Continuous,PointSetFekete,0> >;
     using element_temperature_t = typename toolbox_t::element_temperature_type;
     using element_temperature_ptr_t = typename toolbox_t::element_temperature_ptrtype;
     using element_velocityconvection_t = typename toolbox_t::element_velocityconvection_type;
