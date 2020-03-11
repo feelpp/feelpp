@@ -19,7 +19,9 @@
 //!
 #include <pybind11/pybind11.h>
 #include <pybind11/functional.h>
+// #include <pybind11/eigen.h>
 
+#include <feel/feelcrb/crb.hpp>
 #include <feel/feelcrb/toolboxmor.hpp>
 
 namespace py = pybind11;
@@ -42,10 +44,12 @@ void defToolboxMor(py::module &m)
         .def("setInitialized", &mor_t::setInitialized, "set the model to initialized", py::arg("b") )
         .def("functionSpace", &mor_t::functionSpace, "returns the function space" )
         .def("setFunctionSpaces",&mor_t::setFunctionSpaces, "set the function spaces", py::arg("Vh"))
-        .def("setAssembleDEIM", &mor_t::setAssembleDEIM, "set the function to assemble DEIM", py::arg("fct") )
+        .def("setAssembleDEIM", static_cast<void (mor_t::*)(std::function<vector_ptrtype(ParameterSpaceX::Element const&)> const&) >(&mor_t::setAssembleDEIM), "set the function to assemble DEIM", py::arg("fct") )
         .def("setAssembleMDEIM", &mor_t::setAssembleMDEIM, "set the function to assemble MDEIM", py::arg("fct"))
         .def("setOnlineAssembleDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble DEIM for the online model", py::arg("fct"))
         .def("setOnlineAssembleMDEIM", &mor_t::setOnlineAssembleDEIM, "set the function to assemble MDEIM for the online model", py::arg("fct"))
+        .def("getDEIMReducedMesh", &mor_t::getDEIMReducedMesh, "get the reduced mesh of DEIM" )
+        .def("getMDEIMReducedMesh", &mor_t::getMDEIMReducedMesh, "get the reduced mesh of MDEIM" )
         ;
 
 }
@@ -59,5 +63,6 @@ PYBIND11_MODULE(_toolboxmor, m )
     defToolboxMor<3>(m);
 
     m.def("makeToolboxMorOptions", &makeToolboxMorOptions, "get options for the model" );
+
 }
 
