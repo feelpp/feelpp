@@ -531,8 +531,52 @@ public:
                         return true;
                 return false;
             }
+
+        auto modelFields( self_type const& fluidToolbox, std::string const& prefix = "" ) const
+            {
+                using _field_translational_ptrtype = std::decay_t<decltype(this->begin()->second.fieldTranslationalVelocityPtr())>;
+                using _field_angular_ptrtype = std::decay_t<decltype(this->begin()->second.fieldAngularVelocityPtr())>;
+
+                std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> registerFields;
+                for ( auto const& [name,bpbc] : *this )
+                {
+                    registerFields[name] = std::make_tuple( bpbc.fieldTranslationalVelocityPtr(), bpbc.fieldAngularVelocityPtr() );
+                }
+                return this->modelFieldsImpl( fluidToolbox,registerFields,prefix );
+            }
+        auto modelFields( self_type const& fluidToolbox, vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+            {
+                using _field_translational_ptrtype = std::decay_t<decltype( this->begin()->second.spaceTranslationalVelocity()->elementPtr( *sol,rowStartInVector ) )>;
+                using _field_angular_ptrtype = std::decay_t<decltype(this->begin()->second.spaceAngularVelocity()->elementPtr( *sol, rowStartInVector ) )>;
+
+                std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> registerFields;
+                for ( auto const& [name,bpbc] : *this )
+                {
+                    size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                    size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+                    registerFields[name] = std::make_tuple( bpbc.spaceTranslationalVelocity()->elementPtr( *sol, rowStartInVector+startBlockIndexTranslationalVelocity ),
+                                                            bpbc.spaceAngularVelocity()->elementPtr( *sol, rowStartInVector+startBlockIndexAngularVelocity ) );
+                }
+                return this->modelFieldsImpl( fluidToolbox,registerFields,prefix );
+            }
     private:
 
+        template <typename _field_translational_ptrtype, typename _field_angular_ptrtype>
+        auto modelFieldsImpl( self_type const& fluidToolbox, std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> const& registerFields, std::string const& prefix ) const
+            {
+                auto mfieldTranslational = modelField<FieldTag::fluid_body_translational_velocity,FieldCtx::ID,_field_translational_ptrtype>();
+                auto mfieldAngular = modelField<FieldTag::fluid_body_angular_velocity,FieldCtx::ID,_field_angular_ptrtype>();
+                for ( auto const& [name,bpbc] : *this )
+                {
+                    auto const& field_translational = std::get<0>( registerFields.find( name )->second );
+                    auto const& field_angular = std::get<1>( registerFields.find( name )->second );
+                    std::string prefixBase = prefixvm( prefix, (boost::format("body.%1%")%name).str() );
+                    std::string prefix_symbol = prefixvm( fluidToolbox.keyword(), (boost::format("body_%1%")%name).str(), "_");
+                    mfieldTranslational.add( prefixvm(prefixBase,"translational-velocity"), field_translational, "V",  prefix_symbol );
+                    mfieldAngular.add( prefixvm(prefixBase,"angular-velocity"), field_angular, "W",  prefix_symbol );
+                }
+                return Feel::FeelModels::modelFields( mfieldTranslational, mfieldAngular );
+            }
     };
 
 
@@ -614,11 +658,11 @@ public:
 
     //___________________________________________________________________________________//
     // constructor
-    FluidMechanics( std::string const& prefix,
-                    std::string const& keyword = "fluid",
-                    worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
-                    std::string const& subPrefix = "",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
+    explicit FluidMechanics( std::string const& prefix,
+                             std::string const& keyword = "fluid",
+                             worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
+                             std::string const& subPrefix = "",
+                             ModelBaseRepository const& modelRep = ModelBaseRepository() );
     FluidMechanics( self_type const & M ) = default;
 
     static self_ptrtype New( std::string const& prefix,
@@ -904,19 +948,22 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(),  this->fieldPressurePtr(), prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+0 );
-            auto field_p = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+1 );
-            return this->modelFields( field_u, field_p, prefix );
+            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
+            auto field_p = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
+            auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
+            return this->modelFields( field_u, field_p, mfields_body, prefix );
         }
-    template <typename VelocityFieldType,typename PressureFieldType>
-    auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, std::string const& prefix = "" ) const
+    template <typename VelocityFieldType,typename PressureFieldType,typename ModelFieldsBodyType>
+    auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
         {
+            auto mfields_ale = this->modelFieldsMeshALE( prefix );
             return Feel::FeelModels::modelFields( modelField<FieldTag::fluid_velocity,FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( prefixvm( prefix,"velocity" ), field_u, "U", this->keyword() ),
-                                                  modelField<FieldTag::fluid_pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() )
+                                                  modelField<FieldTag::fluid_pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() ),
+                                                  mfields_body, mfields_ale
                                                   );
         }
 
@@ -1267,6 +1314,16 @@ private :
     //protected:
     virtual size_type initStartBlockIndexFieldsInMatrix();
     virtual int initBlockVector();
+
+
+    auto modelFieldsMeshALE( std::string const& prefix = "" ) const
+        {
+            using _field_disp_ptrtype =  typename mesh_ale_type::ale_map_element_ptrtype;
+            auto mfieldDisp = modelField<FieldTag::fluid_mesh_displacement,FieldCtx::ID,_field_disp_ptrtype>();
+            if ( this->isMoveDomain() )
+                mfieldDisp.add( prefixvm( prefix, "displacement"), this->meshALE()->displacement(), "disp", this->keyword() );
+            return Feel::FeelModels::modelFields( mfieldDisp );
+        }
 
     //----------------------------------------------------
     // mesh
