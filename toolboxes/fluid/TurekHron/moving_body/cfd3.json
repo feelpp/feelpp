@@ -97,6 +97,21 @@
         "Measures":
         {
             "Forces":"wall2",
+            "Statistics":
+            {
+                "mybody_translational":
+                {
+                    "type":"mean",
+                    "markers":["fluid-cylinder","fluid-beam"],
+                    "field":"body.p1_mark.translational-velocity"
+                },
+                "mybody_angular":
+                {
+                    "type":"mean",
+                    "markers":["fluid-cylinder","fluid-beam"],
+                    "field":"body.p1_mark.angular-velocity"
+                }
+            },
             "Points":
             {
                 "pointA":
