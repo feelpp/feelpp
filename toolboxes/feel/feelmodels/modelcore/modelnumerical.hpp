@@ -49,6 +49,8 @@
 
 #include <feel/feelcore/tuple_utils.hpp>
 
+#include <feel/feelmodels/modelcore/modelfields.hpp>
+
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
@@ -437,11 +439,11 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    hana::for_each( tupleFields, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+    hana::for_each( tupleFields.tupleModelField, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
-                                for ( auto const& [fieldName,fieldPtr] : e )
+                                for ( auto const& [fieldName,fieldPtr,symbol,prefixSymb] : e )
                                 {
                                     if (!fieldPtr )
                                         return;
@@ -688,11 +690,11 @@ void
 ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, TupleFieldsType const& fieldTuple )
 {
     std::string formatUsed = (format.empty())? "default" : format;
-    hana::for_each( fieldTuple, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
+    hana::for_each( fieldTuple.tupleModelField, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
-                                for ( auto const& [fieldName,fieldPtr] : e )
+                                for ( auto const& [fieldName,fieldPtr,symbol,prefixSymb] : e )
                                 {
                                     if ( fieldPtr && fieldsNamesToSave.find( fieldName ) != fieldsNamesToSave.end() )
                                     {

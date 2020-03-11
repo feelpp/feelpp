@@ -897,25 +897,46 @@ public :
         this->materialProperties()->updateDynamicViscosityField( __expr );
         M_pmmNeedUpdate = true;
     }
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldVelocityPtr(),  this->fieldPressurePtr(), prefix );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+0 );
+            auto field_p = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+1 );
+            return this->modelFields( field_u, field_p, prefix );
+        }
+    template <typename VelocityFieldType,typename PressureFieldType>
+    auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldTag::fluid_velocity,FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( prefixvm( prefix,"velocity" ), field_u, "U", this->keyword() ),
+                                                  modelField<FieldTag::fluid_pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() )
+                                                  );
+        }
+
     //___________________________________________________________________________________//
     // symbols expression
-    template <typename FieldVelocityType, typename FieldPressureType>
-    /*constexpr*/auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_" ) const
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( u,p, prefix_symbol );
+            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
         }
-    auto symbolsExpr( std::string const& prefix_symbol = "fluid_" ) const { return this->symbolsExpr( this->fieldVelocity(), this->fieldPressure(), prefix_symbol ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
-    template <typename FieldVelocityType, typename FieldPressureType>
-    auto symbolsExprToolbox( FieldVelocityType const& u, FieldPressureType const& p, std::string const& prefix_symbol = "fluid_"  ) const
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%U")%prefix_symbol).str(), idv(u), SymbolExprComponentSuffix( nDim, 1, true ) ),
-                                          symbolExpr( (boost::format("%1%P")%prefix_symbol).str(), idv(p) ),
-                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
+            return mfields.symbolsExpr();
         }
 
     //___________________________________________________________________________________//
@@ -926,7 +947,7 @@ public :
             //this->materialProperties()->updateFields( symbolsExpr );
             this->updateVorticity();
         }
-
+#if 0
     auto allFields( std::string const& prefix = "" ) const
         {
             std::map<std::string,element_normalstress_ptrtype> fields_normalstress;
@@ -952,7 +973,7 @@ public :
                                      //,fields_NoSlipRigidTranslationalVelocity,fields_NoSlipRigidAngularVelocity
                                      );
         }
-
+#endif
     //___________________________________________________________________________________//
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
@@ -1444,13 +1465,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    // this->modelProperties().parameters().updateParameterValues();
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().postProcess().setParameterValues( paramValues );
 
     this->updateFields( symbolsExpr );
 
-    auto fields = this->allFields();
+    auto fields = this->modelFields();
     if ( nOrderGeo == 1 )
     {
         this->executePostProcessExports( M_exporter, time, fields/*, symbolsExpr*/ );

@@ -440,16 +440,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("ThermoElectric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    auto symbolExpr = this->symbolsExpr();
+    auto mfields = this->modelFields();
+    auto symbolExpr = this->symbolsExpr( mfields );
     //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
 
-    auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
+    //auto mfields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_electricModel->allFields( M_electricModel->keyword() ) );
+
     auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
                                      hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
                                                    M_electricModel->exprPostProcessExports( symbolExpr,M_electricModel->keyword() ) ) );
-    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -550,10 +552,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     auto mesh = this->mesh();
     auto XhV = M_electricModel->spaceElectricPotential();
     auto XhT = M_heatModel->spaceTemperature();
+
+    auto mfield = this->modelFields( vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
+    auto symbolsExpr = this->symbolsExpr( mfield );
     auto v = *XhV->elementPtr( *vecCurrentPicardSolution, startBlockIndexElectricPotential );
     auto t = *XhT->elementPtr( *vecCurrentPicardSolution, startBlockIndexTemperature );
 
-    auto symbolsExpr = this->symbolsExpr( t, v );
+    //auto symbolsExpr = this->symbolsExpr( t, v );
     M_heatModel->updateLinearPDE( data,symbolsExpr );
     M_electricModel->updateLinearPDE( data,symbolsExpr );
 
@@ -597,9 +602,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Electric( DataUpdateLinear & da
 {
     this->log("ThermoElectric","updateLinear_Electric","start" );
 
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const& t = M_heatModel->fieldTemperature();
-    auto symbolsExpr = this->symbolsExpr(t,v);
+    auto symbolsExpr = this->symbolsExpr();
     M_electricModel->updateLinearPDE( data,symbolsExpr );
 
     this->log("ThermoElectric","updateLinear_Electric","finish" );
@@ -617,7 +620,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
 
     auto const& v = M_electricModel->fieldElectricPotential();
     auto const& t = M_heatModel->fieldTemperature();
-    auto symbolsExpr = this->symbolsExpr(t,v);
+    auto symbolsExpr = this->symbolsExpr();
     M_heatModel->updateLinearPDE( data,symbolsExpr );
 
     if ( buildNonCstPart && M_modelUseJouleEffect ) // TODO : not always non cst part
@@ -654,7 +657,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
     auto XhT = M_heatModel->spaceTemperature();
     auto const& v = M_electricModel->fieldElectricPotential();
     auto const t = XhT->element(XVec, M_heatModel->rowStartInVector());
-    auto symbolsExpr = this->symbolsExpr(t,v);
+    //auto symbolsExpr = this->symbolsExpr(t,v);
+    auto mfield = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
+                                     this->electricModel()->modelFields( this->electricModel()->keyword() ) );
+    auto symbolsExpr = this->symbolsExpr( mfield );
 
     M_heatModel->updateResidual( data,symbolsExpr );
 
@@ -710,7 +716,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto XhT = M_heatModel->spaceTemperature();
     //auto const& t = M_heatModel->fieldTemperature();
     auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-    auto symbolsExpr = this->symbolsExpr(t,v);
+    //auto symbolsExpr = this->symbolsExpr(t,v);
+
+    auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto symbolsExpr = this->symbolsExpr( mfield );
 
     M_heatModel->updateJacobian( data,symbolsExpr );
     M_electricModel->updateJacobian( data,symbolsExpr );
@@ -789,7 +798,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto XhT = M_heatModel->spaceTemperature();
     auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-    auto symbolsExpr = this->symbolsExpr(t,v);
+    //auto symbolsExpr = this->symbolsExpr(t,v);
+    auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto symbolsExpr = this->symbolsExpr( mfield );
 
     M_heatModel->updateResidual( data,symbolsExpr );
     M_electricModel->updateResidual( data,symbolsExpr );

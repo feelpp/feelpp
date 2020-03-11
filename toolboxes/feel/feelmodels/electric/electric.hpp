@@ -150,15 +150,6 @@ public :
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
 
     //___________________________________________________________________________________//
-    // fields used in post-processing
-    //___________________________________________________________________________________//
-
-    auto allFields( std::string const& prefix = "" ) const
-        {
-            return hana::make_tuple( std::make_pair( prefixvm(prefix,"electric-potential"),this->fieldElectricPotentialPtr() ) );
-        }
-
-    //___________________________________________________________________________________//
     // export expressions
     //___________________________________________________________________________________//
 
@@ -198,40 +189,56 @@ public :
         }
 
     //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldElectricPotentialPtr(), prefix );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector );
+            return this->modelFields( field_p, prefix );
+        }
+    template <typename PotentialFieldType>
+    auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldTag::electric_potential,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"electric-potential" ), field_p, "P", this->keyword() ) );
+        }
+
+    //___________________________________________________________________________________//
     // symbols expressions
     //___________________________________________________________________________________//
 
-    template <typename FieldElectricPotentialType>
-    auto symbolsExpr( FieldElectricPotentialType const& v, std::string const& prefix_symbol = "electric_" ) const
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( v, prefix_symbol );
+            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
         }
-    auto symbolsExpr( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExpr( this->fieldElectricPotential(), prefix_symbol ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
-    template <typename FieldElectricPotentialType>
-    auto symbolsExprToolbox( FieldElectricPotentialType const& v,  std::string const& prefix_symbol = "electric_" ) const
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields,  std::string const& prefix = "" ) const
         {
+            auto const& v =  mfields.template field<FieldTag::electric_potential>( prefixvm( prefix,"electric-potential" ) );
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
             {
-                std::string symbolcurrentDensityStr = (boost::format("%1%%2%_current_density")%prefix_symbol %matName).str();
+                std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
                 auto _currentDensityExpr = this->currentDensityExpr( v, matName );
                 currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
             }
 
             // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%P")%prefix_symbol).str(),idv(v) ),
-                                          symbolExpr( (boost::format("%1%grad_P")%prefix_symbol).str(),gradv(v), SymbolExprComponentSuffix( 1,nDim,true ) ),
-                                          symbolExpr( (boost::format("%1%dn_P")%prefix_symbol).str(),dnv(v) ),
-                                          symbolExpr( currentDensitySymbs )
-                                          );
+            return Feel::vf::symbolsExpr( mfields.symbolsExpr(), symbolExpr( currentDensitySymbs ) );
         }
-    auto symbolsExprToolbox( std::string const& prefix_symbol = "electric_" ) const { return this->symbolsExprToolbox( this->fieldElectricPotential(), prefix_symbol ); }
+    //auto symbolsExprToolbox( std::string const& prefix = "" ) const { return this->symbolsExprToolbox( this->modelFields(), prefix ); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -338,7 +345,7 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    auto fields = this->allFields();
+    auto fields = this->modelFields();
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( invalid_uint32_type_value, fields );

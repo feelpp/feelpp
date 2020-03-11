@@ -129,17 +129,47 @@ public :
     void startTimeStep();
     void updateTimeStep();
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
 
-    template <typename FieldTemperatureType,typename FieldElectricPotentialType>
-    auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
+    auto modelFields( std::string const& prefix = "" ) const
         {
-            auto seHeat = this->heatModel()->symbolsExprToolbox( t );
-            auto seElectric = this->electricModel()->symbolsExprToolbox( v );
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( this->heatModel()->keyword() ),
+                                                  this->electricModel()->modelFields( this->electricModel()->keyword() ) );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorElectric, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( sol, rowStartInVectorHeat, this->heatModel()->keyword() ),
+                                                  this->electricModel()->modelFields( sol, rowStartInVectorElectric, this->electricModel()->keyword() ) );
+        }
+    template <typename ModelFieldsHeatType,typename ModelFieldsElectricType>
+    auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsElectricType const& mfieldsElectric, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsElectric );
+        }
+#if 0
+    template <typename TemperatureFieldType,typename PotentialFieldType>
+    auto modelFields( TemperatureFieldType const& field_t, PotentialFieldType const& field_p, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( field_t, this->heatModel()->keyword() ),
+                                                  this->electricModel()->modelFields( field_p, this->electricModel()->keyword() ) );
+        }
+#endif
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            auto seHeat = this->heatModel()->symbolsExprToolbox( mfields, this->heatModel()->keyword() );
+            auto seElectric = this->electricModel()->symbolsExprToolbox( mfields, this->electricModel()->keyword() );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat );
         }
-    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
     //___________________________________________________________________________________//
     // apply assembly and solver

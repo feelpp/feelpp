@@ -603,7 +603,8 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -735,16 +736,14 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto const t = this->spaceTemperature()->element(XVec, this->rowStartInVector());
-    this->updateJacobian( data, this->symbolsExpr(t) );
+    this->updateJacobian( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
 }
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto const t = this->spaceTemperature()->element(XVec, this->rowStartInVector());
-    this->updateResidual( data, this->symbolsExpr(t) );
+    this->updateResidual( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
