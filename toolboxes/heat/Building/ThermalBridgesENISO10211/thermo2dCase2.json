@@ -76,7 +76,15 @@
         },
         "Measures":
         {
-            "Normal-Heat-Flux":"bottom",
+            //"Normal-Heat-Flux":"bottom",
+            "Normal-Heat-Flux":
+            {
+                "bottom":
+                {
+                    "markers":"bottom",
+                    "direction":"inward"
+                }
+            },
             "Statistics":
             {
                 "Check_Heat-Flux_top":
@@ -102,6 +110,12 @@
                 {
                     "type":"integrate",
                     "expr":"-h_bottom*(heat_T-T0_bottom):heat_T:h_bottom:T0_bottom",
+                    "markers":"bottom"
+                },
+                "Inward-Heat-Flux_V2_bottom":
+                {
+                    "type":"integrate",
+                    "expr":"-heat_nflux:heat_nflux",
                     "markers":"bottom"
                 }
             },
@@ -164,7 +178,12 @@
                     "value":9.5,
                     "tolerance":1e-1
                 },
-                "NormalHeatFlux_bottom":
+                "Statistics_Inward-Heat-Flux_V2_bottom_integrate":
+                {
+                    "value":9.5,
+                    "tolerance":1e-1
+                },
+                "Normal_Heat_Flux_bottom":
                 {
                     "value":9.5,
                     "tolerance":1e-1
