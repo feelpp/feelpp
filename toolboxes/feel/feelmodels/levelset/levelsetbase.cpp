@@ -395,9 +395,7 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::postProcessExportsAllFieldsAvailable() const
 {
-    std::set<std::string> postProcessExportsAllFieldsAvailable = this->postProcessSaveAllFieldsAvailable();
-    postProcessExportsAllFieldsAvailable.insert( "pid" );
-    return postProcessExportsAllFieldsAvailable;
+    return this->postProcessSaveAllFieldsAvailable();
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -418,6 +416,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
 
     this->setPostProcessExportsAllFieldsAvailable( this->postProcessExportsAllFieldsAvailable() );
     this->setPostProcessSaveAllFieldsAvailable( this->postProcessSaveAllFieldsAvailable() );
+    this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
     // Point measures

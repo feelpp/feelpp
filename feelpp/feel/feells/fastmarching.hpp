@@ -244,6 +244,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         std::vector< FastMarchingDofStatus > M_dofStatus;
         heap_type M_positiveCloseDofHeap;
         heap_type M_negativeCloseDofHeap;
+        int M_nNewDofs;
 };
 
 } // namespace Feel

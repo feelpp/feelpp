@@ -381,6 +381,8 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
 
+    myBlockGraph.close();
+
     this->log("MultiFluid","buildBlockMatrixGraph", "finish" );
 
     return myBlockGraph;
@@ -1245,10 +1247,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     for( auto const& lsInterfaceForces: M_levelsetInterfaceForcesModels )
     {
         std::string const lsName = lsInterfaceForces.first;
-        std::string levelset_prefix = prefixvm(this->prefix(), lsName);
         for( auto const& force: lsInterfaceForces.second )
         {
-            interfaceForcesFields[prefixvm(levelset_prefix, force.first)] = force.second->lastInterfaceForce();
+            interfaceForcesFields[prefixvm(lsName, force.first)] = force.second->lastInterfaceForce();
         }
     }
     for( auto const& force: M_additionalInterfaceForcesModel )
@@ -1450,6 +1451,9 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     for ( auto const& ls : M_levelsets )
         for ( auto const& s : ls.second->postProcessExportsAllFieldsAvailable() )
             ppExportsAllFieldsAvailable.insert( prefixvm( ls.second->keyword(), s ) );
+    for( auto const& lsForces : M_levelsetInterfaceForcesModels )
+        for( auto const& f : lsForces.second )
+            ppExportsAllFieldsAvailable.insert( prefixvm( lsForces.first, f.first ) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();

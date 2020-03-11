@@ -223,6 +223,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
 
         case FastMarchingInitialisationMethod::ILP_L2 :
         {
+            *phiRedist = phi;
             auto const modGradPhi = this->projectorL2()->project( norm2( gradv(phi) ) );
             phiRedist->on( 
                     _range=rangeInitialElts, 
@@ -233,6 +234,7 @@ LevelSetRedistanciationFM<FunctionSpaceType>::initFastMarching( element_type con
 
         case FastMarchingInitialisationMethod::ILP_SMOOTH :
         {
+            *phiRedist = phi;
             auto const modGradPhi = this->projectorSM()->project( norm2( gradv(phi) ) );
             phiRedist->on( 
                     _range=rangeInitialElts, 
