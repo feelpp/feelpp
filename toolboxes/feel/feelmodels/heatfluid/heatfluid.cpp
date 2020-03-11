@@ -466,15 +466,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     this->log("HeatFluid","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    auto symbolExpr = this->symbolsExpr();
+    auto mfields = this->modelFields();
+    auto symbolExpr = this->symbolsExpr( mfields );
     M_heatModel->exportResults( time, symbolExpr );
     M_fluidModel->exportResults( time, symbolExpr );
 
-    auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
+    //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
     auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
                                     hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
-    this->executePostProcessExports( M_exporter, time, fields, symbolExpr, exprExport );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -755,7 +756,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     auto const u = XhV->element(XVec, blockIndexVelocity );
     auto const p = XhP->element(XVec, blockIndexPressure );
 
-    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    //auto symbolsExpr = this->symbolsExpr(t,u,p);
+    auto mfield = this->modelFields( XVec, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+    auto symbolsExpr = this->symbolsExpr( mfield );
+
 
     M_heatModel->updateJacobian( data, symbolsExpr );
     M_fluidModel->updateJacobian( data/*, symbolsExpr*/ );
@@ -913,7 +917,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     auto const u = XhV->element(XVec, blockIndexVelocity );
     auto const p = XhP->element(XVec, blockIndexPressure );
 
-    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    //auto symbolsExpr = this->symbolsExpr(t,u,p);
+    auto mfield = this->modelFields( XVec, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+    auto symbolsExpr = this->symbolsExpr( mfield );
+
 
 
     if ( doAssemblyHeat )
@@ -1049,10 +1056,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) const
 {
-    auto const& t = this->heatModel()->fieldTemperature();
-    auto const& u = this->fluidModel()->fieldVelocity();
-    auto const& p = this->fluidModel()->fieldPressure();
-    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    auto symbolsExpr = this->symbolsExpr();
     M_heatModel->updateLinearPDE( data,symbolsExpr );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1060,13 +1064,15 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto XhT = this->heatModel()->spaceTemperature();
-    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
-    auto const t = XhT->element(XVec, blockIndexTemperature );
-    auto const& u = this->fluidModel()->fieldVelocity();
-    auto const& p = this->fluidModel()->fieldPressure();
+    // auto XhT = this->heatModel()->spaceTemperature();
+    // size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    // auto const t = XhT->element(XVec, blockIndexTemperature );
+    // auto const& u = this->fluidModel()->fieldVelocity();
+    // auto const& p = this->fluidModel()->fieldPressure();
+    auto mfield = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
+                                     this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
+    auto symbolsExpr = this->symbolsExpr( mfield );
 
-    auto symbolsExpr = this->symbolsExpr(t,u,p);
     M_heatModel->updateResidual( data,symbolsExpr );
 
 }
@@ -1075,13 +1081,15 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Heat( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    auto XhT = this->heatModel()->spaceTemperature();
-    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
-    auto const t = XhT->element(XVec, blockIndexTemperature );
-    auto const& u = this->fluidModel()->fieldVelocity();
-    auto const& p = this->fluidModel()->fieldPressure();
-
-    auto symbolsExpr = this->symbolsExpr(t,u,p);
+    // auto XhT = this->heatModel()->spaceTemperature();
+    // size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    // auto const t = XhT->element(XVec, blockIndexTemperature );
+    // auto const& u = this->fluidModel()->fieldVelocity();
+    // auto const& p = this->fluidModel()->fieldPressure();
+    auto mfield = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
+                                     this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
+    auto symbolsExpr = this->symbolsExpr( mfield );
+    //auto symbolsExpr = this->symbolsExpr(t,u,p);
     M_heatModel->updateJacobian( data,symbolsExpr );
 }
 
