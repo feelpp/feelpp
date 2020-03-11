@@ -120,6 +120,7 @@ private:
     int M_nbTempRobin;
     map_eim_type M_elecEimIndex;
     map_eim_type M_therEimIndex;
+    int M_eimGradSize;
 
     parameter_type M_mu;
     element_type M_u;
@@ -144,8 +145,6 @@ public:
     int QInitialGuess() const override { return 2; }
     int mMaxInitialGuess(int q) const override { return 1; }
     void resize();
-    int indexOfElecMat(std::string const& mat ) const;
-    int indexOfTherMat(std::string const& mat ) const;
 
     functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
     void initModel() override;

@@ -178,6 +178,7 @@ int PoissonNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
 
 void PoissonNL::resize()
 {
+    M_eimGradSize = this->scalarDiscontinuousEim()[0]->mMax();
     M_Aqm.resize(Qa());
     M_betaAqm.resize(Qa());
     for( int q = 0; q < Qa(); ++q)
@@ -197,24 +198,6 @@ void PoissonNL::resize()
             M_betaFqm[l][q].resize(mMaxF(l,q));
         }
     }
-}
-
-int PoissonNL::indexOfElecMat(std::string const& mat ) const
-{
-    auto it = M_elecMaterials.find(mat);
-    if( it != M_elecMaterials.end() )
-        return std::distance(it, M_elecMaterials.begin());
-    else
-        return -1;
-}
-
-int PoissonNL::indexOfTherMat(std::string const& mat ) const
-{
-    auto it = M_therMaterials.find(mat);
-    if( it != M_therMaterials.end() )
-        return std::distance(it, M_therMaterials.begin());
-    else
-        return -1;
 }
 
 
@@ -364,18 +347,21 @@ void PoissonNL::initModel()
         Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
     }
 
+    auto name = "eim_grad";
     auto gradgrad = _e2v*trans(_e2v);
-    auto Jh = eimd_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, M_materials.markersWithPhysic("electric")) );
+    auto Jh = eimd_space_type::New( _mesh=M_mesh,
+                                    _range=elements(support(Xh->template functionSpace<0>())));
     auto eim_grad = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
                          _element=M_u.template element<1>(),
                          _element2=M_u.template element<0>(),
                          _parameter=M_mu,
                          _expr=gradgrad,
                          _space=Jh,
-                         _name="eim_grad",
+                         _name=name,
                          _sampling=Pset );
     this->addEimDiscontinuous( eim_grad );
-    Feel::cout << tc::green << "eim_grad dimension: " << eim_grad->mMax() << tc::reset << std::endl;
+    M_eimGradSize = eim_grad->mMax();
+    Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
 
     auto U = Xh->element();
     auto u1 = U.template element<0>();
@@ -453,9 +439,10 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
         Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
     }
 
-    auto const& ptreeEimGrad = ptreeEim.get_child( "eim_grad" );
-    std::string dbNameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
+    auto name = "eim_grad";
     auto gradgrad = _e2v*trans(_e2v);
+    auto const& ptreeEimGrad = ptreeEim.get_child( name );
+    std::string dbNameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
     eimd_space_ptrtype Jh;
     auto eim_grad = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
                          _element=M_u.template element<1>(),
@@ -463,11 +450,12 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
                          _parameter=M_mu,
                          _expr=gradgrad,
                          _space=Jh,
-                         _name="eim_grad",
+                         _name=name,
                          _filename=dbNameEimGrad,
                          _directory=dbDir );
     this->addEimDiscontinuous( eim_grad );
-    Feel::cout << tc::green << "eim_grad dimension: " << eim_grad->mMax() << tc::reset << std::endl;
+    M_eimGradSize = eim_grad->mMax();
+    Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
 
     this->resize();
 }

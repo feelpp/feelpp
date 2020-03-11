@@ -231,15 +231,15 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
     /**********  left hand side *********/
     int i = 0;
     for( i = 0; i < M_nbTherMat; ++i )
-        for( int m = 0; m < betaK[i].size(); ++m )
+        for( int m = 0; m < M_betaAqm[i].size(); ++m )
             M_betaAqm[i][m] = betaK[i](m);
     for( i = M_nbTherMat; i < M_nbTherMat+M_nbElecMat; ++i )
-        for( int m = 0; m < betaSigma[i-M_nbTherMat].size(); ++m )
+        for( int m = 0; m < M_betaAqm[i].size(); ++m )
             M_betaAqm[i][m] = betaSigma[i-M_nbTherMat](m);
     for( auto const&[bdName, bd] : potentialDirichlet )
     {
         int idx = M_elecEimIndex[bd.material()]-M_nbTherMat;
-        for( int m = 0; m < betaSigma[idx].size(); ++m )
+        for( int m = 0; m < M_betaAqm[i].size(); ++m )
             M_betaAqm[i][m] = betaSigma[idx](m);
         ++i;
     }
@@ -260,8 +260,8 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
     for( i = 0; i < M_nbElecMat; ++i )
     {
         int M = 0;
-        for( int m = 0; m < betaSigma[i].size(); ++m )
-            for( int mm = 0; mm < betaGrad.size(); ++mm )
+        for( int m = 0; m < M_betaFqm[0][i].size()/M_eimGradSize; ++m )
+            for( int mm = 0; mm < M_eimGradSize; ++mm )
                 M_betaFqm[0][i][M++] = betaSigma[i](m)*betaGrad(mm);
     }
     for( auto const&[bdName, bd] : potentialDirichlet )
@@ -271,7 +271,7 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
         int idx = M_elecEimIndex[bd.material()]-M_nbTherMat;
-        for( int m = 0; m < betaSigma[idx].size(); ++m )
+        for( int m = 0; m < M_betaFqm[0][i].size(); ++m )
             M_betaFqm[0][i][m] = e.evaluate()(0,0)*betaSigma[idx](m);
         ++i;
     }
@@ -300,7 +300,7 @@ void PoissonNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGr
         {
             auto mat = output.getString("material");
             int idx = M_elecEimIndex[mat] - M_nbTherMat;
-            for( int m = 0; m < betaSigma[idx].size(); ++m )
+            for( int m = 0; m < M_betaFqm[i][0].size(); ++m )
                 M_betaFqm[i][0][m] = betaSigma[idx](m);
         }
         ++i;

@@ -24,6 +24,9 @@
 //!
 
 #include "poissonCRB-nl.hpp"
+#include <feel/feelcrb/ser.hpp>
+
+#define DO_CVG_TEST 0
 
 using namespace Feel;
 
@@ -73,6 +76,8 @@ int main( int argc, char** argv)
     using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
     using crb_type = CRB<crb_model_type>;
     using crb_ptrtype = std::shared_ptr<crb_type>;
+    using ser_type = SER<crb_type>;
+    using ser_ptrtype = std::shared_ptr<ser_type>;
     using sampling_type = typename crb_type::sampling_type;
     using sampling_ptrtype = std::shared_ptr<sampling_type>;
     using vectorN_type = Eigen::VectorXd;
@@ -81,6 +86,7 @@ int main( int argc, char** argv)
     opt.add_options()
         ( "online.dbid", po::value<std::string>()->default_value(""), "id of the db to load" )
         ( "online.sampling-size", po::value<int>()->default_value(1), "number of parameters" )
+        ( "online.do-cvg", po::value<bool>()->default_value(true), "" )
         ;
     Environment env( _argc=argc, _argv=argv,
                      _desc=opt
@@ -94,13 +100,14 @@ int main( int argc, char** argv)
                      .add(bdf_options("PoissonCRB")) );
 
     auto crb = crb_type::New("poissonmodel-nl_crb", crb::stage::offline);
-    crb->loadDBFromId( soption("online.dbid"), crb::load::all );
+    auto crbmodel = crb->model();
     auto model = crb->model()->model();
-
-    sampling_ptrtype sampling( new sampling_type( model->parameterSpace() ) );
-    int size = ioption("online.sampling-size");
-    sampling->clear();
-    sampling->randomize( size, true );
+    auto ser = std::make_shared<ser_type>(crb, crbmodel);
+    if( boption("crb.rebuild-database") || boption("eim.rebuild-database") )
+        ser->run();
+    else
+        crb->offline();
+    // crb->loadDBFromId( soption("online.dbid"), crb::load::all );
 
     int N = crb->dimension();
     int timeSteps = 1;
@@ -115,64 +122,174 @@ int main( int argc, char** argv)
     auto VTRB = Xh->element();
     auto VRB = VTRB.template element<0>();
     auto TRB = VTRB.template element<1>();
+    double outFE=1, outRB=1;
 
-    std::vector<std::vector<std::vector<double> > > errs(2, std::vector<std::vector<double> >(N, std::vector<double>(size)));
-    std::vector<std::vector<std::vector<double> > > errsRel(2, std::vector<std::vector<double> >(N, std::vector<double>(size)));
-    Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
-    int i = 0;
-    for( auto const& mu : *sampling )
+#if 0
+    if( !boption("online.do-cvg") )
     {
+        auto eim_k = model->scalarContinuousEim()[0];
+        auto eim_sigma = model->scalarContinuousEim()[1];
+        auto eim_grad = model->scalarDiscontinuousEim()[0];
+        auto sigmaMax = model->parameterSpace()->min().parameterNamed("sigma");
+
+        auto mu = model->parameterSpace()->element();
+        mu << 2.65644e-08, 275.225, 0.0034501, 0.0494472, 0.0920968, 50501.4;
+
         VTFE = model->solve(mu);
         auto normV = normL2( rangeU, idv(VFE) );
         auto normT = normL2( rangeU, idv(TFE) );
-        for(int n = 0; n < N; ++n)
+        auto sigma0 = mu.parameterNamed("sigma");
+        auto alpha = mu.parameterNamed("alpha");
+        auto L = mu.parameterNamed("L");
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(TFE)-cst(293.)) );
+        auto nSigma = normL2(rangeU,sigma/sigmaMax);
+        auto qSigma = eim_sigma->q();
+        auto betaSigmaFE = eim_sigma->beta(mu, VTFE);
+        auto sigmaFE = Feel::expansion(qSigma,betaSigmaFE);
+        auto k = sigma*L*idv(TFE);
+        auto nK = normL2(rangeU,k);
+        auto qK = eim_k->q();
+        auto betaKFE = eim_k->beta(mu, VTFE);
+        auto kFE = Feel::expansion(qK,betaKFE);
+        auto gradgrad = inner(gradv(VFE));
+        auto nGrad = normL2(rangeU,gradgrad);
+        auto qGrad = eim_grad->q();
+        auto betaGradFE = eim_grad->beta(mu, VTFE);
+        auto gradFE = Feel::expansion(qGrad,betaGradFE);
+
+        auto mesh = model->mesh();
+        auto e = exporter(mesh);
+        for(int n = 0; n < 2; ++n)
         {
+            crb->computeProjectionInitialGuess(mu, n+1, uNs[0]);
+            auto Init = crb->expansion( uNs[0], n+1 );
+            auto VInit = Init.template element<0>();
+            auto TInit = Init.template element<1>();
+            Feel::cout << "solving for N=" << n+1 << "...";
             crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
+            Feel::cout << "solved" << std::endl;
             vectorN_type uN = uNs[0];
             VTRB = crb->expansion( uN, n+1 );
-            errs[0][n][i] = normL2( rangeU, idv(VRB)-idv(VFE) );
-            errs[1][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
-            errsRel[0][n][i] = errs[0][n][i]/normV;
-            errsRel[1][n][i] = errs[1][n][i]/normT;
+            auto errV = normL2(rangeU, idv(VRB)-idv(VFE));
+            auto errT = normL2(rangeU, idv(TRB)-idv(TFE));
+            Feel::cout << "["<<n+1<<"] error V= " << errV << "\t rel=" << errV/normV << std::endl;
+            Feel::cout << "["<<n+1<<"] error T= " << errT << "\t rel=" << errT/normT << std::endl;
+            auto betaSigma = eim_sigma->beta(mu, uN);
+            auto sigmaRB = Feel::expansion(qSigma,betaSigma);
+            auto errSigma = normL2(rangeU,idv(sigmaRB)-sigma/sigmaMax);
+            Feel::cout << "["<<n+1<<"] error sigma=" << errSigma << "\t rel=" << errSigma/nSigma << std::endl;
+            auto betaK = eim_k->beta(mu, uN);
+            auto kRB = Feel::expansion(qK,betaK);
+            auto errK = normL2(rangeU,idv(kRB)-k);
+            Feel::cout << "["<<n+1<<"] error k=" << errK << "\t rel=" << errK/nK << std::endl;
+            auto betaGrad = eim_grad->beta(mu, uN);
+            auto gradRB = Feel::expansion(qGrad,betaGrad);
+            auto errGrad = normL2(rangeU,idv(gradRB)-gradgrad);
+            Feel::cout << "["<<n+1<<"] error grad=" << errGrad << "\t rel=" << errGrad/nGrad << std::endl;
+            e->step(n)->add("VFE", VFE);
+            e->step(n)->add("VRB", VRB);
+            e->step(n)->add("TFE", TFE);
+            e->step(n)->add("TRB", TRB);
+            e->step(n)->add("sigma", sigma);
+            e->step(n)->add("sigmaRB", sigmaRB);
+            e->step(n)->add("k", k);
+            e->step(n)->add("kRB", kRB);
+            e->step(n)->add("grad", gradgrad);
+            e->step(n)->add("gradRB", gradRB);
+            e->step(n)->add("sigmaFE", sigmaFE);
+            e->step(n)->add("kFE", kFE);
+            e->step(n)->add("gradFE", gradFE);
+            e->step(n)->add("Vinit", VInit);
+            e->step(n)->add("Tinit", TInit);
+            e->save();
         }
-        ++i;
     }
-
-    std::vector<std::vector<double> > min(2, std::vector<double>(N)), max(2, std::vector<double>(N)), mean(2, std::vector<double>(N));
-    for(int n = 0; n < N; ++n)
+    else
+#endif
     {
-        for( int i = 0; i < 2; ++i )
+        sampling_ptrtype sampling( new sampling_type( model->parameterSpace() ) );
+        int size = ioption("online.sampling-size");
+        sampling->clear();
+        sampling->randomize( size, true );
+
+        int nbErr = ioption("crb.output-index") != 0 ? 3 : 2;
+        std::vector<std::vector<std::vector<double> > > errs(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
+        std::vector<std::vector<std::vector<double> > > errsRel(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
+        Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
+        int i = 0;
+        for( auto const& mu : *sampling )
         {
-            min[i][n] = *std::min_element(errsRel[i][n].begin(), errsRel[i][n].end());
-            max[i][n] = *std::max_element(errsRel[i][n].begin(), errsRel[i][n].end());
-            double s = std::accumulate(errsRel[i][n].begin(), errsRel[i][n].end(), 0.0);
-            mean[i][n] = s/size;
+            Feel::cout << "solving for mu = " << mu.toString() << std::endl;
+            VTFE = model->solve(mu);
+            if( ioption("crb.output-index") != 0 )
+                outFE = model->output(ioption("crb.output-index"), mu, VTFE);
+            auto normV = normL2( rangeU, idv(VFE) );
+            auto normT = normL2( rangeU, idv(TFE) );
+            for(int n = 0; n < N; ++n)
+            {
+                crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
+                vectorN_type uN = uNs[0];
+                VTRB = crb->expansion( uN, n+1 );
+                errs[0][n][i] = normL2( rangeU, idv(VRB)-idv(VFE) );
+                errs[1][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
+                errsRel[0][n][i] = errs[0][n][i]/normV;
+                errsRel[1][n][i] = errs[1][n][i]/normT;
+                if( ioption("crb.output-index") != 0 )
+                {
+                    outRB = outputs[0];
+                    errs[2][n][i] = std::abs(outFE-outRB);
+                    errsRel[2][n][i] = errs[2][n][i]/std::abs(outFE);
+                }
+            }
+            ++i;
         }
+
+        std::vector<std::vector<double> > min(nbErr, std::vector<double>(N)), max(nbErr, std::vector<double>(N)), mean(nbErr, std::vector<double>(N));
+        for(int n = 0; n < N; ++n)
+        {
+            for( int i = 0; i < nbErr; ++i )
+            {
+                min[i][n] = *std::min_element(errsRel[i][n].begin(), errsRel[i][n].end());
+                max[i][n] = *std::max_element(errsRel[i][n].begin(), errsRel[i][n].end());
+                double s = std::accumulate(errsRel[i][n].begin(), errsRel[i][n].end(), 0.0);
+                mean[i][n] = s/size;
+            }
+        }
+
+        fs::ofstream cvgErrV( "errV.dat" ), cvgErrT( "errT.dat" );
+        fs::ofstream cvgErrVR( "errVR.dat" ), cvgErrTR( "errTR.dat" );
+        fs::ofstream cvgStatV( "statV.dat" ), cvgStatT( "statT.dat" );
+        writeErrors(cvgErrV, errs[0]);
+        writeErrors(cvgErrTR, errsRel[0]);
+        writeErrors(cvgErrT, errs[1]);
+        writeErrors(cvgErrTR, errsRel[1]);
+        printStats(cvgStatV, min[0], max[0], mean[0]);
+        printStats(cvgStatT, min[1], max[1], mean[1]);
+        cvgErrV.close();
+        cvgErrVR.close();
+        cvgErrT.close();
+        cvgErrTR.close();
+        cvgStatV.close();
+        cvgStatT.close();
+        if( ioption("crb.output-index") != 0 )
+        {
+            fs::ofstream cvgErrO( "errO.dat"), cvgErrOR( "errOR.dat" ), cvgStatO("statO.dat");
+            writeErrors(cvgErrO, errs[2]);
+            writeErrors(cvgErrOR, errsRel[2]);
+            printStats(cvgStatO, min[2], max[2], mean[2]);
+            cvgErrO.close();
+            cvgErrOR.close();
+            cvgStatO.close();
+        }
+
+        auto mesh = model->mesh();
+        auto e = exporter(mesh);
+        e->add("VFE", VFE);
+        e->add("VRB", VRB);
+        e->add("TFE", TFE);
+        e->add("TRB", TRB);
+        e->save();
     }
-
-    fs::ofstream cvgErrV( "errV.dat" ), cvgErrT( "errT.dat" );
-    fs::ofstream cvgErrVR( "errVR.dat" ), cvgErrTR( "errTR.dat" );
-    fs::ofstream cvgStatV( "statV.dat" ), cvgStatT( "statT.dat" );
-    writeErrors(cvgErrV, errs[0]);
-    writeErrors(cvgErrTR, errsRel[0]);
-    writeErrors(cvgErrT, errs[1]);
-    writeErrors(cvgErrTR, errsRel[1]);
-    printStats(cvgStatV, min[0], max[0], mean[0]);
-    printStats(cvgStatT, min[1], max[1], mean[1]);
-    cvgErrV.close();
-    cvgErrVR.close();
-    cvgErrT.close();
-    cvgErrTR.close();
-    cvgStatV.close();
-    cvgStatT.close();
-
-    auto mesh = model->mesh();
-    auto e = exporter(mesh);
-    e->add("VFE", VFE);
-    e->add("VRB", VRB);
-    e->add("TFE", TFE);
-    e->add("TRB", TRB);
-    e->save();
 
     return 0;
 }
