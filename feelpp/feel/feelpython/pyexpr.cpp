@@ -155,9 +155,10 @@ pyexpr( std::string const& pycode, std::vector<std::string> const& vars, std::ma
         py::dict _locals=py::cast(locals);
         py::exec(pycode.c_str(), py::globals(),_locals);
 
-        for( auto l : vars )
+        for( std::string const& l : vars )
         {
-            std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
+            //std::string cmd = l + "= toginac(sympify(" + l + "), [x] if len(" + l + ".free_symbols)==0 else " + l + ".free_symbols );";
+            std::string cmd = l + "=sympytoginac( "+ l +" );";
             py::exec(cmd, py::globals(), _locals );
             r[l] = _locals[l.c_str()].cast<std::string>();
         }

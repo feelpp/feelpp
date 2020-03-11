@@ -161,8 +161,8 @@ Test_AOI::run()
     AUTO ( f , sin( 0.5*M_PI*Px() )*( cos( 0.5*M_PI*Py() ) ) );
     AUTO ( g , Px()*( Px()-1 )*0.5*Py() );
 
-    us = vf::project( Xh, elements( mesh ), g );
-    p_mixed = vf::project( p_mixed.functionSpace() , elements( mesh ), f );
+    us = vf::project( _space=Xh, _range=elements( mesh ), _expr=g );
+    p_mixed = vf::project( _space=p_mixed.functionSpace() , _range=elements( mesh ), _expr=f );
 
     //-----------------------------------------------------------------------------------//
 
@@ -212,17 +212,17 @@ Test_AOI::run()
 
     //-----------------------------------------------------------------------------------//
 
-    double int11=integrate( elements( mesh ), f, _Q<4>() ).evaluate()( 0,0 );
-    double int12=integrate( elements( mesh ), f ).evaluate()( 0,0 );
+    double int11=integrate( _range=elements( mesh ), _expr=f, _quad=_Q<4>() ).evaluate()( 0,0 );
+    double int12=integrate( _range=elements( mesh ), _expr=f ).evaluate()( 0,0 );
     BOOST_CHECK_EQUAL( int11,int12 );
     //BOOST_CHECK(std::abs(int11-int12)<1e-15);
 
-    double int21=integrate( elements( mesh ), g, _Q<3>() ).evaluate()( 0,0 );
-    double int22=integrate( elements( mesh ), g ).evaluate()( 0,0 );
+    double int21=integrate( _range=elements( mesh ), _expr=g, _quad=_Q<3>() ).evaluate()( 0,0 );
+    double int22=integrate( _range=elements( mesh ), _expr=g ).evaluate()( 0,0 );
     BOOST_CHECK_EQUAL( int21,int22 );
 
-    double int31=integrate( elements( mesh ), gradv( p_mixed )*idv( u_mixed ),_Q<us_order+p_mixed_order-1 >() ).evaluate()( 0,0 );
-    double int32=integrate( elements( mesh ), gradv( p_mixed )*idv( u_mixed )  ).evaluate()( 0,0 );
+    double int31=integrate( _range=elements( mesh ), _expr=gradv( p_mixed )*idv( u_mixed ),_quad=_Q<us_order+p_mixed_order-1 >() ).evaluate()( 0,0 );
+    double int32=integrate( _range=elements( mesh ), _expr=gradv( p_mixed )*idv( u_mixed )  ).evaluate()( 0,0 );
     BOOST_CHECK_EQUAL( int31,int32 );
 
 

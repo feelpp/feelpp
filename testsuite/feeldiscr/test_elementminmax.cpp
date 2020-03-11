@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax1, T, dim_types )
     typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
-    u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
+    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
 
     double maximum = u.max();
     double minimum = u.min();
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( elementminmax2, T, dim_types )
     typedef std::shared_ptr<space_type> space_ptrtype;
     space_ptrtype Xh = space_type::New( mesh );
     auto u = Xh->element();
-    u = vf::project( Xh, elements( mesh ), vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
+    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=vf::sqrt( Px()*Px() + Py()*Py() + Pz()*Pz() ) );
 
     typedef FunctionSpace<mesh_type,bases<Lagrange<0, Scalar, Discontinuous> > > p0_space_type;
     typedef std::shared_ptr<p0_space_type> p0_space_ptrtype;

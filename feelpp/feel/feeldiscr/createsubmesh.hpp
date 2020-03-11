@@ -1013,13 +1013,14 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     int nbRequest=2*neighborSubdomains;
 
     std::map<rank_type,std::vector<std::pair<size_type,size_type> > > memoryDataToSend;
-    std::map<rank_type,std::vector<size_type> > dataToSend,dataToRecv,dataToRecv2;
+    std::map<rank_type,std::vector<size_type> > dataToSend,dataToRecv,dataToReSend,dataToRecv2;
     // init container
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
         memoryDataToSend[neighborRank].clear();
         dataToSend[neighborRank].clear();
         dataToRecv[neighborRank].clear();
+        dataToReSend[neighborRank].clear();
         dataToRecv2[neighborRank].clear();
     }
     // update container for first send
@@ -1057,16 +1058,16 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
 
     // treat first recv and resend answer
     cptRequest=0;
-    for ( auto const& dataToRecvPair : dataToRecv )
+    for ( auto const& [rankRecv,dataToRecvOnProc] : dataToRecv )
     {
-        rank_type rankRecv = dataToRecvPair.first;
-        int nData = dataToRecvPair.second.size();
+        int nData = dataToRecvOnProc.size();
+        dataToReSend[rankRecv].resize( nData );
         if ( nData == 0 )
             continue;
-        std::vector<size_type> dataToReSend( nData,invalid_v<size_type> );
+        std::fill( dataToReSend[rankRecv].begin(), dataToReSend[rankRecv].end(), invalid_v<size_type> );
         for ( int k=0;k<nData;++k )
         {
-            size_type idEltRecv = dataToRecvPair.second[k];
+            size_type idEltRecv = dataToRecvOnProc[k];
             // search id
             auto const itFindId = new_element_id.find(idEltRecv);
             if ( itFindId != new_element_id.end() )
@@ -1076,11 +1077,11 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
                 CHECK( newMesh->hasElement( idEltInNewMesh) ) << "mesh has not elt whit id " << idEltInNewMesh << "\n";
                 auto & eltToUpdate = newMesh->elementIterator( idEltInNewMesh )->second;
                 eltToUpdate.addNeighborPartitionId( rankRecv );
-                dataToReSend[k] = idEltInNewMesh;
+                dataToReSend[rankRecv][k] = idEltInNewMesh;
             }
         }
         // second send
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, &(dataToReSend[0]), nData );
+        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, &(dataToReSend[rankRecv][0]), nData );
     }
     // second recv
 
