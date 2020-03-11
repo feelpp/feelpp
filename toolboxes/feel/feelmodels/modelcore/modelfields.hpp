@@ -21,11 +21,15 @@ namespace FeelModels
 
 namespace FieldTag
 {
-//static uint16_type next_free_tag = 0;
-const uint16_type heat_temperature=0;//next_free_tag++;
-const uint16_type electric_potential=1;//next_free_tag++;
-const uint16_type fluid_velocity=2;//next_free_tag++;
-const uint16_type fluid_pressure=3;//next_free_tag++;
+
+const uint16_type heat_temperature=0;
+const uint16_type electric_potential=1;
+const uint16_type fluid_velocity=2;
+const uint16_type fluid_pressure=3;
+const uint16_type fluid_body_translational_velocity=4;
+const uint16_type fluid_body_angular_velocity=5;
+const uint16_type fluid_mesh_displacement=6;
+
 }
 namespace FieldCtx
 {
@@ -56,6 +60,11 @@ class ModelField : public std::vector<std::tuple<std::string,FieldType,std::stri
     ModelField( ModelField const& ) = default;
     ModelField( ModelField && ) = default;
     ModelField( std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
+    {
+        this->add( name,u,symbol,prefix_symbol );
+    }
+
+    void add( std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
     {
         if constexpr ( is_shared_ptr_v<field_type> )
             {
@@ -137,6 +146,13 @@ class ModelField : public std::vector<std::tuple<std::string,FieldType,std::stri
     }
 
 };
+
+template <uint16_type Tag,size_type Ctx,typename FieldType>
+auto modelField()
+{
+    return ModelField<Tag,Ctx,FieldType>{};
+}
+
 
 template <uint16_type Tag,size_type Ctx,typename FieldType>
 auto modelField( std::string const& name, FieldType const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
