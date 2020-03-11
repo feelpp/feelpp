@@ -153,6 +153,15 @@ public:
                 return super::operator=( other );
             }
 
+        double const& coeff(int i ) const
+            {
+                return super::operator()(i);
+            }
+        double& coeff(int i )
+            {
+                return super::operator()(i);
+            }
+
         /**
          * return name of parameter at index d
          */

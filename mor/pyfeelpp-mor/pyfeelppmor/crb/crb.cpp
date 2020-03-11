@@ -213,33 +213,37 @@ PYBIND11_MODULE( _crb, m )
         .def("__iter__", [](std::vector<CRBResults> &v) {
                 return py::make_iterator(v.begin(), v.end());
             }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
-        
+
     using ElementP = ParameterSpaceX::Element;
     py::class_<ElementP>(m,"ParameterSpaceElement")
-    //.def("__repr__",[](const ParameterSpaceX::Element &a) {
-    //return "<ParameterSpaceX named '" + a + "'>";
-    //});
-    .def("__str__", [](const ParameterSpaceX::Element &a) {
-            std::ostringstream os;
-            os << "[";
-            os.precision(2);
-            os.setf(std::ios::scientific);
-            for ( int i = 0; i < a.size(); ++i )
-            {
-                os << a[i];
-                if ( i != a.size()-1)
-                    os << ",";
-            }
-            os << "]";
-            return os.str();
-        });
-
+        //.def("__repr__",[](const ParameterSpaceX::Element &a) {
+        //return "<ParameterSpaceX named '" + a + "'>";
+        //});
+        .def("__str__", [](const ParameterSpaceX::Element &a) {
+                            std::ostringstream os;
+                            os << "[";
+                            os.precision(2);
+                            os.setf(std::ios::scientific);
+                            for ( int i = 0; i < a.size(); ++i )
+                            {
+                                os << a[i];
+                                if ( i != a.size()-1)
+                                    os << ",";
+                            }
+                            os << "]";
+                            return os.str();
+                        })
+        .def("parameterNamed", static_cast<double& (ElementP::*)(std::string)>(&ElementP::parameterNamed), "return the parameter named", py::arg("name") )
+        .def("parameterName", &ElementP::parameterName, "return the i-th name ", py::arg("i"))
+        .def("size", &ElementP::size, "return the size of the parameters" )
+        .def("__call__", static_cast<double& (ElementP::*)(int)>(&ElementP::coeff), "return the ith parameter", py::arg("i") )
+        ;
 
     //!
     //! Sampling wrapping
     //!
     py::class_<std::vector<ParameterSpaceX::Element>>(m,"VectorParameterSpaceElement");
-    
+
     py::class_<ParameterSpaceX::Sampling, std::shared_ptr<ParameterSpaceX::Sampling>>(m,"ParameterSpaceSampling")
         .def(py::init<std::shared_ptr<ParameterSpaceX>,int,std::shared_ptr<ParameterSpaceX::Sampling>>())
         .def("sampling",&ParameterSpaceX::Sampling::sampling)
