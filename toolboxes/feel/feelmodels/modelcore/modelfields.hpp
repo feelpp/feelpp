@@ -1,4 +1,3 @@
-
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
 
 #ifndef FEELPP_TOOLBOXES_MODELCORE_MODELFIELDS_H
@@ -19,19 +18,14 @@ namespace Feel
 namespace FeelModels
 {
 
-namespace FieldTag
+enum class ToolboxTag
 {
+    heat = 0,
+    electric,
+    fluid,
+    solid
+};
 
-const uint16_type heat_temperature=0;
-const uint16_type electric_potential=1;
-const uint16_type fluid_velocity=2;
-const uint16_type fluid_pressure=3;
-const uint16_type fluid_body_translational_velocity=4;
-const uint16_type fluid_body_angular_velocity=5;
-const uint16_type fluid_mesh_displacement=6;
-const uint16_type solid_displacement=7;
-const uint16_type solid_pressure=8;
-}
 namespace FieldCtx
 {
 
@@ -42,9 +36,12 @@ const size_type GRAD_NORMAL  = ( 1<<3 );
 
 }
 
+struct ModelFieldFeelppTag {};
+
+template <ToolboxTag TheToolboxTag,uint16_type TheFieldTag>
 struct ModelFieldTag {};
 
-template <uint16_type Tag,size_type Ctx,typename FieldType>
+template <typename ModelFieldTagType,size_type Ctx,typename FieldType>
 class ModelField : public std::vector<std::tuple<std::string,FieldType,std::string,std::string>> // name, field, symbol, prefix in symbol expr
 {
     static constexpr uint16_type nComponents1 = Feel::remove_shared_ptr_type<FieldType>::nComponents1;
@@ -52,10 +49,11 @@ class ModelField : public std::vector<std::tuple<std::string,FieldType,std::stri
     static constexpr uint16_type nRealDim = Feel::remove_shared_ptr_type<FieldType>::nRealDim;
 
   public :
-    static constexpr uint16_type tag = Tag;
-    using type = ModelField<Tag,Ctx,FieldType>; // used by boost::hana and find_if
+    //static constexpr uint16_type tag = Tag;
+    using tag_type = ModelFieldTagType;
+    using type = ModelField<ModelFieldTagType,Ctx,FieldType>; // used by boost::hana and find_if
     using field_type = FieldType;
-    using feelpp_tag = ModelFieldTag;
+    using feelpp_tag = ModelFieldFeelppTag;
 
     ModelField() = default;
     ModelField( ModelField const& ) = default;
@@ -148,21 +146,21 @@ class ModelField : public std::vector<std::tuple<std::string,FieldType,std::stri
 
 };
 
-template <uint16_type Tag,size_type Ctx,typename FieldType>
+template <typename TagType,size_type Ctx,typename FieldType>
 auto modelField()
 {
-    return ModelField<Tag,Ctx,FieldType>{};
+    return ModelField<TagType,Ctx,FieldType>{};
 }
 
 
-template <uint16_type Tag,size_type Ctx,typename FieldType>
+template <typename TagType,size_type Ctx,typename FieldType>
 auto modelField( std::string const& name, FieldType const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
 {
-    return ModelField<Tag,Ctx,FieldType>( name,u,symbol,prefix_symbol );
+    return ModelField<TagType,Ctx,FieldType>( name,u,symbol,prefix_symbol );
 }
 
 
-struct ModelFieldsTag {};
+struct ModelFieldsFeelppTag {};
 
 //! defined type from input args (variadic expression)
 struct ModelFieldsTraits
@@ -219,11 +217,11 @@ private :
     template<typename ResType, typename T1, typename... MFieldsType2 >
     static constexpr auto applyImpl( ResType && res, T1 const& t1, const MFieldsType2&... mfields )
         {
-            if constexpr ( is_a_t<ModelFieldTag, T1 >::value )
+            if constexpr ( is_a_t<ModelFieldFeelppTag, T1 >::value )
                 {
                     return applyImpl( applyModelField(t1,std::forward<ResType>(res) ), mfields... );
                 }
-            else if constexpr ( is_a_t<ModelFieldsTag, T1 >::value )
+            else if constexpr ( is_a_t<ModelFieldsFeelppTag, T1 >::value )
                 {
                     if constexpr ( std::decay_t<decltype(hana::size(t1.tupleModelField))>::value == 0 )
                                      return applyImpl( std::forward<ResType>( res ), mfields... );
@@ -237,11 +235,11 @@ private :
 };
 
 
-template <uint16_type Tag>
+template <typename TagType>
 struct ModelFieldsFindTag
 {
     template <typename T>
-    struct is_same_tag : public std::integral_constant<bool, T::tag == Tag> {};
+    struct is_same_tag : public std::integral_constant<bool, std::is_same_v<typename T::tag_type, TagType>> {};
 
     template <typename C>
     static auto find(C const& c ) { return hana::find_if( c,  hana::trait< is_same_tag > ); }
@@ -251,7 +249,7 @@ template <typename TupleFieldType>
 class ModelFields
 {
 public :
-    using feelpp_tag = ModelFieldsTag;
+    using feelpp_tag = ModelFieldsFeelppTag;
     using tuple_type = TupleFieldType;
 
     ModelFields() = default;
@@ -271,11 +269,11 @@ public :
             return this->symbolsExprImpl( symbols_expression_empty_t{}, tupleModelField );
         }
 
-    template <uint16_type TheTAG>
+    template <typename TagType>
     auto
     field( std::string const& name ) const
         {
-            auto findFieldT = ModelFieldsFindTag<TheTAG>::find( tupleModelField );
+            auto findFieldT = ModelFieldsFindTag<TagType>::find( tupleModelField );
             static_assert( findFieldT != hana::nothing, "tag not found" );
             using found_field_type = typename std::decay_t<decltype( findFieldT.value() )>::field_type;
             for ( auto const& [name2,field,symbol,prefix_symbol] : findFieldT.value() )

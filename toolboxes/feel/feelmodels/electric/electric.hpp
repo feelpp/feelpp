@@ -41,6 +41,11 @@ namespace Feel
 namespace FeelModels
 {
 
+namespace ElectricFieldTag
+{
+    using potential = ModelFieldTag<ToolboxTag::electric,0>;
+}
+
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
@@ -204,7 +209,7 @@ public :
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldTag::electric_potential,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"electric-potential" ), field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<ElectricFieldTag::potential,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"electric-potential" ), field_p, "P", this->keyword() ) );
         }
 
     //___________________________________________________________________________________//
@@ -224,7 +229,7 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields,  std::string const& prefix = "" ) const
         {
-            auto const& v =  mfields.template field<FieldTag::electric_potential>( prefixvm( prefix,"electric-potential" ) );
+            auto const& v =  mfields.template field<ElectricFieldTag::potential>( prefixvm( prefix,"electric-potential" ) );
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;

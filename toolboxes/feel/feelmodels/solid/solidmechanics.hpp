@@ -55,6 +55,12 @@ namespace Feel
 namespace FeelModels
 {
 
+namespace SolidMechanicsFieldTag
+{
+using displacement = ModelFieldTag<ToolboxTag::solid,0>;
+using pressure = ModelFieldTag<ToolboxTag::solid,1>;
+}
+
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public ModelNumerical,
                        public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
@@ -514,11 +520,11 @@ public :
     template <typename DisplacementFieldType, typename VelocityFieldType,typename PressureFieldType>
     auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            auto mfield_disp = modelField<FieldTag::solid_displacement,FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>();
+            auto mfield_disp = modelField<SolidMechanicsFieldTag::displacement,FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>();
             mfield_disp.add( prefixvm( prefix,"displacement" ), field_s, "s", this->keyword() );
             mfield_disp.add( prefixvm( prefix,"velocity" ), field_v, "v", this->keyword() );
             //mfield_disp.add( prefixvm( prefix,"acceleration" ), this->fieldAccelerationPtr(), "a", this->keyword() );
-            auto mfield_pressure = modelField<FieldTag::solid_pressure,FieldCtx::ID>( prefixvm( prefix,"velocity" ), this->fieldPressurePtr(), "p", this->keyword() );
+            auto mfield_pressure = modelField<SolidMechanicsFieldTag::pressure,FieldCtx::ID>( prefixvm( prefix,"velocity" ), this->fieldPressurePtr(), "p", this->keyword() );
 
             return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
         }
