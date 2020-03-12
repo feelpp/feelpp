@@ -422,6 +422,7 @@ private :
 public :
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     void predictorDispl();
 
@@ -501,23 +502,46 @@ public :
     element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
-    // symbols expression
-    template <typename FieldDispType>
-    auto symbolsExpr( FieldDispType const& u, std::string const& prefix_symbol = "solid_"  ) const
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( u, prefix_symbol );
+            return this->modelFields( this->fieldDisplacementPtr(), this->fieldVelocityPtr(), this->fieldPressurePtr(), prefix );
+        }
+    template <typename DisplacementFieldType, typename VelocityFieldType,typename PressureFieldType>
+    auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
+        {
+            auto mfield_disp = modelField<FieldTag::solid_displacement,FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>();
+            mfield_disp.add( prefixvm( prefix,"displacement" ), field_s, "s", this->keyword() );
+            mfield_disp.add( prefixvm( prefix,"velocity" ), field_v, "v", this->keyword() );
+            //mfield_disp.add( prefixvm( prefix,"acceleration" ), this->fieldAccelerationPtr(), "a", this->keyword() );
+            auto mfield_pressure = modelField<FieldTag::solid_pressure,FieldCtx::ID>( prefixvm( prefix,"velocity" ), this->fieldPressurePtr(), "p", this->keyword() );
+
+            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+        }
+
+
+    //___________________________________________________________________________________//
+    // symbols expression
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
         }
-    auto symbolsExpr( std::string const& prefix_symbol = "solid_" ) const { return this->symbolsExpr( this->fieldDisplacement(), prefix_symbol ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
 
-    template <typename FieldDispType>
-    auto symbolsExprToolbox( FieldDispType const& u, std::string const& prefix_symbol = "solid_"  ) const
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
         {
-            return Feel::vf::symbolsExpr( symbolExpr( (boost::format("%1%U")%prefix_symbol).str(), idv(u), SymbolExprComponentSuffix( nDim, 1, true ) ),
-                                          symbolExpr( (boost::format("%1%U_magnitude")%prefix_symbol).str(), inner(idv(u),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
+            return mfields.symbolsExpr();
         }
 
     //----------------------------------//

@@ -695,6 +695,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->updateBoundaryConditionsForUse();
 
+    // update constant parameters
+    this->updateParameterValues();
+
     // update block vector (index + data struct)
     if (this->isStandardModel())
     {
@@ -1083,10 +1086,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     std::string modelName = "solid";
 
-    // update post-process expression
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    // // update post-process expression
+    // this->modelProperties().parameters().updateParameterValues();
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().postProcess().setParameterValues( paramValues );
 
     M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
     // clean doExport with fields not available

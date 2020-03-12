@@ -29,7 +29,8 @@ const uint16_type fluid_pressure=3;
 const uint16_type fluid_body_translational_velocity=4;
 const uint16_type fluid_body_angular_velocity=5;
 const uint16_type fluid_mesh_displacement=6;
-
+const uint16_type solid_displacement=7;
+const uint16_type solid_pressure=8;
 }
 namespace FieldCtx
 {
