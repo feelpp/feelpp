@@ -1,6 +1,6 @@
 
 #include "thermoelectricconfig.h"
-#include <feel/feelmodels/thermoelectric/thermoelectric.cpp>
+#include <feel/feelmodels/thermoelectric/thermoelectricassemblyresidual.cpp>
 
 namespace Feel {
 namespace FeelModels {

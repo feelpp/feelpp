@@ -93,9 +93,15 @@ macro( genLibHeat )
     set(HEAT_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heat/${HEAT_LIB_VARIANTS})
     set(HEAT_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heat_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyresidual_inst.cpp
       )
     set(HEAT_CODEGEN_SOURCES
       ${HEAT_LIB_DIR}/heat_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblylinear_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyjacobian_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyresidual_inst.cpp
       )
     set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
@@ -138,9 +144,17 @@ macro( genLibElectric )
     # configure the lib
     set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS})
     set(ELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_CODEGEN_SOURCES
-      ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
+      ${ELECTRIC_LIB_DIR}/electric_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblylinear_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyjacobian_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  )
     # generate the lib target
     genLibBase(
@@ -762,9 +776,17 @@ macro( genLibThermoElectric )
     # configure the lib
     set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
     set(THERMOELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_CODEGEN_SOURCES
-      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblylinear_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyjacobian_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(THERMOELECTRIC_LIB_DEPENDS ${HEAT_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
     # generate the lib target

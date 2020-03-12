@@ -1,6 +1,6 @@
 
 #include "electricconfig.h"
-#include <feel/feelmodels/electric/electric.cpp>
+#include <feel/feelmodels/electric/electricassemblyjacobian.cpp>
 
 namespace Feel {
 namespace FeelModels {
