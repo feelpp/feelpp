@@ -62,6 +62,15 @@ namespace Feel
 namespace FeelModels
 {
 
+namespace FluidMechanicsFieldTag
+{
+using velocity = ModelFieldTag<ToolboxTag::fluid,0>;
+using pressure = ModelFieldTag<ToolboxTag::fluid,1>;
+using body_translational_velocity = ModelFieldTag<ToolboxTag::fluid,2>;
+using body_angular_velocity = ModelFieldTag<ToolboxTag::fluid,3>;
+using mesh_displacement = ModelFieldTag<ToolboxTag::fluid,4>;
+}
+
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
           typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
@@ -564,8 +573,8 @@ public:
         template <typename _field_translational_ptrtype, typename _field_angular_ptrtype>
         auto modelFieldsImpl( self_type const& fluidToolbox, std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> const& registerFields, std::string const& prefix ) const
             {
-                auto mfieldTranslational = modelField<FieldTag::fluid_body_translational_velocity,FieldCtx::ID,_field_translational_ptrtype>();
-                auto mfieldAngular = modelField<FieldTag::fluid_body_angular_velocity,FieldCtx::ID,_field_angular_ptrtype>();
+                auto mfieldTranslational = modelField<FluidMechanicsFieldTag::body_translational_velocity,FieldCtx::ID,_field_translational_ptrtype>();
+                auto mfieldAngular = modelField<FluidMechanicsFieldTag::body_angular_velocity,FieldCtx::ID,_field_angular_ptrtype>();
                 for ( auto const& [name,bpbc] : *this )
                 {
                     auto const& field_translational = std::get<0>( registerFields.find( name )->second );
@@ -961,8 +970,8 @@ public :
     auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
         {
             auto mfields_ale = this->modelFieldsMeshALE( prefix );
-            return Feel::FeelModels::modelFields( modelField<FieldTag::fluid_velocity,FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( prefixvm( prefix,"velocity" ), field_u, "U", this->keyword() ),
-                                                  modelField<FieldTag::fluid_pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() ),
+            return Feel::FeelModels::modelFields( modelField<FluidMechanicsFieldTag::velocity,FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( prefixvm( prefix,"velocity" ), field_u, "U", this->keyword() ),
+                                                  modelField<FluidMechanicsFieldTag::pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() ),
                                                   mfields_body, mfields_ale
                                                   );
         }
@@ -1319,7 +1328,7 @@ private :
     auto modelFieldsMeshALE( std::string const& prefix = "" ) const
         {
             using _field_disp_ptrtype =  typename mesh_ale_type::ale_map_element_ptrtype;
-            auto mfieldDisp = modelField<FieldTag::fluid_mesh_displacement,FieldCtx::ID,_field_disp_ptrtype>();
+            auto mfieldDisp = modelField<FluidMechanicsFieldTag::mesh_displacement,FieldCtx::ID,_field_disp_ptrtype>();
             if ( this->isMoveDomain() )
                 mfieldDisp.add( prefixvm( prefix, "displacement"), this->meshALE()->displacement(), "disp", this->keyword() );
             return Feel::FeelModels::modelFields( mfieldDisp );

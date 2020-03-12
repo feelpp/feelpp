@@ -51,6 +51,11 @@ namespace Feel
 namespace FeelModels
 {
 
+namespace HeatFieldTag
+{
+    using temperature = ModelFieldTag<ToolboxTag::heat,0>;
+}
+
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
              public ModelPhysics<ConvexType::nDim>,
@@ -242,7 +247,7 @@ class Heat : public ModelNumerical,
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
-                return Feel::FeelModels::modelFields( modelField<FieldTag::heat_temperature,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"temperature" ), field_t, "T", this->keyword() ) );
+                return Feel::FeelModels::modelFields( modelField<HeatFieldTag::temperature,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"temperature" ), field_t, "T", this->keyword() ) );
             }
 
         //___________________________________________________________________________________//
@@ -262,7 +267,7 @@ class Heat : public ModelNumerical,
         template <typename ModelFieldsType>
         auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
             {
-                auto const& t = mfields.template field<FieldTag::heat_temperature>( prefixvm( prefix,"temperature" ) );
+                auto const& t = mfields.template field<HeatFieldTag::temperature>( prefixvm( prefix,"temperature" ) );
                 // generate symbol heat_nflux
                 typedef decltype( this->normalHeatFluxExpr(t) ) _expr_nflux_type;
                 std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
