@@ -3,12 +3,24 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmesh/remesh.hpp>
 #include <feel/feeldiscr/quality.hpp>
+#include <feel/feells/disttoentityrange.hpp>
 
+using namespace Feel;
+
+/**
+ * metric function equal to 
+ * - 1 if the distance \p d is less than \p e
+ * - exp(n*d) if the distance \p d is greater or equal than \p e 
+ */
+template<typename DistFieldT, typename DistToRangeExpr, typename = std::enable_if_t<is_functionspace_element_v<DistFieldT>>>
+auto flatThenIncreaseAroundEntityRange( DistFieldT const& d, DistToRangeExpr const& e, int coefexp = 3 )
+{
+    return ( idv(d) < e ) + ( idv(d) > e-cst(1e-8) )*exp(coefexp*idv(d)/h());
+}
 template <Feel::uint16_type OrderGeo>
 void
 runALEMesh()
 {
-    using namespace Feel;
 
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,OrderGeo>>);
 
@@ -32,10 +44,17 @@ runALEMesh()
     auto alemesh = genALEMesh( mesh );
     auto disp = alemesh->functionSpace()->elementPtr();
     auto exSave = [&ex]( double t, auto alemesh, auto disp ) {
+
+                      auto Xh = Pch<1>( alemesh->movingMesh() );
+                      auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving")) );
+                      
                       ex->step( t )->setMesh( alemesh->movingMesh() );
                       ex->step( t )->add( "disp", idv(*disp) );
                       ex->step( t )->add( "etaQ", etaQ( alemesh->movingMesh() ) );
                       ex->step( t )->add( "nsrQ", nsrQ( alemesh->movingMesh() ) );
+                      ex->step( t )->add( "dist", phi );
+                      auto nlayers = ioption(_name="remesh.metric.layers");
+                      ex->step( t )->add( "met", flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*expr(soption("remesh.metric")) ); 
                       ex->save();
                   };
     exSave( 0, alemesh, disp );
@@ -70,7 +89,7 @@ runALEMesh()
             auto Xh = Pch<1>( moving_mesh );
             auto met = Xh->element();
             auto etaqmin = etaQ( moving_mesh ).min();
-
+            
             if ( etaqmin < doption("etaqtol") )
             {
                 // revert to t-dt
@@ -78,8 +97,15 @@ runALEMesh()
                 updateDisp( alemesh, disp, dispExpr, t-dt, T0, dt );
 
                 // apply remesh
+
+                // define distance function from moving boundary to adapt the metric
+                auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving")) );
+                
                 if ( !soption( "remesh.metric" ).empty() )
-                    met.on( _range=elements(moving_mesh), _expr=expr(soption("remesh.metric")) );
+                {
+                    auto nlayers = ioption(_name="remesh.metric.layers");
+                    met.on( _range=elements(moving_mesh), _expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*expr(soption("remesh.metric")) );
+                }
                 else
                 {
                     auto [ havg, hmin, hmax ] = hMeasures( moving_mesh );
@@ -118,6 +144,8 @@ main( int argc, char** argv )
         ("markers.free", po::value<std::vector<std::string> >()->multitoken(), "list of markers on free boundary" )
         ("mesh-adaptation-function", Feel::po::value<std::string>(), "mesh-adaptation-function")
         ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
+        ( "remesh.metric.layers", po::value<int>()->default_value( 3 ), "remesh metric layers" )
+        ( "remesh.metric.exp", po::value<std::string>()->default_value( "1" ), "remesh metric expression for exponent" )
         ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
         ( "dt", po::value<double>()->default_value( 0.1 ), "dt" )
         ( "Tfinal", po::value<double>()->default_value( 1 ), "T" )
