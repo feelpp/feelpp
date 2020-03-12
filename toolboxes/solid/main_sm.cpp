@@ -78,6 +78,7 @@ runApplicationSolid()
                 SM->timerTool("TimeStepping").setAdditionalParameter(variableSymbol,currentParam);
 
                 SM->addParameterInModelProperties(variableSymbol,currentParam);
+                SM->updateParameterValues();
                 SM->solve();
                 SM->exportResults(cptCurrent);
 
