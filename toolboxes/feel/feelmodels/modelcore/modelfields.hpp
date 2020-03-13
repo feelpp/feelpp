@@ -206,7 +206,11 @@ auto modelField()
 {
     return ModelField<Ctx,TagType,FieldType>{};
 }
-
+template <size_type Ctx,typename FieldType,typename TagType>
+auto modelField( TagType const& )
+{
+    return ModelField<Ctx,TagType,FieldType>{};
+}
 
 template <size_type Ctx,typename TagType,typename FieldType>
 auto modelField( TagType const& thetag, std::string const& prefix, std::string const& name, FieldType const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )

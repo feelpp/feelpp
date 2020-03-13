@@ -263,7 +263,7 @@ class Heat : public ModelNumerical,
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
         }
-        auto symbolsExpr() const { return this->symbolsExpr( this->modelFields() ); }
+        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
         template <typename ModelFieldsType>
         auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
