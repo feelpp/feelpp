@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE( t2 )
     auto m = Feel::pyexpr( ostr.str(), {"kgrad_f","div_kgrad_f"}, locals );
 
     BOOST_CHECK_EQUAL( m.at("kgrad_f"), "{8*x,0,0,0,8*y,0,0,0,8*z}:x:y:z" );
-    BOOST_CHECK_EQUAL( m.at("div_kgrad_f"), "{8,8,8}:x" );
+    BOOST_CHECK_EQUAL( m.at("div_kgrad_f"), "{8,8,8}" );
     BOOST_TEST_MESSAGE( "div_kgrad_f=" << m.at("div_kgrad_f") );
 }
 
