@@ -68,7 +68,7 @@ template<typename T>
 using is_matrix_polynomial = is_tensor2_polynomial<T>;
 
 template<typename T>
-using local_interpolant_t = typename T::local_interpolant_type;
+using local_interpolant_t = typename decay_type<T>::local_interpolant_type;
 template<typename T>
 struct local_interpolant
 {

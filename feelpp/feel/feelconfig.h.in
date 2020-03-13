@@ -241,7 +241,7 @@
 #cmakedefine PACKAGE_VERSION
 
 /* Define to 1 if you have the ANSI C header files. */
-#ifndef STDC_HEADERS
+#if !defined( STDC_HEADERS )
 #cmakedefine STDC_HEADERS
 #endif
 

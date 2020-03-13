@@ -33,7 +33,8 @@ namespace vf
 namespace detail
 {
 FEELPP_EXPORT
-void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename, WorldComm const& world,
+void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::string const& exprDesc, std::string const& filename,
+                        WorldComm const& world,
                         std::shared_ptr<GiNaC::FUNCP_CUBA>& cfun )
 {
     // register the GinacExprManager into Feel::Environment so that it gets the
@@ -57,14 +58,17 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
     }
     else
     {
+        fs::path filename_p = fs::path( filename );
+        fs::path filename_parent_p = filename_p.parent_path();
         std::string filenameDescExpr = filename + ".desc";
         std::string filenameWithSuffix =  filename + ".so";
-        if ( !fs::path(filename).is_absolute() )
+        if ( !fs::path(filename).is_absolute() && ( filename_parent_p != Environment::exprRepository() ) )
         {
-            filenameDescExpr = Environment::exprRepository() + filename + ".desc";
-            filenameWithSuffix =  Environment::exprRepository() + filename + ".so";
+            filenameDescExpr = (fs::path(Environment::exprRepository()) / fs::path( filename + ".desc" )).string();
+            filenameWithSuffix =  (fs::path(Environment::exprRepository()) / fs::path(filename + ".so")).string();
         }
-
+        DVLOG(2) << "filename: " << filename << std::endl;
+        DVLOG(2) << "filenameWithSuffix: " << filenameWithSuffix << std::endl;
         bool doRebuildGinacLib = true;
         // load .desc file and compare if both expr are identical
         if ( world.isMasterRank() && !filename.empty() && fs::exists( filenameDescExpr ) && fs::exists( filenameWithSuffix ) )
@@ -83,15 +87,26 @@ void ginacBuildLibrary( GiNaC::lst const& exprs, GiNaC::lst const& syml, std::st
         {
             if ( !filename.empty() && fs::path( filename ).is_absolute() )
             {
-                if ( !fs::exists( fs::path( filename ).parent_path() ) )
-                    fs::create_directories( fs::path( filename ).parent_path() );
+                if ( !fs::exists( filename_parent_p ) )
+                    fs::create_directories( filename_parent_p );
+                if ( !fs::exists( filename_parent_p ) )
+                {
+                    using namespace std::string_literals;
+                    throw std::logic_error( "directories "s + filename + " not created");
+                }
                 DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
                 GiNaC::compile_ex( exprs, syml, *cfun, filename );
             }
             else if ( !filename.empty() )
             {
                 DVLOG( 2 ) << "GiNaC::compile_ex with filenameWithSuffix " << filenameWithSuffix << "\n";
-                GiNaC::compile_ex( exprs, syml, *cfun, Environment::exprRepository() + "/" + filename );
+                DVLOG( 2 ) << "GiNaC::compile_ex with parent_path " << filename_parent_p << "\n";
+                if ( !fs::exists( filename_parent_p ) )
+                    fs::create_directories( filename_parent_p );
+                if ( filename_parent_p == Environment::exprRepository() )
+                    GiNaC::compile_ex( exprs, syml, *cfun, filename );
+                else
+                    GiNaC::compile_ex( exprs, syml, *cfun, (fs::path(Environment::exprRepository()) / filename_p).string() );
             }
             else
             {
