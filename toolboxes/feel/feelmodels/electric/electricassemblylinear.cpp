@@ -9,7 +9,7 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDE( data, this->symbolsExpr() );
+    this->updateLinearPDE( data, this->modelContext() );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -25,16 +25,18 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & 
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
     auto mesh = XhV->mesh();
+    auto se = this->symbolsExpr();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
+
     for( auto const& d : this->M_bcDirichlet )
     {
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=v,_rhs=F,_expr=expression(d) );
+                _element=v,_rhs=F,_expr=expression(d,se) );
     }
 
     this->log("Electric","updateLinearPDEDofElimination","finish" );

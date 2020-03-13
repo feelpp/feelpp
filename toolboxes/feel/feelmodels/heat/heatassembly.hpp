@@ -7,9 +7,9 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisTemperatureType >
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const
+Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -32,6 +32,8 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
             timeSteppingScaling = M_timeStepThetaValue;
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
+
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
@@ -219,9 +221,9 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 
 
 template< typename ConvexType, typename BasisTemperatureType >
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const
+Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
@@ -248,9 +250,9 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
 
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
-    auto const u = Xh->element(XVec, this->rowStartInVector());
+    auto const& u = mctx.field( FieldTag::temperature(this), "temperature" );
     auto const& v = this->fieldTemperature();
-
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -366,9 +368,9 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
 }
 
 template< typename ConvexType, typename BasisTemperatureType >
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const
+Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
@@ -404,8 +406,8 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     auto mesh = this->mesh();
     auto Xh = this->spaceTemperature();
     auto const& v = this->fieldTemperature();
-    auto const u = Xh->element(XVec, this->rowStartInVector());
-
+    auto const& u = mctx.field( FieldTag::temperature(this), "temperature" );
+    auto const& symbolsExpr = mctx.symbolsExpr();
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
 

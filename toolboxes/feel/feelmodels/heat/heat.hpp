@@ -51,11 +51,6 @@ namespace Feel
 namespace FeelModels
 {
 
-namespace HeatFieldTag
-{
-    using temperature = ModelFieldTag<ToolboxTag::heat,0>;
-}
-
 template< typename ConvexType, typename BasisTemperatureType>
 class Heat : public ModelNumerical,
              public ModelPhysics<ConvexType::nDim>,
@@ -106,6 +101,12 @@ class Heat : public ModelNumerical,
         // measure tools for points evaluation
         typedef MeasurePointsEvaluation<space_temperature_type> measure_points_evaluation_type;
         typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
+
+        struct FieldTag
+        {
+            static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        };
+
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
@@ -241,13 +242,13 @@ class Heat : public ModelNumerical,
             }
         auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
             {
-                auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector );
+                auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
                 return this->modelFields( field_t, prefix );
             }
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
-                return Feel::FeelModels::modelFields( modelField<HeatFieldTag::temperature,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"temperature" ), field_t, "T", this->keyword() ) );
+                return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
             }
 
         //___________________________________________________________________________________//
@@ -255,19 +256,19 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
 
         template <typename ModelFieldsType>
-        auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
         }
-        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
+        auto symbolsExpr() const { return this->symbolsExpr( this->modelFields() ); }
 
         template <typename ModelFieldsType>
-        auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
             {
-                auto const& t = mfields.template field<HeatFieldTag::temperature>( prefixvm( prefix,"temperature" ) );
+                auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
                 // generate symbol heat_nflux
                 typedef decltype( this->normalHeatFluxExpr(t) ) _expr_nflux_type;
                 std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
@@ -278,7 +279,26 @@ class Heat : public ModelNumerical,
                 // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
                 return Feel::vf::symbolsExpr( mfields.symbolsExpr(), symbolExpr( normalHeatFluxSymbs ) );
             }
-        //auto symbolsExprToolbox( std::string const& prefix = "" ) const { return this->symbolsExprToolbox( this->modelFields(), prefix ); }
+
+        //___________________________________________________________________________________//
+        // model context helper
+        //___________________________________________________________________________________//
+
+        template <typename ModelFieldsType>
+        auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+            {
+                return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+            }
+        auto modelContext( std::string const& prefix = "" ) const
+            {
+                auto mfields = this->modelFields( prefix );
+                return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            }
+        auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+            {
+                auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+                return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            }
 
         //___________________________________________________________________________________//
         // toolbox expressions
@@ -302,8 +322,8 @@ class Heat : public ModelNumerical,
         void solve();
 
         void updateLinearPDE( DataUpdateLinear & data ) const override;
-        template <typename SymbolsExpr>
-        void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
+        template <typename ModelContextType>
+        void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
@@ -313,16 +333,16 @@ class Heat : public ModelNumerical,
         void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
 
         void updateJacobian( DataUpdateJacobian & data ) const override;
-        template <typename SymbolsExpr>
-        void updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const;
+        template <typename ModelContextType>
+        void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
         void updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateJacobian & data ) const;
         void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
 
         void updateResidual( DataUpdateResidual & data ) const override;
-        template <typename SymbolsExpr>
-        void updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const;
+        template <typename ModelContextType>
+        void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
         template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename... ExprT>
         void updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                              Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateResidual & data,
@@ -408,7 +428,6 @@ template <typename TupleFieldsType, typename SymbolsExpr>
 void
 Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
-
     bool hasMeasure = false;
 
     // compute measures

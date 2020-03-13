@@ -26,14 +26,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     auto XhV = M_electricModel->spaceElectricPotential();
     auto XhT = M_heatModel->spaceTemperature();
 
-    auto mfield = this->modelFields( vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
-    auto symbolsExpr = this->symbolsExpr( mfield );
-    auto v = *XhV->elementPtr( *vecCurrentPicardSolution, startBlockIndexElectricPotential );
-    auto t = *XhT->elementPtr( *vecCurrentPicardSolution, startBlockIndexTemperature );
+    auto mctx = this->modelContext(  vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
+    auto const& symbolsExpr = mctx.symbolsExpr();
+    // auto mfield = this->modelFields( vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
+    // auto symbolsExpr = this->symbolsExpr( mfield );
+    // auto v = *XhV->elementPtr( *vecCurrentPicardSolution, startBlockIndexElectricPotential );
+    // auto t = *XhT->elementPtr( *vecCurrentPicardSolution, startBlockIndexTemperature );
+    auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
+    auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
 
     //auto symbolsExpr = this->symbolsExpr( t, v );
-    M_heatModel->updateLinearPDE( data,symbolsExpr );
-    M_electricModel->updateLinearPDE( data,symbolsExpr );
+    M_heatModel->updateLinearPDE( data,mctx );
+    M_electricModel->updateLinearPDE( data,mctx );
 
     if ( buildNonCstPart )
     {
@@ -74,8 +78,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Electric( DataUpdateLinear & da
 {
     this->log("ThermoElectric","updateLinear_Electric","start" );
 
-    auto symbolsExpr = this->symbolsExpr();
-    M_electricModel->updateLinearPDE( data,symbolsExpr );
+    auto mctx = this->modelContext( /*vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential*/ );
+    M_electricModel->updateLinearPDE( data,mctx );
 
     this->log("ThermoElectric","updateLinear_Electric","finish" );
 }
@@ -90,11 +94,13 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
     bool buildNonCstPart = !buildCstPart;
     vector_ptrtype& F = data.rhs();
 
+    auto mctx = this->modelContext( /*vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential*/ );
+
     auto const& v = M_electricModel->fieldElectricPotential();
     auto const& t = M_heatModel->fieldTemperature();
-    auto symbolsExpr = this->symbolsExpr();
-    M_heatModel->updateLinearPDE( data,symbolsExpr );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
+    M_heatModel->updateLinearPDE( data,mctx );
     if ( buildNonCstPart && M_modelUseJouleEffect ) // TODO : not always non cst part
     {
         auto XhT = M_heatModel->spaceTemperature();
