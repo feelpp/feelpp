@@ -7,9 +7,9 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -23,6 +23,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     auto const& v = this->fieldElectricPotential();
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -95,9 +96,9 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
 
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
@@ -112,7 +113,9 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& v = mctx.field( FieldTag::potential(this), "electric-potential" );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -151,9 +154,9 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
 }
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr>
+template <typename ModelContextType>
 void
-Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const
+Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
@@ -169,7 +172,9 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
     // auto const& v = this->fieldElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& v = mctx.field( FieldTag::potential(this), "electric-potential" );
+    auto const& symbolsExpr = mctx.symbolsExpr();
 
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );

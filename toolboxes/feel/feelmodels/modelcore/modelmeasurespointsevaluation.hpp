@@ -117,14 +117,16 @@ public :
                                                 [this,&x,&res](auto const& y) {
                                                     if constexpr ( is_iterable_v<decltype(y)> )
                                                     {
-                                                        for ( auto const& [fieldName,fieldFunc,symbol,prefixSymb] : y )
+                                                        for ( auto const& mfield : y )
                                                         {
+                                                            std::string fieldName = mfield.nameWithPrefix();
+                                                            auto const& fieldFunc = mfield.field();
                                                             this->evalFieldImpl( x,fieldName,fieldFunc,res );
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        this->evalFieldImpl( x,y.first,y.second,res );
+                                                        //this->evalFieldImpl( x,y.first,y.second,res );
                                                     }
                                                 }); // for_each fieldTuple
                             }); // for_each M_contextFields

@@ -23,18 +23,24 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     size_type startBlockIndexTemperature = M_heatModel->startBlockSpaceIndexVector()+0;
     size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
 
+    auto mctx = this->modelContext( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
+    auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+
+
     auto mesh = this->mesh();
 
     auto XhV = M_electricModel->spaceElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto XhT = M_heatModel->spaceTemperature();
-    auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
+    //auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
     //auto symbolsExpr = this->symbolsExpr(t,v);
-    auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto symbolsExpr = this->symbolsExpr( mfield );
+    // auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
+    // auto symbolsExpr = this->symbolsExpr( mfield );
 
-    M_heatModel->updateResidual( data,symbolsExpr );
-    M_electricModel->updateResidual( data,symbolsExpr );
+    M_heatModel->updateResidual( data,mctx );
+    M_electricModel->updateResidual( data,mctx );
 
     if ( !buildCstPart )
     {
@@ -81,15 +87,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
     bool buildNonCstPart = !buildCstPart;
     vector_ptrtype& R = data.residual();
 
-    auto XhT = M_heatModel->spaceTemperature();
-    auto const& v = M_electricModel->fieldElectricPotential();
-    auto const t = XhT->element(XVec, M_heatModel->rowStartInVector());
-    //auto symbolsExpr = this->symbolsExpr(t,v);
-    auto mfield = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
+    auto mfields = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
                                      this->electricModel()->modelFields( this->electricModel()->keyword() ) );
-    auto symbolsExpr = this->symbolsExpr( mfield );
+    //auto symbolsExpr = this->symbolsExpr( mfields );
+    auto mctx = Feel::FeelModels::modelContext( std::move(mfields), this->symbolsExpr( mfields ) );
+    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
+    auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
 
-    M_heatModel->updateResidual( data,symbolsExpr );
+    auto XhT = M_heatModel->spaceTemperature();
+    //auto const& v = M_electricModel->fieldElectricPotential();
+    //auto const t = XhT->element(XVec, M_heatModel->rowStartInVector());
+    //auto symbolsExpr = this->symbolsExpr(t,v);
+
+    M_heatModel->updateResidual( data,mctx );
 
     if ( buildNonCstPart && M_modelUseJouleEffect ) // TODO non const part only if sigma is related to Temperature
     {

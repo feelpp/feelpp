@@ -9,7 +9,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDE( data, this->symbolsExpr() );
+    this->updateLinearPDE( data, this->modelContext() );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -29,10 +29,11 @@ HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data
                                               _pattern=size_type(Pattern::COUPLED),
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
+    auto se = this->symbolsExpr();
 
     for( auto const& d : this->M_bcDirichlet )
     {
-        auto theExpr = expression(d,this->symbolsExpr());
+        auto theExpr = expression(d,se);
         bilinearForm_PatternCoupled +=
             on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
                 _element=u,_rhs=F,_expr=theExpr );
