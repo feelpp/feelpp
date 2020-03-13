@@ -102,7 +102,7 @@ template<typename T>
 struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
 template<typename T>
 constexpr uint16_type dimension_v = dimension_t<T>::value;
-
+ 
 template<typename T>
 struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
 template<typename T>
@@ -141,6 +141,8 @@ template<typename T>
 struct is_convex : std::is_convertible<T,ConvexBase>::type {};
 template<typename T>
 struct is_simplex : std::is_base_of<SimplexBase, T>::type {};
+template<typename T>
+constexpr bool is_simplex_v = is_simplex<T>::value;
 template<typename T>
 struct is_triangle : mpl::and_<is_simplex<T>,is_2d<T>> {};
 template<typename T>
