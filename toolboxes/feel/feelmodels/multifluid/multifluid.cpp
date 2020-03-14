@@ -1256,7 +1256,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     {
         interfaceForcesFields[prefixvm("additional", force.first)] = force.second->lastInterfaceForce();
     }
-
+#if 0
     //auto const ls_fields = []( std::pair<std::string, levelset_model_ptrtype> const& p ) 
         //-> decltype( p.second->allFields() )
     //{
@@ -1306,7 +1306,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto exprExport = M_fluidModel->exprPostProcessExports( symbolsExpr, M_fluidModel->keyword() );
     // TODO: add exprPostProcessExports support in LevelSet
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exprExport );
-
+#endif
     // Export measures
     this->exportMeasures( time );
 

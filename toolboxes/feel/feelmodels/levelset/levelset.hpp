@@ -355,6 +355,7 @@ public:
     // Symbols expressions
     using super_type::symbolsExpr;
     // Fields
+#if 0
     auto allFields( std::string const& prefix = "" ) const
     {
         return hana::concat( super_type::allFields( prefix ), hana::make_tuple(
@@ -363,6 +364,13 @@ public:
                 this->optionalVectorialFields( prefix )
                 ) );
     }
+#else
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return super_type::modelFields();
+        }
+
+#endif
     auto optionalScalarFields( std::string const& prefix = "" ) const
     {
         std::map<std::string, element_scalar_ptrtype> fields;
@@ -406,7 +414,7 @@ public:
     using super_type::exportResults;
     void exportResults( double time ) override;
     template<typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->allFields(), this->allMeasuresQuantities() ); }
+    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->modelFields(), this->allMeasuresQuantities() ); }
     //--------------------------------------------------------------------//
     // Physical quantities
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 
