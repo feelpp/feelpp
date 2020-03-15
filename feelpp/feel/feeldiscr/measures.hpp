@@ -30,22 +30,25 @@ using value_t = typename MeshType::value_type;
 template<typename MeshType>
 using index_t = typename MeshType::index_type;
 
-template<typename MeshType>
+/**
+ * compute h measure statistics over a range of elements or facets
+ */
+template<typename MeshType, typename RangeType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
 std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
-hMeasures( std::shared_ptr<MeshType> const& m )
+hMeasures( std::shared_ptr<MeshType> const& m, RangeType r )
 {
     using value_type=value_t<MeshType>;
     value_type h_avg = 0;
     value_type h_min = std::numeric_limits<value_type>::max();
     value_type h_max = 0;
-    for ( auto const& eltWrap : elements( m ) )
+    for ( auto const& eltWrap : r )
     {
         auto const& elt = unwrap_ref( eltWrap );
         h_avg += elt.h();
         h_min = std::min( h_min, elt.h() );
         h_max = std::max( h_max, elt.h() );
     }
-    h_avg /= m->numGlobalElements();
+    h_avg /= nelements( r, Zone::GLOBAL );
     value_type reduction[3] = {h_avg, h_min, h_max};
     MPI_Op op;
     MPI_Op_create( (MPI_User_function*)(Functor::AvgMinMax<value_type, WorldComm::communicator_type>), 1, &op );
@@ -58,4 +61,13 @@ hMeasures( std::shared_ptr<MeshType> const& m )
     return std::tuple{ h_avg, h_min, h_max };
 }
 
+/**
+ * compute h measures statistics over all elements of a mesh
+ */
+template<typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+std::tuple<value_t<MeshType>, value_t<MeshType>, value_t<MeshType>>
+hMeasures( std::shared_ptr<MeshType> const& m )
+{
+    return hMeasures( m, elements( m ) );
+}
 }
