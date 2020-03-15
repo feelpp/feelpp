@@ -100,18 +100,18 @@ runALEMesh()
 
                 // define distance function from moving boundary to adapt the metric
                 auto phi = distToEntityRange( Xh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving")) );
-                
+                auto [ havg, hmin, hmax ] = hMeasures( moving_mesh, markedfaces( Xh->mesh(), alemesh->aleFactory()->flagSet("moving"))  );
+
                 if ( !soption( "remesh.metric" ).empty() )
                 {
                     auto nlayers = ioption(_name="remesh.metric.layers");
-                    met.on( _range=elements(moving_mesh), _expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*expr(soption("remesh.metric")) );
+                    met.on( _range=elements(moving_mesh), _expr=flatThenIncreaseAroundEntityRange(phi,nlayers*h(),nlayers)*havg);
                 }
                 else
                 {
-                    auto [ havg, hmin, hmax ] = hMeasures( moving_mesh );
-                    met.on( _range=elements(moving_mesh), _expr=cst(hmax)  );
+                    met.on( _range=elements(moving_mesh), _expr=cst(havg)  );
                 }
-                auto r =  remesher( moving_mesh );
+                    auto r =  remesher( moving_mesh, std::vector<int>{}, alemesh->aleFactory()->flagSet("moving") );
     
                 r.setMetric( met );
                 auto out = r.execute();
