@@ -51,6 +51,10 @@ if ( FEELPP_ENABLE_SYSTEM_EIGEN3 )
   set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindEigen3.cmake )
 endif()
 
+if ( FEELPP_HAS_SCOTCH )
+  set(modules ${modules} ${CMAKE_CURRENT_SOURCE_DIR}/FindScotch.cmake )
+endif()
+
 #FILE(GLOB modules "${CMAKE_CURRENT_SOURCE_DIR}/*.cmake")
 
 INSTALL(FILES ${modules} DESTINATION share/feelpp/feel/cmake/modules COMPONENT Devel)
