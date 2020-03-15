@@ -180,7 +180,8 @@ public :
             auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat );
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 

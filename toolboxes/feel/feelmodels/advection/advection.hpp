@@ -335,7 +335,7 @@ public :
     template <typename TemperatureFieldType>
     auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::field(this), prefix, "field", field_t, "phi", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::field(this), prefix, "phi", field_t, "phi", this->keyword() ) );
         }
 
         //___________________________________________________________________________________//
