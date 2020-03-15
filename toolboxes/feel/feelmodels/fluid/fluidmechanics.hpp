@@ -993,14 +993,15 @@ public :
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return mfields.symbolsExpr();
+            return symbols_expression_empty_t{};
         }
 
     //___________________________________________________________________________________//

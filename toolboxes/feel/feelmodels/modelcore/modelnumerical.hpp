@@ -455,6 +455,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                          exporter->step( time )->add( prefixvm(this->prefix(),fieldName),
                                                                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),fieldName)),
                                                                                       thefield );
+                                                         hasFieldToExport = true;
                                                  }
                                 }
                             }

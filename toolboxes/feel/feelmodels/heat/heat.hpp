@@ -261,7 +261,8 @@ class Heat : public ModelNumerical,
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
+            auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
         }
         auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -276,8 +277,7 @@ class Heat : public ModelNumerical,
                 auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t );
                 normalHeatFluxSymbs.push_back( std::make_tuple( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) ) );
 
-                // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
-                return Feel::vf::symbolsExpr( mfields.symbolsExpr(), symbolExpr( normalHeatFluxSymbs ) );
+                return Feel::vf::symbolsExpr( symbolExpr( normalHeatFluxSymbs ) );
             }
 
         //___________________________________________________________________________________//
