@@ -143,8 +143,8 @@ private:
 
 template <typename MeshType>
 Remesh<MeshType> remesher( std::shared_ptr<MeshType> const& m,
-                           boost::any required_element_markers = {},
-                           boost::any required_facet_markers = {} )
+                           boost::any required_element_markers = std::vector<int>{},
+                           boost::any required_facet_markers = std::vector<int>{} )
 {
     return Remesh<MeshType>{ m, required_element_markers, required_facet_markers };
 }
