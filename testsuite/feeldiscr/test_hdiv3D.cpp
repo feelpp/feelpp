@@ -213,7 +213,7 @@ TestHDiv3D::exampleProblem1()
     // Solve problem (p)
     M_backend->solve( _matrix=M_l, _solution=p_l, _rhs=F_l );
     // Deduce u :
-    u_l = vf::project( Xhvec, elements(mesh), -K*trans(gradv(p_l)) );
+    u_l = vf::project( _space=Xhvec, _range=elements(mesh), _expr=-K*trans(gradv(p_l)) );
 
     // ****** Dual-mixed solving - with Raviart Thomas ******
     prod_space_ptrtype Yh = prod_space_type::New( mesh );
