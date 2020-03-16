@@ -200,7 +200,7 @@ int main( int argc, char** argv )
         ofs << summary << std::endl;
     }
 
-
+    // cgLaplacian may not solve the problem, hence u is std::optional
     auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
