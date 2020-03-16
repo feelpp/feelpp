@@ -28,7 +28,9 @@
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmesh/partitionmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/partitionio.hpp>
+#include <feel/feelmesh/remesh.hpp>
 //#include <feel/feelfilters/savegmshmesh.hpp>
 
 namespace Feel {
@@ -53,10 +55,35 @@ void partition( std::vector<int> const& nParts)
                              _filename=inputPathMesh.string(),
                              _update=update_,
                              _straighten=false );
-                             //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
-                             //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
+        //_update=size_type(MESH_UPDATE_FACES_MINIMAL|MESH_NO_UPDATE_MEASURES));
+        //_update=size_type(MESH_UPDATE_FACES|MESH_UPDATE_EDGES));
         toc("loading mesh done",FLAGS_v>0);
 
+        if constexpr ( is_simplex_v<ShapeType> )
+        {
+            if ( boption( "remesh" ) )
+            {
+                auto Xh = Pch<1>( mesh );
+                auto met = Xh->element();
+                if ( !soption( "remesh.metric" ).empty() )
+                    met.on( _range=elements(mesh), _expr=expr(soption("remesh.metric")) );
+                else
+                {
+                    auto [ havg, hmin, hmax ] = hMeasures( mesh );
+                    std::map<std::string, double> hs { {"havg",havg },{"hmin",hmin },{"hmax",hmax } };
+                    double h_ = hs.at("hmax");
+                    if ( hs.count( soption("remesh.h") ) )
+                        h_=hs.at( soption("remesh.h"));
+                    met.on( _range=elements(mesh), _expr=cst(h_)  );
+                }
+                auto r =  remesher( mesh );
+    
+                r.setMetric( met );
+                auto out = r.execute();
+                out->updateForUse();
+                mesh = out;
+            }
+        }
         std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
         std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
         if ( mesh_type::nDim == 3 )

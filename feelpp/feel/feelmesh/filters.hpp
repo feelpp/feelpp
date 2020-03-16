@@ -42,6 +42,7 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
+#include <feel/feelcore/enums.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
@@ -1068,6 +1069,19 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, 
     return gd;
 }
 
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, Zone const& z )
+{
+    return nelements( its, ( z == Zone::GLOBAL ) );
+}
+
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container>> const& its, Zone const& z )
+{
+    return nelements( its, ( z == Zone::GLOBAL ) );
+}
 
 
 template<typename ElementType>
