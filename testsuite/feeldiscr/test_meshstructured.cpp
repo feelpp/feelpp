@@ -106,7 +106,7 @@ class Test_MeshStructured
             auto u = Vh->element () ;
             auto v = Vh->element () ;
      
-            auto imaP = vf::project(Vh,elements(mesh),Px()); 
+            auto imaP = vf::project(_space=Vh,_range=elements(mesh),_expr=Px()); 
             auto l = form1( _test=Vh );
             l = integrate(_range=elements(mesh),
                           _expr=id(v)*idv(imaP));
@@ -140,8 +140,8 @@ class Test_MeshStructured
             auto u = Vh->element () ;
             auto v = Vh->element () ;
      
-            auto imaP = vf::project(Vh,elements(mesh),cst(1.)); 
-            auto imaP2 = vf::project(Vh,elements(mesh),cst(0.)); 
+            auto imaP = vf::project(_space=Vh,_range=elements(mesh),_expr=cst(1.)); 
+            auto imaP2 = vf::project(_space=Vh,_range=elements(mesh),_expr=cst(0.)); 
             auto l = form1( _test=Vh );
             l = integrate(_range=elements(mesh),
                           //_expr=grad(v)*vec(idv(ima),idv(ima)));
@@ -154,7 +154,7 @@ class Test_MeshStructured
     
             a.solve(_rhs=l,_solution=u) ;
     
-            auto value  = vf::project(Vh,elements(mesh),Py()); 
+            auto value  = vf::project(_space=Vh,_range=elements(mesh),_expr=Py()); 
             auto n = normL2 ( _range=elements( mesh ), _expr=idv(u)-idv(value)); 
             std::cout << " Norm2 " << n << std::endl;
 

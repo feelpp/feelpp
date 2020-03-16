@@ -699,7 +699,13 @@ public:
     {
         return M_markername;
     }
-
+    /**
+     * set the marker names 
+     */
+    void setMarkerNames( std::map<std::string, std::vector<size_type> > const& m )
+    {
+        M_markername = m;
+    }
     /**
      * add a new marker name
      */

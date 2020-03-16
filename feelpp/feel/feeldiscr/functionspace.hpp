@@ -1861,6 +1861,16 @@ public:
             mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
     typedef std::shared_ptr<pc_type> pc_ptrtype;
 
+    /**
+     * interpolate type if available
+     */
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
     // component basis
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,

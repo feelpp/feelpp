@@ -163,6 +163,17 @@ using functionspace_element_type = typename mpl::if_<is_functionspace_element<de
                                                      mpl::identity<void> >::type::type;
 
 /**
+ * get the element type of a functionspace
+ */
+template<typename SpaceT>
+using element_t = typename SpaceT::element_type;
+/**
+ * get the element shared ptr type of a functionspace
+ */
+template<typename SpaceT>
+using element_ptr_t = typename SpaceT::element_ptr_type;
+
+/**
  * @} // end Traits group
  */
 }
