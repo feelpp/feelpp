@@ -169,7 +169,8 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
     {
         this->marchNarrowBand( sol );
         this->syncDofs( sol );
-        this->marchNarrowBand( sol );
+        // The second marchNarrowBand is only needed when the stride is finite
+        //this->marchNarrowBand( sol );
         // Update closeDofHeapsAreEmptyOnAllProc
         bool closeDofHeapsAreEmpty = M_positiveCloseDofHeap.empty() && M_negativeCloseDofHeap.empty();
         closeDofHeapsAreEmptyOnAllProc = mpi::all_reduce(
@@ -185,8 +186,6 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::runImpl( element_type con
         if( closeDofHeapsAreEmptyOnAllProc && maxNumberOfNewDofsOnAllProc == 0 )
             break;
     }
-
-    sync( sol, "=" );
 
     return sol;
 }
