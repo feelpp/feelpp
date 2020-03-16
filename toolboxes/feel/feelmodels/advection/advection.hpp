@@ -36,11 +36,14 @@
 #include <feel/feelvf/vf.hpp>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/advection/diffusionreactionmodel.hpp>
+
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
@@ -69,6 +72,7 @@ template<
         >
 class AdvDiffReac : 
     public ModelNumerical,
+    public ModelPhysics<FunctionSpaceType::mesh_type::shape_type::nDim>,
     public MarkerManagementDirichletBC,
     public MarkerManagementNeumannBC,
     public std::enable_shared_from_this< AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> >
@@ -173,6 +177,10 @@ public :
     typedef DiffusionReactionModel<space_diffusioncoeff_type, space_reactioncoeff_type> diffusionreaction_model_type;
     typedef std::shared_ptr<diffusionreaction_model_type> diffusionreaction_model_ptrtype;
 
+    // materials properties
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
     //--------------------------------------------------------------------//
     // Backend
     typedef Backend<value_type> backend_type;
@@ -253,6 +261,7 @@ public :
     void init( bool buildModelAlgebraicFactory = true );
 
     void createMesh();
+    void initMaterialProperties();
     void initFunctionSpaces();
     void initAlgebraicData();
     void initTimeDiscretization();
@@ -338,25 +347,46 @@ public :
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::field(this), prefix, "phi", field_t, "phi", this->keyword() ) );
         }
 
-        //___________________________________________________________________________________//
-        // symbols expressions
-        //___________________________________________________________________________________//
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
 
-        template <typename ModelFieldsType>
-        auto symbolsExpr( ModelFieldsType const& mfields ) const
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
         }
-        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
-        template <typename ModelFieldsType>
-        auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
-            {
-                return mfields.symbolsExpr();
-            }
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            return mfields.symbolsExpr();
+        }
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    // template <typename ModelFieldsType>
+    // auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    //     {
+    //         return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+    //     }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+
 #if 0
     //--------------------------------------------------------------------//
     // Symbols
@@ -436,12 +466,15 @@ public :
     // Algebraic model updates
     // Linear PDE
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+
+
     virtual void updateLinearPDEAdditional( sparse_matrix_ptrtype & A, vector_ptrtype & F, bool _BuildCstPart ) const {}
     virtual void updateLinearPDEStabilization( DataUpdateLinear & data ) const;
-    virtual void updateSourceTermLinearPDE( DataUpdateLinear & data ) const;
     virtual bool hasSourceTerm() const;
     virtual void updateWeakBCLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F,bool buildCstPart) const;
-    virtual void updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const;
     
     void updateBCNeumannLinearPDE( vector_ptrtype& F ) const;
     
@@ -511,8 +544,6 @@ protected:
     void createPostProcessMeasures();
     void initPostProcessExportsAndMeasures();
 
-    virtual void updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool buildCstPart ) const;
-
     template<typename ExprT>
     void updateLinearPDEAdvection( DataUpdateLinear & data, vf::Expr<ExprT> const& advectionVelocity );
 
@@ -562,6 +593,9 @@ protected:
     bool M_doProjectFieldAdvectionVelocity;
     std::function<void ()> M_functionProjectFieldAdvectionVelocity;
     //--------------------------------------------------------------------//
+    // physical parameters
+    materialsproperties_ptrtype M_materialsProperties;
+
     // Physical parameters (diffusivity and reaction coefficient)
     diffusionreaction_model_ptrtype M_diffusionReactionModel;
     //--------------------------------------------------------------------//
@@ -585,11 +619,6 @@ protected:
     // Export
     exporter_ptrtype M_exporter;
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
-    bool M_doExportAll;
-    bool M_doExportAdvectionVelocity;
-    bool M_doExportDiffusionCoefficient;
-    bool M_doExportReactionCoefficient;
-    bool M_doExportSourceField;
     //--------------------------------------------------------------------//
     // Stabilization
     static const std::map<std::string, AdvectionStabMethod> AdvectionStabMethodIdMap;
@@ -708,6 +737,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& 
 } // namespace Feel
 
 //----------------------------------------------------------------------------//
+#include <feel/feelmodels/advection/adrassembly.hpp>
 // Stabilization
 #include <feel/feelmodels/advection/advectionstabilisation.cpp>
 
