@@ -22,11 +22,47 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 // tag::global[]
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
 #include "cg_laplacian.hpp"
+
+using namespace Feel;
+
+template<typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT>>>
+int check( Checker& thechecker, ElementT const& u )
+{
+    int status = 0;
+    // tag::check[]
+    if ( thechecker.check() )
+    {
+        auto mesh = u.functionSpace()->mesh();
+        auto Vh = u.functionSpace();
+        std::string solution = thechecker.solution();
+        // compute l2 and h1 norm of u-u_h where u=solution
+        auto norms = [=]( std::string const& solution ) -> std::map<std::string, double> {
+            tic();
+            double l2 = normL2( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ) );
+            toc( "L2 error norm" );
+            tic();
+            double h1 = normH1( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ), _grad_expr = gradv( u ) - grad<FEELPP_DIM>( expr( solution ) ) );
+            toc( "H1 error norm" );
+            return {{"L2", l2}, {"H1", h1}};
+        };
+
+        status = !thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
+    }
+    // end::check[]
+    return status;
+}
+
 int main( int argc, char** argv )
 {
     // tag::env[]
@@ -165,14 +201,17 @@ int main( int argc, char** argv )
     }
 
 
-    auto u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
+    auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
     tic();
     auto e = exporter( _mesh = mesh );
     e->addRegions();
-    e->add( "p", u );
-    e->add( "u", -k*gradv(u), "element" );
+    if ( opt_u )
+    {
+        e->add( "p", *opt_u );
+        e->add( "u", -k*gradv(*opt_u), "element" );
+    }
     e->add( "k", k );
     e->add( "f", f );
     e->add( "g", g );
@@ -187,26 +226,8 @@ int main( int argc, char** argv )
     toc( "Exporter" );
     // end::export[]
 
-    int status = 0;
-    // tag::check[]
-    if ( thechecker.check() )
-    {
-        // compute l2 and h1 norm of u-u_h where u=solution
-        auto norms = [=]( std::string const& solution ) -> std::map<std::string, double> {
-            tic();
-            double l2 = normL2( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ) );
-            toc( "L2 error norm" );
-            tic();
-            double h1 = normH1( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ), _grad_expr = gradv( u ) - grad<FEELPP_DIM>( expr( solution ) ) );
-            toc( "H1 error norm" );
-            return {{"L2", l2}, {"H1", h1}};
-        };
-
-        status = !thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    }
-    // end::check[]
-
-    // exit status = 0 means no error
-    return status;
+    if ( opt_u )
+        return check( thechecker, *opt_u );
+    return 0;
 }
 // end::global[]
