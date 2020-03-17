@@ -240,6 +240,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         functionspace_ptrtype M_space;
 
         std::map< size_type, std::set< rank_type > > M_dofSharedOnCluster;
+        std::map< size_type, size_type > M_mapSharedDofGlobalClusterToGlobalProcess;
 
         std::vector< FastMarchingDofStatus > M_dofStatus;
         heap_type M_positiveCloseDofHeap;

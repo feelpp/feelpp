@@ -60,7 +60,18 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
         size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
         for( rank_type const p : activeDofShared.second )
             dataToSend[p].emplace_back( dofGCId, activeDofShared.second );
+        // Update active dofs globalClusterToGlobalProcess map
+        M_mapSharedDofGlobalClusterToGlobalProcess[dofGCId] = dofId;
     }
+    // Update ghost dofs globalClusterToGlobalProcess map
+    size_type const ghostDofIdStart = dofTable->nLocalDofWithoutGhost();
+    size_type const ghostDofIdEnd = dofTable->nLocalDofWithGhost();
+    for( size_type k = ghostDofIdStart ; k < ghostDofIdEnd ; ++k )
+    {
+        M_mapSharedDofGlobalClusterToGlobalProcess[dofTable->mapGlobalProcessToGlobalCluster(k)] = k;
+    }
+
+    // Send shared dofs
     int cntRequests = 0;
     for( rank_type const p: dofTable->neighborSubdomains() )
     {
@@ -73,24 +84,19 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::FastMarching(
         for( auto const& dofGCIdPids: dataR.second )
         {
             size_type const dofGCId = dofGCIdPids.first;
+            size_type const dofId = M_mapSharedDofGlobalClusterToGlobalProcess[dofGCId];
+#if !defined(NDEBUG)
             auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
             DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
-            size_type const dofId = boost::get<1>( resSearchDof );
+            size_type const dofId2 = boost::get<1>( resSearchDof );
+            CHECK( dofId == dofId2 ) << "[" << localPid << "]" << "dof id must be the same : " << dofId << " vs " << dofId2 << "(" << dofGCId << "," << dofTable->firstDofGlobalCluster() << ")" << std::endl;
+#endif
             M_dofSharedOnCluster[dofId].insert( dataR.first );
             for( rank_type const p : dofGCIdPids.second )
                 if( p != localPid )
                     M_dofSharedOnCluster[dofId].insert( p );
         }
     }
-    //for( size_type dofId = 0; dofId < dofTable->nLocalDofWithGhost(); ++dofId )
-    //{
-        //if( dofTable->dofGlobalProcessIsGhost( dofId ) )
-        //{
-            //size_type dofGCId = dofTable->mapGlobalProcessToGlobalCluster( dofId );
-            //rank_type procId = dofTable->procOnGlobalCluster( dofGCId );
-            //M_dofSharedOnCluster[dofId].insert( procId );
-        //}
-    //}
 #if 0
     std::cout << "["<<dofTable->worldCommPtr()->localRank()<<"]" << "dofSharedOnCluster = ";
     for( auto const& dofShared: M_dofSharedOnCluster )
@@ -372,10 +378,13 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::syncDofs( element_type & 
         {
             // Find received dof global process id
             size_type const dofGCId = dofGCIdVal.first;
+            size_type const dofId = M_mapSharedDofGlobalClusterToGlobalProcess[dofGCId];
+#if !defined(NDEBUG)
             auto resSearchDof = dofTable->searchGlobalProcessDof( dofGCId );
             DCHECK( boost::get<0>( resSearchDof ) ) << "[" << localPid << "]" << " dof " << dofGCId << " not found\n";
-            size_type const dofId = boost::get<1>( resSearchDof );
-            //size_type const dofId = dofGCId - dofTable->firstDofGlobalCluster();
+            size_type const dofId2 = boost::get<1>( resSearchDof );
+            CHECK( dofId == dofId2 ) << "[" << localPid << "]" << "dof id must be the same : " << dofId << " vs " << dofId2 << "(" << dofGCId << "," << dofTable->firstDofGlobalCluster() << ")" << std::endl;
+#endif
             // Update current value with received ghost values if needed
             value_type valCurrent = sol(dofId);
             value_type valNew = dofGCIdVal.second;
