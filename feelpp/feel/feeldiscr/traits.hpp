@@ -59,6 +59,22 @@ using mesh_t = decay_type<MeshType>;
 template<typename MeshType>
 constexpr bool is_mesh_v = is_mesh<MeshType>::value;
 
+//!
+//! @return the topogical dimension of the mesh \p m
+//!
+template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
+{
+    return MeshType::nDim;
+}
+//!
+//! @return the real dimension in which the mesh is defined
+//!
+template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+inline constexpr int realdim( std::shared_ptr<MeshType> const& m )
+{
+    return MeshType::nRealDim;
+}
 
 /**
  * if \p T has base class \p ScalarBase then @return the member constant value equal

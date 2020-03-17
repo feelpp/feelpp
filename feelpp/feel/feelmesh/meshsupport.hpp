@@ -47,6 +47,7 @@ public :
     using range_faces_type = faces_reference_wrapper_t<mesh_type>;
     using element_type = typename mesh_type::element_type;
     using face_type = typename mesh_type::face_type;
+    static constexpr int nDim = mesh_type::nDim;
 
     MeshSupport() = default;
     MeshSupport( mesh_ptrtype const& mesh )
