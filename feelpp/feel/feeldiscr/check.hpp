@@ -43,8 +43,8 @@ enum class solution_t {
  * 
  * @return 0 if ok, 1 otherwise
  */
-template<typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT>>>
-int check( Checker&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
+template<typename CheckerT, typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT>>>
+int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
 {
     int status = 0;
     // tag::check[]
@@ -69,7 +69,7 @@ int check( Checker&& thechecker, ElementT const& u, solution_t s = solution_t::u
             };
             auto sol_ex = get_sol_ex( thechecker ); 
             tic(); 
-            double l2_p, l2;
+            double l2_p=1, l2=0;
 
             if ( s == solution_t::unique )
             {
