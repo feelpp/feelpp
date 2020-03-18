@@ -422,6 +422,102 @@ endmacro( genLibFSI )
 #############################################################################
 #############################################################################
 #############################################################################
+
+macro( genLibCoefficientFormPDEs )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;UNKNOWN_BASIS_TYPE;UNKNOWN_BASIS_TAG;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR  FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(COEFFICIENTFORMPDES_DIM ${FEELMODELS_APP_DIM})
+  set(COEFFICIENTFORMPDES_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TYPE count)
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TAG count2)
+  if ( NOT (count EQUAL count2) )
+    message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
+  endif()
+
+  math(EXPR count "${count}-1")
+  foreach(i RANGE ${count})
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+    if ( i EQUAL 0 )
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "\"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    else()
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} , ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG} , \"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    endif()
+    set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDES_ORDERGEO} )
+    set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+
+    set(COEFFICIENTFORMPDES_LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
+
+    if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
+      # configure the lib
+      set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+      set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
+        ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      # generate the lib target
+      genLibBase(
+        LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
+        LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
+        LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
+        FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
+        FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
+        CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
+        )
+    endif()
+  endforeach()
+
+#  set (COEFFICIENTFORMPDES_TUPLE_UNKNOWN_BASIS_TYPE "hana::tuple<${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE}>")
+
+  set(COEFFICIENTFORMPDES_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}dG${COEFFICIENTFORMPDES_ORDERGEO} )
+  set(COEFFICIENTFORMPDES_LIB_NAME feelpp_toolbox_coefficientformpdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+
+  if ( NOT TARGET ${COEFFICIENTFORMPDES_LIB_NAME} )
+    # configure the lib
+    set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+    set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
+      )
+    set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
+      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
+      )
+
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${COEFFICIENTFORMPDES_LIB_NAME}
+      LIB_DIR ${COEFFICIENTFORMPDES_LIB_DIR}
+      LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS}
+      FILES_TO_COPY ${COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesconfig.h.in
+      )
+  endif()
+
+
+
+endmacro(genLibCoefficientFormPDEs)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
       "DIM;POLY_ORDER;CONTINUITY;POLY_SET;GEO_ORDER;DIFFUSION_REACTION_ORDER;DIFFUSIONCOEFF_POLY_SET;REACTIONCOEFF_POLY_SET;DIFFUSION_REACTION_CONTINUITY"
@@ -536,13 +632,9 @@ macro( genLibAdvection )
     # configure the lib
     set(ADVECTION_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/advection/${ADVECTION_LIB_VARIANTS})    
     set(ADVECTION_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/advection/advection_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/advection/adrassemblylinear_inst.cpp
-      )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/advection/advection_inst.cpp )
     set(ADVECTION_CODEGEN_SOURCES
-      ${ADVECTION_LIB_DIR}/advection_inst.cpp
-      ${ADVECTION_LIB_DIR}/adrassemblylinear_inst.cpp
-      )
+      ${ADVECTION_LIB_DIR}/advection_inst.cpp )
     set(ADVECTION_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
     genLibBase(

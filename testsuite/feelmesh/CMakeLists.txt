@@ -19,5 +19,5 @@ feelpp_add_test( submesh1d SRCS test_submesh1d.cpp CFG test_submesh1d.cfg GEO te
 # add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS ${TESTS} )
 
 if ( FEELPP_HAS_MMG )
-  feelpp_add_test( remesh )
+  feelpp_add_test( remesh NO_MPI_TEST )
 endif()

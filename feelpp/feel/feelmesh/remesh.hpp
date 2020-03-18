@@ -44,12 +44,16 @@ public:
         :
         Remesh( nullptr )
     {}
-    Remesh( std::shared_ptr<MeshType> const& mesh )
+    Remesh( std::shared_ptr<MeshType> const& mesh,
+            boost::any const& required_element_markers,
+            boost::any const& required_facet_markers )
         :
         M_mesh( mesh ),
         M_mmg_mesh( nullptr ),
         M_mmg_sol( nullptr ),
-        M_mmg_met( nullptr )
+        M_mmg_met( nullptr ),
+        M_required_element_markers( required_element_markers ),
+        M_required_facet_markers( required_facet_markers )
         {
             if constexpr ( dimension_v<MeshType> == 3 )
                 MMG3D_Init_mesh(MMG5_ARG_start,
@@ -130,15 +134,19 @@ private:
 
     std::unordered_map<int,int> pt_id;
 
+    boost::any M_required_element_markers;
+    boost::any M_required_facet_markers;
     std::mutex mutex_;
 
 };
 
 
 template <typename MeshType>
-Remesh<MeshType> remesher( std::shared_ptr<MeshType> const& m  )
+Remesh<MeshType> remesher( std::shared_ptr<MeshType> const& m,
+                           boost::any required_element_markers = std::vector<int>{},
+                           boost::any required_facet_markers = std::vector<int>{} )
 {
-    return Remesh<MeshType>{ m };
+    return Remesh<MeshType>{ m, required_element_markers, required_facet_markers };
 }
 
 template<typename MeshType>
@@ -247,6 +255,10 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 throw std::logic_error( "Error in MMG3D_Set_vertex" );
             }
+            if ( pt.hasMarker() && MMG3D_Set_requiredVertex(M_mmg_mesh, k) != 1 )
+            {
+                throw std::logic_error( "Error in MMG3D_Set_requiredVertex" );
+            }   
             pt_id[pt.id()] = k++;
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3  )
@@ -255,6 +267,10 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 throw std::logic_error( "Error in MMGS_Set_vertex" );
             }
+            if ( pt.hasMarker() && MMGS_Set_requiredVertex(M_mmg_mesh, k) != 1 )
+            {
+                throw std::logic_error( "Error in MMGS_Set_requiredVertex" );
+            }   
             pt_id[pt.id()] = k++;
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2  )
@@ -263,9 +279,14 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 throw std::logic_error( "Error in MMG2D_Set_vertex" );
             }
+            if ( pt.hasMarker() && MMG2D_Set_requiredVertex(M_mmg_mesh, k) != 1 )
+            {
+                throw std::logic_error( "Error in MMG2D_Set_requiredVertex" );
+            }   
             pt_id[pt.id()] = k++;
         }
     }
+    auto required_element_ids = m_in->markersId( M_required_element_markers );
     k = 1;
     for( auto const& welt : m_in->elements() )
     {
@@ -281,6 +302,12 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 throw std::logic_error( "Error in MMG3D_Set_tetrahedron" );
             }
+            if ( required_element_ids.count( elt.markerOr(0).value() ) &&
+                 MMG3D_Set_requiredTetrahedron( M_mmg_mesh, k ) != 1 )
+            {
+                throw std::logic_error( "Error in MMG3D_Set_requiredTetrahedron" );
+            }
+                
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 3  )
         {
@@ -291,6 +318,11 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                     elt.markerOr(0).value(), k ) != 1 )
             {
                 throw std::logic_error( "Error in MMGS_Set_triangle" );
+            }
+            if ( required_element_ids.count( elt.markerOr(0).value() ) &&
+                 MMGS_Set_requiredTriangle( M_mmg_mesh, k ) != 1 )
+            {
+                throw std::logic_error( "Error in MMGS_Set_requiredTriangle" );
             }
         }
         else if constexpr ( dimension_v<MeshType> == 2 && real_dimension_v<MeshType> == 2  )
@@ -303,9 +335,16 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             {
                 throw std::logic_error( "Error in MMG2D_Set_triangle" );
             }
+            if ( required_element_ids.count( elt.markerOr(0).value() ) &&
+                 MMG2D_Set_requiredTriangle( M_mmg_mesh, k ) != 1 )
+            {
+                throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
+            }
         }
         k++;
     }
+
+    auto required_facet_ids = m_in->markersId( M_required_facet_markers );
 
     k = 1;
     for( auto const& wface : m_in->faces() )
@@ -318,10 +357,15 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
                                     pt_id[face.point(0).id()],
                                     pt_id[face.point(1).id()],
                                     pt_id[face.point(2).id()],
-                                    face.markerOr(0).value(), k++ ) != 1 )
+                                    face.markerOr(0).value(), k ) != 1 )
             {
                 using namespace std::string_literals;
                 throw std::logic_error( "Error in MMG3D_Set_triangle "s + std::to_string( face.id() ) + " " + std::to_string(face.markerOr(0).value()) );
+            }
+            if ( required_facet_ids.count( face.markerOr(0).value() ) &&
+                 MMG3D_Set_requiredTriangle( M_mmg_mesh, k ) != 1 )
+            {
+                throw std::logic_error( "Error in MMG2D_Set_requiredTriangle" );
             }
         }
         else if constexpr ( dimension_v<MeshType> == 2 )
@@ -330,12 +374,20 @@ Remesh<MeshType>::mesh2Mmg( std::shared_ptr<MeshType> const& m_in )
             if ( MMG2D_Set_edge(M_mmg_mesh,
                                 pt_id[face.point(0).id()],
                                 pt_id[face.point(1).id()],
-                                face.markerOr(0).value(), k++ ) != 1 )
+                                face.markerOr(0).value(), k ) != 1 )
             {
                 using namespace std::string_literals;
                 throw std::logic_error( "Error in MMG2D_Set_edge "s + std::to_string( face.id() ) + " " + std::to_string(face.markerOr(0).value()) );
             }
+            if ( required_facet_ids.count( face.markerOr(0).value() ) &&
+                 MMG2D_Set_requiredEdge( M_mmg_mesh, k ) != 1 )
+            {
+                throw std::logic_error( "Error in MMG2D_Set_requiredEdge" );
+            }
         }
+
+        // update facet index
+        k++;
     }
 
     return M_mmg_mesh;
