@@ -4,6 +4,7 @@
 #define FEELPP_TOOLBOXES_MODELMATERIALS_H 1
 
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/ones.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelvf/exprselectorbymeshelement.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
@@ -241,8 +242,8 @@ public :
                     else
                     {
                         // TODO : CREATE MaterialPropertyDescription
-                        typename ModelPDE<nDim>::material_property_shape_dim_type scalarShape = std::make_pair(1,1);
-                        //typename ModelPDE<nDim>::material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
+                        typename ModelPhysics<nDim>::material_property_shape_dim_type scalarShape = std::make_pair(1,1);
+                        //typename ModelPhysics<nDim>::material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
                         //auto shapeExpr = ( propExpr.hasExpr<1,1>()?scalarShape
                         if ( !propExpr.template hasExpr<1,1>() )
@@ -252,7 +253,7 @@ public :
                         matProperties.add( propName/*symbol*/, propExpr );
                         auto itFindPropDesc=M_materialPropertyDescription.find( propName);
                         if( itFindPropDesc == M_materialPropertyDescription.end() )
-                            M_materialPropertyDescription[propName] = std::make_tuple( propSymbol, std::vector< typename ModelPDE<nDim>::material_property_shape_dim_type>( { scalarShape } ) );
+                            M_materialPropertyDescription[propName] = std::make_tuple( propSymbol, std::vector< typename ModelPhysics<nDim>::material_property_shape_dim_type>( { scalarShape } ) );
                         else
                         {
                             // nothing only scalar currently
@@ -788,8 +789,8 @@ private :
     std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;
 
     std::map<std::string,MaterialProperties<mesh_type>> M_materialNameToProperties;
-    std::map<std::string,typename ModelPDE<nDim>::material_property_description_type> M_materialPropertyPhysicDescription; // name -> (symbol, shapes.. )   only defined in phycis
-    std::map<std::string,typename ModelPDE<nDim>::material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )   all prop read
+    std::map<std::string,typename ModelPhysics<nDim>::material_property_description_type> M_materialPropertyPhysicDescription; // name -> (symbol, shapes.. )   only defined in phycis
+    std::map<std::string,typename ModelPhysics<nDim>::material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )   all prop read
 };
 
 

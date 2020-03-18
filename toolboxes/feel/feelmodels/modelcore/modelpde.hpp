@@ -27,7 +27,6 @@ public :
     ModelPDE( ModelPDE const& ) = default;
     ModelPDE( ModelPDE && ) = default;
 
-    std::map<std::string,std::tuple<std::string,std::vector<material_property_shape_dim_type>>> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
 
 protected :
     void addMaterialPropertyDescription( std::string const& propName, std::string const& symbol, std::initializer_list<material_property_shape_dim_type> const& shapes )
@@ -35,7 +34,12 @@ protected :
             M_materialPropertyDescription[propName] = std::make_tuple( symbol, std::vector< material_property_shape_dim_type>( shapes ) );
         }
 
-private :
+
+    //private :
+    std::string M_physic; // the name of the physic
+    std::set<std::string> M_physics; // all physics (example thermo-electric include also heat and electric)
+    std::map<std::string,std::set<std::string>> M_mapPhysicsToSubphysics;
+
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
 };
 
