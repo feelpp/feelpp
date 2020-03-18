@@ -181,12 +181,12 @@ using functionspace_element_type = typename mpl::if_<is_functionspace_element<de
 /**
  * get the element type of a functionspace
  */
-template<typename SpaceT>
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
 using element_t = typename SpaceT::element_type;
 /**
  * get the element shared ptr type of a functionspace
  */
-template<typename SpaceT>
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
 using element_ptr_t = typename SpaceT::element_ptr_type;
 
 /**
