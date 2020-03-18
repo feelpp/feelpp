@@ -35,7 +35,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac(
         ModelBaseRepository const& modelRep )
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<nDim>( "adr" ),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_doProjectFieldAdvectionVelocity( false ),
@@ -87,9 +86,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Mesh
     if( !M_mesh )
         this->createMesh();
-
-    this->initMaterialProperties();
-
     // Function spaces
     this->initFunctionSpaces();
     // Algebraic data
@@ -147,7 +143,7 @@ void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 {
     this->log("AdvDiffReac","loadParametersFromOptionsVm", "start");
-
+    
     M_hasSourceAdded = false;
 
     // Model
@@ -162,6 +158,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     CHECK(AdvectionStabMethodIdMap.count(stabmeth)) << stabmeth <<" is not in the list of possible stabilization methods\n";
     M_stabMethod = AdvectionStabMethodIdMap.at(stabmeth);
 
+    M_doExportAll = boption(_name="export-all",_prefix=this->prefix());
+    M_doExportAdvectionVelocity = boption(_name="export-advection-velocity",_prefix=this->prefix());
+    M_doExportDiffusionCoefficient = boption(_name="export-diffusion", _prefix=this->prefix());
+    M_doExportReactionCoefficient = boption(_name="export-reaction", _prefix=this->prefix());
+    M_doExportSourceField = boption(_name="export-source", _prefix=this->prefix());
+    
     this->log("AdvDiffReac","loadParametersFromOptionsVm", "finish");
 }
 
@@ -241,25 +243,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createMesh()
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("AdvDiffReac","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initMaterialProperties()
-{
-    this->log("AdvDiffReac","initMaterialProperties", "start" );
-    this->timerTool("Constructor").start();
-
-    if ( !M_materialsProperties )
-    {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
-    }
-
-    double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
-    this->log("AdvDiffReac","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
@@ -782,6 +765,128 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initTimeStep()
 //----------------------------------------------------------------------------//
 //----------------------------------------------------------------------------//
 // Algebraic model updates
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+{
+    using namespace Feel::vf;
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    bool _BuildCstPart = data.buildCstPart();
+    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
+
+    bool BuildNonCstPart = !_BuildCstPart;
+    bool BuildCstPart = _BuildCstPart;
+
+    bool build_AdvectiveTerm = BuildNonCstPart;
+    bool build_DiffusionTerm = BuildNonCstPart;
+    bool build_ReactionTerm = BuildNonCstPart;
+    //bool build_SourceTerm = BuildNonCstPart;
+    //bool build_BoundaryNeumannTerm = BuildNonCstPart;
+
+    std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
+    this->log("AdvDiffReac","updateLinearPDE", "start"+sc );
+    this->timerTool("Solve").start();
+
+    auto mesh = this->mesh();
+    auto space = this->functionSpace();
+
+    auto const& advection_velocity = this->fieldAdvectionVelocity();
+
+    auto const& phi = this->fieldSolution();
+    auto const& psi = this->fieldSolution();
+
+    // Forms
+    auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
+    auto linearForm = form1( _test=space, _vector=F );
+
+    // Advection
+    if(this->hasAdvection() && build_AdvectiveTerm)
+    {
+        this->timerTool("Solve").start();
+        
+        //bilinearForm += integrate(
+                //_range=this->rangeMeshElements(),
+                //_expr=inner((gradt(phi)*idv(advection_velocity)), id(psi)),
+                //_geomap=this->geomap()
+                //);
+        this->M_functionAssemblyLinearAdvection( data );
+
+        double timeElapsedAdvection = this->timerTool("Solve").stop();
+        this->log("AdvDiffReac","updateLinearPDE","assembly advection terms in "+(boost::format("%1% s") %timeElapsedAdvection).str() );
+    }
+
+    // Diffusion
+    if( this->hasDiffusion() && build_DiffusionTerm )
+    {
+        this->timerTool("Solve").start();
+
+        auto const& D = this->diffusionReactionModel()->fieldDiffusionCoeff();
+
+        bilinearForm += integrate(
+                _range=this->rangeMeshElements(),
+                _expr=inner(trans(gradt(phi)),idv(D)*trans(grad(psi))),
+                _geomap=this->geomap()
+                );
+
+        double timeElapsedDiffusion = this->timerTool("Solve").stop();
+        this->log("AdvDiffReac","updateLinearPDE","assembly diffusion terms in "+(boost::format("%1% s") %timeElapsedDiffusion).str() );
+    }
+
+    // Reaction
+    if( this->hasReaction() && build_ReactionTerm )
+    {
+        this->timerTool("Solve").start();
+
+        auto const& R = this->diffusionReactionModel()->fieldReactionCoeff();
+        
+        bilinearForm += integrate(
+                _range=this->rangeMeshElements(),
+                _expr=inner(idv(R)*idt(phi), id(psi)),
+                _geomap=this->geomap()
+                );
+
+        double timeElapsedReaction = this->timerTool("Solve").stop();
+        this->log("AdvDiffReac","updateLinearPDE","assembly reaction terms in "+(boost::format("%1% s") %timeElapsedReaction).str() );
+    }
+
+    // Transient terms
+    if (!this->isStationary())
+    {
+        this->timerTool("Solve").start();
+       
+        this->updateLinearPDETransient( A, F, BuildCstPart ); 
+        
+        double timeElapsedTransient = this->timerTool("Solve").stop();
+        this->log("AdvDiffReac","updateLinearPDE","assembly transient terms in "+(boost::format("%1% s") %timeElapsedTransient).str() );
+    }
+
+    // Source term
+    this->updateSourceTermLinearPDE( data );
+    if( this->hasSourceAdded() && !BuildCstPart )
+    {
+        linearForm +=
+            integrate( _range=this->rangeMeshElements(),
+                       _expr= inner(idv(M_fieldSource),id(psi)),
+                       _geomap=this->geomap() );
+    }
+
+    // User-defined additional terms
+    this->updateLinearPDEAdditional( A, F, BuildCstPart );
+
+    // Stabilization
+    if ( this->hasAdvection() )
+        this->updateLinearPDEStabilization( data );
+
+    // Boundary conditions
+    this->updateWeakBCLinearPDE(A, F, BuildCstPart);
+    if ( BuildNonCstPart && _doBCStrongDirichlet)
+        this->updateBCStrongDirichletLinearPDE(A,F);
+
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("AdvDiffReac","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
+}
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -807,12 +912,125 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateWeakBCLinearPDE(sparse_matrix_ptrtype& A,
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateBCStrongDirichletLinearPDE(sparse_matrix_ptrtype& A, vector_ptrtype& F) const
+{
+    if ( this->M_bcDirichlet.empty() && this->M_bcInflowMarkers.empty() ) return;
+
+    this->log("AdvDiffReac","updateBCStrongDirichletLinearPDE","start" );
+
+    auto mesh = this->mesh();
+    auto Xh = this->functionSpace();
+    auto const& u = this->fieldSolution();
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+
+    // Dirichlet bc
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
+                _element=u,_rhs=F,_expr=expression(d) );
+    }
+
+    // Inflow bc
+    if( !this->isStationary() )
+    {
+        for( auto const& bcMarker: this->M_bcInflowMarkers )
+        {
+            bilinearForm_PatternCoupled +=
+                on( _range=markedfaces(mesh, bcMarker),
+                        _element=u,
+                        _rhs=F,
+                        _expr=(
+                            // Transient part
+                            idv(this->timeStepBDF()->polyDeriv())
+                            // Advection part
+                            - gradv(u)*idv(this->fieldAdvectionVelocity())
+                            // Diffusion part
+                            + (this->hasDiffusion()) * idv(this->diffusionReactionModel()->fieldDiffusionCoeff())*laplacianv(u)
+                            // Reaction part
+                            - (this->hasReaction()) * idv(this->diffusionReactionModel()->fieldReactionCoeff())*idv(u)
+                            // Source part
+                            + (this->hasSourceAdded() || this->hasSourceTerm()) * idv(*this->M_fieldSource)
+                            )/(this->timeStepBDF()->polyDerivCoefficient(0))
+                  );
+        }
+    }
+
+    this->log("AdvDiffReac","updateBCStrongDirichletLinearPDE","finish" );
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceTermLinearPDE( ModelAlgebraic::DataUpdateLinear & data ) const
+{
+    if( this->M_sources.empty() ) return;
+
+    bool BuildCstPart = data.buildCstPart();
+    if ( BuildCstPart )
+        return;
+    vector_ptrtype& F = data.rhs();
+
+    auto mesh = this->mesh();
+    auto space = this->functionSpace();
+    auto const& v = this->fieldSolution();
+    auto linearForm = form1( _test=space, _vector=F );
+    for( auto const& d : this->M_sources )
+    {
+        auto rangeUsed = ( markers(d).empty() )? elements(mesh) : markedelements(mesh,markers(d));
+        linearForm += integrate( _range=rangeUsed,
+                                 _expr= inner(expression(d),id(v)),
+                                 _geomap=this->geomap() );
+
+    }
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 bool
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::hasSourceTerm() const
 {
     return !this->M_sources.empty(); 
 }
 
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateLinearPDETransient( sparse_matrix_ptrtype& A, vector_ptrtype& F, bool BuildCstPart ) const
+{
+    auto const& space = this->functionSpace();
+    auto const& phi = this->fieldSolution();
+    auto const& psi = this->fieldSolution();
+    // Forms
+    auto bilinearForm = form2( _test=space, _trial=space, _matrix=A );
+    auto linearForm = form1( _test=space, _vector=F );
+
+    bool BuildNonCstPart = !BuildCstPart;
+    bool build_Form2TransientTerm = BuildNonCstPart;
+    bool build_Form1TransientTerm = BuildNonCstPart;
+    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+    {
+        build_Form2TransientTerm = BuildCstPart;
+    }
+
+    if (build_Form2TransientTerm)
+    {
+        bilinearForm += integrate( 
+                _range=this->rangeMeshElements(),
+                _expr=M_bdf->polyDerivCoefficient(0)*inner(idt(phi),id(psi)),
+                _geomap=this->geomap() 
+                );
+    }
+    if (build_Form1TransientTerm)
+    {
+        linearForm += integrate(
+                _range=this->rangeMeshElements(),
+                _expr=inner(idv(M_bdf->polyDeriv()),id(psi)),
+                _geomap=this->geomap() 
+                );
+    }
+}
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
