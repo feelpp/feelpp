@@ -126,8 +126,10 @@ measureStatisticsEvaluation( RangeType const& range,
                         {
                             if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    for ( auto const& [fieldName,fieldFunc,symbol,prefixSymb] : e )
+                                    for ( auto const& mfield : e )
                                     {
+                                        std::string fieldName = mfield.nameWithPrefix();
+                                        auto const& fieldFunc = mfield.field();
                                         if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
                                             {
                                                 if ( !fieldFunc )
@@ -149,6 +151,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                 }
                             else
                             {
+#if 0
                                 if ( ppStat.field() == e.first )
                                 {
                                     auto const& fieldFunc = e.second;
@@ -167,6 +170,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                             measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
                                     }
                                 }
+#endif
                             }
                         }), ... );
     }

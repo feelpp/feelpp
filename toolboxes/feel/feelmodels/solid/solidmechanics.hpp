@@ -285,6 +285,12 @@ public:
 
     //___________________________________________________________________________________//
 
+     struct FieldTag
+     {
+         static auto displacement( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+         static auto pressure( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+     };
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -514,11 +520,11 @@ public :
     template <typename DisplacementFieldType, typename VelocityFieldType,typename PressureFieldType>
     auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            auto mfield_disp = modelField<FieldTag::solid_displacement,FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>();
-            mfield_disp.add( prefixvm( prefix,"displacement" ), field_s, "s", this->keyword() );
-            mfield_disp.add( prefixvm( prefix,"velocity" ), field_v, "v", this->keyword() );
-            //mfield_disp.add( prefixvm( prefix,"acceleration" ), this->fieldAccelerationPtr(), "a", this->keyword() );
-            auto mfield_pressure = modelField<FieldTag::solid_pressure,FieldCtx::ID>( prefixvm( prefix,"velocity" ), this->fieldPressurePtr(), "p", this->keyword() );
+            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
+            //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
+            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"velocity", this->fieldPressurePtr(), "p", this->keyword() );
 
             return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
         }
@@ -529,19 +535,20 @@ public :
     //___________________________________________________________________________________//
 
     template <typename ModelFieldsType>
-    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
         }
-    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
-    auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return mfields.symbolsExpr();
+            return symbols_expression_empty_t{};
         }
 
     //----------------------------------//

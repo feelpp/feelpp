@@ -17,10 +17,12 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess &
     auto mesh = this->mesh();
     size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
     auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto se = this->symbolsExpr();
+
     for( auto const& d : M_bcDirichlet )
     {
         v.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=expression(d) );
+             _expr=expression(d,se) );
     }
 
     // update info for synchronization
@@ -33,7 +35,7 @@ void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    this->updateJacobian( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
+    this->updateJacobian( data, this->modelContext( XVec, this->rowStartInVector() ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

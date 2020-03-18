@@ -31,20 +31,25 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     size_type startBlockIndexTemperature = M_heatModel->startBlockSpaceIndexVector()+0;
     size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
 
+    auto mctx = this->modelContext( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential ); // TODO CHECK if we need rowStartInVector here
+    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
+    auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+
     auto mesh = this->mesh();
 
     auto XhV = M_electricModel->spaceElectricPotential();
-    auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
+    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto XhT = M_heatModel->spaceTemperature();
     //auto const& t = M_heatModel->fieldTemperature();
-    auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
+    //auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
     //auto symbolsExpr = this->symbolsExpr(t,v);
 
-    auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto symbolsExpr = this->symbolsExpr( mfield );
+    // auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
+    // auto symbolsExpr = this->symbolsExpr( mfield );
 
-    M_heatModel->updateJacobian( data,symbolsExpr );
-    M_electricModel->updateJacobian( data,symbolsExpr );
+    M_heatModel->updateJacobian( data,mctx );
+    M_electricModel->updateJacobian( data,mctx );
 
     if ( !buildCstPart )
     {

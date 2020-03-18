@@ -10,7 +10,7 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    this->updateResidual( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
+    this->updateResidual( data, this->modelContext( XVec, this->rowStartInVector() ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

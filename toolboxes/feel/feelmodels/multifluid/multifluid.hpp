@@ -190,6 +190,22 @@ public:
     decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return M_fluidModel->modelFields( prefix );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expression
+    //___________________________________________________________________________________//
+
+    auto symbolsExpr( std::string const& prefix = "" ) const { return M_fluidModel->symbolsExpr( prefix ); }
+
+#if 0
     //--------------------------------------------------------------------//
     // Symbols expr
     auto symbolsExpr() const { 
@@ -205,6 +221,7 @@ public:
         //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
         return Feel::vf::symbolsExpr( seFluid, seParam );
     }
+#endif
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;
