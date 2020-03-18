@@ -15,11 +15,13 @@ HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & dat
 
     vector_ptrtype& U = data.initialGuess();
     auto mesh = this->mesh();
-    auto u = this->spaceTemperature()->element( U, this->rowStartInVector() );
+    size_type startBlockIndexTemperature = this->startSubBlockSpaceIndex( "temperature" );
+    auto u = this->spaceTemperature()->element( U, this->rowStartInVector()+startBlockIndexTemperature );
+    auto se = this->symbolsExpr();
 
     for( auto const& d : M_bcDirichlet )
     {
-        auto theExpr = expression(d,this->symbolsExpr());
+        auto theExpr = expression(d,se);
         u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
              _expr=theExpr );
     }
@@ -35,7 +37,7 @@ void
 HEAT_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    this->updateJacobian( data, this->symbolsExpr( this->modelFields( XVec, this->rowStartInVector() ) ) );
+    this->updateJacobian( data, this->modelContext( XVec, this->rowStartInVector() ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS

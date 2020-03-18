@@ -85,6 +85,11 @@ public:
     typedef MeasurePointsEvaluation<space_electricpotential_type> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
+    struct FieldTag
+    {
+        static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+
     //___________________________________________________________________________________//
     // constructor
     Electric( std::string const& prefix,
@@ -198,13 +203,13 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector );
+            auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
             return this->modelFields( field_p, prefix );
         }
     template <typename PotentialFieldType>
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldTag::electric_potential,FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( prefixvm( prefix,"electric-potential" ), field_p, "P", this->keyword() ) );
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
         }
 
     //___________________________________________________________________________________//
@@ -212,19 +217,21 @@ public :
     //___________________________________________________________________________________//
 
     template <typename ModelFieldsType>
-    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat );
+            auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
         }
-    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
-    auto symbolsExprToolbox( ModelFieldsType const& mfields,  std::string const& prefix = "" ) const
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            auto const& v =  mfields.template field<FieldTag::electric_potential>( prefixvm( prefix,"electric-potential" ) );
+            auto const& v = mfields.field( FieldTag::potential(this), "electric-potential" );
+
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
@@ -235,10 +242,29 @@ public :
                 currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
             }
 
-            // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            return Feel::vf::symbolsExpr( mfields.symbolsExpr(), symbolExpr( currentDensitySymbs ) );
+            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
         }
-    //auto symbolsExprToolbox( std::string const& prefix = "" ) const { return this->symbolsExprToolbox( this->modelFields(), prefix ); }
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -247,18 +273,18 @@ public :
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
-    template <typename SymbolsExpr>
-    void updateLinearPDE( DataUpdateLinear & data, SymbolsExpr const& symbolsExpr ) const;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
-    template <typename SymbolsExpr>
-    void updateJacobian( DataUpdateJacobian & data, SymbolsExpr const& symbolsExpr ) const;
+    template <typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;
-    template <typename SymbolsExpr>
-    void updateResidual( DataUpdateResidual & data, SymbolsExpr const& symbolsExpr ) const;
+    template <typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 
@@ -341,9 +367,9 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
     this->log("Electric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    // this->modelProperties().parameters().updateParameterValues();
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().postProcess().setParameterValues( paramValues );
 
     auto fields = this->modelFields();
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );

@@ -266,6 +266,16 @@ public:
     typedef std::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
 #endif
 
+    struct FieldTag
+    {
+        static auto velocity( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto pressure( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+        static auto mesh_displacement( self_type const* t ) { return ModelFieldTag<self_type,2>( t ); }
+        //static auto body_translational_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::translational_velocity( t ); }
+        //static auto body_angular_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::angular_velocity( t ); }
+    };
+
+
     //___________________________________________________________________________________//
 
     class Body : public ModelPhysics<nDim>
@@ -334,6 +344,12 @@ public:
         typedef std::shared_ptr<element_trace_angular_velocity_type> element_trace_angular_velocity_ptrtype;
         typedef Bdf<space_trace_angular_velocity_type> bdf_trace_angular_velocity_type;
         typedef std::shared_ptr<bdf_trace_angular_velocity_type> bdf_trace_angular_velocity_ptrtype;
+
+        struct FieldTag
+        {
+            static auto translational_velocity( BodyBoundaryCondition const* t ) { return ModelFieldTag<BodyBoundaryCondition,0>( t ); }
+            static auto angular_velocity( BodyBoundaryCondition const* t ) { return ModelFieldTag<BodyBoundaryCondition,1>( t ); }
+        };
 
         BodyBoundaryCondition() = default;
         BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
@@ -564,16 +580,16 @@ public:
         template <typename _field_translational_ptrtype, typename _field_angular_ptrtype>
         auto modelFieldsImpl( self_type const& fluidToolbox, std::map<std::string,std::tuple<_field_translational_ptrtype,_field_angular_ptrtype>> const& registerFields, std::string const& prefix ) const
             {
-                auto mfieldTranslational = modelField<FieldTag::fluid_body_translational_velocity,FieldCtx::ID,_field_translational_ptrtype>();
-                auto mfieldAngular = modelField<FieldTag::fluid_body_angular_velocity,FieldCtx::ID,_field_angular_ptrtype>();
+                auto mfieldTranslational = modelField<FieldCtx::ID,_field_translational_ptrtype>( BodyBoundaryCondition::FieldTag::translational_velocity(nullptr) );
+                auto mfieldAngular = modelField<FieldCtx::ID,_field_angular_ptrtype>( BodyBoundaryCondition::FieldTag::angular_velocity(nullptr) );
                 for ( auto const& [name,bpbc] : *this )
                 {
                     auto const& field_translational = std::get<0>( registerFields.find( name )->second );
                     auto const& field_angular = std::get<1>( registerFields.find( name )->second );
                     std::string prefixBase = prefixvm( prefix, (boost::format("body.%1%")%name).str() );
                     std::string prefix_symbol = prefixvm( fluidToolbox.keyword(), (boost::format("body_%1%")%name).str(), "_");
-                    mfieldTranslational.add( prefixvm(prefixBase,"translational-velocity"), field_translational, "V",  prefix_symbol );
-                    mfieldAngular.add( prefixvm(prefixBase,"angular-velocity"), field_angular, "W",  prefix_symbol );
+                    mfieldTranslational.add( BodyBoundaryCondition::FieldTag::translational_velocity(&bpbc), prefixBase, "translational-velocity", field_translational, "V",  prefix_symbol );
+                    mfieldAngular.add( BodyBoundaryCondition::FieldTag::angular_velocity(&bpbc), prefixBase, "angular-velocity", field_angular, "W",  prefix_symbol );
                 }
                 return Feel::FeelModels::modelFields( mfieldTranslational, mfieldAngular );
             }
@@ -953,7 +969,7 @@ public :
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
-            auto field_p = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
+            auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
             auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
             return this->modelFields( field_u, field_p, mfields_body, prefix );
         }
@@ -961,30 +977,53 @@ public :
     auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
         {
             auto mfields_ale = this->modelFieldsMeshALE( prefix );
-            return Feel::FeelModels::modelFields( modelField<FieldTag::fluid_velocity,FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( prefixvm( prefix,"velocity" ), field_u, "U", this->keyword() ),
-                                                  modelField<FieldTag::fluid_pressure,FieldCtx::ID>( prefixvm( prefix,"pressure" ), field_p, "P", this->keyword() ),
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
+                                                  modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
                                                   mfields_body, mfields_ale
                                                   );
         }
 
     //___________________________________________________________________________________//
     // symbols expression
+    //___________________________________________________________________________________//
 
     template <typename ModelFieldsType>
-    auto symbolsExpr( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            auto seToolbox = this->symbolsExprToolbox( mfields, prefix );
+            auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             //auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
         }
-    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields(), prefix ); }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
-    auto symbolsExprToolbox( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return mfields.symbolsExpr();
+            return symbols_expression_empty_t{};
         }
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    // template <typename ModelFieldsType>
+    // auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    //     {
+    //         return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+    //     }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+
 
     //___________________________________________________________________________________//
     // fields
@@ -1318,10 +1357,10 @@ private :
 
     auto modelFieldsMeshALE( std::string const& prefix = "" ) const
         {
-            using _field_disp_ptrtype =  typename mesh_ale_type::ale_map_element_ptrtype;
-            auto mfieldDisp = modelField<FieldTag::fluid_mesh_displacement,FieldCtx::ID,_field_disp_ptrtype>();
+            using _field_disp_ptrtype = typename mesh_ale_type::ale_map_element_ptrtype;
+            auto mfieldDisp = modelField<FieldCtx::ID,_field_disp_ptrtype>( FieldTag::mesh_displacement(this) );
             if ( this->isMoveDomain() )
-                mfieldDisp.add( prefixvm( prefix, "displacement"), this->meshALE()->displacement(), "disp", this->keyword() );
+                mfieldDisp.add( FieldTag::mesh_displacement(this), prefix, "displacement", this->meshALE()->displacement(), "disp", this->keyword() );
             return Feel::FeelModels::modelFields( mfieldDisp );
         }
 

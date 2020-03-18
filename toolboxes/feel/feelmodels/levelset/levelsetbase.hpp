@@ -355,6 +355,55 @@ public:
     projector_levelset_ptrtype const& smootherInterface() const;
     projector_levelset_vectorial_ptrtype const& smootherInterfaceVectorial() const;
 
+    struct FieldTag
+    {
+        static auto phi( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto levelset( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+        static auto gradphi( self_type const* t ) { return ModelFieldTag<self_type,2>( t ); }
+    };
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->phiPtr(), prefix );
+        }
+#if 0
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_t = this->functionSpace()->elementPtr( *sol, rowStartInVector /*+ this->startSubBlockSpaceIndex( "field" )*/ );
+            return this->modelFields( field_t, prefix );
+        }
+#endif
+    template <typename PhiFieldType>
+    auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::phi(this), prefix, "phi", field_phi, "phi", this->keyword() ),
+                                                  modelField<0>( FieldTag::levelset(this), prefix, "dirac", this->dirac() )
+                                                  );
+        }
+        //___________________________________________________________________________________//
+        // symbols expressions
+        //___________________________________________________________________________________//
+
+        template <typename ModelFieldsType>
+        auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            //auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam/*, seMat*/, seFields );
+        }
+        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+        // template <typename ModelFieldsType>
+        // auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        //     {
+        //     }
+#if 0
     //--------------------------------------------------------------------//
     // Symbols expressions
     auto symbolsExpr( std::string const& prefix_symbol = "levelset_" ) const {
@@ -398,6 +447,7 @@ public:
                 this->fieldsUserVectorial()
                 );
     }
+#endif
     // Measures quantities
     auto allMeasuresQuantities( std::string const& prefix = "" ) const
     {
@@ -489,7 +539,7 @@ public:
     void exportResults() { this->exportResults( this->currentTime() ); }
     virtual void exportResults( double time );
     template<typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->allFields(), this->allMeasuresQuantities() ); }
+    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->modelFields(), this->allMeasuresQuantities() ); }
     template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
     void exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& fields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities );
 
@@ -789,9 +839,9 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
 
 //----------------------------------------------------------------------------//
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
-template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+template<typename SymbolsExpr, typename ModelFieldsType, typename TupleMeasuresQuantitiesType>
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
 {
     this->log("LevelSetBase","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -800,8 +850,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const&
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->executePostProcessExports( M_exporter, time, tupleFields, symbolsExpr );
-    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, tupleFields, tupleMeasuresQuantities );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, mfields, tupleMeasuresQuantities );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
