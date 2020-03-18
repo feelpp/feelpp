@@ -26,6 +26,7 @@
 #include <feel/feelcore/checker.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/check.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <tabulate/table.hpp>
@@ -36,42 +37,7 @@
 
 using namespace Feel;
 
-template<typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT>>>
-int check( Checker& thechecker, ElementT const& u )
-{
-    int status = 0;
-    // tag::check[]
-    if ( thechecker.check() )
-    {
-        auto mesh = u.functionSpace()->mesh();
-        auto Vh = u.functionSpace();
-        std::string solution = thechecker.solution();
-        // compute l2 and h1 norm of u-u_h where u=solution
-        auto norms = [=]( std::string const& solution ) -> std::map<std::string, double> {
-             tic();
-            double l2_p = normL2(_range=elements(support(Vh)), _expr=expr(solution) );
-            double l2 = normL2(_range=elements(support(Vh)), _expr=idv(u)-expr(solution) );
-            toc("L2 error norm");
-            if ( !thechecker.hasGradient() )
-                return { { "L2", l2/l2_p } };
-            //auto grad_ex = expr<1,dimension(support(Vh))>( thechecker.gradient().value() );
-            auto grad_ex = expr<1,FEELPP_DIM>( thechecker.gradient().value() );
-            tic();
-            double h1_p = normH1(_range=elements(support(Vh)), _expr=expr(solution), _grad_expr=grad_ex );
-            double h1 = normH1(_range=elements(support(Vh)), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-grad_ex );
-            toc("H1 error norm");   
-            tic();
-            double semih1 = normL2(_range=elements(support(Vh)), _expr=gradv(u)-grad_ex );
-            double semih1_p = normL2(_range=elements(support(Vh )), _expr=grad_ex );
-            toc("semi H1 error norm");
-            return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} }; 
-        };
 
-        status = !thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    }
-    // end::check[]
-    return status;
-}
 
 int main( int argc, char** argv )
 {
