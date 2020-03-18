@@ -102,7 +102,15 @@ template<typename T>
 struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
 template<typename T>
 constexpr uint16_type dimension_v = dimension_t<T>::value;
- 
+/**
+ * @return topological dimension of a type T
+ */
+template<typename T>
+inline constexpr int dimension( T const& t )
+{
+  return dimension_v<T>;
+}
+
 template<typename T>
 struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
 template<typename T>
