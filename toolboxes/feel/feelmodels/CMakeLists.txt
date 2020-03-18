@@ -65,6 +65,9 @@ endif()
 if ( FEELPP_TOOLBOXES_ENABLE_FSI )
   add_subdirectory(fsi)
 endif()
+
+add_subdirectory(coefficientformpdes)
+
 if ( FEELPP_TOOLBOXES_ENABLE_ADVECTION )
   add_subdirectory(advection)
 endif()
