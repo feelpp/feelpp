@@ -115,6 +115,8 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         this->add( thetag, prefix, name, u, symbol, prefix_symbol );
     }
 
+    ModelField& operator=( ModelField&& ) = default;
+
     void add( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
     {
 
@@ -314,6 +316,7 @@ public :
     ModelFields() = default;
     ModelFields( ModelFields const& ) = default;
     ModelFields( ModelFields && ) = default;
+    ModelFields& operator=( ModelFields&& ) = default;
 
     explicit ModelFields( tuple_type const& tmf )
         :

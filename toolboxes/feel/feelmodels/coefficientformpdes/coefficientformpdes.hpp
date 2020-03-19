@@ -25,10 +25,17 @@ public :
 
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
+    using convex_type = typename coefficient_form_pde_base_type::convex_type;
+    static const uint16_type nDim = coefficient_form_pde_base_type::nDim;
+    static const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
 
     // materials properties
     typedef MaterialsProperties<mesh_type> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
+    // exporter
+    typedef Exporter<mesh_type,nOrderGeo> export_type;
+    typedef std::shared_ptr<export_type> export_ptrtype;
 
     // algebraic solver
     typedef ModelAlgebraicFactory model_algebraic_factory_type;
@@ -52,6 +59,28 @@ private :
             {
                 return std::variant<TheType...>{};
             }
+
+    private :
+        struct TransformModelFields
+        {
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(t)>;
+                    std::shared_ptr<coefficient_form_pde_type> dummycfpde;
+                    return dummycfpde->modelFields( std::string("") );
+                }
+
+            template <typename... TheType>
+            static constexpr auto
+            toModelFields(  hana::tuple<TheType...> const& t )
+                {
+                    return model_fields_t<TheType...>{};
+                }
+        };
+    public :
+        using model_fields_type =  std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
+
     };
 public :
 
@@ -66,7 +95,74 @@ public :
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
+    std::shared_ptr<std::ostringstream> getInfo() const override;
+    void updateInformationObject( pt::ptree & p ) override;
+
+
+    mesh_ptrtype const& mesh() const { return M_mesh; }
+
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"mesh.path"); }
+
+    //___________________________________________________________________________________//
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
+    //___________________________________________________________________________________//
+    // post-process
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
+    template <typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+private :
+
+    template <typename ResType>
+    void modelFieldsImpl( std::string const& prefix, ResType && res ) const
+        {
+            hana::for_each( tuple_type_unknown_basis, [this,&prefix,&res]( auto const& e )
+                            {
+                                for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                                    res = Feel::FeelModels::modelFields( res, cfpde->modelFields( prefixvm( prefix, cfpde->keyword() ) ) );
+                                }
+                            });
+        }
+
+public :
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            typename traits::model_fields_type res;
+            this->modelFieldsImpl( prefix, std::move(res) );
+            return res;
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            //auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
+            //auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( /*seHeat,seElectric,*/seParam,seMat,seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     //___________________________________________________________________________________//
     // algebraic data and solver
@@ -80,11 +176,14 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     //int nBlockMatrixGraph() const { return 1; }
 
+    void solve();
+
     static
     std::string const& unknowBasisTag( variant_unknown_basis_type const& vb );
 private :
     void initMesh();
     void initMaterialProperties();
+    void initPostProcess() override;
 
 private :
 
@@ -95,6 +194,9 @@ private :
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
 
+    // post-process
+    export_ptrtype M_exporter;
+
     // algebraic data/tools
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
@@ -103,6 +205,30 @@ private :
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> M_coefficientFormPDEs;
 
 };
+
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename SymbolsExpr, typename ExportsExprType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+{
+    this->log("CoefficientFormPDEs","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    auto fields = this->modelFields();
+    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
+    //this->executePostProcessMeasures( time, fields, symbolsExpr );
+    //this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("CoefficientFormPDEs","exportResults", "finish");
+}
 
 } // namespace Feel
 } // namespace FeelModels

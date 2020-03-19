@@ -52,15 +52,21 @@ public:
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
 
 
-    // algebraic solver
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
+    CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+                        std::string const& prefix,
+                        std::string const& keyword = "pde",
+                        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                        std::string const& subPrefix  = "",
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     CoefficientFormPDE( std::string const& prefix,
                         std::string const& keyword = "pde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
+        {}
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
 
@@ -96,19 +102,51 @@ public:
     void initAlgebraicFactory();
 
     //___________________________________________________________________________________//
-    // algebraic data and solver
-    backend_ptrtype const& backend() const { return  M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    size_type nLocalDof() const;
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+    // toolbox fields
+    //___________________________________________________________________________________//
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    int nBlockMatrixGraph() const { return 1; }
+    struct FieldTag
+    {
+        static auto unknown( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldUnknownPtr(), prefix );
+        }
+#if 0
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
+            return this->modelFields( field_t, prefix );
+        }
+#endif
+    template <typename TheUnknownFieldType>
+    auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ) );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            //auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
+            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, seMat, seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
 
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues );
+
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -143,10 +181,6 @@ private :
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
 };
 
 } // namespace Feel
