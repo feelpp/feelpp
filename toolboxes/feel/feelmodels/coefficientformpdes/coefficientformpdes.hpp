@@ -92,6 +92,9 @@ public :
                          std::string const& subPrefix  = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
+    static
+    std::string const& unknowBasisTag( variant_unknown_basis_type const& vb );
+
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
@@ -165,6 +168,27 @@ public :
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+#if 0
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+#endif
+    //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return  M_backend; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -178,8 +202,13 @@ public :
 
     void solve();
 
-    static
-    std::string const& unknowBasisTag( variant_unknown_basis_type const& vb );
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+
 private :
     void initMesh();
     void initMaterialProperties();
@@ -232,6 +261,8 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
 
 } // namespace Feel
 } // namespace FeelModels
+
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdesassembly.hpp>
 
 #endif
 

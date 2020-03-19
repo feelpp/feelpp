@@ -244,10 +244,32 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
 {
+    this->log("CoefficientFormPDEs","solve", "start");
+    this->timerTool("Solve").start();
 
+    this->setStartBlockSpaceIndex( 0 );
+
+    M_blockVectorSolution.updateVectorFromSubVectors();
+
+    for (auto & cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physic() ) );
+
+    // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
+    //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+    // else
+    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
+
+    M_blockVectorSolution.localize();
+
+    double tElapsed = this->timerTool("Solve").stop("solve");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("Solve").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("Solve").save();
+    }
+    this->log("CoefficientFormPDEs","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
-
-
 
 } // namespace Feel
 } // namespace FeelModels

@@ -482,8 +482,6 @@ macro( genLibCoefficientFormPDEs )
     endif()
   endforeach()
 
-#  set (COEFFICIENTFORMPDES_TUPLE_UNKNOWN_BASIS_TYPE "hana::tuple<${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE}>")
-
   set(COEFFICIENTFORMPDES_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}dG${COEFFICIENTFORMPDES_ORDERGEO} )
   set(COEFFICIENTFORMPDES_LIB_NAME feelpp_toolbox_coefficientformpdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
 
@@ -492,9 +490,11 @@ macro( genLibCoefficientFormPDEs )
     set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
     set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_inst.cpp
       )
     set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
       ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
+      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdesassemblylinear_inst.cpp
       )
 
     # generate the lib target

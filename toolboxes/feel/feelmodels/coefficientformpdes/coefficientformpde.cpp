@@ -128,8 +128,6 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     for( auto const& d : this->M_bcRobin )
         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(),  std::string("VolumicForces") } } );
-
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
     std::set<std::string> unknownMarkers;
