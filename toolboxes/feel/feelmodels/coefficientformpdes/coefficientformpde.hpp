@@ -54,13 +54,13 @@ public:
 
     CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
                         std::string const& prefix,
-                        std::string const& keyword = "pde",
+                        std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     CoefficientFormPDE( std::string const& prefix,
-                        std::string const& keyword = "pde",
+                        std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() )

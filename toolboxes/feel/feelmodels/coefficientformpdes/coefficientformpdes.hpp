@@ -87,7 +87,7 @@ public :
     using variant_unknown_basis_type = std::decay_t<decltype(traits::variant_from_tuple(tuple_type_unknown_basis))>;
 
     CoefficientFormPDEs( std::string const& prefix,
-                         std::string const& keyword = "pdes",
+                         std::string const& keyword = "cfpdes",
                          worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                          std::string const& subPrefix  = "",
                          ModelBaseRepository const& modelRep = ModelBaseRepository() );
