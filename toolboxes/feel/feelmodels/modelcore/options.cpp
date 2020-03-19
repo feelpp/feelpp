@@ -101,6 +101,18 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( ptree_options( prefix ) );
 }
 
+
+Feel::po::options_description
+coefficientformpdes_options(std::string const& prefix)
+{
+    Feel::po::options_description cfpdesOptions("coefficient-form-pdes options");
+    cfpdesOptions.add_options()
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+        ;
+    return cfpdesOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+}
+
 /**
  * generate options for the fluid solver
  */
@@ -644,39 +656,40 @@ alemesh_options(std::string const& prefix)
 }
 
 
-
 Feel::po::options_description
-toolboxes_options(std::string const& type)
+toolboxes_options( std::string const& type, std::string const& prefix )
 {
     Feel::po::options_description toolboxesOptions("toolboxes options");
 
     if (type == "fluid")
-        toolboxesOptions.add(fluidMechanics_options("fluid"));
+        toolboxesOptions.add(fluidMechanics_options(prefix));
     else if (type == "solid")
-        toolboxesOptions.add(solidMechanics_options("solid"));
+        toolboxesOptions.add(solidMechanics_options(prefix));
     else if ( type == "heat" )
-        toolboxesOptions.add( heat_options("heat") );
+        toolboxesOptions.add( heat_options(prefix) );
     else if (type == "fsi")
         toolboxesOptions
             .add(fluidMechanics_options("fluid"))
             .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
     else if (type == "advection")
-        toolboxesOptions.add(advection_options("advection"));
+        toolboxesOptions.add(advection_options(prefix));
     else if (type == "levelset")
-        toolboxesOptions.add(levelset_options("levelset"));
+        toolboxesOptions.add(levelset_options(prefix));
     else if (type == "multifluid")
-        toolboxesOptions.add(multifluid_options("multifluid"));
+        toolboxesOptions.add(multifluid_options(prefix));
     else if (type == "electric")
-        toolboxesOptions.add(electricity_options("electric"));
+        toolboxesOptions.add(electricity_options(prefix));
     else if (type == "thermo-electric")
-        toolboxesOptions.add(thermoElectric_options("thermo-electric"));
+        toolboxesOptions.add(thermoElectric_options(prefix));
     else if (type == "heat-fluid")
-        toolboxesOptions.add(heatFluid_options("heat-fluid"));
+        toolboxesOptions.add(heatFluid_options(prefix));
     else if (type == "maxwell")
-        toolboxesOptions.add(maxwell_options("maxwell"));
+        toolboxesOptions.add(maxwell_options(prefix));
+    else if (type == "coefficient-form-pdes")
+        toolboxesOptions.add(coefficientformpdes_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes";
 
     return toolboxesOptions;
 }
