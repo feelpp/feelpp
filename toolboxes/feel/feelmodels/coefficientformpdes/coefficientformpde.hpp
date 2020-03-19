@@ -153,6 +153,13 @@ public:
     //___________________________________________________________________________________//
 
     void solve();
+
+    template <typename ModelContextType>
+    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+
+
 private :
     void initFunctionSpaces();
     void initBoundaryConditions();
@@ -176,7 +183,6 @@ private :
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
@@ -185,5 +191,7 @@ private :
 
 } // namespace Feel
 } // namespace FeelModels
+
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeassembly.hpp>
 
 #endif

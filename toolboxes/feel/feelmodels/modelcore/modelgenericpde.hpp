@@ -30,6 +30,8 @@ public :
     std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
     std::string reactionCoefficientName() const { return prefixvm( this->physic(), "a", "_" ); }
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
+    std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "m", "_" ); }
+    std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
 
 protected :
     void setupGenericPDE( std::string const& name, pt::ptree const& p );
