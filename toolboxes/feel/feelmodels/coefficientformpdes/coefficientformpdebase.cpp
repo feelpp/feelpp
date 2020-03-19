@@ -10,13 +10,15 @@ namespace FeelModels
 {
 
 template< typename ConvexType>
-CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( std::string const& prefix,
+CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& genericPDE,
+                                                            std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super2_type( genericPDE )
 {
     this->log("CoefficientFormPDE","constructor", "start" );
 
@@ -87,6 +89,34 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
     this->log("CoefficientFormPDE","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
+}
+
+template< typename ConvexType>
+void
+CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
+{
+    this->log("Heat","initPostProcess", "start");
+    this->timerTool("Constructor").start();
+
+    this->setPostProcessExportsAllFieldsAvailable( { this->unknownName() } );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->setPostProcessExportsPidName( "pid" );
+    this->setPostProcessSaveAllFieldsAvailable( { this->unknownName() } );
+    super_type::initPostProcess();
+
+    if ( !this->postProcessExportsFields().empty() )
+    {
+        std::string geoExportType="static";//change_coords_only, change, static
+        M_exporter = exporter( _mesh=this->mesh(),
+                               _name="Export",
+                               _geo=geoExportType,
+                               _path=this->exporterPath() );
+
+        // restart exporter
+        if ( M_exporter->doExport() && this->doRestart() && this->restartPath().empty() )
+            M_exporter->restart(this->timeInitial());
+    }
+
 }
 
 template class CoefficientFormPDEBase< Simplex<2,1> >;

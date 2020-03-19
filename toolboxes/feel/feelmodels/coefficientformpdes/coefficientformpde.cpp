@@ -11,13 +11,14 @@ namespace FeelModels
 {
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( std::string const& prefix,
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+                                                            std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep )
 {}
 
 
@@ -57,16 +58,16 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update constant parameters into
     this->updateParameterValues();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    // backend
+    this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     // subspaces index
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( this->unknownName(), currentStartIndex++ );
 
      // vector solution
-    M_blockVectorSolution.resize( 1 );
-    M_blockVectorSolution(0) = this->fieldUnknownPtr();
+    this->M_blockVectorSolution.resize( 1 );
+    this->M_blockVectorSolution(0) = this->fieldUnknownPtr();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -115,18 +116,19 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
     for( auto const& d : this->M_bcDirichlet )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
+    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(),  std::string("Neumann") }  } );
     for( auto const& d : this->M_bcNeumann )
         M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
 
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
+    std::string tmp = this->physic();
+    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( std::move(tmp), "Robin" );
     for( auto const& d : this->M_bcRobin )
         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
+    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(),  std::string("VolumicForces") } } );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
@@ -164,7 +166,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    // TODO
+    this->initBasePostProcess();
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -172,9 +174,9 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->M_blockVectorSolution.buildVector( this->backend() );
 
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    this->M_algebraicFactory.reset( new typename super_type::model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -201,6 +203,39 @@ std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||-----------------Info : Heat------------------||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n   Prefix : " << this->prefix()
+           << "\n   Root Repository : " << this->rootRepository();
+    *_ostr << "\n   Physical Model"
+           << "\n     -- name      : " << this->physic()
+           << "\n     -- time mode : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    *_ostr << "\n   Boundary conditions"
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+    *_ostr << "\n   Mesh Discretization"
+           << "\n     -- mesh filename      : " << this->meshFile()
+           << "\n     -- number of element : " << this->mesh()->numGlobalElements()
+           << "\n     -- order             : " << nOrderGeo;
+    *_ostr << "\n   Space Unknown Discretization"
+           << "\n     -- name of unknown         : " << this->unknownName()
+           << "\n     -- symbol of unknown : " << this->unknownSymbol()
+           << "\n     -- basis : " << this->unknownBasis()
+           << "\n     -- number of dof : " << this->spaceUnknown()->nDof() << " (" << this->spaceUnknown()->nLocalDof() << ")";
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n";
+
     return _ostr;
 }
 
