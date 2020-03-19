@@ -84,6 +84,8 @@ add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
 
+add_subdirectory( coefficientformpdes )
+
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory( fluid )
 endif()
