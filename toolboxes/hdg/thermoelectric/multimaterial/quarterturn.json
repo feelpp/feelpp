@@ -17,11 +17,10 @@
             "filename":"$cfgdir/omega.json",
             "physics":"thermo-electric"
         },
-        "other":
+        "omega2":
         {
             "filename":"$cfgdir/omega.json",
-            "physics":"heat",
-            "markers":"omega2"
+            "physics":"heat"
         }
     },
     "BoundaryConditions":
