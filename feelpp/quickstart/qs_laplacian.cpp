@@ -22,11 +22,23 @@
 //! @copyright 2017 Feel++ Consortium
 //!
 // tag::global[]
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/check.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
 #include <tabulate/table.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
 #include "cg_laplacian.hpp"
+
+using namespace Feel;
+
+
+
 int main( int argc, char** argv )
 {
     // tag::env[]
@@ -106,7 +118,7 @@ int main( int argc, char** argv )
                        return ""s;
                    return data;
               };
-    std::map<std::string,std::string> locals{{"dim",std::to_string(FEELPP_DIM)},{"k",opt(soption("k"))},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",opt(soption("un"))}, {"f",opt(soption("f"))}, {"g",opt(soption("g"))}, {"r_1",soption("r_1")}, {"r_2",opt(soption("r_2"))}};
+    std::map<std::string,std::string> locals{{"dim",std::to_string(FEELPP_DIM)},{"k",opt(soption("k"))},{"p",soption("checker.solution")},{"grad_p",""}, {"u",soption("checker.gradient")}, {"un",opt(soption("un"))}, {"f",opt(soption("f"))}, {"g",opt(soption("g"))}, {"r_1",soption("r_1")}, {"r_2",opt(soption("r_2"))}};
     
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
 
@@ -121,7 +133,7 @@ int main( int argc, char** argv )
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") );
     thechecker.setSolution( locals.at("p") );
-
+    thechecker.setGradient( locals.at("grad_p") );
     Table summary;
     summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
     summary[0].format().font_align(FontAlign::center);
@@ -153,6 +165,7 @@ int main( int argc, char** argv )
         //ex.format().hide_border();
         summary.add_row({"Exact solution to be checked with L2/H1 norms"});
         ex.add_row({"p",locals.at("p")});
+        ex.add_row({"grad(p)",locals.at("grad_p")});
         ex.add_row({"-k*grad(p)",locals.at("u")});
         ex.column(0).format().font_align(FontAlign::right);
         summary.add_row({ex});
@@ -164,15 +177,18 @@ int main( int argc, char** argv )
         ofs << summary << std::endl;
     }
 
-
-    auto u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
+    // cgLaplacian may not solve the problem, hence u is std::optional
+    auto opt_u = cgLaplacian( Vh, std::tuple{k,f,g,un,r_1,r_2} );
 
     // tag::export[]
     tic();
     auto e = exporter( _mesh = mesh );
     e->addRegions();
-    e->add( "p", u );
-    e->add( "u", -k*gradv(u), "element" );
+    if ( opt_u )
+    {
+        e->add( "p", *opt_u );
+        e->add( "u", -k*gradv(*opt_u), "element" );
+    }
     e->add( "k", k );
     e->add( "f", f );
     e->add( "g", g );
@@ -187,26 +203,8 @@ int main( int argc, char** argv )
     toc( "Exporter" );
     // end::export[]
 
-    int status = 0;
-    // tag::check[]
-    if ( thechecker.check() )
-    {
-        // compute l2 and h1 norm of u-u_h where u=solution
-        auto norms = [=]( std::string const& solution ) -> std::map<std::string, double> {
-            tic();
-            double l2 = normL2( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ) );
-            toc( "L2 error norm" );
-            tic();
-            double h1 = normH1( _range = elements( support( Vh ) ), _expr = idv( u ) - expr( solution ), _grad_expr = gradv( u ) - grad<FEELPP_DIM>( expr( solution ) ) );
-            toc( "H1 error norm" );
-            return {{"L2", l2}, {"H1", h1}};
-        };
-
-        status = !thechecker.runOnce( norms, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    }
-    // end::check[]
-
-    // exit status = 0 means no error
-    return status;
+    if ( opt_u )
+        return check( thechecker, *opt_u );
+    return 0;
 }
 // end::global[]

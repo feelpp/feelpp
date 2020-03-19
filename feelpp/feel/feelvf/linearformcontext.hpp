@@ -153,8 +153,45 @@ LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,
     M_test_dof( __form.functionSpace()->dof().get() ),
     M_lb( __form.blockList() ),
 
-    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), im2.points() ) ),
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
     M_test_pc_face( precomputeTestBasisAtPoints( im2 ) ),
+
+    M_gmc( _gmcTest ),
+    M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
+    M_gmc_right( fusion::at_key<gmc1 >( _gmcTest ) ),
+    M_left_map( fusion::make_map<gmc<0> >( M_gmc_left ) ),
+    M_right_map( fusion::make_map<gmc<0> >( M_gmc_right ) ),
+    M_test_fec( fusion::transform( M_gmc,vf::detail::FEContextInit<0,form_context_type>( __form.testFiniteElement<UseMortar>(), *this ) ) ),
+    M_test_fec0( fusion::make_map<gmc<0> >( fusion::at_key<gmc<0> >( M_test_fec ) ) ),
+    M_test_fec1( fusion::make_pair<gmc1 >( fusion::at_key<gmc1 >( M_test_fec ) ) ),
+    M_rep(),
+    M_rep_2(),
+    M_rep_mortar(),
+    M_eval0_expr( new eval0_expr_type( expr, _gmcExpr, M_test_fec0 ) ),
+    M_eval1_expr( new eval1_expr_type( expr, _gmcExpr, M_test_fec1 ) ),
+    M_integrator( im )
+
+{
+    M_eval0_expr->init( im2 );
+    M_eval1_expr->init( im2 );
+}
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+template<typename GeomapContext,typename ExprT, typename IM,typename GeomapExprContext,typename GeomapTrialContext,int UseMortarType>
+template<typename IM2, typename IMTest>
+LinearForm<SpaceType, VectorType, ElemContType>::Context<GeomapContext,ExprT,IM,GeomapExprContext,GeomapTrialContext,UseMortarType>::Context( form_type& __form,
+        map_test_geometric_mapping_context_type const& _gmcTest,
+        map_geometric_mapping_expr_context_type const& _gmcExpr,
+        ExprT const& expr,
+        IM const& im, IM2 const& im2, IMTest const& imTest,
+        mpl::int_<2> )
+    :
+    //super(),
+    M_form( __form ),
+    M_test_dof( __form.functionSpace()->dof().get() ),
+    M_lb( __form.blockList() ),
+
+    M_test_pc( new test_precompute_type( M_form.testFiniteElement<UseMortar>(), fusion::at_key<gmc<0> >( _gmcTest )->pc()->nodes() ) ),
+    M_test_pc_face( precomputeTestBasisAtPoints( imTest ) ),
 
     M_gmc( _gmcTest ),
     M_gmc_left( fusion::at_key<gmc<0> >( _gmcTest ) ),
