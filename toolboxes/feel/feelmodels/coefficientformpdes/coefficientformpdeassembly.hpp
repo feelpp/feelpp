@@ -132,6 +132,34 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     } // for each material
 
 
+    // update weak bc
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : this->M_bcNeumann )
+        {
+            auto theExpr = expression( d,se );
+            linearForm +=
+                integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                           _expr= timeSteppingScaling*theExpr*id(v),
+                           _geomap=this->geomap() );
+        }
+
+        for( auto const& d : this->M_bcRobin )
+        {
+            auto theExpr1 = expression1( d,se );
+            bilinearForm +=
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
+                           _geomap=this->geomap() );
+            auto theExpr2 = expression2( d,se );
+            linearForm +=
+                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
+                           _expr= timeSteppingScaling*theExpr1*theExpr2*id(v),
+                           _geomap=this->geomap() );
+        }
+    }
+
+
 }
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelContextType>

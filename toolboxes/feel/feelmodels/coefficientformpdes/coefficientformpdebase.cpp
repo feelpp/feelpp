@@ -117,6 +117,15 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
             M_exporter->restart(this->timeInitial());
     }
 
+    // start or restart the export of measures
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+    }
+
 }
 
 template class CoefficientFormPDEBase< Simplex<2,1> >;

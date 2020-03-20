@@ -468,7 +468,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     auto mfields = this->modelFields();
     auto symbolExpr = this->symbolsExpr( mfields );
-    M_heatModel->exportResults( time, mfields, symbolExpr, M_heatModel->exprPostProcessExports( symbolExpr ) );
+    M_heatModel->exportResults( time, symbolExpr );
     M_fluidModel->exportResults( time, symbolExpr );
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );

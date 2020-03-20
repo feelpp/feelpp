@@ -5,6 +5,7 @@
 
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
+#include <feel/feelts/tsbase.hpp>
 
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
@@ -76,6 +77,9 @@ public :
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
+    //___________________________________________________________________________________//
+    // time discretisation
+    virtual std::shared_ptr<TSBase> timeStepBase() const = 0;
     //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return M_backend; }

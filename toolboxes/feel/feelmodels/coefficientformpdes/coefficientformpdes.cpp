@@ -234,8 +234,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    auto se = this->symbolsExpr();
-    this->exportResults( time, se, this->materialsProperties()->exprPostProcessExports( this->physics(),se ) );
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->physics(),se ) );
 }
 
 
@@ -299,6 +300,21 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     }
     this->log("CoefficientFormPDEs","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+bool
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
+{
+    // several calls (not do in on line) to be sure that all check have been run
+    bool checkValue = super_type::checkResults();
+    std::vector<bool> checkCFPDE;
+    checkCFPDE.reserve(M_coefficientFormPDEs.size());
+    for (auto & cfpdeBase : M_coefficientFormPDEs )
+        checkCFPDE.push_back( cfpdeBase->checkResults() );
+    checkValue = checkValue && (std::find(std::begin(checkCFPDE), std::end(checkCFPDE), false) == std::end(checkCFPDE));
+    return checkValue;
+}
+
 
 } // namespace Feel
 } // namespace FeelModels

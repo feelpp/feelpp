@@ -50,6 +50,9 @@ public:
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_unknown_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
     CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
@@ -88,8 +91,8 @@ public:
     // time step scheme
     std::string const& timeStepping() const { return M_timeStepping; }
     bdf_unknown_ptrtype const& timeStepBdfUnknown() const { return M_bdfUnknown; }
-    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfUnknown(); }
+    //std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
+    std::shared_ptr<TSBase> timeStepBase() const override { return this->timeStepBdfUnknown(); }
     void startTimeStep();
     void updateTimeStep();
     //___________________________________________________________________________________//
@@ -100,6 +103,31 @@ public:
 
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
+
+    //___________________________________________________________________________________//
+    // execute post-processing
+    //___________________________________________________________________________________//
+
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
+
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        {
+            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+        }
+
+    template <typename ModelFieldsType,typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+
+    template <typename SymbExprType>
+    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        {
+            return this->materialsProperties()->exprPostProcessExports( this->physics(),se );
+        }
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -187,7 +215,52 @@ private :
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
 
+    // post-process
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+{
+    this->log("CoefficientFormPDE","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->executePostProcessExports( this->M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : this->timeStepBase()->iteration(), mfields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("CoefficientFormPDE","exportResults", "finish");
+}
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelFieldsType, typename SymbolsExpr>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
 
 } // namespace Feel
 } // namespace FeelModels

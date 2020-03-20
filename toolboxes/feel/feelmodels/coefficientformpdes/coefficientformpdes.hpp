@@ -116,8 +116,13 @@ public :
     // post-process
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    template <typename SymbolsExpr,typename ExportsExprType>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename ModelFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+
+    bool checkResults() const override;
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -240,17 +245,33 @@ private :
 
 
 template< typename ConvexType, typename... BasisUnknownType>
-template <typename SymbolsExpr, typename ExportsExprType>
+template <typename ModelFieldsType,typename SymbolsExprType, typename ExportsExprType>
 void
-CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExprType const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
+    if ( M_coefficientFormPDEs.empty() )
+        return;
     this->log("CoefficientFormPDEs","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    auto fields = this->modelFields();
-    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
-    //this->executePostProcessMeasures( time, fields, symbolsExpr );
-    //this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
+    hana::for_each( tuple_type_unknown_basis, [this,&time,&mfields,&symbolsExpr]( auto const& e )
+                    {
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                            cfpde->exportResults( time,symbolsExpr );
+                        }
+                    });
+
+
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_coefficientFormPDEs.front()->timeStepBase()->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -261,6 +282,29 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     }
     this->log("CoefficientFormPDEs","exportResults", "finish");
 }
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename ModelFieldsType, typename SymbolsExpr>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+#if 0
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    //bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    if ( hasMeasureNorm || hasMeasureStatistics /*|| hasMeasurePoint*/ )
+        hasMeasure = true;
+#endif
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
+
 
 } // namespace Feel
 } // namespace FeelModels
