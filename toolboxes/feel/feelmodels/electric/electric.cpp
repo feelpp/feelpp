@@ -399,7 +399,9 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
 #if 0
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS

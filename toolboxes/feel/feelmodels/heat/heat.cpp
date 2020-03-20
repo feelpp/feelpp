@@ -589,9 +589,11 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
-
+#if 0
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
@@ -599,7 +601,7 @@ HEAT_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
     auto mfields = this->modelFields();
     this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
-
+#endif
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::startTimeStep()

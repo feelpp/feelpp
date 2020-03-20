@@ -30,11 +30,16 @@
 #ifndef FEELPP_TOOLBOXES_ELECTRIC_HPP
 #define FEELPP_TOOLBOXES_ELECTRIC_HPP 1
 
-#include <feel/feelmodels/heat/heat.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feelfilters/exporter.hpp>
+//#include <feel/feelvf/vf.hpp>
+
+#include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelphysics.hpp>
+#include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
-#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 
 namespace Feel
 {
@@ -142,24 +147,19 @@ public :
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    template <typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr )
-        {
-            this->exportResults( time, symbolsExpr, hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),symbolsExpr ),
-                                                                  this->exprPostProcessExports( symbolsExpr ) ) );
-        }
-    template <typename SymbolsExpr,typename ExportsExprType>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
 
-    template <typename TupleFieldsType, typename SymbolsExpr>
-    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename ModelFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
 
     //___________________________________________________________________________________//
     // export expressions
     //___________________________________________________________________________________//
 
     template <typename SymbExprType>
-    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+    auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
             auto const& v = this->fieldElectricPotential();
             auto electricFieldExpr = -trans(gradv( v ) );
@@ -192,6 +192,12 @@ public :
             }
             return hana::make_tuple( mapExprElectricField, mapExprCurrentDensity, mapExprJoulesLosses );
         }
+        template <typename SymbExprType>
+        auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+            {
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                                     this->exprPostProcessExportsToolbox( se, prefix ) );
+            }
 
     //___________________________________________________________________________________//
     // toolbox fields
@@ -276,8 +282,12 @@ public :
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mfields ) const;
     void updateJacobian( DataUpdateJacobian & data ) const override;
     template <typename ModelContextType>
     void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
@@ -360,21 +370,16 @@ private :
 
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename SymbolsExpr, typename ExportsExprType>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+Electric<ConvexType,BasisPotentialType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("Electric","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    // this->modelProperties().parameters().updateParameterValues();
-    // auto paramValues = this->modelProperties().parameters().toParameterValues();
-    // this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    auto fields = this->modelFields();
-    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, fields, symbolsExpr );
-    this->executePostProcessSave( invalid_uint32_type_value, fields );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( invalid_uint32_type_value, mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -388,14 +393,14 @@ Electric<ConvexType,BasisPotentialType>::exportResults( double time, SymbolsExpr
 
 
 template< typename ConvexType, typename BasisPotentialType>
-template <typename TupleFieldsType,typename SymbolsExpr>
+template <typename ModelFieldsType,typename SymbolsExpr>
 void
-Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+Electric<ConvexType,BasisPotentialType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
     if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
         hasMeasure = true;
 

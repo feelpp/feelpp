@@ -218,7 +218,65 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
 
 }
 
+template< typename ConvexType, typename BasisTemperatureType >
+template <typename ModelContextType>
+void
+Heat<ConvexType,BasisTemperatureType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
+{
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
 
+    this->log("Heat","updateLinearPDEDofElimination","start" );
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    auto const& se = mctx.symbolsExpr();
+    auto mesh = this->mesh();
+    auto Xh = this->spaceTemperature();
+    auto const& u = this->fieldTemperature();
+    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        auto theExpr = expression(d,se);
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+                _element=u,_rhs=F,_expr=theExpr );
+    }
+
+    this->log("Heat","updateLinearPDEDofElimination","finish" );
+}
+
+
+template< typename ConvexType, typename BasisTemperatureType >
+template <typename ModelContextType>
+void
+Heat<ConvexType,BasisTemperatureType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    if ( M_bcDirichlet.empty() ) return;
+
+    this->log("Heat","updateNewtonInitialGuess","start" );
+
+    vector_ptrtype& U = data.initialGuess();
+    auto mesh = this->mesh();
+    size_type startBlockIndexTemperature = this->startSubBlockSpaceIndex( "temperature" );
+    auto u = this->spaceTemperature()->element( U, this->rowStartInVector()+startBlockIndexTemperature );
+    auto const& se = mctx.symbolsExpr();
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto theExpr = expression(d,se);
+        u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+             _expr=theExpr );
+    }
+
+    // update info for synchronization
+    this->updateDofEliminationIds( "temperature", data );
+
+    this->log("Heat","updateNewtonInitialGuess","finish" );
+}
 
 template< typename ConvexType, typename BasisTemperatureType >
 template <typename ModelContextType>
