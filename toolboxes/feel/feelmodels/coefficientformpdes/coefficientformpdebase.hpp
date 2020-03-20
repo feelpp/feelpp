@@ -87,6 +87,8 @@ public :
 
     //int nBlockMatrixGraph() const { return 1; }
 
+    virtual void setParameterValues( std::map<std::string,double> const& paramValues ) = 0;
+
 
 protected :
     void loadParameterFromOptionsVm();

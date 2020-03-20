@@ -200,6 +200,9 @@ public :
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     //int nBlockMatrixGraph() const { return 1; }
 
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;

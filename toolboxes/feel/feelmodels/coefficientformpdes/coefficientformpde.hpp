@@ -144,7 +144,7 @@ public:
 
 
     void updateParameterValues();
-    void setParameterValues( std::map<std::string,double> const& paramValues );
+    void setParameterValues( std::map<std::string,double> const& paramValues ) override;
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
