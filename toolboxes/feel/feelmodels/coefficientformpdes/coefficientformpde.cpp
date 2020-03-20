@@ -164,7 +164,20 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
+    this->log("Heat","initPostProcess", "start");
+    this->timerTool("Constructor").start();
+
     this->initBasePostProcess();
+
+    // point measures
+    auto fieldNamesWithSpaceUnknown = std::make_pair( std::set<std::string>({this->unknownName()}), this->spaceUnknown() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceUnknown );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        M_measurePointsEvaluation->init( evalPoints );
+
+    double tElpased = this->timerTool("Constructor").stop("initPostProcess");
+    this->log("Heat","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -277,6 +290,15 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::solve()
 {
     // TODO
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
 
 

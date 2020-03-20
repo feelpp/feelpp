@@ -151,6 +151,12 @@ public :
     template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
     void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
 
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        {
+            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+        }
+
     template <typename ModelFieldsType, typename SymbolsExpr>
     void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
 

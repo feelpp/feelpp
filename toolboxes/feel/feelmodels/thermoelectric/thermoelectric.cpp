@@ -443,8 +443,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto mfields = this->modelFields();
     auto symbolExpr = this->symbolsExpr( mfields );
     //std::cout << "holalla \n "<< symbolExpr.names() << std::endl;
-    M_heatModel->exportResults( time, mfields, symbolExpr, M_heatModel->exprPostProcessExports( symbolExpr ) );
-    M_electricModel->exportResults( time, mfields, symbolExpr, M_electricModel->exprPostProcessExports( symbolExpr ) );
+    M_heatModel->exportResults( time, symbolExpr );
+    M_electricModel->exportResults( time, symbolExpr );
 
     auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
                                      hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
