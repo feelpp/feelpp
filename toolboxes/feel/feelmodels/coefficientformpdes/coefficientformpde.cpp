@@ -102,7 +102,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
     }
 
-    M_fieldUnknown.reset( new element_unknown_type(M_Xh,"temperature"));
+    M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("CoefficientFormPDE","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
@@ -132,18 +132,18 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto Xh = this->spaceUnknown();
     std::set<std::string> unknownMarkers;
 
-    // strong Dirichlet bc on temperature from expression
+    // strong Dirichlet bc
     for( auto const& d : M_bcDirichlet )
     {
         auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         unknownMarkers.insert( listMark.begin(), listMark.end() );
     }
-    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, unknownMarkers );
+    auto meshMarkersUnknownByEntities = detail::distributeMarkerListOnSubEntity( mesh, unknownMarkers );
 
     // on topological faces
-    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    if ( !listMarkedFacesTemperature.empty() )
-        this->updateDofEliminationIds( "temperature", Xh, markedfaces( mesh,listMarkedFacesTemperature ) );
+    auto const& listMarkedFacesUnknown = std::get<0>( meshMarkersUnknownByEntities );
+    if ( !listMarkedFacesUnknown.empty() )
+        this->updateDofEliminationIds( this->unknownName(), Xh, markedfaces( mesh,listMarkedFacesUnknown ) );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -263,12 +263,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
-#if 0
+
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
-#endif
+
     this->log("CoefficientFormPDE","setParameterValues", "finish");
 }
 

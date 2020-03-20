@@ -46,7 +46,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                             {
                                 using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
                                 std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, this->prefix(), eq.physic()/*this->keyword()*/, this->worldCommPtr(), this->subPrefix(), this->repository() ) );
-                                //newCoefficientFormPDE.reset( new typename self_type::traits::template coefficient_form_pde_t<decltype(e)>( this->prefix(), this->keyword(), this->worldCommPtr(), this->subPrefix(), this->repository() ) );
+                                _newCoefficientFormPDE->setManageParameterValues( false );
                                 _newCoefficientFormPDE->setMesh( this->mesh() );
                                 // TODO check if the same space has already built
                                 _newCoefficientFormPDE->init( false );
@@ -59,9 +59,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // TODO
     // update constant parameters into
-    //this->updateParameterValues();
+    this->updateParameterValues();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -237,6 +236,36 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto se = this->symbolsExpr();
     this->exportResults( time, se, this->materialsProperties()->exprPostProcessExports( this->physics(),se ) );
+}
+
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateParameterValues()
+{
+    if ( !this->manageParameterValues() )
+        return;
+
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
+
+    for (auto & cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->setParameterValues( paramValues );
 }
 
 
