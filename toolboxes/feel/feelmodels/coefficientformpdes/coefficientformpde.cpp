@@ -157,14 +157,44 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    // TODO
+    this->log("CoefficientFormPDE","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
+
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+
+    M_bdfUnknown = this->createBdf( this->spaceUnknown(),this->unknownName(), bdfOrder, nConsecutiveSave, myFileFormat );
+
+    if (!this->doRestart())
+    {
+        // up current time
+        this->updateTime( M_bdfUnknown->timeInitial() );
+    }
+    else
+    {
+        // start time step
+        double tir = M_bdfUnknown->restart();
+        // load a previous solution as current solution
+        *this->fieldUnknownPtr() = M_bdfUnknown->unknown(0);
+        // up initial time
+        this->setTimeInitial( tir );
+        // up current time
+        this->updateTime( tir );
+    }
+
+    double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
+    this->log("CoefficientFormPDE","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    this->log("Heat","initPostProcess", "start");
+    this->log("CoefficientFormPDE","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
     this->initBasePostProcess();
@@ -177,7 +207,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
         M_measurePointsEvaluation->init( evalPoints );
 
     double tElpased = this->timerTool("Constructor").stop("initPostProcess");
-    this->log("Heat","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
+    this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -217,7 +247,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
-           << "\n||-----------------Info : Heat------------------||"
+           << "\n||-----------Info : CoefficientFormPDE----------||"
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"
@@ -248,6 +278,64 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n";
 
     return _ostr;
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("CoefficientFormPDE","startTimeStep", "start");
+#if 0
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+#endif
+    // start time step
+    if (!this->doRestart())
+        M_bdfUnknown->start( M_bdfUnknown->unknowns() );
+     // up current time
+    this->updateTime( M_bdfUnknown->time() );
+
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
+
+    this->log("CoefficientFormPDE","startTimeStep", "finish");
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->log("CoefficientFormPDE","updateTimeStep", "start");
+    this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
+    this->timerTool("TimeStepping").start();
+#if 0
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+#endif
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBdfUnknown()->timeOrder();
+        M_bdfUnknown->next( this->fieldUnknown() );
+        int currentTimeOrder = this->timeStepBdfUnknown()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( this->timeStepBdfUnknown()->time() );
+    }
+#if 0
+    else if ( M_timeStepping == "Theta" )
+    {
+        M_bdfUnknown->next( this->fieldUnknown() );
+        this->updateTime( this->timeStepBdfUnknown()->time() );
+    }
+#endif
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
+
+    this->updateParameterValues();
+
+    this->timerTool("TimeStepping").stop("updateTimeStep");
+    if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
+    this->log("CoefficientFormPDE","updateTimeStep", "finish");
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
