@@ -135,6 +135,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     // update weak bc
     if ( buildNonCstPart )
     {
+
+        // k \nabla u  n = g
         for( auto const& d : this->M_bcNeumann )
         {
             auto theExpr = expression( d,se );
@@ -144,6 +146,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
                            _geomap=this->geomap() );
         }
 
+        // k \nabla u  n + g u = h  -> - k \nabla u  n = gu - h
         for( auto const& d : this->M_bcRobin )
         {
             auto theExpr1 = expression1( d,se );
@@ -154,7 +157,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             auto theExpr2 = expression2( d,se );
             linearForm +=
                 integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= timeSteppingScaling*theExpr1*theExpr2*id(v),
+                           _expr= timeSteppingScaling*theExpr2*id(v),
                            _geomap=this->geomap() );
         }
     }
