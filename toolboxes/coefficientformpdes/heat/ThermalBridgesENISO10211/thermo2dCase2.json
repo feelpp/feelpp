@@ -17,10 +17,10 @@
     },
     "Parameters":
     {
-        "h_top":"1.0/0.06",
-        "h_bottom":"1.0/0.11",
-        "T0_top":0,
-        "T0_bottom":20
+        "h_top":"1.0/0.06", // h coeff
+        "h_bottom":"1.0/0.11", // h coeff
+        "T0_top":0, // temperature exterior
+        "T0_bottom":20 // temperature exterior
     },
     "Materials":
     {
@@ -66,13 +66,13 @@
             {
                 "top":
                 {
-                    "expr1":"h_top:h_top",// h coeff
-                    "expr2":"T0_top:T0_top"// temperature exterior
+                    "expr1":"h_top:h_top",
+                    "expr2":"h_top*T0_top:h_top:T0_top"
                 },
                 "bottom":
                 {
-                    "expr1":"h_bottom:h_bottom",// h coeff
-                    "expr2":"T0_bottom:T0_bottom"// temperature exterior
+                    "expr1":"h_bottom:h_bottom",
+                    "expr2":"h_bottom*T0_bottom:h_bottom:T0_bottom"
                 }
             }
         }
