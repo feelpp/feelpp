@@ -254,6 +254,8 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::exportResults( double time,
     this->log("CoefficientFormPDEs","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
+    //std::cout << "holalla \n "<< symbolsExpr.names() << std::endl; 
+
     hana::for_each( tuple_type_unknown_basis, [this,&time,&mfields,&symbolsExpr]( auto const& e )
                     {
                         for ( auto const& cfpdeBase : M_coefficientFormPDEs )

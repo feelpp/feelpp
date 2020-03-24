@@ -260,6 +260,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::strin
 {
     if ( this->manageParameterValuesOfModelProperties() )
     {
+        //std::cout << "JJJ paramValues : " << paramValues << std::endl;
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
