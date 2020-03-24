@@ -153,26 +153,10 @@ ModelParameters::saveMD(std::ostream &os)
 void
 ModelParameters::updateParameterValues()
 {
-#if 0
-    for( auto const& p : *this )
-        if ( p.second.hasExpression() )
-            for ( auto const& mysymb : p.second.expression().expression().symbols() )
-                std::cout << "p.first " << p.first << " mysymb " << mysymb.get_name() << "\n";
-#endif
-#if 0
-    std::map<std::string,double> mp;
-    for( auto const& p : *this )
-        if ( !p.second.hasExpression() || p.second.expression().expression().symbols().empty() )
-            mp[p.first] = p.second.value();
-    // update all parameters with expression which not depends of symbols (can be improved)
-    this->setParameterValues( mp );
-#endif
-
-
     // erase parameter in expr
     std::set<std::string> allSymbNames;
     for( auto const& p : *this )
-        allSymbNames.insert( p.first );
+        p.second.updateSymbolNames( allSymbNames );
     for( auto & p : *this )
         p.second.eraseParameterValues( allSymbNames );
 
@@ -204,20 +188,7 @@ ModelParameters::toParameterValues() const
         if ( !mparam.isEvaluable() )
             continue;
 
-        std::string symbName = p.first;
-        auto evalExpr = mparam.evaluate();
-        if (evalExpr.rows() == 1 && evalExpr.cols() == 1 )
-            pv[symbName] = evalExpr(0,0);
-        else
-        {
-            for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(evalExpr.rows(),evalExpr.cols(), true ) )
-            {
-                uint16_type c1 = compArray[0];
-                uint16_type c2 = compArray[1];
-                symbName += _suffix;
-                pv[symbName] = evalExpr( c1,c2 );
-            }
-        }
+        p.second.updateParameterValues( pv );
     }
     return pv;
 }
