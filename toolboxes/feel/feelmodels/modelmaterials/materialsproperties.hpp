@@ -81,10 +81,6 @@ public :
     MaterialsProperties( std::string const& prefix, std::string const& exprRepository )
         :
         M_exprRepository( exprRepository )
-        //M_thermalConductivityDefaultValue( doption(_name="thermal-conductivity",_prefix=prefix) ),// [ W/(m*K) ]
-        //M_heatCapacityDefaultValue( doption(_name="heat-capacity",_prefix=prefix) ), // [ J/(kg*K) ]
-        //M_rhoDefaultValue( doption(_name="rho",_prefix=prefix) ),
-        //M_thermalExpansionDefaultValue( doption(_name="thermal-expansion",_prefix=prefix) ) // [ 1/K ]
         {}
 
     MaterialsProperties( MaterialsProperties const& ) = default;
@@ -199,35 +195,15 @@ public :
                 auto [itProp,isAdded] = M_materialNameToProperties.emplace( matName, MaterialProperties<mesh_type>( matName ) );
                 auto & matProperties = itProp->second;
 
-#if 0
-                for ( auto const& [propName,desc] :  M_materialPropertyPhysicDescription  )
-                {
-                    std::string const& symbol = std::get<0>( desc );
-                    if ( !mat.hasProperty( symbol ) )
-                        continue;
-                    auto const& possibleExprShapes = std::get<1>( desc );
-                    auto const& matExprProperty = mat.property( symbol );
-                    for ( auto [nComp1,nComp2] : std::get<1>( desc ) )
-                    {
-                        if ( matExprProperty.hasExpr(nComp1,nComp2) )
-                        {
-                            matProperties.add( propName/*symbol*/, matExprProperty );
-                            break;
-                        }
-                    }
-                }
-#else
                 for ( auto const& [propSymbol,propExpr] : mat.properties() )
                 {
                     auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
                     if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
                     {
                         std::string propName = itFindSymbolInDesc->second;
-                        auto const& desc =  M_materialPropertyPhysicDescription.find( propName )->second;
-                        auto const& possibleExprShapes = std::get<1>( desc );
-                        //auto const& matExprProperty = mat.property( symbol );
+                        auto const& desc = M_materialPropertyPhysicDescription.find( propName )->second;
                         bool findProp = false;
-                        for ( auto [nComp1,nComp2] : std::get<1>( desc ) )
+                        for ( auto [nComp1,nComp2] : desc.shapes() )
                         {
                             if ( propExpr.hasExpr(nComp1,nComp2) )
                             {
@@ -237,33 +213,33 @@ public :
                             }
                         }
                         CHECK( findProp ) << "shape of the material property " << propName << " is not compatible with the physic";
-                        if ( findProp )
-                            M_materialPropertyDescription[propName] = desc; // TODO do only one time
+                        M_materialPropertyDescription.try_emplace( propName,desc );
                     }
                     else
                     {
-                        // TODO : CREATE MaterialPropertyDescription
-                        typename ModelPhysics<nDim>::material_property_shape_dim_type scalarShape = std::make_pair(1,1);
-                        //typename ModelPhysics<nDim>::material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
-
-                        //auto shapeExpr = ( propExpr.hasExpr<1,1>()?scalarShape
-                        if ( !propExpr.template hasExpr<1,1>() )
-                            CHECK( false ) << "Only support scalar currently : TODO";
-
-                        std::string propName = propSymbol;
-                        matProperties.add( propName/*symbol*/, propExpr );
-                        auto itFindPropDesc=M_materialPropertyDescription.find( propName);
-                        if( itFindPropDesc == M_materialPropertyDescription.end() )
-                            M_materialPropertyDescription[propName] = std::make_tuple( propSymbol, std::vector< typename ModelPhysics<nDim>::material_property_shape_dim_type>( { scalarShape } ) );
-                        else
-                        {
-                            // nothing only scalar currently
-                        }
-
+                        // we need to copy these variable elses the lambda don't capture, I don't know why
+                        auto propSymbol2 = propSymbol;
+                        auto propExpr2 = propExpr;
+                        hana::for_each( ModelExpression::expr_shapes, [this,&propSymbol2,&propExpr2,&matProperties]( auto const& e_ij )
+                                        {
+                                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                            if ( propExpr2.template hasExpr<ni,nj>() )
+                                            {
+                                                std::string propName = propSymbol2;
+                                                matProperties.add( propName, propExpr2 );
+                                                auto propShape = MaterialPropertyDescription::shape(ni,nj);
+                                                auto itFindPropDesc = M_materialPropertyDescription.find( propName);
+                                                if( itFindPropDesc == M_materialPropertyDescription.end() )
+                                                    M_materialPropertyDescription.emplace( propName, MaterialPropertyDescription( propSymbol2, { propShape } ) );
+                                                else
+                                                    itFindPropDesc->second.add( propShape );
+                                            }
+                                        });
                     }
                 }
-#endif
 
+                // TODO : move in heat toolbox
                 // rho * Cp
                 M_rhoHeatCapacityByMaterial[matName];
                 if ( this->hasDensity( matName ) && this->density( matName ).hasExprScalar()  && this->hasHeatCapacity( matName ) && this->heatCapacity( matName ).hasExprScalar() )
@@ -889,8 +865,8 @@ private :
     std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;
 
     std::map<std::string,MaterialProperties<mesh_type>> M_materialNameToProperties;
-    std::map<std::string,typename ModelPhysics<nDim>::material_property_description_type> M_materialPropertyPhysicDescription; // name -> (symbol, shapes.. )   only defined in phycis
-    std::map<std::string,typename ModelPhysics<nDim>::material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )   all prop read
+    std::map<std::string,MaterialPropertyDescription> M_materialPropertyPhysicDescription; // name -> (symbol, shapes.. )   only defined in phycis
+    std::map<std::string,MaterialPropertyDescription> M_materialPropertyDescription; // name -> (symbol, shapes.. )   all props read
 };
 
 
