@@ -24,7 +24,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     this->log("CoefficientFormPDE","updateLinearPDE", "start"+sc);
     this->timerTool("Solve").start();
 
-    bool build_ReactionTerm = buildNonCstPart;
+    //bool build_ReactionTerm = buildNonCstPart;
     // bool BuildNonCstPart_Form2TransientTerm = buildNonCstPart;
     // bool BuildNonCstPart_Form1TransientTerm = buildNonCstPart;
     // if ( !this->isStationary() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
@@ -57,30 +57,62 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        // Diffusion
-        if ( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) )
+
+        if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
         {
-            auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
-            auto const& coeff_c_expr = expr( coeff_c.expr(), se );
-            bool build_DiffusionTerm = coeff_c_expr.expression().isConstant()? buildCstPart : buildNonCstPart;
-            if ( /*this->hasDiffusion() &&*/ build_DiffusionTerm )
+            auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
+            auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+            bool build_ConvectionTerm = coeff_beta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+            if ( build_ConvectionTerm )
             {
                 bilinearForm +=
                     integrate( _range=range,
-                               _expr= coeff_c_expr*inner(gradt(u),grad(v)),
+                               _expr= timeSteppingScaling*(gradt(u)*coeff_beta_expr)*id(v),
                                _geomap=this->geomap() );
             }
         }
 
+        // Diffusion
+        if ( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) )
+        {
+            auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
+            if ( coeff_c.template hasExpr<nDim,nDim>() )
+            {
+                auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                bool build_DiffusionTerm = coeff_c_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_DiffusionTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*grad(v)*(coeff_c_expr*trans(gradt(u))),
+                                   _geomap=this->geomap() );
+                }
+            }
+            else
+            {
+                auto const& coeff_c_expr = expr( coeff_c.expr(), se );
+                bool build_DiffusionTerm = coeff_c_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_DiffusionTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*coeff_c_expr*inner(gradt(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
+        // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
             auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
             auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+            bool build_ReactionTerm = coeff_a_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( build_ReactionTerm )
             {
                 bilinearForm +=
                     integrate( _range=range,
-                               _expr=coeff_a_expr*inner(idt(u), id(v)),
+                               _expr= timeSteppingScaling*coeff_a_expr*inner(idt(u), id(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -135,7 +167,6 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     // update weak bc
     if ( buildNonCstPart )
     {
-
         // k \nabla u  n = g
         for( auto const& d : this->M_bcNeumann )
         {
