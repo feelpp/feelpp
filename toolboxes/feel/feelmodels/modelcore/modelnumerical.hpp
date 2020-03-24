@@ -513,17 +513,11 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
 #if 1
                                 else if constexpr ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
                                 {
-                                    auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
-                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<3>)
-                                                                       );
                                     auto const& fieldNameBIS = fieldName;
                                     auto const& theexprBIS = theexpr;
                                     auto const& rangeBIS = range;
                                     auto const& reprsBIS = reprs;
-                                    hana::for_each( exprShape, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
+                                    hana::for_each( ModelExpression::expr_shapes, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
                                                     {
                                                         constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                                                         constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;

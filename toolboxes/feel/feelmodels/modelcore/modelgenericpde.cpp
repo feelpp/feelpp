@@ -46,10 +46,11 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
     }
 
     material_property_shape_dim_type scalarShape = std::make_pair(1,1);
+    material_property_shape_dim_type vectorialShape = std::make_pair(nDim,1);
     material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
-    this->addMaterialPropertyDescription( this->convectionCoefficientName(), this->convectionCoefficientName(), { scalarShape } );
-    this->addMaterialPropertyDescription( this->diffusionCoefficientName(), this->diffusionCoefficientName(), { scalarShape } );
+    this->addMaterialPropertyDescription( this->convectionCoefficientName(), this->convectionCoefficientName(), { vectorialShape } );
+    this->addMaterialPropertyDescription( this->diffusionCoefficientName(), this->diffusionCoefficientName(), { scalarShape, matrixShape } );
     this->addMaterialPropertyDescription( this->reactionCoefficientName(), this->reactionCoefficientName(), { scalarShape } );
     this->addMaterialPropertyDescription( this->firstTimeDerivativeCoefficientName(), this->firstTimeDerivativeCoefficientName(), { scalarShape } );
     this->addMaterialPropertyDescription( this->secondTimeDerivativeCoefficientName(), this->secondTimeDerivativeCoefficientName(), { scalarShape } );
