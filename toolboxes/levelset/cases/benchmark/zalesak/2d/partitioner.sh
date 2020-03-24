@@ -2,9 +2,16 @@
 
 PART_LIST="2 4 8 10 12 16 20 24"
 PART_LIST="1 2 4 8 10 12 16 20 24"
+PART_LIST="2 4 8 10 12 24"
+
 #H_SIZES="0.32 0.16 0.08 0.04 0.032 0.016 0.008 0.004 0.0032 0.0016 0.0008 0.0004"
 #H_SIZES="0.32"
+
+# hsizes for space convergence analysis:
 H_SIZES="0.0032 0.0016 0.0008 0.0004"
+# hsizes for redistanciation frequency analysis:
+H_SIZES="0.0008 0.0011 0.0016 0.0023 0.0032 0.0045 0.0064 0.0091"
+
 INPUT_MESH=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/2d/domain.geo
 OUTPUT_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/2d/meshes/
 OUTPUT_FILENAME=domain
