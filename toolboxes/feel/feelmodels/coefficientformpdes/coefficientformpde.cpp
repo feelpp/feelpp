@@ -3,7 +3,7 @@
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
 //#include <feel/feelmodels/modelmesh/createmesh.hpp>
-//#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel
 {
@@ -43,15 +43,15 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initTimeStep();
 
     this->initInitialConditions();
-#if 0
+
     // stabilization gls
-    if ( M_stabilizationGLS )
+    if ( this->M_applyStabilization && !this->M_stabilizationGLSParameter )
     {
-        typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
-        M_stabilizationGLSParameter->init();
+        typedef StabilizationGLSParameter<mesh_type, nOrderUnknown> stab_gls_parameter_impl_type;
+        this->M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization.gls.parameter") ) );
+        this->M_stabilizationGLSParameter->init();
     }
-#endif
+
     // post-process
     this->initPostProcess();
 

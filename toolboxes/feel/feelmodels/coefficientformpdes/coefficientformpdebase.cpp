@@ -43,14 +43,10 @@ template< typename ConvexType>
 void
 CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
 {
+    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix());;
+    M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix());
+
 #if 0
-    // M_fieldVelocityConvectionIsUsed = boption(_name="use_velocity-convection",_prefix=this->prefix()) ||
-    //     Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str());
-    // M_fieldVelocityConvectionIsIncompressible = boption(_name="velocity-convection_is_incompressible",_prefix=this->prefix());
-
-    M_stabilizationGLS = boption(_name="stabilization-gls",_prefix=this->prefix());
-    M_stabilizationGLSType = soption(_name="stabilization-gls.type",_prefix=this->prefix());
-
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());

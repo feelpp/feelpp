@@ -161,6 +161,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             }
         }
 
+
+        // Stab
+        if ( this->M_applyStabilization && buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+        {
+            this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
+        }
+
+
     } // for each material
 
 

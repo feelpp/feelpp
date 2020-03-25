@@ -30,7 +30,7 @@ namespace vf
 {
 
 template <typename IndexType>
-class ExprSelectorByMeshElementMapping : public Feel::vf::ExprDynamicBase
+class ExprSelectorByMeshElementMapping
 {
 public :
     using tag_type = uint16_type;
@@ -69,7 +69,7 @@ private :
 };
 
 template <typename IndexType, typename TupleVectorExprType>
-class ExprSelectorByMeshElement
+class ExprSelectorByMeshElement : public Feel::vf::ExprDynamicBase
 {
 public :
     using this_type = ExprSelectorByMeshElement<IndexType,TupleVectorExprType>;
