@@ -15,7 +15,7 @@ class ModelGenericPDE : public ModelPhysics<Dim>
 {
     using super_type = ModelPhysics<Dim>;
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
-    static const uint16_type nDim = Dim;
+    inline static const uint16_type nDim = Dim;
 public :
     ModelGenericPDE();
     ModelGenericPDE( std::string const& name, pt::ptree const& p );
@@ -46,7 +46,7 @@ class ModelGenericPDEs : public ModelPhysics<Dim>
 {
     using super_type = ModelPhysics<Dim>;
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
-    static const uint16_type nDim = Dim;
+    inline static const uint16_type nDim = Dim;
 public :
     ModelGenericPDEs();
     ModelGenericPDEs( ModelGenericPDEs const& ) = default;
