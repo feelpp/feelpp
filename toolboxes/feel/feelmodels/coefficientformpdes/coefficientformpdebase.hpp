@@ -13,6 +13,7 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 
 namespace Feel
 {
@@ -37,6 +38,10 @@ public :
     // materials properties
     typedef MaterialsProperties<mesh_type> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+
+    // stabilization
+    typedef StabilizationGLSParameterBase<mesh_type> stab_gls_parameter_type;
+    typedef std::shared_ptr<stab_gls_parameter_type> stab_gls_parameter_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,nOrderGeo> export_type;
@@ -78,6 +83,12 @@ public :
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     //___________________________________________________________________________________//
+    // stabilization
+    bool applyStabilization() const { return M_applyStabilization; }
+    std::string const& stabilizationType() const { return M_stabilizationType; }
+    stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+
+    //___________________________________________________________________________________//
     // time discretisation
     virtual std::shared_ptr<TSBase> timeStepBase() const = 0;
     //___________________________________________________________________________________//
@@ -107,6 +118,11 @@ protected :
 
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
+
+    // stabilization
+    bool M_applyStabilization;
+    std::string M_stabilizationType;
+    stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
 
     // post-process
     export_ptrtype M_exporter;

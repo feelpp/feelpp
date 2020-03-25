@@ -186,6 +186,8 @@ public:
     void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename ModelContextType,typename RangeType>
+    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
 
 
 private :
@@ -266,5 +268,6 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( dou
 } // namespace FeelModels
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdeassembly.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeassemblystabilizationgls.hpp>
 
 #endif
