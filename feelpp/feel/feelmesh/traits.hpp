@@ -156,5 +156,18 @@ struct is_cube : mpl::and_<is_hypercube<T>,is_3d<T>> {};
 template<typename T>
 struct is_segment : mpl::and_<is_convex<T>,is_1d<T>> {};
 
+/**
+ * Checks whether T is a GeoElement<n>D type. 
+ * Provides the member constant value that is equal to true, if T is the type GeoElement<n>D. 
+ * Otherwise, value is equal to false.
+ */
+template <typename T> struct is_geoelement: std::false_type {};
+/**
+ * Helper variable template
+ * \return true is T is a GeoElement<n>D at compilation time, false otherwise
+ */
+template <typename... T>
+inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
+
 } // Feel
 #endif /* __Traits_H */

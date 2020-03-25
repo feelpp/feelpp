@@ -29,11 +29,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvectionStabMethodIdMap = {
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 :
-    super_type( prefix, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_doProjectFieldAdvectionVelocity( false ),
@@ -51,11 +52,12 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::self_ptrtype 
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::New( 
         std::string const& prefix,
+        std::string const& keyword,
         worldcomm_ptr_t const& worldComm,
         std::string const& subPrefix,
         ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type>( prefix, worldComm, subPrefix, modelRep );
+    return std::make_shared<self_type>( prefix, keyword, worldComm, subPrefix, modelRep );
 }
     
 //----------------------------------------------------------------------------//
@@ -78,13 +80,11 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->setModelName( advection_model );
     }
 
-    // Initial value
-    this->loadConfigICFile();
     // Boundary conditions
     this->loadConfigBCFile();
 
     // Mesh
-    if( !M_mesh)
+    if( !M_mesh )
         this->createMesh();
     // Function spaces
     this->initFunctionSpaces();
@@ -94,8 +94,6 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->initTimeDiscretization();
     // Physical parameters
     this->initOthers();
-    // Exporters
-    this->initExporters();
 
     // Stabilization
     if ( this->hasAdvection() )
@@ -116,11 +114,8 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // Vector solution
     this->buildVectorSolution();
 
-    // Initial value
-    if( !this->doRestart() )
-    {
-        this->initInitialValue();
-    }
+    // Initial conditions
+    this->initInitialConditions();
 
     // Time step
     this->initTimeStep();
@@ -200,14 +195,6 @@ map_vector_field<Dim, 1, 2> getBCFields(
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigICFile()
-{
-    this->M_icValue = detail::getBCFields<nDim, is_vectorial>(
-            this->modelProperties().initialConditions(), this->prefix(), "InitialValue" );
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::loadConfigBCFile()
 {
     this->clearMarkerDirichletBC();
@@ -252,6 +239,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createMesh()
     createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
     CHECK( M_mesh ) << "mesh generation failed";
     M_isUpdatedForUse = false;
+    M_rangeMeshElements = elements( M_mesh );
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("AdvDiffReac","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -349,23 +337,36 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initTimeDiscretization()
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initExporters()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 {
-    this->log("AdvDiffReac","initExporters", "start");
-    this->timerTool("Constructor").start();
-
-    if( !M_exporter )
+    if ( !this->postProcessExportsFields().empty() )
     {
         std::string geoExportType = this->geoExportType();//change_coords_only, change, static
-        M_exporter = exporter( 
+        M_exporter = Feel::exporter( 
                 _mesh=this->mesh(),
                 _name="Export",
                 _geo=geoExportType,
-                _path=this->exporterPath() );
-    }
+                _worldcomm=this->functionSpace()->worldComm(),
+                _path=this->exporterPath() 
+                );
 
-    double tElapsed = this->timerTool("Constructor").stop("initExporters");
-    this->log("AdvDiffReac","initExporters",(boost::format("finish in %1% s")%tElapsed).str() );
+        if ( M_exporter->doExport() && this->doRestart() && this->restartPath().empty() )
+            M_exporter->restart(this->timeInitial());
+    }
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::createPostProcessMeasures()
+{
+    // Start measures export
+    if ( !this->isStationary() )
+    {
+        if ( this->doRestart() )
+            this->postProcessMeasuresIO().restart( "time", this->timeInitial() );
+        else
+            this->postProcessMeasuresIO().setMeasure( "time", this->timeInitial() ); //just for have time in first column
+    }
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
@@ -398,35 +399,30 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initOthers()
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialValue()
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initInitialConditions()
 {
-    this->modelProperties().parameters().updateParameterValues();
-    if( !M_initialValue )
+    if( !this->doRestart() )
     {
-        M_initialValue.reset( new element_advection_type(this->functionSpace(), "initialValue") );
-
-        if( !this->M_icValue.empty() )
+        if( !M_initialValue )
         {
-            this->M_icValue.setParameterValues( this->modelProperties().parameters().toParameterValues() );
-            for( auto const& iv : this->M_icValue )
-            {
-                if( markers(iv).empty() )
-                {
-                    M_initialValue->on( _range=elements(this->mesh()),
-                            _expr=expression(iv),
-                            _geomap=this->geomap() );
-                }
-                else
-                {
-                    M_initialValue->on( _range=markedelements(this->mesh(), markers(iv)),
-                            _expr=expression(iv),
-                            _geomap=this->geomap() );
-                }
-            }
-        }
-    }
+            M_initialValue.reset( new element_advection_type(this->functionSpace(), "initialValue") );
+            std::vector<element_advection_ptrtype> icADRFields;
+            if ( this->isStationary() )
+                icADRFields = { M_initialValue };
+            else
+                icADRFields = M_bdf->unknowns();
 
-    *(this->fieldSolutionPtr()) = *M_initialValue;
+            auto paramValues = this->modelProperties().parameters().toParameterValues();
+            this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+            this->updateInitialConditions( this->prefix(), this->rangeMeshElements(), this->symbolsExpr(), icADRFields );
+
+            if( !this->isStationary() )
+                *M_initialValue = M_bdf->unknown(0);
+        }
+
+        *this->fieldSolutionPtr() = *M_initialValue;
+    }
 }
 
 //----------------------------------------------------------------------------//
@@ -636,7 +632,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::fieldAdvectionVelocityPtr() const
 //----------------------------------------------------------------------------//
 // Algebraic data
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::size_type
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::matrixPattern() const
 {
     size_type pat = size_type(Pattern::COUPLED);
@@ -692,7 +688,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename ADVDIFFREAC_CLASS_TEMPLATE_TYPE::size_type
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->functionSpace()->nLocalDofWithGhost();
@@ -1099,81 +1095,49 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::solve()
 // Export results
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initPostProcessExportsAndMeasures()
+{
+    // Update post-process expressions
+    this->modelProperties().parameters().updateParameterValues();
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().postProcess().setParameterValues( paramValues );
+
+    std::set<std::string> postProcessAllFieldsAvailable = { "phi", "advection-velocity", "diffusion-coeff", "reaction-coeff", "source" };
+    this->setPostProcessExportsAllFieldsAvailable( postProcessAllFieldsAvailable );
+    this->setPostProcessExportsPidName( "pid" );
+    this->setPostProcessSaveAllFieldsAvailable( postProcessAllFieldsAvailable );
+    super_type::initPostProcess();
+
+    // Point measures
+    auto fieldNamesWithSpaceADR = std::make_pair( std::set<std::string>({"adr"}), this->functionSpace() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceADR );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        M_measurePointsEvaluation->init( evalPoints );
+}
+
+ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
+void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    if (this->doRestart() && this->restartPath().empty() )
-    {
-        if ( M_exporter->doExport() ) M_exporter->restart(this->timeInitial());
-    }
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
-{
-    this->exportMeasuresImpl( time );
-}
-
-ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportMeasuresImpl( double time )
-{
+    this->initPostProcessExportsAndMeasures();
+    this->createPostProcessExporters();
+    this->createPostProcessMeasures();
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResultsImpl( time );
-    this->exportMeasures( time );
+    this->exportResults( time, this->symbolsExpr(), this->allFields(), this->allMeasuresQuantities() );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResultsImpl( double time )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::setDoExport( bool b )
 {
-    if ( !M_exporter->doExport() ) return;
-
-    this->log("AdvDiffReac","exportResults", "start");
-    this->timerTool("PostProcessing").start();
-
-    M_exporter->step( time )->add( prefixvm(this->prefix(),"phi"),
-                                   prefixvm(this->prefix(),prefixvm(this->subPrefix(),"phi")),
-                                   this->fieldSolution() );
-    if ( ( M_doExportAdvectionVelocity || M_doExportAll ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"advection_velocity"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"advection_velocity")),
-                                       this->fieldAdvectionVelocity() );
-    }
-    if ( ( M_doExportDiffusionCoefficient || M_doExportAll ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"diffusion_coeff"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"diffusion_coeff")),
-                                       this->diffusionReactionModel()->fieldDiffusionCoeff() );
-    }
-    if ( ( M_doExportReactionCoefficient || M_doExportAll ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"reaction_coeff"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"reaction_coeff")),
-                                       this->diffusionReactionModel()->fieldReactionCoeff() );
-    }
-    if ( ( M_doExportSourceField || M_doExportAll ) )
-    {
-        M_exporter->step( time )->add( prefixvm(this->prefix(),"source"),
-                                       prefixvm(this->prefix(),prefixvm(this->subPrefix(),"source")),
-                                       *M_fieldSource );
-    }
-    M_exporter->save();
-
-    double tElapsed = this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("AdvDiffReac","exportResults", (boost::format("finish in %1% s")%tElapsed).str() );
+    if( M_exporter )
+        M_exporter->setDoExport( b );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS

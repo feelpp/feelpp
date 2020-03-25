@@ -51,11 +51,11 @@ namespace Feel {
  *
  * @endcode
  */
-template<typename T>
-inline std::shared_ptr<BackendPetsc<T>>
-toPETSc( std::shared_ptr<Backend<T>> const& b )
+template<typename T, typename SizeT = uint32_type>
+inline std::shared_ptr<BackendPetsc<T,SizeT>>
+toPETSc( std::shared_ptr<Backend<T,SizeT>> const& b )
 {
-    return std::dynamic_pointer_cast<BackendPetsc<T>>( b );
+    return std::dynamic_pointer_cast<BackendPetsc<T,SizeT>>( b );
 }
 
 /**

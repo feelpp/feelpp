@@ -16,10 +16,8 @@ namespace FeelModels
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & data, element_fluid_external_storage_type const& U ) const
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
-    using namespace Feel::vf;
-
     this->log("FluidMechanics","updateResidualModel", "start" );
 
     boost::mpi::timer thetimer,thetimer2;
@@ -35,16 +33,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     //--------------------------------------------------------------------------------------------------//
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto XhV = this->functionSpaceVelocity();
+    auto const& v = u;
+    auto const& q = p;
 
     size_type rowStartInVector = this->rowStartInVector();
-    auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
-                                            _pattern=size_type(Pattern::COUPLED),
-                                            _rowstart=this->rowStartInVector() );
+    auto linearFormV = form1( _test=XhV, _vector=R,
+                              _pattern=size_type(Pattern::COUPLED),
+                              _rowstart=this->rowStartInVector() );
 
 
     auto Id = eye<nDim,nDim>();
@@ -58,17 +54,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     if ( BuildCstPart )
     {
         for( auto const& d : this->M_bcNeumannScalar )
-            linearForm_PatternCoupled +=
+            linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
-            linearForm_PatternCoupled +=
+            linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
                            _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
-            linearForm_PatternCoupled +=
+            linearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
                            _expr= -timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
@@ -82,7 +78,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         {
             if ( BuildCstPart )
             {
-                auto const Beta = M_bdf_fluid->poly();
+                auto const beta = M_bdfVelocity->poly();
 
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
@@ -103,7 +99,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
                     auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
-                                             _expr=trans(idv(Beta.template element<0>()))*N() ).evaluate()(0,0);
+                                             _expr=trans(idv(beta))*N() ).evaluate()(0,0);
 
                     double pressureDistalOld  = 0;
                     for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
@@ -112,7 +108,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
                     M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
 
-                    linearForm_PatternCoupled +=
+                    linearFormV +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr= timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
                                    _geomap=this->geomap() );
@@ -200,7 +196,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                        _geomap=this->geomap() );
                         //----------------------------------------------------//
                         // coupling with fluid model
-                        form1( _test=Xh, _vector=R,
+                        form1( _test=XhV, _vector=R,
                                _rowstart=rowStartInVector ) +=
                             integrate( _range=markedfaces(mesh,markerOutlet),
                                        _expr= timeSteppingScaling*idv(presProximal)*trans(N())*id(v),
@@ -221,14 +217,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
-        auto Beta = M_bdf_fluid->poly();
-        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
-                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto betaExtrapolated = M_bdfVelocity->poly();
+        auto beta = vf::project( _space=XhV,
+                                 _range=boundaryfaces(mesh),
+                                 _expr=idv(rho)*idv(betaExtrapolated) );
         auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h());
         auto Ctau = gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
-        linearForm_PatternCoupled +=
+        linearFormV +=
             integrate( _range=markedfaces(mesh,this->markerSlipBC()),
                        _expr=
                        val(timeSteppingScaling*Cn*(trans(idv(u))*N()))*(trans(id(v))*N())+
@@ -249,17 +245,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             // deformation and stress tensor (eval)
             auto defv = sym(gradv(u));
             auto Sigmav = -idv(p)*Id + 2*idv(mu)*defv;
-            linearForm_PatternCoupled +=
+            linearFormV +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
                            _expr= -timeSteppingScaling*trans(Sigmav*N())*id(v)
                            /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( idv(u),id(v) )/hFace(),
                            _geomap=this->geomap() );
         }
-
         if ( BuildCstPart )
         {
             for( auto const& d : this->M_bcDirichlet )
-                linearForm_PatternCoupled +=
+                linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
                                _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
@@ -268,7 +263,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     //------------------------------------------------------------------------------------//
     // Dirichlet with Lagrange-mulitplier
-    if (this->hasMarkerDirichletBClm())
+    if ( this->hasMarkerDirichletBClm() )
     {
         CHECK( this->hasStartSubBlockSpaceIndex("dirichletlm") ) << " start dof index for dirichletlm is not present\n";
         size_type startBlockIndexDirichletLM = this->startSubBlockSpaceIndex("dirichletlm");
@@ -279,7 +274,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             //int dataBaseIdLM = XVec->map().basisIndexFromGp( rowStartInVector+startBlockIndexDirichletLM );
             M_blockVectorSolution.setSubVector( lambdaBC, *XVec, rowStartInVector+startBlockIndexDirichletLM );
 
-            linearForm_PatternCoupled +=
+            linearFormV +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBClm() ),
                            _expr= inner( idv(lambdaBC),id(u) ) );
 
@@ -289,7 +284,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     _range=markedfaces( this->mesh(),this->markerDirichletBClm() ),
                            _expr= inner(idv(u),id(lambdaBC) ) );
         }
-
+#if 1
         if ( BuildCstPart )
         {
             auto lambdaBC = this->XhDirichletLM()->element();
@@ -301,6 +296,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                _expr= -inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
         }
+#endif
 
     }
 
@@ -318,8 +314,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
             if ( nDim==2 )
             {
-                form1( _test=Xh,_vector=R,
-                       _rowstart=rowStartInVector ) +=
+                linearFormV +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idv(lambdaPressure1),
                                _geomap=this->geomap() );
@@ -333,8 +328,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
             else if ( nDim==3 )
             {
                 auto alpha = 1./sqrt(1-Nz()*Nz());
-                form1( _test=Xh,_vector=R,
-                       _rowstart=rowStartInVector ) +=
+                linearFormV +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idv(lambdaPressure1)*alpha,
                                _geomap=this->geomap() );
@@ -350,8 +344,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
                 auto lambdaPressure2 = M_spaceLagrangeMultiplierPressureBC->element( XVec, rowStartInVector+startBlockIndexPressureLM2 );
 
-                form1( _test=Xh,_vector=R,
-                       _rowstart=rowStartInVector ) +=
+                linearFormV +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr= -timeSteppingScaling*trans(cross(id(u),N()))(0,0)*alpha*idv(lambdaPressure2)*Ny()
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idv(lambdaPressure2)*Nx(),
@@ -369,7 +362,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
         {
             for( auto const& d : this->M_bcPressure )
             {
-                linearForm_PatternCoupled +=
+                linearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
                                _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*trans(N())*id(v),
                                _geomap=this->geomap() );

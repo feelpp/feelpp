@@ -47,7 +47,8 @@ public :
     typedef ModelBase super_type;
 
     typedef double value_type;
-    typedef Backend<value_type> backend_type;
+    using size_type = uint32_type;
+    typedef Backend<value_type,size_type> backend_type;
     typedef std::shared_ptr<backend_type> backend_ptrtype;
 
     typedef backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
@@ -67,18 +68,63 @@ public :
         DataUpdateBase( DataUpdateBase const& ) = default;
         DataUpdateBase( DataUpdateBase && ) = default;
         virtual ~DataUpdateBase() {}
+
         void addInfo( std::string const& info ) { M_infos.insert( info ); }
+        void eraseInfo( std::string const& info ) { M_infos.erase( info ); }
         bool hasInfo( std::string const& info ) const { return M_infos.find( info ) != M_infos.end(); }
+
         void addDoubleInfo( std::string const& info, double val ) { M_doubleInfos[info] = val; }
+        void eraseDoubleInfo( std::string const& info ) { M_doubleInfos.erase( info ); }
         bool hasDoubleInfo( std::string const& info ) const { return M_doubleInfos.find( info ) != M_doubleInfos.end(); }
         double doubleInfo( std::string const& info ) const
             {
                 CHECK( this->hasDoubleInfo( info ) ) << "double info "<< info << "is missing";
                 return M_doubleInfos.find(info)->second;
             }
+
+        void addVectorInfo( std::string const& info, vector_ptrtype vec ) { M_vectorInfos[info] = vec; }
+        void eraseVectorInfo( std::string const& info ) { M_vectorInfos.erase( info ); }
+        bool hasVectorInfo( std::string const& info ) const { return M_vectorInfos.find( info ) != M_vectorInfos.end(); }
+        vector_ptrtype vectorInfo( std::string const& info )
+            {
+                CHECK( this->hasVectorInfo( info ) ) << "vector info "<< info << "is missing";
+                return M_vectorInfos.find(info)->second;
+            }
+
+        void addMatrixInfo( std::string const& info, sparse_matrix_ptrtype mat ) { M_matrixInfos[info] = mat; }
+        void eraseMatrixInfo( std::string const& info ) { M_matrixInfos.erase( info ); }
+        bool hasMatrixInfo( std::string const& info ) const { return M_matrixInfos.find( info ) != M_matrixInfos.end(); }
+        sparse_matrix_ptrtype matrixInfo( std::string const& info )
+            {
+                CHECK( this->hasMatrixInfo( info ) ) << "matrix info "<< info << "is missing";
+                return M_matrixInfos.find(info)->second;
+            }
+
+        void copyInfos( DataUpdateBase const& dub )
+            {
+                for ( std::string const& info : dub.M_infos )
+                    this->addInfo( info );
+                for ( auto const& [info,val] : dub.M_doubleInfos )
+                    this->addDoubleInfo( info,val );
+                for ( auto const& [info,vec] : dub.M_vectorInfos )
+                    this->addVectorInfo( info,vec );
+                for ( auto const& [info,mat] : dub.M_matrixInfos )
+                    this->addMatrixInfo( info,mat );
+            }
+
+        void clearInfos()
+            {
+                M_infos.clear();
+                M_doubleInfos.clear();
+                M_vectorInfos.clear();
+                M_matrixInfos.clear();
+            }
     private :
         std::set<std::string> M_infos;
         std::map<std::string,double> M_doubleInfos;
+        std::map<std::string,vector_ptrtype> M_vectorInfos;
+        std::map<std::string,sparse_matrix_ptrtype> M_matrixInfos;
+
     };
 
     class DataUpdateLinear : public DataUpdateBase
@@ -169,6 +215,7 @@ public :
         bool doBCStrongDirichlet() const { return M_doBCStrongDirichlet; }
 
         void setBuildCstPart( bool b ) { M_buildCstPart = b; }
+        void setUseJacobianLinearTerms( bool b ) { M_useJacobianLinearTerms = b; }
         void setDoBCStrongDirichlet( bool b ){ M_doBCStrongDirichlet = b; }
 
     private :
@@ -380,9 +427,9 @@ public :
             auto itFind = M_startSubBlockSpaceIndex.find( name );
             if ( itFind != M_startSubBlockSpaceIndex.end() )
                 return itFind->second;
-            return invalid_size_type_value;
+            return invalid_v<size_type>;
         }
-    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_size_type_value); }
+    bool hasStartSubBlockSpaceIndex( std::string const& name ) const { return (this->startSubBlockSpaceIndex( name ) != invalid_v<size_type>); }
     void setStartSubBlockSpaceIndex( std::string const& name, size_type s ) { M_startSubBlockSpaceIndex[name] = s; }
 
     //! update data usefull for mpi synchronization of NewtonInitialGuess, impose value in residual or jacobian

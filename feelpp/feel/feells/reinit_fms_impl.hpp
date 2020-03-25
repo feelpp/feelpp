@@ -122,7 +122,7 @@ createPeriodicCorrespondanceTable()
     for ( auto it = rg1.template get<1>(), en = rg1.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type index = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
+                const size_type index = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
                 const size_type idOnCluster = processorToCluster(index);
                 const node_type coordPointPlusTrans = get<0>( M_functionspace->dof()->dofPoint( index ) ) + M_translation;
 
@@ -165,7 +165,7 @@ createPeriodicCorrespondanceTable()
     for (auto it = rg2.template get<1>(), en=rg2.template get<2>(); it!=en; ++it)
         for (size_type k=0; k<M_functionspace->dof()->nLocalDofOnFace() ; ++k)
             {
-                const size_type indexTag2 = boost::get<0>( M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ) );
+                const size_type indexTag2 = M_functionspace->dof()->localToGlobal( boost::unwrap_ref( *it ), k, 0 ).index();
                 if ( ! dofTag2Done.count( indexTag2 ) )
                     {
                         const size_type globalIndexTag2 = processorToCluster( indexTag2 );
@@ -329,6 +329,16 @@ reduceClosePoints(heap_type& theHeap, element_type& status )
 }
 
 
+template <typename HeapEntryType, typename TheSizeType>
+struct MinNewEntryForAllReduce
+{
+    typedef std::pair<HeapEntryType,TheSizeType> cont_type;
+    cont_type operator()( cont_type const& a, cont_type const& b ) const
+    {
+        return std::abs(a.first.first) < std::abs(b.first.first) ? a : b;
+    }
+};
+
 
 template<typename FunctionSpaceType, typename periodicity_type>
 typename ReinitializerFMS<FunctionSpaceType, periodicity_type>::element_type
@@ -342,10 +352,10 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
 
     const uint16_type ndofv = functionspace_type::fe_type::nDof;
 
-    auto __v = vf::project(M_functionspace, elements(M_functionspace->mesh()), idv(phi) );
+    auto __v = vf::project(_space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=idv(phi) );
 
     std::set<size_type> done;
-    auto status = vf::project( M_functionspace, elements(M_functionspace->mesh()), vf::cst(FAR) );
+    auto status = vf::project( _space=M_functionspace, _range=elements(M_functionspace->mesh()), _expr=vf::cst(FAR) );
 
     auto it_marked = boost::get<1>(rangeInitialElts);
     auto en_marked = boost::get<2>(rangeInitialElts);
@@ -393,14 +403,14 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
     checkHeap( "before reduce close points" );
     reduceClosePoints( theHeap, status );
     checkHeap( "after reduce close points" );
-
+#if 0 // Not work from boost >= 1.69, see #1296
     typedef std::pair<heap_entry_type, size_type> pair_heap_dofid_type;
     std::function<pair_heap_dofid_type( pair_heap_dofid_type const&, pair_heap_dofid_type const& )>
         minNewEntry = []( pair_heap_dofid_type const& a,
                           pair_heap_dofid_type const& b)
       { // return the entry having the minimum abs(phi) value
         return std::abs(a.first.first) < std::abs(b.first.first) ? a : b; };
-
+#endif
 
     const int nbTotalIterFM = M_functionspace->dof()->nDof() - nbTotalDone - M_nbDofTag1;
 
@@ -418,7 +428,7 @@ ReinitializerFMS<FunctionSpaceType, periodicity_type>::operator()
         // the real new accepted value is the min of all the phi computed in the heaps
         newAccepted = mpi::all_reduce(Environment::worldComm().globalComm(),
                                       newAccepted,
-                                      minNewEntry);
+                                      MinNewEntryForAllReduce<heap_entry_type, size_type>()  /*minNewEntry*/);
 
         size_type newIdOnCluster = newAccepted.second;
 

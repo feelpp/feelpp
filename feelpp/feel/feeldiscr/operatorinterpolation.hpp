@@ -354,7 +354,9 @@ public:
     typedef typename super::backend_ptrtype backend_ptrtype;
 
 
-
+    using size_type = typename domain_mesh_type::size_type;
+    using datamap_type = DataMap<size_type>;
+    using datamap_ptrtype = std::shared_ptr<datamap_type>;
     /*
      * image
      */
@@ -999,7 +1001,7 @@ domainLocalDofFromImageLocalDof( std::shared_ptr<DomainDofType> const& domaindof
 } // namespace detail
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::set<size_type>
+std::set<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type>
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::defineGhostDofUsedToInterpolate()
 {
     std::set<size_type> ghostDofUsedToInterpolate;
@@ -1406,7 +1408,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
                                                     //get global dof
-                                                    size_type j =  boost::get<0>( domaindof->localToGlobal( itanal->first,jloc,comp ) );
+                                                    size_type j =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
                                                     value_type v = MlocEval( domain_basis_type::nComponents1*jloc
                                                                              + comp*domain_basis_type::nComponents1*domain_basis_type::nLocalDof
                                                                              + comp,
@@ -1920,7 +1922,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     // build data map for the columns
     //this->domainSpace()->mapOnOff().showMeMapGlobalProcessToGlobalCluster();
     //this->dualImageSpace()->worldCommPtr()->showMe();
-    std::shared_ptr<DataMap> mapColInterp( new DataMap(this->dualImageSpace()->worldCommPtr()));// this->domainSpace()->mapOnOff().worldCommPtr());
+    datamap_ptrtype mapColInterp( new datamap_type(this->dualImageSpace()->worldCommPtr()));// this->domainSpace()->mapOnOff().worldCommPtr());
     mapColInterp->setNDof(this->domainSpace()->mapOnOff().nDof());
 
     mapColInterp->setNLocalDofWithoutGhost( proc_id, new_nLocalDofWithoutGhost );//  this->domainSpace()->mapOnOff().nLocalDofWithoutGhost() );
@@ -1983,7 +1985,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 //-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType,
                       ImageSpaceType,
                       IteratorRange,
@@ -2075,7 +2077,7 @@ OperatorInterpolation<DomainSpaceType,
                                             const auto gdof = memmapGdof[proc_id][k+comp];
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
-                                                    const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                    const size_type j_gdof =  domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                     j_gdofs[jloc]=std::make_pair(j_gdof,domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                 }
                                             dof_extrapolationData[gdof].push_back(boost::make_tuple(proc_id,bary,theRefPtExtrap,j_gdofs,comp));
@@ -2104,7 +2106,7 @@ OperatorInterpolation<DomainSpaceType,
                                                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                         {
                                                             //get global dof
-                                                            const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                                            const size_type j_gdof =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
                                                             // up graph
                                                             row.template get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                             // get value
@@ -2170,7 +2172,7 @@ OperatorInterpolation<DomainSpaceType,
                                     std::vector<std::pair<size_type,size_type> > j_gdofs(domain_basis_type::nLocalDof);
                                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                         {
-                                            const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                            const size_type j_gdof =  domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                             j_gdofs[jloc]=std::make_pair(j_gdof,domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                         }
                                     dof_extrapolationData[gdof].push_back(boost::make_tuple(proc_id,bary,theRefPtExtrap,j_gdofs,comp));
@@ -2195,7 +2197,7 @@ OperatorInterpolation<DomainSpaceType,
                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                 {
                                                     //get global dof
-                                                    const size_type j_gdof =  boost::get<0>(domaindof->localToGlobal( itanal->first,jloc,comp ));
+                                                    const size_type j_gdof =  domaindof->localToGlobal( itanal->first,jloc,comp ).index();
                                                     // up graph
                                                     row.template get<2>().insert(domaindof->mapGlobalProcessToGlobalCluster()[j_gdof]);
                                                     // get value
@@ -2220,7 +2222,7 @@ OperatorInterpolation<DomainSpaceType,
 //-----------------------------------------------------------------------------------------------------------------//
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                       IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
@@ -2495,7 +2497,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                             pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
                                                             for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                                 {
-                                                                    const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                                    const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                                     pointsDofsColFinded[k][jloc] = j_gdof;
                                                                     pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                                                                 }
@@ -2533,7 +2535,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                                                                     pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
                                                                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                                                                         {
-                                                                            const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                                                                            const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                                                                             pointsDofsColFinded[k+comp][jloc] = j_gdof;
                                                                             pointsDofsGlobalClusterColFinded[k+comp][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                                                                         }
@@ -2683,7 +2685,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 } // version1
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-std::list<boost::tuple<size_type,uint16_type> >
+std::list<boost::tuple<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type,uint16_type> >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                       IteratorRange,InterpType>::updateNoRelationMeshMPI_upWithOtherWorld2( boost::tuple<std::vector<rank_type>,std::vector<rank_type>,std::vector<boost::tuple<int,int> > > const& worldcommFusionProperties,
                                                                                            std::vector< std::vector<size_type> > const& memmapGdof,
@@ -2907,7 +2909,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                     pointsDofsGlobalClusterColFinded[k].resize(domain_basis_type::nLocalDof);
                     for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                     {
-                        const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                        const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                         pointsDofsColFinded[k][jloc] = j_gdof;
                         pointsDofsGlobalClusterColFinded[k][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                     }
@@ -2945,7 +2947,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                         pointsDofsGlobalClusterColFinded[k+comp].resize(domain_basis_type::nLocalDof);
                         for ( uint16_type jloc = 0; jloc < domain_basis_type::nLocalDof; ++jloc )
                         {
-                            const auto j_gdof = boost::get<0>(domaindof->localToGlobal( eltIdLocalised,jloc,comp ));
+                            const auto j_gdof = domaindof->localToGlobal( eltIdLocalised,jloc,comp ).index();
                             pointsDofsColFinded[k+comp][jloc] = j_gdof;
                             pointsDofsGlobalClusterColFinded[k+comp][jloc] = domaindof->mapGlobalProcessToGlobalCluster()[j_gdof];
                         }
@@ -3090,7 +3092,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
 
 
 template<typename DomainSpaceType, typename ImageSpaceType,typename IteratorRange,typename InterpType>
-boost::tuple<std::vector< std::vector<size_type> >, std::vector< std::vector<uint16_type> >,
+boost::tuple<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::size_type> >, std::vector< std::vector<uint16_type> >,
              std::vector<std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type> >,
              std::vector<std::vector< std::vector<typename OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>::image_mesh_type::node_type > > > >
 OperatorInterpolation<DomainSpaceType, ImageSpaceType,
@@ -3157,7 +3159,7 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,
                     for ( uint16_type comp = 0;comp < image_basis_type::nComponents;++comp )
                     {
 
-                        const auto gdof =  boost::get<0>(imagedof->localToGlobal( theImageElt, iloc, comp ));
+                        const auto gdof =  imagedof->localToGlobal( theImageElt, iloc, comp ).index();
 
                         const size_type gdofCluster = imagedof->mapGlobalProcessToGlobalCluster()[gdof];
 

@@ -41,6 +41,7 @@ namespace FeelModels
 
 template< typename HeatType, typename ElectricType>
 class ThermoElectric : public ModelNumerical,
+                       public ModelPhysics<HeatType::convex_type::nDim>,
                        public std::enable_shared_from_this< ThermoElectric<HeatType,ElectricType> >
 {
 
@@ -60,6 +61,9 @@ public:
     typedef typename electric_model_type::mesh_type mesh_electric_type;
     typedef mesh_heat_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
+
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
     typedef Exporter<mesh_type,mesh_type::nOrder> export_type;
@@ -83,7 +87,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initPostProcess();
+    void initPostProcess() override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
@@ -120,17 +124,28 @@ public :
     void startTimeStep() { this->heatModel()->startTimeStep(); }
     void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
 
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+
+    template <typename FieldTemperatureType,typename FieldElectricPotentialType>
+    auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
+        {
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
+            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+            //auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ), prefix_symbol );
+            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                             M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        }
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
 
-    void updateLinearPreAssemblyJouleLaw( DataUpdateLinear & data ) const;
-    void updateResidualPreAssemblyJouleLaw( DataUpdateResidual & data ) const;
-    void updateGenericPreAssemblyJouleLaw( vector_ptrtype& F, bool applyOnResidual ) const;
-
-    void updateLinearElectricDependingOnTemperature( DataUpdateLinear & data ) const;
+    void updateLinear_Heat( DataUpdateLinear & data ) const;
+    void updateResidual_Heat( DataUpdateResidual & data ) const;
+    void updateLinear_Electric( DataUpdateLinear & data ) const;
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
 
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
     void updateJacobian( DataUpdateJacobian & data ) const override;
@@ -139,7 +154,15 @@ public :
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
     //___________________________________________________________________________________//
-    void updateCurrentDensity();
+
+    bool checkResults() const override
+        {
+            // several calls (not do in on line) to be sure that all check have been run
+            bool checkThermoElectric = super_type::checkResults();
+            bool checkHeat = this->heatModel()->checkResults();
+            bool checkElectric = this->electricModel()->checkResults();
+            return checkThermoElectric && checkHeat && checkElectric;
+        }
 
 private :
     heat_model_ptrtype M_heatModel;
@@ -155,6 +178,7 @@ private :
     // physical parameter
     std::string M_modelName;
     bool M_modelUseJouleEffect;
+    materialsproperties_ptrtype M_materialsProperties;
 
     // solver
     std::string M_solverName;
@@ -167,7 +191,6 @@ private :
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeat, M_postProcessFieldExportedElectric;
 };
 
 } // namespace FeelModels

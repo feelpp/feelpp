@@ -28,28 +28,44 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <feel/feelvf/vonmises.hpp>
+#include <feel/feelvf/eig.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+#include "nullspace-rigidbody.hpp"
+
 namespace Feel {
 
 inline
 po::options_description
 makeOptions()
 {
-    po::options_description testhdivoptions( "test qs_hdg_elasticity options" );
-    testhdivoptions.add_options()
-        ( "pyexpr.filename", po::value<std::string>()->default_value("${top_srcdir}/quickstart/elasticity.py"), "python file to evaluate" )
+    po::options_description hdgoptions( "test qs_hdg_elasticity options" );
+    hdgoptions.add_options()
+        ( "pyexpr.filename", po::value<std::string>()->default_value("$cfgdir/../python/elasticity.py"), "python file to evaluate" )
         ( "hsize", po::value<double>()->default_value( 0.8 ), "mesh size" )
         ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
         ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
         ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
-        ( "displ", po::value<std::string>()->default_value( "0" ), "displacement is given" )
-        ( "lambda", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
-        ( "mu", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
+#if FEELPP_DIM==2
+        ( "displ", po::value<std::string>()->default_value( "Array([0,0])" ), "displacement is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0])" ), "external surfacic load" )
+#else
+        ( "displ", po::value<std::string>()->default_value( "Array([0,0,0])" ), "displacement is given" )
+        ( "f", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external volumic load" )
+        ( "stressn", po::value<std::string>()->default_value( "Array([0,0,0])" ), "external surfacic load" )
+#endif
+        ( "Lambda", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
+        ( "Mu", po::value<std::string>()->default_value( "1" ), "Lame coefficient" )
         ( "hface", po::value<int>()->default_value( 0 ), "hface" )
         ( "hdg.tau.constant", po::value<double>()->default_value( 1.0 ), "stabilization constant for hybrid methods" )
         ( "hdg.tau.order", po::value<int>()->default_value( 0 ), "order of the stabilization function on the selected edges"  ) // -1, 0, 1 ==> h^-1, h^0, h^1
+        ( "order", po::value<int>()->default_value( 1 ), "approximation order"  )
+        ( "exact", po::value<bool>()->default_value( true ), "displacement is give and provides the exact solution or an approximation"  )
+        ( "use-near-null-space", po::value<bool>()->default_value( false ), "use near-null-space for AMG"  )
+        ( "use-null-space", po::value<bool>()->default_value( false ), "use null-space for AMG"  )
         ;
-    return testhdivoptions.add( Feel::feel_options() ).add( backend_options("sc"));
+    return hdgoptions;
 }
 
 inline
@@ -61,7 +77,7 @@ makeAbout()
                      "0.1",
                      "Quickstart for HDG method for linear elasticity",
                      AboutData::License_GPL,
-                     "Copyright (c) 2016-2017 Feel++ Consortium" );
+                     "Copyright (c) 2016-2019 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     about.addAuthor( "Daniele Prada", "developer", "daniele.prada85@gmail.com", "" );
     about.addAuthor( "Lorenzo Sala", "developer", "sala@unistra.fr", "" );
@@ -72,7 +88,7 @@ makeAbout()
 
 
 template<int Dim, int OrderP, int OrderG=1>
-int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& locals )
+int hdg_elasticity( std::map<std::string,std::string>& locals )
 {
 
 	typedef Simplex<Dim,OrderG> convex_type;
@@ -110,7 +126,7 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
 
     auto Vh = Pdhms<OrderP>( mesh, true );
     auto Wh = Pdhv<OrderP>( mesh, true );
-    auto face_mesh = createSubmesh( mesh, faces(mesh), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto face_mesh = createSubmesh( _mesh=mesh, _range=faces(mesh), _update=0 );
     auto Mh = Pdhv<OrderP>( face_mesh,true );
 
     toc("spaces",true);
@@ -131,17 +147,16 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
     auto nDofu     = u.functionSpace()->nDof();
     auto nDofuhat  = uhat.functionSpace()->nDof();
 
-
-	bool condense = 1;
+    solve::strategy strategy = boption("sc.condense")?solve::strategy::static_condensation:solve::strategy::monolithic;
 	double sc_param = 1;
-    if( condense )
+    if( boption("sc.condense") )
         sc_param = 0.5;
 	
 
 	tic();
     auto ps = product( Vh, Wh, Mh );
-	auto a = blockform2( ps , backend() );
-	auto rhs = blockform1( ps , backend() );
+	auto a = blockform2( ps, strategy , backend() );
+	auto rhs = blockform1( ps, strategy , backend() );
 
 
     // Building the RHS
@@ -157,24 +172,29 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
         H.on( _range=elements(face_mesh), _expr=pow(h(),tau_order) );
 
     tic();
-    if ( rhs_f.count("exact") )
-        rhs(1_c) += integrate(_range=elements(mesh), _expr=trans(expr<Dim,1>(rhs_f.at("exact")))*id(w));
+    rhs(1_c) += integrate(_range=elements(mesh), _expr=-trans(expr<Dim,1>(rhs_f))*id(w));
+#if 0
     else
     {
         for( auto part: rhs_f )
             rhs(1_c) += integrate(_range=markedelements(mesh,part.first), _expr=trans(expr<Dim,1>(part.second))*id(w));
     }
-
+#endif
     // in convergence test Neumann condition is given from the displacement and
     // constitutive law
+#if 0
     for( auto part: stressn )
         rhs(2_c) += integrate(_range=markedfaces(mesh,part.first), _expr=trans(id(m))*(expr<Dim,1>(part.second)));
     for( auto part: displ )
         rhs(2_c) += integrate(_range=markedfaces(mesh,part.first), _expr=trans(id(m))*(expr<Dim,1>(part.second)));
+#else
+    rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"), _expr=trans(id(m))*(expr<Dim,1>(stressn)));
+    rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"), _expr=trans(id(m))*(expr<Dim,1>(displ)));
+#endif
     toc("rhs",true);
-
     // Building the matrix
     tic();
+#if 0
     for( auto mat : c1 )
     {
         a( 0_c, 0_c ) +=  integrate(_range=markedelements(mesh,mat.first),_expr=expr(mat.second)*inner(idt(sigma),id(v)));
@@ -184,7 +204,15 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
         a( 0_c, 0_c ) += integrate(_range=markedelements(mesh,mat.first),_expr=expr(c2.at(mat.first))*tracet(sigma)*trace(v) );
         toc("a(0,0).2", true);
     }
+#else
+    a( 0_c, 0_c ) +=  integrate(_range=elements(mesh),_expr=expr(c1)*inner(idt(sigma),id(v)));
+    
+    toc("a(0,0).1", true);
+    tic();
+    a( 0_c, 0_c ) += integrate(_range=elements(mesh),_expr=expr(c2)*tracet(sigma)*trace(v));
+    toc("a(0,0).2", true);
 
+#endif
     tic();
     a( 0_c, 1_c ) += integrate(_range=elements(mesh),_expr=(trans(idt(u))*div(v)));
     toc("a(0,1)", true);
@@ -194,26 +222,29 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
                                        trans(idt(uhat))*rightface(normal(v))) );
     a( 0_c, 2_c) += integrate(_range=boundaryfaces(mesh),
                               _expr=-trans(idt(uhat))*(normal(v)));
+
     toc("a(0,2)", true);
     tic();
     a( 1_c, 0_c) += integrate(_range=elements(mesh),
-                              _expr=(trans(id(w))*divt(sigma)));
+                              _expr=-trans(id(w))*divt(sigma));
     toc("a(1,0)", true);
     tic();
     // begin dp: here we need to put the projection of u on the faces
-    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=-tau_constant*
-                              inner(leftfacet(idt(u)),leftface(id(w))) +
-                              inner(rightfacet(idt(u)),rightface(id(w) )));
+    a( 1_c, 1_c) += integrate(_range=internalfaces(mesh),_expr=tau_constant*(
+                                  trans(leftfacet(idt(u)))*leftface(id(w)) +
+                                  trans(rightfacet(idt(u)))*rightface(id(w) )) );
 
     a( 1_c, 1_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=-(tau_constant * trans(idt(u))*id(w)));
+                              _expr=(tau_constant * trans(idt(u))*id(w)));
     toc("a(1,1)", true);
     tic();
+
     a( 1_c, 2_c) += integrate(_range=internalfaces(mesh),
-                              _expr=tau_constant*inner(idt(uhat),leftface( id(w))+rightface(id(w)))  );
+                              _expr=-tau_constant*trans(idt(uhat))*(leftface(id(w))+rightface(id(w)))  );
 
     a( 1_c, 2_c) += integrate(_range=boundaryfaces(mesh),
-                              _expr=tau_constant * trans(idt(uhat)) * id(w) );
+                              _expr=-tau_constant * trans(idt(uhat)) * id(w) );
+
     toc("a(1,2)", true);
     tic();
     a( 2_c, 0_c) += integrate(_range=internalfaces(mesh),
@@ -222,71 +253,92 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
     toc("a(2,0)", true);
     tic();
     a( 2_c, 1_c) += integrate(_range=internalfaces(mesh),
-                              _expr=-tau_constant * inner(id(m), leftfacet( idt(u) )+rightfacet( idt(u) )) );
+                              _expr=-tau_constant * trans(id(m))*(leftfacet( idt(u) )+rightfacet( idt(u) )) );
     toc("a(2,1)", true);
     tic();
     a( 2_c, 2_c) += integrate(_range=internalfaces(mesh),
                               _expr=sc_param*tau_constant *  inner(idt(uhat),id(m)));
 
-    for( auto part: displ )
-        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,part.first),
-                                  _expr=trans(idt(uhat)) * id(m) );
+    //for( auto part: displ )
+    a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
+                              _expr=trans(idt(uhat)) * id(m) );
 
     toc("a(2,2)", true);
     tic();
-    for( auto part: stressn )
+    //for( auto part: stressn )
     {
-        a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,part.first),
+        a( 2_c, 0_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                                   _expr=( trans(id(m))*(normalt(sigma)) ));
 
-        a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,part.first),
+        a( 2_c, 1_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                                   _expr=-tau_constant * trans(id(m)) * ( idt(u) ) );
 
-        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,part.first),
+        a( 2_c, 2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
                                   _expr=tau_constant * trans(idt(uhat)) * id(m)  );
     }
     toc("a(2,{0,1,2})", true);
     toc("matrices",true);
-
     tic();
+
+    if ( boption( "use-near-null-space" ) ||  boption( "use-null-space" ) )
+    {
+        auto b = backend( _name="sc" );
+        std::shared_ptr<NullSpace<double> > myNullSpace( new NullSpace<double>(b,qsNullSpace(Mh,mpl::int_<FEELPP_DIM>())) );
+        if ( boption( "use-near-null-space" ) )
+            b->attachNearNullSpace( myNullSpace );
+        if ( boption( "use-null-space" ) )
+            b->attachNullSpace( myNullSpace );
+    }
+    
     auto U = ps.element();
     auto Ue = ps.element();
-    a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=condense);
+    //a.solve( _solution=U, _rhs=rhs, _rebuild=true, _condense=boption("sc.condense"));
+    a.solve( _solution=U, _rhs=rhs, _condense=boption("sc.condense"));
     toc("solve",true);
     cout << "[Hdg] solve done" << std::endl;
 
     auto sigmap = U(0_c);
     auto up = U(1_c);
     auto uhatp = U(2_c);
-
-    int status = 1;
-    if ( displ.count("exact" ) )
+    int status_displ = 1, status_stress = 1;
+    if ( boption( "exact" ) )
     {
-        auto displ_exact = displ.at("exact");
-        auto sigma_exact = locals.at("stress").at("exact");
-        auto grad_displ_exact = locals.at("grad_displ").at("exact");
+        auto displ_exact = displ;
+        auto sigma_exact = locals.at("stress");
+        auto grad_displ_exact = locals.at("grad_displ");
         Ue(0_c).on( _range=elements(mesh), _expr=expr<Dim,Dim>( sigma_exact ) );
         Ue(1_c).on( _range=elements(mesh), _expr=expr<Dim,1>( displ_exact ) );
-
+        Ue(2_c).on( _range=faces(mesh), _expr=expr<Dim,1>( displ_exact ) );
+        
         auto l2err_sigma = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+        Feel::cout << "L2 Error sigma: " << l2err_sigma << std::endl;
         toc("error");
                     
         // CHECKER
+        auto norms_stress = [&]( std::string const& solution ) ->std::map<std::string,double>
+            {
+                tic();
+                double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) - idv(sigmap) );
+                toc("L2 stress error norm");
+                
+                return { { "L2", l2 } };
+            };
         // compute l2 and h1 norm of u-u_h where u=solution
         auto norms_displ = [&]( std::string const& solution ) ->std::map<std::string,double>
             {
 			tic();
 			double l2 = normL2( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) - idv(up) );
-			toc("L2 error norm");
+			toc("L2 displ error norm");
 
 			tic();
 			double h1 = normH1(_range=elements(mesh), _expr=idv(up)- expr<Dim,1>(displ_exact), _grad_expr=gradv(up)-expr<Dim,Dim>(grad_displ_exact) );
-			toc("H1 error norm");
+			toc("H1 displ error norm");
 
 			return { { "L2", l2 } , {  "H1", h1 } };
             };
 
-        status = checker(displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_displ = checker("L2/H1 displacement norms",displ_exact).runOnce( norms_displ, rate::hp( mesh->hMax(), Wh->fe()->order() ) );
+        status_stress = checker("L2 stress norms",displ_exact).runOnce( norms_stress, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
         v.on( _range=elements(mesh), _expr=expr<Dim,Dim>(sigma_exact) );
         w.on( _range=elements(mesh), _expr=expr<Dim,1>(displ_exact) );
     }
@@ -300,18 +352,24 @@ int hdg_elasticity( std::map<std::string,std::map<std::string,std::string>>& loc
 
     auto e = exporter( _mesh=mesh, _name=exportName );
     e->setMesh( mesh );
-    e->add( sigmaName, sigmap );
-    e->add( uName, up );
-    if ( displ.count("exact" ) )
+    e->add( sigmaName, sigmap, "nodal" );
+    e->add( uName, up, "nodal" );
+    std::set<std::string> reps({ "nodal", "element" });
+    e->add( "vonmises", vonmises(idv(sigmap)), reps );
+    e->add( "principal_stress", eig(idv(sigmap)), reps );
+    e->add( "magnitude_stress", sqrt(inner(idv(sigmap))), reps );
+    
+    if ( boption("exact" ) )
     {
-        e->add( sigma_exName, v );
-        e->add( u_exName, w );
+        e->add( sigma_exName, v, "nodal" );
+        e->add( u_exName, w, "nodal" );
     }
+
     e->save();
 
     toc("export");
 
-    return !status;
+    return status_stress || status_displ;
 }
 
 } // Feel
@@ -329,21 +387,27 @@ int main( int argc, char** argv )
     // end::env[]
 
     // Exact solutions
-    std::map<std::string,std::map<std::string,std::string>> locals{{"dim",{{"dim",std::to_string(FEELPP_DIM)}}},
-        {"displ", {{ "exact", soption("displ")}} },
-        {"grad_displ",{}},
-        {"strain",{}},
-        {"stress",{}},
-        {"stressn",{}},
-        {"f",{}},
-        {"c1",{}},
-        {"c2",{}}};
+    std::map<std::string,std::string> locals{
+        {"dim",std::to_string(FEELPP_DIM)},
+        {"exact",std::to_string(boption("exact"))}, 
+        {"lam1",soption("Mu")},
+        {"lam2",soption("Lambda")},
+        {"displ", soption("displ")},
+        {"grad_displ",""},
+        {"strain",""},
+        {"stress",""},
+        {"stressn",soption("stressn")},
+        {"f",soption("f")},
+        {"c1",""},
+        {"c2",""}};
     Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals  );
 
     for( auto d: locals )
-        cout << d.first << ":" << d.second << std::endl;
-    
-    int status = hdg_elasticity<FEELPP_DIM,2>( locals );
-    return !status;
+        Feel::cout << d.first << ":" << d.second << std::endl;
+    if ( ioption( "order" ) == 1 )
+        return !hdg_elasticity<FEELPP_DIM,1>( locals );
+    if ( ioption( "order" ) == 2 )
+        return !hdg_elasticity<FEELPP_DIM,2>( locals );
 
+    return 1;
 }

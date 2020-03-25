@@ -57,6 +57,7 @@ BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
 BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( about )
     BOOST_PARAMETER_NAME( prefix )
+    BOOST_PARAMETER_NAME( prefix_overload )
     BOOST_PARAMETER_NAME( sub )
     BOOST_PARAMETER_NAME( opt )
     BOOST_PARAMETER_NAME( path )
@@ -311,6 +312,13 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( rho )
     BOOST_PARAMETER_NAME( alpha )
     BOOST_PARAMETER_NAME( tag )
+
+// create submesh
+    BOOST_PARAMETER_NAME( only_on_boundary_faces )
+    BOOST_PARAMETER_NAME( view )
+
+
+
 } // Feel
 
 

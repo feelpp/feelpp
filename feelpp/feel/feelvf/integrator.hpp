@@ -1076,7 +1076,9 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 // -# loop over quadrature loop and assemble the local matrix associated with the bilinear form
                 // -# assemble the local contribution in the global representation of the bilinear form
                 //
-                for ( ; it != en; ++it )
+                const bool updateCtxAndIntegrate = !(__form.testSpace()->mesh()->isCartesian()  &&
+                                                     ( !hasPOINT(__c->dynamicContext() ) && !hasINTERPOLANT(__c->dynamicContext()) ) );
+                for (int nElt = 0 ; it != en; ++it, ++nElt )
                 {
                     auto const& eltCur = boost::unwrap_ref( *it );
 
@@ -1091,32 +1093,44 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     if ( formc->isZero( idElt ) )
                         continue;
 
+                    
+                    
                     switch ( M_gt )
                     {
                     default:
                     case GeomapStrategyType::GEOMAP_HO:
                     {
-                        //ti0.restart();
-                        __c->update( eltTest );
-                        //t0+=ti0.elapsed();
+                        if ( updateCtxAndIntegrate || ( nElt == 0 ) )
+                        {
+                            //Feel::cout << "update ctx and integrate HO" << std::endl;
+                            //ti0.restart();
+                            __c->update( eltTest );
+                            //t0+=ti0.elapsed();
 #if 0
-                        std::cout << "Element: " << eltCur.id() << "\n"
+                            std::cout << "Element: " << eltCur.id() << "\n"
                                   << " o - points : " << eltCur.G() << "\n"
                                   << " o - quadrature :\n"
                                   << "     ref : " << this->im().points() << "\n"
                                   << "     real : " << __c->xReal() << "\n";
 #endif
-                        //ti1.restart();
-                        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                        formc->update( mapgmc,mapgmc,mapgmc );
-                        //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
-                        //t1+=ti1.elapsed();
+                            //ti1.restart();
+                            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                            formc->update( mapgmc, mapgmc, mapgmc );
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
 
-                        //ti2.restart();
-                        formc->integrate();
-                        //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
-                        //t2+=ti2.elapsed();
-
+                            //ti2.restart();
+                            formc->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+                        }
+                        else
+                        {
+                            __c->setElement( eltTest );
+                            //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                            //formc->update( mapgmc, mapgmc, mapgmc );
+                            //formc->integrate();
+                        }
                         //ti3.restart();
                         formc->assemble();
                         //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
@@ -1126,9 +1140,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                     case GeomapStrategyType::GEOMAP_O1:
                     {
-                        //ti0.restart();
-                        __c1->update( eltTest );
-                        //t0+=ti0.elapsed();
+                        if ( updateCtxAndIntegrate || ( nElt == 0 )  )
+                        {
+                            //Feel::cout << "update ctx and integrate O1" << std::endl;
+                            //ti0.restart();
+                            __c1->update( eltTest );
+                            //t0+=ti0.elapsed();
 #if 0
                         DLOG(INFO) << "Element: " << eltCur.id() << "\n"
                                       << " o - points : " << eltCur.G() << "\n"
@@ -1136,17 +1153,24 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                       << "     ref : " << this->im().points() << "\n"
                                       << "     real : " << __c->xReal() << "\n";
 #endif
-                        //ti1.restart();
-                        map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                        formc1->update( mapgmc1,mapgmc1,mapgmc1 );
-                        //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
-                        //t1+=ti1.elapsed();
+                            //ti1.restart();
+                            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0>>( __c1 ) );
+                            formc1->update( mapgmc1, mapgmc1, mapgmc1 );
+                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                            //t1+=ti1.elapsed();
 
-                        //ti2.restart();
-                        formc1->integrate();
-                        //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
-                        //t2+=ti2.elapsed();
-
+                            //ti2.restart();
+                            formc1->integrate();
+                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                            //t2+=ti2.elapsed();
+                        }
+                        else
+                        {
+                            __c1->setElement( eltTest );
+                            //map_gmc_type mapgmc1( fusion::make_pair<vf::detail::gmc<0>>( __c1 ) );
+                            //formc1->update( mapgmc1, mapgmc1, mapgmc1 );
+                            //formc1->integrate();
+                        }
                         //ti3.restart();
                         formc1->assemble();
                         //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
@@ -1158,9 +1182,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                     {
                         if ( eltCur.isOnBoundary() )
                         {
-                            //ti0.restart();
-                            __c->update( eltTest );
-                            //t0+=ti0.elapsed();
+                            if ( updateCtxAndIntegrate || ( nElt == 0 )  )
+                            {
+                                //Feel::cout << "update ctx and integrate OPTbdy" << std::endl;
+                                //ti0.restart();
+                                __c->update( eltTest );
+                                //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << eltCur.id() << "\n"
                                           << " o - points : " << eltCur.G() << "\n"
@@ -1168,18 +1195,25 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";
 #endif
-                            //ti1.restart();
-                            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-                            formc->update( mapgmc,mapgmc,mapgmc );
+                                //ti1.restart();
+                                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                                formc->update( mapgmc, mapgmc, mapgmc );
 
-                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
-                            //t1+=ti1.elapsed();
+                                //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                                //t1+=ti1.elapsed();
 
-                            //ti2.restart();
-                            formc->integrate();
-                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
-                            //t2+=ti2.elapsed();
-
+                                //ti2.restart();
+                                formc->integrate();
+                                //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                                //t2+=ti2.elapsed();
+                            }
+                            else
+                            {
+                                __c->setElement( eltTest );
+                                //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0>>( __c ) );
+                                //formc->update( mapgmc, mapgmc, mapgmc );
+                                //formc->integrate();
+                            }
                             //ti3.restart();
                             formc->assemble();
                             //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
@@ -1188,9 +1222,12 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
                         else
                         {
-                            //ti0.restart();
-                            __c1->update( eltTest );
-                            //t0+=ti0.elapsed();
+                            if ( updateCtxAndIntegrate || ( nElt == 0 ) )
+                            {
+                                //Feel::cout << "update ctx and integrate OPTint" << std::endl;
+                                //ti0.restart();
+                                __c1->update( eltTest );
+                                //t0+=ti0.elapsed();
 #if 0
                             DLOG(INFO) << "Element: " << eltCur.id() << "\n"
                                           << " o - points : " << eltCur.G() << "\n"
@@ -1198,18 +1235,25 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                                           << "     ref : " << this->im().points() << "\n"
                                           << "     real : " << __c->xReal() << "\n";
 #endif
-                            //ti1.restart();
-                            map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0> >( __c1 ) );
-                            formc1->update( mapgmc1,mapgmc1,mapgmc1 );
+                                //ti1.restart();
+                                map_gmc1_type mapgmc1( fusion::make_pair<vf::detail::gmc<0>>( __c1 ) );
+                                formc1->update( mapgmc1, mapgmc1, mapgmc1 );
 
-                            //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
-                            //t1+=ti1.elapsed();
+                                //DLOG(INFO)  << "update gmc : " << ti1.elapsed() << "\n";
+                                //t1+=ti1.elapsed();
 
-                            //ti2.restart();
-                            formc1->integrate();
-                            //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
-                            //t2+=ti2.elapsed();
-
+                                //ti2.restart();
+                                formc1->integrate();
+                                //DLOG(INFO)  << "integrate : " << ti2.elapsed() << "\n";
+                                //t2+=ti2.elapsed();
+                            }
+                            else
+                            {
+                                __c1->setElement( eltTest );
+                                //map_gmc_type mapgmc1( fusion::make_pair<vf::detail::gmc<0>>( __c1 ) );
+                                //formc1->update( mapgmc1, mapgmc1, mapgmc1 );
+                                //formc1->integrate();
+                            }
                             //ti3.restart();
                             formc1->assemble();
                             //DLOG(INFO)  << "assemble : " << ti3.elapsed() << "\n";
@@ -3408,7 +3452,6 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
 
             else
             {
-#if 1
                 if ( !isInitConnectionTo0 )
                 {
                     form = form_context_ptrtype( new form_context_type( __form, mapgmc, mapgmc, mapgmc, expression(), face_ims[__face_id_in_elt_0], this->im() ) );
@@ -3420,27 +3463,18 @@ Integrator<Elements, Im, Expr, Im2>::assemble( FormType& __form, mpl::int_<MESH_
                 __c0->update( elt0Test,__face_id_in_elt_0 );
                 //t0 += ti0.elapsed();
 
-                FEELPP_ASSERT( __face_id_in_elt_0 == __c0->faceId() )
-                    ( __face_id_in_elt_0 )
-                    ( __c0->faceId() ).warn ( "invalid face id" );
-
                 //ti1.restart();
                 map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
                 form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
                 //t1 += ti1.elapsed();
 
                 //ti2.restart();
-                form->integrate( );
+                form->integrate();
                 //t2 += ti2.elapsed();
 
                 //ti3.restart();
-                form->assemble( elt0Test.id() );
+                form->assemble();
                 //t3 += ti3.elapsed();
-#else
-                map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c0 ) );
-                form->update( mapgmc, mapgmc, mapgmc, face_ims[__face_id_in_elt_0] );
-                form->integrate( );
-#endif
             } // end loop on elements
         }
     }// end loop on list of element
@@ -3704,7 +3738,7 @@ Integrator<Elements, Im, Expr, Im2>::assembleWithRelationDifferentMeshType(vf::d
 
             if ( faceCur.isGhostFace() )
             {
-                LOG(INFO) << "face id : " << faceCur.id() << " is a ghost face";
+                VLOG(3) << "face id : " << faceCur.id() << " is a ghost face";
                 continue;
             }
 
@@ -6542,8 +6576,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
  template<typename Args>
  struct integrate_type
  {
-     typedef typename clean2_type<Args,tag::expr,Expr<Cst<double> > >::type _expr_type;
-     typedef typename Feel::detail::quadptlocrangetype<typename clean_type<Args,tag::range>::type>::type _range_type;
+     typedef clean2_type<Args,tag::expr,Expr<Cst<double> > > _expr_type;
+     typedef typename Feel::detail::quadptlocrangetype<clean_type<Args,tag::range>>::type _range_type;
      typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
      static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
      using _element_type = typename boost::unwrap_reference<typename _element_iterator::value_type>::type;
@@ -6564,8 +6598,8 @@ template<typename Elements, typename Im, typename Expr, typename Im2>
      //using _value_type = typename _expr_type::value_type;
      using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
 
-     typedef typename clean2_type<Args,tag::quad, im_default_type>::type __quad_type;
-     typedef typename clean2_type<Args,tag::quad1, im_default_type >::type __quad1_type;
+     typedef clean2_type<Args,tag::quad, im_default_type> __quad_type;
+     typedef clean2_type<Args,tag::quad1, im_default_type > __quad1_type;
      using _im_type = integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
      using _quad_type = typename _im_type::_quad_type;
      using _quad1_type = typename _im_type::_quad1_type;

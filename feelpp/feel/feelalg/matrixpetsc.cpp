@@ -741,7 +741,8 @@ void MatrixPetsc<T>::close ()  const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::size1 () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::size1 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -756,7 +757,8 @@ size_type MatrixPetsc<T>::size1 () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::size2 () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::size2 () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -771,7 +773,8 @@ size_type MatrixPetsc<T>::size2 () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::rowStart () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::rowStart () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -787,7 +790,8 @@ size_type MatrixPetsc<T>::rowStart () const
 
 template <typename T>
 inline
-size_type MatrixPetsc<T>::rowStop () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::rowStop () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -801,7 +805,8 @@ size_type MatrixPetsc<T>::rowStop () const
 
 template <typename T>
 inline
-std::size_t MatrixPetsc<T>::nnz () const
+typename MatrixPetsc<T>::size_type
+MatrixPetsc<T>::nnz () const
 {
     FEELPP_ASSERT ( this->isInitialized() ).error( "MatrixPetsc<> not properly initialized" );;
 
@@ -3228,11 +3233,12 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
     if ( on_context.test( ContextOn::ELIMINATION ) )
     {
         rhs.setIsClosed( false );
-        VectorPetscMPI<value_type> diag( this->mapColPtr() );
+        std::shared_ptr<VectorPetscMPI<value_type>> diag;
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
-            MatGetDiagonal( this->M_mat, diag.vec() );
-            diag.close();
+            diag = std::make_shared<VectorPetscMPI<value_type>>( this->mapColPtr() );
+            MatGetDiagonal( this->M_mat, diag->vec() );
+            diag->close();
         }
 
 #if (PETSC_VERSION_MAJOR >= 3) && (PETSC_VERSION_MINOR >= 2)
@@ -3247,14 +3253,14 @@ MatrixPetscMPI<T>::zeroRows( std::vector<int> const& rows,
         }
         if ( on_context.test( ContextOn::KEEP_DIAGONAL ) )
         {
-            MatDiagonalSet( this->M_mat, diag.vec(), INSERT_VALUES );
+            MatDiagonalSet( this->M_mat, diag->vec(), INSERT_VALUES );
             for ( size_type i = 0; i < rows.size(); ++i )
             {
                 // warning: a row index may belong to another
                 // processor, so make sure that we access only the
                 // rows that belong to this processor
                 if ( rows[i] >= start && rows[i] < stop )
-                    rhs.set( rows[i], values(rows[i])*diag( rows[i] ) );
+                    rhs.set( rows[i], values(rows[i])*diag->operator()( rows[i] ) );
             }
         }
 

@@ -69,20 +69,20 @@ public:
 
     typedef GraphCSR self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
-
+    typedef DataMap<> datamap_type;
+    typedef std::shared_ptr<datamap_type> datamap_ptrtype;
+    using size_type = typename datamap_type::size_type;
     typedef std::vector<size_type> nz_type;
     typedef std::shared_ptr<nz_type> nz_ptrtype;
 
     //typedef boost::tuple<size_type, size_type, std::vector<size_type> > row_type;
     typedef boost::tuple<size_type, size_type, std::set<size_type> > row_type;
-    typedef std::map<size_type, row_type > storage_type;
+    typedef std::unordered_map<size_type, row_type > storage_type;
     typedef std::shared_ptr<storage_type> storage_ptrtype;
 
     typedef storage_type::iterator iterator;
     typedef storage_type::const_iterator const_iterator;
 
-    typedef DataMap datamap_type;
-    typedef std::shared_ptr<DataMap> datamap_ptrtype;
     //@}
 
     /** @name Constructors, destructor
@@ -396,8 +396,8 @@ private :
     template<class Archive>
     void load( Archive & ar, const unsigned int version )
     {
-        Feel::DataMap map_row;
-        Feel::DataMap map_col;
+        Feel::DataMap<> map_row;
+        Feel::DataMap<> map_col;
 
         ar & BOOST_SERIALIZATION_NVP(map_row);
         ar & BOOST_SERIALIZATION_NVP(map_col);
@@ -412,8 +412,8 @@ private :
         ar & BOOST_SERIALIZATION_NVP(M_ja);
         ar & BOOST_SERIALIZATION_NVP(M_a);
 
-        M_mapRow = std::make_shared<Feel::DataMap>( map_row );
-        M_mapCol = std::make_shared<Feel::DataMap>( map_col );
+        M_mapRow = std::make_shared<Feel::DataMap<>>( map_row );
+        M_mapCol = std::make_shared<Feel::DataMap<>>( map_col );
     }
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -532,7 +532,7 @@ private :
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
-                size_type pattern = Pattern::COUPLED,
+                uint32_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpacesBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();
@@ -608,7 +608,7 @@ csrGraphBlocks( PS&& ps,
 template<typename PS>
 BlocksBaseGraphCSR
 csrGraphBlocks( PS&& ps,
-                size_type pattern = Pattern::COUPLED,
+                uint32_type pattern = Pattern::COUPLED,
                 std::enable_if_t<std::is_base_of<ProductSpaceBase,std::remove_reference_t<PS>>::value>* = nullptr )
 {
     int s = ps.numberOfSpaces();

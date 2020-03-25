@@ -19,6 +19,7 @@ public:
     //--------------------------------------------------------------------//
     // Class
     typedef ModelNumerical super_type;
+    using size_type = typename super_type::size_type;
     typedef MultiFluid< FluidType, LevelSetType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
@@ -56,10 +57,10 @@ public:
     typedef typename levelset_model_type::space_markers_ptrtype space_levelset_markers_ptrtype;
     typedef typename levelset_model_type::space_advection_velocity_type space_levelset_advection_velocity_type;
     typedef typename levelset_model_type::space_advection_velocity_ptrtype space_levelset_advection_velocity_ptrtype;
-    typedef typename fluid_model_type::component_space_fluid_velocity_type component_space_fluid_velocity_type;
+    typedef typename fluid_model_type::component_space_velocity_type component_space_fluid_velocity_type;
 
-    typedef typename fluid_model_type::space_fluid_velocity_type space_fluid_velocity_type;
-    typedef typename fluid_model_type::space_fluid_velocity_ptrtype space_fluid_velocity_ptrtype;
+    typedef typename fluid_model_type::space_velocity_type space_fluid_velocity_type;
+    typedef typename fluid_model_type::space_velocity_ptrtype space_fluid_velocity_ptrtype;
 
     typedef typename levelset_model_type::element_levelset_type element_levelset_type;
     typedef typename levelset_model_type::element_levelset_ptrtype element_levelset_ptrtype; 
@@ -181,14 +182,29 @@ public:
 
     //--------------------------------------------------------------------//
     // Accessors interfaces
-    decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
+    //decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
     decltype(auto) functionSpaceVelocity() const { return this->fluidModel()->functionSpaceVelocity(); }
     decltype(auto) functionSpacePressure() const { return this->fluidModel()->functionSpacePressure(); }
-    decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
-    decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
+    //decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
+    //decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
     decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
+    //--------------------------------------------------------------------//
+    // Symbols expr
+    auto symbolsExpr() const { 
+        return this->symbolsExpr( M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); 
+        // TODO add levelsets symbols
+    }
+
+    template <typename FieldVelocityType, typename FieldPressureType>
+    auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
+    {
+        auto symbolExprField = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprField( u, p ) );
+        auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+        auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+        return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+    }
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;
@@ -249,8 +265,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Export
-    void exportResults( double time ) { this->exportResultsImpl( time ); }
     void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
     void exportMeasures( double time );
     // Measures
     force_type computeLevelsetForce( std::string const& name ) const;
@@ -260,7 +276,7 @@ protected:
     // Initialization
     void initMesh();
     void initLevelsets();
-    void initPostProcess();
+    void initPostProcess() override;
 
     virtual int initBlockVector();
     bool useImplicitCoupling() const;
@@ -273,9 +289,6 @@ protected:
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
-    //--------------------------------------------------------------------//
-    // Export
-    virtual void exportResultsImpl( double time );
 
     //--------------------------------------------------------------------//
     uint16_type M_nFluids;
@@ -336,8 +349,8 @@ private:
     // Penalty method gamma
     std::map<std::string, double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
-    // Reinitialization
-    std::map<std::string, int> M_levelsetReinitEvery;
+    // Redistanciation
+    std::map<std::string, int> M_levelsetRedistEvery;
 
     //--------------------------------------------------------------------//
     // Post-process

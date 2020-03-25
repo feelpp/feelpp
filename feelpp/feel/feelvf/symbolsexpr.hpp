@@ -29,35 +29,134 @@ namespace Feel
 namespace vf
 {
 
+struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,std::array<uint16_type,2>>>
+{
+    SymbolExprComponentSuffix() = default;
+    SymbolExprComponentSuffix( SymbolExprComponentSuffix const& ) = default;
+    SymbolExprComponentSuffix( SymbolExprComponentSuffix && ) = default;
+
+    SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2, bool useXYZ = false )
+    {
+        if ( nComp1 > 1 && nComp2 > 1 )
+        {
+            for (uint16_type c1=0;c1<nComp1;++c1 )
+                for (uint16_type c2=0;c2<nComp2;++c2 )
+                    this->push_back( std::make_tuple( this->generateSuffix( c1,c2,useXYZ ), std::array<uint16_type,2>{ { c1,c2 } } ) );
+        }
+        else if ( nComp2 == 1 && nComp1 > 1 )
+        {
+            for (uint16_type c1=0;c1<nComp1;++c1 )
+                this->push_back( std::make_tuple( this->generateSuffix( c1,useXYZ ), std::array<uint16_type,2>{ { c1,0 } } ) );
+        }
+        else if ( nComp1 == 1 && nComp2 > 1 )
+        {
+            for (uint16_type c2=0;c2<nComp2;++c2 )
+                this->push_back( std::make_tuple( this->generateSuffix( c2,useXYZ ), std::array<uint16_type,2>{ { 0,c2 } } ) );
+        }
+        if ( !this->empty() )
+            this->shrink_to_fit();
+    }
+
+    void print() const
+    {
+        for ( auto const& d : *this )
+            std::cout << "suffix " << std::get<0>( d ) << " c1=" << std::get<1>( d )[0] << " c1=" << std::get<1>( d )[1] << std::endl;
+    }
+  private :
+    static std::string generateSuffix( uint16_type c1, bool useXYZ )
+    {
+        return "_" + convertComponent( c1, useXYZ );
+    }
+    static std::string generateSuffix( uint16_type c1, uint16_type c2, bool useXYZ )
+    {
+        return "_" + convertComponent( c1, useXYZ ) + convertComponent( c2, useXYZ );
+    }
+   static std::string convertComponent( uint16_type c1, bool useXYZ )
+    {
+        if ( useXYZ )
+        {
+            switch ( c1 )
+            {
+            case 0 : return "x";
+            case 1 : return "y";
+            case 2 : return "z";
+            default : CHECK( false ) << "can't use xyz suffix if comp > 2";
+            }
+            return "";
+        }
+        else
+        {
+            return (boost::format("%1%")%c1).str();
+        }
+    }
+};
+
+
 struct SymbolExprTag {};
 
 //! attach a symbol (string) with a feel++ expression
 //! ex : auto se = SymbolExpr( "u", cst(3.)*idv(u) );
 template <typename ExprT>
-struct SymbolExpr : public std::vector<std::pair<std::string,ExprT>>
+struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>>
 {
-    using super_type = std::vector<std::pair<std::string,ExprT>>;
+    using super_type = std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>>;
     using feelpp_tag = SymbolExprTag;
     SymbolExpr() = default;
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
-    SymbolExpr( std::pair<std::string,ExprT> const& e ) : super_type( 1,e ) {}
-    SymbolExpr( std::pair<std::string,ExprT> && e ) : super_type( 1,e ) {}
-    SymbolExpr( std::initializer_list<std::pair<std::string,ExprT>> const& e ) : super_type( e ) {}
+
+    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> const& e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> && e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( std::initializer_list<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>> const& e ) : super_type( e ) {}
+
+    explicit SymbolExpr( std::vector<std::tuple<std::string,ExprT>> const& e )
+        :
+        super_type()
+    {
+        this->reserve( e.size() );
+        SymbolExprComponentSuffix emptySuffix;
+        for ( int k=0;k<e.size();++k )
+            this->push_back( std::make_tuple( std::get<0>( e[k] ), std::get<1>( e[k] ), emptySuffix ) );
+    }
+    explicit SymbolExpr( std::vector<std::pair<std::string,ExprT>> const& e )
+        :
+        super_type()
+    {
+        this->reserve( e.size() );
+        SymbolExprComponentSuffix emptySuffix;
+        for ( int k=0;k<e.size();++k )
+            this->push_back( std::make_tuple( e[k].first, e[k].second, emptySuffix ) );
+    }
     SymbolExpr( super_type const& e ) : super_type( e ) {}
 };
 //! build a SymbolExpr object
 template <typename T>
 SymbolExpr<Expr<T>>
-symbolExpr( std::string const& s,Expr<T> const& e ) { return SymbolExpr<Expr<T>>( std::make_pair(s,e) ); }
+symbolExpr( std::string const& s,Expr<T> const& e, SymbolExprComponentSuffix secs = SymbolExprComponentSuffix() ) { return SymbolExpr<Expr<T>>( std::make_tuple(s,e,secs) ); }
 
 template <typename T>
 SymbolExpr<Expr<T>>
-symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( std::vector<std::pair<std::string,Expr<T>>>( e ) ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( std::vector<std::tuple<std::string,Expr<T>>>( e ) ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::vector<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::vector<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 
 
 struct SymbolsExprTag {};
@@ -190,6 +289,7 @@ template <>
 struct SymbolsExpr<>
 {
     using tuple_type = hana::tuple<>;
+    using feelpp_tag = SymbolsExprTag;
     tuple_type tupleExpr;
 };
 

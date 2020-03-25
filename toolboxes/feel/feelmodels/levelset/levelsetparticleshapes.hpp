@@ -89,7 +89,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Redistantiation
-    element_type redistantiate( element_type const& phi ) const;
+    element_type redistanciate( element_type const& phi ) const;
 
     //--------------------------------------------------------------------//
     // Read parameters
@@ -142,7 +142,7 @@ LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_TYPE::create( LevelSetShapeType shape, par
     }
     if( redist )
     {
-        return this->redistantiate( phi );
+        return this->redistanciate( phi );
     }
     else
     {
@@ -200,7 +200,7 @@ LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_TYPE::createEllipse( parameter_map const& 
 
 LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_TYPE::element_type
-LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_TYPE::redistantiate( element_type const& phi ) const
+LEVELSETPARTICLESHAPES_CLASS_TEMPLATE_TYPE::redistanciate( element_type const& phi ) const
 {
     auto phiILP = vf::project(
             _space=this->functionSpace(),

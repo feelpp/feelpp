@@ -28,7 +28,6 @@
 #ifndef _GEOELEMENT_HH_
 #define _GEOELEMENT_HH_
 
-#include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -36,7 +35,7 @@
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
 
-#include <feel/feelalg/lu.hpp>
+//#include <feel/feelalg/lu.hpp>
 
 namespace Feel
 {
@@ -553,9 +552,15 @@ public:
         super2()
     {}
 
-    GeoElement0D( size_type id, node_type const& n,  bool boundary = false )
+    template <typename GeoNodeType>
+    GeoElement0D( size_type id, GeoNodeType const& n,  bool boundary = false )
         :
         super( id, n, boundary ),
+        super2()
+        {}
+    GeoElement0D( size_type id, geo0d_type const& n, bool boundary, bool isView )
+        :
+        super( id, n, boundary, false, isView ),
         super2()
     {}
 
@@ -734,13 +739,15 @@ template<uint16_type Dim,
          typename SubFace = SubFaceOfNone<0>,
          typename T = double,
          typename IndexT = uint32_type,
-         bool PointTypeIsSubFaceOf = false >
+         bool PointTypeIsSubFaceOf = false,
+         bool UseMeasuresStorage = false >
 class GeoElement1D
     :
     public GeoND<Dim, GEOSHAPE, T, IndexT,
                  typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
-                                   mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf> >, T, IndexT> >,
-                                   mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type
+                                   mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
+                                   mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
+                 UseMeasuresStorage
                  >,
     public SubFace
 {
@@ -748,9 +755,11 @@ public:
 
     typedef GeoND<Dim, GEOSHAPE, T, IndexT,
                   typename mpl::if_<mpl::bool_<PointTypeIsSubFaceOf>,
-                                    mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf> >, T, IndexT> >,
-                                    mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type
+                                    mpl::identity< GeoElement0D<Dim, SubFaceOf<GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> >, T, IndexT> >,
+                                    mpl::identity< GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > >::type::type,
+                  UseMeasuresStorage
                   > super;
+
     typedef SubFace super2;
 
     static inline const uint16_type nDim = super::nDim;
@@ -763,7 +772,7 @@ public:
     using index_type = typename super::index_type;
     using size_type = typename super::size_type;
     typedef GEOSHAPE GeoShape;
-    typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf> self_type;
+    typedef GeoElement1D<Dim, GEOSHAPE, SubFace, T, IndexT, PointTypeIsSubFaceOf, UseMeasuresStorage> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
 #if 0
@@ -1041,16 +1050,17 @@ template<uint16_type Dim,
          typename GEOSHAPE,
          typename SubFace = SubFaceOfNone<0>,
          typename T = double,
-         typename IndexT = uint32_type>
+         typename IndexT = uint32_type,
+         bool UseMeasuresStorage = false >
 class GeoElement2D
     :
-    public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> >,
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage >,
 public SubFace
 {
 public:
 
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFace super2;
 
     static inline const uint16_type nDim = super::nDim;
@@ -1068,7 +1078,7 @@ public:
     using size_type = typename super::size_type;
     typedef GEOSHAPE GeoShape;
     typedef typename super::face_type entity_face_type;
-    typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T, IndexT> self_type;
+    typedef GeoElement2D<Dim, GEOSHAPE,SubFace, T, IndexT, UseMeasuresStorage> self_type;
     //typedef typename SubFace::template Element<self_type>::type element_type;
     typedef self_type element_type;
     typedef typename mpl::if_<mpl::equal_to<mpl::int_<nRealDim>,mpl::int_<2> >,
@@ -1396,17 +1406,18 @@ private:
 template<uint16_type Dim,
          typename GEOSHAPE,
          typename T = double,
-         typename IndexT = uint32_type>
+         typename IndexT = uint32_type,
+         bool UseMeasuresStorage = false >
 class GeoElement3D
     :
-    public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> >,
+        public GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>,UseMeasuresStorage >,
 public SubFaceOfNone<0>
 {
 public:
 
     static inline const uint16_type nDim = Dim;
 
-    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT> > super;
+    typedef GeoND<Dim, GEOSHAPE, T, IndexT, GeoElement0D<Dim, SubFaceOfNone<0>, T, IndexT>, UseMeasuresStorage > super;
     typedef SubFaceOfNone<0> super2;
 
     using index_type = typename super::index_type;
@@ -1415,7 +1426,7 @@ public:
 
     typedef typename super::face_type entity_face_type;
 
-    typedef GeoElement3D<Dim, GEOSHAPE,T,IndexT> self_type;
+    typedef GeoElement3D<Dim, GEOSHAPE,T,IndexT,UseMeasuresStorage> self_type;
     typedef self_type element_type;
     typedef GeoElement2D<Dim, entity_face_type, SubFaceOf<self_type>, T, IndexT > face_type;
     typedef GeoElement1D<Dim, typename entity_face_type::topological_face_type, SubFaceOfMany<face_type>, T, IndexT> edge_type;
@@ -1751,15 +1762,52 @@ private:
   GeoElement3D
   --------------------------------------------------------------------------*/
 
+
+template <uint16_type Dim, typename SubFace, typename T, typename IndexT>
+struct is_geoelement<GeoElement0D<Dim,SubFace,T,IndexT>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool PointTypeIsSubFaceOf,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement1D<Dim,GEOSHAPE,SubFace,T,IndexT,PointTypeIsSubFaceOf,UseMeasuresStorage>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement2D<Dim,GEOSHAPE,SubFace,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+
+
+/**
+ * \return true if the element \p e has a face with \p flag, false otherwise
+ */
 template<typename EltType>
 bool
-hasFaceWithMarker( EltType const& e, boost::any const& flag )
+hasFaceWithMarker( EltType const& e, boost::any const& flag,
+                   std::enable_if_t<(dimension_v<EltType> > 0) && is_geoelement_v<EltType>>* = nullptr )
 {
     flag_type theflag = e.mesh()->markerId( flag );
-    for( auto const& f : e.faces() )
+    // for( auto const& f : e.faces() )
+    auto [ fbegin, fend ] = e.faces();
+    for( auto f = fbegin; f != fend; ++f )
     {
-        if ( f.marker().value() == theflag )
-            return true;
+        if ( *f && (*f)->hasMarker() )
+        {
+            if ( (*f)->marker().value() == theflag )
+                return true;
+        }
     }
     return false;
 }

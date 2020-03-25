@@ -92,8 +92,8 @@ public:
         typedef this_type expression_type;
         typedef typename LeftExprType::template tensor<Geo_t, Basis_i_t, Basis_j_t> l_type;
         typedef typename RightExprType::template tensor<Geo_t, Basis_i_t, Basis_j_t> r_type;
-        typedef typename strongest_numeric_type<typename l_type::value_type,
-                typename r_type::value_type>::type value_type;
+        typedef strongest_numeric_type<typename l_type::value_type,
+                                       typename r_type::value_type> value_type;
         BOOST_STATIC_ASSERT( ( boost::is_same<typename l_type::return_value_type,
                                typename r_type::return_value_type>::value ) );
 

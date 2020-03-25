@@ -159,7 +159,6 @@ public:
     typedef Elem element_type;
     typedef RhsElem rhs_element_type;
     typedef typename element_type::value_type value_type;
-    typedef value_type evaluate_type;
     typedef typename element_type::return_type return_type;
     typedef OnExpr expression_type;
 
@@ -566,9 +565,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         uint16_type __face_id = faceForInit.pos_first();
         gmc_ptrtype __c( new gmc_type( __gm, faceForInit.element( 0 ), __geopc, __face_id, M_expr.dynamicContext() ) );
 
-        // map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-        // t_expr_type expr( M_expr, mapgmc );
-
+        map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+        t_expr_type expr( M_expr, mapgmc );
 
         DVLOG(2)  << "face_type::numVertices = " << face_type::numVertices << ", fe_type::nDofPerVertex = " << fe_type::nDofPerVertex << "\n"
                   << "face_type::numEdges = " << face_type::numEdges << ", fe_type::nDofPerEdge = " << fe_type::nDofPerEdge << "\n"
@@ -649,9 +647,8 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
             DVLOG(2) << "FACE_ID = " << theface.id() << "  ref pts=" << __c->xRefs() << "\n";
             DVLOG(2) << "FACE_ID = " << theface.id() << " real pts=" << __c->xReal() << "\n";
 
-            map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
-
-            t_expr_type expr( M_expr, mapgmc );
+            //map_gmc_type mapgmc( fusion::make_pair<vf::detail::gmc<0> >( __c ) );
+            //t_expr_type expr( M_expr, mapgmc );
             expr.update( mapgmc );
 
 #if 0
@@ -781,7 +778,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         auto ctx =  gm->template context<context>( elt, geopc);
 #else
         typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-        typedef typename geoelement_type::template PermutationSubEntity<2>::type permutation_type;
+        typedef typename geoelement_type::template PermutationSubEntity<2> permutation_type;
         typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
         std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numEdges );
         for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
@@ -975,7 +972,7 @@ IntegratorOnExpr<ElementRange, Elem, RhsElem,  OnExpr>::assemble( std::shared_pt
         //auto geopc = gm->preCompute( __fe->vertexPoints(ptid_in_element) );
         //auto ctx = gm->template context<context>( elt, geopc );
         typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-        typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim>::type permutation_type;
+        typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim> permutation_type;
         typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
         std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numVertices );
         for ( uint16_type __f = 0; __f < geoelement_type::numVertices; ++__f )
@@ -1085,10 +1082,10 @@ struct v_ptr2
 template<typename Args>
 struct integratoron_type
 {
-    typedef typename clean_type<Args,tag::range>::type _range_base_type;
-    typedef typename clean_type<Args,tag::rhs>::type _rhs_type;
-    typedef typename clean_type<Args,tag::element>::type _element_type;
-    typedef typename clean_type<Args,tag::expr>::type _expr_type;
+    typedef clean_type<Args,tag::range> _range_base_type;
+    typedef clean_type<Args,tag::rhs> _rhs_type;
+    typedef clean_type<Args,tag::element> _element_type;
+    typedef clean_type<Args,tag::expr> _expr_type;
 
     typedef typename mpl::if_< boost::is_std_list<_range_base_type>,
                                mpl::identity<_range_base_type>,

@@ -173,7 +173,7 @@ TestInterpolationHCurl3D::testInterpolation( std::string one_element_mesh )
     element_type U_h_on_boundary = Xh->element();
 
     submesh1d_ptrtype edgeMesh( new submesh1d_type );
-    edgeMesh = createSubmesh(oneelement_mesh, boundaryedges(oneelement_mesh) ); //submesh of edges
+    edgeMesh = createSubmesh(_mesh=oneelement_mesh, _range=boundaryedges(oneelement_mesh) ); //submesh of edges
 
     // Tangents on ref element
     auto t0 = vec(cst(0.),cst(0.),cst(-2.));

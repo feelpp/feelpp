@@ -10,7 +10,7 @@
     {
         "levelset":
         {
-            "shapes":
+            "Shapes":
             {
                 "drop1":
                 {
@@ -39,6 +39,13 @@
 
     "PostProcess":
     {
-        "PhysicalQuantities": ["volume"]
+        "Exports":
+        {
+            "fields": ["phi"]
+        },
+        "Measures":
+        {
+            "quantities": ["volume"]
+        }
     }
 }

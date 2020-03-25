@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeltiming/tic.hpp>
+#include <feel/feelfilters/hbf.hpp>
 
 #if defined( FEELPP_HAS_FFTW )
 #include <fftw3.h>
@@ -53,9 +54,6 @@ using namespace boost::numeric;
 
 namespace Feel
 {
-template <typename T = float>
-using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
-
 class FFTFeel
 {
 public :    

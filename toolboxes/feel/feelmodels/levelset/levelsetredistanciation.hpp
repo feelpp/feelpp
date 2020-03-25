@@ -25,6 +25,11 @@
 #ifndef _LEVELSET_REDISTANCIATION_HPP
 #define _LEVELSET_REDISTANCIATION_HPP 1
 
+#include <memory>
+#include <string>
+
+#include <feel/feelvf/vf.hpp>
+
 namespace Feel {
 
 template<

@@ -867,7 +867,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::grad_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -961,7 +961,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::symmetricGradient( ContextTy
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
 
             value_type v_ = this->globalValue( gdof );
 
@@ -1130,7 +1130,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::div_( ContextType const & co
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1249,7 +1249,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1312,7 +1312,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::curl_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             int ldof = c1*basis_type::nDof+l;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( elt_id, l, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( elt_id, l, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1713,7 +1713,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::d_( int N, ContextType const
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -1995,7 +1995,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::hess_( ContextType const & c
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -2129,7 +2129,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -2168,7 +2168,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::laplacian_( ContextType cons
         for ( int c1 = 0; c1 < ncdof; ++c1 )
         {
             size_type ldof = basis_type::nDof*c1 + i;
-            size_type gdof = boost::get<0>( M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ) );
+            size_type gdof = M_functionspace->dof()->localToGlobal( context.eId(), i, c1 ).index();
             FEELPP_ASSERT( gdof >= this->firstLocalIndex() &&
                            gdof < this->lastLocalIndex() )
             ( context.eId() )
@@ -2824,7 +2824,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     //auto ctx = gm->template context<context,2>( elt, geopc );
     typedef Element<Y,Cont> element_type;
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::template PermutationSubEntity<2>::type permutation_type;
+    typedef typename geoelement_type::template PermutationSubEntity<2> permutation_type;
     typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
     std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numEdges );
     for ( uint16_type __f = 0; __f < geoelement_type::numEdges; ++__f )
@@ -2857,14 +2857,14 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         }
         if ( eid == invalid_v<index_type> )
             continue;
-        std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
-                  << eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
+        //std::cout << "entity " << curEntity.id() << " element " << eid << " id in element "
+        //<< eid_in_element<< " with hasMarker " << curEntity.hasMarker() << std::endl;
         auto const& elt = mesh->element( eid );
         ctx->update( elt, eid_in_element );
         
         expr_evaluator.update( vf::mapgmc( ctx ) );
         __fe->edgeInterpolate( expr_evaluator, IhLoc );
-        std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
+        //std::cout << "Ihloc: " << IhLoc << " eid: " << eid << " eid_in_element:" << eid_in_element << std::endl;
         if ( accumulate )
             this->plus_assign( curEntity, IhLoc, std::make_pair(eid,eid_in_element) );
         else
@@ -2914,7 +2914,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
 
     typedef Element<Y,Cont> element_type;
     typedef typename element_type::functionspace_type::mesh_type::element_type geoelement_type;
-    typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim>::type permutation_type;
+    typedef typename geoelement_type::template PermutationSubEntity<geoelement_type::nDim> permutation_type;
     typedef typename geoelement_type::gm_type::precompute_ptrtype geopc_ptrtype;
     std::vector<std::map<permutation_type, geopc_ptrtype> > geopc( geoelement_type::numVertices );
     for ( uint16_type __f = 0; __f < geoelement_type::numVertices; ++__f )

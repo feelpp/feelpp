@@ -75,11 +75,11 @@ private:
     scstate M_state;
 };
 
-template<typename local_vector_t>
-class LocalVector: public std::unordered_map<size_type,local_vector_t>
+template<typename local_vector_t, typename SizeT = uint32_type>
+class LocalVector: public std::unordered_map<SizeT,local_vector_t>
 {
 public:
-    using super = std::unordered_map<size_type,local_vector_t>;
+    using super = std::unordered_map<SizeT,local_vector_t>;
 
     LocalVector() : super(), M_state( scstate::none ) {}
     LocalVector( LocalVector const& lm ) : super(lm), M_state( lm.M_state )  {}
@@ -474,7 +474,19 @@ public:
             }
         }
     void setDim4( int dim4 ) { M_dim4 = dim4; }
-    
+
+    //!
+    //! transpose block n1,n2
+    //! the local matrices are transposed and copied
+    //!
+    void transpose( int n1, int n2 )
+        {
+            for( auto const& [key,matrix]: M_local_matrices[std::make_pair(n1,n2)] )
+            {
+                auto const & [id1,id2] = key;
+                this->M_local_matrices[std::pair{n2,n1}][std::pair{id2,id1}].noalias() = matrix.transpose();
+            }
+        }
     using local_vector_t = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
     using local_matrix_t = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor>;
     using local_index_t = Eigen::Matrix<int,Eigen::Dynamic,1>;
@@ -758,7 +770,9 @@ template<typename E, typename T, typename M_t, typename V_t>
 struct Condenser
 {
     using value_t = T;
+    using size_type = uint32_type;
     using sc_t=StaticCondensation<value_t> ;
+
     using local_vector_t = typename sc_t::local_vector_t;
     using local_matrix_t = typename sc_t::local_matrix_t;
     using block_local_matrices_t = typename sc_t::block_local_matrices_t;
@@ -895,12 +909,8 @@ struct Condenser
                     extractBlock( F0K, K, FK, e1 );
                     FK.tail(N1) = F1K.at(K);
 
-#if 1
-                    auto Aldlt = AK.ldlt();
-                    ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
                     auto Aldlt = AK.lu();
-#endif
+
                     auto _AinvB = Aldlt.solve( BK );
                     auto _AinvF = Aldlt.solve( FK );
 
@@ -1078,12 +1088,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             extractBlock( F0K, K, FK, e1 );
             FK.tail(N1) = F1K.at(K);
 
-#if 1
-            auto Aldlt = AK.ldlt();
-            ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
             auto Aldlt = AK.lu();
-#endif
+
             auto AinvB = Aldlt.solve( BK );
             auto AinvF = Aldlt.solve( FK );
 
@@ -1141,22 +1147,16 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
     //LOG(INFO) << "A21K.size=" << A21K.size();
     auto const& A22K = M_local_matrices[std::make_pair(2,2)];
     //LOG(INFO) << "A22K.size=" << A22K.size();
-    auto const& A30K = M_local_matrices[std::make_pair(3,0)];
-    auto const& A03K = M_local_matrices[std::make_pair(0,3)];
-    //LOG(INFO) << "A20K.size=" << A20K.size();
-    auto const& A31K = M_local_matrices[std::make_pair(3,1)];
-    auto const& A13K = M_local_matrices[std::make_pair(1,3)];
-    //LOG(INFO) << "A21K.size=" << A21K.size();
-    auto const& A33K = M_local_matrices[std::make_pair(3,3)];
-    
-    //LOG(INFO) << "A22K.size=" << A22K.size();
-    auto A4K = [this]( int i, int j ) { return this->M_local_matrices[std::make_pair(i,j)]; };
+
+    auto Adyn = [this]( int row, int col ){ return M_local_matrices[std::pair{row,col}]; };
+    auto Fdyn = [rhs]( int row ){ return rhs->M_local_vectors[row]; };
+
     auto const& F0K = rhs->M_local_vectors[0];
     //LOG(INFO) << "F0K.size=" << F0K.size();
     auto const& F1K = rhs->M_local_vectors[1];
     //LOG(INFO) << "F1K.size=" << F1K.size();
     auto const& F2K = rhs->M_local_vectors[2];
-    auto const& F3K = rhs->M_local_vectors[3];
+    
     //LOG(INFO) << "F2K.size=" << F2K.size();
     auto F4K = [&rhs]( int i ) { return rhs->M_local_vectors[i]; };
 
@@ -1171,24 +1171,30 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
     int N3 = N2*e1.mesh()->numLocalTopologicalFaces();
 
     int N41 = N2*(e1.mesh()->numLocalTopologicalFaces());
-    int N42 = 0;
-    
-    if ( e.functionSpace(3_c)->numberOfSpaces() > 0 )
+    int N42 = 0, N43 = 0;
+
+    if( e.functionSpace(3_c)->hasIbcSpace() )
     {
         N41 = N2*(e1.mesh()->numLocalTopologicalFaces()-1);
         N42 = e(3_c,0).dof()->nLocalDof();
     }
+    if( e.functionSpace(3_c)->hasOtherThanIbcSpace() )
+    {
+        N43 = e(3_c,0).dof()->nLocalDof();
+    }
     int N4 = N41+N42;
+    bool other_than_ibc_space = e.functionSpace(3_c)->hasOtherThanIbcSpace();
     cout << "[staticcondensation] N=" << N << " N0=" << N0 << " N1=" << N1 << " N2=" << N2 << " N3=" << N3 << " N4=" << N4 << "(" << N41 << "+" << N42 << ")" << " ntf=" << e1.mesh()->numLocalTopologicalFaces()<< std::endl;
     local_matrix_t AK( N, N ),A00(N0,N0),A01(N0,N1),A10(N1,N0), A11(N1,N1), A20(N3,N0), A21(N3,N1), A22(N3,N3);
     local_matrix_t A03(N0,N42),A30(N42,N0), A13(N1,N42),A31(N42,N1), A23(N2,N42),A32(N42,N2), A33(N42,N42);
+    local_matrix_t A43(N43,N42),A34(N42,N43), A44(N43,N43);
     local_matrix_t BK( N, N3 ),BK3( N,N4);
     local_matrix_t CK( N3, N ),CK3( N4,N);
     local_matrix_t DK( N3, N3 ), DK3( N4,N4);
     local_vector_t FK( N );
     local_vector_t DKF( N3 );
     local_vector_t DKF3(N4);
-    local_vector_t F2( N3 ), F3(N4);
+    local_vector_t F2( N3 ), F3(N4), F4(N43);
     for( ; it != en ; ++it )
     {
         auto key = it->first;
@@ -1209,25 +1215,38 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 
         dK_iterator_type dK_it;
         // index of the function space in e4
-        int index = 0;
+        uint16_type index = 0, index_not_ibc = 0;
+        bool has_ibc_coupling = false;
         {
             auto dK = e3.mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
             decltype(dK) dK1;
             dK_it = M_dK.end();
             if ( dK.second ) // there are missing
             {
-                LOG(INFO) << "missing faces" << key.first << ":" << dK;
-                for ( int i = 0; i < 1/*M_dim4*/; ++i )
+                //Feel::cout << "missing faces" << key.first << ":" << dK << " -- " << e.functionSpace(3_c)->numberOfSpaces() << std::endl;
+                for ( int i = 0; i < e.functionSpace(3_c)->numberOfSpaces(); ++i )
                 {
-                    
-                    dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
-                    DLOG(INFO) << "possibly adding faces from space " << i << " element " << key.first << ":" << dK1 << " fIds" << e1.mesh()->element(key.first).facesId();
-                    if ( !dK1.first.empty() )
+                    if ( e.functionSpace(3_c)->isIbcSpace( i ) )
                     {
-                        DLOG(INFO) << " . added face from space index " << i;
-                        index = i;
-                        dK_it = M_dK.emplace( K, Feel::detail::ElementFaces<>( std::move(dK.first), std::move(dK1.first), index ) ).first;
-                        break;
+                        dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
+                        LOG(INFO) << "possibly adding faces from space " << i << " element " << key.first << ":" << dK1 << " fIds" << e1.mesh()->element(key.first).facesId();
+                        if ( !dK1.first.empty() )
+                        {
+                            //Feel::cout << " . added face from space index " << i << std::endl;
+                            index = i;
+                            dK_it = M_dK.emplace( K, Feel::detail::ElementFaces<>( std::move(dK.first), std::move(dK1.first), index ) ).first;
+                        }
+                    }
+                    else
+                    {
+                        dK1 = e(3_c,i).mesh()->meshToSubMesh( e1.mesh()->element(key.first).facesId());
+                        if ( !dK1.first.empty() )
+                        {
+                            
+                            index_not_ibc = i;
+                            has_ibc_coupling = true;
+                            //Feel::cout << "index_not_ibc: " << index_not_ibc << std::endl;
+                        }
                     }
                     
                 }
@@ -1294,13 +1313,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                 cout<< "F2=" << F2 << std::endl;
             }
 
-
-#if 1
-            auto Aldlt = AK.ldlt();
-            ////LOG(INFO) << "Aldlt=" << Aldlt;
-#else
             auto Aldlt = AK.lu();
-#endif
+
             auto AinvB = Aldlt.solve( BK );
             auto AinvF = Aldlt.solve( FK );
 
@@ -1324,11 +1338,26 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             A22 = local_matrix_t::Zero(N4,N4);
             A20 = local_matrix_t::Zero(N4,N0);
             A21 = local_matrix_t::Zero(N4,N1);
+            A34 = local_matrix_t::Zero(N42,N43);
+            A43 = local_matrix_t::Zero(N43,N42);
+            A44 = local_matrix_t::Zero(N43,N43);
             CK = local_matrix_t::Zero(N4,N);
             FK = local_vector_t::Zero(N);
             F2 = local_vector_t::Zero(N4);
+            F4 = local_vector_t::Zero(N43);
             BK3 = local_matrix_t::Zero(N, N4);
+            
+            auto const& A30K = Adyn( 3+dK.spaceIndex(), 0 );
+            auto const& A31K = Adyn( 3+dK.spaceIndex(), 1 );
+            auto const& A03K = Adyn( 0, 3+dK.spaceIndex() );
+            auto const& A13K = Adyn( 1, 3+dK.spaceIndex() );
+            auto const& A33K = Adyn( 3+dK.spaceIndex(), 3+dK.spaceIndex() );
+            auto const& F3K = Fdyn( 3+dK.spaceIndex() );
 
+            auto const& A34K = Adyn( 3+dK.spaceIndex(), 3+index_not_ibc );
+            auto const& A43K = Adyn( 3+index_not_ibc, 3+dK.spaceIndex() );
+            auto const& A44K = Adyn( 3+index_not_ibc, 3+index_not_ibc );
+            auto const& F4K = Fdyn( 3+index_not_ibc );
             int n = 0;
             std::for_each( dK.faces1().begin(), dK.faces1().end(), [&]( auto dKi )
                            {
@@ -1375,7 +1404,7 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             int n2 = 0;
             std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                            {
-                               //std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
+                               // std::cout << "face2 key.first=" << key.first << " dKi=" << dKi << std::endl;
                                auto key2 = std::make_pair(key.first, dKi );
                                auto key3 = std::make_pair(dKi,key.first);
                                auto key4 = std::make_pair(dKi, dKi);
@@ -1399,7 +1428,21 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
                                //std::cout << "f CK=" << CK << std::endl;
                                if ( A33K.count(key4) )
                                    A22.block(n*N2+n2*N42, n*N2, N42, N42 ) = A33K.at(key4);
-
+                               if ( other_than_ibc_space )
+                               {
+                                   if ( A34K.count( key4 ) )
+                                       A34 = A34K.at(key4);
+                                   if ( A43K.count( key4 ) )
+                                       A43 = A43K.at(key4);
+                                   if ( A44K.count( key4 ) )
+                                       A44 = A44K.at(key4);
+                                   if ( F4K.count( dKi ) )
+                                       F4 = F4K.at( dKi );
+                                   //Feel::cout << "A43:" << A43 << std::endl;
+                                   //Feel::cout << "A34:" << A34 << std::endl;
+                                   //Feel::cout << "A44:" << A44 << std::endl;
+                                   //Feel::cout << "F4:" << F4 << std::endl;
+                               }
                                if ( F3K.count(dKi) )
                                {
                                    F2.segment(n*N2+n2*N42,N42)=F3K.at(dKi);
@@ -1421,11 +1464,8 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             }
 
 
-#if 0
-            auto Aldlt = AK.ldlt();
-#else
             auto Aldlt = AK.lu();
-#endif
+
 #if 0
             local_vector_t pK(N4);
             pK=local_vector_t::Constant(N4,1);
@@ -1464,16 +1504,13 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
 
             auto dofs2 = e(3_c,dK.spaceIndex()).dofs(dK.faces2(),S.matrixPtr()->mapRow(),1);
 
-            decltype(dofs1) dofs( dofs1.size()+dofs2.size() );
-            std::copy(dofs1.begin(), dofs1.end(), dofs.begin() );
-            std::copy(dofs2.begin(), dofs2.end(), dofs.begin()+dofs1.size() );
-
             local_matrix_t DK00( DK3.block( 0, 0, N41, N41 ) );
             local_matrix_t DK01( DK3.block( 0, N41, N41, N42 ) );
             local_matrix_t DK10( DK3.block( N41, 0, N42, N41 ) );
             local_matrix_t DK11( DK3.block( N41, N41, N42, N42 ) );
             local_vector_t DKF1( DKF3.head( N41 ) );
-            local_vector_t DKF2( DKF3.tail( N42 ) );
+            local_vector_t DKF2( DKF3.segment( N41, N42 ) );
+            
             S(0_c,0_c).addMatrix( dofs1.data(), dofs1.size(), dofs1.data(), dofs1.size(), DK00.data(), invalid_v<size_type>, invalid_v<size_type> );
             //S.matrixPtr()->printMatlab("S1.m");
             S(0_c,1_c,0,dK.spaceIndex()).addMatrix( dofs1.data(), dofs1.size(), dofs2.data(), dofs2.size(), DK01.data(), invalid_v<size_type>, invalid_v<size_type> );
@@ -1487,7 +1524,19 @@ StaticCondensation<T,IndexT>::condense( std::shared_ptr<StaticCondensation<T>> c
             //V.vectorPtr()->printMatlab("g1.m");
             V(1_c,dK.spaceIndex()).addVector( dofs2.data(), dofs2.size(), DKF2.data(), invalid_v<size_type>, invalid_v<size_type> );
 
-            condense2( dK, rhs, e, S, V );
+            //Feel::cout << " -- index_not_ibc: " << index_not_ibc << std::endl;
+            if ( other_than_ibc_space && has_ibc_coupling ) //index_not_ibc != invalid_v<uint16_type> )
+            {
+                auto dofs3 = e(3_c,index_not_ibc).dofs(dK.faces2(),S.matrixPtr()->mapRow(),2);
+                S(1_c,1_c,dK.spaceIndex(),index_not_ibc).addMatrix( dofs2.data(), dofs2.size(), dofs3.data(), dofs3.size(), A34.data(), invalid_v<size_type>, invalid_v<size_type> );
+                S(1_c,1_c,index_not_ibc,dK.spaceIndex()).addMatrix( dofs3.data(), dofs3.size(), dofs2.data(), dofs2.size(), A43.data(), invalid_v<size_type>, invalid_v<size_type> );
+                S(1_c,1_c,index_not_ibc,index_not_ibc).addMatrix( dofs3.data(), dofs3.size(), dofs3.data(), dofs3.size(), A44.data(), invalid_v<size_type>, invalid_v<size_type> );
+            
+                V(1_c,index_not_ibc).addVector( dofs3.data(), dofs3.size(), F4.data(), invalid_v<size_type>, invalid_v<size_type> );
+
+            }
+            
+            //condense2( dK, rhs, e, S, V );
            //V.vectorPtr()->printMatlab("g2.m");
             toc("sc.condense.globalassembly", FLAGS_v>1);
 
@@ -1553,7 +1602,7 @@ StaticCondensation<T,IndexT>::condense2( DK const& dK, std::shared_ptr<StaticCon
     Feel::cout << "\n";
     std::for_each( dK.faces2().begin(), dK.faces2().end(), [&]( auto dKi )
                    {
-                       Feel::cout << "face2 dKi=" << dKi << std::endl;
+                       // Feel::cout << "face2 dKi=" << dKi << std::endl;
                        auto key = std::make_pair(dKi, dKi);
                        Feel::cout << "A34(" << key.first << "):" << A34K.at(key) << "\n";
                        Feel::cout << "A43(" << key.first << "):" << A43K.at(key) << "\n";

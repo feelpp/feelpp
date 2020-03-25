@@ -20,8 +20,8 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
         vector_ptrtype& F = data.rhs();
 
         auto mesh = M_fluidModel->mesh();
-        auto Xh = M_fluidModel->spaceVelocityPressure();
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
                                    _pattern=size_type(Pattern::COUPLED),
                                    _rowstart=M_fluidModel->rowStartInMatrix(),
                                    _colstart=M_fluidModel->colStartInMatrix() );
@@ -29,7 +29,7 @@ FSI<FluidType,SolidType>::updateLinearPDEDofElimination_Fluid( DataUpdateLinear 
         bilinearForm +=
             on( _range=M_rangeFSI_fluid,
                 _element=u, _rhs=F,
-                _expr=idv(M_fluidModel->meshVelocity2()) );
+                _expr=idv(this/*M_fluidModel*/->meshVelocity2()) );
 
         this->log("FSI","updateLinearPDEDofElimination_Fluid", "finish" );
     }
@@ -45,11 +45,10 @@ FSI<FluidType,SolidType>::updateNewtonInitialGuess_Fluid( DataNewtonInitialGuess
 
         vector_ptrtype& U = data.initialGuess();
         auto mesh = M_fluidModel->mesh();
-        auto Xh = M_fluidModel->spaceVelocityPressure();
-        auto up = Xh->element( U, M_fluidModel->rowStartInVector() );
-        auto u = up.template element<0>();
+        auto XhV = M_fluidModel->functionSpaceVelocity();
+        auto u = XhV->element( U, M_fluidModel->rowStartInVector() );
         u.on(_range=M_rangeFSI_fluid,
-             _expr=idv( M_fluidModel->meshVelocity2() ) );
+             _expr=idv( this/*M_fluidModel*/->meshVelocity2() ) );
         // update info for synchronization
         M_fluidModel->updateDofEliminationIds( "velocity", this->dofEliminationIds( "fluid.velocity" ), data );
 
@@ -109,12 +108,13 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     M_fluidModel->timerTool("Solve").start();
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
 
     auto const& u = M_fluidModel->fieldVelocity();
     auto const& p = M_fluidModel->fieldPressure();
-    auto const& uEval = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pEval = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
+    auto const& uEval = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pEval = M_fluidModel->fieldPressure();
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
@@ -122,9 +122,9 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
     auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(uEval),*M_fluidModel->materialProperties(),matName);
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto linearForm = form1( _test=Xh, _vector=F,
+    auto linearForm = form1( _test=XhV, _vector=F,
                              _rowstart=M_fluidModel->rowStartInVector() );
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=A,
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
@@ -154,7 +154,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             //M_fluidModel->meshALE()->revertReferenceMesh();
             linearForm +=
                 integrate( _range=rangeFSI,
-                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
+                           _expr= ( gammaRobinFSI*muExpr/hFace() )*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
                            _geomap=this->geomap() );
             //M_fluidModel->meshALE()->revertMovingMesh();
         }
@@ -163,16 +163,25 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
         {
             double alpha = M_couplingNitscheFamily_alpha;
             double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-            auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
+            auto mysigma_p = id(p)*Id;
+            auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
             if ( buildCstPart )
             {
-                bilinearForm +=
+                auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=A,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                             _colstart=M_fluidModel->colStartInMatrix()+1 );
+                auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=A,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                             _colstart=M_fluidModel->colStartInMatrix() );
+                bilinearFormPP +=
                     integrate( _range=rangeFSI,
                                _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(p)*id(p),
                                _geomap=this->geomap() );
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
-                    bilinearForm +=
+                    bilinearFormPV +=
                         integrate( _range=rangeFSI,
                                    _expr= -inner( idt(u), vf::N() )*id(p),
                                    _geomap=this->geomap() );
@@ -181,13 +190,19 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 {
                     bilinearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), mysigma*vf::N() ),
+                                   _expr= -inner( idt(u), mysigma_u*vf::N() ),
+                                   _geomap=this->geomap() );
+                    bilinearFormPV +=
+                        integrate( _range=rangeFSI,
+                                   _expr= -inner( idt(u), mysigma_p*vf::N() ),
                                    _geomap=this->geomap() );
                 }
             }
             if ( buildNonCstPart )
             {
-                linearForm +=
+                auto linearFormP = form1( _test=XhP, _vector=F,
+                                          _rowstart=M_fluidModel->rowStartInVector()+1 );
+                linearFormP +=
                     integrate( _range=rangeFSI,
                                _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pEval)*id(p),
                                _geomap=this->geomap() );
@@ -195,9 +210,9 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
                     //M_fluidModel->meshALE()->revertReferenceMesh();
-                    linearForm +=
+                    linearFormP +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(M_fluidModel->meshVelocity2()),vf::N())*id(p),
+                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
                                    _geomap=this->geomap() );
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
@@ -205,7 +220,11 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
                     //M_fluidModel->meshALE()->revertReferenceMesh();
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner(idv(M_fluidModel->meshVelocity2()),mysigma*vf::N()),
+                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_u*vf::N()),
+                                   _geomap=this->geomap() );
+                    linearFormP +=
+                        integrate( _range=rangeFSI,
+                                   _expr= -inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_p*vf::N()),
                                    _geomap=this->geomap() );
                 }
                 //M_fluidModel->meshALE()->revertMovingMesh();
@@ -254,8 +273,7 @@ FSI<FluidType,SolidType>::updateLinearPDE_Fluid( DataUpdateLinear & data ) const
             }
             if ( buildNonCstPart )
             {
-                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
-                auto uWrap = UWrap.template element<0>();
+                auto uWrap = XhV->element( M_coulingRNG_vectorTimeDerivative, 0 );
                 uWrap.zero();
                 uWrap.add( -1., *this->couplingRNG_evalForm1() );
                 F->close();
@@ -289,17 +307,17 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
     this->log("FSI","updateJacobian_Fluid", "start"+sc );
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
 
-    auto U = Xh->element(XVec, M_fluidModel->rowStartInVector());
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
+    auto u = XhV->element(XVec, M_fluidModel->rowStartInVector());
+    auto const& q =  M_fluidModel->fieldPressure();
+    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pPrevious = M_fluidModel->fieldPressure();
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+    auto bilinearForm = form2( _test=XhV,_trial=XhV,_matrix=J,
                                _pattern=size_type(Pattern::COUPLED),
                                _rowstart=M_fluidModel->rowStartInMatrix(),
                                _colstart=M_fluidModel->colStartInMatrix() );
@@ -328,25 +346,38 @@ FSI<FluidType,SolidType>::updateJacobian_Fluid( DataUpdateJacobian & data ) cons
             {
                 double alpha = M_couplingNitscheFamily_alpha;
                 double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-                auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
+                auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
+                auto mysigma_p = id(q)*Id;
+                auto bilinearFormPV = form2( _test=XhP,_trial=XhV,_matrix=J,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                             _colstart=M_fluidModel->colStartInMatrix() );
+                auto bilinearFormPP = form2( _test=XhP,_trial=XhP,_matrix=J,
+                                             _pattern=size_type(Pattern::COUPLED),
+                                             _rowstart=M_fluidModel->rowStartInMatrix()+1,
+                                             _colstart=M_fluidModel->colStartInMatrix()+1 );
 
-                bilinearForm +=
+                bilinearFormPP +=
                     integrate( _range=rangeFSI,
-                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(p)*id(p),
+                               _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idt(q)*id(q),
                                _geomap=this->geomap() );
 
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
-                    bilinearForm +=
+                    bilinearFormPV +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), vf::N() )*id(p),
+                                   _expr= -inner( idt(u), vf::N() )*id(q),
                                    _geomap=this->geomap() );
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
                 {
                     bilinearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner( idt(u), mysigma*vf::N() ),
+                                   _expr= -inner( idt(u), mysigma_u*vf::N() ),
+                                   _geomap=this->geomap() );
+                    bilinearFormPV +=
+                        integrate( _range=rangeFSI,
+                                   _expr= -inner( idt(u), mysigma_p*vf::N() ),
                                    _geomap=this->geomap() );
                 }
             }
@@ -400,21 +431,23 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
     this->log("FSI","updateResidual_Fluid", "start"+sc );
 
     auto mesh = M_fluidModel->mesh();
-    auto Xh = M_fluidModel->spaceVelocityPressure();
+    auto XhV = M_fluidModel->functionSpaceVelocity();
+    auto XhP = M_fluidModel->functionSpacePressure();
+    auto u = XhV->element(XVec, M_fluidModel->rowStartInVector());
+    auto p = XhP->element(XVec, M_fluidModel->rowStartInVector() +1);
+    auto const& q = M_fluidModel->fieldPressure();
 
-    auto U = Xh->element(XVec, M_fluidModel->rowStartInVector());
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
-
-    auto linearForm = form1( _test=Xh, _vector=R,
+    auto linearForm = form1( _test=XhV, _vector=R,
                              _rowstart=M_fluidModel->rowStartInVector() );
+    auto linearFormP = form1( _test=XhP, _vector=R,
+                             _rowstart=M_fluidModel->rowStartInVector()+1 );
 
     auto const Id = eye<fluid_type::nDim,fluid_type::nDim>();
 
     auto rangeFSI = M_rangeFSI_fluid;
 
-    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0).template element<0>();
-    auto const& pPrevious = (true)? M_fluidModel->fieldPressure() : M_fluidModel->timeStepBDF()->unknown(0).template element<1>();
+    auto const& uPrevious = (true)? M_fluidModel->fieldVelocity() : M_fluidModel->timeStepBDF()->unknown(0);
+    auto const& pPrevious = M_fluidModel->fieldPressure();
 
     CHECK( M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
     std::string matName = M_fluidModel->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
@@ -442,7 +475,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                            _geomap=this->geomap() );
             linearForm +=
                 integrate( _range=rangeFSI,
-                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(M_fluidModel->meshVelocity2()),id(u)),
+                           _expr= -(gammaRobinFSI*muExpr/hFace())*inner(idv(this/*M_fluidModel*/->meshVelocity2()),id(u)),
                            _geomap=this->geomap() );
         }
         if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
@@ -450,16 +483,18 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
         {
             double alpha = M_couplingNitscheFamily_alpha;
             double gamma0RobinFSI = M_couplingNitscheFamily_gamma0;
-            auto mysigma = id(p)*Id+2*alpha*muExpr*sym(grad(u));
+            auto mysigma_u = 2*alpha*muExpr*sym(grad(u));
+            auto mysigma_p = id(q)*Id;
             if ( buildNonCstPart && !useJacobianLinearTerms )
             {
-                linearForm +=
+                auto p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1);
+                linearFormP +=
                     integrate( _range=rangeFSI,
                                _expr= ( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(p)*id(p),
                                _geomap=this->geomap() );
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
-                    linearForm +=
+                    linearFormP +=
                         integrate( _range=rangeFSI,
                                    _expr= -inner( idv(u), vf::N() )*id(p),
                                    _geomap=this->geomap() );
@@ -468,29 +503,37 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
                 {
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= -inner( idv(u), mysigma*vf::N() ),
+                                   _expr= -inner( idv(u), mysigma_u*vf::N() ),
+                                   _geomap=this->geomap() );
+                    linearFormP +=
+                        integrate( _range=rangeFSI,
+                                   _expr= -inner( idv(u), mysigma_p*vf::N() ),
                                    _geomap=this->geomap() );
                 }
             }
             if ( buildCstPart )
             {
-                linearForm +=
+                linearFormP +=
                     integrate( _range=rangeFSI,
                                _expr= -( gamma0RobinFSI*hFace()/(gammaRobinFSI*muExpr) )*idv(pPrevious)*id(p),
                                _geomap=this->geomap() );
 
                 if ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-neumann" )
                 {
-                    linearForm +=
+                    linearFormP +=
                         integrate( _range=rangeFSI,
-                                   _expr= inner(idv(M_fluidModel->meshVelocity2()),vf::N())*id(p),
+                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),vf::N())*id(p),
                                    _geomap=this->geomap() );
                 }
                 else if ( this->fsiCouplingBoundaryCondition() == "nitsche" )
                 {
                     linearForm +=
                         integrate( _range=rangeFSI,
-                                   _expr= inner(idv(M_fluidModel->meshVelocity2()),mysigma*vf::N()),
+                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_u*vf::N()),
+                                   _geomap=this->geomap() );
+                    linearFormP +=
+                        integrate( _range=rangeFSI,
+                                   _expr= inner(idv(this/*M_fluidModel*/->meshVelocity2()),mysigma_p*vf::N()),
                                    _geomap=this->geomap() );
                 }
             }
@@ -532,8 +575,7 @@ FSI<FluidType,SolidType>::updateResidual_Fluid( DataUpdateResidual & data ) cons
             }
             if ( buildCstPart )
             {
-                auto UWrap = this->fluidModel()->spaceVelocityPressure()->element( M_coulingRNG_vectorTimeDerivative, 0 );
-                auto uWrap = UWrap.template element<0>();
+                auto uWrap = XhV->element( M_coulingRNG_vectorTimeDerivative, 0 );
                 uWrap.zero();
                 uWrap.add( 1., *this->couplingRNG_evalForm1() );
                 R->close();

@@ -58,15 +58,15 @@ namespace detail
 template<typename Args>
 struct projector_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
-    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::type::element_type image_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::element_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::imageSpace>::element_type image_type;
     typedef std::shared_ptr<Projector<domain_type,image_type> > return_type;
 };
 
 template<typename Args>
 struct lift_args
 {
-    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::type::element_type domain_type;
+    typedef typename vf::detail::clean_type<Args,tag::domainSpace>::element_type domain_type;
     typedef std::shared_ptr<Projector<domain_type,domain_type> > lift_return_type;
 };
 
@@ -113,22 +113,22 @@ public :
     template<typename Args,typename IntEltsDefault>
     struct integrate_type
     {
-        typedef typename vf::detail::clean_type<Args,tag::expr>::type _expr_type;
-        typedef typename vf::detail::clean2_type<Args,tag::range,IntEltsDefault>::type _range_type;
+        typedef vf::detail::clean_type<Args,tag::expr> _expr_type;
+        typedef vf::detail::clean2_type<Args,tag::range,IntEltsDefault> _range_type;
         typedef typename boost::tuples::template element<1, _range_type>::type _element_iterator;
         static const uint16_type geoOrder = boost::unwrap_reference<typename _element_iterator::value_type>::type::nOrder;
 
         using expr_order_t = ExpressionOrder<_range_type,_expr_type>;
         using im_default_type = im_t<typename expr_order_t::the_element_type, typename _expr_type::value_type>;
-        typedef typename vf::detail::clean2_type<Args,tag::quad, im_default_type>::type __quad_type;
-        typedef typename vf::detail::clean2_type<Args,tag::quad1, im_default_type >::type __quad1_type;
+        typedef vf::detail::clean2_type<Args,tag::quad, im_default_type> __quad_type;
+        typedef vf::detail::clean2_type<Args,tag::quad1, im_default_type > __quad1_type;
         using _im_type = vf::detail::integrate_im_type<_range_type,_expr_type,__quad_type,__quad1_type>;
         using _quad_type = typename _im_type::_quad_type;
         using _quad1_type = typename _im_type::_quad1_type;
 
         
-        //typedef typename vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > >::type _quad_type;
-        //typedef typename vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > >::type _quad1_type;
+        //typedef vf::detail::clean2_type<Args,tag::quad, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value > > _quad_type;
+        //typedef vf::detail::clean2_type<Args,tag::quad1, _Q< vf::ExpressionOrder<_range_type,_expr_type>::value_1 > > _quad1_type;
     };
 
     //@}

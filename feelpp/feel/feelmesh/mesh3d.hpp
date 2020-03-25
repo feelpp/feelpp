@@ -75,10 +75,10 @@ class Mesh3D
       public MeshBase<IndexT>,
       public Elements<Shape, T>,
       public Points<3, T>,
-      public Faces<typename Shape::template shape<2>::type,
+      public Faces<typename Shape::template shape<2>,
                    typename Elements<Shape, T>::element_type>,
-      public Edges<typename Shape::template shape<1>::type,
-                   typename Faces<typename Shape::template shape<2>::type,
+      public Edges<typename Shape::template shape<1>,
+                   typename Faces<typename Shape::template shape<2>,
                                   typename Elements<Shape, T>::element_type>::face_type>
 {
     // check at compilation time that the shape has indeed dimension 2
@@ -114,7 +114,7 @@ class Mesh3D
     typedef typename super_points::points_type points_type;
     typedef typename super_points::point_type point_type;
 
-    typedef Faces<typename Shape::template shape<2>::type,
+    typedef Faces<typename Shape::template shape<2>,
                   typename super_elements::element_type>
         super_faces;
     typedef typename super_faces::faces_type faces_type;
@@ -127,7 +127,7 @@ class Mesh3D
     typedef typename super_faces::face_reference_wrapper_iterator location_face_iterator;
     typedef typename super_faces::face_reference_wrapper_const_iterator location_face_const_iterator;
 
-    typedef Edges<typename Shape::template shape<1>::type, face_type> super_edges;
+    typedef Edges<typename Shape::template shape<1>, face_type> super_edges;
     typedef typename super_edges::edges_type edges_type;
     typedef typename super_edges::edge_type edge_type;
     typedef typename super_edges::edge_iterator edge_iterator;
@@ -388,14 +388,14 @@ Mesh3D<GEOSHAPE, T, IndexT>::~Mesh3D()
 template <typename GEOSHAPE, typename T, typename IndexT>
 void Mesh3D<GEOSHAPE, T, IndexT>::clear()
 {
+    super::clear();
     super_elements::clear();
     super_points::clear();
     super_faces::clear();
     super_edges::clear();
 
     M_e2e.resize( boost::extents[0][0] );
-    FEELPP_ASSERT( isEmpty() )
-        .error( "all mesh containers should be empty after a clear." );
+    CHECK( isEmpty() ) << "all mesh containers should be empty after a clear.";
 }
 
 template <typename GEOSHAPE, typename T, typename IndexT>

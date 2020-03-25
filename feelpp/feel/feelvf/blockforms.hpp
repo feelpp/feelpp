@@ -105,6 +105,7 @@ class BlockBilinearForm
 public :
     using value_type = typename Feel::decay_type<PS>::value_type;
     using condensed_matrix_type = MatrixCondensed<value_type>;
+    using size_type = typename condensed_matrix_type::size_type;
     using condensed_matrix_ptrtype = std::shared_ptr<condensed_matrix_type>;
     using product_space_t = decay_type<PS>;
 
@@ -310,6 +311,10 @@ public :
         {
             M_matrix->zero( n1, n2 );
         }
+    void transpose(int n1, int n2 )
+        {
+            M_matrix->transposeBlock( n1, n2 );
+        }
     //!
     //! @return the number of non-zero entries in matrix representation
     //!
@@ -452,14 +457,19 @@ public :
             auto& e1 = solution(0_c);
 
             auto sc = M_matrix->sc();
-
+            tic();
             auto psS = product( e3.functionSpace() );
+            toc("blockform.sc.space",FLAGS_v>0);
+            tic();
             auto S = blockform2( psS, solve::strategy::monolithic, backend(), Pattern::HDG  );
+            toc("blockform.sc.bilinearform",FLAGS_v>0);
             //MatSetOption ( dynamic_cast<MatrixPetsc<double>*>(S.matrixPtr().get())->mat(), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE );
             auto V = blockform1( psS, solve::strategy::monolithic, backend() );
-
+            
             tic();
             this->syncLocalMatrix();
+            toc("blockform.sc.sync", FLAGS_v>0);
+            tic();
             sc->condense ( rhs.vectorPtr()->sc(), solution, S, V );
             toc("blockform.sc.condense", FLAGS_v>0);
             S.close();V.close();

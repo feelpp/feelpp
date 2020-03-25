@@ -64,8 +64,8 @@ enum MeshComponents
     MESH_NO_UPDATE_MEASURES = ( 1 << 8 ),
     MESH_UPDATE_ELEMENTS_ADJACENCY = ( 1 << 9 ),
     MESH_UPDATE_FACES_MINIMAL = ( 1 << 10 ),
-    MESH_GEOMAP_NOT_CACHED = ( 1 << 11 )
-
+    MESH_GEOMAP_NOT_CACHED = ( 1 << 11 ),
+    MESH_DO_NOT_UPDATE = (1 << 16 )
 
 };
 const uint16_type MESH_ALL_COMPONENTS = MESH_UPDATE_EDGES | MESH_UPDATE_FACES | MESH_CHECK | MESH_PARTITION | MESH_RENUMBER;
@@ -147,6 +147,12 @@ public:
     /** @name Accessors
      */
     //@{
+
+    //! return current shared_ptr of type MeshBase
+    virtual std::shared_ptr<MeshBase<IndexT>> shared_from_this_meshbase() = 0;
+
+    //! return current shared_ptr of type MeshBase
+    virtual std::shared_ptr<const MeshBase<IndexT>> shared_from_this_meshbase() const = 0;
 
     /**
      * \return \p true if the mesh is ready for use, \p false
@@ -310,6 +316,8 @@ public:
      */
     virtual void updateForUse( size_type components );
 
+    //! update the mesh when nodes have moved
+    virtual void updateForUseAfterMovingNodes( bool upMeasures = true ) = 0;
 
     /**
      * Call the default partitioner (currently \p metis_partition()).
@@ -530,6 +538,37 @@ public:
             }
             return invalid_v<size_type>;
         }
+
+    //! store a mesh which has nodes shared with the current mesh
+    template<typename MeshType>
+    void addMeshWithNodesShared( std::shared_ptr<MeshType> m )
+    {
+        auto foundMesh = std::find_if( M_meshesWithNodesShared.begin(), M_meshesWithNodesShared.end(),
+                                       [&m](auto const& wptr) { return m == wptr.lock(); });
+        if ( foundMesh == M_meshesWithNodesShared.end() )
+        {
+            M_meshesWithNodesShared.push_back( m );
+            m->addMeshWithNodesShared( this->shared_from_this_meshbase() );
+        }
+    }
+
+    //! store a mesh which has nodes shared with the current mesh
+    template<typename MeshType>
+    void addMeshWithNodesShared( std::shared_ptr<const MeshType> m )
+    {
+        this->addMeshWithNodesShared( std::const_pointer_cast<MeshType>( m ) );
+    }
+
+    //! get all meshes which share the nodes with the current mesh (current mesh is also include)
+    std::vector<std::shared_ptr<MeshBase<IndexT>>>
+    meshesWithNodesShared() const
+    {
+        std::vector<std::shared_ptr<MeshBase<IndexT>>> ret;
+        auto selfPtr = std::const_pointer_cast< MeshBase<IndexT>>( this->shared_from_this_meshbase() );
+        ret.push_back( selfPtr );
+        meshesWithNodesSharedImpl( ret );
+        return ret;
+    }
 
     //!
     //! @return true if the list strings are all  mesh marker
@@ -758,6 +797,27 @@ private:
             ar & M_n_parts;
             ar & M_markername;
         }
+
+    void meshesWithNodesSharedImpl( std::vector<std::shared_ptr<MeshBase<IndexT>>> & ret ) const
+    {
+        for ( std::weak_ptr<MeshBase<IndexT>> m : M_meshesWithNodesShared )
+        {
+            if ( m.expired() )
+                continue;
+            auto otherPtr = m.lock();
+            auto foundOther = std::find_if(ret.begin(), ret.end(),
+                                           [&otherPtr](auto const& ptr) { return otherPtr == ptr; });
+            if ( foundOther == ret.end() )
+            {
+                ret.push_back( otherPtr );
+                otherPtr->meshesWithNodesSharedImpl( ret );
+            }
+        }
+    }
+
+    //! remove a mesh which has nodes shared with the current mesh (typically when the mesh is deleted)
+    void removeMeshWithNodesShared( MeshBase<IndexT> * m );
+
 protected:
 
     /**
@@ -812,6 +872,9 @@ private:
 
     // sub mesh data
     smd_ptrtype M_smd;
+
+    //! meshes with nodes shared
+    std::vector<std::weak_ptr<MeshBase<IndexT>>> M_meshesWithNodesShared;
 
 
 };

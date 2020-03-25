@@ -47,10 +47,10 @@ extern "C"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time_adjustor.hpp>
 #include <boost/date_time/c_local_time_adjustor.hpp>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
 
@@ -519,6 +519,24 @@ Environment::Environment( int argc, char** argv,
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
+
+    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
+    {
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( !fs::exists( p ) )
+                fs::create_directories( p );
+            else if ( !fs::is_directory( p ) )
+                continue;
+            S_rootdir = p;
+            break;
+        }
+    }
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
@@ -1344,6 +1362,22 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 }
 
 
+std::string
+Environment::findFileRemotely( std::string const& fname, std::string const& subdir )
+{
+    RemoteData rdTool( fname, worldCommPtr());
+    if ( rdTool.canDownload() )
+    {
+        auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
+        for( auto dl : downloadedFolder )
+            std::cout << dl << std::endl;
+
+        //CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+        return downloadedFolder[0];
+    }
+    return fname;
+}
+
 
 void
 Environment::doOptions( int argc, char** argv,
@@ -1536,26 +1570,13 @@ Environment::finalized()
 }
 
 
-std::string
+std::string const&
 Environment::rootRepository()
 {
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( !fs::is_directory( p ) )
-                continue;
-            return p.string();
-        }
-    }
-    return std::string();
+    return S_rootdir.string();
 }
 std::string
-Environment::findFile( std::string const& filename )
+Environment::findFile( std::string const& filename, std::vector<std::string> paths )
 {
     fs::path cp = fs::current_path();
 
@@ -1577,7 +1598,16 @@ Environment::findFile( std::string const& filename )
     }
 
 #endif
-
+    
+    auto filename_ = fs::path(filename).filename().string();
+    for( auto const& ps : paths )
+    {
+        
+        fs::path p( Environment::expand(ps) );
+        if ( fs::exists( p / filename_ ) )
+            
+            return ( p / filename_ ).string();
+    }
     // look in to paths list from end-1 to begin
     auto it = std::find_if( S_paths.rbegin(), S_paths.rend(),
                             [&filename] ( fs::path const& p ) -> bool
@@ -1874,12 +1904,15 @@ Environment::updateInformationObject( pt::ptree & p )
         p.put( "run.directories.downloads", Environment::downloadsRepository() );
         p.put( "run.number_processors", Environment::numberOfProcessors() );
 
-        if ( S_vm.count( "case" ) )
+
+        std::string commandLineUsed;
+        for ( int i = 0; i < S_argc; ++i )
         {
-            p.put( "run.case", soption( _name="case" ) );
-            if ( S_vm.count( "case.config-file" ) )
-                p.put( "run.case.config-file", soption( _name="case.config-file" ) );
+            commandLineUsed += S_argv[i];
+            if (i < S_argc-1 )
+                commandLineUsed += " ";
         }
+        p.put( "run.command-line", commandLineUsed );
         pt::ptree ptTmp;
         for ( auto const& cfg : S_configFiles )
             ptTmp.push_back( std::make_pair("", pt::ptree( std::get<0>( cfg ) ) ) );
@@ -1969,7 +2002,12 @@ Environment::startLogging( std::string decorate )
     FLAGS_log_dir=a0.string();
 
     google::AllowCommandLineReparsing();
-    google::ParseCommandLineFlags( &S_argc, &S_argv, false );
+
+    // duplicate argv before passing to gflags because gflags is going to rearrange them
+    char** envargv = dupargv( S_argv );
+    int envargc = S_argc;
+    google::ParseCommandLineFlags( &envargc, &envargv/*S_argv*/, false );
+    freeargv( envargv );
     //std::cout << "FLAGS_vmodule: " << FLAGS_vmodule << "\n";
 #if 0
     std::cout << "argc=" << S_argc << "\n";
@@ -2485,6 +2523,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
+fs::path Environment::S_rootdir;
 fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;

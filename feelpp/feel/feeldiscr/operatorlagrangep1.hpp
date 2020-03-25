@@ -35,6 +35,7 @@
 #include <feel/feelfilters/pointsettomesh.hpp>
 //#include <feel/feelfilters/exporterquick.hpp>
 #ifdef FEELPP_HAS_GMSH
+#include <feel/feelfilters/straightenmesh.hpp>
 #include <feel/feelfilters/loadgmshmesh.hpp>
 #endif
 //#include <feel/feelfilters/savegmshmesh.hpp>
@@ -68,7 +69,7 @@ struct SpaceToLagrangeP1Space
 
         typedef Lagrange<1,PsetType> type;
     };
-    typedef typename convex_type::template shape<domain_mesh_type::nDim, 1, domain_mesh_type::nRealDim>::type image_convex_type;
+    typedef typename convex_type::template shape<domain_mesh_type::nDim, 1, domain_mesh_type::nRealDim> image_convex_type;
     typedef Mesh<image_convex_type> image_mesh_type;
 
     typedef typename mpl::if_<mpl::bool_<domain_space_type::is_scalar>,
@@ -575,7 +576,8 @@ OperatorLagrangeP1<space_type>::buildLagrangeP1Mesh( bool parallelBuild, size_ty
             }
 
             // add element in mesh
-            auto const& theNewElt = M_mesh->addElement ( elt );
+            auto [eit,inserted] = M_mesh->addElement ( elt );
+            auto const& [eid,theNewElt] = *eit;
 
             // store // infos
             if ( doParallelBuild )
@@ -782,7 +784,7 @@ OperatorLagrangeP1<space_type>::operator()( element_type const& u ) const
             for ( int c = 0; c < nComponents; ++c )
                 for ( int p = 0; p < domain_mesh_type::element_type::numVertices; ++p )
                 {
-                    size_type ptid = boost::get<0>( this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ) );
+                    size_type ptid = this->dualImageSpace()->dof()->localToGlobal( elt.id(), p, c ).index();
                     res( ptid ) = ublas::column( u_at_pts, M_el2pt[*ite][p] )( nComponents*c+c );
                 }
         }

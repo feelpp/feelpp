@@ -561,10 +561,10 @@ endif (0) #BUILD_TESTING)
 install (TARGETS feelpp_glog
   #EXPORT feelpp-contrib-export-targets
   EXPORT glog-targets
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   PUBLIC_HEADER DESTINATION include/feelpp/glog
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib)
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if (gflags_FOUND)
   set (feelpp_gflags_DEPENDENCY "find_dependency (feelpp_gflags ${gflags_VERSION})")

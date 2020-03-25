@@ -60,11 +60,6 @@ public :
             }
 
             M_isDefinedOnWholeMesh = ( M_markers.size() == eltMarkersInMesh.size() );
-            if ( M_isDefinedOnWholeMesh )
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm );
-            else
-                M_space = space_type::New(_mesh=mesh, _worldscomm=worldsComm,_range=markedelements(mesh,M_markers) );
-            M_fieldElectricConductivity = M_space->elementPtr( vf::cst( this->cstElectricConductivity() ) );
 
             for( auto const& m : mats )
             {
@@ -84,7 +79,6 @@ public :
                 {
                     auto const& expr = mat.propertyExprScalar("sigma");
                     M_electricConductivityByMaterial[matName].setExpr( expr );
-                    M_fieldElectricConductivity->on(_range=range,_expr=expr);
                 }
             }
         }
@@ -93,7 +87,11 @@ public :
     bool isDefinedOnWholeMesh() const { return M_isDefinedOnWholeMesh; }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
-
+    elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
+        {
+            CHECK( this->hasMaterial(matName) ) << "no material with name " << matName;
+            return M_rangeMeshElementsByMaterial.find( matName )->second;
+        }
     bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     std::map<std::string, ModelExpressionScalar> const& electricConductivityByMaterial() const { return M_electricConductivityByMaterial; }
@@ -111,9 +109,6 @@ public :
             CHECK( itFindMat != M_electricConductivityByMaterial.end() ) << "material name not registered : " << matName;
             return itFindMat->second.value();
         }
-
-    element_type const& fieldElectricConductivity() const { return *M_fieldElectricConductivity; }
-    element_ptrtype const& fieldElectricConductivityPtr() const { return M_fieldElectricConductivity; }
 
     bool hasElectricConductivity( std::string const& matName ) const
         {
@@ -169,14 +164,11 @@ public :
                 prop.second.setParameterValues( mp );
         }
 
-
 private :
     std::set<std::string> M_markers;
     bool M_isDefinedOnWholeMesh;
-    space_ptrtype M_space;
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
     std::map<std::string, ModelExpressionScalar> M_electricConductivityByMaterial;
-    element_ptrtype M_fieldElectricConductivity;
     double M_electricConductivityDefaultValue;
 };
 

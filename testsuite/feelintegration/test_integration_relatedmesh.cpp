@@ -66,10 +66,10 @@ void run( bool useSMD )
     auto mesh1 = ((R-Circ2)+(Circ2-Circ)+Circ).createMesh(_mesh= new Mesh<Simplex<2,1,2>>,
                                                          _name="lomesh" );
 
-    auto mesh2 = createSubmesh( mesh1,markedelements(mesh1,"LocInterior"),ctxRelationLoc );
+    auto mesh2 = createSubmesh( _mesh=mesh1,_range=markedelements(mesh1,"LocInterior"),_context=ctxRelationLoc );
 
     std::list<std::string> listMarkers = { "LocInterior", "LocExterior" };
-    auto mesh3 = createSubmesh( mesh1,markedelements(mesh1,listMarkers),ctxRelationLoc );
+    auto mesh3 = createSubmesh( _mesh=mesh1,_range=markedelements(mesh1,listMarkers),_context=ctxRelationLoc );
 
     // function space
     auto Xh1 = Pch<2>(mesh1,true);

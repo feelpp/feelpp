@@ -53,6 +53,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
         M_exporterPath( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"exports")) ),
+        M_postProcessSaveRepository( fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"save")) ),
         M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() ),
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
         M_useChecker( boption(_prefix=this->prefix(),_name="checker") )
@@ -177,12 +178,63 @@ ModelNumerical::checkResults() const
                 std::cout << tc::green << "[success]";
             else
                 std::cout << tc::red << "[failure]";
-            std::cout << tc::reset << " check measure " << measureName <<  " : error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
+            std::cout << tc::reset << " check measure " << measureName <<  " : measure=" << valueMeasured << " , reference=" << checkerMeasure.value() << " , error=" << diffVal << " [tolerance=" << checkerMeasure.tolerance() << "]" << std::endl;
         }
         resultsAreOk = resultsAreOk && checkIsOk;
     }
     return resultsAreOk;
 }
+
+
+void
+ModelNumerical::initPostProcess()
+{
+    if ( this->hasModelProperties() )
+    {
+        for ( auto & [tag,fields] : M_postProcessExportsFields )
+            std::get<0>( fields ) = this->postProcessExportsFields( tag, this->modelProperties().postProcess().exports( this->keyword() ).fields() );
+
+        M_postProcessSaveFields = this->postProcessSaveFields( this->modelProperties().postProcess().save( this->keyword() ).fieldsNames() );
+        M_postProcessSaveFieldsFormat = this->modelProperties().postProcess().save( this->keyword() ).fieldsFormat();
+    }
+    if ( M_postProcessSaveFieldsFormat.empty() )
+        M_postProcessSaveFieldsFormat = "default";
+}
+
+std::set<std::string>
+ModelNumerical::postProcessExportsFields( std::string const& tag, std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    auto itFindTag = M_postProcessExportsFields.find( tag );
+    if ( itFindTag == M_postProcessExportsFields.end() )
+        return res;
+    for ( auto const& o : ifields )
+    {
+        for ( auto const& fieldAvailable : std::get<1>( itFindTag->second ) )
+            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
+                res.insert( fieldAvailable );
+    }
+    std::string const& pidName = std::get<2>( itFindTag->second );
+    if ( !pidName.empty() )
+    {
+        if ( ifields.find( pidName ) != ifields.end() || ifields.find( "all" ) != ifields.end() )
+            res.insert( pidName );
+    }
+    return res;
+}
+std::set<std::string>
+ModelNumerical::postProcessSaveFields( std::set<std::string> const& ifields, std::string const& prefix ) const
+{
+    std::set<std::string> res;
+    for ( auto const& o : ifields )
+    {
+        for ( auto const& fieldAvailable : M_postProcessSaveAllFieldsAvailable )
+            if ( o == prefixvm(prefix,fieldAvailable) || o == prefixvm(prefix,"all") || o == "all" )
+                res.insert( fieldAvailable );
+    }
+    return res;
+}
+
 
 } // namespace FeelModels
 

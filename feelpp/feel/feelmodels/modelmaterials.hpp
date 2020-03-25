@@ -105,7 +105,8 @@ struct FEELPP_EXPORT ModelMaterial : public CommObject
 
     bool hasPhysics() const { return !M_physics.empty(); }
     bool hasPhysics( std::string const& physic ) const { return M_physics.find(physic) != M_physics.end(); }
-    bool hasPhysics( std::initializer_list<std::string> const& physics ) const
+    bool hasPhysics( std::initializer_list<std::string> const& physics ) const { return this->hasPhysics( std::set<std::string>( physics ) ); }
+    bool hasPhysics( std::set<std::string> const& physics ) const
     {
         for ( std::string const& s : physics )
             if ( this->hasPhysics( s ) )
@@ -412,43 +413,19 @@ public:
     virtual ~ModelMaterials() = default;
     void setPTree( pt::ptree const& _p ) { M_p = _p; setup(); }
 
-    ModelMaterial const&
-    material( std::string const& m ) const
-        {
-            auto it = this->find( m );
-            if ( it == this->end() )
-                throw std::invalid_argument( std::string("ModelMaterial: Invalid material name ") + m );
-            return it->second;
-        }
+    ModelMaterial const& material( std::string const& m ) const;
 
     /** return all the materials which physic is physic
      *
      */
-    std::map<std::string,ModelMaterial> materialWithPhysic(std::string const& physic) const
-    {
-        std::map<std::string,ModelMaterial> mat;
-        std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
-                     [physic](std::pair<std::string,ModelMaterial> const& mp)
-                     { return mp.second.hasPhysics(physic); } );
-        return mat;
-    }
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::string const& physic) const;
 
     /** return all the materials which physic is one of physics
      *
      */
-    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> const& physics) const
-    {
-        std::map<std::string,ModelMaterial> mat;
-        std::copy_if(this->begin(),this->end(),std::inserter(mat,mat.begin()),
-                     [physics](std::pair<std::string,ModelMaterial> const& mp)
-                     {
-                         bool b = false;
-                         for( auto const& p : physics )
-                             b = b || mp.second.hasPhysics(p);
-                         return b;
-                     });
-        return mat;
-    }
+    std::map<std::string,ModelMaterial> materialWithPhysic(std::vector<std::string> const& physics) const;
+    std::set<std::string> markersWithPhysic(std::string const& physic) const;
+    std::set<std::string> markersWithPhysic(std::vector<std::string> const& physic) const;
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 

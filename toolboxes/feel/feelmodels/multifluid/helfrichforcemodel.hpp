@@ -159,13 +159,12 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
     bool BuildNonCstPart = !BuildCstPart;
 
     vector_ptrtype& F = data.rhs();
-    auto Xh = this->fluid()->functionSpace();
+    auto Xh = this->fluid()->functionSpaceVelocity();
     auto myLinearForm = form1( _test=Xh, _vector=F,
                                _rowstart=this->fluid()->rowStartInVector() );
 
-    auto const& U = this->fluid()->fieldVelocityPressure();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
+    auto const& u = this->fluid()->fieldVelocity();
+    auto const& v = u;
 
     if( BuildNonCstPart )
     {
@@ -217,11 +216,10 @@ HelfrichForceModel<LevelSetType, FluidMechanicsType>::updateFluidInterfaceForces
 
     const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
-    auto Xh = this->fluid()->functionSpace();
+    auto Xh = this->fluid()->functionSpaceVelocity();
 
-    auto U = Xh->element(XVec, this->fluid()->rowStartInVector());
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
+    auto u = Xh->element(XVec, this->fluid()->rowStartInVector());
+    auto const& v = this->fluid()->fieldVelocity();
 
     auto linearForm_PatternCoupled = form1( _test=Xh, _vector=R,
                                             _pattern=size_type(Pattern::COUPLED),

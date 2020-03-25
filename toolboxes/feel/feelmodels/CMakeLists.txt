@@ -30,6 +30,7 @@ add_subdirectory(modelcore)
 add_subdirectory(modelalg)
 add_subdirectory(modelmesh)
 add_subdirectory(modelvf)
+add_subdirectory(modelmaterials)
 
 
 add_custom_target(feelpp-models-algebra)

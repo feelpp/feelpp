@@ -1,6 +1,6 @@
 set_directory_properties(PROPERTIES LABEL testfilters )
 
-foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize gmsh)
+foreach(TEST importergmsh importerarm geotool geotool2 exporter_sanitize gmsh importer_mesh)
 
   feelpp_add_test( ${TEST} )
 
@@ -12,4 +12,4 @@ if(FEELPP_HAS_MED)
   feelpp_add_test( med SRCS test_med.cpp CFG test_med.cfg NO_MPI_TEST)
 endif()
 
-feelpp_add_test( exporter_disc CLI "--exporter.element-spaces=P1")
+feelpp_add_test( exporter_disc )

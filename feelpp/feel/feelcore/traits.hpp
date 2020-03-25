@@ -30,60 +30,20 @@
 #ifndef FEELPP_TRAITS_HPP
 #define FEELPP_TRAITS_HPP 1
 
-#include <cmath>
-
-#include <boost/rational.hpp>
-
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/max_element.hpp>
-#include <boost/mpl/transform_view.hpp>
-#include <boost/mpl/sizeof.hpp>
-
 #include <feel/feelcore/feel.hpp>
-
 #include <feel/feelcore/typetraits.hpp>
-#include <feel/feelcore/ublastraits.hpp>
+
 
 namespace Feel
 {
-template <typename T1, typename T2, typename T3 = mpl::void_, typename T4 = mpl::void_, typename T5 = mpl::void_>
-struct strongest_numeric_type
-{
-    typedef mpl::vector<T1, T2, T3, T4, T5> types;
-    typedef typename mpl::max_element<mpl::transform_view< types,mpl::sizeof_<mpl::_1> > >::type iter;
-    typedef typename mpl::deref<typename iter::base>::type type;
-};
-
-template <typename T1, typename T2>
-struct strongest_numeric_type<T1,std::complex<T2> >
-{
-    typedef typename type_traits<T1>::real_type R1;
-    typedef std::complex<typename strongest_numeric_type<R1,T2>::type > type;
-};
-template <typename T1, typename T2>
-struct strongest_numeric_type<std::complex<T1>,T2 >
-{
-    typedef typename type_traits<T2>::real_type R2;
-    typedef std::complex<typename strongest_numeric_type<T1,R2>::type > type;
-};
-template <typename T1, typename T2>
-struct strongest_numeric_type<std::complex<T1>,std::complex<T2> >
-{
-    typedef std::complex<typename strongest_numeric_type<T1,T2>::type > type;
-};
-
+template <typename... T>
+using strongest_numeric_type = std::common_type_t<T...>;
 
 template <class T>
-struct is_shared_ptr
-        : mpl::false_
-{
-};
+struct is_shared_ptr : std::bool_constant<false> {};
 
 template <class T>
-struct is_shared_ptr<std::shared_ptr<T> >
-        : mpl::true_
-{
-};
+struct is_shared_ptr<std::shared_ptr<T> > : std::bool_constant<true> {};
 
 template <class T>
 struct remove_shared_ptr
@@ -101,14 +61,13 @@ template<class T>
 constexpr bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
 template<typename T>
-struct is_ptr_or_shared_ptr : mpl::or_<is_shared_ptr<T>, boost::is_pointer<T> >::type {};
+struct is_ptr_or_shared_ptr : std::bool_constant<is_shared_ptr_v<T>||std::is_pointer_v<T>>  {};
 
 template<typename T>
 using remove_shared_ptr_type = typename remove_shared_ptr<T>::type;
-    //typename mpl::if_<is_shared_ptr<T>, mpl::identity<typename T::element_type>, mpl::identity<T>>::type::type;
 
 template<typename T>
-using decay_type = typename std::decay<remove_shared_ptr_type<typename std::decay<T>::type>>::type;
+using decay_type = std::decay_t<remove_shared_ptr_type<std::decay_t<T>>>;
 
 template<typename T>
 decltype(auto) remove_shared_ptr_f( T&& e )
@@ -118,5 +77,37 @@ decltype(auto) remove_shared_ptr_f( T&& e )
                      []( auto&& x ) { return x; } )( std::forward<T>(e) );
 
 }
+
+
+template <typename T, typename = void>
+struct is_iterable : std::false_type {};
+template <typename T>
+struct is_iterable<T, std::void_t<decltype(std::declval<T>().begin()),decltype(std::declval<T>().end())>>
+    : std::true_type {};
+template <typename T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
+template <class T>
+struct is_std_vector : std::bool_constant<false> {};
+template <class T>
+struct is_std_vector<std::vector<T> > : std::bool_constant<true> {};
+template <class T>
+using is_std_vector_t = is_std_vector<T>;
+template <class T>
+inline constexpr  bool is_std_vector_v = is_std_vector_t<T>::value;
+
+template <class T>
+struct remove_std_vector
+{
+    typedef T type;
+};
+template <class T>
+struct remove_std_vector<std::vector<T> >
+{
+    typedef T type;
+};
+template<typename T>
+using remove_std_vector_t = typename remove_std_vector<T>::type;
+
 } // namespace Feel
 #endif

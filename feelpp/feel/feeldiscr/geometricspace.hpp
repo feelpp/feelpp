@@ -133,10 +133,6 @@ public :
                     // std::cout << "geospace ContextGeo with minimal mesh\n";
                     if ( !M_meshGeoContext->hasElement( meshEltCtx.id() ) )
                     {
-                        auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
-                                                                                                             M_meshGeoContext->gm(),
-                                                                                                             M_meshGeoContext->gm1() );
-                        meshEltCtx.setCommonData( geondEltCommon );
                         M_meshGeoContext->addElement( meshEltCtx, false );
                     }
                     auto const& meshEltCtxRegister = M_meshGeoContext->element( meshEltCtx.id() );
@@ -224,7 +220,7 @@ public :
                 m(i,0) = t(i);
             auto loc =  M_Xh->mesh()->tool_localization();
             loc->setExtrapolation( false );
-            auto analysis = loc->run_analysis( m, invalid_v<size_type> );
+            auto analysis = loc->run_analysis( m, invalid_v<typename mesh_type::size_type> );
             auto found_points = analysis.template get<0>();
             bool found = found_points[0];
 
@@ -313,10 +309,6 @@ public :
                 if ( !M_meshGeoContext->hasElement( modelMeshEltCtx.id(), modelMeshEltCtx.processId() ) )
                 {
                     element_type meshEltCtx = modelMeshEltCtx;
-                    auto geondEltCommon = std::make_shared<GeoNDCommon<typename element_type::super>>( M_meshGeoContext.get(),
-                                                                                                         M_meshGeoContext->gm(),
-                                                                                                         M_meshGeoContext->gm1() );
-                    meshEltCtx.setCommonData( geondEltCommon );
                     M_meshGeoContext->addElement( meshEltCtx, false );
                 }
             }

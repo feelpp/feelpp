@@ -63,6 +63,7 @@ public:
     typedef typename element_type::edge_permutation_type edge_permutation_type;
     typedef typename element_type::face_permutation_type face_permutation_type;
 
+    using size_type = typename mesh_type::size_type;
     static const uint16_type nOrder = fe_type::nOrder;
     static const uint16_type nDim = mesh_type::nDim;
     static const uint16_type nRealDim = mesh_type::nRealDim;
@@ -269,7 +270,7 @@ DofFromPeriodic<DofTableType,FEType>::addVertexPeriodicDof( element_type const& 
                 dof_id = M_doftable->localToGlobal( __elt.id(), lid, c1 ).index();
                 periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, c1, gDof, 0 ) ) );
 
-                VLOG(2) << "added vertex periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+                VLOG(2) << "added vertex periodic dof " <<  __elt.id() << ", " <<  lid << ", " << std::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
             }
         }
 
@@ -321,10 +322,10 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
             // add the pair (elt, lid) to the map associated
             // with dof_id, one dof can be shared by several
             // elements
-            dof_id = boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) );
+            dof_id = M_doftable->localToGlobal( __elt.id(), lid, c1 ).index();
             periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(), lid, c1, gDof, 1 ) ) );
 
-            DVLOG(4) << "added edge periodic dof " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+            DVLOG(4) << "added edge periodic dof " <<  __elt.id() << ", " <<  lid << ", " << M_doftable->localToGlobal( __elt.id(), lid, c1 ).index() << "\n";
         }
 
     }
@@ -392,10 +393,10 @@ DofFromPeriodic<DofTableType,FEType>::addEdgePeriodicDof( element_type const& __
                 // add the pair (elt, lid) to the map associated
                 // with dof_id, one dof can be shared by several
                 // elements
-                dof_id = boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) );
+                dof_id = M_doftable->localToGlobal( __elt.id(), lid, c1 ).index();
                 periodic_dof[tag].insert( std::make_pair( dof_id, boost::make_tuple( __elt.id(),  lid, c1, gDof, 1 ) ) );
 
-                DVLOG(4) << "added " <<  __elt.id() << ", " <<  lid << ", " << boost::get<0>( M_doftable->localToGlobal( __elt.id(), lid, c1 ) ) << "\n";
+                DVLOG(4) << "added " <<  __elt.id() << ", " <<  lid << ", " << M_doftable->localToGlobal( __elt.id(), lid, c1 ).index() << "\n";
             }
         }
     }

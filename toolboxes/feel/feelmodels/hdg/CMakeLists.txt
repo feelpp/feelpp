@@ -27,12 +27,14 @@ foreach(_DIM 2 3)
   feelpp_max( MAX_ORDER 1 ${_P_ORDER})
   message(STATUS "[feelpp] MIXEDPOISSON ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _P_ORDER RANGE 1 ${MAX_ORDER} )
-    genLibMixedPoisson(
-      DIM     ${_DIM}
-      P_ORDER ${_P_ORDER}
-      GEO_ORDER 1
-      )
-    set(FEELPP_MODELS_LIBRARIES_MIXEDPOISSON ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON} ${MIXEDPOISSON_LIB_NAME} )
+    foreach( _G_ORDER RANGE 1 2 )
+      genLibMixedPoisson(
+        DIM     ${_DIM}
+        P_ORDER ${_P_ORDER}
+        GEO_ORDER ${_G_ORDER}
+        )
+      set(FEELPP_MODELS_LIBRARIES_MIXEDPOISSON ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON} ${MIXEDPOISSON_LIB_NAME} )
+    endforeach()
   endforeach()
 endforeach()
 

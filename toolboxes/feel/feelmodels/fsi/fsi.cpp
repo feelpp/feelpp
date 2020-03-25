@@ -198,7 +198,7 @@ template <typename FluidType,typename SolidType>
 typename SolidType::mesh_1dreduced_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->meshALE()->referenceMesh(), markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
+    auto submeshStruct = createSubmesh( _mesh=FM->meshALE()->referenceMesh(), _range=markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
@@ -225,7 +225,7 @@ template <typename FluidType,typename SolidType>
 typename FluidType::mesh_type::trace_mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<true> /**/ )
 {
-    auto submeshStruct = createSubmesh( FM->mesh(), markedfaces( FM->mesh(),FM->markersFSI() ) );
+    auto submeshStruct = createSubmesh( _mesh=FM->mesh(), _range=markedfaces( FM->mesh(),FM->markersFSI() ) );
     auto hola = boundaryfaces(submeshStruct);
     for ( auto itp = hola.template get<1>(),enp = hola.template get<2>() ; itp!=enp ; ++itp )
         submeshStruct->faceIterator( unwrap_ref(*itp).id() )->second.setMarker( submeshStruct->markerName("Fixe") );
@@ -342,9 +342,14 @@ FSI<FluidType,SolidType>::init()
     }
 
     M_rangeFSI_fluid = markedfaces( this->fluidModel()->mesh(),this->fluidModel()->markersFSI() );
-    auto submeshfsi_fluid = createSubmesh( this->fluidModel()->mesh(),M_rangeFSI_fluid );
+    auto submeshfsi_fluid = createSubmesh( _mesh=this->fluidModel()->mesh(),_range=M_rangeFSI_fluid,_view=1 );
     M_spaceNormalStress_fluid = fluid_type::space_normalstress_type::New(_mesh=submeshfsi_fluid );
     M_fieldNormalStressRefMesh_fluid.reset( new typename fluid_type::element_normalstress_type( M_spaceNormalStress_fluid ) );
+
+    M_XhMeshVelocityInterface = space_fluid_meshvelocityonboundary_type::New(_mesh=submeshfsi_fluid );
+    // mesh velocity only on moving interface
+    M_meshVelocityInterface.reset(new element_fluid_meshvelocityonboundary_type( M_XhMeshVelocityInterface ) );
+
 
     this->fluidModel()->updateRangeDistributionByMaterialName( "interface_fsi", M_rangeFSI_fluid );
 
@@ -358,7 +363,7 @@ FSI<FluidType,SolidType>::init()
     {
         M_rangeFSI_solid = markedfaces(this->solidModel()->mesh(),this->solidModel()->markerNameFSI());
         //M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=M_solidModel->mesh() );
-        auto subfsimesh = createSubmesh( this->solidModel()->mesh(),M_rangeFSI_solid) ;
+        auto subfsimesh = createSubmesh( _mesh=this->solidModel()->mesh(),_range=M_rangeFSI_solid, _view=true ) ;
         M_spaceNormalStressFromFluid_solid = space_solid_normalstressfromfluid_type::New( _mesh=subfsimesh );
         M_fieldNormalStressFromFluid_solid.reset(new element_solid_normalstressfromfluid_type( M_spaceNormalStressFromFluid_solid ) );
         if ( this->fsiCouplingBoundaryCondition() == "robin-neumann" ||
@@ -404,18 +409,19 @@ FSI<FluidType,SolidType>::init()
 
     //-------------------------------------------------------------------------//
     // build interface operator for generalized robin-neumann
+    auto XhFluidVelocity = this->fluidModel()->functionSpaceVelocity();
+    M_dofsMultiProcessVelocitySpaceOnFSI_fluid = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
     if ( this->fsiCouplingBoundaryCondition() == "robin-neumann-generalized" )
     {
         this->initCouplingRobinNeumannGeneralized();
     }
     else if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        auto XhFluidVelocity = this->fluidModel()->functionSpaceVelocity();
         auto dofsToAdd = XhFluidVelocity->dofs(  M_rangeFSI_fluid );
         XhFluidVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
         this->dofEliminationIdsAll("fluid.velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        //auto dofsMultiProcessToAdd = XhFluidVelocity->dofs( M_rangeFSI_fluid, ComponentType::NO_COMPONENT, true );
+        this->dofEliminationIdsMultiProcess("fluid.velocity",MESH_FACES).insert( M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.begin(), M_dofsMultiProcessVelocitySpaceOnFSI_fluid/*dofsMultiProcessToAdd*/.end() );
     }
 
     if ( ( this->fsiCouplingBoundaryCondition() == "robin-robin" || this->fsiCouplingBoundaryCondition() == "robin-robin-genuine" ||
@@ -477,11 +483,9 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
 {
     bool useAlgebraicInnerProductWithLumping = false;
 
-    M_couplingRNG_evalForm1 = M_fluidModel->meshVelocity2().functionSpace()->elementPtr();
+    M_couplingRNG_evalForm1 = M_fluidModel->functionSpaceVelocity()/*meshVelocity2().functionSpace()*/->elementPtr();
     if ( M_fluidModel->doRestart() )
     {
-        if ( M_fluidModel->useFSISemiImplicitScheme() )
-            M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
         M_fluidModel->updateNormalStressOnReferenceMesh( "interface_fsi", M_fieldNormalStressRefMesh_fluid );
     }
 
@@ -496,7 +500,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
 
         this->solidModel()->setUseMassMatrixLumped( boption(_name="coupling-robin-neumann-generalized.use-mass-matrix-lumped-in-solid",_prefix=this->prefix()) );
 
-        M_coulingRNG_operatorDiagonalOnFluid = this->fluidModel()->meshVelocity2().functionSpace()->elementPtr();
+        M_coulingRNG_operatorDiagonalOnFluid = this->fluidModel()->functionSpaceVelocity()/*meshVelocity2().functionSpace()*/->elementPtr();
 
         //--------------------------------------------------------
         auto rangeFSI = M_rangeFSI_solid;
@@ -525,7 +529,11 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             auto vecDiagMassMatrixLumpedUBLAS = Vh->element( vecDiagMassLumped2 );
             auto qqqq = Vh->element();
             qqqq = vecDiagMassMatrixLumpedUBLAS;
-            M_opVelocity2dTo2dconf->apply( qqqq, *M_coulingRNG_operatorDiagonalOnFluid );
+            //M_opVelocity2dTo2dconf->apply( qqqq, *M_coulingRNG_operatorDiagonalOnFluid );
+            auto rrrr = M_XhMeshVelocityInterface->element();
+            M_opVelocity2dTo2dconf->apply( qqqq, rrrr );
+            M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
+            sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
             useAlgebraicInnerProductWithLumping = true;
         }
         else if ( true )
@@ -561,7 +569,11 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
                 vecDiagMassMatrixLumpedRestrictFSI_OP(k) = vecDiagMassMatrixLumpedUBLAS(k)/vecDiagMassMatrixLumpedRestrictFSI->operator()(k);
             sync( vecDiagMassMatrixLumpedRestrictFSI_OP, "=", dofsIdOnFSI );
 
-            M_opVelocity2dTo2dconf->apply( vecDiagMassMatrixLumpedRestrictFSI_OP, *M_coulingRNG_operatorDiagonalOnFluid );
+            //M_opVelocity2dTo2dconf->apply( vecDiagMassMatrixLumpedRestrictFSI_OP, *M_coulingRNG_operatorDiagonalOnFluid );
+            auto rrrr = M_XhMeshVelocityInterface->element();
+            M_opVelocity2dTo2dconf->apply( vecDiagMassMatrixLumpedRestrictFSI_OP, rrrr );
+            M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
+            sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
         }
         else
         {
@@ -603,13 +615,17 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
                 vecDiagMassLumpedRestrictedFSI.scale( countActiveDofOnFSI/(Vh->nComponents*areaFSI) );
             }
 
-            M_opVelocity2dTo2dconf->apply( vecDiagMassLumpedRestrictedFSI, *M_coulingRNG_operatorDiagonalOnFluid );
+            //M_opVelocity2dTo2dconf->apply( vecDiagMassLumpedRestrictedFSI, *M_coulingRNG_operatorDiagonalOnFluid );
+            auto rrrr = M_XhMeshVelocityInterface->element();
+            M_opVelocity2dTo2dconf->apply( vecDiagMassLumpedRestrictedFSI,rrrr );
+            M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
+            sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
         }
 
     }
     else if ( this->solidModel()->is1dReducedModel() )
     {
-        auto VhFluid = this->fluidModel()->meshVelocity2().functionSpace();
+        auto VhFluid = this->fluidModel()->functionSpaceVelocity();//meshVelocity2().functionSpace();
         M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
         std::set<size_type> dofsIdOnFSIFluid;
         for ( auto const& faceWrap : M_rangeFSI_fluid )
@@ -630,7 +646,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         auto dmFullFluidSpace = this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr();
         M_coulingRNG_vectorTimeDerivative = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
         int nBlock = this->fluidModel()->nBlockMatrixGraph();
-        auto VhFluid = this->fluidModel()->spaceVelocityPressure();
+        auto VhVelocity = this->fluidModel()->functionSpaceVelocity();
         auto ru = stencilRange<0,0>(M_rangeFSI_fluid);
         auto const& u = M_fluidModel->fieldVelocity();
         if ( useAlgebraicInnerProductWithLumping )
@@ -640,17 +656,14 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             graph->close();
             M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newMatrix( 0,0,0,0,graph );
             auto thediagg = this->fluidModel()->backend()->newVector( dmFullFluidSpace );
-            auto thediaggUBLAS = VhFluid->element( thediagg, 0 );
-            auto thediaggUBLAS_u = thediaggUBLAS.template element<0>();
+            auto thediaggUBLAS_u = VhVelocity->element( thediagg, 0 );
             thediaggUBLAS_u = *M_coulingRNG_operatorDiagonalOnFluid;
             M_coulingRNG_matrixTimeDerivative->setDiagonal( thediagg );
         }
         else
         {
             BlocksBaseGraphCSR myblockGraphTimeDerivative(nBlock,nBlock);
-            auto blockpatternTimeDerivative = vf::Blocks<2,2,size_type>() << size_type(Pattern::COUPLED/*DEFAULT*/) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO) << size_type(Pattern::ZERO);
-            auto mygraphTimeDerivative = stencil(_test=VhFluid,_trial=VhFluid,
-                                                 _pattern_block=blockpatternTimeDerivative,
+            auto mygraphTimeDerivative = stencil(_test=VhVelocity,_trial=VhVelocity,
                                                  _diag_is_nonzero=false,_close=true,
                                                  _range=stencilRangeMap(ru) )->graph();
             myblockGraphTimeDerivative(0,0) = mygraphTimeDerivative;
@@ -663,7 +676,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             }
             M_coulingRNG_matrixTimeDerivative = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraphTimeDerivative);
             auto myB = this->couplingRNG_operatorExpr( mpl::int_<fluid_type::nDim>() );
-            form2(_test=VhFluid,_trial=VhFluid,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
+            form2(_test=VhVelocity,_trial=VhVelocity,_matrix=M_coulingRNG_matrixTimeDerivative/*,_pattern=size_type(Pattern::DEFAULT)*/ ) +=
                 integrate( _range=M_rangeFSI_fluid,
                            _expr=inner(myB*idt(u),id(u)),
                            _geomap=this->geomap() );
@@ -675,9 +688,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         M_coulingRNG_vectorStress = this->fluidModel()->backend()->newVector( VhStress );
         auto dofStress = VhStress->dof();
         BlocksBaseGraphCSR myblockGraph(nBlock,1);
-        auto blockpatternStress = vf::Blocks<2,1,size_type>() << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO);
-        auto mygraph = stencil(_test=VhFluid,_trial=VhStress,
-                               _pattern_block=blockpatternStress,
+        auto mygraph = stencil(_test=VhVelocity,_trial=VhStress,
                                _diag_is_nonzero=false,_close=true,
                                _range=stencilRangeMap(ru) )->graph();
         myblockGraph(0,0) = mygraph;
@@ -690,10 +701,11 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         M_coulingRNG_matrixStress = this->fluidModel()->backend()->newBlockMatrix(_block=myblockGraph);
         // assembly stress matrix
-        form2(_test=VhFluid,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
+        form2(_test=VhVelocity,_trial=VhStress,_matrix=M_coulingRNG_matrixStress ) +=
             integrate( _range=M_rangeFSI_fluid,
                        _expr= inner( idt(M_fieldNormalStressRefMesh_fluid),id(u)),
                        _geomap=this->geomap() );
+        M_coulingRNG_matrixStress->close();
     }
 
 }
@@ -791,7 +803,7 @@ template< class FluidType, class SolidType >
 void
 FSI<FluidType,SolidType>::initInHousePreconditionerPCD_fluid( operatorpcdbase_fluid_type & opPCDBase ) const
 {
-    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+    typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type> op_pcd_type;
     op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
     CHECK( opPCD ) << "fails to cast OperatorPCD";
 
@@ -813,14 +825,14 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
 {
     if ( this->fsiCouplingBoundaryCondition() == "dirichlet-neumann" )
     {
-        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_fluid_velocity_type,typename fluid_type::space_fluid_pressure_type> op_pcd_type;
+        typedef Feel::Alternatives::OperatorPCD<typename fluid_type::space_velocity_type,typename fluid_type::space_pressure_type> op_pcd_type;
         op_pcd_type * opPCD = dynamic_cast<op_pcd_type*>(&opPCDBase);
         CHECK( opPCD ) << "fails to cast OperatorPCD";
         for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
         {
             std::string matName = rangeFacesMat.first;
             auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
-            opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(M_fluidModel->meshVelocity2()) );
+            opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(this/*M_fluidModel*/->meshVelocity2()) );
         }
     }
 }
@@ -834,10 +846,7 @@ FSI<FluidType,SolidType>::solveImpl1()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->transfertDisplacement();
-        M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
-
+        this->transfertDisplacementAndApplyMeshMoving();
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
@@ -872,8 +881,7 @@ FSI<FluidType,SolidType>::solveImpl1()
         timerCur.restart();
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->transfertDisplacement();
-            M_fluidModel->updateALEmesh();
+            this->transfertDisplacementAndApplyMeshMoving();
             double tALE = timerCur.elapsed();
             this->log("FSI","update ale","finish in "+(boost::format("%1% s") % tALE).str() );
         }
@@ -940,10 +948,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->transfertDisplacement();
-        M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
-
+        this->transfertDisplacementAndApplyMeshMoving();
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
@@ -1005,8 +1010,7 @@ FSI<FluidType,SolidType>::solveImpl2()
         //--------------------------------------------------------------//
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->transfertDisplacement();
-            M_fluidModel->updateALEmesh();
+            this->transfertDisplacementAndApplyMeshMoving();
         }
         else
         {
@@ -1050,9 +1054,7 @@ FSI<FluidType,SolidType>::solveImpl2()
 
     if (false && this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->transfertDisplacement();
-        M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
+        this->transfertDisplacementAndApplyMeshMoving();
     }
 
 
@@ -1066,10 +1068,7 @@ FSI<FluidType,SolidType>::solveImpl3()
 
     if (this->fsiCouplingType()=="Semi-Implicit")
     {
-        this->transfertDisplacement();
-        M_fluidModel->updateALEmesh();
-        M_fluidModel->updateNormalStressOnReferenceMeshOptPrecompute( M_rangeFSI_fluid );
-
+        this->transfertDisplacementAndApplyMeshMoving();
         M_fluidModel->setRebuildLinearPartInJacobian(true);M_fluidModel->setRebuildCstPartInLinearSystem(true);
         M_solidModel->setRebuildLinearPartInJacobian(true);M_solidModel->setRebuildCstPartInLinearSystem(true);
         //M_fluidModel->setRebuildCstPartInResidual(true);M_solidModel->setRebuildCstPartInResidual(true);
@@ -1104,8 +1103,7 @@ FSI<FluidType,SolidType>::solveImpl3()
         //--------------------------------------------------------------//
         if (this->fsiCouplingType()=="Implicit")
         {
-            this->transfertDisplacement();
-            M_fluidModel->updateALEmesh();
+            this->transfertDisplacementAndApplyMeshMoving();
         }
         else
         {

@@ -152,7 +152,7 @@ public:
 
     typedef typename super1::datamap_type datamap_type;
     typedef typename super1::datamap_ptrtype datamap_ptrtype;
-
+    using size_type = typename datamap_type::size_type;
     //@}
 
     /** @name Constructors, destructor
@@ -996,9 +996,8 @@ public:
     //@}
 
 #ifdef FEELPP_HAS_HDF5
-    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false );
+    void saveHDF5( std::string const& filename, std::string tableName = "element", bool appendMode = false ) const;
     void loadHDF5( std::string const& filename, std::string tableName = "element" );
-    void ioHDF5( bool isLoad, std::string const& filename, std::string tableName = "element", bool appendMode = false );
 #endif
 
     //! create a VectorUblas as a view of another Vector type (as VectorPetsc)

@@ -2,24 +2,25 @@
 {
     "Name": "Test heat toolbox",
     "ShortName":"TestHeat",
-    // "Parameters":
-    // {
-    //     "gravity":
-    //     {
-    //         "value":"-1"
-    //     }
-    // },
     "Materials":
     {
-        "mymat":
+        "mymat1":
         {
-            "markers":"Omega",
-            "name":"mymat",
-            "k":"10",//[ W/(m*K) ]
+            "markers":"Omega1",
+            //"k":"10",//[ W/(m*K) ]
+            //"k":"10+100*(1+y):y",//[ W/(m*K) ]
             //"k":"{10,0,0,100}",//[ W/(m*K) ]
-            //"k":"10*heat_T/293:heat_T",//[ W/(m*K) ]
+            "k":"10+100*(1-heat_T/293):heat_T",//[ W/(m*K) ]
             "Cp":"1000.005", //[ J/(kg*K) ]
             "rho":"1.205" //[ kg/(m^3) ]
+        },
+        "mymat2":
+        {
+            "markers":"Omega2",
+            //"k":"100",
+            "k":"{100,0,0,100}",//[ W/(m*K) ]
+            "Cp":"3500",
+            "rho":"2"
         }
     },
     "BoundaryConditions":
@@ -41,7 +42,8 @@
             {
                 "MarkerNeumann":
                 {
-                    "expr":"0:x" 
+                    "markers":["MarkerNeumann_1","MarkerNeumann_2"],
+                    "expr":"0" 
                 }
             },
             "Robin":
@@ -58,25 +60,87 @@
     {
         "temperature":
         {
-            "":
+            "Expression":
             {
-                "myic":
+                "myic1":
                 {
-                    "markers":["Omega"],
+                    "markers":"Omega1",
                     "expr":"293"
+                },
+                "myic2":
+                {
+                    "markers":"Omega2",
+                    "expr":"305"
+                },
+                "myic3":
+                {
+                    "markers":"Interface_1_2",
+                    "expr":"310"
                 }
-            }
+            }/*,
+            "File":
+            {
+                "myic3":
+                {
+                    "filename":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_24/heat.ts/temperature/temperature-199.h5",
+                    "format":"hdf5"
+                    //"directory":"$home/feel/toolboxes/heat/thermo2d/P1G1/np_1/heat.ts/temperature"
+                }
+            }*/
         }
     },
     "PostProcess":
     {
         "Exports":
         {
-            "fields":["temperature"]
+            "fields":["temperature","all"],
+            "expr":
+            {
+                "toto":"2*x*y:x:y",
+                "titi":
+                {
+                    //"tag":"todo",
+                    "part":
+                    {
+                        "expr":"3*x*y:x:y",
+                        "markers":"Omega1"
+                    },
+                    "part":
+                    {
+                        "expr":"4*x*y:x:y",
+                        "markers":"Omega2"
+                    },
+                    "representation":["nodal","element"]
+                },
+                "tutu":
+                {
+                    "expr":"{heat_k_xx,heat_k_xy,heat_k_yx,heat_k_yy}:heat_k_xx:heat_k_xy:heat_k_yx:heat_k_yy",
+                    "representation":["nodal","element"]
+                }
+            }
         },
         "Measures":
         {
-            "Normal-Heat-Flux":["MarkerRobin","MarkerNeumann"],
+            "Normal-Heat-Flux":
+            {
+                "onRobin":
+                {
+                    "markers":"MarkerRobin"
+                },
+                "onNeumann":
+                {
+                    "markers":["MarkerNeumann_1","MarkerNeumann_2"]
+                }
+            },
+            "Statistics":
+            {
+                "fluxOnRobin":
+                {
+                    "type":"integrate",
+                    "expr":"heat_mymat2_k*heat_dn_T:heat_mymat2_k:heat_dn_T",
+                    "markers":"MarkerRobin"
+                }
+            },
             "Points":
             {
                 "ptA":

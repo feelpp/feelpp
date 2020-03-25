@@ -81,7 +81,7 @@ runCreateSubmeshAndSaveElement( std::shared_ptr<MeshType> const& mesh, std::list
     Feel::cout << "\n";
 
     tic();
-    auto submesh = createSubmesh( mesh, markedelements(mesh,markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto submesh = createSubmesh( _mesh=mesh, _range=markedelements(mesh,markers) );
     toc("extract submesh",true);
 
     Feel::cout << "output mesh path : " << outputPathMesh << "\n";
@@ -96,7 +96,7 @@ runCreateSubmeshAndSaveElement( std::shared_ptr<MeshType> const& mesh, std::list
     {
         saveGMSHMesh(_mesh=submesh,_filename=outputPathMesh );
     }
-    toc("save face submesh on disk done",true);
+    toc("save markedelements submesh on disk done",true);
 }
 template <typename MeshType>
 void
@@ -123,11 +123,11 @@ runCreateSubmeshAndSaveFace( std::shared_ptr<MeshType> const& mesh, std::list<st
     std::shared_ptr<typename MeshType::trace_mesh_type> submesh;
     if ( extractBoundaryFaces )
     {
-        submesh = createSubmesh( mesh, boundaryfaces(mesh), EXTRACTION_KEEP_MESH_RELATION, MESH_UPDATE_FACES|MESH_UPDATE_EDGES, true );
+        submesh = createSubmesh( _mesh=mesh, _range=boundaryfaces(mesh), _only_on_boundary_faces=true );
     }
     else
     {
-        submesh = createSubmesh( mesh, markedfaces(mesh,markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+        submesh = createSubmesh( _mesh=mesh, _range=markedfaces(mesh,markers), _update=0 );
     }
     toc("extract submesh",true);
 
@@ -163,7 +163,7 @@ runCreateSubmeshAndSaveEdge( std::shared_ptr<MeshType> const& mesh, std::list<st
     Feel::cout << "\n";
 
     tic();
-    auto submesh = createSubmesh( mesh, markededges(mesh,markers), EXTRACTION_KEEP_MESH_RELATION, 0 );
+    auto submesh = createSubmesh( _mesh=mesh, _range=markededges(mesh,markers), _update=0 );
     toc("extract submesh",true);
 
     Feel::cout << "output mesh path : " << outputPathMesh << "\n";

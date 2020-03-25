@@ -111,7 +111,7 @@ const size_type mctx = vm::MEASURE;
 /**/
 # define VF_GD2                                                         \
     BOOST_PP_TUPLE_TO_LIST(                                             \
-        10,                                                              \
+        12,                                                              \
         (                                                               \
             ( h       , GDH       , 0, mctx , Scalar   , M_gmc->h()                   , 0), \
             ( hMin    , GDHMin    , 0, mctx , Scalar   , M_gmc->hMin()                , 0), \
@@ -122,7 +122,9 @@ const size_type mctx = vm::MEASURE;
             ( measFace, GDHMeasFace,0, mctx , Scalar   , M_gmc->measFace()            , 0), \
             ( eid     , GDEid     , 0, 0    , Scalar   , M_gmc->id()                  , 0), \
             ( emarker , GDEmarker , 0, 0    , Scalar   , M_gmc->marker().value()      , 0), \
-            ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0) \
+            ( semarker, GDFmarker , 0, 0    , Scalar   , M_gmc->entityMarker().value() , 0), \
+            ( emarker2, GDEmarker2, 0, 0    , Scalar   , M_gmc->marker2().value()     , 0), \
+            ( epid    , GDEPid    , 0, 0    , Scalar   , M_gmc->element().processId() , 0) \
             )                                                           \
         )                                                               \
 /**/
@@ -191,7 +193,6 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         typedef VF_GD_NAME(O) this_type;                                \
         typedef double value_type;                                      \
-        typedef value_type evaluate_type;                               \
                                                                         \
         VF_GD_NAME(O) ()                                                \
         {                                                               \
@@ -210,7 +211,6 @@ const size_type mctx = vm::MEASURE;
                                                                         \
         constexpr uint16_type polynomialOrder() const { return VF_GD_IMORDER(O); } \
         constexpr bool isPolynomial() const { return true; }            \
-        evaluate_type evaluate( bool parallel = true, worldcomm_ptr_t const& worldcomm = Environment::worldCommPtr() ) const { return 0; } \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
@@ -222,7 +222,6 @@ const size_type mctx = vm::MEASURE;
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype; \
             typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type; \
             typedef typename gmc_type::value_type value_type;           \
-            typedef  value_type evaluate_type;                          \
             typedef VF_GD_RETURN(O)<gmc_type::NDim> return_value_type;  \
             typedef Shape<gmc_type::NDim, VF_GD_RETURN(O), false> shape; \
                                                                         \

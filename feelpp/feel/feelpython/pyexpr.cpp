@@ -25,6 +25,8 @@
 
 
 
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/map.hpp>
 #include <feel/feelpython/pyexpr.hpp>
@@ -33,6 +35,16 @@
 #include <feel/feelcore/feelio.hpp>
 
 namespace Feel {
+
+std::vector<std::string> lookups_ =
+{
+    "$cfgdir/../../python/",
+    "$cfgdir/../python/",
+    "$datadir/testcases/python/",
+    "$datadir/python/",
+    "$top_srcdir/feelpp/quickstart/python/",
+    "$top_srcdir/feelpp/feel/feelpython/"
+};
 
 void
 //pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& vars, std::map<std::string,std::string> const& _locals )
@@ -46,11 +58,14 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
     if ( Environment::isMasterRank() )
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-        py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
+        std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
+        //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
+        py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
         //py::print(py::module::import("sys").attr("path"));
         py::dict locals = py::cast(_locals);
-        py::print(locals);
-        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+        //py::print(locals);
+        //std::cout << "eval_f = " << Environment::findFile( pyfilename.c_str(), lookups_ ) << std::endl;
+        py::eval_file( Environment::findFile( pyfilename.c_str(), lookups_ ), py::globals(), locals );
         
 #if 1
         for( auto l : _locals )
@@ -71,6 +86,18 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::map<std
     //return r;
 }
 
+FEELPP_NO_EXPORT std::map<std::string,std::string> clean_locals( std::map<std::string,std::string> & locals )
+{
+    using namespace boost::algorithm;
+    std::map<std::string,std::string> ls;
+    for( auto const& [key, value] : locals )
+    {
+        std::vector<std::string> v;
+        split(v, value, is_any_of(":"));
+        ls[key] = v[0];
+    }
+    return ls;
+}
 //std::map<std::string,std::string> 
 void
 //pyexprFromFile( std::string const& pyfilename, std::vector<std::string> const& vars, std::map<std::string,std::string> const& _locals )
@@ -84,11 +111,14 @@ pyexprFromFile( std::string const& pyfilename, std::map<std::string,std::string>
     if ( Environment::isMasterRank() )
     {
         py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-        py::module::import("sys").attr("path").cast<py::list>().append(Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
+        std::string sympytoginac_f = Environment::findFile( "sympy2ginac.py", lookups_ );
+        //std::cout << "sympytoginac_f = " << sympytoginac_f << std::endl;
+        py::module::import("sys").attr("path").cast<py::list>().append( fs::path( sympytoginac_f ).parent_path().string() );
         //py::print(py::module::import("sys").attr("path"));
-        py::dict locals = py::cast(_locals);
-        py::print(locals);
-        py::eval_file( pyfilename.c_str(), py::globals(), locals );
+        py::dict locals = py::cast(clean_locals(_locals));
+        //py::print(locals);
+        //std::cout << "eval_f = " << Environment::findFile( pyfilename.c_str(), lookups_ ) << std::endl;
+        py::eval_file( Environment::findFile( pyfilename.c_str(), lookups_ ), py::globals(), locals );
 
 #if 0
         for( auto const& [key,value] : _locals )

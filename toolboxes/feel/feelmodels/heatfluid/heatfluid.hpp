@@ -72,17 +72,17 @@ public:
                std::string const& subPrefix = "",
                ModelBaseRepository const& modelRep = ModelBaseRepository() );
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatFluidMesh.path"); }
-    std::shared_ptr<std::ostringstream> getInfo() const;
+    std::shared_ptr<std::ostringstream> getInfo() const override;
 
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void initPostProcess();
+    void initPostProcess() override;
 public :
     // update for use
     void init( bool buildModelAlgebraicFactory = true );
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const;
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     int nBlockMatrixGraph() const;
 
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -114,21 +114,42 @@ public :
     void updateTimeStep();
 
     //___________________________________________________________________________________//
+    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); }
+
+    template <typename FieldTemperatureType,typename FieldVelocityType, typename FieldPressureType>
+    auto symbolsExpr( FieldTemperatureType const& t, FieldVelocityType const& u, FieldPressureType const& p ) const
+        {
+            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_fluidModel->symbolsExprField( u,p ) );
+            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
+            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
+                                                             M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        }
+
+    //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
 
-    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
-    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+    void updateInHousePreconditioner( DataUpdateLinear & data ) const override;
+    void updateInHousePreconditioner( DataUpdateJacobian & data ) const override;
 
-    void updateLinearPDE( DataUpdateLinear & data ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
+    void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const override;
+    void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const override;
 
-    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const;
-    void updateJacobian( DataUpdateJacobian & data ) const;
-    void updateJacobianDofElimination( DataUpdateJacobian & data ) const;
-    void updateResidual( DataUpdateResidual & data ) const;
-    void updateResidualDofElimination( DataUpdateResidual & data ) const;
+    void updateLinearPDE( DataUpdateLinear & data ) const override;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+    void updateResidual( DataUpdateResidual & data ) const override;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
+
+    void updateLinearFluidSolver( DataUpdateLinear & data ) const;
+    void updateResidualFluidSolver( DataUpdateResidual & data ) const;
+private :
+    void updateTimeStepCurrentResidual();
 
 private :
 
@@ -155,10 +176,10 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // post-process
     export_ptrtype M_exporter;
-    std::set<std::string> M_postProcessFieldExportedHeatt, M_postProcessFieldExportedFluid;
 };
 
 } // namespace FeelModels
