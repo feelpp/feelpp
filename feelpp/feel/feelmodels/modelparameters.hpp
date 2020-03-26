@@ -125,6 +125,14 @@ struct FEELPP_EXPORT ModelParameter
     {
          M_expr.eraseParameterValues( symbNames );
     }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+    {
+        M_expr.updateParameterValues( this->name(), pv );
+    }
+    void updateSymbolNames( std::set<std::string> & outputSymbNames ) const
+    {
+        M_expr.updateSymbolNames( this->name(), outputSymbNames );
+    }
 private:
     std::string M_name, M_type;
     double M_value, M_min, M_max;

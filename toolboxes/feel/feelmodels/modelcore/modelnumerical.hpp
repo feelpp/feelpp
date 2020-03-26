@@ -513,17 +513,11 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
 #if 1
                                 else if constexpr ( std::is_same_v<decay_type<decltype(theexpr)>,ModelExpression> )
                                 {
-                                    auto exprShape = hana::make_tuple( hana::make_tuple(hana::int_c<1>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<1>),
-                                                                       hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
-                                                                       hana::make_tuple(hana::int_c<3>,hana::int_c<3>)
-                                                                       );
                                     auto const& fieldNameBIS = fieldName;
                                     auto const& theexprBIS = theexpr;
                                     auto const& rangeBIS = range;
                                     auto const& reprsBIS = reprs;
-                                    hana::for_each( exprShape, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
+                                    hana::for_each( ModelExpression::expr_shapes, [this,&exporter,&time,&hasFieldToExport,&symbolsExpr,&fieldNameBIS,&theexprBIS,&rangeBIS,&reprsBIS]( auto const& e_ij )
                                                     {
                                                         constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                                                         constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
@@ -660,11 +654,13 @@ ModelNumerical::updatePostProcessMeasuresStatistics( std::shared_ptr<MeshType> m
 
 template <typename MeasurePointEvalType, typename ModelFieldsType>
 bool
-ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& tupleFields )
+ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, ModelFieldsType const& mfields )
 {
+    if ( !measurePointsEvaluation )
+        return false;
     bool hasMeasure = false;
     std::map<std::string,double> resPpPoints;
-    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, tupleFields );
+    measurePointsEvaluation->eval( this->modelProperties().postProcess().measuresPoint( this->keyword() ), resPpPoints, mfields );
     for ( auto const& resPpPoint : resPpPoints )
     {
         this->postProcessMeasuresIO().setMeasure( resPpPoint.first, resPpPoint.second );
@@ -675,14 +671,15 @@ ModelNumerical::updatePostProcessMeasuresPoint( std::shared_ptr<MeasurePointEval
 
 template <typename MeshType, typename RangeType, typename MeasurePointEvalType, typename SymbolsExpr, typename ModelFieldsType, typename TupleQuantitiesType>
 bool 
-ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation, SymbolsExpr const& symbolsExpr, ModelFieldsType const& tupleFields, TupleQuantitiesType const& tupleQuantities )
+ModelNumerical::updatePostProcessMeasures( std::shared_ptr<MeshType> mesh, RangeType const& rangeMeshElements, std::shared_ptr<MeasurePointEvalType> measurePointsEvaluation,
+                                           SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, TupleQuantitiesType const& tupleQuantities )
 {
     bool hasMeasureQuantities = this->updatePostProcessMeasuresQuantities( tupleQuantities );
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, tupleFields );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( mesh, rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( mesh, rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = false;
     if( measurePointsEvaluation )
-        hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, tupleFields );
+        hasMeasurePoint = this->updatePostProcessMeasuresPoint( measurePointsEvaluation, mfields );
 
     return ( hasMeasureQuantities || hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint );
 }

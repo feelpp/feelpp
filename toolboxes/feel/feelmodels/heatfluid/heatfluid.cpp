@@ -473,7 +473,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
     auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
-                                    hana::concat( M_heatModel->exprPostProcessExports( symbolExpr,M_heatModel->keyword() ),
+                                    hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
 

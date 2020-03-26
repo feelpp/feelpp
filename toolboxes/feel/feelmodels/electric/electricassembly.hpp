@@ -98,6 +98,65 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
 template< typename ConvexType, typename BasisPotentialType>
 template <typename ModelContextType>
 void
+Electric<ConvexType,BasisPotentialType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
+{
+    if ( this->M_bcDirichlet.empty() ) return;
+
+    this->log("Electric","updateLinearPDEDofElimination","start" );
+
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    auto const& se = mctx.symbolsExpr();
+    auto XhV = this->spaceElectricPotential();
+    auto const& v = this->fieldElectricPotential();
+    auto mesh = XhV->mesh();
+
+    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
+                                              _pattern=size_type(Pattern::COUPLED),
+                                              _rowstart=this->rowStartInMatrix(),
+                                              _colstart=this->colStartInMatrix() );
+
+    for( auto const& d : this->M_bcDirichlet )
+    {
+        bilinearForm_PatternCoupled +=
+            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+                _element=v,_rhs=F,_expr=expression(d,se) );
+    }
+
+    this->log("Electric","updateLinearPDEDofElimination","finish" );
+}
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename ModelContextType>
+void
+Electric<ConvexType,BasisPotentialType>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    if ( M_bcDirichlet.empty() ) return;
+
+    this->log("Electric","updateNewtonInitialGuess","start" );
+
+    vector_ptrtype& U = data.initialGuess();
+    auto mesh = this->mesh();
+    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
+    auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
+    auto const& se = mctx.symbolsExpr();
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        v.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+             _expr=expression(d,se) );
+    }
+
+    // update info for synchronization
+    this->updateDofEliminationIds( "potential-electric", data );
+
+    this->log("Electric","updateNewtonInitialGuess","finish" );
+}
+
+
+template< typename ConvexType, typename BasisPotentialType>
+template <typename ModelContextType>
+void
 Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();

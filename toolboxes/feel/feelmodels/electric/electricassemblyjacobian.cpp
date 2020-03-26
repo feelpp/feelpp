@@ -9,26 +9,8 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
-    if ( M_bcDirichlet.empty() ) return;
-
-    this->log("Electric","updateNewtonInitialGuess","start" );
-
     vector_ptrtype& U = data.initialGuess();
-    auto mesh = this->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-    auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
-    auto se = this->symbolsExpr();
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        v.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=expression(d,se) );
-    }
-
-    // update info for synchronization
-    this->updateDofEliminationIds( "potential-electric", data );
-
-    this->log("Electric","updateNewtonInitialGuess","finish" );
+    this->updateNewtonInitialGuess( data, this->modelContext( U, this->rowStartInVector() ) );
 }
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -50,7 +32,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian &
 
     this->log("Electric","updateJacobianDofElimination","finish" );
 }
-
 
 } // namespace FeelModels
 } // namespace Feel

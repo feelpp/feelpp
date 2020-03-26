@@ -50,17 +50,26 @@ public:
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_unknown_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
-    // algebraic solver
-    typedef ModelAlgebraicFactory model_algebraic_factory_type;
-    typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
-
-    CoefficientFormPDE( std::string const& prefix,
-                        std::string const& keyword = "pde",
+    CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+                        std::string const& prefix,
+                        std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
+
+    CoefficientFormPDE( std::string const& prefix,
+                        std::string const& keyword = "cfpde",
+                        worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
+                        std::string const& subPrefix  = "",
+                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+        :
+        CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
+        {}
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
 
@@ -82,8 +91,8 @@ public:
     // time step scheme
     std::string const& timeStepping() const { return M_timeStepping; }
     bdf_unknown_ptrtype const& timeStepBdfUnknown() const { return M_bdfUnknown; }
-    std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
-    std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBdfUnknown(); }
+    //std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
+    std::shared_ptr<TSBase> timeStepBase() const override { return this->timeStepBdfUnknown(); }
     void startTimeStep();
     void updateTimeStep();
     //___________________________________________________________________________________//
@@ -96,25 +105,91 @@ public:
     void initAlgebraicFactory();
 
     //___________________________________________________________________________________//
-    // algebraic data and solver
-    backend_ptrtype const& backend() const { return  M_backend; }
-    BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
-    BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-    size_type nLocalDof() const;
-    model_algebraic_factory_ptrtype const& algebraicFactory() const { return M_algebraicFactory; }
-    model_algebraic_factory_ptrtype & algebraicFactory() { return M_algebraicFactory; }
+    // execute post-processing
+    //___________________________________________________________________________________//
 
-    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    int nBlockMatrixGraph() const { return 1; }
+    void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
+
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        {
+            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+        }
+
+    template <typename ModelFieldsType,typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+
+    template <typename SymbExprType>
+    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        {
+            return this->materialsProperties()->exprPostProcessExports( this->physics(),se );
+        }
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    struct FieldTag
+    {
+        static auto unknown( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldUnknownPtr(), prefix );
+        }
+#if 0
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
+            return this->modelFields( field_t, prefix );
+        }
+#endif
+    template <typename TheUnknownFieldType>
+    auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ) );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            //auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr(); // generate symbols heat_T, heat_grad_T(_x,_y,_z), heat_dn_T
+            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, seMat, seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
 
     void updateParameterValues();
-    void setParameterValues( std::map<std::string,double> const& paramValues );
+    void setParameterValues( std::map<std::string,double> const& paramValues ) override;
+
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
     //___________________________________________________________________________________//
     // apply assembly and solver
     //___________________________________________________________________________________//
 
     void solve();
+
+    template <typename ModelContextType>
+    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename ModelContextType,typename RangeType>
+    void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+
+
 private :
     void initFunctionSpaces();
     void initBoundaryConditions();
@@ -138,18 +213,61 @@ private :
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
-    map_scalar_field<2> M_volumicForcesProperties;
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
     MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
     MarkerManagementRobinBC M_bcRobinMarkerManagement;
 
-    // algebraic data/tools
-    backend_ptrtype M_backend;
-    model_algebraic_factory_ptrtype M_algebraicFactory;
-    BlocksBaseVector<double> M_blockVectorSolution;
+    // post-process
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+{
+    this->log("CoefficientFormPDE","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->executePostProcessExports( this->M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : this->timeStepBase()->iteration(), mfields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("CoefficientFormPDE","exportResults", "finish");
+}
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelFieldsType, typename SymbolsExpr>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), this->rangeMeshElements(), symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
 
 } // namespace Feel
 } // namespace FeelModels
+
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeassembly.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdeassemblystabilizationgls.hpp>
 
 #endif

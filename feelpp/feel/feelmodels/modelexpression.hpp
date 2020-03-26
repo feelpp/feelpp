@@ -200,6 +200,64 @@ public :
                         });
     }
 
+    void updateParameterValues( std::set<std::string> const& symbNames, std::map<std::string,double> & pv ) const
+    {
+        hana::for_each( expr_shapes, [this,&symbNames,&pv]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                auto const& theexpr = this->expr<ni,nj>();
+                                if ( theexpr.expression().isEvaluable() )
+                                {
+                                    auto theEvalExpr = theexpr.evaluate();
+                                    if constexpr ( ni == 1 && nj == 1 )
+                                                 {
+                                                     for ( std::string const& s : symbNames )
+                                                         pv[s] = theEvalExpr(0,0);
+                                                 }
+                                    else
+                                    {
+                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                        {
+                                            uint16_type c1 = compArray[0];
+                                            uint16_type c2 = compArray[1];
+                                            for ( std::string const& s : symbNames )
+                                                pv[ s + _suffix ] = theEvalExpr(c1,c2);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+    }
+
+    void updateParameterValues( std::string const& symbName, std::map<std::string,double> & pv ) const { this->updateParameterValues( std::set<std::string>({ symbName }), pv );}
+
+    void updateSymbolNames( std::set<std::string> const& symbNames, std::set<std::string> & outputSymbNames ) const
+    {
+        hana::for_each( expr_shapes, [this,&symbNames,&outputSymbNames]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                if constexpr ( ni == 1 && nj == 1 )
+                                {
+                                    outputSymbNames.insert( symbNames.begin(), symbNames.end() );
+                                }
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                    {
+                                        for ( std::string const& s : symbNames )
+                                            outputSymbNames.insert( s + _suffix );
+                                    }
+                                }
+                            }
+                        });
+    }
+    void updateSymbolNames( std::string const& symbName, std::set<std::string> & outputSymbNames ) const { this->updateSymbolNames( std::set<std::string>({ symbName }), outputSymbNames ); }
 
     template<typename ExprT>
     constexpr auto

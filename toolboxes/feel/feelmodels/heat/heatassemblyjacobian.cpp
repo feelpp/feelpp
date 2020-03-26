@@ -9,27 +9,8 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
-    if ( M_bcDirichlet.empty() ) return;
-
-    this->log("Heat","updateNewtonInitialGuess","start" );
-
     vector_ptrtype& U = data.initialGuess();
-    auto mesh = this->mesh();
-    size_type startBlockIndexTemperature = this->startSubBlockSpaceIndex( "temperature" );
-    auto u = this->spaceTemperature()->element( U, this->rowStartInVector()+startBlockIndexTemperature );
-    auto se = this->symbolsExpr();
-
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto theExpr = expression(d,se);
-        u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=theExpr );
-    }
-
-    // update info for synchronization
-    this->updateDofEliminationIds( "temperature", data );
-
-    this->log("Heat","updateNewtonInitialGuess","finish" );
+    this->updateNewtonInitialGuess( data, this->modelContext( U, this->rowStartInVector() ) );
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
