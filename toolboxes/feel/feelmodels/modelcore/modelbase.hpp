@@ -43,12 +43,16 @@
 
 namespace Feel
 {
+
+BOOST_PARAMETER_NAME( keyword )
+BOOST_PARAMETER_NAME( repository )
+
 namespace FeelModels
 {
 
 struct ModelBaseRepository
 {
-    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "" );
+    ModelBaseRepository( std::string const& rootDirWithoutNumProc = "", bool use_npSubDir = true, std::string const& exprRepository = "" );
     ModelBaseRepository( ModelBaseRepository const& ) = default;
     ModelBaseRepository( ModelBaseRepository && ) = default;
 
