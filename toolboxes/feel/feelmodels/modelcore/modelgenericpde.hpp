@@ -15,7 +15,7 @@ class ModelGenericPDE : public ModelPhysics<Dim>
 {
     using super_type = ModelPhysics<Dim>;
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
-    static const uint16_type nDim = Dim;
+    inline static const uint16_type nDim = Dim;
 public :
     ModelGenericPDE();
     ModelGenericPDE( std::string const& name, pt::ptree const& p );
@@ -30,6 +30,8 @@ public :
     std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
     std::string reactionCoefficientName() const { return prefixvm( this->physic(), "a", "_" ); }
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
+    std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "m", "_" ); }
+    std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
 
 protected :
     void setupGenericPDE( std::string const& name, pt::ptree const& p );
@@ -44,7 +46,7 @@ class ModelGenericPDEs : public ModelPhysics<Dim>
 {
     using super_type = ModelPhysics<Dim>;
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
-    static const uint16_type nDim = Dim;
+    inline static const uint16_type nDim = Dim;
 public :
     ModelGenericPDEs();
     ModelGenericPDEs( ModelGenericPDEs const& ) = default;

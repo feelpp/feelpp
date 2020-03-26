@@ -107,6 +107,21 @@ class Heat : public ModelNumerical,
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
         };
 
+        BOOST_PARAMETER_MEMBER_FUNCTION(
+            ( self_ptrtype ), static New, tag,
+            ( required
+              ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
+              )
+            ( optional
+              //( prefix,*( boost::is_convertible<mpl::_,std::string> ),"heat" )   // there is a compilation error if BOOST_PARAMETER_MEMBER_FUNCTION in a class template has no required
+              ( keyword,*( boost::is_convertible<mpl::_,std::string> ),"heat" )
+              ( worldcomm, *, Environment::worldCommPtr() )
+              ( repository, *, ModelBaseRepository() )
+              ) )
+            {
+                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
+            }
+
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
@@ -196,25 +211,25 @@ class Heat : public ModelNumerical,
 
         void exportResults() { this->exportResults( this->currentTime() ); }
         void exportResults( double time );
+
+        template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+        void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
         template <typename SymbolsExpr>
         void exportResults( double time, SymbolsExpr const& symbolsExpr )
             {
-                this->exportResults( time, symbolsExpr, hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),symbolsExpr ),
-                                                                      this->exprPostProcessExports( symbolsExpr ) ) );
+                return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
             }
-        template <typename SymbolsExpr,typename ExportsExprType>
-        void exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
 
-        void executePostProcessMeasures( double time );
-        template <typename TupleFieldsType,typename SymbolsExpr>
-        void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
+        template <typename ModelFieldsType,typename SymbolsExpr>
+        void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
 
         //___________________________________________________________________________________//
         // export expressions
         //___________________________________________________________________________________//
 
         template <typename SymbExprType>
-        auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
             {
                 typedef decltype(expr(velocity_convection_expr_type{},se)) _expr_velocity_convection_type;
                 std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
@@ -228,10 +243,14 @@ class Heat : public ModelNumerical,
                         mapExprVelocityConvection[prefixvm(prefix,"velocity-convection")].push_back( std::make_tuple( velocityConvectionExpr, range, "nodal" ) );
                     }
                 }
-
                 return hana::make_tuple( mapExprVelocityConvection );
             }
-
+        template <typename SymbExprType>
+        auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+            {
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                                     this->exprPostProcessExportsToolbox( se, prefix ) );
+            }
         //___________________________________________________________________________________//
         // toolbox fields
         //___________________________________________________________________________________//
@@ -328,9 +347,13 @@ class Heat : public ModelNumerical,
         void updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp, Expr<ConductivityExprType> const& kappa,
                                               Expr<ConvectionExprType> const& uconv, RangeType const& range, DataUpdateLinear & data ) const;
         void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+        template <typename ModelContextType>
+        void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
         // non linear (newton)
         void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+        template <typename ModelContextType>
+        void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mfields ) const;
 
         void updateJacobian( DataUpdateJacobian & data ) const override;
         template <typename ModelContextType>
@@ -401,17 +424,16 @@ class Heat : public ModelNumerical,
 
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename SymbolsExpr, typename ExportsExprType>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+Heat<ConvexType,BasisTemperatureType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    auto fields = this->modelFields();
-    this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exportsExpr );
-    this->executePostProcessMeasures( time, fields, symbolsExpr );
-    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), fields );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
@@ -424,25 +446,27 @@ Heat<ConvexType,BasisTemperatureType>::exportResults( double time, SymbolsExpr c
 }
 
 template< typename ConvexType, typename BasisTemperatureType>
-template <typename TupleFieldsType, typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExpr>
 void
-Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+Heat<ConvexType,BasisTemperatureType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
+
+    auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
 
     // compute measures
     for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
     {
-        auto const& t = this->fieldTemperature();
+        //auto const& t = this->fieldTemperature();
         double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
                                     _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
         this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
         hasMeasure = true;
     }
 
-    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, tupleFields );
-    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
     if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
         hasMeasure = true;
 

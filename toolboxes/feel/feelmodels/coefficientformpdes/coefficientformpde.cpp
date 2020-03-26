@@ -3,7 +3,7 @@
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
 
 //#include <feel/feelmodels/modelmesh/createmesh.hpp>
-//#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+#include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel
 {
@@ -11,13 +11,14 @@ namespace FeelModels
 {
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( std::string const& prefix,
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+                                                            std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep )
 {}
 
 
@@ -42,31 +43,31 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initTimeStep();
 
     this->initInitialConditions();
-#if 0
+
     // stabilization gls
-    if ( M_stabilizationGLS )
+    if ( this->M_applyStabilization && !this->M_stabilizationGLSParameter )
     {
-        typedef StabilizationGLSParameter<mesh_type, nOrderTemperature> stab_gls_parameter_impl_type;
-        M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization-gls.parameter") ) );
-        M_stabilizationGLSParameter->init();
+        typedef StabilizationGLSParameter<mesh_type, nOrderUnknown> stab_gls_parameter_impl_type;
+        this->M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization.gls.parameter") ) );
+        this->M_stabilizationGLSParameter->init();
     }
-#endif
+
     // post-process
     this->initPostProcess();
 
     // update constant parameters into
     this->updateParameterValues();
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    // backend
+    this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
     // subspaces index
     size_type currentStartIndex = 0;
-    this->setStartSubBlockSpaceIndex( "temperature", currentStartIndex++ );
+    this->setStartSubBlockSpaceIndex( this->unknownName(), currentStartIndex++ );
 
      // vector solution
-    M_blockVectorSolution.resize( 1 );
-    M_blockVectorSolution(0) = this->fieldUnknownPtr();
+    this->M_blockVectorSolution.resize( 1 );
+    this->M_blockVectorSolution(0) = this->fieldUnknownPtr();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -101,7 +102,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
     }
 
-    M_fieldUnknown.reset( new element_unknown_type(M_Xh,"temperature"));
+    M_fieldUnknown.reset( new element_unknown_type( M_Xh,this->unknownName() ) );
 
     double tElpased = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("CoefficientFormPDE","initFunctionSpaces",(boost::format("finish in %1% s")%tElpased).str() );
@@ -115,35 +116,34 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Dirichlet" );
+    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
     for( auto const& d : this->M_bcDirichlet )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
-    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "Neumann" );
+    this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(),  std::string("Neumann") }  } );
     for( auto const& d : this->M_bcNeumann )
         M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
 
-    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "temperature", "Robin" );
+    std::string tmp = this->physic();
+    this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( std::move(tmp), "Robin" );
     for( auto const& d : this->M_bcRobin )
         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
-
-    this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "temperature", "VolumicForces" );
 
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
     std::set<std::string> unknownMarkers;
 
-    // strong Dirichlet bc on temperature from expression
+    // strong Dirichlet bc
     for( auto const& d : M_bcDirichlet )
     {
         auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         unknownMarkers.insert( listMark.begin(), listMark.end() );
     }
-    auto meshMarkersTemperatureByEntities = detail::distributeMarkerListOnSubEntity( mesh, unknownMarkers );
+    auto meshMarkersUnknownByEntities = detail::distributeMarkerListOnSubEntity( mesh, unknownMarkers );
 
     // on topological faces
-    auto const& listMarkedFacesTemperature = std::get<0>( meshMarkersTemperatureByEntities );
-    if ( !listMarkedFacesTemperature.empty() )
-        this->updateDofEliminationIds( "temperature", Xh, markedfaces( mesh,listMarkedFacesTemperature ) );
+    auto const& listMarkedFacesUnknown = std::get<0>( meshMarkersUnknownByEntities );
+    if ( !listMarkedFacesUnknown.empty() )
+        this->updateDofEliminationIds( this->unknownName(), Xh, markedfaces( mesh,listMarkedFacesUnknown ) );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -157,14 +157,57 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
 {
-    // TODO
+    this->log("CoefficientFormPDE","initTimeStep", "start" );
+    this->timerTool("Constructor").start();
+
+    std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+
+    int bdfOrder = 1;
+    if ( M_timeStepping == "BDF" )
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+    int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+
+    M_bdfUnknown = this->createBdf( this->spaceUnknown(),this->unknownName(), bdfOrder, nConsecutiveSave, myFileFormat );
+
+    if (!this->doRestart())
+    {
+        // up current time
+        this->updateTime( M_bdfUnknown->timeInitial() );
+    }
+    else
+    {
+        // start time step
+        double tir = M_bdfUnknown->restart();
+        // load a previous solution as current solution
+        *this->fieldUnknownPtr() = M_bdfUnknown->unknown(0);
+        // up initial time
+        this->setTimeInitial( tir );
+        // up current time
+        this->updateTime( tir );
+    }
+
+    double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
+    this->log("CoefficientFormPDE","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    // TODO
+    this->log("CoefficientFormPDE","initPostProcess", "start");
+    this->timerTool("Constructor").start();
+
+    this->initBasePostProcess();
+
+    // point measures
+    auto fieldNamesWithSpaceUnknown = std::make_pair( std::set<std::string>({this->unknownName()}), this->spaceUnknown() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceUnknown );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        M_measurePointsEvaluation->init( evalPoints );
+
+    double tElpased = this->timerTool("Constructor").stop("initPostProcess");
+    this->log("CoefficientFormPDE","initPostProcess",(boost::format("finish in %1% s")%tElpased).str() );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -172,9 +215,9 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
     // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
+    this->M_blockVectorSolution.buildVector( this->backend() );
 
-    M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+    this->M_algebraicFactory.reset( new typename super_type::model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -201,7 +244,98 @@ std::shared_ptr<std::ostringstream>
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||-----------Info : CoefficientFormPDE----------||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n   Prefix : " << this->prefix()
+           << "\n   Root Repository : " << this->rootRepository();
+    *_ostr << "\n   Physical Model"
+           << "\n     -- name      : " << this->physic()
+           << "\n     -- time mode : " << std::string( (this->isStationary())?"Stationary":"Transient");
+    *_ostr << "\n   Boundary conditions"
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+    *_ostr << "\n   Mesh Discretization"
+           << "\n     -- mesh filename      : " << this->meshFile()
+           << "\n     -- number of element : " << this->mesh()->numGlobalElements()
+           << "\n     -- order             : " << nOrderGeo;
+    *_ostr << "\n   Space Unknown Discretization"
+           << "\n     -- name of unknown         : " << this->unknownName()
+           << "\n     -- symbol of unknown : " << this->unknownSymbol()
+           << "\n     -- basis : " << this->unknownBasis()
+           << "\n     -- number of dof : " << this->spaceUnknown()->nDof() << " (" << this->spaceUnknown()->nLocalDof() << ")";
+    if ( this->algebraicFactory() )
+        *_ostr << this->algebraicFactory()->getInfo()->str();
+    *_ostr << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n||==============================================||"
+           << "\n";
+
     return _ostr;
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    this->log("CoefficientFormPDE","startTimeStep", "start");
+#if 0
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+#endif
+    // start time step
+    if (!this->doRestart())
+        M_bdfUnknown->start( M_bdfUnknown->unknowns() );
+     // up current time
+    this->updateTime( M_bdfUnknown->time() );
+
+    // update all expressions in bc or in house prec
+    this->updateParameterValues();
+
+    this->log("CoefficientFormPDE","startTimeStep", "finish");
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    this->log("CoefficientFormPDE","updateTimeStep", "start");
+    this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
+    this->timerTool("TimeStepping").start();
+#if 0
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+#endif
+    bool rebuildCstAssembly = false;
+    if ( M_timeStepping == "BDF" )
+    {
+        int previousTimeOrder = this->timeStepBdfUnknown()->timeOrder();
+        M_bdfUnknown->next( this->fieldUnknown() );
+        int currentTimeOrder = this->timeStepBdfUnknown()->timeOrder();
+        rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
+        this->updateTime( this->timeStepBdfUnknown()->time() );
+    }
+#if 0
+    else if ( M_timeStepping == "Theta" )
+    {
+        M_bdfUnknown->next( this->fieldUnknown() );
+        this->updateTime( this->timeStepBdfUnknown()->time() );
+    }
+#endif
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
+
+    this->updateParameterValues();
+
+    this->timerTool("TimeStepping").stop("updateTimeStep");
+    if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
+    this->log("CoefficientFormPDE","updateTimeStep", "finish");
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -230,12 +364,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
         this->modelProperties().postProcess().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
-#if 0
+
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
-    M_volumicForcesProperties.setParameterValues( paramValues );
-#endif
+
     this->log("CoefficientFormPDE","setParameterValues", "finish");
 }
 
@@ -245,6 +378,15 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::solve()
 {
     // TODO
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::exportResults( double time )
+{
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
 
 

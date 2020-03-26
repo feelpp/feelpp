@@ -16,30 +16,7 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
-
-    this->log("Heat","updateLinearPDEDofElimination","start" );
-
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
-    auto se = this->symbolsExpr();
-
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        auto theExpr = expression(d,se);
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=u,_rhs=F,_expr=theExpr );
-    }
-
-    this->log("Heat","updateLinearPDEDofElimination","finish" );
+    this->updateLinearPDEDofElimination( data, this->modelContext() );
 }
 
 } // namespace FeelModels

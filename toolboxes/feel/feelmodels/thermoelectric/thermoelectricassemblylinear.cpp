@@ -26,12 +26,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     auto XhV = M_electricModel->spaceElectricPotential();
     auto XhT = M_heatModel->spaceTemperature();
 
-    auto mctx = this->modelContext(  vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
+    auto mctx = this->modelContext( vecCurrentPicardSolution, M_heatModel->startBlockSpaceIndexVector(), M_electricModel->startBlockSpaceIndexVector() );
     auto const& symbolsExpr = mctx.symbolsExpr();
-    // auto mfield = this->modelFields( vecCurrentPicardSolution, startBlockIndexTemperature, startBlockIndexElectricPotential );
-    // auto symbolsExpr = this->symbolsExpr( mfield );
-    // auto v = *XhV->elementPtr( *vecCurrentPicardSolution, startBlockIndexElectricPotential );
-    // auto t = *XhT->elementPtr( *vecCurrentPicardSolution, startBlockIndexTemperature );
     auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
 
@@ -68,8 +64,11 @@ THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    M_heatModel->updateLinearPDEDofElimination( data );
-    M_electricModel->updateLinearPDEDofElimination( data );
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, M_heatModel->startBlockSpaceIndexVector(), M_electricModel->startBlockSpaceIndexVector() );
+    auto const& symbolsExpr = mctx.symbolsExpr();
+    M_heatModel->updateLinearPDEDofElimination( data, mctx );
+    M_electricModel->updateLinearPDEDofElimination( data, mctx );
 }
 
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS

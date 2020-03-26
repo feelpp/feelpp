@@ -12,8 +12,10 @@ void
 THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("ThermoElectric","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( data );
-    M_electricModel->updateNewtonInitialGuess( data );
+    vector_ptrtype& U = data.initialGuess();
+    auto mctx = this->modelContext( U, M_heatModel->startBlockSpaceIndexVector(), M_electricModel->startBlockSpaceIndexVector() );
+    M_heatModel->updateNewtonInitialGuess( data, mctx );
+    M_electricModel->updateNewtonInitialGuess( data, mctx );
     this->log("ThermoElectric","updateNewtonInitialGuess","finish" );
 }
 THERMOELECTRIC_CLASS_TEMPLATE_DECLARATIONS
