@@ -10,7 +10,8 @@ runApplicationCoefficientFormPDEs()
 
     typedef FeelModels::CoefficientFormPDEs< Simplex<nDim,nOrderGeo>,
                                              Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<2,Scalar,Continuous,PointSetFekete> > model_type;
+                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
+                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> > model_type;
 
     std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
     cfpdes->init();
