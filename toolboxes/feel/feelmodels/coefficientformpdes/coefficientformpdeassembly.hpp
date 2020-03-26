@@ -61,13 +61,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
         {
             auto const& coeff_beta = this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() );
-            auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
+            auto coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
             bool build_ConvectionTerm = coeff_beta_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( build_ConvectionTerm )
             {
                 bilinearForm +=
                     integrate( _range=range,
-                               _expr= timeSteppingScaling*(gradt(u)*coeff_beta_expr)*id(v),
+                               _expr= timeSteppingScaling*inner( gradt(u)*coeff_beta_expr, id(v) ),
+                               //_expr= timeSteppingScaling*(gradt(u)*coeff_beta_expr)*id(v),
                                _geomap=this->geomap() );
             }
         }
@@ -78,19 +79,29 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
             if ( coeff_c.template hasExpr<nDim,nDim>() )
             {
-                auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                auto coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
                 bool build_DiffusionTerm = coeff_c_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
                 if ( build_DiffusionTerm )
                 {
-                    bilinearForm +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling*grad(v)*(coeff_c_expr*trans(gradt(u))),
-                                   _geomap=this->geomap() );
+                    if constexpr ( unknown_is_vectorial )
+                        {
+                            bilinearForm +=
+                                integrate( _range=range,
+                                           _expr= timeSteppingScaling*inner(coeff_c_expr*gradt(u),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    else
+                    {
+                            bilinearForm +=
+                                integrate( _range=range,
+                                           _expr= timeSteppingScaling*grad(v)*(coeff_c_expr*trans(gradt(u))),
+                                           _geomap=this->geomap() );
+                    }
                 }
             }
             else
             {
-                auto const& coeff_c_expr = expr( coeff_c.expr(), se );
+                auto coeff_c_expr = expr( coeff_c.expr(), se );
                 bool build_DiffusionTerm = coeff_c_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
                 if ( build_DiffusionTerm )
                 {
@@ -106,7 +117,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
             auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-            auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+            auto coeff_a_expr = expr( coeff_a.expr(), se );
             bool build_ReactionTerm = coeff_a_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( build_ReactionTerm )
             {
@@ -121,7 +132,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         if ( !this->isStationary() && this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) )
         {
             auto const& coeff_d = this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() );
-            auto const& coeff_d_expr = expr( coeff_d.expr(), se );
+            auto coeff_d_expr = expr( coeff_d.expr(), se );
 
             bool build_Form2TransientTerm = buildNonCstPart;
             bool build_Form1TransientTerm = buildNonCstPart;
@@ -150,24 +161,25 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         if ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
-            auto const& coeff_f_expr = expr( coeff_f.expr(), se );
+            auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                               [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
+                                               [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
+            //auto const& coeff_f_expr = expr( coeff_f.expr(), se );
             bool buildSourceTerm = coeff_f_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( buildSourceTerm )
             {
                 linearForm +=
                     integrate( _range=range,
-                               _expr= coeff_f_expr*id(v),
+                               _expr= inner(coeff_f_expr,id(v)),
                                _geomap=this->geomap() );
             }
         }
-
 
         // Stab
         if ( this->M_applyStabilization && buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
         {
             this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
         }
-
 
     } // for each material
 
@@ -178,26 +190,33 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         // k \nabla u  n = g
         for( auto const& d : this->M_bcNeumann )
         {
-            auto theExpr = expression( d,se );
+            auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                          [&d,&se] { return expression( d,se ); },
+                                          [&d,&se] { return expression( d,se )*N(); } );
             linearForm +=
                 integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
-                           _expr= timeSteppingScaling*theExpr*id(v),
+                           _expr= timeSteppingScaling*inner(theExpr,id(v)),
                            _geomap=this->geomap() );
         }
 
         // k \nabla u  n + g u = h  -> - k \nabla u  n = gu - h
         for( auto const& d : this->M_bcRobin )
         {
-            auto theExpr1 = expression1( d,se );
-            bilinearForm +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
-                           _geomap=this->geomap() );
-            auto theExpr2 = expression2( d,se );
-            linearForm +=
-                integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= timeSteppingScaling*theExpr2*id(v),
-                           _geomap=this->geomap() );
+            if constexpr( unknown_is_scalar )
+            {
+                auto theExpr1 = expression1( d,se );
+                bilinearForm +=
+                    integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
+                               _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
+                               _geomap=this->geomap() );
+                auto theExpr2 = expression2( d,se );
+                linearForm +=
+                    integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
+                               _expr= timeSteppingScaling*theExpr2*id(v),
+                               _geomap=this->geomap() );
+            }
+            else
+                CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
         }
     }
 

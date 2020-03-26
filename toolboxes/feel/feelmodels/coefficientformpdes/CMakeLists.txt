@@ -28,23 +28,24 @@ install(TARGETS feelpp_toolbox_coefficientformpdebase EXPORT feelpp-toolboxes-ta
 
 
 
-set( _UNKNOWN_BASIS_TYPE_LIST Lagrange<1,Scalar,Continuous,PointSetFekete> Lagrange<2,Scalar,Continuous,PointSetFekete> )
-set( _UNKNOWN_BASIS_TAG_LIST Pch1 Pch2)
+set( _UNKNOWN_BASIS_TYPE_LIST
+  "Lagrange<1,Scalar,Continuous,PointSetFekete>" "Lagrange<2,Scalar,Continuous,PointSetFekete>"
+  "Lagrange<1,Vectorial,Continuous,PointSetFekete>" )
+set( _UNKNOWN_BASIS_TAG_LIST
+  "Pch1" "Pch2"
+  "Pchv1" )
 # geo order 1
 foreach(_DIM 2 3)
   math(EXPR _T_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_T_ORDER})
   message(STATUS "[feelpp] COEFFICIENTFORMPDES ${_DIM}D PNG1 N=1..${MAX_ORDER}")
-  #foreach( _T_ORDER RANGE 1 ${MAX_ORDER} )
     genLibCoefficientFormPDEs(
       DIM     ${_DIM}
-      #UNKNOWN_ORDER ${_T_ORDER}
       UNKNOWN_BASIS_TYPE ${_UNKNOWN_BASIS_TYPE_LIST}
       UNKNOWN_BASIS_TAG ${_UNKNOWN_BASIS_TAG_LIST}
       GEO_ORDER 1
       )
     set(FEELPP_MODELS_LIBRARIES_COEFFICIENTFORMPDES  ${FEELPP_MODELS_LIBRARIES_COEFFICIENTFORMPDES} ${COEFFICIENTFORMPDES_LIB_NAME}  )
-  #endforeach()
 endforeach()
 
 if ( 0 )
