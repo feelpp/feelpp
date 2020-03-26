@@ -42,12 +42,15 @@ void removeTrailingSlash( std::string & s )
 }
 }
 
-ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
+ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc, bool use_npSubDir, std::string const& exprRepository )
 {
     if ( rootDirWithoutNumProc.empty() )
     {
         M_rootRepositoryWithoutNumProc = Environment::appRepositoryWithoutNumProc();
-        M_rootRepositoryWithNumProc = Environment::appRepository();
+        if ( use_npSubDir )
+            M_rootRepositoryWithNumProc = Environment::appRepository();
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = Environment::exprRepository();
     }
     else
@@ -55,9 +58,22 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
         M_rootRepositoryWithoutNumProc = Environment::expand( rootDirWithoutNumProc );
         if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
             M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
-        std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
-        M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+
+        if ( use_npSubDir )
+        {
+            std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
+            M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+        }
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
+    }
+
+    if ( !exprRepository.empty() )
+    {
+        M_exprRepository = Environment::expand( exprRepository );
+        if ( fs::path( M_exprRepository ).is_relative() )
+            M_exprRepository = (fs::path(M_rootRepositoryWithoutNumProc)/fs::path( M_exprRepository )).string();
     }
 
     ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithoutNumProc );

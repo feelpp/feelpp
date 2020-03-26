@@ -107,6 +107,21 @@ class Heat : public ModelNumerical,
             static auto temperature( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
         };
 
+        BOOST_PARAMETER_MEMBER_FUNCTION(
+            ( self_ptrtype ), static New, tag,
+            ( required
+              ( prefix,*( boost::is_convertible<mpl::_,std::string> ) )
+              )
+            ( optional
+              //( prefix,*( boost::is_convertible<mpl::_,std::string> ),"heat" )   // there is a compilation error if BOOST_PARAMETER_MEMBER_FUNCTION in a class template has no required
+              ( keyword,*( boost::is_convertible<mpl::_,std::string> ),"heat" )
+              ( worldcomm, *, Environment::worldCommPtr() )
+              ( repository, *, ModelBaseRepository() )
+              ) )
+            {
+                return std::make_shared<self_type>( prefix, keyword, worldcomm, "", repository );
+            }
+
 
         Heat( std::string const& prefix,
               std::string const& keyword = "heat",
