@@ -36,14 +36,16 @@ public:
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     // basis
-    static const uint16_type nOrderUnknown = BasisUnknownType::nOrder;
     typedef BasisUnknownType basis_unknown_type;
+    static const uint16_type nOrderUnknown = basis_unknown_type::nOrder;
     // function space unknown
     typedef FunctionSpace<mesh_type, bases<basis_unknown_type> > space_unknown_type;
     typedef std::shared_ptr<space_unknown_type> space_unknown_ptrtype;
     typedef typename space_unknown_type::element_type element_unknown_type;
     typedef std::shared_ptr<element_unknown_type> element_unknown_ptrtype;
     typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
+    static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
+    static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
     // materials properties
     typedef MaterialsProperties<mesh_type> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -210,7 +212,8 @@ private :
     //vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // boundary conditions
-    map_scalar_field<2> M_bcDirichlet;
+    using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
+    map_field_dirichlet/*map_scalar_field<2>*/ M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
     map_scalar_fields<2> M_bcRobin;
     MarkerManagementDirichletBC M_bcDirichletMarkerManagement;

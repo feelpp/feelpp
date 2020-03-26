@@ -116,7 +116,11 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
     M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
-    this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
+    if constexpr ( unknown_is_scalar )
+        M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(), std::string("Dirichlet") } } );
+    else
+        M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( { { this->physic(), std::string("Dirichlet") } } );
+
     for( auto const& d : this->M_bcDirichlet )
         M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( { { this->physic(),  std::string("Neumann") }  } );

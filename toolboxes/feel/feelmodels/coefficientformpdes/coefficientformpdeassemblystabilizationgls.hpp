@@ -55,7 +55,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     using expr_convection_test_type = std::decay_t<decltype( grad(u)*coeff_beta_expr )>;
     using expr_reaction_test_type = std::decay_t<decltype( coeffNatureStabilization*expr_coeff_reaction_type{}*id(u) )>;
     using expr_diffusion_scalar_test_type = std::decay_t<decltype( -coeffNatureStabilization*expr_coeff_diffusion_scalar_type{}*laplacian(u) )>;
-    using expr_diffusion_matrix_test_type = std::decay_t<decltype( -coeffNatureStabilization*inner(expr_coeff_diffusion_matrix_type{},hess(u)) )>;
+    using expr_diffusion_matrix_test_type = typename mpl::if_c<unknown_is_scalar,
+                                                               std::decay_t<decltype( -coeffNatureStabilization*inner(expr_coeff_diffusion_matrix_type{},hess(u)) )>,
+                                                               std::decay_t<decltype( cst(0.) )> >::type;
 
     auto stab_test = exprOptionalConcat<expr_convection_test_type,expr_reaction_test_type,expr_diffusion_scalar_test_type,expr_diffusion_matrix_test_type>();
 
@@ -81,8 +83,13 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
                 auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
                 if ( coeff_c.template hasExpr<nDim,nDim>() )
                 {
-                    auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
-                    stab_test.expression().template set<3>( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
+                    if constexpr ( unknown_is_scalar )
+                    {
+                        auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                        stab_test.expression().template set<3>( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
+                    }
+                    else
+                        CHECK( false ) << "can not define stabilization with matrix diffusion coefficient and vectorial unknown";
                 }
                 else
                 {
@@ -96,7 +103,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradt(u)*coeff_beta_expr) )>;
     using expr_reaction_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idt(u) )>;
     using expr_diffusion_scalar_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplaciant(u) )>;
-    using expr_diffusion_matrix_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hesst(u)) )>;
+    using expr_diffusion_matrix_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
+                                                                       std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hesst(u)) )>,
+                                                                       std::decay_t<decltype( cst(0.) )> >::type;
 
     auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,expr_diffusion_scalar_residual_lhs_type,expr_diffusion_matrix_residual_lhs_type>();
     residual_lhs.expression().template set<0>( timeSteppingScaling*(gradt(u)*coeff_beta_expr) );
@@ -108,20 +117,25 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
         if ( coeff_c.template hasExpr<nDim,nDim>() )
         {
-            auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
-            residual_lhs.expression().template set<3>( -timeSteppingScaling*inner(coeff_c_expr,hesst(u)) );
-            if ( hasReactionTerm )
+            if constexpr ( unknown_is_scalar )
             {
-                auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
-                auto const& coeff_a_expr = expr( coeff_a.expr(), se );
-                residual_lhs.expression().template set<1>( -timeSteppingScaling*coeff_a_expr*idt(u) );
-                CHECK( false ) << "TODO";
+                auto const& coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
+                residual_lhs.expression().template set<3>( -timeSteppingScaling*inner(coeff_c_expr,hesst(u)) );
+                if ( hasReactionTerm )
+                {
+                    auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
+                    auto const& coeff_a_expr = expr( coeff_a.expr(), se );
+                    residual_lhs.expression().template set<1>( -timeSteppingScaling*coeff_a_expr*idt(u) );
+                    CHECK( false ) << "TODO";
+                }
+                else
+                {
+                    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),coeff_beta_expr, coeff_c_expr, true, true );
+                    tauFieldPtr->on(_range=range,_expr=tauExpr);
+                }
             }
             else
-            {
-                auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),coeff_beta_expr, coeff_c_expr, true, true );
-                tauFieldPtr->on(_range=range,_expr=tauExpr);
-            }
+                CHECK( false ) << "can not define stabilization with matrix diffusion coefficient and vectorial unknown";
         }
         else
         {

@@ -42,8 +42,15 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
             M_unknownBasis = *unknownBasisOpt;
         else
             M_unknownBasis = "Pch1";
-        CHECK( M_unknownBasis == "Pch1" ||  M_unknownBasis == "Pch2"  ) << "invalid unknown.basis : " << M_unknownBasis;
     }
+
+    std::string unknownShape;
+    if ( M_unknownBasis == "Pch1" ||  M_unknownBasis == "Pch2" )
+        unknownShape = "scalar";
+    else if ( M_unknownBasis == "Pchv1" ||  M_unknownBasis == "Pchv2" )
+        unknownShape = "vectorial";
+    else
+        CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
 
     material_property_shape_dim_type scalarShape = std::make_pair(1,1);
     material_property_shape_dim_type vectorialShape = std::make_pair(nDim,1);
@@ -54,7 +61,10 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
     this->addMaterialPropertyDescription( this->reactionCoefficientName(), this->reactionCoefficientName(), { scalarShape } );
     this->addMaterialPropertyDescription( this->firstTimeDerivativeCoefficientName(), this->firstTimeDerivativeCoefficientName(), { scalarShape } );
     this->addMaterialPropertyDescription( this->secondTimeDerivativeCoefficientName(), this->secondTimeDerivativeCoefficientName(), { scalarShape } );
-    this->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { scalarShape } );
+    if ( unknownShape == "scalar" )
+        this->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { scalarShape } );
+    else if ( unknownShape == "vectorial" )
+        this->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { vectorialShape } );
 }
 
 template <uint16_type Dim>
