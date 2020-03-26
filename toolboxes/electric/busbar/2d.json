@@ -1,0 +1,45 @@
+/ -*- mode: javascript -*-
+{
+    "Name":"cvg2d",
+    "ShortName":"cvg2d",
+    "Models":
+    {
+        "v_expr":"0.25*x/L:x:y:z",
+        "c_expr":"{-0.25/L,0}:x:y:z"
+    },
+    "Materials":
+    {
+        "omega":
+        {
+            "sigma":"4.8e7"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "electric-potential":
+        {
+            "Dirichlet":
+            {
+                "V0":
+                {
+                    "expr":"0" // V_in
+                },
+                "V1":
+                {
+                    "expr":"0.25" // V_out
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "electric":
+        {
+            "Exports":
+            {
+                "fields":["electric.electric-potential","electric.electric-field","electric.pid"]
+            }
+        }
+    }
+}
