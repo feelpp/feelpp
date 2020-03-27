@@ -9,14 +9,28 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDE( data, this->modelContext() );
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDE_spec<CompilerSelectorBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    this->updateLinearPDEDofElimination( data, this->modelContext() );
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDEDofElimination_spec<CompilerSelectorBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
 }
 
 } // namespace FeelModels

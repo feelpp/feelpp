@@ -22,6 +22,7 @@ public :
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
@@ -82,6 +83,17 @@ private :
         using model_fields_type =  std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
 
     };
+
+    struct CompilerSelectorBasisUnknownAll {
+        template<typename T>
+        struct apply { static constexpr bool value = true; };
+    };
+    template<typename TheBasisType>
+    struct CompilerSelectorBasisUnknown {
+        template<typename T>
+        struct apply { static constexpr bool value = std::is_same_v<T,TheBasisType>; };
+    };
+
 public :
 
     using variant_unknown_basis_type = std::decay_t<decltype(traits::variant_from_tuple(tuple_type_unknown_basis))>;
@@ -211,9 +223,13 @@ public :
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
     template <typename ModelContextType>
     void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
@@ -222,6 +238,10 @@ private :
     void initMaterialProperties();
     void initPostProcess() override;
 
+    template <typename CompilerSelectorBasisUnknownType>
+    void updateLinearPDE_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
+    template <typename CompilerSelectorBasisUnknownType>
+    void updateLinearPDEDofElimination_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
 private :
 
     static const std::vector<std::string> S_unknownBasisTags;
