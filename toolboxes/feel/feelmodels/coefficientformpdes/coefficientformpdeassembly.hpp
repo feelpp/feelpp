@@ -220,6 +220,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         }
     }
 
+    double timeElapsed = this->timerTool("Solve").stop();
+    this->log("CoefficientFormPDE","updateLinearPDE",
+              "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 
 }
 template< typename ConvexType, typename BasisUnknownType>
@@ -253,6 +256,52 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
     }
 
     this->log("CoefficientFormPDE","updateLinearPDEDofElimination","finish" );
+}
+
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+
+    this->log("CoefficientFormPDE","updateNewtonInitialGuess","start" );
+
+    vector_ptrtype& U = data.initialGuess();
+    auto mesh = this->mesh();
+    size_type startBlockIndexUnknown = this->startSubBlockSpaceIndex( this->unknownName() );
+    auto u = this->spaceUnknown()->element( U, this->rowStartInVector()+startBlockIndexUnknown );
+    auto const& se = mctx.symbolsExpr();
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto theExpr = expression(d,se);
+        u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+             _expr=theExpr );
+    }
+
+    // update info for synchronization
+    this->updateDofEliminationIds( this->unknownName(), data );
+
+    this->log("CoefficientFormPDE","updateNewtonInitialGuess","finish" );
+
+}
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const
+{
+    // TODO
+}
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const
+{
+    // TODO
 }
 
 } // namespace Feel

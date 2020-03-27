@@ -9,21 +9,54 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename... BasisUnknownType>
-template <typename ModelContextType>
+template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
                     {
-                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        if constexpr ( CompilerSelectorBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
                         {
-                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                continue;
+                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                            {
+                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                    continue;
 
-                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                            cfpde->updateLinearPDE( data, mctx );
+                                cfpde->updateLinearPDE( data, mctx );
+                            }
+                        }
+                    });
+}
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
+{
+    this->updateLinearPDE<CompilerSelectorBasisUnknownAll>( data, mctx );
+}
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+                    {
+                        if constexpr ( CompilerSelectorBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        {
+                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                            {
+                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                    continue;
+
+                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                cfpde->updateLinearPDEDofElimination( data, mctx );
+                            }
                         }
                     });
 }
@@ -33,19 +66,7 @@ template <typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
-                    {
-                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                        {
-                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                continue;
-
-                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
-
-                            cfpde->updateLinearPDEDofElimination( data, mctx );
-                        }
-                    });
+    this->updateLinearPDEDofElimination<CompilerSelectorBasisUnknownAll>( data, mctx );
 }
 
 } // namespace Feel
