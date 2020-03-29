@@ -288,6 +288,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
     //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     // else
+    //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
@@ -316,6 +317,94 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
     return checkValue;
 }
 
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+{
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDE_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
+{
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDEDofElimination_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
+{
+    vector_ptrtype& U = data.initialGuess();
+    auto mctx = this->modelContext( U, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateNewtonInitialGuess_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateJacobian_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{
+    for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateJacobianDofElimination( data );
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateResidual_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateResidualDofElimination( data );
+}
 
 } // namespace Feel
 } // namespace FeelModels

@@ -72,6 +72,17 @@ private :
                     return dummycfpde->modelFields( std::string("") );
                 }
 
+            struct View
+            {
+                template <typename T>
+                constexpr auto operator()(T const& t) const
+                    {
+                        using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(t)>;
+                        std::shared_ptr<coefficient_form_pde_type> dummycfpde;
+                        return dummycfpde->modelFields( vector_ptrtype{}, size_type(0), std::string("") );
+                    }
+            };
+
             template <typename... TheType>
             static constexpr auto
             toModelFields(  hana::tuple<TheType...> const& t )
@@ -80,16 +91,18 @@ private :
                 }
         };
     public :
-        using model_fields_type =  std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
+        using model_fields_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
+
+        using model_fields_view_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, typename TransformModelFields::View{} ) ) )>;
 
     };
 
-    struct CompilerSelectorBasisUnknownAll {
+    struct FilterBasisUnknownAll {
         template<typename T>
         struct apply { static constexpr bool value = true; };
     };
     template<typename TheBasisType>
-    struct CompilerSelectorBasisUnknown {
+    struct FilterBasisUnknown {
         template<typename T>
         struct apply { static constexpr bool value = std::is_same_v<T,TheBasisType>; };
     };
@@ -159,6 +172,25 @@ private :
                             });
         }
 
+    template <typename ResType>
+    void modelFieldsImpl( vector_ptrtype sol, size_type rowStartInVector, std::string const& prefix, ResType && res ) const
+        {
+            hana::for_each( tuple_type_unknown_basis, [this,&sol,&rowStartInVector,&prefix,&res]( auto const& e )
+                            {
+                                for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                                    res = Feel::FeelModels::modelFields( res, cfpde->modelFields( sol,
+                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->physic() ),
+                                                                                                  prefixvm( prefix, cfpde->keyword() ) ) );
+                                }
+                            });
+        }
+
 public :
 
     auto modelFields( std::string const& prefix = "" ) const
@@ -167,6 +199,15 @@ public :
             this->modelFieldsImpl( prefix, std::move(res) );
             return res;
         }
+
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            typename traits::model_fields_view_type res;
+            this->modelFieldsImpl( sol, rowStartInVector, prefix, std::move(res) );
+            return res;
+
+        }
+
 
     //___________________________________________________________________________________//
     // symbols expressions
@@ -198,13 +239,12 @@ public :
             auto mfields = this->modelFields( prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
-#if 0
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
-#endif
+
     //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return  M_backend; }
@@ -223,25 +263,51 @@ public :
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
-    template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
-    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
-    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
-    template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
-    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
-    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const;
+
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+
+    void updateResidual( DataUpdateResidual & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 private :
     void initMesh();
     void initMaterialProperties();
     void initPostProcess() override;
 
-    template <typename CompilerSelectorBasisUnknownType>
+    template <typename FilterBasisUnknownType>
     void updateLinearPDE_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
-    template <typename CompilerSelectorBasisUnknownType>
+    template <typename FilterBasisUnknownType>
     void updateLinearPDEDofElimination_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateNewtonInitialGuess_spec( DataNewtonInitialGuess & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateJacobian_spec( DataUpdateJacobian & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateResidual_spec( DataUpdateResidual & data, std::any const& mctxAsAny ) const;
 private :
 
     static const std::vector<std::string> S_unknownBasisTags;

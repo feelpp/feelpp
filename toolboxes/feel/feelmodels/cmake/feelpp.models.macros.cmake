@@ -495,11 +495,9 @@ macro( genLibCoefficientFormPDEs )
     set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
     set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_inst.cpp
       )
     set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
       ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
-      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdesassemblylinear_inst.cpp
       )
 
     set(COEFFICIENTFORMPDES_TARGET_COPY_FILES ${COEFFICIENTFORMPDES_LIB_NAME}_copyfiles)
@@ -518,7 +516,11 @@ macro( genLibCoefficientFormPDEs )
       CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE}.h )
 
 
-      set( COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY  ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_spec.cpp )
+      set( COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyjacobian_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyresidual_spec.cpp
+        )
       # lib files
       foreach(filepath ${COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY})
         get_filename_component(filename ${filepath} NAME)

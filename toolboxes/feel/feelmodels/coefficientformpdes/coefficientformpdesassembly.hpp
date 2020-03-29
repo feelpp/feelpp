@@ -8,14 +8,18 @@ namespace Feel
 namespace FeelModels
 {
 
+// ------------------------------------------------------------- //
+// updateLinearPDE
+// ------------------------------------------------------------- //
+
 template< typename ConvexType, typename... BasisUnknownType>
-template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
+template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( CompilerSelectorBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
                         {
                             for ( auto const& cfpdeBase : M_coefficientFormPDEs )
                             {
@@ -35,17 +39,21 @@ template <typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    this->updateLinearPDE<CompilerSelectorBasisUnknownAll>( data, mctx );
+    this->updateLinearPDE<FilterBasisUnknownAll>( data, mctx );
 }
 
+// ------------------------------------------------------------- //
+// updateLinearPDEDofElimination
+// ------------------------------------------------------------- //
+
 template< typename ConvexType, typename... BasisUnknownType>
-template <typename CompilerSelectorBasisUnknownType,typename ModelContextType>
+template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( CompilerSelectorBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
                         {
                             for ( auto const& cfpdeBase : M_coefficientFormPDEs )
                             {
@@ -60,14 +68,120 @@ CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofEliminati
                         }
                     });
 }
-
 template< typename ConvexType, typename... BasisUnknownType>
 template <typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    this->updateLinearPDEDofElimination<CompilerSelectorBasisUnknownAll>( data, mctx );
+    this->updateLinearPDEDofElimination<FilterBasisUnknownAll>( data, mctx );
 }
+
+// ------------------------------------------------------------- //
+// updateNewtonInitialGuess
+// ------------------------------------------------------------- //
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename FilterBasisUnknownType,typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+                    {
+                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        {
+                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                            {
+                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                    continue;
+
+                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                cfpde->updateNewtonInitialGuess( data, mctx );
+                            }
+                        }
+                    });
+}
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
+{
+    this->updateNewtonInitialGuess<FilterBasisUnknownAll>( data, mctx );
+}
+
+
+// ------------------------------------------------------------- //
+// updateJacobian
+// ------------------------------------------------------------- //
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename FilterBasisUnknownType,typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+                    {
+                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                            {
+                                for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                    cfpde->updateJacobian( data, mctx );
+                                }
+                            }
+                    });
+
+}
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
+{
+    this->updateNewtonInitialGuess<FilterBasisUnknownAll>( data, mctx );
+}
+
+
+// ------------------------------------------------------------- //
+// updateResidual
+// ------------------------------------------------------------- //
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename FilterBasisUnknownType,typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+                    {
+                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                            {
+                                for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                    cfpde->updateResidual( data, mctx );
+                                }
+                            }
+                    });
+}
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename ModelContextType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
+{
+    this->updateNewtonInitialGuess<FilterBasisUnknownAll>( data, mctx );
+}
+
+
 
 } // namespace Feel
 } // namespace FeelModels
