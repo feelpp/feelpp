@@ -10,13 +10,13 @@ namespace FeelModels {
 template <>
 template <>
 void
-COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDE_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template CompilerSelectorBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
+COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDE_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
 {
     using the_model_context_type = std::decay_t<decltype(this->modelContext())>;
     try
     {
         auto const& mctx = *std::any_cast<const the_model_context_type*>(mctxAsAny);
-        this->updateLinearPDE<typename COEFFICIENTFORMPDES_CLASS_TYPE::template CompilerSelectorBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION> >( data, mctx );
+        this->updateLinearPDE<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION> >( data, mctx );
     }
     catch (const std::bad_any_cast& e)
     {
@@ -27,11 +27,11 @@ COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDE_spec<typename COEFFICIENTFORMPDE
 template <>
 template <>
 void
-COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDEDofElimination_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template CompilerSelectorBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
+COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDEDofElimination_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
 {
     using the_model_context_type = std::decay_t<decltype(this->modelContext())>;
     auto const& mctx = *std::any_cast<const the_model_context_type*>(mctxAsAny);
-    this->updateLinearPDEDofElimination<typename COEFFICIENTFORMPDES_CLASS_TYPE::template CompilerSelectorBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION> >( data, mctx );
+    this->updateLinearPDEDofElimination<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION> >( data, mctx );
 }
 
 } // namespace FeelModels
