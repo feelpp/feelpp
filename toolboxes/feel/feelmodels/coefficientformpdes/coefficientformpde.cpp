@@ -148,6 +148,18 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedFacesUnknown = std::get<0>( meshMarkersUnknownByEntities );
     if ( !listMarkedFacesUnknown.empty() )
         this->updateDofEliminationIds( this->unknownName(), Xh, markedfaces( mesh,listMarkedFacesUnknown ) );
+    // on marked edges (only 3d)
+    if constexpr ( nDim == 3)
+    {
+        auto const& listMarkedEdgesUnknown = std::get<1>( meshMarkersUnknownByEntities );
+        if ( !listMarkedEdgesUnknown.empty() )
+            this->updateDofEliminationIds( this->unknownName(), Xh, markededges( mesh,listMarkedEdgesUnknown ) );
+    }
+    // on marked points
+    auto const& listMarkedPointsUnknown = std::get<2>( meshMarkersUnknownByEntities );
+    if ( !listMarkedPointsUnknown.empty() )
+        this->updateDofEliminationIds( this->unknownName(), Xh, markedpoints( mesh,listMarkedPointsUnknown ) );
+
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
