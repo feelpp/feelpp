@@ -168,7 +168,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
         }
 
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+        if ( this->M_applyStabilization && buildNonCstPart )
         {
             this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
         }
@@ -239,11 +239,54 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
+    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : M_bcDirichlet )
     {
+        mapMarkerBCToEntitiesMeshMarker[name(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
+    }
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+        if ( listMarkerFaces.empty() )
+            continue;
         auto theExpr = expression(d,se);
         bilinearForm +=
-            on( _range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+            on( _range=markedfaces(mesh, listMarkerFaces ),
+                _element=u,_rhs=F,_expr=theExpr );
+    }
+    if constexpr ( nDim == 3 )
+    {
+        for( auto const& d : M_bcDirichlet )
+        {
+            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                continue;
+            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+            if ( listMarkerEdges.empty() )
+                continue;
+            auto theExpr = expression(d,se);
+            bilinearForm +=
+                on( _range=markededges(mesh, listMarkerEdges ),
+                    _element=u,_rhs=F,_expr=theExpr );
+        }
+    }
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+        if ( listMarkerPoints.empty() )
+            continue;
+        auto theExpr = expression(d,se);
+        bilinearForm +=
+            on( _range=markedpoints(mesh, listMarkerPoints ),
                 _element=u,_rhs=F,_expr=theExpr );
     }
 
