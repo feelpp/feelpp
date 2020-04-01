@@ -21,12 +21,29 @@
 //! @date 26 Aug 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/check.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <tabulate/table.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
+
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
+#include <feel/feeldiscr/check.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/operators2.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+
+#include "cg_laplacian.hpp"
+
 namespace Feel {
 
 
@@ -67,7 +84,7 @@ makeAbout()
                      "0.1",
                      "Quickstart HDG Laplacian",
                      AboutData::License_GPL,
-                     "Copyright (c) 2017 Feel++ Consortium" );
+                     "Copyright (c) 2017-2020 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
@@ -141,56 +158,15 @@ int hdg_laplacian()
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << std::endl;
 
+    int status_cg = 0;
     if ( boption( "solvecg" ) == true )
     {
         Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgXh->element();
-        tic(); // assembly + solve
-        tic(); // assembly
-        tic();
-        auto l = form1( _test=cgXh );
-        l = integrate( _range=elements(mesh), _expr=f_exact*id(u), _quad=ioption("rhs_quad") );
-        l += integrate(_range=markedfaces(mesh,"Neumann"),
-                       _quad=ioption("rhs_quad"),
-                       _expr=id(u)*un_exact );
-        l += integrate( _range=markedfaces(mesh, "Robin"),
-                        _expr=id(u)*r_2);
-        toc("cg.assembly.l",FLAGS_v>0);
-        tic();
-        auto a = form2(_trial=cgXh, _test=cgXh );
-        a = integrate( _range=elements(mesh), _expr=K*gradt(u)*trans(grad(u)) );
-        a += integrate( _range=markedfaces(mesh, "Robin"),
-                        _expr=id(u)*idt(u)*r_1);
-        a += on(_range=markedfaces(mesh,"Dirichlet"),
-                _rhs=l,
-                _element=u,
-                _expr=p_exact);
-        toc("cg.assembly.a",FLAGS_v>0);
-        toc("cg.assembly");
-        tic();
-        a.solve( _rhs=l,_solution=u );
-        toc("cg.solve");
-        toc("cg.assembly+cg.solve");
-        auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
-            {
-                tic();
-                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
-                double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
-                toc("L2 error norm");
-                tic();
-                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
-                double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-expr<1,Dim>(u_exact_str) );
-                toc("H1 error norm");
-                tic();
-                double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-expr<1,Dim>(u_exact_str) );
-                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
-                toc("semi H1 error norm");
-                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
-            };
-
-        int status = checker("L2/H1 and SemiH1 norms on potential",p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
+        auto u = cgLaplacian( cgXh, std::tuple{K,f_exact,p_exact,un_exact,r_1,r_2} );
+        if ( u )        
+            status_cg = check( checker("L2/H1 and SemiH1 norms on potential", p_exact_str), *u );
         Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
@@ -393,62 +369,13 @@ int hdg_laplacian()
     tic();
 
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
-
-
-    // tag::check[]
-    // compute l2 and h1 norm of u-u_h where u=solution
-    auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
-            auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
-            toc("L2 error norm u");
-            return { { "L2", l2err_u/l2_u }};
-        };
-
-    auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            double l2_p = 1;
-            double l2err_p = 1e+30;
-            if ( has_dirichlet )
-            {
-                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
-                l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
-            }
-            else
-            {
-                auto mean_p_exact = mean( elements(mesh), expr(solution) )(0,0);
-                auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
-                l2err_p = normL2( elements(mesh),
-                                  (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
-                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
-            }
-            toc("L2 error norm p");
-            return { { "L2", l2err_p/l2_p }};
-        };
-    auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            double l2_p = normL2( elements(mesh), expr(solution) );
-            double l2err_p = 1e+30;
-            l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
-            toc("L2 error norm ppp");
-            return { { "L2", l2err_p/l2_p }};
-        };
-#if 0
-    int status = checker().runOnce( {norms_p,norms_u},
-                                    { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
-#else
-    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status2 = checker("L2 Convergence flux",u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
-#endif
-
-    
+    solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
+    int status1 = check( checker("L2 Convergence potential",p_exact_str), pp, s_t );
+    int status2 = check( checker("L2 Convergence flux",u_exact_str), up );
+    int status3 = check( checker("L2 Convergence post-processed potential",p_exact_str), ppp, s_t );    
     // end::check[]
 
-    return status1 || status2 || status3;
+    return status_cg || status1 || status2 || status3;
 }
 
 
@@ -467,18 +394,16 @@ int main( int argc, char** argv )
                                   _email="feelpp-devel@feelpp.org"));
     // end::env[]
     if ( ioption( "order" ) == 1 )
-        return !hdg_laplacian<FEELPP_DIM,1>();
-
-    
+        return hdg_laplacian<FEELPP_DIM,1>();
     if ( ioption( "order" ) == 2 )
-        return !hdg_laplacian<FEELPP_DIM,2>();
+        return hdg_laplacian<FEELPP_DIM,2>();
 
-#if 0
+ #if 0   
     if ( ioption( "order" ) == 3 )
-        return !hdg_laplacian<FEELPP_DIM,3>();
+        return hdg_laplacian<FEELPP_DIM,3>();
 
     if ( ioption( "order" ) == 4 )
-        return !hdg_laplacian<FEELPP_DIM,4>();
+        return hdg_laplacian<FEELPP_DIM,4>();
 #endif
     return 1;
 }
