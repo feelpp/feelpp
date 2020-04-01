@@ -56,7 +56,8 @@ class Heat : public ModelNumerical,
                      public std::enable_shared_from_this< Heat<ConvexType,BasisTemperatureType> >,
                      public MarkerManagementDirichletBC,
                      public MarkerManagementNeumannBC,
-                     public MarkerManagementRobinBC
+                     public MarkerManagementRobinBC,
+                     public MarkerManagementRadiationBC
     {
     public:
         typedef ModelNumerical super_type;
@@ -146,6 +147,7 @@ class Heat : public ModelNumerical,
         map_scalar_field<2> const& bcDirichlet() const { return M_bcDirichlet; }
         map_scalar_field<2> const& bcNeumann() const { return M_bcNeumann; }
         map_scalar_fields<2> const& bcRobin() const { return M_bcRobin; }
+        map_scalar_fields<2> const& bcRadiation() const { return M_bcRadiation; }
         map_scalar_field<2> const& bodyForces() const { return M_volumicForcesProperties; }
         //___________________________________________________________________________________//
         // algebraic data and solver
@@ -361,6 +363,7 @@ class Heat : public ModelNumerical,
         map_scalar_field<2> M_bcDirichlet;
         map_scalar_field<2> M_bcNeumann;
         map_scalar_fields<2> M_bcRobin;
+        map_scalar_fields<2> M_bcRadiation;
         map_scalar_field<2> M_volumicForcesProperties;
 
         // stabilization

@@ -65,7 +65,8 @@ main( int argc, char** argv )
     auto discretizationt = hana::make_tuple( hana::make_tuple("P1-P1P1", hana::make_tuple( hana::int_c<1>,hana::int_c<1>,hana::int_c<1>) ),
                                              hana::make_tuple("P1-P2P1", hana::make_tuple( hana::int_c<1>,hana::int_c<2>,hana::int_c<1>) ) );
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
+    bool b = false;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension,&b]( auto const& d )
                     {
                         constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
                         std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
@@ -73,8 +74,14 @@ main( int argc, char** argv )
                         constexpr int _uorder = std::decay_t<decltype(hana::at_c<1>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
                         constexpr int _porder = std::decay_t<decltype(hana::at_c<2>(hana::at_c<1>( hana::at_c<1>(d)) ))>::value;
                         if ( dimension == _dim && discretization == _discretization )
+                        {
                             runApplicationHeatFluid<_dim,_torder,_uorder,_porder>();
+                            b = true;
+                        }
                     } );
 
+    if( !b )
+        Feel::cout << tc::red << "Dimension or discretization unavailable (D=2,3 P=P1-P2P1,P1-P1P1)"
+                   << tc::reset << std::endl;
     return 0;
 }
