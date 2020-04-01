@@ -102,11 +102,29 @@ template<typename T>
 struct dimension_t : mpl::int_<decay_type<T>::nDim> {};
 template<typename T>
 constexpr uint16_type dimension_v = dimension_t<T>::value;
- 
+/**
+ * @return topological dimension of a type T
+ */
+template<typename T>
+inline constexpr int dimension( T const& t )
+{
+  return dimension_v<T>;
+}
+
 template<typename T>
 struct real_dimension_t : mpl::int_<decay_type<T>::nRealDim> {};
 template<typename T>
 constexpr uint16_type real_dimension_v = real_dimension_t<T>::value;
+
+/**
+ * @return real dimension of a type T
+ */
+template<typename T>
+inline constexpr int real_dimension( T const& t )
+{
+  return real_dimension_v<T>;
+}
+
 
 
 template<typename T>
@@ -170,6 +188,7 @@ template <typename T> struct is_geoelement: std::false_type {};
  */
 template <typename... T>
 inline constexpr bool is_geoelement_v = is_geoelement<T...>::value;
+
 
 } // Feel
 #endif /* __Traits_H */
