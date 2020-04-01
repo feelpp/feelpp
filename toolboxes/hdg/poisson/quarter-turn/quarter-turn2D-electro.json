@@ -112,7 +112,7 @@
                 "Power":
                 {
                     "type":"integrate",
-                    "expr":"-poisson_P:poisson_P:poisson_Fx",
+                    "expr":"poisson_P:poisson_P",
                     "markers":"omega"
                 }
             }
