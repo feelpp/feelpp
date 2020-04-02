@@ -330,7 +330,7 @@ public :
 
     auto symbolsExpr() const
         {
-            return this->symbolsExprImpl( symbols_expression_empty_t{}, tupleModelField );
+            return this->symbolsExprImpl<0>( symbols_expression_empty_t{}, tupleModelField );
         }
 
     template <typename TagType>
@@ -350,19 +350,17 @@ public :
     tuple_type tupleModelField;
 
 private :
-    template<typename ResType >
-    static auto symbolsExprImpl( ResType && res, hana::tuple<> const& t )
-        {
-            return std::move( res );
-        }
-    template<typename ResType, typename T1, typename... MFieldsType >
-    static auto symbolsExprImpl( ResType && res, hana::tuple<T1,MFieldsType...> const& t )
-        {
-            return symbolsExprImpl( Feel::vf::symbolsExpr( std::forward<ResType>( res ),  hana::at( t, 0_c ).symbolsExpr() ), hana::remove_at( t, 0_c ) );
-        }
-
 
     static const int nModelField = std::decay_t<decltype(hana::size(tuple_type{}))>::value;
+
+    template<int Index,typename ResType,typename TheTupleModelFieldType>
+    static auto symbolsExprImpl( ResType && res, TheTupleModelFieldType const& t )
+        {
+            if constexpr ( Index < nModelField )
+                return symbolsExprImpl<Index+1>( Feel::vf::symbolsExpr( std::forward<ResType>( res ), hana::at( t, hana::int_c<Index> ).symbolsExpr() ), t );
+            else
+                return std::move( res );
+        }
 
     template <typename FieldType,typename TagType,int Index>
     auto const&
