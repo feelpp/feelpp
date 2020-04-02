@@ -3,7 +3,7 @@
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;TARGET_COPY_FILES"
     ""
     ${ARGN}
     )
@@ -24,7 +24,12 @@ macro(genLibBase)
     CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_PATH} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${FEELMODELS_GENLIB_CONFIG_FILENAME_WE}.h  )
   endif()
 
-  add_custom_target(codegen_${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
+  if ( FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES )
+    set( TARGET_COPY_FILES ${FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES} )
+  else()
+    set( TARGET_COPY_FILES ${LIB_APPLICATION_NAME}_copyfiles)
+    add_custom_target(${TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+  endif()
 
   # lib files
   foreach(filepath ${CODEGEN_FILES_TO_COPY})
@@ -33,7 +38,7 @@ macro(genLibBase)
       #configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
       file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} "") #write empty file
     endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET ${TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -45,7 +50,7 @@ macro(genLibBase)
     SHARED
     ${CODEGEN_SOURCES}
     )
-  add_dependencies(${LIB_APPLICATION_NAME} codegen_${LIB_APPLICATION_NAME})
+  add_dependencies(${LIB_APPLICATION_NAME} ${TARGET_COPY_FILES})
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
   set_property(TARGET ${LIB_APPLICATION_NAME} PROPERTY MACOSX_RPATH ON)
@@ -490,12 +495,46 @@ macro( genLibCoefficientFormPDEs )
     set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
     set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_inst.cpp
       )
     set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
       ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
-      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdesassemblylinear_inst.cpp
       )
+
+    set(COEFFICIENTFORMPDES_TARGET_COPY_FILES ${COEFFICIENTFORMPDES_LIB_NAME}_copyfiles)
+    add_custom_target(${COEFFICIENTFORMPDES_TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+
+    # specialisation
+    foreach(i RANGE ${count})
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+      set( COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE} )
+      set( COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR  ${COEFFICIENTFORMPDES_LIB_DIR}/${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG} )
+
+      set(FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH  ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesbasisspecialisation.h.in)
+      get_filename_component(FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} NAME_WE)
+      CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE}.h )
+
+
+      set( COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyjacobian_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyresidual_spec.cpp
+        )
+      # lib files
+      foreach(filepath ${COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY})
+        get_filename_component(filename ${filepath} NAME)
+        if ( NOT EXISTS ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+          file(WRITE ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} "") #write empty file
+        endif()
+        add_custom_command(TARGET ${COEFFICIENTFORMPDES_TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${filepath} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+
+        set(COEFFICIENTFORMPDES_CODEGEN_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+      endforeach()
+
+    endforeach()
+
 
     # generate the lib target
     genLibBase(
@@ -505,6 +544,7 @@ macro( genLibCoefficientFormPDEs )
       FILES_TO_COPY ${COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY}
       FILES_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES}
       CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesconfig.h.in
+      TARGET_COPY_FILES ${COEFFICIENTFORMPDES_TARGET_COPY_FILES}
       )
   endif()
 

@@ -148,6 +148,18 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedFacesUnknown = std::get<0>( meshMarkersUnknownByEntities );
     if ( !listMarkedFacesUnknown.empty() )
         this->updateDofEliminationIds( this->unknownName(), Xh, markedfaces( mesh,listMarkedFacesUnknown ) );
+    // on marked edges (only 3d)
+    if constexpr ( nDim == 3)
+    {
+        auto const& listMarkedEdgesUnknown = std::get<1>( meshMarkersUnknownByEntities );
+        if ( !listMarkedEdgesUnknown.empty() )
+            this->updateDofEliminationIds( this->unknownName(), Xh, markededges( mesh,listMarkedEdgesUnknown ) );
+    }
+    // on marked points
+    auto const& listMarkedPointsUnknown = std::get<2>( meshMarkersUnknownByEntities );
+    if ( !listMarkedPointsUnknown.empty() )
+        this->updateDofEliminationIds( this->unknownName(), Xh, markedpoints( mesh,listMarkedPointsUnknown ) );
+
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -388,9 +400,38 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
+#if 0
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
     this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
+#endif
+}
+
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const
+{
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+
+    this->log("CoefficientFormPDE","updateJacobianDofElimination","start" );
+
+    this->updateDofEliminationIds( this->unknownName(), data );
+
+    this->log("CoefficientFormPDE","updateJacobianDofElimination","finish" );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const
+{
+    if ( !M_bcDirichletMarkerManagement.hasMarkerDirichletBCelimination() ) return;
+
+    this->log("CoefficientFormPDE","updateResidualDofElimination","start" );
+
+    this->updateDofEliminationIds( this->unknownName(), data );
+
+    this->log("CoefficientFormPDE","updateResidualDofElimination","finish" );
 }
 
 
