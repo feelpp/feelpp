@@ -357,10 +357,13 @@ public:
             auto seParam = this->symbolsExprParameter();
             // auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
-            Feel::cout << seFields.names() << std::endl;
+            //Feel::cout << seFields.names() << std::endl;
+            //std::cout << "Info field potential = " << mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] ).functionSpace()->nDof() << std::endl;
             return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, /*seMat,*/ seFields );
         }
+#if 0 // NOT USE this one because field not use shared ptr : (object modelfields is temporary here and the fields are stored inside)
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+#endif
 #if 0
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
