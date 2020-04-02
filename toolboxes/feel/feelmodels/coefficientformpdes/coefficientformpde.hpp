@@ -144,13 +144,13 @@ public:
         {
             return this->modelFields( this->fieldUnknownPtr(), prefix );
         }
-#if 0
+
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
+            auto field_t = this->spaceUnknown()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( this->unknownName() ) );
             return this->modelFields( field_t, prefix );
         }
-#endif
+
     template <typename TheUnknownFieldType>
     auto modelFields( TheUnknownFieldType const& field_u, std::string const& prefix = "" ) const
         {
@@ -185,11 +185,20 @@ public:
     void solve();
 
     template <typename ModelContextType>
-    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDE( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
-    void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType,typename RangeType>
     void updateLinearPDEStabilizationGLS( ModelAlgebraic::DataUpdateLinear & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
+
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override;
+    template <typename ModelContextType>
+    void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override;
 
 
 private :
@@ -208,8 +217,8 @@ private :
     // time discretisation
     std::string M_timeStepping;
     bdf_unknown_ptrtype M_bdfUnknown;
-    //double M_timeStepThetaValue;
-    //vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // boundary conditions
     using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
