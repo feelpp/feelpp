@@ -331,9 +331,10 @@ public:
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            auto mfieldP = modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->potentialField(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() );
-            auto mfieldF = Feel::FeelModels::modelFields( modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fluxField(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() ) );
-            return Feel::FeelModels::modelFields(  mfieldP, mfieldF );
+            return Feel::FeelModels::modelFields(
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->potentialField(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fluxField(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() )
+                                                 );
             // return this->modelFields( /*this->potentialField(), */prefix );
         }
     // auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
@@ -359,6 +360,7 @@ public:
             auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
             //Feel::cout << seFields.names() << std::endl;
             //std::cout << "Info field potential = " << mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] ).functionSpace()->nDof() << std::endl;
+            //std::cout << "Info field flux = " << mfields.field( FieldTag::flux(this), MixedPoissonPhysicsMap[M_physic]["fluxK"] ).functionSpace()->nDof() << std::endl;
             return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, /*seMat,*/ seFields );
         }
 #if 0 // NOT USE this one because field not use shared ptr : (object modelfields is temporary here and the fields are stored inside)
