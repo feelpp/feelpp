@@ -317,6 +317,8 @@ private :
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
 
+    std::string M_solverName;
+
     // post-process
     export_ptrtype M_exporter;
 
