@@ -67,9 +67,13 @@
     },
     "PostProcess":
     {
-        "Exports":
+        "use-model-name":1,
+        "cfpdes":
         {
-            "fields":["all"]
+            "Exports":
+            {
+                "fields":["all"]
+            }
         }
     }
 }
