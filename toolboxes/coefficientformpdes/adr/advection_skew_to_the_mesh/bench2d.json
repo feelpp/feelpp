@@ -35,7 +35,11 @@
         {
             "Dirichlet":
             {
-                "Gamma0": { "expr":"0" },
+                "Gamma0":
+                {
+                    "markers":["Gamma0","GammaOut"],
+                    "expr":"0"
+                },
                 "Gamma1": { "expr":"1" }
             }
         }
