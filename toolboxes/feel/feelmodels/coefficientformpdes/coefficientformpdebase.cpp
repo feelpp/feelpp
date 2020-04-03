@@ -17,7 +17,7 @@ CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& g
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) ),
     super2_type( genericPDE )
 {
     this->log("CoefficientFormPDE","constructor", "start" );
@@ -43,13 +43,13 @@ template< typename ConvexType>
 void
 CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
 {
-    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix());
-    M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix());
-    M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix());
+    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix(),_vm=this->clovm());
 #if 0
     // time stepping
-    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
-    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());
 #endif
 }
 

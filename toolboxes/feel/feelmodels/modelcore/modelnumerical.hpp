@@ -87,12 +87,14 @@ class ModelNumerical : public ModelAlgebraic
         ModelNumerical( std::string const& _theprefix, std::string const& keyword,
                         worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                         std::string const& subPrefix="",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                        ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                        ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
         ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                         std::string const& subPrefix="",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+                        ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                        ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
             :
-            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep, modelCmdLineOpt )
             {}
 
         ModelNumerical( ModelNumerical const& app ) = default;
