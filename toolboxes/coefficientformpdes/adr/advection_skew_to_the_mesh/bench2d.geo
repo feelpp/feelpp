@@ -17,6 +17,15 @@ Line(5) = {5, 1};
 Line Loop(6) = {4, 5, 1, 2, 3};
 Plane Surface(7) = {6};
 
-Physical Line("Gamma0") = {2,3,4};
+Physical Line("Gamma0") = {4};
 Physical Line("Gamma1") = {1,5};
+Physical Line("GammaOut") = {2,3};
 Physical Surface("Omega") = {7};
+
+
+/*
+Transfinite Line {5} = 5 Using Progression 1;
+Transfinite Line {4} = (5-1)*4+1 Using Progression 1;
+Transfinite Line {1,2,3} = 17+5-1 Using Progression 1;
+Transfinite Surface {7} = {1,2,3,4}  AlternateLeft;//Left;//Right; //  Left | Right | Alternate | AlternateRight | AlternateLeft >
+*/
