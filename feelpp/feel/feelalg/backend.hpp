@@ -235,7 +235,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
 
     static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
