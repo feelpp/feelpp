@@ -43,9 +43,9 @@ template< typename ConvexType>
 void
 CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
 {
-    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix());;
+    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix());
     M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix());
-
+    M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix());
 #if 0
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());

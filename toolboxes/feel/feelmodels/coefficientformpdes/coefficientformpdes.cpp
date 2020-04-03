@@ -18,7 +18,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep )
-{}
+{
+    M_solverName = soption(_prefix=this->prefix(),_name="solver");
+}
 
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -288,8 +290,14 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
     //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
     // else
-    //M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
+    if ( M_solverName == "automatic" ) // TODO define automatic solver from pde/option
+    {
+        M_algebraicFactory->solve( "Linear", M_blockVectorSolution.vectorMonolithic() );
+        // M_blockVectorSolution.localize();
+        // M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
+    }
+    else
+        M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
 

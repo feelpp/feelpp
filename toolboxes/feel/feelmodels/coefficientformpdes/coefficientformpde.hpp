@@ -195,9 +195,13 @@ public:
     void updateNewtonInitialGuess( ModelAlgebraic::DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
     void updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType,typename RangeType>
+    void updateJacobianStabilizationGLS( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
     void updateJacobianDofElimination( ModelAlgebraic::DataUpdateJacobian & data ) const override;
     template <typename ModelContextType>
     void updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType,typename RangeType>
+    void updateResidualStabilizationGLS( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx, std::string const& matName, RangeType const& range ) const;
     void updateResidualDofElimination( ModelAlgebraic::DataUpdateResidual & data ) const override;
 
 

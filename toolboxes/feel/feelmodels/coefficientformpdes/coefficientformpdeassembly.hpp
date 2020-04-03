@@ -162,7 +162,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
             {
                 linearForm +=
                     integrate( _range=range,
-                               _expr= inner(coeff_f_expr,id(v)),
+                               _expr= timeSteppingScaling*inner(coeff_f_expr,id(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -252,12 +252,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
         auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
         if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
             continue;
-        auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
-        if ( listMarkerFaces.empty() )
+        auto const& listMarkedFaces = std::get<0>( itFindMarker->second );
+        if ( listMarkedFaces.empty() )
             continue;
         auto theExpr = expression(d,se);
         bilinearForm +=
-            on( _range=markedfaces(mesh, listMarkerFaces ),
+            on( _range=markedfaces(mesh, listMarkedFaces ),
                 _element=u,_rhs=F,_expr=theExpr );
     }
     if constexpr ( nDim == 3 )
@@ -267,12 +267,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
             auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
             if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
                 continue;
-            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
-            if ( listMarkerEdges.empty() )
+            auto const& listMarkedEdges = std::get<1>( itFindMarker->second );
+            if ( listMarkedEdges.empty() )
                 continue;
             auto theExpr = expression(d,se);
             bilinearForm +=
-                on( _range=markededges(mesh, listMarkerEdges ),
+                on( _range=markededges(mesh, listMarkedEdges ),
                     _element=u,_rhs=F,_expr=theExpr );
         }
     }
@@ -281,12 +281,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEDofElimination( 
         auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
         if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
             continue;
-        auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
-        if ( listMarkerPoints.empty() )
+        auto const& listMarkedPoints = std::get<2>( itFindMarker->second );
+        if ( listMarkedPoints.empty() )
             continue;
         auto theExpr = expression(d,se);
         bilinearForm +=
-            on( _range=markedpoints(mesh, listMarkerPoints ),
+            on( _range=markedpoints(mesh, listMarkedPoints ),
                 _element=u,_rhs=F,_expr=theExpr );
     }
 
@@ -309,10 +309,51 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateNewtonInitialGuess( Model
     auto u = this->spaceUnknown()->element( U, this->rowStartInVector()+startBlockIndexUnknown );
     auto const& se = mctx.symbolsExpr();
 
+    // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
+    std::map<std::string, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > mapMarkerBCToEntitiesMeshMarker;
     for( auto const& d : M_bcDirichlet )
     {
+        mapMarkerBCToEntitiesMeshMarker[name(d)] =
+            detail::distributeMarkerListOnSubEntity(mesh,M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) );
+    }
+
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkedFaces = std::get<0>( itFindMarker->second );
+        if ( listMarkedFaces.empty() )
+            continue;
         auto theExpr = expression(d,se);
-        u.on(_range=markedfaces(mesh, M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
+        u.on(_range=markedfaces(mesh, listMarkedFaces ),
+             _expr=theExpr );
+    }
+    if constexpr ( nDim == 3 )
+    {
+        for( auto const& d : M_bcDirichlet )
+        {
+            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+                continue;
+            auto const& listMarkedEdges = std::get<1>( itFindMarker->second );
+            if ( listMarkedEdges.empty() )
+                continue;
+            auto theExpr = expression(d,se);
+            u.on(_range=markededges(mesh, listMarkedEdges ),
+                 _expr=theExpr );
+        }
+    }
+    for( auto const& d : M_bcDirichlet )
+    {
+        auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+        if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
+            continue;
+        auto const& listMarkedPoints = std::get<2>( itFindMarker->second );
+        if ( listMarkedPoints.empty() )
+            continue;
+        auto theExpr = expression(d,se);
+        u.on(_range=markedpoints(mesh, listMarkedPoints ),
              _expr=theExpr );
     }
 
@@ -328,9 +369,7 @@ template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic::DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
-    const vector_ptrtype& XVec = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
-    vector_ptrtype& RBis = data.vectorUsedInStrongDirichlet();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
 
@@ -452,13 +491,13 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         }
 
         // Source : TODO if source coeff depend of unknow
-#if 0
+
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+        if ( this->M_applyStabilization && buildNonCstPart )
         {
-            this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
+            this->updateJacobianStabilizationGLS( data, mctx, matName, range );
         }
-#endif
+
 
     } // for each material
 
@@ -489,7 +528,6 @@ template <typename ModelContextType>
 void
 CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic::DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
-    const vector_ptrtype& XVec = data.currentSolution();
     vector_ptrtype& R = data.residual();
     bool buildCstPart = data.buildCstPart();
     bool buildNonCstPart = !buildCstPart;
@@ -632,7 +670,6 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
             auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                                [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
-            //auto const& coeff_f_expr = expr( coeff_f.expr(), se );
             bool buildSourceTerm = buildCstPart; // TODO : if coeff_f_expr depends on unkwnon, then it's buildNonCstPart
             if ( buildSourceTerm )
             {
@@ -643,13 +680,11 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
             }
         }
 
-#if 0
         // Stab
-        if ( this->M_applyStabilization && buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
+        if ( this->M_applyStabilization && buildNonCstPart )
         {
-            this->updateLinearPDEStabilizationGLS( data, mctx, matName, range );
+            this->updateResidualStabilizationGLS( data, mctx, matName, range );
         }
-#endif
 
     } // for each material
 

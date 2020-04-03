@@ -123,6 +123,7 @@ protected :
     bool M_applyStabilization;
     std::string M_stabilizationType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    bool M_stabilizationGLS_applyShockCapturing;
 
     // post-process
     export_ptrtype M_exporter;
