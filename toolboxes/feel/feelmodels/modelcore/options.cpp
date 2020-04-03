@@ -101,6 +101,25 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( ptree_options( prefix ) );
 }
 
+Feel::po::options_description
+coefficientformpde_options(std::string const& prefix)
+{
+    Feel::po::options_description cfpdeOptions("coefficient-form-pde options");
+    cfpdeOptions.add_options()
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"stabilization").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
+        (prefixvm(prefix,"stabilization.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
+        (prefixvm(prefix,"stabilization.gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
+        ;
+
+    return cfpdeOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+}
 
 Feel::po::options_description
 coefficientformpdes_options(std::string const& prefix)

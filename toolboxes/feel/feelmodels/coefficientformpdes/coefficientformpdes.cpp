@@ -36,6 +36,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->M_mesh )
         this->initMesh();
 
+    CHECK( this->hasModelProperties() ) << "no model properties";
+
     this->initMaterialProperties();
 
     for ( auto const& eq : this->pdes() )
@@ -47,9 +49,17 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                             if ( this->unknowBasisTag( e ) == eqBasisTag )
                             {
                                 using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, this->prefix(), eq.physic()/*this->keyword()*/, this->worldCommPtr(), this->subPrefix(), this->repository() ) );
+                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, prefixvm( this->prefix(),eq.physic())/*this->prefix()*/, eq.physic()/*this->keyword()*/,
+                                                                                                                                  this->worldCommPtr(), this->subPrefix(), this->repository() ) );
                                 _newCoefficientFormPDE->setManageParameterValues( false );
+                                if ( !_newCoefficientFormPDE->hasModelProperties() )
+                                {
+                                    _newCoefficientFormPDE->setModelProperties( this->modelPropertiesPtr() );
+                                    _newCoefficientFormPDE->setManageParameterValuesOfModelProperties( false );
+                                }
+                                _newCoefficientFormPDE->setMaterialsProperties( M_materialsProperties );
                                 _newCoefficientFormPDE->setMesh( this->mesh() );
+
                                 // TODO check if the same space has already built
                                 _newCoefficientFormPDE->init( false );
                                 newCoefficientFormPDE = _newCoefficientFormPDE;

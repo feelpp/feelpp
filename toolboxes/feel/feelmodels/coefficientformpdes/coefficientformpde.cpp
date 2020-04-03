@@ -48,7 +48,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->M_applyStabilization && !this->M_stabilizationGLSParameter )
     {
         typedef StabilizationGLSParameter<mesh_type, nOrderUnknown> stab_gls_parameter_impl_type;
-        this->M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(),prefixvm(this->prefix(),"stabilization.gls.parameter") ) );
+        this->M_stabilizationGLSParameter.reset( new stab_gls_parameter_impl_type( this->mesh(), prefixvm(this->prefix(),"stabilization.gls.parameter"), this->clovm() ) );
         this->M_stabilizationGLSParameter->init();
     }
 
@@ -59,7 +59,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->updateParameterValues();
 
     // backend
-    this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
 
     // subspaces index
     size_type currentStartIndex = 0;
@@ -180,7 +180,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
 
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
-        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
+        bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order",_vm=this->clovm());
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
 
     M_bdfUnknown = this->createBdf( this->spaceUnknown(),this->unknownName(), bdfOrder, nConsecutiveSave, myFileFormat );
