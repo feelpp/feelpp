@@ -133,6 +133,8 @@ class FEELPP_EXPORT Checker : public JournalWatcher
 {
     using super = JournalWatcher;
 public:
+    using variables_t = std::map<std::string,std::string>;
+
     explicit Checker( std::string const& name = "" );
     Checker( Checker const& c ) = default;
     Checker( Checker && c ) = default;
@@ -154,14 +156,31 @@ public:
      * setter and getter for solution expression
      */
     std::string const& solution() const { return M_solution; }
-    void setSolution( std::string const& s ) { M_solution = s; }
+    void setSolution( std::string const& s, std::string const& key = "solution" ) { M_solution = s; M_solution_key = key; }
     
     /*
      * setter and getter for gradient expression
      */
     bool hasGradient() const { return M_gradient.has_value(); }
     std::optional<std::string> const& gradient() const { return M_gradient; }
-    void setGradient( std::string const& s ) { M_gradient = s; }
+    void setGradientKey( std::string const& key ) { M_gradient_key = key; }
+    std::string const& gradientKey() const { return M_gradient_key; } 
+    void setGradient( std::string const& s, std::string const& key = "gradient" ) { M_gradient = s; M_gradient_key = key; }
+
+    //! set the script to configure a PDE from a set of coefficient using a script
+    void setScript( std::string const& s, variables_t const& inputs = {} , bool use = true );
+
+    //! @return true if use the script, false otherwise
+    void setUseScript( bool u ) { M_use_script = u; }
+    //! @return true if use the script, false otherwise
+    bool useScript() const { return M_use_script; }
+
+    /*
+     * compute manufactured solution from a python script
+     * @param vm variables map
+     * @return an optional variables map
+     */
+    variables_t runScript();
 
     template<typename ErrorFn, typename ErrorLaw>
     int
@@ -172,7 +191,11 @@ private:
     bool M_verbose;
     std::string M_solution;
     std::optional<std::string> M_gradient;
+    std::string M_solution_key{"solution"}, M_gradient_key{"gradient"};
     double M_etol, M_otol;
+    std::string M_script;
+    std::map<std::string,std::string> M_script_in;
+    bool M_use_script;
 };
 
 
@@ -248,7 +271,47 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 //! @param gradient optional expression for the gradient, if empty use checker.gradient
 //! if @p gradient and option checker.gradient are empty then we do not set the gradient expression
 //!
-FEELPP_EXPORT Checker checker( std::string const& c_name  = "", std::string const& solution = "", std::string const& gradient = "" );
+BOOST_PARAMETER_FUNCTION(
+    ( Checker ), // return type
+    checker,    // 2. function name
+
+    tag,           // 3. namespace of tag types
+
+    ( required
+      ( name, (std::string))
+      ( solution_key, (std::string))
+      ) // 4. one required parameter, and
+
+    ( optional
+      ( inputs,(std::map<std::string,std::string>), (std::map<std::string,std::string>{})  )
+      ( solution, (std::string), inputs.count(solution_key)?inputs.at(solution_key):soption("checker.solution"))
+      ( gradient_key, (std::string), std::string{"grad_"}+solution_key)
+      ( gradient, (std::string), inputs.count(gradient_key)?inputs.at(gradient_key):soption("checker.gradient"))
+      ( script,(std::string), soption("checker.script"))    
+      ( compute_pde_coefficients, (bool), boption("checker.compute-pde-coefficients") )
+      ( prefix, (std::string), "" )
+      ( verbose,   (bool), boption(_prefix=prefix,_name="checker.verbose") )
+      )
+    )
+{
+    using Feel::cout;
+    
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunsequenced"
+#endif
+    //if ( solution.empty() && soption("checker.solution" ).empty() )
+    //    throw std::logic_error("Invalid setup of Checker system, no solution provided");
+    Checker c{name};
+    c.setVerbose( verbose );
+    c.setSolution( solution, solution_key );
+    if ( !gradient.empty() )
+        c.setGradient( gradient, gradient_key );
+    else
+        c.setGradientKey( gradient_key );
+    c.setScript( script, inputs, compute_pde_coefficients ); 
+    return c;
+}
 
 } // Feel
 
