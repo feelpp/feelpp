@@ -24,6 +24,7 @@
 #ifndef FEELPP_CHECKER_HPP
 #define FEELPP_CHECKER_HPP 1
 
+#include <optional>
 #include <feel/feelcore/environment.hpp>
 
 
@@ -148,8 +149,19 @@ public:
     bool verbose() const { return M_verbose; }
     void setVerbose( bool v ) { M_verbose = v; }
 
+
+    /*
+     * setter and getter for solution expression
+     */
     std::string const& solution() const { return M_solution; }
     void setSolution( std::string const& s ) { M_solution = s; }
+    
+    /*
+     * setter and getter for gradient expression
+     */
+    bool hasGradient() const { return M_gradient.has_value(); }
+    std::optional<std::string> const& gradient() const { return M_gradient; }
+    void setGradient( std::string const& s ) { M_gradient = s; }
 
     template<typename ErrorFn, typename ErrorLaw>
     int
@@ -159,6 +171,7 @@ private:
     bool M_check;
     bool M_verbose;
     std::string M_solution;
+    std::optional<std::string> M_gradient;
     double M_etol, M_otol;
 };
 
@@ -230,9 +243,12 @@ Checker::runOnce( ErrorFn fn, ErrorRate rate, std::string metric )
 
 //!
 //! check create function
-//! @param s solution to pass to checker and check the numerical results
+//! @param c_name name of the checker
+//! @param solution to pass to checker and check the numerical results, if empty use checker.solution
+//! @param gradient optional expression for the gradient, if empty use checker.gradient
+//! if @p gradient and option checker.gradient are empty then we do not set the gradient expression
 //!
-FEELPP_EXPORT Checker checker( std::string const& s  = "", std::string const& prefix = "" );
+FEELPP_EXPORT Checker checker( std::string const& c_name  = "", std::string const& solution = "", std::string const& gradient = "" );
 
 } // Feel
 

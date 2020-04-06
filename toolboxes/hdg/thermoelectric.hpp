@@ -68,6 +68,8 @@ private:
     tempflux_type M_tempflux;
     std::string M_kKey;
     std::string M_kKeyNL;
+    std::string M_temperatureKey;
+    std::string M_heatFluxKey;
 
     std::string M_prefixElectro;
     electro_ptrtype M_electro;
@@ -75,6 +77,8 @@ private:
     current_type M_current;
     std::string M_sigmaKey;
     std::string M_sigmaKeyNL;
+    std::string M_potentialKey;
+    std::string M_currentKey;
 
     init_guess_space_ptrtype M_initGuessSpace;
     init_guess_type M_initGuess;
@@ -125,8 +129,12 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::ThermoElectricHDG( std::string p
     M_outputMarker(soption(prefixvm( M_prefix, "output-marker")))
 {
     tic();
-    M_thermo = thermo_type::New(M_prefixThermo);
-    M_electro = electro_type::New(M_prefixElectro);
+    M_thermo = thermo_type::New(M_prefixThermo,MixedPoissonPhysics::Heat);
+    M_temperatureKey = M_thermo->potentialKey();
+    M_heatFluxKey = M_thermo->fluxKey();
+    M_electro = electro_type::New(M_prefixElectro,MixedPoissonPhysics::Electric);
+    M_potentialKey = M_electro->potentialKey();
+    M_currentKey = M_electro->fluxKey();
     toc("construct");
 }
 
@@ -158,7 +166,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
     {
         try
         {
-            auto bndCnd = electroProp.boundaryConditions2().at("potential").at("Dirichlet").at(M_outputMarker);
+            auto bndCnd = electroProp.boundaryConditions2().at(M_potentialKey).at("Dirichlet").at(M_outputMarker);
             Vinit = std::stod(bndCnd.expression());
             if( Vinit == 0 )
                 throw std::out_of_range("no dirichlet condition on potential on "+M_outputMarker);
@@ -170,7 +178,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
         {
             try
             {
-                auto bndCnd = electroProp.boundaryConditions2().at("flux").at("Integral").at(M_outputMarker);
+                auto bndCnd = electroProp.boundaryConditions2().at(M_currentKey).at("Integral").at(M_outputMarker);
                 Iinit = std::stod(bndCnd.expression());
                 if( Iinit != 0 )
                 {
@@ -242,7 +250,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
         }
     }
     M_electro->assemblePotentialRHS( cst(0.), "");
+    tic();
     M_electro->solve();
+    toc("solve electro");
     M_potential = M_electro->potentialField();
     M_current = M_electro->fluxField();
 
@@ -271,8 +281,8 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
                                {{"T",T0},{"k0",k0},{"T0",T0},{"alpha",alpha},{"Lorentz",L},{"sigma0",sigma0}});
         M_thermo->updateConductivityTerm( k, marker);
         M_k += vf::project( _space=M_electro->potentialSpace(),
-                               _range=markedelements(M_mesh,marker),
-                               _expr=k );
+                            _range=markedelements(M_mesh,marker),
+                            _expr=k );
     }
     M_thermo->assembleRhsBoundaryCond();
     for( auto const& pairMat : electroMat )
@@ -303,7 +313,9 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             M_thermo->assemblePotentialRHS( rhs, marker);
         }
     }
+    tic();
     M_thermo->solve();
+    toc("solve thermo");
     M_temperature = M_thermo->potentialField();
     M_tempflux = M_thermo->fluxField();
 
@@ -406,7 +418,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             toc("assembleElectro");
             tic();
             M_electro->solve();
-            toc("solveElectro");
+            toc("solve electro");
             M_potential = M_electro->potentialField();
             M_current = M_electro->fluxField();
 
@@ -458,7 +470,7 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::solve()
             toc("assembleThermo");
             tic();
             M_thermo->solve();
-            toc("solveThermo");
+            toc("solve thermo");
             M_temperature = M_thermo->potentialField();
             M_tempflux = M_thermo->fluxField();
 
