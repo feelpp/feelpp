@@ -37,60 +37,40 @@
 
 using namespace Feel;
 
-
-
-int main( int argc, char** argv )
+template<int Dim, int Order>
+int cg_laplacian_app()
 {
-    // tag::env[]
-    using namespace Feel;
     using namespace tabulate;
     using Feel::cout;
-
-    po::options_description laplacianoptions( "Laplacian options" );
-    
-    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
-        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
-        ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )
-        ( "g", po::value<std::string>()->default_value( "" ), "Dirichlet boundary condition" )
-        ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
-        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
-        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
-        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
-    laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
-    laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
-
-    Environment env( _argc = argc, _argv = argv,
-                     _desc = laplacianoptions,
-                     _about = about( _name = "qs_laplacian",
-                                     _author = "Feel++ Consortium",
-                                     _email = "feelpp-devel@feelpp.org" ) );
-
-    // end::env[]
-
     // tag::mesh_space[]
     tic();
 #if FEELPP_HYPERCUBE == 1
     using mesh_t = Mesh<Hypercube<FEELPP_DIM, 1>>;
     auto mesh = loadMesh( _mesh = new mesh_t );
 #else
-    using mesh_t = Mesh<Simplex<FEELPP_DIM, 1>>;
+    using mesh_t = Mesh<Simplex<Dim, 1>>;
     auto mesh = loadMesh( _mesh = new mesh_t );
 #endif
     toc( "loadMesh" );
 
     tic();
-    Pch_ptrtype<mesh_t,2> Vh;
+    Pch_ptrtype<mesh_t,Order> Vh;
     if ( Environment::vm().count("marker.name") )
-        Vh = Pch<2>( mesh, markedelements(mesh, soption("marker.name") ) );
+        Vh = Pch<Order>( mesh, markedelements(mesh, soption("marker.name") ) );
     else if ( Environment::vm().count("marker.levelset") )
-        Vh = Pch<2>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
+        Vh = Pch<Order>( mesh, elements(mesh, expr(soption("marker.levelset")) ) );
     else
-        Vh = Pch<2>( mesh );
+        Vh = Pch<Order>( mesh );
 
-
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
+                                            {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
     // if we do not check the results with a manufactured solution,
     // the right hand side is given by functions.f otherwise it is computed by the python script
-    auto thechecker = checker( "L1/H1 convergence", soption("checker.solution") );
+    auto thechecker = checker( _name= "L1/H1 convergence", 
+                               _solution_key="p",
+                               _gradient_key="grad_p",
+                               _inputs=inputs
+                               );
     auto check_data = [&thechecker]( std::string data, std::string helper, bool defined = true ) {
                           using namespace std::string_literals;
                           if ( defined )
@@ -112,15 +92,8 @@ int main( int argc, char** argv )
         Feel::cout << "Exiting..." << std::endl;
         return 1;
     }
-    auto opt = [&thechecker]( std::string data ) {
-                   using namespace std::string_literals;
-                   if ( thechecker.check() )
-                       return ""s;
-                   return data;
-              };
-    std::map<std::string,std::string> locals{{"dim",std::to_string(FEELPP_DIM)},{"k",opt(soption("k"))},{"p",soption("checker.solution")},{"grad_p",""}, {"u",soption("checker.gradient")}, {"un",opt(soption("un"))}, {"f",opt(soption("f"))}, {"g",opt(soption("g"))}, {"r_1",soption("r_1")}, {"r_2",opt(soption("r_2"))}};
     
-    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
+    auto locals = thechecker.runScript();
 
     std::string p_exact_str = locals.at("p");
     std::string u_exact_str = locals.at("u");
@@ -132,8 +105,6 @@ int main( int argc, char** argv )
     auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
     auto r_2 = expr( locals.at("r_2") );
-    thechecker.setSolution( locals.at("p") );
-    thechecker.setGradient( locals.at("grad_p") );
     Table summary;
     summary.add_row({"Solving -div(( k grad p ) = f with the following boundary conditions"});
     summary[0].format().font_align(FontAlign::center);
@@ -165,7 +136,8 @@ int main( int argc, char** argv )
         //ex.format().hide_border();
         summary.add_row({"Exact solution to be checked with L2/H1 norms"});
         ex.add_row({"p",locals.at("p")});
-        ex.add_row({"grad(p)",locals.at("grad_p")});
+        if ( locals.count( "grad_p" ) )
+            ex.add_row({"grad(p)",locals.at("grad_p")});
         ex.add_row({"-k*grad(p)",locals.at("u")});
         ex.column(0).format().font_align(FontAlign::right);
         summary.add_row({ex});
@@ -206,5 +178,41 @@ int main( int argc, char** argv )
     if ( opt_u )
         return check( thechecker, *opt_u );
     return 0;
+}
+
+int main( int argc, char** argv )
+{
+    // tag::env[]
+    using namespace Feel;
+
+
+    po::options_description laplacianoptions( "Laplacian options" );
+    
+    laplacianoptions.add_options()( "no-solve", po::value<bool>()->default_value( false ), "No solve" )
+        ( "k", po::value<std::string>()->default_value( "1" ), "diffusion coefficient" )
+        ( "f", po::value<std::string>()->default_value( "" ), "right hand side" )
+        ( "g", po::value<std::string>()->default_value( "" ), "Dirichlet boundary condition" )
+        ( "un", po::value<std::string>()->default_value( "" ), "Neumann boundary condition" )
+        ( "r_1", po::value<std::string>()->default_value( "1" ), "Robin left hand side coefficient" )
+        ( "r_2", po::value<std::string>()->default_value( "" ), "Robin right hand side  coefficient" )
+        ( "pyexpr.filename", po::value<std::string>()->default_value( "$cfgdir/../python/laplacian.py" ), "python filename to execute" );
+    laplacianoptions.add( case_options( FEELPP_DIM, "P1" ) );
+    laplacianoptions.add_options()( "marker.name", po::value<std::string>(), "marker on which to solve problem" );
+    laplacianoptions.add_options()( "marker.levelset", po::value<std::string>(), "marker on which to solve problem" );
+
+    Environment env( _argc = argc, _argv = argv,
+                     _desc = laplacianoptions,
+                     _about = about( _name = "qs_laplacian",
+                                     _author = "Feel++ Consortium",
+                                     _email = "feelpp-devel@feelpp.org" ) );
+
+    // end::env[]
+    if ( soption( "case.discretization" ) == "P1" )
+        return cg_laplacian_app<FEELPP_DIM,1>();
+    if ( soption( "case.discretization" ) == "P2" )
+        return cg_laplacian_app<FEELPP_DIM,2>();
+    if ( soption( "case.discretization" ) == "P3" )
+        return cg_laplacian_app<FEELPP_DIM,3>();
+    
 }
 // end::global[]
