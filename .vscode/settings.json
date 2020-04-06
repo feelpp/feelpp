@@ -1,0 +1,8 @@
+{
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "type_traits": "cpp",
+        "stdexcept": "cpp",
+        "regex": "cpp"
+    }
+}
