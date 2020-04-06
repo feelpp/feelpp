@@ -38,18 +38,17 @@ foreach(_DIM 2 3)
   endforeach()
 endforeach()
 
-add_library(feelpp_toolbox_hdg_poisson_lib SHARED libmixedpoisson.cpp )
+add_library(feelpp_toolbox_hdg_poisson_lib SHARED libmixedpoisson.cpp enums.cpp )
 add_library(Feelpp::feelpp_toolbox_hdg_poisson_lib ALIAS feelpp_toolbox_hdg_poisson_lib )
 set_target_properties(feelpp_toolbox_hdg_poisson_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_hdg_poisson_lib" )
 target_link_libraries(feelpp_toolbox_hdg_poisson_lib ${FEELPP_MODELS_LIBRARIES_MIXEDPOISSON})
 set_property(TARGET feelpp_toolbox_hdg_poisson_lib PROPERTY MACOSX_RPATH ON)
   set_target_properties(feelpp_toolbox_hdg_poisson_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_hdg_poisson_lib
+install(TARGETS feelpp_toolbox_hdg_poisson_lib EXPORT feelpp-toolboxes-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 foreach(_DIM 2 3)
   math(EXPR _P_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
@@ -71,12 +70,11 @@ set_target_properties(feelpp_toolbox_hdg_elasticity_lib PROPERTIES OUTPUT_NAME "
 target_link_libraries(feelpp_toolbox_hdg_elasticity_lib ${FEELPP_MODELS_LIBRARIES_MIXEDELASTICITY})
 set_property(TARGET feelpp_toolbox_hdg_elasticity_lib PROPERTY MACOSX_RPATH ON)
   set_target_properties(feelpp_toolbox_hdg_elasticity_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
-install(TARGETS feelpp_toolbox_hdg_elasticity_lib
+install(TARGETS feelpp_toolbox_hdg_elasticity_lib EXPORT feelpp-toolboxes-targets
       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/hdg COMPONENT Devel)

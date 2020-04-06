@@ -1861,6 +1861,16 @@ public:
             mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
     typedef std::shared_ptr<pc_type> pc_ptrtype;
 
+    /**
+     * interpolate type if available
+     */
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
     // component basis
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -6498,14 +6508,15 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
+namespace Feel {
 //!
 //! @return the support of a function space
 //!
-template<typename SpaceT>
-typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
+constexpr typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
 support( std::shared_ptr<SpaceT> const& X )
 {
     return X->template meshSupport<0>();
 }
-
+} // Feel
 #endif /* __FunctionSpace_H */

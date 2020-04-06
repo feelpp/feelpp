@@ -248,7 +248,7 @@ public:
         Environment( args[_argc],
                      args[_argv],
 #if BOOST_VERSION >= 105500
-                     args[_threading|mpi::threading::multiple],
+                     args[_threading|mpi::threading::funneled],
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
@@ -676,6 +676,30 @@ public:
         return it->second;
     }
 
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( std::pair<std::string,po::variable_value> ), static option, tag,
+        ( required
+          ( name,( std::string ) ) )
+        ( optional
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
+          ) )
+    {
+        std::ostringstream os;
+
+        if ( !prefix.empty() )
+            os << prefix << ".";
+
+        if ( !sub.empty() )
+            os << sub << "-";
+
+        os << name;
+        auto it = vm.find( os.str() );
+        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
+        return *it;
+    }
+
     /**
      * print resident memory usage as well as PETSc malloc usage in log file
      * \param message message to print to identity the associated memory operation
@@ -908,6 +932,19 @@ BOOST_PARAMETER_FUNCTION(
     ) )
 {
     return Environment::vm( _name=name,_sub=sub,_prefix=prefix, _vm=vm );
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( int ), countoption, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
+      ) )
+{
+    return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
 }
 
 BOOST_PARAMETER_FUNCTION(

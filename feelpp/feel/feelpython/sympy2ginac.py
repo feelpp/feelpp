@@ -27,7 +27,9 @@ def toginac(s,symbols):
         
 
 def sympytoginac(e):
-    if isinstance(e,Expr) or isinstance(e,Array):
+    if isinstance(e,Expr) or isinstance(e,Array) or isinstance(e,Matrix):
+        if isinstance(e,Array) and e.rank() == 2 :
+            e = e.tomatrix();
         return toginac(sympify( e ), [] if len( e.free_symbols)==0 else e.free_symbols );
     return str(e);
 

@@ -131,3 +131,4 @@ autom4te.cache
 pyfeelpp-env
 projects
 *bak
+/build*

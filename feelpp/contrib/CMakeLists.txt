@@ -21,8 +21,13 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+message(STATUS "============================================================")
+message(STATUS "Contrib libraries")
 add_library(feelpp_contrib INTERFACE)
 add_library( Feelpp::feelpp_contrib ALIAS feelpp_contrib)
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring GFlags")
 set( FEELPP_HAS_GFLAGS 1 )
 set( FEELPP_HAS_GFLAGS 1 PARENT_SCOPE )
 set( GFLAGS_IS_SUBPROJECT TRUE )
@@ -51,6 +56,8 @@ if ( FEELPP_HAS_GFLAGS )
   set(gflags_FOUND 1)
 endif()
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring GLog")
 set( FEELPP_HAS_GLOG 1 )
 set( FEELPP_HAS_GLOG 1 PARENT_SCOPE )
 add_subdirectory(glog)
@@ -69,6 +76,8 @@ if ( FEELPP_HAS_GLOG )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} GLog/Contrib")
 endif()
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Ginac")
 add_subdirectory(ginac)
 #
 # cln and ginac
@@ -93,7 +102,8 @@ set(DL_LIBS ${CMAKE_DL_LIBS})
 target_link_libraries(feelpp_contrib INTERFACE feelpp_ginac)
 
 
-
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Eigen")
 #
 # Eigen
 #
@@ -161,6 +171,8 @@ message(STATUS "[feelpp] eigen3 headers: ${EIGEN3_INCLUDE_DIR}" )
 #
 # METIS
 #
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Feelpp Metis")
 option( FEELPP_ENABLE_METIS "Enable Metis Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if(FEELPP_ENABLE_METIS)
   add_subdirectory(metis)
@@ -196,7 +208,8 @@ endif()
 
 
 
-
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring NLopt")
 option( FEELPP_ENABLE_NLOPT "Enable NLOPT (NonLinear Optimisation Library)" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if ( FEELPP_ENABLE_NLOPT )
@@ -211,9 +224,15 @@ if ( FEELPP_ENABLE_NLOPT )
   endif( FEELPP_CONTRIB_PREPARE_SUCCEED )
 endif( FEELPP_ENABLE_NLOPT )
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring IPopt")
 if( FEELPP_HAS_IPOPT )
   add_subdirectory(ipopt)
 endif()
+
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring PYBind11")
 ## No cmake support for HPDDM!
 #if( FEELPP_HAS_HPDDM )
 #  add_subdirectory(hpddm)
@@ -236,6 +255,8 @@ endif()
 
 
 # MongoCXX
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Mongo")
 option( FEELPP_ENABLE_MONGOCXX "Enable Mongocxx" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 if ( FEELPP_ENABLE_MONGOCXX )
   feelppContribPrepare( mongocxx )
@@ -272,7 +293,8 @@ if ( FEELPP_ENABLE_MONGOCXX )
   endif()
 endif()
 
-
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring KWsys")
 option( FEELPP_ENABLE_KWSYS "Enable KWSys" ON )
 # Kwsys configure
 set(KWSYS_NAMESPACE feelpp_kwsys CACHE INTERNAL "")
@@ -316,7 +338,8 @@ if ( FEELPP_ENABLE_KWSYS )
   endif()
 endif()
 
-
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring FMILib")
 option( FEELPP_ENABLE_FMILIB "Enable FMLIB C API" ON )
 # FMILib configure
 # install rules.
@@ -345,6 +368,8 @@ if ( FEELPP_ENABLE_FMILIB )
 endif()
 
 if ( FEELPP_HAS_GMSH )
+  message(STATUS "------------------------------------------------------------")
+  message(STATUS "Configuring GMSH")
   add_subdirectory(gmsh)
   if( FEELPP_HAS_GMSH_LIBRARY AND ( NOT FEELPP_HAS_GMSH_API OR FEELPP_GMSH_API_MISSING_HEADERS ) )
     if ( TARGET feelpp_gmsh_get_files )
@@ -358,6 +383,8 @@ if ( FEELPP_HAS_GMSH )
   endif()
 endif()
 
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Tabulate")
 feelppContribPrepare( tabulate )
 if( FEELPP_CONTRIB_PREPARE_SUCCEED )
   add_subdirectory( tabulate )
@@ -368,7 +395,21 @@ if( FEELPP_CONTRIB_PREPARE_SUCCEED )
     $<INSTALL_INTERFACE:include/feelpp> )
   set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Tabulate/Contrib")
 endif()
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Indicators")
+feelppContribPrepare( indicators )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  add_subdirectory( indicators )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_INDICATORS )
+  target_link_libraries(feelpp_contrib INTERFACE indicators )
+  target_include_directories(feelpp_contrib INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/contrib/indicators/include>
+    $<INSTALL_INTERFACE:include/feelpp> )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Indicators/Contrib")
+endif()
   
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Boost")
 add_subdirectory( boost )
 #include(feelpp.module.mongocxx)
 #include(feelpp.module.hpddm)
@@ -377,6 +418,45 @@ add_subdirectory( boost )
 #include(feelpp.module.cereal)
 #include(feelpp.module.paralution)
 #include(feelpp.module.jsonlab)
+
+message(STATUS "------------------------------------------------------------")
+message(STATUS "Configuring Mmg")
+feelppContribPrepare( mmg )
+if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+  set(MMG_CI OFF)
+  set(MMG2D_CI OFF)
+  set(MMG3D_CI OFF)
+  set(MMGS_CI OFF)
+  set(BUILD_SHARED_LIBS ON)
+  set(ONLY_VERY_SHORT_TESTS ON)
+  set(CMAKE_INSTALL_INCLUDEDIR "include/feelpp" )
+  add_subdirectory( mmg )
+  target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_MMG )
+  target_link_libraries(feelpp_contrib INTERFACE libfeelpp_mmg_so )
+  set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} Mmg/Contrib")
+  if ( SCOTCH_FOUND )
+    target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_SCOTCH )
+  endif() 
+
+  # setup parmmg only if mmg is ok
+  feelppContribPrepare( parmmg )
+  if( FEELPP_CONTRIB_PREPARE_SUCCEED )
+    SET ( LIBPARMMG_STATIC OFF )
+    SET ( LIBPARMMG_SHARED ON )
+    SET( DOWNLOAD_MMG OFF )
+    SET( DOWNLOAD_METIS OFF )
+    SET(MMG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mmg)
+    SET(MMG_BUILDDIR ${CMAKE_CURRENT_BINARY_DIR}/mmg)
+    if ( 0 )
+      add_subdirectory( parmmg )
+      target_compile_definitions( feelpp_contrib INTERFACE FEELPP_HAS_PARMMG )
+      target_link_libraries(feelpp_contrib INTERFACE libfeelpp_parmmg_so )
+      set(FEELPP_ENABLED_OPTIONS_CONTRIB "${FEELPP_ENABLED_OPTIONS_CONTRIB} ParMmg/Contrib")
+    endif( 0 )
+  endif()
+endif()
+
+
 
 # Add an info message to be displayed at the end of the cmake process.
 if( FEELPP_CONTRIB_SUBMODULE_UPDATED )
@@ -388,3 +468,5 @@ endif()
 INSTALL(TARGETS feelpp_contrib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-contrib-export-targets)
 install(EXPORT feelpp-contrib-export-targets NAMESPACE Feelpp:: DESTINATION share/feelpp/feel/cmake/modules)
 
+message(STATUS "Contrib libraries configured")
+message(STATUS "============================================================")
