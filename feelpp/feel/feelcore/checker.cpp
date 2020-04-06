@@ -162,13 +162,15 @@ hp::operator()( std::string const& sol, std::pair<std::string,double> const& r, 
 } // rate
 
 Checker
-checker( std::string const& s, std::string const& p )
+checker( std::string const& c_name, std::string const& solution, std::string const& gradient )
 {
-    if ( p.empty() && soption("checker.solution" ).empty() )
+    if ( solution.empty() && soption("checker.solution" ).empty() )
         throw std::logic_error("Invalid setup of Checker system, no solution provided");
-    auto sol = p.empty()?soption("checker.solution" ):p;
-    Checker c{s};
-    c.setSolution( sol );
+    auto sol = solution.empty()?soption("checker.solution" ):solution;
+    Checker c{c_name};
+    c.setSolution( solution );
+    if ( !gradient.empty() || !soption("checker.gradient" ).empty() )
+        c.setGradient( gradient.empty()?soption("checker.gradient" ):gradient );
     return c;
 }
 

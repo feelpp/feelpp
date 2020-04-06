@@ -6,12 +6,13 @@
     {
         "omega":
         {
-            "filename":"$cfgdir/omega.json"
+            "filename":"$cfgdir/omega.json",
+            "markers":"thermo-electric"
         }
     },
     "BoundaryConditions":
     {
-        "flux":
+        "current-density":
         {
             "Integral":
             {
@@ -21,7 +22,7 @@
                 }
             }
         },
-        "potential":
+        "electric-potential":
         {
             "Dirichlet":
             {
@@ -49,6 +50,51 @@
                     "expr":"0"
                 },
                 "TieRods":
+                {
+                    "expr":"0"
+                },
+                "top":
+                {
+                    "expr":"0"
+                },
+                "bottom":
+                {
+                    "expr":"0"
+                }
+            }
+        },
+        "temperature":
+        {
+            "Robin":
+            {
+                "Channel0":
+                {
+                    "expr1":"-0.08",
+                    "expr2":"-0.08*293"
+                },
+                "Channel1":
+                {
+                    "expr1":"-0.08",
+                    "expr2":"-0.08*293"
+                },
+                "TieRods":
+                {
+                    "expr1":"-0.08",
+                    "expr2":"-0.08*293"
+                },
+                "CoolingHoles":
+                {
+                    "expr1":"-0.08",
+                    "expr2":"-0.08*293"
+                }
+            },
+            "Neumann":
+            {
+                "V0":
+                {
+                    "expr":"0"
+                },
+                "V1":
                 {
                     "expr":"0"
                 },
