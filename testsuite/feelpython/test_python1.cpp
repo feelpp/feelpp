@@ -38,7 +38,6 @@ BOOST_AUTO_TEST_SUITE( python )
 
 BOOST_AUTO_TEST_CASE( t1 )
 {
-    py::scoped_interpreter guard{};
     py::module::import("sys").attr("path").cast<py::list>().append(Feel::Environment::expand("$top_srcdir/feelpp/feel/feelpython/"));
     auto locals = py::dict("f"_a="[x**2,y**2,z**2]");
     std::ostringstream ostr;
