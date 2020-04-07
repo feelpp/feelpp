@@ -1,31 +1,36 @@
 #!/bin/bash
-#LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/build_develop/toolboxes/levelset/feelpp_toolbox_levelset_2d
-#LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
-#LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Debug_install_develop_rpath_custom_ls_toolbox/bin/feelpp_toolbox_levelset_2d
-LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_build_develop_rpath_custom_ls_toolbox/toolboxes/levelset/feelpp_toolbox_levelset_2d
+module purge
+module load feelpp.profile
+LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_build_benchmark_zalesak_march2020/toolboxes/levelset/feelpp_toolbox_levelset_2d
+
 NARGS=3
 CFG_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/2d
+MESH_ROOT_DIR=/home/u2/derhovsepian/feel/toolboxes/levelset/cases/benchmark/zalesak/2d/meshes
 EXPERIMENT_PREFIX=""
-#EXPERIMENT_PREFIX="full_time_min_and_max_modGradPhi_"
-EXPERIMENT_PREFIX="find_modgradphi_min_max_to_redistanciate"
+EXPERIMENT_PREFIX="check_freq_"
+#EXPERIMENT_PREFIX="full_export_fast_curv_and_dist_methods_"
 LOGPATH=logs/${EXPERIMENT_PREFIX}space_convergence
 TIME_FINAL=628.0
-TIME_FINAL=157.0
+#TIME_FINAL=157.0
+TIME_FINAL=10.0
 #TIME_FINAL=0.5
 #TIME_FINAL=1.0
+
 TIME_SCHEME=BDF2
-LS_REINIT_EVERY="-1"
+LS_REDIST_EVERY="-1"
+LS_REDIST_EVERY="1"
 QUAD_ORDER=1
 QUAD_ORDER=2
-#QUAD_ORDER=3
-#QUAD_ORDER=4
-#QUAD_ORDER=5
-#QUAD_ORDER=6
 #HN=${hostname 2>&1}
 RESTART=""
 #RESTART="--ts.restart=true --ts.restart.at-last-save=true"
+EXPORTER_EXPORT_FREQ=""
+EXPORTER_EXPORT_FREQ=10
 EXPORTER_EXPORT=""
-#EXPORTER_EXPORT="--exporter.export=0"
+#EXPORTER_EXPORT="--exporter.export="
+FAST_METHOD_FOR_UNUSED_FIELDS=""
+FAST_METHOD_FOR_UNUSED_FIELDS="--levelset.curvature-method=nodal-projection --levelset.distance-method=none"
+
 mkdir -p ${LOGPATH} 
 
 usage(){
@@ -117,21 +122,23 @@ fi
 printf "h = $HSIZE, dt = ${DELTA_T}\n"
 CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
     --config-file=${CFG_DIR}/slotteddisk.cfg \
-    --levelset.mesh.filename=${CFG_DIR}/meshes/${HSIZE}/domain_0_p${NCORE}.json \
-    --directory=toolboxes/levelset/zalesak2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_reinitevery_${LS_REINIT_EVERY}/h_${HSIZE}/quadorder_${QUAD_ORDER} \
+    --levelset.mesh.filename=${MESH_ROOT_DIR}/h_${HSIZE}/domain_0_p${NCORE}.json \
+    --directory=toolboxes/levelset/cases/benchmark/zalesak/2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_redistevery_${LS_REDIST_EVERY}/h_${HSIZE}/quadorder_${QUAD_ORDER} \
     --ts.time-step=${DELTA_T} \
     --ts.time-final=${TIME_FINAL} \
-    --levelset.reinit-every=${LS_REINIT_EVERY} \
+    --levelset.redist-every=${LS_REDIST_EVERY} \
     --levelset.ts.order=${ORDER} \
     --levelset.gmsh.hsize=${HSIZE} \
     --levelset.stabilization.method=${STABILIZATION_METHOD} \
     --levelset.quad.order=$QUAD_ORDER \
+    --exporter.freq=${EXPORTER_EXPORT_FREQ} \
+    ${FAST_METHOD_FOR_UNUSED_FIELDS} \
     ${EXPORTER_EXPORT} \
     ${RESTART} \
-    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_reinitevery_${LS_REINIT_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}.log"
+    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_redistevery_${LS_REDIST_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}.log"
 
 printf "${CMD} \n"
-printf "${CMD} \n" >> sc_cmd.txt
+printf "${CMD} \n\n" >> sc_cmd.txt
 eval "${CMD}"
 
 
