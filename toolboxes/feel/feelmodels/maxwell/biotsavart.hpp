@@ -185,6 +185,8 @@ template<int DimB>
 void BiotSavart<DimB>::init()
 {
     tic();
+    auto nDofs = M_Xh->nDof();
+    Feel::cout << "Computing on box with " << nDofs << " dofs" << std::endl;
     M_dofMgn.clear();
     int isIn = M_Xh->nLocalDof() > 0 ? 1 : 0;
     std::vector<int> isInGlob( Environment::worldComm().size() );
@@ -225,9 +227,11 @@ void BiotSavart<DimB>::compute(Expr j, bool computeB, bool computeA, std::set<st
 
     decltype(elements(M_meshCond)) range;
     if( markers.empty() )
-	range = elements(M_meshCond);
+        range = elements(M_meshCond);
     else
-	range = markedelements(M_meshCond, markers);
+        range = markedelements(M_meshCond, markers);
+    auto nElts = nelements(range,true);
+    Feel::cout << "Integral on " << nElts << " elements" << std::endl;
 
     for( auto const& [rank,dofPoints] : M_dofMgn )
     {
