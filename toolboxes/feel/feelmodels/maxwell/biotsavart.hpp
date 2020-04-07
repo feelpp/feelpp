@@ -5,6 +5,7 @@
 #include <feel/feelvf/cross.hpp>
 #include <feel/feelvf/integrate.hpp>
 #include <feel/feelfilters/geotool.hpp>
+#include <feel/feeldiscr/pchv.hpp>
 
 namespace Feel
 {
@@ -31,11 +32,14 @@ public:
     using mesh_box_type = Mesh<convex_box_type>;
     using mesh_box_ptrtype = std::shared_ptr<mesh_box_type>;
 
-    using magneticfield_space_type = FunctionSpace<mesh_box_type,
-                                                   bases<Lagrange<1, Vectorial,
-                                                                  Continuous, PointSetFekete> > >;
-    using magneticfield_space_ptrtype = std::shared_ptr<magneticfield_space_type>;
-    using magneticfield_element_type = typename magneticfield_space_type::element_type;
+    // using magneticfield_space_type = FunctionSpace<mesh_box_type,
+    //                                                bases<Lagrange<1, Vectorial,
+    //                                                               Continuous, PointSetFekete> > >;
+    // using magneticfield_space_ptrtype = std::shared_ptr<magneticfield_space_type>;
+    // using magneticfield_element_type = typename magneticfield_space_type::element_type;
+    using magneticfield_space_type = Pchv_type<mesh_box_type, 1>;
+    using magneticfield_space_ptrtype = Pchv_ptrtype<mesh_box_type,1>;
+    using magneticfield_element_type = element_t<magneticfield_space_type>;
 
     using dof_point_type = boost::tuple<node_type, size_type, uint16_type >;
     using dof_points_type = typename std::vector<dof_point_type>;
