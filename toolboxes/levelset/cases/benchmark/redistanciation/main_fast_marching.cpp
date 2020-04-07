@@ -12,7 +12,9 @@ runLevelsetApplication()
 
     typedef Simplex<FEELPP_DIM,1> convex_type;
     typedef Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete> basis_type;
-    typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
+    // This line was changed, see main_ls.cpp
+    //typedef FunctionSpace<Mesh<convex_type>, Feel::detail::bases<Lagrange<OrderLevelset, Vectorial, Continuous, PointSetFekete>>, double, Periodicity<NoPeriodicity>, mortars<NoMortar>> space_advection_velocity_type;
+    typedef FunctionSpace<Mesh<convex_type>, bases<typename FeelModels::detail::ChangeBasisPolySet<Vectorial, basis_type>::type> > space_advection_velocity_type;
     typedef Lagrange<OrderLevelsetPN, Scalar, Continuous, PointSetFekete> basis_PN_type;
 
     typedef FeelModels::LevelSet<
@@ -49,8 +51,12 @@ runLevelsetApplication()
     int nDof = LS->functionSpace()->nDof();
     int nElements = LS->mesh()->numGlobalElements();
     double redistTime;
-
-    std::string timeFileNewName = timeFileBaseName + "_" + geoBaseName + "_" + jsonBaseName + "_" + str(hSize) + "." + timeFileExtension;
+    // TODO : create meaningful base names : 
+    std::string timeFileBaseName = "timeFileBaseName";
+    std::string geoBaseName = "geoBaseName";
+    std::string jsonBaseName = "jsonBaseName";
+    std::string timeFileExtension = "csv";
+    std::string timeFileName = timeFileBaseName + "_" + geoBaseName + "_" + jsonBaseName + "_" + std::to_string(hSize) + "." + timeFileExtension;
     
     Feel::cout << "Redistanciation started. Will write results to " << timeFileName << std::endl;
     tic();
