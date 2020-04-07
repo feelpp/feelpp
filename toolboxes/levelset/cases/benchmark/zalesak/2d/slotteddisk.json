@@ -18,7 +18,7 @@
     {
 	"levelset":
 	{
-	    "Dirichlet":
+	    "Expression":
 	    {
 		"Omega":
 		{
@@ -35,7 +35,7 @@
         {
             //"fields":["advection-velocity"]
             //"fields":["advection-velocity", "heaviside", "modgradphi", "pid"]
-            "fields":[""]
+            "fields":["phi","dirac","heaviside","modgradphi","pid"]
         },
         "Measures":
         {
