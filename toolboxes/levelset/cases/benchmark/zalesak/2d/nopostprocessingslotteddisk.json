@@ -1,0 +1,39 @@
+{
+    "Name":"Slotted Disk Benchmark",
+    "ShortName":"SlottedDisk",
+    "Models":
+    {
+	"equations":"Levelset"
+    },
+    "Parameters":
+    {
+	"centerx":"0.5",
+	"centery":"0.75",
+	"radius":"0.15",
+	"slotwidth":"0.05",
+	"slotlength":"0.25"
+	
+    },
+    "InitialConditions":
+    {
+	"levelset":
+	{
+	    "Expression":
+	    {
+		"Omega":
+		{
+		    //"expr":" max( min( slotwidth+(x-centerx), min( slotwidth-(x-centerx), slotlength-(y-centery+radius) ) ), sqrt(pow(x-centerx,2)+pow(y-centery,2)) - radius ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+            "expr":" max( min( x-(centerx-slotwidth/2), min( -(x-(centerx+slotwidth/2)), -(y-(centery-radius+slotlength) ) ) ), sqrt(pow(x-centerx,2)+pow(y-centery,2)) - radius ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+		}
+	    }
+	}
+    },
+    "PostProcess":
+    {
+	    "PhysicalQuantities": [],
+        "Exports":
+        {
+            "fields":[]
+        }        
+    }  
+}
