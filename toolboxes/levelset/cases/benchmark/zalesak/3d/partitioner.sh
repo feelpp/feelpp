@@ -4,7 +4,7 @@ PART_LIST="2 4 8 10 12 16 20 24"
 PART_LIST="1 2 4 8 10 12 16 20 24"
 H_SIZES="0.032 0.016 0.008 0.004"
 INPUT_MESH=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/3d/domain3d.geo
-OUTPUT_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/3d/meshes/
+OUTPUT_DIR=/home/u2/derhovsepian/feel/meshes/toolboxes/levelset/cases/benchmark/zalesak/3d
 OUTPUT_FILENAME=domain3d
 INIT_DIR=${PWD}
 
