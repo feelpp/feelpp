@@ -32,7 +32,7 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
+#include <pybind11/embed.h>
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
@@ -136,6 +136,8 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+namespace py = pybind11;
+using namespace py::literals;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -539,6 +541,7 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
+    py::initialize_interpreter();
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -787,6 +790,7 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+    py::finalize_interpreter();
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
