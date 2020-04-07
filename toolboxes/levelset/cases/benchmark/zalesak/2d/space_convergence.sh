@@ -12,24 +12,26 @@ EXPERIMENT_PREFIX="check_freq_"
 LOGPATH=logs/${EXPERIMENT_PREFIX}space_convergence
 TIME_FINAL=628.0
 #TIME_FINAL=157.0
-TIME_FINAL=10.0
+#TIME_FINAL=10.0
 #TIME_FINAL=0.5
 #TIME_FINAL=1.0
 
 TIME_SCHEME=BDF2
 LS_REDIST_EVERY="-1"
+LS_REDIST_EVERY="50"
 LS_REDIST_EVERY="1"
 QUAD_ORDER=1
 QUAD_ORDER=2
 #HN=${hostname 2>&1}
 RESTART=""
 #RESTART="--ts.restart=true --ts.restart.at-last-save=true"
-EXPORTER_EXPORT_FREQ=""
-EXPORTER_EXPORT_FREQ=10
+EXPORTER_EXPORT_FREQ="1"
+#EXPORTER_EXPORT_FREQ=10
 EXPORTER_EXPORT=""
-#EXPORTER_EXPORT="--exporter.export="
+#EXPORTER_EXPORT="--exporter.export=false"
 FAST_METHOD_FOR_UNUSED_FIELDS=""
 FAST_METHOD_FOR_UNUSED_FIELDS="--levelset.curvature-method=nodal-projection --levelset.distance-method=none"
+#FAST_METHOD_FOR_UNUSED_FIELDS="--levelset.curvature-method=nodal-projection --levelset.distance-method=renormalisation"
 
 mkdir -p ${LOGPATH} 
 
