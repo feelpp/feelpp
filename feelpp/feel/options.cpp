@@ -63,6 +63,8 @@ file_options( std::string const& appname )
         ;
     return file;
 }
+ 
+  
 
 po::options_description
 generic_options()
@@ -98,6 +100,17 @@ generic_options()
         ( "subdir.expr", po::value<std::string>()->default_value("exprs"), "subdirectory for expressions" )
         ;
     return generic;
+}
+
+po::options_description
+case_options( int default_dim, std::string const& default_discr, std::string const& prefix )
+{
+    po::options_description file( "Case options" );
+    file.add_options()
+        ( prefixvm( prefix, "case.dim").c_str(), po::value<int>()->default_value(default_dim), "case dimenstion" )
+        ( prefixvm( prefix, "case.discretization").c_str(), po::value<std::string>()->default_value(default_discr), "case discretization" )
+        ;
+    return file;
 }
 
 po::options_description
@@ -1022,6 +1035,8 @@ checker_options( std::string const& prefix )
         ( prefixvm( prefix,"checker.tolerance.order" ).c_str(), Feel::po::value<double>()->default_value(1e-1), "tolerance for order check" )
         ( prefixvm( prefix,"checker.name" ).c_str(), Feel::po::value<std::string>()->default_value("checker"), "name of the test" )
         ( prefixvm( prefix,"checker.filename" ).c_str(), Feel::po::value<std::string>()->default_value("checker.json"), "name of the test" )
+        ( prefixvm( prefix,"checker.script" ).c_str(), Feel::po::value<std::string>(), "script to run" )
+        ( prefixvm( prefix,"checker.compute-pde-coefficients" ).c_str(), Feel::po::value<bool>()->default_value(true), "run script" )
         ( prefixvm( prefix,"checker.verbose" ).c_str(), Feel::po::value<bool>()->default_value(false), "checker prints more information" )
         ;
     return _options;
