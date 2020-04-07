@@ -37,7 +37,7 @@ runLevelsetApplication()
     //LS->setInitialValue( phi_init );
 
     Feel::cout << "============================================================\n";
-    Feel::cout << "Levelset toolbox with errors measures\n";
+    Feel::cout << "Levelset toolbox with errors measures and timings\n";
     Feel::cout << "============================================================\n";
     LS->init();
     LS->printAndSaveInfo();
@@ -99,29 +99,36 @@ runLevelsetApplication()
     else
     {
         int redist_every = ioption( _name="levelset.redist-every" );
+	int lastIter = 0;
 
         for ( int iter = 1; !LS->timeStepBase()->isFinished(); LS->updateTimeStep(), ++iter )
         {
-            Feel::cout << "============================================================\n";
+	    tic();
+	    Feel::cout << "============================================================\n";
             Feel::cout << "time simulation: " << LS->time() << "s \n";
             Feel::cout << "============================================================\n";
 
             Feel::cout << "Iter since redist: " << LS->iterSinceRedistanciation() << std::endl;
             Feel::cout << "Levelset BDF order: " << LS->timeStepBDF()->timeOrder() << std::endl;
 
-            LS->solve();
+            tic();
+	    LS->solve();
+	    toc("LS->solve()");
 
 	    min_modGradPhi = LS->modGradPhi()->min();
 	    max_modGradPhi = LS->modGradPhi()->max();
 	    Feel::cout << "modGradphi : min = " << min_modGradPhi << ", max = " << max_modGradPhi << std::endl;
-	    
-            if( reinit_every > 0 && iter%reinit_every == 0 )
+
+	    tic();
+            if( redist_every > 0 && iter%redist_every == 0 )
             {
                 Feel::cout << "Reinitializing... ";
                 LS->redistanciate();
                 Feel::cout << "done\n";
             }
-
+	    toc("Redistanciation:");
+	    
+	    tic();
             LS->exportResults();
             if( exportDistToBoundary )
             {
@@ -129,7 +136,29 @@ runLevelsetApplication()
                 myExporter->step(iter)->add("distToBoundary", *distToBoundary );
                 myExporter->save();
             }
+	    toc("Exports:");
+	    toc("Full iteration (with exports):");
+	    lastIter = iter;
         }
+	Feel::cout << "-------------Last export-------------" << std::endl;
+	Feel::cout << "Last time step already saved : " << std::endl;
+	Feel::cout << "lastIter = " << lastIter << std::endl;
+	int exporterFreq = ioption( _name="exporter.freq" );
+	Feel::cout << "exporter.freq =  " << exporterFreq << std::endl;
+	int lastTimeStepWasNotSaved = lastIter % exporterFreq;
+	Feel::cout << "lastIter % LS->M_exporter->freq() = " << lastTimeStepWasNotSaved << std::endl;
+	if( ( exporterFreq > 1 ) && ( lastTimeStepWasNotSaved != 0 ) )
+	{
+	  tic();
+	  Feel::cout << "=> will export last time step..." << std::endl;
+	  LS->exportResults();
+	  Feel::cout << "done." << std::endl;
+	  toc("Last Exports:");
+	}
+	else
+	{
+	  Feel::cout << "(Last time step already saved)" << std::endl;
+	}
 	tic();
 	// Error measures :
 	// we compute the L2 norm error integrals :
@@ -192,11 +221,11 @@ runLevelsetApplication()
 					   _quad=error_quad_order
 					   ).evaluate()(0,0);
 	double mass_error = std::abs( em_phi_integral - em_phi0_integral ) / em_phi0_integral;
-	toc("Mass error :");
+	Feel::cout << "Mass error = " << mass_error << std::endl;
+	toc("Mass error:");
 	
 	//Feel::cout << "phi0 integral = " << em_phi0_integral << std::endl;
 	//Feel::cout << "phi integral = " << em_phi_integral << std::endl;
-	Feel::cout << "Mass error = " << mass_error << std::endl;
 	double hsize = doption( _name="levelset.gmsh.hsize" );
 	
 	// Compute min and max of |grad(phi)|
