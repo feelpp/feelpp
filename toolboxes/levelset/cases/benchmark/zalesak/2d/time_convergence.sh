@@ -5,13 +5,14 @@ LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_install_develop_rpath_custom_ls_
 NARGS=3
 NCORE=1
 CFG_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/benchmark/zalesak/2d
+MESH_ROOT_DIR=/home/u2/derhovsepian/feel/toolboxes/levelset/cases/benchmark/zalesak/2d/meshes
 HSIZE=0.004 #0.05
 STABILIZATION_METHOD=SUPG
 LOGPATH=logs/time_convergence
 TIME_FINAL=628.0
 #TIME_FINAL=0.5
 TIME_SCHEME=BDF2
-LS_REINIT_EVERY="-1"
+LS_REDIST_EVERY="-1"
 QUAD_ORDER=1
 QUAD_ORDER=2
 #QUAD_ORDER=3
@@ -63,17 +64,17 @@ fi
 printf "h = $HSIZE, dt = ${DELTA_T}\n"
 CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
     --config-file=${CFG_DIR}/slotteddisk.cfg \
-    --levelset.mesh.filename=${CFG_DIR}/meshes/${HSIZE}/domain_0_p${NCORE}.json \
-    --directory=toolboxes/levelset/zalesak2d/time_convergence/${TIME_SCHEME}_reinitevery_${LS_REINIT_EVERY}/deltat_${DELTA_T}_h_${HSIZE}/quadorder_${QUAD_ORDER} \
+    --levelset.mesh.filename=${MESH_ROOT_DIR}/h_${HSIZE}/domain_0_p${NCORE}.json \
+    --directory=toolboxes/levelset/cases/benchmark/zalesak/2d/time_convergence/${TIME_SCHEME}_reinitevery_${LS_REDIST_EVERY}/deltat_${DELTA_T}_h_${HSIZE}/quadorder_${QUAD_ORDER} \
     --ts.time-step=${DELTA_T} \
     --ts.time-final=${TIME_FINAL} \
-    --levelset.reinit-every=${LS_REINIT_EVERY} \
+    --levelset.redist-every=${LS_REDIST_EVERY} \
     --levelset.bdf.order=${ORDER} \
     --levelset.gmsh.hsize=${HSIZE} \
     --levelset.stabilization.method=${STABILIZATION_METHOD} \
     --levelset.quad.order=$QUAD_ORDER \
     ${EXPORTER_EXPORT} \
-    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_reinitevery_${LS_REINIT_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}.log"
+    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_reinitevery_${LS_REDIST_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}.log"
 
 printf "${CMD} \n"
 printf "${CMD} \n" >> sc_cmd.txt
