@@ -136,8 +136,11 @@ BOOST_PARAMETER_FUNCTION(
                 _mesh_ptrtype m( mesh );
                 m->setWorldComm( worldcomm );
                 m->loadHDF5( json_fname, update, scale );
-                if ( straighten && _mesh_type::nOrder > 1 )
-                    return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                if constexpr ( _mesh_type::nOrder > 1 )
+                {
+                    if ( straighten )
+                        return straightenMesh( m, worldcomm->subWorldCommPtr() );
+                }
                 return m;
             }
         }
@@ -238,8 +241,11 @@ BOOST_PARAMETER_FUNCTION(
         _mesh_ptrtype m( mesh );
         m->setWorldComm( worldcomm );
         m->loadHDF5( mesh_name.string(), update, scale );
-        if ( straighten && _mesh_type::nOrder > 1 )
-            return straightenMesh( m, worldcomm->subWorldCommPtr() );
+        if constexpr ( _mesh_type::nOrder > 1 )
+        {
+            if ( straighten )
+                return straightenMesh( m, worldcomm->subWorldCommPtr() );
+        }
         return m;
     }
 #endif

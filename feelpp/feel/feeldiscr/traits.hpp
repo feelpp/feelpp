@@ -131,6 +131,13 @@ template<typename T>
 constexpr bool is_tensor2symm_field_v = is_tensor2symm_field<T>::value;
 
 /**
+ * helper variable template, 
+ * @return true of field is a matrix field field, false otherwise
+ */
+template<typename T>
+constexpr bool is_matrix_field_v  = is_tensor2_field_v<T> || is_tensor2symm_field_v<T>;
+
+/**
  * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
