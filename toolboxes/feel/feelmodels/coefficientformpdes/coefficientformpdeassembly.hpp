@@ -46,7 +46,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     auto linearForm = form1( _test=Xh, _vector=F,
                              _rowstart=this->rowStartInVector() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 
@@ -395,7 +395,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=this->colStartInMatrix() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 
@@ -560,7 +560,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     auto linearForm = form1( _test=Xh, _vector=R,
                              _rowstart=this->rowStartInVector() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 

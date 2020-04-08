@@ -68,7 +68,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                              _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                              _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );

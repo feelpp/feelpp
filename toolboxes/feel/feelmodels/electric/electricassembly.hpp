@@ -34,22 +34,25 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
 
     //--------------------------------------------------------------------------------------------------//
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-
-        auto sigma = expr( electricConductivity.expr(), symbolsExpr);
-        //if ( sigma.expression().hasSymbol( "heat_T" ) )
-        //    continue;
-        //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
-        bool buildDiffusion = sigma.expression().isConstant()? buildCstPart : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr= sigma*inner(gradt(v),grad(v)),
-                           _geomap=this->geomap() );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+
+            auto sigma = expr( electricConductivity.expr(), symbolsExpr);
+            //if ( sigma.expression().hasSymbol( "heat_T" ) )
+            //    continue;
+            //auto sigma = idv(M_electricProperties->fieldElectricConductivity());
+            bool buildDiffusion = sigma.expression().isConstant()? buildCstPart : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigma*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
         }
     }
 
@@ -181,18 +184,21 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
                                               _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
                                               _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
-        bool buildDiffusion = ( electricConductivity.isConstant() )? buildCstPart : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradt(v),grad(v)),
-                           _geomap=this->geomap() );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
+            bool buildDiffusion = ( electricConductivity.isConstant() )? buildCstPart : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
+                bilinearForm_PatternCoupled +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradt(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
         }
     }
 
@@ -238,19 +244,22 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     auto myLinearForm = form1( _test=XhV, _vector=R,
                                _rowstart=this->rowStartInVector() + startBlockIndexElectricPotential );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
-
-        bool buildDiffusion = ( electricConductivity.isConstant() )? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
-        if ( buildDiffusion )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradv(v),grad(v)),
-                           _geomap=this->geomap() );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
+
+            bool buildDiffusion = ( electricConductivity.isConstant() )? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+            if ( buildDiffusion )
+            {
+                auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradv(v),grad(v)),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

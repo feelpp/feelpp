@@ -30,7 +30,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDEs","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physic().empty() )
+    if ( this->physics().empty() )
         this->setupGenericPDEs( this->keyword(), this->modelProperties().models().model( this->keyword() ).ptree() );
 
     if ( !this->M_mesh )
@@ -49,7 +49,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                             if ( this->unknowBasisTag( e ) == eqBasisTag )
                             {
                                 using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, prefixvm( this->prefix(),eq.physic())/*this->prefix()*/, eq.physic()/*this->keyword()*/,
+                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, prefixvm( this->prefix(),eq.physicDefault())/*this->prefix()*/, eq.physicDefault()/*this->keyword()*/,
                                                                                                                                   this->worldCommPtr(), this->subPrefix(), this->repository() ) );
                                 _newCoefficientFormPDE->setManageParameterValues( false );
                                 if ( !_newCoefficientFormPDE->hasModelProperties() )
@@ -84,7 +84,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int indexBlock = 0, startBlockSpace = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
     {
-        this->setStartSubBlockSpaceIndex( cfpdeBase->physic(), startBlockSpace );
+        this->setStartSubBlockSpaceIndex( cfpdeBase->physicDefault(), startBlockSpace );
         auto const& blockVectorSolutionPDE = cfpdeBase->blockVectorSolution();
         int nBlockPDE = blockVectorSolutionPDE.size();
         for ( int k=0;k<nBlockPDE ;++k )
@@ -147,13 +147,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
     for (auto const& cfpde : M_coefficientFormPDEs )
     {
         std::set<std::string> ppExportsAllFieldsAvailableInCFPDE = Feel::FeelModels::detail::set_difference( cfpde->postProcessExportsAllFieldsAvailable(),
-                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->physics() ) );
+                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->physicsAvailable() ) );
         for ( auto const& s : ppExportsAllFieldsAvailableInCFPDE )
             ppExportsAllFieldsAvailable.insert( prefixvm( cfpde->keyword(), s) );
     }
 
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -248,7 +248,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->physics(),se ) );
+    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ) );
 }
 
 
@@ -295,7 +295,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.updateVectorFromSubVectors();
 
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physic() ) );
+        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) );
 
     // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
     //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );

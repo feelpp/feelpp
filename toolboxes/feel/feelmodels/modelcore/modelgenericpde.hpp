@@ -22,6 +22,8 @@ public :
     ModelGenericPDE( ModelGenericPDE const& ) = default;
     ModelGenericPDE( ModelGenericPDE && ) = default;
 
+    std::string const& physic() const { return this->physicDefault(); }
+
     std::string const& unknownName() const { return M_unknownName; }
     std::string const& unknownSymbol() const { return M_unknownSymbol; }
     std::string const& unknownBasis() const { return M_unknownBasis; }

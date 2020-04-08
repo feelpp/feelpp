@@ -82,7 +82,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                             _rowstart=M_fluidModel->rowStartInVector()+0 );
 
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
@@ -209,7 +210,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
     auto mylfV = form1( _test=XhV, _vector=R,
                         _rowstart=M_fluidModel->rowStartInVector() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );

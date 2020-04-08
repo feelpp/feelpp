@@ -49,7 +49,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto mylfV = form1( _test=XhV, _vector=R,
                             _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
@@ -107,15 +108,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
         auto myLinearForm = form1( _test=XhT,_vector=R,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= -sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= -sigmaExpr*inner(gradv(v))*id(t),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

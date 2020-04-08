@@ -10,10 +10,14 @@ namespace FeelModels
 
 template <uint16_type Dim>
 ModelGenericPDE<Dim>::ModelGenericPDE( /*std::string const& physic*/ )
+    :
+    super_type( "GenericPDE" )
 {}
 
 template <uint16_type Dim>
 ModelGenericPDE<Dim>::ModelGenericPDE( std::string const& name, pt::ptree const& p )
+    :
+    super_type( "GenericPDE" )
 {
     this->setupGenericPDE( name, p );
 }
@@ -22,12 +26,13 @@ template <uint16_type Dim>
 void
 ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const& eqPTree )
 {
-    if ( auto nameEqOpt =  eqPTree.template get_optional<std::string>( "name" ) )
-         this->M_physic = *nameEqOpt;
-    else
-        this->M_physic  = name;
+    this->M_physicDefault = name;
 
-    this->M_physics = { this->M_physic };
+    if ( auto nameEqOpt =  eqPTree.template get_optional<std::string>( "name" ) )
+        this->M_physicDefault = *nameEqOpt;
+
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault() );
+
     if ( auto unknownPTree = eqPTree.get_child_optional("unknown") )
     {
         if ( auto unknownNameOpt =  unknownPTree->template get_optional<std::string>( "name" ) )
@@ -56,26 +61,30 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
     material_property_shape_dim_type vectorialShape = std::make_pair(nDim,1);
     material_property_shape_dim_type matrixShape = std::make_pair(nDim,nDim);
 
-    this->addMaterialPropertyDescription( this->convectionCoefficientName(), this->convectionCoefficientName(), { vectorialShape } );
-    this->addMaterialPropertyDescription( this->diffusionCoefficientName(), this->diffusionCoefficientName(), { scalarShape, matrixShape } );
-    this->addMaterialPropertyDescription( this->reactionCoefficientName(), this->reactionCoefficientName(), { scalarShape } );
-    this->addMaterialPropertyDescription( this->firstTimeDerivativeCoefficientName(), this->firstTimeDerivativeCoefficientName(), { scalarShape } );
-    this->addMaterialPropertyDescription( this->secondTimeDerivativeCoefficientName(), this->secondTimeDerivativeCoefficientName(), { scalarShape } );
+    mphysic->addMaterialPropertyDescription( this->convectionCoefficientName(), this->convectionCoefficientName(), { vectorialShape } );
+    mphysic->addMaterialPropertyDescription( this->diffusionCoefficientName(), this->diffusionCoefficientName(), { scalarShape, matrixShape } );
+    mphysic->addMaterialPropertyDescription( this->reactionCoefficientName(), this->reactionCoefficientName(), { scalarShape } );
+    mphysic->addMaterialPropertyDescription( this->firstTimeDerivativeCoefficientName(), this->firstTimeDerivativeCoefficientName(), { scalarShape } );
+    mphysic->addMaterialPropertyDescription( this->secondTimeDerivativeCoefficientName(), this->secondTimeDerivativeCoefficientName(), { scalarShape } );
     if ( unknownShape == "scalar" )
-        this->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { scalarShape } );
+        mphysic->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { scalarShape } );
     else if ( unknownShape == "vectorial" )
-        this->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { vectorialShape } );
+        mphysic->addMaterialPropertyDescription( this->sourceCoefficientName(), this->sourceCoefficientName(), { vectorialShape } );
+
+    this->M_physics.emplace( mphysic->name(), mphysic );
 }
 
 template <uint16_type Dim>
 ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
+    :
+    super_type( "GenericPDEs" )
 {}
 
 template <uint16_type Dim>
 void
 ModelGenericPDEs<Dim>::setupGenericPDEs( std::string const& name, pt::ptree const& modelPTree )
 {
-    this->M_physic = name;
+    this->M_physicDefault = name;
     if ( auto equationsOpt = modelPTree.get_child_optional("equations") )
     {
         if ( equationsOpt->empty() )
@@ -96,16 +105,14 @@ ModelGenericPDEs<Dim>::setupGenericPDEs( std::string const& name, pt::ptree cons
         }
     }
 
-
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name );
     for ( auto const& pde : M_pdes )
     {
-        for (auto const& [propName,propDesc] : pde.materialPropertyDescription() )
-            this->M_materialPropertyDescription[propName] = propDesc;
         this->M_physics.insert( pde.physics().begin(), pde.physics().end() );
-        this->M_mapPhysicsToSubphysics[this->physic()].insert( pde.physics().begin(), pde.physics().end() );
+        for ( auto const& subPhysic : pde.physics() ) // normally only one
+            mphysic->addSubphysic( subPhysic.second );
     }
-    this->M_physics.insert( this->physic() );
-
+    this->M_physics.emplace( name, mphysic );
 }
 
 template class ModelGenericPDE<2>;

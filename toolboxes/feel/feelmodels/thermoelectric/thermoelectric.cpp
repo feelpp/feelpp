@@ -166,6 +166,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("ThermoElectric","init", "start" );
     this->timerTool("Constructor").start();
 
+    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
+                                           this->subPrefix(), this->repository() ) );
+    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
+                                                   this->subPrefix(), this->repository() ) );
+
+    if ( this->physics().empty() )
+    {
+        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
+        subPhyicsDesc[M_heatModel->physicType()] = M_heatModel->keyword();
+        subPhyicsDesc[M_electricModel->physicType()] = M_electricModel->keyword();
+        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
+    }
+
     if ( !M_mesh )
         this->initMesh();
 
@@ -178,8 +191,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
 
-    M_heatModel.reset( new heat_model_type(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                           this->subPrefix(), this->repository() ) );
+    // init heat toolbox
+    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
@@ -190,8 +203,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_heatModel->setMaterialsProperties( M_materialsProperties );
     M_heatModel->init( false );
 
-    M_electricModel.reset( new electric_model_type(prefixvm(this->prefix(),"electric"), "electric", this->worldCommPtr(),
-                                                   this->subPrefix(), this->repository() ) );
+    // init electric toolbox
+    M_electricModel->setPhysics( this->physics( M_electricModel->physicType() ), M_electricModel->keyword() );
     M_electricModel->setManageParameterValues( false );
     if ( !M_electricModel->modelPropertiesPtr() )
     {
@@ -295,9 +308,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // need to not include export fields of material of subphysics
     std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physics() ) );
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailableElectric = Feel::FeelModels::detail::set_difference( this->electricModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->electricModel()->physics() ) );
+                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->electricModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailable;
     for ( auto const& s : ppExportsAllFieldsAvailableHeat )
         ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
@@ -305,7 +318,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
         ppExportsAllFieldsAvailable.insert( prefixvm( this->electricModel()->keyword(), s) );
 
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -446,7 +459,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
 
-    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
+    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physicsAvailable(),symbolExpr ),
                                      hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
                                                    M_electricModel->exprPostProcessExportsToolbox( symbolExpr,M_electricModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );

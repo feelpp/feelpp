@@ -233,7 +233,7 @@ class Heat : public ModelNumerical,
             {
                 typedef decltype(expr(velocity_convection_expr_type{},se)) _expr_velocity_convection_type;
                 std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
-                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
                 {
                     auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
                     auto itFindVelConv = M_exprVelocityConvection.find( matName );
@@ -248,7 +248,7 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
         //___________________________________________________________________________________//
