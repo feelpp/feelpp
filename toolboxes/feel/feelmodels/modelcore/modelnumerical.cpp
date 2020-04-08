@@ -119,7 +119,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
     {
         M_timeCurrent=t;
         if ( M_modelProps )
-            M_modelProps->parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
+            this->addParameterInModelProperties( "t", M_timeCurrent );
     }
 
 

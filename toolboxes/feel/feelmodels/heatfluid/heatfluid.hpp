@@ -155,7 +155,8 @@ public :
             auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
-            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat );
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seHeat,seFluid,seParam,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -173,9 +174,14 @@ public :
             auto mfields = this->modelFields( prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
-    auto modelContext( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorElectric, std::string const& prefix = "" ) const
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
         {
-            auto mfields = this->modelFields( sol, rowStartInVectorHeat, rowStartInVectorElectric, prefix );
+            auto mfields = this->modelFields( sol, rowStartInVectorHeat, rowStartInVectorFluid, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
 
