@@ -12,7 +12,9 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
 {
     this->log("HeatFluid","updateNewtonInitialGuess","start" );
-    M_heatModel->updateNewtonInitialGuess( data );
+    vector_ptrtype& U = data.initialGuess();
+    auto mctx = this->modelContext( U, this->heatModel(), this->fluidModel() );
+    M_heatModel->updateNewtonInitialGuess( data, mctx );
     M_fluidModel->updateNewtonInitialGuess( data );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }

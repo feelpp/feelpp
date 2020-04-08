@@ -980,11 +980,13 @@ macro( genLibHeatFluid )
     set(HEATFLUID_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heatfluid/${HEATFLUID_LIB_VARIANTS})
     set(HEATFLUID_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblylinear_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyjacobian_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyresidual_inst.cpp
       )
     set(HEATFLUID_CODEGEN_SOURCES
       ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblylinear_inst.cpp
       ${HEATFLUID_LIB_DIR}/heatfluidassemblyjacobian_inst.cpp
       ${HEATFLUID_LIB_DIR}/heatfluidassemblyresidual_inst.cpp
       )

@@ -67,7 +67,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, M_heatModel->startBlockSpaceIndexVector(), M_electricModel->startBlockSpaceIndexVector() );
-    auto const& symbolsExpr = mctx.symbolsExpr();
     M_heatModel->updateLinearPDEDofElimination( data, mctx );
     M_electricModel->updateLinearPDEDofElimination( data, mctx );
 }
