@@ -43,7 +43,8 @@ enum class solution_t {
  * 
  * @return 0 if ok, 1 otherwise
  */
-template<typename CheckerT, typename ElementT, typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT>>>
+template<typename CheckerT, typename ElementT, 
+         typename = std::enable_if_t<is_scalar_field_v<ElementT> || is_vector_field_v<ElementT> || is_matrix_field_v<ElementT> >>
 int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::unique )
 {
     int status = 0;
@@ -66,11 +67,15 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
                 {
                     return expr<dim,1>( solution );
                 }
+                else if constexpr ( is_matrix_field_v<ElementT> ) 
+                {
+                    return expr<dim,dim>( solution );
+                }
             };
             auto sol_ex = get_sol_ex( thechecker ); 
             tic(); 
             double l2_p=1, l2=0;
-
+    
             if ( s == solution_t::unique )
             {
                 l2_p = normL2(_range=elements(support(Vh)), _expr=sol_ex );
@@ -92,6 +97,8 @@ int check( CheckerT&& thechecker, ElementT const& u, solution_t s = solution_t::
             toc("L2 error norm");
             if ( !thechecker.hasGradient() )
                 return { { "L2", l2/l2_p } };
+            if ( is_matrix_field_v<ElementT> )
+                throw std::invalid_argument( "H1 and SemiH1 norms not supported for Matrix Fields" );
             
             auto get_grad_ex = [=]( auto const & c ) {
                 if constexpr ( is_scalar_field_v<ElementT> ) 

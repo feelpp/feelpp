@@ -37,7 +37,6 @@
 
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
-#include <feel/feeldiscr/check.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/operators2.hpp>
 #include <feel/feelpython/pyexpr.hpp>
@@ -106,20 +105,26 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
-    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
-
-    for( auto d: locals )
-        cout << d.first << ":" << d.second << std::endl;
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    // if we do not check the results with a manufactured solution,
+    // the right hand side is given by functions.f otherwise it is computed by the python script
+    auto thechecker = checker( _name= "L2/H1 convergence", 
+                               _solution_key="p",
+                               _gradient_key="grad_p",
+                               _inputs=inputs
+                               );
+    auto locals = thechecker.runScript();
 
     std::string p_exact_str = locals.at("p");
     std::string u_exact_str = locals.at("u");
     auto p_exact = expr( p_exact_str );
-    auto u_exact = expr<Dim,1>( u_exact_str );
-    auto un_exact = expr( locals.at("un") );
-    auto f_exact = expr( locals.at("f") );
+    auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
+    auto k = expr( locals.at("k") );
+    auto un = expr( locals.at("un") );
+    auto f = expr( locals.at("f") );
+    auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto r_2 = expr( locals.at("r_2") ); 
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -164,9 +169,13 @@ int hdg_laplacian()
         Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgLaplacian( cgXh, std::tuple{K,f_exact,p_exact,un_exact,r_1,r_2} );
+        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
         if ( u )        
-            status_cg = check( checker("L2/H1 and SemiH1 norms on potential", p_exact_str), *u );
+            status_cg = check( checker( _name= "L2/H1 convergence cG", 
+                                        _solution_key="p",
+                                        _gradient_key="grad_p",
+                                        _inputs=locals
+                                       ), *u );
         Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
@@ -196,10 +205,10 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=f_exact*id(w), _quad=ioption("rhs_quad") );
+                          _expr=f*id(w), _quad=ioption("rhs_quad") );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*un_exact, _quad=ioption("rhs_quad")  );
+                          _expr=id(l)*un, _quad=ioption("rhs_quad")  );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
     rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
@@ -370,9 +379,20 @@ int hdg_laplacian()
 
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
     solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
-    int status1 = check( checker("L2 Convergence potential",p_exact_str), pp, s_t );
-    int status2 = check( checker("L2 Convergence flux",u_exact_str), up );
-    int status3 = check( checker("L2 Convergence post-processed potential",p_exact_str), ppp, s_t );    
+    int status1 = check( checker( _name= "L2/H1 convergence of potential", 
+                                  _solution_key="p",
+                                  _gradient_key="grad_p",
+                                  _inputs=locals
+                                ), pp, s_t );
+    int status2 = check( checker( _name= "L2 convergence of the flux", 
+                                  _solution_key="u",
+                                  _inputs=locals
+                                ), up );
+    int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+                                  _solution_key="p",
+                                  _gradient_key="grad_p",
+                                  _inputs=locals
+                                ), ppp, s_t );    
     // end::check[]
 
     return status_cg || status1 || status2 || status3;
