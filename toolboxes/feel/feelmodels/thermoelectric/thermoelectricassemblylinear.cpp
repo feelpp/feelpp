@@ -42,7 +42,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                              _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature ,
                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
@@ -106,7 +107,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
         auto myLinearForm = form1( _test=XhT,_vector=F,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );

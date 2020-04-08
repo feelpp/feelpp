@@ -181,7 +181,7 @@ public :
             typedef std::decay_t<decltype(_expr_scalar_type{}*inner(gradv(v)))> expr_joules_losses_type;
             std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprJoulesLosses;
 
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
                 auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
                 if ( this->materialsProperties()->hasElectricConductivity( matName ) )
@@ -201,7 +201,7 @@ public :
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
 
@@ -247,7 +247,7 @@ public :
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
                 std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
                 auto _currentDensityExpr = this->currentDensityExpr( v, matName );

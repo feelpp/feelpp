@@ -123,6 +123,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Electric","init", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
     if ( !M_mesh )
         this->initMesh();
 
@@ -136,14 +139,14 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
 
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
+        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physicsAvailableFromCurrentType() ));
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
@@ -249,7 +252,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","current-density","joules-losses"} );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();

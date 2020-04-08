@@ -128,7 +128,7 @@ public:
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
         {
-            return this->materialsProperties()->exprPostProcessExports( this->physics(),se );
+            return this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se );
         }
 
     //___________________________________________________________________________________//

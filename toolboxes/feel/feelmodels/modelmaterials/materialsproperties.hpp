@@ -89,17 +89,17 @@ public :
                        std::set<std::string> const& onlyTheseMaterialNames = std::set<std::string>{},
                        std::set<std::string> const& onlyTheseMarkers = std::set<std::string>{} )
         {
-            std::set<std::string> eltMarkersInMesh;
+            M_eltMarkersInMesh.clear();
             for (auto const& markPair : mesh->markerNames() )
             {
                 std::string meshMarker = markPair.first;
                 if ( mesh->hasElementMarker( meshMarker ) )
-                    eltMarkersInMesh.insert( meshMarker );
+                    M_eltMarkersInMesh.insert( meshMarker );
             }
 
-            auto const& mapPhysicsToSubphysics = modelphysics.mapPhysicsToSubphysics();
-            auto const& defaultPhysics = modelphysics.physic();
-            auto const& physicsAvailable = modelphysics.physics();
+            //auto const& mapPhysicsToSubphysics = modelphysics.mapPhysicsToSubphysics();
+            auto const& defaultPhysics = modelphysics.physicDefault();
+            auto const& physicsAvailable = modelphysics.physicsAvailable();
 
             std::map<std::string,std::set<std::string>> markersByMaterial;
             M_markers.clear();
@@ -130,10 +130,11 @@ public :
                 std::set<std::string> currentPhysics;
                 for ( std::string const& p : currentPhysicsReaded )
                 {
-                    currentPhysics.insert( p );
-                    auto itFindPhysics = mapPhysicsToSubphysics.find( p );
-                    if ( itFindPhysics != mapPhysicsToSubphysics.end() )
-                        currentPhysics.insert( itFindPhysics->second.begin(), itFindPhysics->second.end() );
+                    auto thePhysicsShared = modelphysics.physicsShared( p );
+                    currentPhysics.insert( thePhysicsShared.begin(), thePhysicsShared.end() );
+                    // auto itFindPhysics = mapPhysicsToSubphysics.find( p );
+                    // if ( itFindPhysics != mapPhysicsToSubphysics.end() )
+                    //     currentPhysics.insert( itFindPhysics->second.begin(), itFindPhysics->second.end() );
                 }
 
                 if ( currentPhysics.empty() )
@@ -146,7 +147,7 @@ public :
                 {
                     if ( !onlyTheseMarkers.empty() && (onlyTheseMarkers.find( matmarker ) == onlyTheseMarkers.end()) )
                         continue;
-                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                    if ( M_eltMarkersInMesh.find( matmarker ) == M_eltMarkersInMesh.end() )
                         continue;
                     for ( std::string const& p : currentPhysics )
                         M_markers[p].insert( matmarker );
@@ -155,15 +156,26 @@ public :
             }
 
             for ( std::string const& p : physicsAvailable /*currentPhysics*/ )
-                M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == eltMarkersInMesh.size() );
+                M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == M_eltMarkersInMesh.size() );
 
 
             std::map<std::string,std::string> propSymbolToPropNameInDescription;
+#if 0
             for ( auto const& [propName, propDesc] : modelphysics.materialPropertyDescription() )
             {
                  M_materialPropertyPhysicDescription[propName] = propDesc;
                 propSymbolToPropNameInDescription[std::get<0>( propDesc )] = propName;
             }
+#else
+            for ( auto const& [physicName,physicData] : modelphysics.physics() )
+            {
+                for ( auto const& [propName, propDesc] : physicData->materialPropertyDescription() )
+                {
+                    M_materialPropertyPhysicDescription[propName] = propDesc;
+                    propSymbolToPropNameInDescription[std::get<0>( propDesc )] = propName;
+                }
+            }
+#endif
 
             for( auto const& m : mats )
             {
@@ -290,13 +302,26 @@ public :
             return this->physicToMaterials( std::set<std::string>({ physic }) );
         }
 
-    std::set<std::string> /*const&*/ markers( std::string const& p ) const
+    void markers( std::string const& p, std::set<std::string> & res ) const
         {
             auto itFindMarkers = M_markers.find( p );
-            if ( itFindMarkers == M_markers.end() )
-                return std::set<std::string>{};
-            else
-                return itFindMarkers->second;
+            if ( itFindMarkers != M_markers.end() )
+                res.insert( itFindMarkers->second.begin(), itFindMarkers->second.end() );
+        }
+
+    std::set<std::string> markers( std::string const& p ) const
+        {
+            std::set<std::string> res;
+            this->markers( p, res );
+            return res;
+        }
+
+    std::set<std::string> markers( std::set<std::string> const& setOfPhysics ) const
+        {
+            std::set<std::string> res;
+            for ( std::string p : setOfPhysics )
+                this->markers( p, res );
+            return res;
         }
 
     bool isDefinedOnWholeMesh( std::string const& p ) const
@@ -306,6 +331,12 @@ public :
                 return false;
             else
                 return itFindMarkers->second;
+        }
+
+
+    bool isDefinedOnWholeMesh( std::set<std::string> const& setOfPhysics ) const
+        {
+            return this->markers( setOfPhysics ).size() == M_eltMarkersInMesh.size();
         }
 
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
@@ -856,6 +887,7 @@ public :
 
 private :
     std::string M_exprRepository;
+    std::set<std::string> M_eltMarkersInMesh;
     std::map<std::string,std::set<std::string>> M_markers; // physic -> markers
     std::map<std::string,bool> M_isDefinedOnWholeMesh; // physics -> bool
     std::map<std::string,std::set<std::string>> M_materialsNames; // physic -> matNames

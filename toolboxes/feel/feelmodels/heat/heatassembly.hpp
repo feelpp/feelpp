@@ -50,7 +50,8 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     std::string symbolStr = "heat_T";
     //--------------------------------------------------------------------------------------------------//
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
@@ -317,7 +318,8 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                               _rowstart=this->rowStartInMatrix(),
                                               _colstart=this->colStartInMatrix() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
@@ -469,7 +471,8 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     auto myLinearForm = form1( _test=Xh, _vector=R,
                                _rowstart=this->rowStartInVector() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
