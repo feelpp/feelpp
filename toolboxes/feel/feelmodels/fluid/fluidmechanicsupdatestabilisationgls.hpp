@@ -716,7 +716,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
                                                                                                              std::string const& matName,
                                                                                                              AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple ) const
 {
-    if ( this->modelName() == "Navier-Stokes")
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(this->physicsFromCurrentType().begin()->second);
+
+    if ( physicFluidData->equation() == "Navier-Stokes")
     {
 
         element_velocity_ptrtype fielCurrentPicardSolution;
@@ -739,7 +742,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
             FluidMechanicsDetail::updateLinearPDEStabilizationGLS<FluidMechanicsDetail::FModel::NavierStokes,1>( *this, data, rho, mu, uconv, matName, addRhsTuple, addMatTuple );
         }
     }
-    else if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+    else if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
     {
         auto uconv = vf::zero<nRealDim,1>();
         if ( this->stabilizationGLSType() == "pspg" || ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
@@ -760,7 +763,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
                                                                                                             std::string const& matName, const ExprT&... exprs ) const
 {
-    CHECK( this->modelName() == "Navier-Stokes") << "only implemented for Navier-Stokes";
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(this->physicsFromCurrentType().begin()->second);
+    CHECK( physicFluidData->equation() == "Navier-Stokes") << "only implemented for Navier-Stokes";
 
     if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
          ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )
@@ -783,7 +788,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
                                                                                                             std::string const& matName, const ExprT&... exprs ) const
 {
-    CHECK( this->modelName() == "Navier-Stokes") << "only implemented for Navier-Stokes";
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(this->physicsFromCurrentType().begin()->second);
+    CHECK( physicFluidData->equation() == "Navier-Stokes") << "only implemented for Navier-Stokes";
 
     if ( ( this->stabilizationGLSType() == "supg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "pspg" ) ||
          ( nOrderVelocity<=1 && ( this->stabilizationGLSType() == "gls" || this->stabilizationGLSType() == "gls-no-pspg" ) ) )

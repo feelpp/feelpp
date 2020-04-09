@@ -118,9 +118,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
+#if 0
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         this->setModelName( soption(_name="model",_prefix=this->prefix()) );
-
+#endif
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
@@ -918,22 +919,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-    boost::timer thetimer;
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     if ( !M_mesh )
         this->initMesh();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-
+#if 0
     if ( M_modelName.empty() )
     {
         std::string theFluidModel = this->modelProperties().models().model( this->keyword() ).equations();
         this->setModelName( theFluidModel );
     }
+#endif
     if ( M_solverName.empty() )
     {
-        if ( M_modelName == "Stokes" || M_modelName == "StokesTransient" )
+        bool isLinear = true;
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        {
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+            if ( physicFluidData->equation() == "Navier-Stokes" )
+            {
+                isLinear = false;
+                break;
+            }
+        }
+        if ( isLinear )
             M_solverName="LinearSystem";
         else
             M_solverName="Newton";
@@ -1989,6 +2002,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
 
     if ( auto ptmaterials = pt.get_child_optional("materials") )
     {
+        if ( M_body.physics().empty() )
+            M_body.initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
         M_body.setup( *ptmaterials, fluidToolbox.modelProperties().materials(), fluidToolbox.mesh(), fluidToolbox.repository().expr() );
     }
     else

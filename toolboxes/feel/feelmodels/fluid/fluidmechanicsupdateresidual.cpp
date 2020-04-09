@@ -92,50 +92,56 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     thetimerBis.restart();
-    if ( BuildNonCstPart && this->modelName() == "Navier-Stokes" )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+
+        if ( BuildNonCstPart && physicFluidData->equation() == "Navier-Stokes" )
         {
-            auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
-            linearFormV_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
-                           _geomap=this->geomap() );
-            if ( this->doStabConvectionEnergy() )
-                CHECK( false ) << "TODO";
-        }
-        else
-        {
-            if ( this->doStabConvectionEnergy() )
+            if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
             {
+                auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
                 linearFormV_PatternCoupled +=
                     integrate( _range=M_rangeMeshElements,
-                               //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                               _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                               _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
                                _geomap=this->geomap() );
+                if ( this->doStabConvectionEnergy() )
+                    CHECK( false ) << "TODO";
             }
             else
             {
-                // convection term
-                // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
-                auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
-                linearFormV_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr=timeSteppingScaling*convecTerm,
-                               _geomap=this->geomap() );
+                if ( this->doStabConvectionEnergy() )
+                {
+                    linearFormV_PatternCoupled +=
+                        integrate( _range=M_rangeMeshElements,
+                                   //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
+                                   _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    // convection term
+                    // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
+                    auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
+                    linearFormV_PatternCoupled +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr=timeSteppingScaling*convecTerm,
+                                   _geomap=this->geomap() );
+                }
             }
         }
-    }
 
 
-    if ( !BuildCstPart && !UseJacobianLinearTerms && this->modelName() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
-    {
-        auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
-         linearFormV_PatternCoupled +=
-             integrate( _range=M_rangeMeshElements,
-                        _expr= timeSteppingScaling*val( idv(rho)*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
-                        _geomap=this->geomap() );
-    }
+        if ( !BuildCstPart && !UseJacobianLinearTerms && physicFluidData->equation() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
+        {
+            auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+            linearFormV_PatternCoupled +=
+                integrate( _range=M_rangeMeshElements,
+                           _expr= timeSteppingScaling*val( idv(rho)*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
+                           _geomap=this->geomap() );
+        }
+    } // foreach physic
 
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
     this->log("FluidMechanics","updateResidual","build convective--1-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );

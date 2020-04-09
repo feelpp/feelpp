@@ -78,6 +78,8 @@ public :
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
+    static std::shared_ptr<ModelPhysic<Dim>> New( std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
 
@@ -117,6 +119,21 @@ private :
     std::set<std::string> M_subphysicsTypes;
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
+};
+
+template <uint16_type Dim>
+class ModelPhysicFluid : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+public :
+    ModelPhysicFluid( std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFluid( ModelPhysicFluid const& ) = default;
+    ModelPhysicFluid( ModelPhysicFluid && ) = default;
+
+    std::string const& equation() const { return M_equation; }
+    void setEquation( std::string const& eq );
+private :
+    std::string M_equation;
 };
 
 template <uint16_type Dim>
