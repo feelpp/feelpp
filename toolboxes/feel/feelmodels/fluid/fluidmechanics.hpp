@@ -859,9 +859,10 @@ public :
     bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
     void setApplyMovingMeshBeforeSolve( bool b ) { M_applyMovingMeshBeforeSolve = b; }
     bool isMoveDomain() const { return M_isMoveDomain; }
-
+#if 0
     std::string const& modelName() const;
     void setModelName( std::string const& type );
+#endif
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
@@ -1436,7 +1437,7 @@ private :
     std::shared_ptr<typename space_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
-    std::string M_modelName;
+    //std::string M_modelName;
     std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
