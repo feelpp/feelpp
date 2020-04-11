@@ -168,8 +168,7 @@ public:
                                                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
 
                                                             using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
-                                                            std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
-
+                                                            symbol_expression_t<_expr_type> seParamValue;
                                                             for( auto const& p : *this )
                                                             {
                                                                 auto const& mparam = p.second;
@@ -183,14 +182,14 @@ public:
 
                                                                     auto const& theexpr = mparam.template expression<ni,nj>();
                                                                     std::string symbName = p.first;
-                                                                    _symbsExpr.push_back( std::make_tuple( symbName, theexpr, SymbolExprComponentSuffix( ni, nj, true ) ) );
+                                                                    seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj, true ) );
                                                                 }
                                                             }
-                                                            return SymbolExpr(_symbsExpr);
+                                                            return seParamValue;
                                                         } );
 
             using _fit_expr_type = Expr< Fit<typename ModelExpression::expr_scalar_type,0> >;
-            std::vector<std::pair<std::string,_fit_expr_type>> _fitSymbsExpr;
+            symbol_expression_t<_fit_expr_type> seFit;
             for( auto const& p : *this )
             {
                 auto const& mparam = p.second;
@@ -198,11 +197,10 @@ public:
                     continue;
                 auto const& theexpr = mparam.template expression<1,1>();
                 std::string symbName = p.first;
-                _fitSymbsExpr.push_back( std::make_pair( symbName, fit( theexpr, mparam.fitInterpolator() ) ) );
+                seFit.add( symbName, fit( theexpr, mparam.fitInterpolator() ) );
             }
 
-            return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ),
-                                          Feel::vf::symbolExpr( _fitSymbsExpr ) );
+            return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ), seFit );
         }
 
    void saveMD(std::ostream &os);

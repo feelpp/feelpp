@@ -91,32 +91,33 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
     }
 };
 
+using SymbolExprUpdateFunction = std::function<void()>;
 
 struct SymbolExprTag {};
 
 //! attach a symbol (string) with a feel++ expression
 //! ex : auto se = SymbolExpr( "u", cst(3.)*idv(u) );
 template <typename ExprT>
-struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>>
+struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction >>
 {
-    using super_type = std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>>;
+    using super_type = std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction  >>;
+    using update_function_type = SymbolExprUpdateFunction;
     using feelpp_tag = SymbolExprTag;
     SymbolExpr() = default;
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
-
-    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> const& e ) : super_type( 1,e ) {}
-    explicit SymbolExpr( std::tuple<std::string,ExprT,SymbolExprComponentSuffix> && e ) : super_type( 1,e ) {}
-    explicit SymbolExpr( std::initializer_list<std::tuple<std::string,ExprT,SymbolExprComponentSuffix>> const& e ) : super_type( e ) {}
-
+    explicit SymbolExpr( typename super_type::value_type const& e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( typename super_type::value_type && e ) : super_type( 1,e ) {}
+    explicit SymbolExpr( std::initializer_list<typename super_type::value_type> const& e ) : super_type( e ) {}
     explicit SymbolExpr( std::vector<std::tuple<std::string,ExprT>> const& e )
         :
         super_type()
     {
         this->reserve( e.size() );
         SymbolExprComponentSuffix emptySuffix;
+        update_function_type emptyUpdateFunc;
         for ( int k=0;k<e.size();++k )
-            this->push_back( std::make_tuple( std::get<0>( e[k] ), std::get<1>( e[k] ), emptySuffix ) );
+            this->push_back( std::make_tuple( std::get<0>( e[k] ), std::get<1>( e[k] ), emptySuffix, emptyUpdateFunc ) );
     }
     explicit SymbolExpr( std::vector<std::pair<std::string,ExprT>> const& e )
         :
@@ -124,15 +125,25 @@ struct SymbolExpr : public std::vector<std::tuple<std::string,ExprT,SymbolExprCo
     {
         this->reserve( e.size() );
         SymbolExprComponentSuffix emptySuffix;
+        update_function_type emptyUpdateFunc;
         for ( int k=0;k<e.size();++k )
-            this->push_back( std::make_tuple( e[k].first, e[k].second, emptySuffix ) );
+            this->push_back( std::make_tuple( e[k].first, e[k].second, emptySuffix, emptyUpdateFunc ) );
     }
     SymbolExpr( super_type const& e ) : super_type( e ) {}
+
+    void add( std::string const& s, ExprT const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} )
+    {
+        this->push_back( std::make_tuple( s,e,secs,seuf ) );
+    }
 };
+
+template<typename ExprT>
+using symbol_expression_t = SymbolExpr<ExprT>;
+
 //! build a SymbolExpr object
 template <typename T>
 SymbolExpr<Expr<T>>
-symbolExpr( std::string const& s,Expr<T> const& e, SymbolExprComponentSuffix secs = SymbolExprComponentSuffix() ) { return SymbolExpr<Expr<T>>( std::make_tuple(s,e,secs) ); }
+symbolExpr( std::string const& s,Expr<T> const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} ) { return SymbolExpr<Expr<T>>( std::make_tuple(s,e,secs,seuf) ); }
 
 template <typename T>
 SymbolExpr<Expr<T>>
@@ -141,10 +152,14 @@ symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { r
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( std::vector<std::tuple<std::string,Expr<T>>>( e ) ); }
-
+#if 0
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+#endif
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 
 template <typename T>
 SymbolExpr<Expr<T>>
@@ -153,10 +168,15 @@ symbolExpr( std::vector<std::pair<std::string,Expr<T>>> const& e ) { return Symb
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::vector<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
-
+#if 0
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+#endif
+
+template <typename T>
+SymbolExpr<Expr<T>>
+symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 
 
 struct SymbolsExprTag {};

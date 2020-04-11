@@ -626,11 +626,16 @@ private :
                             for (int k=0;k<nSubExpr;++k)
                             {
                                 auto const& e = evec[k];
+
                                 if ( std::get<2>( e ).empty() )
                                 {
                                     uint16_type idx = this->index( std::get<0>( e ) );
                                     if ( idx == invalid_uint16_type_value )
                                         continue;
+
+                                    // call an optional update function
+                                    if ( std::get<3>( e ) )
+                                        std::get<3>( e )();
 
                                     auto const& theexprBase = std::get<1>( e );
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
@@ -647,6 +652,10 @@ private :
                                 {
                                     if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                          continue;
+
+                                    // call an optional update function
+                                    if ( std::get<3>( e ) )
+                                        std::get<3>( e )();
 
                                     auto const& theexprBase = std::get<1>( e );
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
