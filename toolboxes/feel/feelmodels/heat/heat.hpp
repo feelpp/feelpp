@@ -291,12 +291,13 @@ class Heat : public ModelNumerical,
                 auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
                 // generate symbol heat_nflux
                 typedef decltype( this->normalHeatFluxExpr(t) ) _expr_nflux_type;
+                symbol_expression_t<_expr_nflux_type> se_nflux;
                 std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
                 std::string symbolNormalHeatFluxStr = prefixvm( this->keyword(), "nflux", "_");
                 auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t );
-                normalHeatFluxSymbs.push_back( std::make_tuple( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) ) );
+                se_nflux.add( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) );
 
-                return Feel::vf::symbolsExpr( symbolExpr( normalHeatFluxSymbs ) );
+                return Feel::vf::symbolsExpr( se_nflux );
             }
 
         //___________________________________________________________________________________//

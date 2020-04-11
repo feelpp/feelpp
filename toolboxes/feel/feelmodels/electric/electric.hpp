@@ -247,14 +247,15 @@ public :
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
+            symbol_expression_t<_expr_currentdensity_type> se_currentdensity;
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
                 std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
                 auto _currentDensityExpr = this->currentDensityExpr( v, matName );
-                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
+                se_currentdensity.add( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) );
             }
 
-            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
+            return Feel::vf::symbolsExpr( se_currentdensity );
         }
 
     //___________________________________________________________________________________//

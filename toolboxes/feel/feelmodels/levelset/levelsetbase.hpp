@@ -305,22 +305,22 @@ public:
     void setPhi( element_levelset_ptrtype const& phi, bool reinit = true ) { this->setPhi( *phi, reinit ); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_PN_ptrtype const& phiPN() const;
-    element_vectorial_ptrtype const& gradPhi() const;
-    element_levelset_ptrtype const& modGradPhi() const;
-    element_levelset_ptrtype const& distance() const;
+    element_vectorial_ptrtype const& gradPhi( bool up = true ) const;
+    element_levelset_ptrtype const& modGradPhi( bool up = true ) const;
+    element_levelset_ptrtype const& distance( bool up = true ) const;
 
-    element_levelset_ptrtype const& heaviside() const;
+    element_levelset_ptrtype const& heaviside( bool up = true ) const;
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     levelset_delta_expr_type diracExpr() const;
-    element_levelset_ptrtype const& dirac() const;
+    element_levelset_ptrtype const& dirac( bool up = true ) const;
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_vectorial_ptrtype const& normal() const;
+    element_vectorial_ptrtype const& normal( bool up = true ) const;
     element_vectorial_ptrtype const& N() const { return this->normal(); }
-    element_levelset_ptrtype const& curvature() const;
+    element_levelset_ptrtype const& curvature( bool up = true ) const;
     element_levelset_ptrtype const& K() const { return this->curvature(); }
-    element_vectorial_ptrtype const& distanceNormal() const;
-    element_levelset_ptrtype const& distanceCurvature() const;
+    element_vectorial_ptrtype const& distanceNormal( bool up = true) const;
+    element_levelset_ptrtype const& distanceCurvature( bool up = true ) const;
 
     virtual void updateInterfaceQuantities();
 
@@ -381,7 +381,15 @@ public:
     auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::phi(this), prefix, "phi", field_phi, "phi", this->keyword() ),
-                                                  modelField<0>( FieldTag::levelset(this), prefix, "dirac", this->dirac() )
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind( &self_type::updateDirac, this, std::placeholders::_1, std::ref(M_doUpdateDirac) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind( &self_type::updateHeaviside, this, std::placeholders::_1, std::ref(M_doUpdateHeaviside) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind( &self_type::updateNormal, this, std::placeholders::_1, std::ref(M_doUpdateNormal) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind( &self_type::updateCurvature, this, std::placeholders::_1, std::ref(M_doUpdateCurvature) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind( &self_type::updateGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateGradPhi) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind( &self_type::updateModGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateModGradPhi) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind( &self_type::updateDistance, this, std::placeholders::_1, std::ref(M_doUpdateDistance) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind( &self_type::updateDistanceNormal, this, std::placeholders::_1, std::ref(M_doUpdateDistanceNormal ) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind( &self_type::updateDistanceCurvature, this, std::placeholders::_1, std::ref(M_doUpdateDistanceCurvature) ) )
                                                   );
         }
         //___________________________________________________________________________________//
@@ -621,19 +629,19 @@ protected:
     void initPostProcessExportsAndMeasures();
     //--------------------------------------------------------------------//
     // Levelset data update functions
-    void updateGradPhi();
-    void updateModGradPhi();
-    void updateDirac();
-    void updateHeaviside();
+    void updateGradPhi( element_vectorial_ptrtype & field, bool & doUpdateGradPhi ) const;
+    void updateModGradPhi( element_levelset_ptrtype & field, bool & doUpdateModGradPhi ) const;
+    void updateDirac( element_levelset_ptrtype & field, bool & doUpdateDirac ) const;
+    void updateHeaviside( element_levelset_ptrtype& field, bool & doUpdateHeaviside ) const;
 
-    void updateNormal();
-    void updateCurvature();
+    void updateNormal( element_vectorial_ptrtype & field, bool & doUpdateNormal ) const;
+    void updateCurvature( element_levelset_ptrtype & field, bool & doUpdateCurvature ) const;
 
     void updatePhiPN();
 
-    void updateDistance();
-    void updateDistanceNormal();
-    void updateDistanceCurvature();
+    void updateDistance( element_levelset_ptrtype & field, bool & doUpdateDistance ) const;
+    void updateDistanceNormal( element_vectorial_ptrtype & field, bool & doUpdateDistanceNormal ) const;
+    void updateDistanceCurvature( element_levelset_ptrtype & field, bool & doUpdateDistanceCurvature ) const;
 
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );

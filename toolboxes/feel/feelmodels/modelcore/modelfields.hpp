@@ -58,18 +58,22 @@ private :
 template <typename ModelFieldTagType,typename FieldType>
 struct ModelField1
 {
+    using self_type = ModelField1<ModelFieldTagType,FieldType>;
     using tag_type = ModelFieldTagType;
     using field_type = FieldType;
+    using update_function_type = std::function<void(field_type &)>;
 
-    ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol, std::string const& prefix_symbol )
+    ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
         :
         M_tag( thetag ),
         M_prefix( prefix ),
         M_name( name ),
         M_field( u ),
         M_symbol( symbol ),
-        M_prefixSymbol( prefix_symbol )
+        M_prefixSymbol( prefix_symbol ),
+        M_updateFunction( updateFunction )
         {}
+
     ModelField1( ModelField1 const& ) = default;
     ModelField1( ModelField1 && ) = default;
 
@@ -79,18 +83,32 @@ struct ModelField1
     field_type const& field() const { return M_field; }
     std::string const& symbol() const { return M_symbol; }
     std::string const& prefixSymbol() const { return M_prefixSymbol; }
+    SymbolExprUpdateFunction updateFunctionSymbolExpr() const
+        {
+            if ( M_updateFunction )
+                return std::bind( &self_type::applyUpdateFunction, this );
+            else
+                return SymbolExprUpdateFunction{};
+        }
 
     std::string nameWithPrefix() const { return prefixvm( M_prefix,M_name ); }
+
+    void applyUpdateFunction() const
+        {
+            if ( M_updateFunction )
+                M_updateFunction(const_cast<field_type&>(M_field));
+        }
 private :
     tag_type M_tag;
     std::string M_prefix;
     std::string M_name;
     field_type M_field;
     std::string M_symbol, M_prefixSymbol;
+    update_function_type M_updateFunction;
 };
 
 template <size_type Ctx,typename ModelFieldTagType,typename FieldType>
-class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> > //std::tuple<std::string,FieldType,std::string,std::string>> // name, field, symbol, prefix in symbol expr
+class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
 {
     static constexpr uint16_type nComponents1 = Feel::remove_shared_ptr_type<FieldType>::nComponents1;
     static constexpr uint16_type nComponents2 = Feel::remove_shared_ptr_type<FieldType>::nComponents2;
@@ -102,6 +120,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     using type = ModelField<Ctx,ModelFieldTagType,FieldType>; // used by boost::hana and find_if
     using field_type = FieldType;
     using feelpp_tag = ModelFieldFeelppTag;
+    using update_function_type = typename model_field1_type::update_function_type;
 
     ModelField() = default;
 #if 1
@@ -110,24 +129,23 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     ModelField( ModelField const& e ) : std::vector<ModelField1<ModelFieldTagType,FieldType> >( e ) { std::cout << "copy constructor"<< std::endl; }
 #endif
     ModelField( ModelField && ) = default;
-    ModelField( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
+    ModelField( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "", update_function_type const& updateFunction = update_function_type{} )
     {
-        this->add( thetag, prefix, name, u, symbol, prefix_symbol );
+        this->add( thetag, prefix, name, u, symbol, prefix_symbol, updateFunction );
     }
 
     ModelField& operator=( ModelField&& ) = default;
 
-    void add( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
+    void add( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol = "", std::string const& prefix_symbol = "", update_function_type const& updateFunction = update_function_type{} )
     {
-
         std::string const& symbolNameUsed = symbol.empty()? name : symbol;
         if constexpr ( is_shared_ptr_v<field_type> )
             {
                 if ( u )
-                    this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol ) );
+                    this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol, updateFunction ) );
             }
         else
-            this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol ) );
+            this->push_back( model_field1_type( thetag,prefix, name, u, symbolNameUsed, prefix_symbol, updateFunction ) );
     }
 
     auto symbolsExpr() const
@@ -147,10 +165,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         {
             SymbolExprComponentSuffix secs( nComponents1, nComponents2, true );
             using _expr_type = std::decay_t<decltype( idv(this->front().field()) )>;
-            std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
+            symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
-                _symbsExpr.push_back( std::make_tuple( prefixvm( mfield.prefixSymbol(),mfield.symbol(),"_" ), idv(mfield.field()), secs ) );
-            return Feel::vf::symbolsExpr( symbolExpr( _symbsExpr ) );
+                se.add( prefixvm( mfield.prefixSymbol(),mfield.symbol(),"_" ), idv(mfield.field()), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
         }
         else
             return symbols_expression_empty_t{};
@@ -162,10 +180,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
             {
                 SymbolExprComponentSuffix secs( 1, 1, true );
                 using _expr_type = std::decay_t<decltype( inner(idv(this->front().field()), mpl::int_<InnerProperties::SQRT>() ) )>;
-                std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
+                symbol_expression_t<_expr_type> se;
                 for ( auto const& mfield : *this )
-                    _symbsExpr.push_back( std::make_tuple( prefixvm( mfield.prefixSymbol(), mfield.symbol()+"_magnitude","_" ), inner(idv(mfield.field()),mpl::int_<InnerProperties::SQRT>()) , secs ) );
-                return Feel::vf::symbolsExpr( symbolExpr( _symbsExpr ) );
+                    se.add( prefixvm( mfield.prefixSymbol(), mfield.symbol()+"_magnitude","_" ), inner(idv(mfield.field()),mpl::int_<InnerProperties::SQRT>()) , secs, mfield.updateFunctionSymbolExpr() );
+                return Feel::vf::symbolsExpr( se );
             }
         else
             return symbols_expression_empty_t{};
@@ -177,10 +195,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         {
             SymbolExprComponentSuffix secs( nComponents1, nRealDim, true );
             using _expr_type = std::decay_t<decltype( gradv(this->front().field()) )>;
-            std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
+            symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
-                _symbsExpr.push_back( std::make_tuple( prefixvm( mfield.prefixSymbol(), "grad_"+mfield.symbol(),"_" ), gradv(mfield.field()), secs ) );
-            return Feel::vf::symbolsExpr( symbolExpr( _symbsExpr ) );
+                se.add( prefixvm( mfield.prefixSymbol(), "grad_"+mfield.symbol(),"_" ), gradv(mfield.field()), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
         }
         else
             return symbols_expression_empty_t{};
@@ -192,10 +210,10 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         {
             SymbolExprComponentSuffix secs( nComponents1, 1, true );
             using _expr_type = std::decay_t<decltype(dnv(this->front().field()) )>;
-            std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
+            symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
-                _symbsExpr.push_back( std::make_tuple( prefixvm( mfield.prefixSymbol(), "dn_"+mfield.symbol(),"_" ), dnv(mfield.field()), secs ) );
-            return Feel::vf::symbolsExpr( symbolExpr( _symbsExpr ) );
+                se.add( prefixvm( mfield.prefixSymbol(), "dn_"+mfield.symbol(),"_" ), dnv(mfield.field()), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
         }
         else
             return symbols_expression_empty_t{};
@@ -215,9 +233,10 @@ auto modelField( TagType const& )
 }
 
 template <size_type Ctx,typename TagType,typename FieldType>
-auto modelField( TagType const& thetag, std::string const& prefix, std::string const& name, FieldType const& u, std::string const& symbol = "", std::string const& prefix_symbol = "" )
+auto modelField( TagType const& thetag, std::string const& prefix, std::string const& name, FieldType const& u, std::string const& symbol = "", std::string const& prefix_symbol = "",
+                 typename ModelField<Ctx,TagType,FieldType>::update_function_type const& updateFunction = typename ModelField<Ctx,TagType,FieldType>::update_function_type{} )
 {
-    return ModelField<Ctx,TagType,FieldType>( thetag,prefix,name,u,symbol,prefix_symbol );
+    return ModelField<Ctx,TagType,FieldType>( thetag,prefix,name,u,symbol,prefix_symbol,updateFunction );
 }
 
 
