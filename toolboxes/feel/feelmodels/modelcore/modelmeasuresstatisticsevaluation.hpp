@@ -137,6 +137,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                             }
                                         if ( ppStat.field() == fieldName )
                                         {
+                                            mfield.applyUpdateFunction();
                                             for ( std::string const& statType : ppStatType )
                                             {
                                                 if ( statType == "min" || statType == "max" || statType == "min-max"  )

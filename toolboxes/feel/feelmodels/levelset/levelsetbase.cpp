@@ -402,7 +402,8 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    this->exportResults( time, this->symbolsExpr(mfields), mfields, hana::tuple<>{} /*this->allMeasuresQuantities()*/ ); // TODO allMeasuresQuantities
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
@@ -625,52 +626,52 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::phiPN() const
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::gradPhi() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::gradPhi( bool up ) const
 {
     if( !M_levelsetGradPhi )
         M_levelsetGradPhi.reset( new element_vectorial_type(this->functionSpaceVectorial(), "GradPhi") );
 
-    if( M_doUpdateGradPhi )
-       const_cast<self_type*>(this)->updateGradPhi(); 
+    if( up && M_doUpdateGradPhi )
+        this->updateGradPhi( const_cast<self_type*>(this)->M_levelsetGradPhi, M_doUpdateGradPhi );
 
     return M_levelsetGradPhi;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGradPhi() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::modGradPhi( bool up ) const
 {
     if( !M_levelsetModGradPhi )
         M_levelsetModGradPhi.reset( new element_levelset_type(this->functionSpace(), "ModGradPhi") );
 
-    if( M_doUpdateModGradPhi )
-        const_cast<self_type*>(this)->updateModGradPhi();
+    if( up && M_doUpdateModGradPhi )
+        this->updateModGradPhi( const_cast<self_type*>(this)->M_levelsetModGradPhi, M_doUpdateModGradPhi );
 
     return M_levelsetModGradPhi;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::distance() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::distance( bool up ) const
 {
     if( !M_distance )
         M_distance.reset( new element_levelset_type(this->functionSpace(), "Distance") );
 
-    if( M_doUpdateDistance )
-       const_cast<self_type*>(this)->updateDistance(); 
+    if( up && M_doUpdateDistance )
+        this->updateDistance( const_cast<self_type*>(this)->M_distance, M_doUpdateDistance );
 
     return M_distance;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::heaviside() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::heaviside( bool up ) const
 {
     if( !M_heaviside )
         M_heaviside.reset( new element_levelset_type(this->functionSpace(), "Heaviside") );
 
-    if( M_doUpdateHeaviside )
-       const_cast<self_type*>(this)->updateHeaviside();
+    if( up && M_doUpdateHeaviside )
+        this->updateHeaviside( const_cast<self_type*>(this)->M_heaviside, M_doUpdateHeaviside );
 
     return M_heaviside;
 }
@@ -690,65 +691,65 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::diracExpr() const
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::dirac() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::dirac( bool up ) const
 {
     if( !M_dirac )
         M_dirac.reset( new element_levelset_type(this->functionSpace(), "Dirac") );
 
-    if( M_doUpdateDirac )
-       const_cast<self_type*>(this)->updateDirac();
+    if ( up && M_doUpdateDirac )
+        this->updateDirac( const_cast<self_type*>(this)->M_dirac, M_doUpdateDirac );
 
     return M_dirac;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::normal() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::normal( bool up ) const
 {
     if( !M_levelsetNormal )
         M_levelsetNormal.reset( new element_vectorial_type(this->functionSpaceVectorial(), "Normal") );
 
-    if( M_doUpdateNormal )
-       const_cast<self_type*>(this)->updateNormal(); 
+    if( up && M_doUpdateNormal )
+        this->updateNormal( const_cast<self_type*>(this)->M_levelsetNormal, M_doUpdateNormal );
 
     return M_levelsetNormal;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvature() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::curvature( bool up ) const
 {
     if( !M_levelsetCurvature )
         M_levelsetCurvature.reset( new element_levelset_type(this->functionSpace(), "Curvature") );
 
-    if( M_doUpdateCurvature )
-       const_cast<self_type*>(this)->updateCurvature();
+    if( up && M_doUpdateCurvature )
+        this->updateCurvature( const_cast<self_type*>(this)->M_levelsetCurvature, M_doUpdateCurvature );
 
     return M_levelsetCurvature;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_vectorial_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::distanceNormal() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::distanceNormal( bool up ) const
 {
     if( !M_distanceNormal )
         M_distanceNormal.reset( new element_vectorial_type(this->functionSpaceVectorial(), "DistanceNormal") );
 
-    if( M_doUpdateDistanceNormal )
-       const_cast<self_type*>(this)->updateDistanceNormal(); 
+    if( up && M_doUpdateDistanceNormal )
+        this->updateDistanceNormal( const_cast<self_type*>(this)->M_distanceNormal, M_doUpdateDistanceNormal );
 
     return M_distanceNormal;
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::distanceCurvature() const
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::distanceCurvature( bool up ) const
 {
     if( !M_distanceCurvature )
         M_distanceCurvature.reset( new element_levelset_type(this->functionSpace(), "DistanceCurvature") );
 
-    if( M_doUpdateDistanceCurvature )
-       const_cast<self_type*>(this)->updateDistanceCurvature();
+    if( up && M_doUpdateDistanceCurvature )
+        this->updateDistanceCurvature( const_cast<self_type*>(this)->M_distanceCurvature, M_doUpdateDistanceCurvature );
 
     return M_distanceCurvature;
 }
@@ -803,28 +804,32 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
 // Update levelset-dependent functions
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateGradPhi()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateGradPhi( element_vectorial_ptrtype & levelsetGradPhi, bool & doUpdateGradPhi ) const
 {
+    if ( !doUpdateGradPhi )
+        return;
     this->log("LevelSetBase", "updateGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    *M_levelsetGradPhi = this->grad( this->phiElt(), M_gradPhiMethod );
+    *levelsetGradPhi = this->grad( this->phiElt(), M_gradPhiMethod );
 
-    M_doUpdateGradPhi = false;
+    doUpdateGradPhi = false;
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
 }
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi( element_levelset_ptrtype & levelsetModGradPhi, bool & doUpdateModGradPhi ) const
 {
+    if ( !doUpdateModGradPhi )
+        return;
     this->log("LevelSetBase", "updateModGradPhi", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    *M_levelsetModGradPhi = this->modGrad( this->phiElt(), M_modGradPhiMethod );
+    *levelsetModGradPhi = this->modGrad( this->phiElt(), M_modGradPhiMethod );
 
-    M_doUpdateModGradPhi = false;
+    doUpdateModGradPhi = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateModGradPhi", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -832,8 +837,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateModGradPhi()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac( element_levelset_ptrtype & dirac, bool & doUpdateDirac ) const
 {
+    if ( !doUpdateDirac )
+        return;
     this->log("LevelSetBase", "updateDirac", "start");
     this->timerTool("UpdateInterfaceData").start();
 
@@ -882,12 +889,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
     auto const& psi = this->phiElt();
 
     if ( M_useHeavisideDiracNodalProj )
-        *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                this->diracExpr() );
+        dirac->on(_range=this->rangeMeshElements(),_expr=this->diracExpr() );
     else
-        *M_dirac = M_projectorL2Scalar->project( this->diracExpr() );
+        *dirac = M_projectorL2Scalar->project( this->diracExpr() );
 
-    M_doUpdateDirac = false;
+    doUpdateDirac = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateDirac", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -895,8 +901,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDirac()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
-{ 
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside( element_levelset_ptrtype& heaviside, bool & doUpdateHeaviside ) const
+{
+    if ( !doUpdateHeaviside )
+        return;
     this->log("LevelSetBase", "updateHeaviside", "start");
     this->timerTool("UpdateInterfaceData").start();
 
@@ -907,23 +915,21 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto psi = idv(this->phiElt()) / idv(this->modGradPhi());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            heaviside->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)));
         else
-            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
     else
     {
         auto psi = idv(this->phiElt());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            heaviside->on(_range=this->rangeMeshElements(),_expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
-            *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
 
-    M_doUpdateHeaviside = false;
+    doUpdateHeaviside = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateHeaviside", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -950,22 +956,19 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updatePhiPN()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal( element_vectorial_ptrtype & levelsetNormal, bool & doUpdateNormal ) const
 {
+    if ( !doUpdateNormal )
+        return;
     this->log("LevelSetBase", "updateNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
     //auto const& phi = this->phiElt();
     //*M_levelsetNormal = M_projectorL2Vectorial->project( _expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) );
     auto gradPhi = this->gradPhi();
-    *M_levelsetNormal = vf::project( 
-            _space=this->functionSpaceVectorial(),
-            _range=this->rangeMeshElements(),
-            //_expr=trans(gradv(phi)) / sqrt(gradv(phi) * trans(gradv(phi))) 
-            _expr=idv(gradPhi) / sqrt(trans(idv(gradPhi)) * idv(gradPhi)) 
-            );
+    levelsetNormal->on(_range=this->rangeMeshElements(), _expr=idv(gradPhi) / sqrt(trans(idv(gradPhi)) * idv(gradPhi)) );
 
-    M_doUpdateNormal = false;
+    doUpdateNormal = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -973,8 +976,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateNormal()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature( element_levelset_ptrtype & levelsetCurvature, bool & doUpdateCurvature ) const
 {
+    if ( !doUpdateCurvature )
+        return;
     this->log("LevelSetBase", "updateCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
@@ -983,7 +988,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
         case LevelSetCurvatureMethod::NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateCurvature", "perform nodal projection");
-            M_levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
+            levelsetCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->normal()) );
         }
         break;
         case LevelSetCurvatureMethod::L2_PROJECTION:
@@ -991,7 +996,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             this->log("LevelSetBase", "updateCurvature", "perform L2 projection");
             //*M_levelsetCurvature = this->projectorL2()->project( _expr=divv(this->normal()) );
             auto const& phi = this->phiElt();
-            *M_levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
+            *levelsetCurvature = this->projectorL2()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         case LevelSetCurvatureMethod::SMOOTH_PROJECTION:
@@ -999,7 +1004,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
             this->log("LevelSetBase", "updateCurvature", "perform smooth projection");
             //*M_levelsetCurvature = this->smoother()->project( _expr=divv(this->normal()) );
             auto const& phi = this->phiElt();
-            *M_levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
+            *levelsetCurvature = this->smoother()->derivate( gradv(phi) / sqrt(gradv(phi) * trans(gradv(phi))) );
         }
         break;
         //case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
@@ -1017,24 +1022,24 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
                     //_expr=divv(normalPN)
                     //);
 
-            //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_levelsetCurvature );
+            //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *levelsetCurvature );
         //}
         break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
             this->log("LevelSetBase", "updateCurvature", "perform diffusion order1");
-            *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
+            *levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER2:
         {
             this->log("LevelSetBase", "updateCurvature", "perform diffusion order2");
-            *M_levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
+            *levelsetCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
         }
         break;
     }
 
-    M_doUpdateCurvature = false;
+    doUpdateCurvature = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1042,14 +1047,16 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateCurvature()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance( element_levelset_ptrtype & distance, bool & doUpdateDistance ) const
 {
+    if ( !doUpdateDistance )
+        return;
     this->log("LevelSetBase", "updateDistance", "start");
     this->timerTool("UpdateInterfaceData").start();
 
-    *M_distance = this->redistanciate( this->phiElt(), M_distanceMethod );
+    *distance = this->redistanciate( this->phiElt(), M_distanceMethod );
 
-    M_doUpdateDistance = false;
+    doUpdateDistance = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateDistance", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1057,8 +1064,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistance()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal( element_vectorial_ptrtype & distanceNormal, bool & doUpdateDistanceNormal ) const
 {
+    if ( !doUpdateDistanceNormal )
+        return;
     this->log("LevelSetBase", "updateDistanceNormal", "start");
     this->timerTool("UpdateInterfaceData").start();
 
@@ -1069,15 +1078,15 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
     {
         case LevelSetDerivationMethod::NODAL_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform nodal projection");
-            M_distanceNormal->on( _range=this->rangeMeshElements(), _expr=N_expr );
+            distanceNormal->on( _range=this->rangeMeshElements(), _expr=N_expr );
             break;
         case LevelSetDerivationMethod::L2_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform L2 projection");
-            *M_distanceNormal = this->projectorL2Vectorial()->project( N_expr );
+            *distanceNormal = this->projectorL2Vectorial()->project( N_expr );
             break;
         case LevelSetDerivationMethod::SMOOTH_PROJECTION:
             this->log("LevelSetBase", "updateDistanceNormal", "perform smooth projection");
-            *M_distanceNormal = this->smootherVectorial()->project( N_expr );
+            *distanceNormal = this->smootherVectorial()->project( N_expr );
             break;
         //case LevelSetDerivationMethod::PN_NODAL_PROJECTION:
             //this->log("LevelSetBase", "updateDistanceNormal", "perform PN-nodal projection");
@@ -1088,11 +1097,11 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
                     //_range=this->functionSpaceManager()->rangeMeshPNElements(),
                     //_expr=trans(gradv(phiPN))
                     //);
-            //this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *M_distanceNormal );
+            //this->functionSpaceManager()->opInterpolationVectorialFromPN()->apply( gradPhiPN, *distanceNormal );
             //break;
     }
 
-    M_doUpdateDistanceNormal = false;
+    doUpdateDistanceNormal = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateDistanceNormal", "finish in "+(boost::format("%1% s") %timeElapsed).str() );
@@ -1100,8 +1109,10 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceNormal()
 
 LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 void
-LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature( element_levelset_ptrtype & distanceCurvature, bool & doUpdateDistanceCurvature ) const
 {
+    if ( !doUpdateDistanceCurvature )
+        return;
     this->log("LevelSetBase", "updateDistanceCurvature", "start");
     this->timerTool("UpdateInterfaceData").start();
 
@@ -1110,20 +1121,20 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
         case LevelSetCurvatureMethod::NODAL_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform nodal projection");
-            M_distanceCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->distanceNormal()) );
+            distanceCurvature->on( _range=this->rangeMeshElements(), _expr=divv(this->distanceNormal()) );
         }
         break;
         case LevelSetCurvatureMethod::L2_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform L2 projection");
             //*M_distanceCurvature = this->projectorL2()->project( _expr=divv(this->distanceNormal()) );
-            *M_distanceCurvature = this->projectorL2()->derivate( trans(idv(this->distanceNormal())) );
+            *distanceCurvature = this->projectorL2()->derivate( trans(idv(this->distanceNormal())) );
         }
         break;
         case LevelSetCurvatureMethod::SMOOTH_PROJECTION:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform smooth projection");
-            *M_distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
+            *distanceCurvature = this->smoother()->project( _expr=divv(this->distanceNormal()) );
         }
         break;
         //case LevelSetCurvatureMethod::PN_NODAL_PROJECTION:
@@ -1142,24 +1153,24 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateDistanceCurvature()
                     //_expr=divv(normalPN)
                     //);
 
-            //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *M_distanceCurvature );
+            //this->functionSpaceManager()->opInterpolationScalarFromPN()->apply( curvaturePN, *distanceCurvature );
         //}
         //break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER1:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order1");
-            *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
+            *distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder1( this->distance() );
         }
         break;
         case LevelSetCurvatureMethod::DIFFUSION_ORDER2:
         {
             this->log("LevelSetBase", "updateDistanceCurvature", "perform diffusion order2");
-            *M_distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
+            *distanceCurvature = this->toolManager()->curvatureDiffusion()->curvatureOrder2( this->distance() );
         }
         break;
     }
 
-    M_doUpdateDistanceCurvature = false;
+    doUpdateDistanceCurvature = false;
 
     double timeElapsed = this->timerTool("UpdateInterfaceData").stop();
     this->log("LevelSetBase", "updateDistanceCurvature", "finish in "+(boost::format("%1% s") %timeElapsed).str() );

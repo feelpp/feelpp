@@ -156,6 +156,7 @@ measureNormEvaluation( RangeType const& range,
                                             }
                                         if ( ppNorm.field() == fieldName )
                                         {
+                                            mfield.applyUpdateFunction();
                                             for ( std::string const& normType : ppNorm.types() )
                                                 measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
                                         }

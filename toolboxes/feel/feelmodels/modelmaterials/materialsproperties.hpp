@@ -718,8 +718,7 @@ public :
                     constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
 
                     using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
-                    std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
-
+                    symbol_expression_t<_expr_type> se;
                     for ( auto const& [matName,matProps] : M_materialNameToProperties )
                     {
                         for ( auto const& [propName,matProp] : matProps )
@@ -743,12 +742,12 @@ public :
                             std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
                             std::string symbolGlobalMatProp = (boost::format("%1%%2%")%prefix_symbol %symbolProp).str();
 
-                            _symbsExpr.push_back( std::make_tuple( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) ) );
+                            se.add( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
                             if ( nMat == 1 )
-                                _symbsExpr.push_back( std::make_tuple( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) ) );
+                                se.add( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
                         }
                     }
-                    return Feel::vf::SymbolExpr(_symbsExpr);
+                    return se;
                 });
 
             // generate symbol heat_k(_xx,_xy,...) if the all property k has same shape
@@ -757,36 +756,36 @@ public :
                     constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                     constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                     using _expr_type =  std::decay_t< decltype( this->materialPropertyExpr<ni,nj>( "" ) ) >;
-                    std::vector<std::tuple<std::string,_expr_type,SymbolExprComponentSuffix>> _symbsExpr;
+                    symbol_expression_t<_expr_type> se;
                     for ( auto const& [propName,propSymbol] : propertyNamesToSymbol )
                     {
                         if ( this->materialPropertyHasSameExprShapeInAllMaterials<ni,nj>( propName ) )
                         {
                             std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
                             auto globalMatPropExpr = this->materialPropertyExpr<ni,nj>( propName );
-                            _symbsExpr.push_back( std::make_tuple( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj,true ) ) );
+                            se.add( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
                         }
                         else
                             propertyNamesToSymbol2[propName] = propSymbol;
                     }
-                    return Feel::vf::SymbolExpr(_symbsExpr);
+                    return se;
                 });
 
             // generate symbols heat_k_xx, heat_k_xy,... if a prop is scalar in one mat and matrix in another mat
             typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "" ) ) _expr_scalar_or_matrix_selector_type;
-            std::vector<std::tuple<std::string,_expr_scalar_or_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsScalarOrMatrixSelector;
+            symbol_expression_t<_expr_scalar_or_matrix_selector_type> seScalarOrMatrixSelector;
             for ( auto const& [propName,propSymbol] : propertyNamesToSymbol2 )
             {
                 if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
                 {
                     auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName );
-                    matPropSymbsScalarOrMatrixSelector.push_back( std::make_tuple( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+                    seScalarOrMatrixSelector.add( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) );
                 }
             }
 
             return Feel::vf::symbolsExpr( Feel::vf::SymbolsExpr( tupleSymbolExprsByMaterial ),
                                           Feel::vf::SymbolsExpr( tupleSymbolExprsOnAllMaterials ),
-                                          Feel::vf::symbolExpr( matPropSymbsScalarOrMatrixSelector )
+                                          seScalarOrMatrixSelector
                                           );
         }
 

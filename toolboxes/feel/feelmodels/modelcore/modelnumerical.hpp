@@ -451,6 +451,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                     if ( fieldsNamesToExport.find( fieldName ) == fieldsNamesToExport.end() )
                                         continue;
 
+                                    mfield.applyUpdateFunction();
                                     auto const& thefield = unwrap_ptr( mfield.field() );
                                     if constexpr ( decay_type<ExporterType>::mesh_type::nDim == decay_type<decltype(thefield)>::mesh_type::nDim )
                                                  {
@@ -700,6 +701,8 @@ ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNames
                                     std::string fieldName = mfield.nameWithPrefix();
                                     if ( fieldsNamesToSave.find( fieldName ) == fieldsNamesToSave.end() )
                                         continue;
+
+                                    mfield.applyUpdateFunction();
 
                                     std::string fieldNameSaved = fieldName;
                                     if ( index != invalid_uint32_type_value )
