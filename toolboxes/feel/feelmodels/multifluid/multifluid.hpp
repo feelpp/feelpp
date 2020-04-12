@@ -174,7 +174,8 @@ public:
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
-    element_levelset_ptrtype const& globalLevelsetElt() const;
+    element_levelset_ptrtype const& globalLevelsetElt( bool up = true ) const;
+    void updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const;
 
     // Fluid density-viscosity model
     material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
@@ -194,16 +195,41 @@ public:
     // toolbox fields
     //___________________________________________________________________________________//
 
+    struct FieldTag
+    {
+        static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return M_fluidModel->modelFields( prefix );
+            auto mfieldsFluid = M_fluidModel->modelFields( prefixvm( prefix, M_fluidModel->keyword() ) );
+
+            using mfields_levelset_type = std::decay_t<decltype(M_levelsets.begin()->second->modelFields( "" ) )>;
+            mfields_levelset_type mfieldsLevelsets;
+            // for ( auto const& [lsName,lsObject] : M_levelsets )
+            //     mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, lsObject->modelFields(  prefixvm( prefix,  lsObject->keyword() ) ) );
+            for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
+                mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) );
+
+            return Feel::FeelModels::modelFields( mfieldsFluid, mfieldsLevelsets,
+                                                  modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefixvm( prefix, "global-levelset"), "phi", this->globalLevelsetElt(false), "phi", this->keyword(),
+                                                                            std::bind( &self_type::updateGlobalLevelsetElt, this, std::placeholders::_1, std::ref(M_doUpdateGlobalLevelset) ) )
+                                                  );
         }
 
     //___________________________________________________________________________________//
     // symbols expression
     //___________________________________________________________________________________//
 
-    auto symbolsExpr( std::string const& prefix = "" ) const { return M_fluidModel->symbolsExpr( prefix ); }
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
 #if 0
     //--------------------------------------------------------------------//
