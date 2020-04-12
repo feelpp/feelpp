@@ -295,19 +295,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt( bool up ) const
 {
     if( !M_globalLevelsetElt )
         M_globalLevelsetElt.reset( new element_levelset_type(this->functionSpaceLevelset(), "GlobalLevelset") );
-    if( M_doUpdateGlobalLevelset )
-    {
-        M_globalLevelsetElt->on( 
-                _range=elements( M_globalLevelsetElt->mesh() ),
-                _expr=this->globalLevelsetExpr()
-                );
-        M_doUpdateGlobalLevelset = false;
-    }
+    if( up && M_doUpdateGlobalLevelset )
+        this->updateGlobalLevelsetElt( M_globalLevelsetElt, M_doUpdateGlobalLevelset );
+
     return M_globalLevelsetElt;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const
+{
+    if ( !doUpdateGlobalLevelset )
+        return;
+
+    globalLevelsetElt->on(
+        _range=elements( M_globalLevelsetElt->mesh() ),
+        _expr=this->globalLevelsetExpr()
+                            );
+    doUpdateGlobalLevelset = false;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1306,6 +1315,10 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto exprExport = M_fluidModel->exprPostProcessExports( symbolsExpr, M_fluidModel->keyword() );
     // TODO: add exprPostProcessExports support in LevelSet
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exprExport );
+#else
+    auto mfields = this->modelFields();
+    auto symbolExpr = this->symbolsExpr( mfields );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr );
 #endif
     // Export measures
     this->exportMeasures( time );
@@ -1454,6 +1467,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     for( auto const& lsForces : M_levelsetInterfaceForcesModels )
         for( auto const& f : lsForces.second )
             ppExportsAllFieldsAvailable.insert( prefixvm( lsForces.first, f.first ) );
+    ppExportsAllFieldsAvailable.insert( "global-levelset.phi" );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();

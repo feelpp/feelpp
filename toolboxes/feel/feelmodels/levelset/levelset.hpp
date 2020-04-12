@@ -367,7 +367,7 @@ public:
 #else
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return super_type::modelFields();
+            return super_type::modelFields( prefix );
         }
 
 #endif
