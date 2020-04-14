@@ -295,7 +295,7 @@ class Heat : public ModelNumerical,
                 std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
                 std::string symbolNormalHeatFluxStr = prefixvm( this->keyword(), "nflux", "_");
                 auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t );
-                se_nflux.add( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) );
+                se_nflux.add( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1 ) );
 
                 return Feel::vf::symbolsExpr( se_nflux );
             }

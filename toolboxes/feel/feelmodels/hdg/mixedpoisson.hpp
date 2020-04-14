@@ -379,7 +379,7 @@ public:
             {
                 std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
                 auto _currentDensityExpr = this->currentDensityExpr( v, matName );
-                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
+                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1 ) ) );
             }
 
             return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );

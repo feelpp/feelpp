@@ -742,9 +742,9 @@ public :
                             std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
                             std::string symbolGlobalMatProp = (boost::format("%1%%2%")%prefix_symbol %symbolProp).str();
 
-                            se.add( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
+                            se.add( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj ) );
                             if ( nMat == 1 )
-                                se.add( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
+                                se.add( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj ) );
                         }
                     }
                     return se;
@@ -763,7 +763,7 @@ public :
                         {
                             std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
                             auto globalMatPropExpr = this->materialPropertyExpr<ni,nj>( propName );
-                            se.add( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj,true ) );
+                            se.add( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj ) );
                         }
                         else
                             propertyNamesToSymbol2[propName] = propSymbol;
@@ -779,7 +779,7 @@ public :
                 if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
                 {
                     auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName );
-                    seScalarOrMatrixSelector.add( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) );
+                    seScalarOrMatrixSelector.add( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim ) );
                 }
             }
 

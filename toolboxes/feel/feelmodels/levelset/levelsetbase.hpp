@@ -440,7 +440,7 @@ public:
         // generate symbols levelset_phi, levelset_grad_phi(_x,_y,_z), levelset_dn_phi
         return Feel::vf::symbolsExpr( 
                 symbolExpr( (boost::format("%1%phi")%prefix_symbol).str(),idv(f) ),
-                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim ) ),
                 symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
                 );
     }
