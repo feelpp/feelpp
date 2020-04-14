@@ -219,7 +219,7 @@ public :
                                                  }
                                     else
                                     {
-                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
                                         {
                                             uint16_type c1 = compArray[0];
                                             uint16_type c2 = compArray[1];
@@ -248,7 +248,7 @@ public :
                                 }
                                 else
                                 {
-                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
                                     {
                                         for ( std::string const& s : symbNames )
                                             outputSymbNames.insert( s + _suffix );

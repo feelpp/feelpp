@@ -182,7 +182,7 @@ public:
 
                                                                     auto const& theexpr = mparam.template expression<ni,nj>();
                                                                     std::string symbName = p.first;
-                                                                    seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj, true ) );
+                                                                    seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
                                                                 }
                                                             }
                                                             return seParamValue;
