@@ -35,8 +35,9 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
     SymbolExprComponentSuffix( SymbolExprComponentSuffix const& ) = default;
     SymbolExprComponentSuffix( SymbolExprComponentSuffix && ) = default;
 
-    SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2, bool useXYZ = false )
+    SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2 )
     {
+        bool useXYZ = false;
         if ( nComp1 > 1 && nComp2 > 1 )
         {
             for (uint16_type c1=0;c1<nComp1;++c1 )
