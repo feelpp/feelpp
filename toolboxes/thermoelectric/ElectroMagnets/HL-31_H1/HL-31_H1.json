@@ -158,7 +158,7 @@
                     "Power":
                     {
                         "type":"integrate",
-                        "expr":"materials_Cu_sigma*(electric_grad_P_x^2+electric_grad_P_y^2+electric_grad_P_z^2):materials_Cu_sigma:electric_grad_P_x:electric_grad_P_y:electric_grad_P_z",
+                        "expr":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
                         "markers":"Cu"
                     }
                 },
