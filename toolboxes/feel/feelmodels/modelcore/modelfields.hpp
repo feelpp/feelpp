@@ -163,7 +163,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     {
         if constexpr ( has_value_v<Ctx,FieldCtx::ID> )
         {
-            SymbolExprComponentSuffix secs( nComponents1, nComponents2, true );
+            SymbolExprComponentSuffix secs( nComponents1, nComponents2 );
             using _expr_type = std::decay_t<decltype( idv(this->front().field()) )>;
             symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
@@ -178,7 +178,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     {
         if constexpr ( has_value_v<Ctx,FieldCtx::MAGNITUDE> )
             {
-                SymbolExprComponentSuffix secs( 1, 1, true );
+                SymbolExprComponentSuffix secs( 1, 1 );
                 using _expr_type = std::decay_t<decltype( inner(idv(this->front().field()), mpl::int_<InnerProperties::SQRT>() ) )>;
                 symbol_expression_t<_expr_type> se;
                 for ( auto const& mfield : *this )
@@ -193,7 +193,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     {
         if constexpr ( has_value_v<Ctx,FieldCtx::GRAD> && nComponents2 == 1 )
         {
-            SymbolExprComponentSuffix secs( nComponents1, nRealDim, true );
+            SymbolExprComponentSuffix secs( nComponents1, nRealDim );
             using _expr_type = std::decay_t<decltype( gradv(this->front().field()) )>;
             symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
@@ -208,7 +208,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     {
         if constexpr ( has_value_v<Ctx,FieldCtx::GRAD_NORMAL> && nComponents2 == 1 )
         {
-            SymbolExprComponentSuffix secs( nComponents1, 1, true );
+            SymbolExprComponentSuffix secs( nComponents1, 1 );
             using _expr_type = std::decay_t<decltype(dnv(this->front().field()) )>;
             symbol_expression_t<_expr_type> se;
             for ( auto const& mfield : *this )
