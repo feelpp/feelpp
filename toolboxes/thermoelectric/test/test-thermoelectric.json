@@ -2,10 +2,6 @@
 {
     "Name":"test2d",
     "ShortName":"test2d",
-    // "Models":
-    // {
-    //     "equations":"ThermoElectric-nonlinear"//"ThermoElectric-nonlinear" or "ThermoElectric-linear"
-    // },
     "Materials":
     {
         "OmegaTE":
