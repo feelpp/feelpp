@@ -20,6 +20,7 @@ biotsavart_options()
     bo.add_options()
         ( "biotsavart.unit", po::value<std::string>()->default_value("m"), "unit of the mesh (m or mm)" )
         ( "biotsavart.hsize", po::value<double>()->default_value(0.1), "characteristic mesh size")
+        ( "biotsavart.quadrature", po::value<int>()->default_value(1), "quadrature order" )
         ;
     return bo;
 }
@@ -57,6 +58,7 @@ private:
 
     double M_h;
     std::string M_unit;
+    int M_quad;
 public:
     BiotSavart(mesh_conductor_ptrtype const& mesh, std::set<std::string> markers = std::set<std::string>());
     template<int D = DimB>
@@ -96,7 +98,8 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, std::set<std::s
     : M_meshCond(mesh),
       M_markersMgn(markers),
       M_h(doption("biotsavart.hsize")),
-      M_unit(soption("biotsavart.unit"))
+      M_unit(soption("biotsavart.unit")),
+      M_quad(ioption("biotsavart.quadrature"))
 {
     tic();
     this->createXh(markers, hana::int_<DimB>());
@@ -112,7 +115,8 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node p
                  typename std::enable_if<D==1>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
-      M_unit(soption("biotsavart.unit"))
+      M_unit(soption("biotsavart.unit")),
+      M_quad(ioption("biotsavart.quadrature"))
 {
     tic();
     GeoTool::Line l(M_h,"BOX", p1, p2);
@@ -131,7 +135,8 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node c
                  typename std::enable_if<D==2>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
-      M_unit(soption("biotsavart.unit"))
+      M_unit(soption("biotsavart.unit")),
+      M_quad(ioption("biotsavart.quadrature"))
 {
     tic();
     GeoTool::Sphere s(M_h,"BOX", center, r);
@@ -150,7 +155,8 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node c
                  typename std::enable_if<D==3>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
-      M_unit(soption("biotsavart.unit"))
+      M_unit(soption("biotsavart.unit")),
+      M_quad(ioption("biotsavart.quadrature"))
 {
     tic();
     GeoTool::Sphere s(M_h,"BOX", center, r);
@@ -170,7 +176,8 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh,
                  typename std::enable_if<D==3>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
-      M_unit(soption("biotsavart.unit"))
+      M_unit(soption("biotsavart.unit")),
+      M_quad(ioption("biotsavart.quadrature"))
 {
     tic();
     GeoTool::Cylindre c(M_h,"BOX", center, direction, r, length);
@@ -256,14 +263,14 @@ void BiotSavart<DimB>::compute(Expr j, bool computeB, bool computeA, std::set<st
     {
         mgnFields = integrate(_range=range,
                               _expr=unit*cross(j, _e1v-P())/(dist*dist*dist),
-                              _quad=_Q<1>()
+                              _quad=_Q<>(M_quad)
                               ).template evaluate(coords);
     }
     if( computeA )
     {
         mgnPot = integrate(_range=range,
                            _expr=unit*j/dist,
-                           _quad=_Q<1>()
+                           _quad=_Q<>(M_quad)
                            ).template evaluate(coords);
     }
     if( Environment::rank() == rank )
@@ -338,7 +345,7 @@ void BiotSavart<DimB>::createXh(std::set<std::string> markers, hana::int_<1>)
 }
 
 template<typename Expr, typename Range>
-Eigen::MatrixXd biotsavartComputeA(Expr j, Range r, double x, double y, double z, std::string unit = "m")
+Eigen::MatrixXd biotsavartComputeA(Expr j, Range r, double x, double y, double z, std::string unit = "m", int quad = 1)
 {
     auto coeff = unit == "m" ? 1e-7 : 1e-4;
     auto coord = vec(cst(x),cst(y),cst(z));
@@ -346,12 +353,12 @@ Eigen::MatrixXd biotsavartComputeA(Expr j, Range r, double x, double y, double z
                        mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
     auto mgnPot = integrate(_range=r,
                             _expr=coeff*j/dist,
-                            _quad=_Q<1>() ).evaluate();
+                            _quad=_Q<>(quad) ).evaluate();
     return mgnPot;
 }
 
 template<typename Expr, typename Range>
-Eigen::MatrixXd biotsavartComputeB(Expr j, Range r, double x, double y, double z, std::string unit = "m")
+Eigen::MatrixXd biotsavartComputeB(Expr j, Range r, double x, double y, double z, std::string unit = "m", int quad = 1)
 {
     auto coeff = unit == "m" ? 1e-7 : 1e-4;
     auto coord = vec(cst(x),cst(y),cst(z));
@@ -359,7 +366,7 @@ Eigen::MatrixXd biotsavartComputeB(Expr j, Range r, double x, double y, double z
                mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
     auto mgnField = integrate(_range=r,
                               _expr=coeff*cross(j,coord-P())/(dist*dist*dist),
-                              _quad=_Q<1>() ).evaluate();
+                              _quad=_Q<>(quad) ).evaluate();
     return mgnField;
 }
 
