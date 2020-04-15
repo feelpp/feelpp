@@ -1,3 +1,6 @@
+#ifndef FEELPP_TOOLBOX_BIOTSAVART_HPP
+#define FEELPP_TOOLBOX_BIOTSAVART_HPP
+
 #include <feel/feelvf/cst.hpp>
 #include <feel/feelvf/operations.hpp>
 #include <feel/feelvf/operators.hpp>
@@ -15,9 +18,9 @@ biotsavart_options()
 {
     po::options_description bo( "BiotSavart options" );
     bo.add_options()
-	( "biotsavart.unit", po::value<std::string>()->default_value("m"), "unit of the mesh (m or mm)" )
-	( "biotsavart.hsize", po::value<double>()->default_value(0.1), "characteristic mesh size")
-	;
+        ( "biotsavart.unit", po::value<std::string>()->default_value("m"), "unit of the mesh (m or mm)" )
+        ( "biotsavart.hsize", po::value<double>()->default_value(0.1), "characteristic mesh size")
+        ;
     return bo;
 }
 
@@ -27,16 +30,11 @@ class BiotSavart
 public:
     using mesh_conductor_type = Mesh<Simplex<3> >;
     using mesh_conductor_ptrtype = std::shared_ptr<mesh_conductor_type>;
-    
+
     using convex_box_type = Simplex<DimB,1,3>;
     using mesh_box_type = Mesh<convex_box_type>;
     using mesh_box_ptrtype = std::shared_ptr<mesh_box_type>;
 
-    // using magneticfield_space_type = FunctionSpace<mesh_box_type,
-    //                                                bases<Lagrange<1, Vectorial,
-    //                                                               Continuous, PointSetFekete> > >;
-    // using magneticfield_space_ptrtype = std::shared_ptr<magneticfield_space_type>;
-    // using magneticfield_element_type = typename magneticfield_space_type::element_type;
     using magneticfield_space_type = Pchv_type<mesh_box_type, 1>;
     using magneticfield_space_ptrtype = Pchv_ptrtype<mesh_box_type,1>;
     using magneticfield_element_type = element_t<magneticfield_space_type>;
@@ -63,17 +61,17 @@ public:
     BiotSavart(mesh_conductor_ptrtype const& mesh, std::set<std::string> markers = std::set<std::string>());
     template<int D = DimB>
     BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node p1, GeoTool::Node p2,
-	       typename std::enable_if<D==1>::type* = nullptr);
+           typename std::enable_if<D==1>::type* = nullptr);
     template<int D = DimB>
     BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node center, double r,
-	       typename std::enable_if<D==2>::type* = nullptr);
+           typename std::enable_if<D==2>::type* = nullptr);
     template<int D = DimB>
     BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node center, double r,
-	       typename std::enable_if<D==3>::type* = nullptr);
+           typename std::enable_if<D==3>::type* = nullptr);
     template<int D = DimB>
     BiotSavart(mesh_conductor_ptrtype const& mesh,
-	       GeoTool::Node center, GeoTool::Node direction, double r, double length,
-	       typename std::enable_if<D==3>::type* = nullptr);
+           GeoTool::Node center, GeoTool::Node direction, double r, double length,
+           typename std::enable_if<D==3>::type* = nullptr);
     void init();
     void createXh(std::set<std::string> markers, hana::int_<3>);
     void createXh(std::set<std::string> markers, hana::int_<2>);
@@ -105,13 +103,13 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, std::set<std::s
 
     M_A = M_Xh->element();
     M_B = M_Xh->element();
-    toc("BiotSavart constructor");        
+    toc("BiotSavart constructor");
 }
 
 template<int DimB>
 template<int D>
 BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node p1, GeoTool::Node p2,
-			     typename std::enable_if<D==1>::type*)
+                 typename std::enable_if<D==1>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
       M_unit(soption("biotsavart.unit"))
@@ -120,17 +118,17 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node p
     GeoTool::Line l(M_h,"BOX", p1, p2);
     l.setMarker(_type="line", _name="box", _markerAll=true);
     M_meshMgn = l.createMesh(_mesh=new mesh_box_type, _name="box");
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 
     M_A = M_Xh->element();
     M_B = M_Xh->element();
-    toc("BiotSavart constructor");        
+    toc("BiotSavart constructor");
 }
 
 template<int DimB>
 template<int D>
 BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node center, double r,
-			     typename std::enable_if<D==2>::type*)
+                 typename std::enable_if<D==2>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
       M_unit(soption("biotsavart.unit"))
@@ -139,17 +137,17 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node c
     GeoTool::Sphere s(M_h,"BOX", center, r);
     s.setMarker(_type="surface", _name="box", _markerAll=true);
     M_meshMgn = s.createMesh(_mesh=new mesh_box_type, _name="box");
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 
     M_A = M_Xh->element();
     M_B = M_Xh->element();
-    toc("BiotSavart constructor");            
+    toc("BiotSavart constructor");
 }
 
 template<int DimB>
 template<int D>
 BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node center, double r,
-			     typename std::enable_if<D==3>::type*)
+                 typename std::enable_if<D==3>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
       M_unit(soption("biotsavart.unit"))
@@ -158,18 +156,18 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh, GeoTool::Node c
     GeoTool::Sphere s(M_h,"BOX", center, r);
     s.setMarker(_type="volume", _name="box", _markerAll=true);
     M_meshMgn = s.createMesh(_mesh=new mesh_box_type, _name="box");
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 
     M_A = M_Xh->element();
     M_B = M_Xh->element();
-    toc("BiotSavart constructor");            
+    toc("BiotSavart constructor");
 }
 
 template<int DimB>
 template<int D>
 BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh,
-			     GeoTool::Node center, GeoTool::Node direction, double r, double length,
-			     typename std::enable_if<D==3>::type*)
+                 GeoTool::Node center, GeoTool::Node direction, double r, double length,
+                 typename std::enable_if<D==3>::type*)
     : M_meshCond(mesh),
       M_h(doption("biotsavart.hsize")),
       M_unit(soption("biotsavart.unit"))
@@ -178,11 +176,11 @@ BiotSavart<DimB>::BiotSavart(mesh_conductor_ptrtype const& mesh,
     GeoTool::Cylindre c(M_h,"BOX", center, direction, r, length);
     c.setMarker(_type="volume", _name="box", _markerAll=true);
     M_meshMgn = c.createMesh(_mesh=new mesh_box_type, _name="box");
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 
     M_A = M_Xh->element();
     M_B = M_Xh->element();
-    toc("BiotSavart constructor");            
+    toc("BiotSavart constructor");
 }
 
 template<int DimB>
@@ -197,25 +195,25 @@ void BiotSavart<DimB>::init()
     mpi::all_gather( Environment::worldComm(), isIn, isInGlob );
     for(int i=0; i<Environment::worldComm().size(); i++)
     {
-	if( isInGlob[i] )
-	{
-	    int dofSize;
-	    dof_points_type dofM; //dofs
-	    if( Environment::rank() == i )
-	    {
-		for ( size_type dof_id = 0; dof_id < this->M_Xh->nLocalDofWithGhost() ; ++dof_id )
-		{
-		    auto dofpoint = this->M_Xh->dof()->dofPoint(dof_id);
-		    dofM.push_back( dofpoint );
-		}
-		dofSize = dofM.size();
-	    }
+        if( isInGlob[i] )
+        {
+            int dofSize;
+            dof_points_type dofM; //dofs
+            if( Environment::rank() == i )
+            {
+                for ( size_type dof_id = 0; dof_id < this->M_Xh->nLocalDofWithGhost() ; ++dof_id )
+                {
+                    auto dofpoint = this->M_Xh->dof()->dofPoint(dof_id);
+                    dofM.push_back( dofpoint );
+                }
+                dofSize = dofM.size();
+            }
 
-	    mpi::broadcast( Environment::worldComm(), dofSize, i);
-	    dofM.resize( dofSize );
-	    mpi::broadcast( Environment::worldComm(), dofM.data(), dofSize, i);
-	    M_dofMgn.insert(std::make_pair(i,dofM));
-	}
+            mpi::broadcast( Environment::worldComm(), dofSize, i);
+            dofM.resize( dofSize );
+            mpi::broadcast( Environment::worldComm(), dofM.data(), dofSize, i);
+            M_dofMgn.insert(std::make_pair(i,dofM));
+        }
     }
     toc("BiotSavart init");
 }
@@ -239,46 +237,46 @@ void BiotSavart<DimB>::compute(Expr j, bool computeB, bool computeA, std::set<st
 
     for( auto const& [rank,dofPoints] : M_dofMgn )
     {
-	int dofSize = dofPoints.size();
-	int pointSize = dofSize/3;
-	std::vector<Eigen::Matrix<double,3,1>> coords( pointSize );
-	for ( size_type d = 0; d < pointSize ; d++ )
-	{
-	    auto dofCoord = dofPoints[d*3].template get<0>();
-	    Eigen::Matrix<double,3,1> coord;
-	    coord << dofCoord[0], dofCoord[1], dofCoord[2];
-	    coords[d] = coord;
-	}
+    int dofSize = dofPoints.size();
+    int pointSize = dofSize/3;
+    std::vector<Eigen::Matrix<double,3,1>> coords( pointSize );
+    for ( size_type d = 0; d < pointSize ; d++ )
+    {
+        auto dofCoord = dofPoints[d*3].template get<0>();
+        Eigen::Matrix<double,3,1> coord;
+        coord << dofCoord[0], dofCoord[1], dofCoord[2];
+        coords[d] = coord;
+    }
 
-	std::vector<Eigen::Matrix<double,3,1> > mgnFields, mgnPot;
-	auto dist = inner( _e1v-P(), _e1v-P(),
-			   mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-    
-	if( computeB )
-	{
-	    mgnFields = integrate(_range=range,
-				  _expr=unit*cross(j, _e1v-P())/(dist*dist*dist),
-				  _quad=_Q<1>()
-		).template evaluate(coords);
-	}
-	if( computeA )
-	{
-	    mgnPot = integrate(_range=range,
-			       _expr=unit*j/dist,
-			       _quad=_Q<1>()
-		).template evaluate(coords);
-	}
-	if( Environment::rank() == rank )
-	{
-	    for( int d = 0; d < dofSize; ++d )
-	    {
-		auto dofComp = dofPoints[d].template get<2>();
-		if( computeB )
-		    M_B.set(dofPoints[d].template get<1>(), mgnFields[d/3](dofComp,0));
-		if( computeA )
-		    M_A.set(dofPoints[d].template get<1>(), mgnPot[d/3](dofComp,0));
-	    }
-	}
+    std::vector<Eigen::Matrix<double,3,1> > mgnFields, mgnPot;
+    auto dist = inner( _e1v-P(), _e1v-P(),
+                       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+
+    if( computeB )
+    {
+        mgnFields = integrate(_range=range,
+                              _expr=unit*cross(j, _e1v-P())/(dist*dist*dist),
+                              _quad=_Q<1>()
+                              ).template evaluate(coords);
+    }
+    if( computeA )
+    {
+        mgnPot = integrate(_range=range,
+                           _expr=unit*j/dist,
+                           _quad=_Q<1>()
+                           ).template evaluate(coords);
+    }
+    if( Environment::rank() == rank )
+    {
+        for( int d = 0; d < dofSize; ++d )
+        {
+        auto dofComp = dofPoints[d].template get<2>();
+        if( computeB )
+            M_B.set(dofPoints[d].template get<1>(), mgnFields[d/3](dofComp,0));
+        if( computeA )
+            M_A.set(dofPoints[d].template get<1>(), mgnPot[d/3](dofComp,0));
+        }
+    }
     }
     M_B.close();
     M_A.close();
@@ -312,7 +310,7 @@ Eigen::MatrixXd BiotSavart<DimB>::magneticPotentialValue(double x, double y, dou
     ctx.add(t);
     auto aEval = evaluateFromContext(_context=ctx,_expr=idv(this->M_A));
     toc("evaluate");
-    return aEval;    
+    return aEval;
 }
 
 template<int DimB>
@@ -328,7 +326,7 @@ void BiotSavart<DimB>::createXh(std::set<std::string> markers, hana::int_<2>)
 {
     M_meshMgn = createSubmesh(_mesh=M_meshCond,
                               _range=markedfaces(M_meshCond, markers));
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 }
 
 template<int DimB>
@@ -336,7 +334,7 @@ void BiotSavart<DimB>::createXh(std::set<std::string> markers, hana::int_<1>)
 {
     M_meshMgn = createSubmesh(_mesh=M_meshCond,
                               _range=markededges(M_meshCond, markers));
-    this->M_Xh = magneticfield_space_type::New(M_meshMgn);
+    this->M_Xh = magneticfield_space_type::New(_mesh=M_meshMgn);
 }
 
 template<typename Expr, typename Range>
@@ -345,10 +343,10 @@ Eigen::MatrixXd biotsavartComputeA(Expr j, Range r, double x, double y, double z
     auto coeff = unit == "m" ? 1e-7 : 1e-4;
     auto coord = vec(cst(x),cst(y),cst(z));
     auto dist = inner( coord-P(), coord-P(),
-		       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+                       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
     auto mgnPot = integrate(_range=r,
-			    _expr=coeff*j/dist,
-			    _quad=_Q<1>() ).evaluate();
+                            _expr=coeff*j/dist,
+                            _quad=_Q<1>() ).evaluate();
     return mgnPot;
 }
 
@@ -358,11 +356,12 @@ Eigen::MatrixXd biotsavartComputeB(Expr j, Range r, double x, double y, double z
     auto coeff = unit == "m" ? 1e-7 : 1e-4;
     auto coord = vec(cst(x),cst(y),cst(z));
     auto dist = inner( coord-P(), coord-P(),
-		       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+               mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
     auto mgnField = integrate(_range=r,
-			       _expr=coeff*cross(j,coord-P())/(dist*dist*dist),
-			       _quad=_Q<1>() ).evaluate();
+                              _expr=coeff*cross(j,coord-P())/(dist*dist*dist),
+                              _quad=_Q<1>() ).evaluate();
     return mgnField;
 }
 
 } // namespace Feel
+#endif
