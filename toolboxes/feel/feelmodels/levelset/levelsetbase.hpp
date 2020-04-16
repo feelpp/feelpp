@@ -357,16 +357,8 @@ public:
 
     struct FieldTag
     {
-        static auto phi( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
-        static auto dirac( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
-        static auto heaviside( self_type const* t ) { return ModelFieldTag<self_type,2>( t ); }
-        static auto normal( self_type const* t ) { return ModelFieldTag<self_type,3>( t ); }
-        static auto curvature( self_type const* t ) { return ModelFieldTag<self_type,4>( t ); }
-        static auto gradphi( self_type const* t ) { return ModelFieldTag<self_type,5>( t ); }
-        static auto modgradphi( self_type const* t ) { return ModelFieldTag<self_type,6>( t ); }
-        static auto distance( self_type const* t ) { return ModelFieldTag<self_type,7>( t ); }
-        static auto distance_normal( self_type const* t ) { return ModelFieldTag<self_type,8>( t ); }
-        static auto distance_curvature( self_type const* t ) { return ModelFieldTag<self_type,9>( t ); }
+        static auto levelset_scalar( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto levelset_vectorial( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
     };
 
     //___________________________________________________________________________________//
@@ -387,16 +379,16 @@ public:
     template <typename PhiFieldType>
     auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::phi(this), prefix, "phi", field_phi, "phi", this->keyword() ),
-                                                  modelField<FieldCtx::ID>( FieldTag::dirac(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind( &self_type::updateDirac, this, std::placeholders::_1, std::ref(M_doUpdateDirac) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::heaviside(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind( &self_type::updateHeaviside, this, std::placeholders::_1, std::ref(M_doUpdateHeaviside) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::normal(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind( &self_type::updateNormal, this, std::placeholders::_1, std::ref(M_doUpdateNormal) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::curvature(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind( &self_type::updateCurvature, this, std::placeholders::_1, std::ref(M_doUpdateCurvature) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::gradphi(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind( &self_type::updateGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateGradPhi) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::modgradphi(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind( &self_type::updateModGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateModGradPhi) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::distance(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind( &self_type::updateDistance, this, std::placeholders::_1, std::ref(M_doUpdateDistance) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::distance_normal(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind( &self_type::updateDistanceNormal, this, std::placeholders::_1, std::ref(M_doUpdateDistanceNormal ) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::distance_curvature(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind( &self_type::updateDistanceCurvature, this, std::placeholders::_1, std::ref(M_doUpdateDistanceCurvature) ) )
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", field_phi, "phi", this->keyword() ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind( &self_type::updateDirac, this, std::placeholders::_1, std::ref(M_doUpdateDirac) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind( &self_type::updateHeaviside, this, std::placeholders::_1, std::ref(M_doUpdateHeaviside) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind( &self_type::updateNormal, this, std::placeholders::_1, std::ref(M_doUpdateNormal) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind( &self_type::updateCurvature, this, std::placeholders::_1, std::ref(M_doUpdateCurvature) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind( &self_type::updateGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateGradPhi) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind( &self_type::updateModGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateModGradPhi) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind( &self_type::updateDistance, this, std::placeholders::_1, std::ref(M_doUpdateDistance) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind( &self_type::updateDistanceNormal, this, std::placeholders::_1, std::ref(M_doUpdateDistanceNormal ) ) ),
+                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind( &self_type::updateDistanceCurvature, this, std::placeholders::_1, std::ref(M_doUpdateDistanceCurvature) ) )
                                                   );
         }
         //___________________________________________________________________________________//
