@@ -53,11 +53,13 @@ void for_each( Xs && xs, F && f )
     std::for_each( begin(xs), end(xs), f );
 }
 
+namespace detail {
+
 /* Zip an arbitrary -- runtime -- sequence of tuples to a tuple of runtime sequences.
  * The zip function creates a tuple of vectors by default.
  * The zip_with function uses the provided functional to create the runtime sequences in the returned tuple
  */
-namespace detail {
+
 template <typename S>
 struct zip_with_impl
 {
@@ -90,6 +92,84 @@ struct zip_with_impl
         return zip_helper( std::make_index_sequence<N>{}, static_cast<F&&>(f), static_cast<ItT1&&>(itBegin), static_cast<ItT2&&>(itEnd) );
     }
 };
+
+
+/**
+ * Concat hana tuple by storing inside an iterable container (typically a vector) the data of same type
+ * and avoid to increase the tuple size.
+ */
+template <typename FeelppTagOfTupleType,typename FeelppTagOfContainerType>
+struct AdvancedConcatOfTupleContainerType
+{
+    template <typename Tag, typename T>
+    struct is_a_t :
+        hana::integral_constant<bool, std::is_same<Tag, typename T::feelpp_tag >::value >
+    {};
+
+    template<typename... SomeType>
+    static constexpr auto apply( const SomeType&... v )
+        {
+            return applyImpl( hana::tuple<>{}, v... );
+        }
+private :
+
+    template<typename ResType >
+    static constexpr auto applyImpl( ResType && res )
+        {
+            return std::move( res );
+        }
+
+    template<typename ResType >
+    static constexpr auto applyImpl2( ResType && res,  hana::tuple<> const& t )
+        {
+            return std::move( res );
+        }
+    template<typename ResType, typename T1, typename... SomeType >
+    static constexpr auto applyImpl2( ResType && res,  hana::tuple<T1,SomeType...> const& t )
+        {
+            return applyImpl2( applyImpl( std::forward<ResType>( res ), hana::at( t, 0_c ) ),  hana::remove_at( t, 0_c ) );
+        }
+
+    template < typename T1, typename... SomeType >
+    static constexpr auto applyFromContainerType( T1 const& t1, hana::tuple<SomeType...> && res )
+        {
+            if constexpr ( hana::find( hana::to_tuple(hana::tuple_t<SomeType...> ), hana::type_c<T1>) == hana::nothing )
+                         {
+                             return hana::append( res, t1 );
+                         }
+            else
+            {
+                hana::for_each( res, [&t1]( auto & e )
+                                {
+                                    if constexpr ( std::is_same_v<std::decay_t<decltype(e)>, T1> )
+                                        {
+                                            for ( auto const& se : t1 )
+                                                e.push_back( se );
+                                        }
+                                });
+                return std::move( res );
+            }
+        }
+    template<typename ResType, typename T1, typename... SomeType2 >
+    static constexpr auto applyImpl( ResType && res, T1 const& t1, const SomeType2&... tothers )
+        {
+            if constexpr ( is_a_t<FeelppTagOfContainerType, T1 >::value )
+                {
+                    return applyImpl( applyFromContainerType( t1,std::forward<ResType>(res) ), tothers... );
+                }
+            else if constexpr ( is_a_t<FeelppTagOfTupleType, T1 >::value )
+                {
+                    if constexpr ( std::decay_t<decltype(hana::size( t1.tuple() ))>::value == 0 )
+                                     return applyImpl( std::forward<ResType>( res ), tothers... );
+                        else
+                            return applyImpl(  applyImpl2( std::forward<ResType>( res ), t1.tuple() ), tothers... );
+                }
+            else
+                return std::move( res );
+        }
+};
+
+
 } // namespace detail
 
 template <typename F, typename ItT1, typename ItT2>

@@ -24,6 +24,8 @@
 #ifndef FEELPP_VF_SYMBOLSEXPR_HPP
 #define FEELPP_VF_SYMBOLSEXPR_HPP 1
 
+#include <feel/feelcore/tuple_utils.hpp>
+
 namespace Feel
 {
 namespace vf
@@ -182,79 +184,6 @@ symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix
 
 struct SymbolsExprTag {};
 
-//! defined type from input args (variadic expression)
-struct SymbolsExprTraits
-{
-    template <typename Tag, typename T>
-    struct is_a_t :
-        hana::integral_constant<bool, std::is_same<Tag, typename T::feelpp_tag >::value >
-    {};
-
-    template<typename... ExprT>
-    static constexpr auto apply( const ExprT&... exprs )
-        {
-            return applyImpl( hana::tuple<>{}, exprs... );
-        }
-private :
-
-    template<typename ResType >
-    static constexpr auto applyImpl( ResType && res )
-        {
-            return std::move( res );
-        }
-
-    template<typename ResType >
-    static constexpr auto applyImpl2( ResType && res,  hana::tuple<> const& t )
-        {
-            return std::move( res );
-        }
-    template<typename ResType, typename T1, typename... ExprT >
-    static constexpr auto applyImpl2( ResType && res,  hana::tuple<T1,ExprT...> const& t )
-        {
-            return applyImpl2( applyImpl( std::forward<ResType>( res ), hana::at( t, 0_c ) ), hana::remove_at( t, 0_c ) );
-        }
-
-    template < typename T1, typename... ExprT >
-    static constexpr auto applySymbolExpr( T1 const& t1, hana::tuple<ExprT...> && res )
-        {
-            if constexpr ( hana::find( hana::to_tuple(hana::tuple_t<ExprT...> ), hana::type_c<T1>) == hana::nothing )
-                         {
-                             return hana::append( res, t1 );
-                         }
-            else
-            {
-                hana::for_each( res, [&t1]( auto & e )
-                                {
-                                    if constexpr ( std::is_same_v<std::decay_t<decltype(e)>, T1> )
-                                        {
-                                            for ( auto const& se : t1 )
-                                                e.push_back( se );
-                                        }
-                                });
-                return std::move( res );
-            }
-        }
-    template<typename ResType, typename T1, typename... ExprT2 >
-    static constexpr auto applyImpl( ResType && res, T1 const& t1, const ExprT2&... exprs )
-        {
-            if constexpr ( is_a_t<SymbolExprTag, T1 >::value )
-                {
-                    return applyImpl( applySymbolExpr(t1,std::forward<ResType>(res) ), exprs... );
-                }
-            else if constexpr ( is_a_t<SymbolsExprTag, T1 >::value )
-                {
-                    if constexpr ( std::decay_t<decltype(hana::size(t1.tupleExpr))>::value == 0 )
-                                     return applyImpl( std::forward<ResType>( res ), exprs... );
-                        else
-                            return applyImpl( applyImpl2( std::forward<ResType>( res ), t1.tupleExpr ), exprs... );
-                }
-            else
-                return std::move( res );
-        }
-
-};
-
-
 //! store set of SymbolExpr object into a hana::tuple
 template<typename TupleExprType>
 struct SymbolsExpr
@@ -295,8 +224,11 @@ struct SymbolsExpr
             return res;
         }
 
+    tuple_type const& tuple() const { return tupleExpr; }
+
     tuple_type tupleExpr;
 };
+#if 0
 template <>
 struct SymbolsExpr<hana::tuple<>>
 {
@@ -311,17 +243,17 @@ struct SymbolsExpr<hana::tuple<>>
     std::map<std::string,std::set<std::string>> names() const { return std::map<std::string,std::set<std::string>>{}; }
 
 };
-
+#endif
 template<typename... ExprT>
-struct SymbolsExprTraits2
+struct SymbolsExprTraits
 {
-    static constexpr auto callApply = [](const auto& ...exprs) { return SymbolsExprTraits::template apply( exprs... ); };
+    static constexpr auto callApply = [](const auto& ...exprs) { return Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<ExprT...>{},  callApply ) )>;
     using type = SymbolsExpr<tuple_type>;
 };
 
 template<typename... ExprT>
-using symbols_expression_t = typename SymbolsExprTraits2<ExprT...>::type;
+using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
 
 using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
 
@@ -330,7 +262,7 @@ template<typename... ExprT>
 symbols_expression_t<ExprT...>
 symbolsExpr( const ExprT&... exprs )
 {
-    return symbols_expression_t<ExprT...>(SymbolsExprTraits::template apply( exprs... ) );
+    return symbols_expression_t<ExprT...>(Feel::detail::AdvancedConcatOfTupleContainerType<SymbolsExprTag,SymbolExprTag>::template apply( exprs... ) );
 }
 
 } // namespace vf
