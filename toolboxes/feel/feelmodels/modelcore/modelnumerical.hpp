@@ -441,7 +441,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    hana::for_each( tupleFields.tupleModelField, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+    hana::for_each( tupleFields.tuple(), [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
@@ -692,7 +692,7 @@ void
 ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, ModelFieldsType const& fieldTuple )
 {
     std::string formatUsed = (format.empty())? "default" : format;
-    hana::for_each( fieldTuple.tupleModelField, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
+    hana::for_each( fieldTuple.tuple(), [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {

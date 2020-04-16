@@ -113,7 +113,7 @@ public :
 
             hana::for_each( M_contextFields,
                             [this,&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple.tupleModelField,
+                                hana::for_each( fieldTuple.tuple(),
                                                 [this,&x,&res](auto const& y) {
                                                     if constexpr ( is_iterable_v<decltype(y)> )
                                                     {
