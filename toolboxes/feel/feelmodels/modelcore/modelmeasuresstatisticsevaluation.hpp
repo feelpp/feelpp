@@ -122,7 +122,7 @@ measureStatisticsEvaluation( RangeType const& range,
 
     if ( ppStat.hasField() )
     {
-        ( Feel::for_each( fieldTuple.tupleModelField, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tuple(), [&]( auto const& e )
                         {
                             if constexpr ( is_iterable_v<decltype(e)> )
                                 {
