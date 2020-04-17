@@ -157,6 +157,11 @@ public:
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::unknown(this), prefix, this->unknownName(), field_u, this->unknownSymbol(), this->keyword() ) );
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::unknown(this), this->unknownName(), startBlockSpaceIndex ) );
+        }
+
     //___________________________________________________________________________________//
     // symbols expressions
     //___________________________________________________________________________________//
@@ -171,7 +176,6 @@ public:
             return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, seMat, seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
-
 
     void updateParameterValues();
     void setParameterValues( std::map<std::string,double> const& paramValues ) override;

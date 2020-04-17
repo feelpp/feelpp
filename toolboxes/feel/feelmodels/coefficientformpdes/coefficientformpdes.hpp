@@ -90,11 +90,31 @@ private :
                     return model_fields_t<TheType...>{};
                 }
         };
+
+        struct TransformTrialSelectorModelFields
+        {
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(t)>;
+                    std::shared_ptr<coefficient_form_pde_type> dummycfpde;
+                    return dummycfpde->trialSelectorModelFields( 0 );
+                }
+
+            template <typename... TheType>
+            static constexpr auto
+            toTrialSelectorModelFields( hana::tuple<TheType...> const& t )
+                {
+                    return selector_model_fields_t<TheType...>{};
+                }
+
+        };
     public :
         using model_fields_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
 
         using model_fields_view_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, typename TransformModelFields::View{} ) ) )>;
 
+        using trial_selector_model_fields_type = std::decay_t<decltype( TransformTrialSelectorModelFields::toTrialSelectorModelFields( hana::transform( tuple_type_unknown_basis, TransformTrialSelectorModelFields{} ) ) )>;
     };
 
     struct FilterBasisUnknownAll {
@@ -191,6 +211,24 @@ private :
                             });
         }
 
+    template <typename ResType>
+    void trialSelectorModelFieldsImpl( size_type startBlockSpaceIndex, ResType && res ) const
+        {
+            hana::for_each( tuple_type_unknown_basis, [this,&startBlockSpaceIndex,&res]( auto const& e )
+                            {
+                                for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) ) );
+                                }
+                            });
+        }
+
 public :
 
     auto modelFields( std::string const& prefix = "" ) const
@@ -205,9 +243,14 @@ public :
             typename traits::model_fields_view_type res;
             this->modelFieldsImpl( sol, rowStartInVector, prefix, std::move(res) );
             return res;
-
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            typename traits::trial_selector_model_fields_type res;
+            this->trialSelectorModelFieldsImpl( startBlockSpaceIndex, std::move(res) );
+            return res;
+        }
 
     //___________________________________________________________________________________//
     // symbols expressions
@@ -225,6 +268,11 @@ public :
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -237,12 +285,23 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
+#if 0
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+        }
+#endif
+   auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
 
     //___________________________________________________________________________________//
