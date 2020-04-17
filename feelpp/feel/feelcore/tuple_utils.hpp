@@ -119,15 +119,14 @@ private :
             return std::move( res );
         }
 
-    template<typename ResType >
-    static constexpr auto applyImpl2( ResType && res,  hana::tuple<> const& t )
+    template<int Index,typename ResType, typename... SomeType >
+    static constexpr auto applyImplFromTupleType( ResType && res, hana::tuple<SomeType...> const& t )
         {
-            return std::move( res );
-        }
-    template<typename ResType, typename T1, typename... SomeType >
-    static constexpr auto applyImpl2( ResType && res,  hana::tuple<T1,SomeType...> const& t )
-        {
-            return applyImpl2( applyImpl( std::forward<ResType>( res ), hana::at( t, 0_c ) ),  hana::remove_at( t, 0_c ) );
+            constexpr int nTupleElt = std::decay_t<decltype(hana::size( t ))>::value;
+            if constexpr ( Index < nTupleElt )
+                return applyImplFromTupleType<Index+1>( applyImpl( std::forward<ResType>( res ), hana::at( t, hana::int_c<Index> ) ), t );
+            else
+                return std::move( res );
         }
 
     template < typename T1, typename... SomeType >
@@ -135,7 +134,7 @@ private :
         {
             if constexpr ( hana::find( hana::to_tuple(hana::tuple_t<SomeType...> ), hana::type_c<T1>) == hana::nothing )
                          {
-                             return hana::append( res, t1 );
+                             return hana::append( std::forward<hana::tuple<SomeType...>>( res ), t1 );
                          }
             else
             {
@@ -159,10 +158,7 @@ private :
                 }
             else if constexpr ( is_a_t<FeelppTagOfTupleType, T1 >::value )
                 {
-                    if constexpr ( std::decay_t<decltype(hana::size( t1.tuple() ))>::value == 0 )
-                                     return applyImpl( std::forward<ResType>( res ), tothers... );
-                        else
-                            return applyImpl(  applyImpl2( std::forward<ResType>( res ), t1.tuple() ), tothers... );
+                    return applyImpl( applyImplFromTupleType<0>( std::forward<ResType>( res ), t1.tuple() ), tothers... );
                 }
             else
                 return std::move( res );
