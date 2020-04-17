@@ -38,12 +38,12 @@ public :
     using space_type = SpaceType;
     using space_ptrtype = std::shared_ptr<space_type>;
     using expr_type = ExprType;
-    TrialSymbolExpr1( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type startBlockSpaceIndex )
+    TrialSymbolExpr1( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type blockSpaceIndex )
         :
         M_space( space ),
         M_symbol( symbol ),
         M_expr( expr ),
-        M_startBlockSpaceIndex( startBlockSpaceIndex )
+        M_blockSpaceIndex( blockSpaceIndex )
         {}
     TrialSymbolExpr1( TrialSymbolExpr1 const& ) = default;
     TrialSymbolExpr1( TrialSymbolExpr1 && ) = default;
@@ -51,36 +51,51 @@ public :
     space_ptrtype const& space() const { return M_space; }
     std::string const& symbol() const { return M_symbol; }
     expr_type const& expr() const { return M_expr; }
-    size_type startBlockSpaceIndex() const { return M_startBlockSpaceIndex; }
+    size_type blockSpaceIndex() const { return M_blockSpaceIndex; }
+
+    bool isDefinedOn( space_ptrtype const& space, size_type blockSpaceIndex ) const
+        {
+            if ( M_space != space )
+                return false;
+            if ( M_blockSpaceIndex != blockSpaceIndex )
+                return false;
+            return true;
+        }
 private :
     space_ptrtype M_space;
     std::string M_symbol;
     expr_type M_expr;
-    size_type M_startBlockSpaceIndex;
+    size_type M_blockSpaceIndex;
 };
 
 
 struct TrialSymbolExprFeelppTag {};
 struct TrialSymbolsExprFeelppTag {};
+struct TrialsSymbolsExprFeelppTag {};
 
 template <typename SpaceType,typename ExprType>
 class TrialSymbolExpr : public std::vector<TrialSymbolExpr1<SpaceType,ExprType>>
 {
     using super_type = std::vector<TrialSymbolExpr1<SpaceType,ExprType>>;
     using trial_symbol_expr1_type = TrialSymbolExpr1<SpaceType,ExprType>;
+    using space_type = typename trial_symbol_expr1_type::space_type;
     using space_ptrtype = typename trial_symbol_expr1_type::space_ptrtype;
     using expr_type = typename trial_symbol_expr1_type::expr_type;
 public :
     using feelpp_tag = TrialSymbolExprFeelppTag;
 
     TrialSymbolExpr() = default;
-    TrialSymbolExpr( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type startBlockSpaceIndex ) : super_type( 1, trial_symbol_expr1_type( space, symbol, expr, startBlockSpaceIndex ) ) {}
+    TrialSymbolExpr( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type blockSpaceIndex ) : super_type( 1, trial_symbol_expr1_type( space, symbol, expr, blockSpaceIndex ) ) {}
+#if 1
     TrialSymbolExpr( TrialSymbolExpr const& ) = default;
+#else
+    TrialSymbolExpr( TrialSymbolExpr const& tse ) : super_type( tse ) { std::cout << "TrialSymbolExpr copy constructor with size " << this->size() << std::endl; }
+#endif
     TrialSymbolExpr( TrialSymbolExpr && ) = default;
 
-    void add( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type startBlockSpaceIndex )
+    void add( space_ptrtype const& space, std::string const& symbol, expr_type const& expr, size_type blockSpaceIndex )
     {
-        this->push_back( trial_symbol_expr1_type( space, symbol, expr, startBlockSpaceIndex ) );
+        this->push_back( trial_symbol_expr1_type( space, symbol, expr, blockSpaceIndex ) );
     }
 };
 
@@ -89,18 +104,20 @@ using trial_symbol_expr_t = TrialSymbolExpr<SpaceType,ExprType>;
 
 template <typename SpaceType,typename ExprType>
 trial_symbol_expr_t<SpaceType,ExprType>
-trialSymbolExpr( std::shared_ptr<SpaceType> const& space, std::string const& symbol, ExprType const& expr, size_type startBlockSpaceIndex )
+trialSymbolExpr( std::shared_ptr<SpaceType> const& space, std::string const& symbol, ExprType const& expr, size_type blockSpaceIndex )
 {
-    return trial_symbol_expr_t<SpaceType,ExprType>( space, symbol, expr, startBlockSpaceIndex );
+    return trial_symbol_expr_t<SpaceType,ExprType>( space, symbol, expr, blockSpaceIndex );
 }
 
 
-template <typename TupleTrialSymbolExprType>
+template <typename SpaceType,typename TupleTrialSymbolExprType>
 class TrialSymbolsExpr
 {
 public :
     using feelpp_tag = TrialSymbolsExprFeelppTag;
     using tuple_type = TupleTrialSymbolExprType;
+    using space_type = SpaceType;
+    using space_ptrtype = std::shared_ptr<space_type>;
 
     TrialSymbolsExpr() = default;
     TrialSymbolsExpr( TrialSymbolsExpr const& ) = default;
@@ -110,39 +127,182 @@ public :
     explicit TrialSymbolsExpr( tuple_type const& t )
         :
         M_tuple( t )
-        {}
+        {
+            this->updateForUse();
+        }
 
     explicit TrialSymbolsExpr( tuple_type && t )
         :
         M_tuple( t )
-        {}
+        {
+            this->updateForUse();
+        }
 
     tuple_type const& tuple() const { return M_tuple; }
+
+    std::set<std::pair<space_ptrtype,size_type>> const& blockSpaceIndex() const { return M_blockSpaceIndex; }
+private :
+    void updateForUse()
+        {
+            hana::for_each( M_tuple, [this]( auto const& e ) {
+                    for ( auto const & e2 : e )
+                    {
+                        M_blockSpaceIndex.insert( std::make_pair( e2.space(), e2.blockSpaceIndex() ) );
+                    }
+                });
+        }
 private :
     tuple_type M_tuple;
+    std::set<std::pair<space_ptrtype,size_type>> M_blockSpaceIndex;
 };
 
-template<typename... TrialSymbolsExprType>
+template<typename SpaceType,typename... TrialSymbolsExprType>
 struct TrialSymbolsExprTraits
 {
     static constexpr auto callApply = [](const auto& ...args) { return Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::template apply( args... ); };
     using tuple_type = std::decay_t<decltype( hana::unpack( hana::tuple<TrialSymbolsExprType...>{},  callApply ) )>;
-    using type = TrialSymbolsExpr<tuple_type>;
+    // TODO check that all space in tuple_type is equal to SpaceType
+    using type = TrialSymbolsExpr<SpaceType,tuple_type>;
+};
+
+template<typename SpaceType,typename... TrialSymbolsExprType>
+using trial_symbols_expr_t = typename TrialSymbolsExprTraits<SpaceType,TrialSymbolsExprType...>::type;
+
+template<typename SpaceType>
+using trial_symbols_expr_empty_t = TrialSymbolsExpr<SpaceType,hana::tuple<>>;
+
+template<typename SpaceType,typename... TrialSymbolsExprType>
+trial_symbols_expr_t<SpaceType,TrialSymbolsExprType...>
+trialSymbolsExpr( const TrialSymbolsExprType&... tse )
+{
+    return trial_symbols_expr_t<SpaceType,TrialSymbolsExprType...>( Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::template apply( tse... ) );
+}
+
+template <typename FeelppTagOfMapType,typename FeelppTagOfContainerType>
+struct AdvancedConcatOfMapContainerType
+{
+    template <typename Tag, typename T>
+    struct is_a_t :
+        hana::integral_constant<bool, std::is_same<Tag, typename T::feelpp_tag >::value >
+    {};
+
+    template<typename... SomeType>
+    static constexpr auto apply( const SomeType&... v )
+        {
+            return applyImpl( hana::map<>{}, v... );
+        }
+private :
+
+    template < typename T1, typename ResType, typename... SomeType >
+    static constexpr auto applyFromContainerType( T1 const& t1, ResType && res, hana::basic_tuple<SomeType...> && keysInRes )
+        {
+            auto constexpr the_key = hana::type_c<typename T1::space_type>;
+            if constexpr ( hana::find( hana::to_tuple(hana::tuple/*_t*/<SomeType...>{} ), hana::type_c<typename T1::space_type>) == hana::nothing )
+            {
+                return hana::insert( std::forward<ResType>( res ), hana::make_pair(the_key, t1 ) );
+            }
+            else
+            {
+                auto newEntry = trialSymbolsExpr<typename T1::space_type>( hana::at_key( res, hana::type_c<typename T1::space_type> ), t1 );
+                return hana::insert( hana::erase_key( std::forward<ResType>( res ), the_key ),  hana::make_pair( the_key, std::move( newEntry ) ) );
+            }
+        }
+
+    template<int Index, typename ResType, typename T1, typename... SomeType >
+    static constexpr auto applyImpl2( ResType && res, T1 const& t1, hana::basic_tuple<SomeType...> && keysInT1 )
+        {
+            constexpr int nKeys = std::decay_t<decltype(hana::size( hana::basic_tuple<SomeType...> {} ))>::value;
+            if constexpr ( Index < nKeys )
+                return applyImpl2<Index+1>( applyImpl( std::forward<ResType>( res ), hana::at_key( t1, hana::at( keysInT1, hana::int_c<Index> ) ) ),
+                                            t1,  std::forward< hana::basic_tuple<SomeType...> >( keysInT1 ) );
+            else
+                return std::move( res );
+        }
+
+    template<typename ResType >
+    static constexpr auto applyImpl( ResType && res )
+        {
+            return std::move( res );
+        }
+    template<typename ResType, typename T1, typename... SomeType2 >
+    static constexpr auto applyImpl( ResType && res, T1 const& t1, const SomeType2&... tothers )
+        {
+            if constexpr ( is_a_t<FeelppTagOfContainerType, T1 >::value )
+                {
+                    return applyImpl( applyFromContainerType( t1,std::forward<ResType>(res), hana::keys(res) ), tothers... );
+                }
+            else if constexpr ( is_a_t<FeelppTagOfMapType, T1 >::value )
+                {
+                    return applyImpl( applyImpl2<0>( std::forward<ResType>( res ), t1.map(), hana::keys(t1.map()) ), tothers... );
+                }
+            else
+                return std::move( res );
+        }
+};
+
+template <typename MapTrialSymbolsExprType>
+class TrialsSymbolsExpr
+{
+public :
+    using feelpp_tag = TrialsSymbolsExprFeelppTag;
+    using map_type = MapTrialSymbolsExprType;
+
+    TrialsSymbolsExpr() = default;
+    TrialsSymbolsExpr( TrialsSymbolsExpr const& ) = default;
+    TrialsSymbolsExpr( TrialsSymbolsExpr && ) = default;
+    TrialsSymbolsExpr& operator=( TrialsSymbolsExpr&& ) = default;
+
+    explicit TrialsSymbolsExpr( map_type const& m )
+        :
+        M_map( m )
+        {}
+
+    explicit TrialsSymbolsExpr( map_type && m )
+        :
+        M_map( m )
+        {}
+
+    map_type const& map() const { return M_map; }
+
+
+    std::set<std::string> names() const
+        {
+            std::set<std::string> res;
+            hana::for_each( M_map, [&res]( auto const& e )
+                            {
+                                hana::for_each( hana::second(e).tuple(), [&res]( auto const& e2 ) {
+                                        for ( auto const& e3 : e2 )
+                                        {
+                                            res.insert( e3.symbol() );
+                                        }
+                                    });
+                            });
+            return res;
+        }
+
+private :
+    map_type M_map;
 };
 
 template<typename... TrialSymbolsExprType>
-using trial_symbols_expr_t = typename TrialSymbolsExprTraits<TrialSymbolsExprType...>::type;
-
-using trial_symbols_expr_empty_t = TrialSymbolsExpr<hana::tuple<>>;
+struct TrialsSymbolsExprTraits
+{
+    static constexpr auto callApply = [](const auto& ...args) { return Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( args... ); };
+    using map_type = std::decay_t<decltype( hana::unpack( hana::tuple<TrialSymbolsExprType...>{},  callApply ) )>;
+    using type = TrialsSymbolsExpr<map_type>;
+};
 
 template<typename... TrialSymbolsExprType>
-trial_symbols_expr_t<TrialSymbolsExprType...>
-trialSymbolExprs( const TrialSymbolsExprType&... tse )
+using trials_symbols_expr_t = typename TrialsSymbolsExprTraits<TrialSymbolsExprType...>::type;
+
+using trials_symbols_expr_empty_t = TrialsSymbolsExpr<hana::map<>>;
+
+template<typename... TrialSymbolsExprType>
+trials_symbols_expr_t<TrialSymbolsExprType...>
+trialsSymbolsExpr( const TrialSymbolsExprType&... tse )
 {
-    return trial_symbols_expr_t<TrialSymbolsExprType...>( Feel::detail::AdvancedConcatOfTupleContainerType<TrialSymbolsExprFeelppTag,TrialSymbolExprFeelppTag>::template apply( tse... ) );
+    return trials_symbols_expr_t<TrialSymbolsExprType...>( Feel::FeelModels::AdvancedConcatOfMapContainerType<TrialsSymbolsExprFeelppTag,TrialSymbolsExprFeelppTag>::template apply( tse... ) );
 }
-
-
 
 
 
@@ -275,7 +435,7 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     template <typename SelectorModelFieldType>
     auto trialSymbolsExpr( SelectorModelFieldType const& smf ) const
         {
-            return Feel::FeelModels::trialSymbolExprs( this->trialSymbolsExpr_ID( smf ) );
+            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExpr_ID( smf ) );
         }
   private :
 
@@ -347,7 +507,11 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         if constexpr ( has_value_v<Ctx,FieldCtx::ID> )
         {
             SymbolExprComponentSuffix secs( nComponents1, nComponents2 );
-            using _expr_type = std::decay_t<decltype( idt(this->front().field()) )>;
+            //using _expr_type = std::decay_t<decltype( idt(this->front().field()) )>;
+            static constexpr bool is_scalar_trial_expr = nComponents1 == 1 && nComponents2 == 1;
+            using _expr_type = typename mpl::if_c< is_scalar_trial_expr,
+                                                   std::decay_t<decltype( idt( (*this).front().field()) )>,
+                                                   std::decay_t<decltype( idt( (*this).front().field())(0,0) )> >::type;
             trial_symbol_expr_t<functionspace_type,_expr_type> tse;
             for ( auto const& mfield : *this )
             {
@@ -358,18 +522,29 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
                     if ( smf.tag() != mfield.tag() )
                         continue;
 
-                    size_type startBlockSpaceIndex =3;
-                    tse.add( unwrap_ptr( mfield.field() ).functionSpace(), prefixvm( mfield.prefixSymbol(),mfield.symbol(),"_" ), idt(mfield.field()),
-                             //secs, mfield.updateFunctionSymbolExpr()
-                             startBlockSpaceIndex
-                             );
+                    std::string symbolNameBase = prefixvm( mfield.prefixSymbol(),mfield.symbol(),"_" );
+                    auto theSpace = unwrap_ptr( mfield.field() ).functionSpace();
+                    if constexpr ( is_scalar_trial_expr )
+                    {
+                        tse.add( theSpace, symbolNameBase, idt(mfield.field()), smf.blockSpaceIndex() );
+                    }
+                    else
+                    {
+                        for ( auto const& [_suffix,compArray] : secs )
+                        {
+                            std::string symbolWithSuffix = symbolNameBase+ _suffix;
+                            uint16_type c1 = compArray[0];
+                            uint16_type c2 = compArray[1];
+                            tse.add( theSpace, symbolWithSuffix, idt(mfield.field())(c1,c2), smf.blockSpaceIndex() );
+                        }
+                    }
                     break;
                 }
             }
-            return Feel::FeelModels::trialSymbolExprs( tse );
+            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( tse );
         }
         else
-            return trial_symbols_expr_empty_t{};
+            return trial_symbols_expr_empty_t<functionspace_type>{};
     }
 
 };
@@ -400,20 +575,23 @@ class SelectorModelField1
 {
 public :
     using tag_type = FieldTagType;
-    SelectorModelField1( tag_type const& tag, std::string const& name )
+    SelectorModelField1( tag_type const& tag, std::string const& name, size_type blockSpaceIndex )
         :
         M_tag( tag ),
-        M_name( name )
+        M_name( name ),
+        M_blockSpaceIndex( blockSpaceIndex )
         {}
     SelectorModelField1( SelectorModelField1 const& ) = default;
     SelectorModelField1( SelectorModelField1 && ) = default;
 
     tag_type const& tag() const { return M_tag; }
     std::string const& name() const { return M_name; }
+    size_type blockSpaceIndex() const { return M_blockSpaceIndex; }
 
 private :
     tag_type M_tag;
     std::string M_name;
+    size_type M_blockSpaceIndex;
 };
 
 struct SelectorModelFieldFeelppTag {};
@@ -429,16 +607,17 @@ public :
     using tag_type = typename selector_model_field1_type::tag_type;
 
     SelectorModelField() = default;
-    SelectorModelField( tag_type const& tag, std::string const& name ) : super_type( 1, selector_model_field1_type(tag,name) ) {}
+    SelectorModelField( tag_type const& tag, std::string const& name, size_type blockSpaceIndex ) : super_type( 1, selector_model_field1_type(tag,name,blockSpaceIndex) ) {}
     SelectorModelField( SelectorModelField const& ) = default;
     SelectorModelField( SelectorModelField && ) = default;
+    SelectorModelField& operator=( SelectorModelField&& ) = default;
 };
 
 template <typename FieldTagType>
 SelectorModelField<FieldTagType>
-selectorModelField( FieldTagType const& tag, std::string const& name )
+selectorModelField( FieldTagType const& tag, std::string const& name, size_type blockSpaceIndex = 0 )
 {
-    return SelectorModelField<FieldTagType>( tag, name );
+    return SelectorModelField<FieldTagType>( tag, name, blockSpaceIndex );
 }
 
 template <typename TupleSelectorModelFieldType>
@@ -533,7 +712,7 @@ public :
     template <typename TupleSelectorModelFieldType>
     auto trialSymbolsExpr( SelectorModelFields<TupleSelectorModelFieldType> const& smf ) const
         {
-            return this->trialSymbolsExprImpl<0,0>( trial_symbols_expr_empty_t{}, smf.tuple() );
+            return this->trialSymbolsExprImpl<0,0>( trials_symbols_expr_empty_t{}, smf.tuple() );
         }
 
     template <typename TagType>
@@ -579,32 +758,11 @@ private :
                     using CurrentModelFieldType = typename std::decay_t<decltype( hana::at( M_tuple, hana::int_c<Index> ) )>;
                     using CurrentTagType = typename CurrentModelFieldType::tag_type;
                     using SelectorTagType = typename std::decay_t<decltype( hana::at( t, hana::int_c<Index2> ) )>::tag_type;
-                    // found the field type related to TagType
-                    //using findFieldT_opt = std::decay_t<decltype( ModelFieldsFindTag<TagType>::find( hana::to_tuple( M_tuple ) ) )>;
                     if constexpr ( std::is_same_v<SelectorTagType,CurrentTagType> )
                     {
-                        return this->trialSymbolsExprImpl<Index,Index2+1>( Feel::FeelModels::trialSymbolExprs( std::forward<ResType>( res ),
-                                                                                                               hana::at( M_tuple, hana::int_c<Index> ).trialSymbolsExpr( hana::at( t, hana::int_c<Index2> ) )
-                                                                                                               ), t );
-#if 0
-                        using trial_symbols_expr_to_insert_type = std::decay_t<decltype(CurrentModelFieldType{}.trialSymbolsExpr(""))>;
-                        //static_assert( !decltype(hana::is_nothing( findFieldT_opt{} ))::value, "tag not found" );
-                        //using found_field_type = typename std::decay_t<decltype( findFieldT_opt{}.value() )>::type::field_type;
-                        trial_symbols_expr_to_insert_type tse_to_insert;
-                        for ( auto const& mfield : hana::at( M_tuple, hana::int_c<Index> ) )
-                        {
-                            for ( auto const& smf : hana::at( t, hana::int_c<Index2> ) )
-                            {
-                                if ( smf.name() != mfield.name() )
-                                    continue;
-                                if ( smf.tag() != mfield.tag() )
-                                    continue;
-
-                                tse_to_insert = Feel::FeelModels::trialSymbolExprs( tse_to_insert, mfield.trialSymbolsExpr(
-                            }
-                        }
-                        return this->trialSymbolsExprImpl<Index,Index2+1>( Feel::FeelModels::trialSymbolExprs( std::forward<ResType>( res ), tse_to_insert ), t );
-#endif
+                        return this->trialSymbolsExprImpl<Index,Index2+1>( Feel::FeelModels::trialsSymbolsExpr( std::forward<ResType>( res ),
+                                                                                                                hana::at( M_tuple, hana::int_c<Index> ).trialSymbolsExpr( hana::at( t, hana::int_c<Index2> ) )
+                                                                                                                ), t );
                     }
                     else
                         return this->trialSymbolsExprImpl<Index,Index2+1>( std::forward<ResType>( res ), t );
@@ -617,7 +775,6 @@ private :
             else
                 return std::move( res );
         }
-
 
     template <typename FieldType,typename TagType,int Index>
     auto const&
