@@ -385,6 +385,9 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     }
 
     auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
+
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
     auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
@@ -476,7 +479,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             auto coeff_d_expr = expr( coeff_d.expr(), se );
 
             bool build_Form2TransientTerm = buildNonCstPart;
-            if (  coeff_d_expr.expression().isNumericExpression() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+            if ( coeff_d_expr.expression().isNumericExpression() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
             {
                 build_Form2TransientTerm = buildCstPart;
             }
@@ -490,7 +493,62 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
         }
 
-        // Source : TODO if source coeff depend of unknow
+        // Source
+        if constexpr ( unknown_is_scalar ) // TODO
+            {
+        if ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
+        {
+            auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+
+            bool sourceDependOnUnknown = false;
+            for ( auto const& symb : trialSymbolNames )
+            {
+                if ( coeff_f.hasSymbolDependency( symb ) )
+                {
+                    sourceDependOnUnknown = true;
+                    break;
+                }
+            }
+            if ( sourceDependOnUnknown && buildNonCstPart )
+            {
+                auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                                   [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
+                                                   [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
+
+                hana::for_each( tse.map(), [this,&coeff_f_expr,&v,&J,&range,&Xh]( auto const& e )
+                {
+                    // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                    for ( auto const& mapSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = mapSpacePair.first;
+                        auto trialBlockIndex = mapSpacePair.second;
+                        auto bilinearFormAdded = form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                                        _pattern=size_type(Pattern::COUPLED),
+                                                        _rowstart=this->rowStartInMatrix(),
+                                                        _colstart=trialBlockIndex );
+
+                        hana::for_each( hana::second(e).tuple(), [this,&coeff_f_expr,&v,&range,&bilinearFormAdded,trialXh=trialXh,trialBlockIndex=trialBlockIndex]( auto const& e2 )
+                        {
+                            for ( auto const& e3 : e2 )
+                            {
+                                if ( !e3.isDefinedOn( trialXh, trialBlockIndex ) )
+                                    continue;
+                                std::cout << "JACOBIAN symbol " << e3.symbol() << " space : " << e3.space()->nDof() << std::endl;
+
+                                auto coeff_f_diff_expr = diff( coeff_f_expr, e3.symbol(),1,"",this->worldComm(),this->repository().expr());
+
+                                bilinearFormAdded +=
+                                    integrate( _range=range,
+                                               _expr= -inner( e3.expr()*coeff_f_diff_expr,id(v)),
+                                               _geomap=this->geomap() );
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+            } // if constexpr isscalar TODO
 
         // Stab
         if ( this->M_applyStabilization && buildNonCstPart )
@@ -552,6 +610,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     }
 
     auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
     auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
@@ -667,10 +727,22 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
         if ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+
+            bool sourceDependOnUnknown = false;
+            for ( auto const& symb : trialSymbolNames )
+            {
+                if ( coeff_f.hasSymbolDependency( symb ) )
+                {
+                    sourceDependOnUnknown = true;
+                    break;
+                }
+            }
+
             auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                                [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
-            bool buildSourceTerm = buildCstPart; // TODO : if coeff_f_expr depends on unkwnon, then it's buildNonCstPart
+            bool buildSourceTerm = sourceDependOnUnknown ? buildNonCstPart : buildCstPart;
+
             if ( buildSourceTerm )
             {
                 linearForm +=
