@@ -37,7 +37,7 @@ class ExprOptionalConcat : public Feel::vf::ExprDynamicBase
         template <typename T>
         constexpr auto operator()(T const& t) const
             {
-                return std::optional<T>{};
+                return std::vector<T>{};
             }
     };
 
@@ -109,8 +109,8 @@ public :
             uint16_type res = 0;
             hana::for_each( M_exprs, [&res]( auto const& e )
                             {
-                                if ( e )
-                                    res = std::max( res, e->polynomialOrder() );
+                                for ( auto const& e2 : e )
+                                    res = std::max( res, e2.polynomialOrder() );
                             });
             return res;
         }
@@ -121,8 +121,8 @@ public :
             bool res = true;
             hana::for_each( M_exprs, [&res]( auto const& e )
                             {
-                                if ( e )
-                                    res = res && e->isPolynomial();
+                                for ( auto const& e2 : e )
+                                    res = res && e2.isPolynomial();
                             });
             return res;
         }
@@ -132,8 +132,8 @@ public :
             size_type res = 0;
             hana::for_each( M_exprs, [&res]( auto const& e )
                             {
-                                if ( e )
-                                    res = res | Feel::vf::dynamicContext( *e );
+                                for ( auto const& e2 : e )
+                                    res = res | Feel::vf::dynamicContext( e2 );
                             });
             return res;
         }
@@ -145,7 +145,7 @@ public :
             bool res = false;
             hana::for_each( M_exprs, [&res]( auto const& e )
                             {
-                                if ( e )
+                                if ( !e.empty() )
                                     res = true;
                             });
             return res;
@@ -154,7 +154,25 @@ public :
     template <int ExprId>
     void set( std::decay_t<decltype(hana::at_c<ExprId>(tuple_expr_type{}))> const& theExpr )
         {
-            hana::at_c<ExprId>( M_exprs ).emplace( theExpr );
+            hana::at_c<ExprId>( M_exprs ).clear();
+            hana::at_c<ExprId>( M_exprs ).push_back( theExpr );
+        }
+
+    template< typename TheExprType>
+    void add( TheExprType const& theExpr )
+        {
+            bool applyAdd = false;
+            hana::for_each( M_exprs, [&theExpr,&applyAdd]( auto & e )
+                            {
+                                if constexpr ( std::is_same_v<TheExprType, typename std::decay_t<decltype(e)>::value_type> )
+                                    {
+                                        if ( !applyAdd )
+                                        {
+                                            e.push_back( theExpr );
+                                            applyAdd = true;
+                                        }
+                                    }
+                            });
         }
 
 #if 0
@@ -178,34 +196,37 @@ public :
             constexpr auto operator()(T const& t) const
                 {
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
-                    return std::optional<_tensor_type>{};
+                    return std::vector<_tensor_type>{};
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
                 {
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
-                    if ( t )
-                        return std::make_optional( _tensor_type( *t,geom,fev,feu  ) );
-                    else
-                        return std::optional<_tensor_type>{};
+                    std::vector<_tensor_type> res;
+                    res.reserve( t.size() );
+                    for ( auto const& e : t )
+                        res.push_back( _tensor_type( e,geom,fev,feu ) );
+                    return res;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev ) const
                 {
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
-                    if ( t )
-                        return std::make_optional( _tensor_type( *t,geom,fev ) );
-                    else
-                        return std::optional<_tensor_type>{};
+                    std::vector<_tensor_type> res;
+                    res.reserve( t.size() );
+                    for ( auto const& e : t )
+                        res.push_back( _tensor_type( e,geom,fev ) );
+                    return res;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom ) const
                 {
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
-                    if ( t )
-                        return std::make_optional( _tensor_type( *t,geom ) );
-                    else
-                        return std::optional<_tensor_type>{};
+                    std::vector<_tensor_type> res;
+                    res.reserve( t.size() );
+                    for ( auto const& e : t )
+                        res.push_back( _tensor_type( e,geom ) );
+                    return res;
                 }
         };
 
@@ -246,32 +267,32 @@ public :
         {
             hana::for_each( M_tupleTensorExprs, [&geom,&fev,&feu]( auto & e )
                             {
-                                if ( e )
-                                    e->update( geom, fev, feu );
+                                for ( auto & e2 : e )
+                                    e2.update( geom, fev, feu );
                             });
         }
         void update( Geo_t const& geom, Basis_i_t const& fev )
         {
             hana::for_each( M_tupleTensorExprs, [&geom,&fev]( auto & e )
                             {
-                                if ( e )
-                                    e->update( geom, fev );
+                                for ( auto & e2 : e )
+                                    e2.update( geom, fev );
                             });
         }
         void update( Geo_t const& geom )
         {
             hana::for_each( M_tupleTensorExprs, [&geom]( auto & e )
                             {
-                                if ( e )
-                                    e->update( geom );
+                                for ( auto & e2 : e )
+                                    e2.update( geom );
                             });
         }
         void update( Geo_t const& geom, uint16_type face )
         {
             hana::for_each( M_tupleTensorExprs, [&geom,&face]( auto & e )
                             {
-                                if ( e )
-                                    e->update( geom, face );
+                                for ( auto & e2 : e )
+                                    e2.update( geom, face );
                             });
         }
 
@@ -281,8 +302,8 @@ public :
             value_type res(0);
             hana::for_each( M_tupleTensorExprs, [&i,&j,&c1,&c2,&q,&res]( auto const& e )
                             {
-                                if ( e )
-                                    res += e->evalijq( i, j, c1, c2, q );
+                                for ( auto & e2 : e )
+                                    res += e2.evalijq( i, j, c1, c2, q );
                             });
             return res;
         }
@@ -293,8 +314,8 @@ public :
             value_type res(0);
             hana::for_each( M_tupleTensorExprs, [&i,&c1,&c2,&q,&res]( auto const& e )
                             {
-                                if ( e )
-                                    res += e->evaliq( i, c1, c2, q );
+                                for ( auto & e2 : e )
+                                    res += e2.evaliq( i, c1, c2, q );
                             });
             return res;
         }
@@ -305,8 +326,8 @@ public :
             value_type res(0);
             hana::for_each( M_tupleTensorExprs, [&c1,&c2,&q,&res]( auto const& e )
                             {
-                                if ( e )
-                                    res += e->evalq( c1, c2, q );
+                                for ( auto & e2 : e )
+                                    res += e2.evalq( c1, c2, q );
                             });
             return res;
         }
