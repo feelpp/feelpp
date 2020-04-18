@@ -279,23 +279,37 @@ public :
         return res;
     }
 
-    bool hasSymbolDependency( std::string const& symbolStr ) const
+
+    bool hasSymbolDependency( std::set<std::string> const& symbolsStr ) const
     {
         if ( this->isConstant() )
             return false;
 
         bool res = false;
-        hana::for_each( expr_shapes, [this,&symbolStr,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&symbolsStr,&res]( auto const& e_ij )
                         {
                             if ( res )
                                 return;
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
-                                    res = true;
+                            {
+                                for ( std::string const& symbolStr : symbolsStr )
+                                {
+                                    if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
+                                    {
+                                        res = true;
+                                        break;
+                                    }
+                                }
+                            }
                         });
         return res;
+    }
+
+    bool hasSymbolDependency( std::string const& symbolStr ) const
+    {
+        return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ) );
     }
 
 private :
