@@ -4,6 +4,7 @@
 #define FEELPP_TOOLBOXES_COEFFICIENTFORMPDE_ASSEMBLY_HPP 1
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpde.hpp>
+#include <feel/feelmodels/modelcore/diffsymbolicexpr.hpp>
 
 namespace Feel
 {
@@ -494,21 +495,11 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         }
 
         // Source
-        if constexpr ( unknown_is_scalar ) // TODO
-            {
         if ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) )
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
 
-            bool sourceDependOnUnknown = false;
-            for ( auto const& symb : trialSymbolNames )
-            {
-                if ( coeff_f.hasSymbolDependency( symb ) )
-                {
-                    sourceDependOnUnknown = true;
-                    break;
-                }
-            }
+            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames );
             if ( sourceDependOnUnknown && buildNonCstPart )
             {
                 auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
@@ -522,33 +513,22 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     {
                         auto trialXh = mapSpacePair.first;
                         auto trialBlockIndex = mapSpacePair.second;
-                        auto bilinearFormAdded = form2( _test=Xh,_trial=trialXh,_matrix=J,
-                                                        _pattern=size_type(Pattern::COUPLED),
-                                                        _rowstart=this->rowStartInMatrix(),
-                                                        _colstart=trialBlockIndex );
 
-                        hana::for_each( hana::second(e).tuple(), [this,&coeff_f_expr,&v,&range,&bilinearFormAdded,trialXh=trialXh,trialBlockIndex=trialBlockIndex]( auto const& e2 )
-                        {
-                            for ( auto const& e3 : e2 )
-                            {
-                                if ( !e3.isDefinedOn( trialXh, trialBlockIndex ) )
-                                    continue;
-                                std::cout << "JACOBIAN symbol " << e3.symbol() << " space : " << e3.space()->nDof() << std::endl;
+                        auto coeff_f_diff_expr = diffSymbolicExpr( coeff_f_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                        if ( !coeff_f_diff_expr.expression().hasExpr() )
+                            continue;
 
-                                auto coeff_f_diff_expr = diff( coeff_f_expr, e3.symbol(),1,"",this->worldComm(),this->repository().expr());
-
-                                bilinearFormAdded +=
-                                    integrate( _range=range,
-                                               _expr= -inner( e3.expr()*coeff_f_diff_expr,id(v)),
-                                               _geomap=this->geomap() );
-                            }
-                        });
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=range,
+                                       _expr= -inner(coeff_f_diff_expr,id(v)),
+                                       _geomap=this->geomap() );
                     }
                 });
             }
         }
-
-            } // if constexpr isscalar TODO
 
         // Stab
         if ( this->M_applyStabilization && buildNonCstPart )
@@ -728,15 +708,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
 
-            bool sourceDependOnUnknown = false;
-            for ( auto const& symb : trialSymbolNames )
-            {
-                if ( coeff_f.hasSymbolDependency( symb ) )
-                {
-                    sourceDependOnUnknown = true;
-                    break;
-                }
-            }
+            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames );
 
             auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
                                                [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
