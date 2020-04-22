@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 namespace Feel
 {
 
-std::pair<int32_t,int32_t>
+std::tuple<int32_t, int32_t, std::string>
 readHBFHeaderAndSizes( std::string const& s )
 {
     LOG(INFO) << "Reading Header and sizes " << s << std::endl;
@@ -43,19 +43,30 @@ readHBFHeaderAndSizes( std::string const& s )
     }
     return readHBFHeaderAndSizes( in );
 }
-std::pair<int32_t,int32_t>
+std::tuple<int32_t, int32_t, std::string>
 readHBFHeaderAndSizes( std::ifstream& in )
 {
     LOG(INFO) << "Reading Header and sizes" << std::endl;
     std::string header;
+    std::string data_type;
     char ch;
     size_t count = 0;
+    bool inside_type = false;
     while ((ch = in.get()) != '\0')
     {
         header += ch;
+
+        if ( ch == '>' || ch == 'c' )
+            inside_type = false;
+        if ( inside_type )
+            data_type += ch;
+        if ( ch == '<' )
+            inside_type = true;
+
         ++count;
     }
     LOG(INFO) << "header: " << header << std::endl;
+    LOG(INFO) << "data type:" << data_type << std::endl;
     LOG(INFO) << count << std::endl;
 
     int32_t version = 0;
@@ -64,9 +75,19 @@ readHBFHeaderAndSizes( std::ifstream& in )
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
     LOG(INFO) << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
-    return {rows,cols};
+    return {rows, cols, data_type};
 }
-holo3_image<float>
+
+#define CREATE_MATRIX(data_type) do {\
+            Matrix<data_type, cols, rows> x ( cols, rows );\
+            in.read( (char*)x.data(), x.size()*sizeof(data_type) );\
+            if(x.rows() <= 6 && x.cols() <= 6)\
+                LOG(INFO) << x << std::endl;\
+            LOG(INFO) << "rows: " << x.transpose().rows() << " , cols: " << x.transpose().cols()  << std::endl;\
+            return x.transpose();\
+        }while(0)
+
+holo3_image<auto>
 readHBF( std::string const& s )
 {
     std::ifstream in( s, std::ios::binary );
@@ -75,15 +96,35 @@ readHBF( std::string const& s )
         using namespace std::string_literals;
         throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
     }
-    auto [rows,cols] = readHBFHeaderAndSizes( in );
-    Eigen::MatrixXf x( cols, rows  );
-    in.read( (char*)x.data(), x.size()*sizeof(float) );
-    if(x.rows() <= 6 && x.cols() <= 6)
-        LOG(INFO) << x << std::endl;
-   // if ( Environment::isMasterRank() )
-       // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
-    LOG(INFO) << "rows: " << x.transpose().rows() << " , cols: " << x.transpose().cols()  << std::endl;
-    return x.transpose();
+    auto [rows,cols, data_type] = readHBFHeaderAndSizes( in );
+    switch ( data_type )
+    {
+        case "__int8":
+            CREATE_MATRIX(__int8);
+        case "__int16":
+            CREATE_MATRIX(__int16);
+        case "__int32":
+            CREATE_MATRIX(__int32);
+        case "__int64":
+            CREATE_MATRIX(__int64);
+        case "long":
+            CREATE_MATRIX(long);
+        case "unsigned __int8":
+            CREATE_MATRIX(unsigned __int8);
+        case "unsigned __int16":
+            CREATE_MATRIX(unsigned __int16);
+        case "unsigned __int32":
+            CREATE_MATRIX(unsigned __int32);
+        case "unsigned __int64":
+            CREATE_MATRIX(unsigned __int64);
+        case "double":
+            CREATE_MATRIX(double);
+        case "float":
+            CREATE_MATRIX(float);
+        default :
+            using namespace std::string_literals;
+            throw std::invalid_argument ( "ReadHBF - Data Type not supported " data_type );
+    }
 }
    
 void
