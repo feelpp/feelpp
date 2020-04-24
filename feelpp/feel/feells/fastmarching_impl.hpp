@@ -204,6 +204,7 @@ void
 FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_type dofDoneId, element_type & sol )
 {
     value_type const dofDoneVal = sol(dofDoneId);
+    int dofDoneSgn = (0. < dofDoneVal) - (dofDoneVal < 0.);
     // Process elements containing dofDoneId
 #ifdef DEBUG_FM_COUT
     std::cout << "["<<this->mesh()->worldCommPtr()->localRank()<<"]" 
@@ -229,6 +230,12 @@ FastMarching< FunctionSpaceType, LocalEikonalSolver >::updateNeighborDofs( size_
         {
             size_type const dofId = gid.index();
             if( dofId == dofDoneId )
+                continue;
+            // CLOSE or DONE neighbors are only considered
+            // if they have the same sign than the dofDone
+            int dofSgn = (0. < sol(dofId)) - (sol(dofId) < 0.);
+            if( dofSgn != dofDoneSgn 
+                    && !(M_dofStatus[dofId] & FastMarchingDofStatus::FAR) )
                 continue;
 #ifdef DEBUG_FM_COUT
             std::cout << "(" << dofId << "," 
