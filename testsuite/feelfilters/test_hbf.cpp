@@ -1,6 +1,6 @@
-#define HBF_CONFIG_MAIN
+#define BOOST_TEST_MODULE hbf
 
-#include <hbf.hpp>
+#include <feel/feelfilters/gmsh.hpp>
 
 int test_Write_Read()
 {
