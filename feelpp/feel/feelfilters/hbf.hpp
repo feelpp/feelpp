@@ -103,7 +103,8 @@ std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::ifstream& 
  * @param s file name
  * @return eigen array of floats
  */
-holo3_image<auto>
+template <typename T>
+holo3_image<T>
 readHBF( std::string const& s );
 
 /**
@@ -112,8 +113,9 @@ readHBF( std::string const& s );
  * @param s file name
  * @param x eigen array of floats
  */
+template <typename T>
 void
-writeHBF( std::string const& s, holo3_image<float> const& x );
+writeHBF( std::string const& s, holo3_image<T> const& x );
 
 holo3_image<float> cutHbf ( holo3_image<float> const& im, int n, int start );
 

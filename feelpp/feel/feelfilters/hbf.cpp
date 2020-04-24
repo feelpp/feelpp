@@ -87,7 +87,8 @@ readHBFHeaderAndSizes( std::ifstream& in )
             return x.transpose();\
         }while(0)
 
-holo3_image<auto>
+template <typename T>
+holo3_image<T>
 readHBF( std::string const& s )
 {
     std::ifstream in( s, std::ios::binary );
@@ -97,34 +98,15 @@ readHBF( std::string const& s )
         throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
     }
     auto [rows,cols, data_type] = readHBFHeaderAndSizes( in );
-    switch ( data_type )
-    {
-        case "__int8":
-            CREATE_MATRIX(__int8);
-        case "__int16":
-            CREATE_MATRIX(__int16);
-        case "__int32":
-            CREATE_MATRIX(__int32);
-        case "__int64":
-            CREATE_MATRIX(__int64);
-        case "long":
-            CREATE_MATRIX(long);
-        case "unsigned __int8":
-            CREATE_MATRIX(unsigned __int8);
-        case "unsigned __int16":
-            CREATE_MATRIX(unsigned __int16);
-        case "unsigned __int32":
-            CREATE_MATRIX(unsigned __int32);
-        case "unsigned __int64":
-            CREATE_MATRIX(unsigned __int64);
-        case "double":
-            CREATE_MATRIX(double);
-        case "float":
-            CREATE_MATRIX(float);
-        default :
-            using namespace std::string_literals;
-            throw std::invalid_argument ( "ReadHBF - Data Type not supported " data_type );
-    }
+
+    holo3_image<T> x ( cols, rows );
+    in.read( (char*)x.data(), x.size()*sizeof(T) );
+    if (x.rows() <= 6 && x.cols() <= 6)
+        LOG(INFO) << x << std::endl;
+    LOG(INFO) << "rows: " << x.transpose().rows() 
+                << ", cols: " << x.transpose().cols()
+                << ", data type: " << data_type << std::endl;
+    return x.transpose();
 }
 
 template <typename T>
