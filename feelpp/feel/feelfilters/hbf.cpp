@@ -117,24 +117,24 @@ writeHBF( std::string const& s, holo3_image<T> const& x )
             throw std::invalid_argument ( "writeHBF - Error opening file "s + s.c_str() );
         }
 
-        std::map<std::size_t,std::string> data_sizes;
-        data_sizes[sizeof(__int8)]="__int8";
-        data_sizes[sizeof(__int16)]="__int16";
-        data_sizes[sizeof(__int32)]="__int32";
-        data_sizes[sizeof(__int64)]="__int64";
-        data_sizes[sizeof(long)]="long";
-        data_sizes[sizeof(unsigned __int8)]="unsigned __int8";
-        data_sizes[sizeof(unsigned __int16)]="unsigned __int16";
-        data_sizes[sizeof(unsigned __int32)]="unsigned __int32";
-        data_sizes[sizeof(unsigned __int64)]="unsigned __int64";
-        data_sizes[sizeof(float)]="float";
-        data_sizes[sizeof(double)]="double";
+        std::map<std::string,std::string> data_sizes;
+        data_sizes[typeid(int8_t).name()]="__int8";
+        data_sizes[typeid(int16_t).name()]="__int16";
+        data_sizes[typeid(int32_t).name()]="__int32";
+        data_sizes[typeid(int64_t).name()]="__int64";
+        data_sizes[typeid(long).name()]="long";
+        data_sizes[typeid(uint8_t).name()]="unsigned __int8";
+        data_sizes[typeid(uint16_t).name()]="unsigned __int16";
+        data_sizes[typeid(uint32_t).name()]="unsigned __int32";
+        data_sizes[typeid(uint64_t).name()]="unsigned __int64";
+        data_sizes[typeid(float).name()]="float";
+        data_sizes[typeid(double).name()]="double";
 
-        std::string data_type = data_sizes[sizeof(*(x.data()))];
-        char* header = "class CH3Array2D<"+data_type+"> *";
+        std::string data_type = data_sizes[typeid(T).name()];
+        std::string header = "class CH3Array2D<"+data_type+"> *";
 
-        out.write( header, strlen(header) );
-        out.write( "\0",sizeof(char) );
+        out.write( header.c_str(), header.size() );
+        out.write( "\0", sizeof(char) );
         
         LOG(INFO) << "writeHBF: write header " << header << "\n";
 
@@ -145,7 +145,7 @@ writeHBF( std::string const& s, holo3_image<T> const& x )
         out.write( (char*)&cols, sizeof(int32_t) );
         LOG(INFO) << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
 
-        out.write( (char*)x.data(),x.size()*sizeof(*(x.data())) );
+        out.write( (char*)x.data(),x.size()*sizeof(T) );
 
         LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
 
