@@ -78,15 +78,6 @@ readHBFHeaderAndSizes( std::ifstream& in )
     return {rows, cols, data_type};
 }
 
-#define CREATE_MATRIX(data_type) do {\
-            holo3_image<auto> x ( cols, rows );\
-            in.read( (char*)x.data(), x.size()*sizeof(data_type) );\
-            if(x.rows() <= 6 && x.cols() <= 6)\
-                LOG(INFO) << x << std::endl;\
-            LOG(INFO) << "rows: " << x.transpose().rows() << " , cols: " << x.transpose().cols()  << std::endl;\
-            return x.transpose();\
-        }while(0)
-
 template <typename T>
 holo3_image<T>
 readHBF( std::string const& s )
@@ -533,5 +524,29 @@ std::pair<int,int> ElemFineToCoarse::operator()( int num)
     return std::make_pair(ki*SizeElem,kj*SizeElem);
 }
 
+
+template holo3_image<double> readHBF(std::string const&);
+template holo3_image<float> readHBF(std::string const&);
+template holo3_image<__int8> readHBF(std::string const&);
+template holo3_image<__int16> readHBF(std::string const&);
+template holo3_image<__int32> readHBF(std::string const&);
+template holo3_image<__int64> readHBF(std::string const&);
+template holo3_image<long> readHBF(std::string const &);
+template holo3_image<unsigned __int8> readHBF(std::string const&);
+template holo3_image<unsigned __int16> readHBF(std::string const&);
+template holo3_image<unsigned __int32> readHBF(std::string const&);
+template holo3_image<unsigned __int64> readHBF(std::string const&);
+
+template void writeHBF( std::string const& , holo3_image<double> const& );
+template void writeHBF( std::string const& , holo3_image<float> const& );
+template void writeHBF( std::string const& , holo3_image<__int8> const& );
+template void writeHBF( std::string const& , holo3_image<__int16> const& );
+template void writeHBF( std::string const& , holo3_image<__int32> const& );
+template void writeHBF( std::string const& , holo3_image<__int64> const& );
+template void writeHBF( std::string const& , holo3_image<long> const& );
+template void writeHBF( std::string const& , holo3_image<unsigned __int8> const& );
+template void writeHBF( std::string const& , holo3_image<unsigned __int16> const& );
+template void writeHBF( std::string const& , holo3_image<unsigned __int32> const& );
+template void writeHBF( std::string const& , holo3_image<unsigned __int64> const& );
 
 }// Feel
