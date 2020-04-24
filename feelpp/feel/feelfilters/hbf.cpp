@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelcore/environment.hpp>
 //#include <fftw3.h>
 #include <feel/feelfilters/hbf.hpp>
-
+#include <map>
 
 namespace Feel
 {
@@ -79,7 +79,7 @@ readHBFHeaderAndSizes( std::ifstream& in )
 }
 
 #define CREATE_MATRIX(data_type) do {\
-            Matrix<data_type, cols, rows> x ( cols, rows );\
+            holo3_image<auto> x ( cols, rows );\
             in.read( (char*)x.data(), x.size()*sizeof(data_type) );\
             if(x.rows() <= 6 && x.cols() <= 6)\
                 LOG(INFO) << x << std::endl;\
@@ -126,9 +126,10 @@ readHBF( std::string const& s )
             throw std::invalid_argument ( "ReadHBF - Data Type not supported " data_type );
     }
 }
-   
+
+template <typename T>
 void
-writeHBF( std::string const& s, holo3_image<float> const& x )
+writeHBF( std::string const& s, holo3_image<T> const& x )
 {
     if ( Environment::isMasterRank() )
     {
@@ -142,7 +143,23 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
             using namespace std::string_literals;
             throw std::invalid_argument ( "writeHBF - Error opening file "s + s.c_str() );
         }
-        const char* header = "class CH3Array2D<float> *";
+
+        std::map<std::size_t,std::string> data_sizes;
+        data_sizes[sizeof(__int8)]="__int8";
+        data_sizes[sizeof(__int16)]="__int16";
+        data_sizes[sizeof(__int32)]="__int32";
+        data_sizes[sizeof(__int64)]="__int64";
+        data_sizes[sizeof(long)]="long";
+        data_sizes[sizeof(unsigned __int8)]="unsigned __int8";
+        data_sizes[sizeof(unsigned __int16)]="unsigned __int16";
+        data_sizes[sizeof(unsigned __int32)]="unsigned __int32";
+        data_sizes[sizeof(unsigned __int64)]="unsigned __int64";
+        data_sizes[sizeof(float)]="float";
+        data_sizes[sizeof(double)]="double";
+
+        std::string data_type = data_sizes[sizeof(*(x.data()))];
+        char* header = "class CH3Array2D<"+data_type+"> *";
+
         out.write( header, strlen(header) );
         out.write( "\0",sizeof(char) );
         
@@ -155,7 +172,7 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
         out.write( (char*)&cols, sizeof(int32_t) );
         LOG(INFO) << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
 
-        out.write( (char*)x.data(),x.size()*sizeof(float) );
+        out.write( (char*)x.data(),x.size()*sizeof(*(x.data())) );
 
         LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
 

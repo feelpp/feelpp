@@ -90,20 +90,20 @@ template <typename T>
 using holo3_image = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> ;
 
 /**
- * Given a std::string path to a file, read the header and return the sizes of the HBF
+ * Given a std::string path to a file, read the header and return the sizes of the HBF and the type of data
  */
-std::pair<int32_t,int32_t> readHBFHeaderAndSizes( std::string const& s );
+std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::string const& s );
 /**
- * Given a std::ifstream, read the header and return the sizes of the HBF
+ * Given a std::ifstream, read the header and return the sizes of the HBF and the type of data
  */
-std::pair<int32_t,int32_t> readHBFHeaderAndSizes( std::ifstream& in );
+std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::ifstream& in );
 
 /**
  * @brief read an HBF file containing an array of floats
  * @param s file name
  * @return eigen array of floats
  */
-holo3_image<float>
+holo3_image<auto>
 readHBF( std::string const& s );
 
 /**
