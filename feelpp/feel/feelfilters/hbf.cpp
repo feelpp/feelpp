@@ -539,14 +539,14 @@ template holo3_image<uint64_t> readHBF(std::string const&);
 
 template void writeHBF( std::string const& , holo3_image<double> const& );
 template void writeHBF( std::string const& , holo3_image<float> const& );
-template void writeHBF( std::string const& , holo3_image<__int8> const& );
-template void writeHBF( std::string const& , holo3_image<__int16> const& );
-template void writeHBF( std::string const& , holo3_image<__int32> const& );
-template void writeHBF( std::string const& , holo3_image<__int64> const& );
+template void writeHBF( std::string const& , holo3_image<int8_t> const& );
+template void writeHBF( std::string const& , holo3_image<int16_t> const& );
+template void writeHBF( std::string const& , holo3_image<int32_t> const& );
+template void writeHBF( std::string const& , holo3_image<int64_t> const& );
 template void writeHBF( std::string const& , holo3_image<long> const& );
-template void writeHBF( std::string const& , holo3_image<unsigned __int8> const& );
-template void writeHBF( std::string const& , holo3_image<unsigned __int16> const& );
-template void writeHBF( std::string const& , holo3_image<unsigned __int32> const& );
-template void writeHBF( std::string const& , holo3_image<unsigned __int64> const& );
+template void writeHBF( std::string const& , holo3_image<uint8_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint16_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint32_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint64_t> const& );
 
 }// Feel
