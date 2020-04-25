@@ -527,15 +527,15 @@ std::pair<int,int> ElemFineToCoarse::operator()( int num)
 
 template holo3_image<double> readHBF(std::string const&);
 template holo3_image<float> readHBF(std::string const&);
-template holo3_image<__int8> readHBF(std::string const&);
-template holo3_image<__int16> readHBF(std::string const&);
-template holo3_image<__int32> readHBF(std::string const&);
-template holo3_image<__int64> readHBF(std::string const&);
+template holo3_image<int8_t> readHBF(std::string const&);
+template holo3_image<int16_t> readHBF(std::string const&);
+template holo3_image<int32_t> readHBF(std::string const&);
+template holo3_image<int64_t> readHBF(std::string const&);
 template holo3_image<long> readHBF(std::string const &);
-template holo3_image<unsigned __int8> readHBF(std::string const&);
-template holo3_image<unsigned __int16> readHBF(std::string const&);
-template holo3_image<unsigned __int32> readHBF(std::string const&);
-template holo3_image<unsigned __int64> readHBF(std::string const&);
+template holo3_image<uint8_t> readHBF(std::string const&);
+template holo3_image<uint16_t> readHBF(std::string const&);
+template holo3_image<uint32_t> readHBF(std::string const&);
+template holo3_image<uint64_t> readHBF(std::string const&);
 
 template void writeHBF( std::string const& , holo3_image<double> const& );
 template void writeHBF( std::string const& , holo3_image<float> const& );
