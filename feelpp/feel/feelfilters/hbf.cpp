@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 Date: 2014-06-04
 
-Copyright (C) 2014 Feel++ Consortium
+Copyright (C) 2014-2020 Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -153,6 +153,7 @@ writeHBF( std::string const& s, holo3_image<T> const& x )
             LOG(INFO) << x << std::endl;
         LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     }
+    Environment::worldComm().barrier();
 }
 
 
