@@ -191,21 +191,71 @@ BlocksBaseGraphCSR
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     this->log("CoefficientFormPDEs","buildBlockMatrixGraph", "start" );
-    int nBlock = M_coefficientFormPDEs.size();
-    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
-    for (int k=0;k<nBlock;++k )
+    int nEq = M_coefficientFormPDEs.size();
+    BlocksBaseGraphCSR myblockGraph(nEq,nEq);
+    for ( int k=0;k<nEq;++k )
     {
         auto const& cfpdeBase = M_coefficientFormPDEs[k];
-        hana::for_each( tuple_type_unknown_basis, [this,&myblockGraph,&k,&cfpdeBase]( auto const& e )
+        hana::for_each( tuple_type_unknown_basis, [this,&nEq,&myblockGraph,&k,&cfpdeBase]( auto const& e )
                         {
-                            if ( this->unknowBasisTag( e ) == cfpdeBase->unknownBasis() )
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                return;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+                            int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+                            myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
+                                                                _trial=cfpde->spaceUnknown() )->graph();
+
+                            // maybe coupling with other equation in the row
+                            for ( int k2=0;k2<nEq;++k2 )
                             {
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
-                                if ( !cfpde ) CHECK( false ) << "ai";
-                                myblockGraph(k,k) = stencil(_test=cfpde->spaceUnknown(),
-                                                            _trial=cfpde->spaceUnknown() )->graph();
+                                if ( k == k2 )
+                                    continue;
+                                auto const& cfpdeBase2 = M_coefficientFormPDEs[k2];
+                                hana::for_each( tuple_type_unknown_basis, [this,&myblockGraph,&rowId,&cfpde,&cfpdeBase2]( auto const& e2 )
+                                                {
+                                                    if ( this->unknowBasisTag( e2 ) != cfpdeBase2->unknownBasis() )
+                                                        return;
+
+                                                    using coefficient_form_pde_2_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e2)>;
+                                                    auto cfpde2 = std::dynamic_pointer_cast<coefficient_form_pde_2_type>( cfpdeBase2 );
+                                                    if ( !cfpde2 ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+                                                    auto tse = this->trialSymbolsExpr( this->modelFields(), cfpde2->trialSelectorModelFields() );
+                                                    auto trialSymbolNames = tse.names();
+
+                                                    bool coeffDependOnUnknown = false;
+                                                    for ( std::string const& matName : cfpde->materialsProperties()->physicToMaterials( cfpde->physicDefault() ) )
+                                                    {
+                                                        if ( ( cfpde->materialsProperties()->hasProperty( matName, cfpde->convectionCoefficientName() ) &&
+                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->convectionCoefficientName() ).hasSymbolDependency( trialSymbolNames ) ) ||
+                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->diffusionCoefficientName() ) &&
+                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->diffusionCoefficientName() ).hasSymbolDependency( trialSymbolNames ) ) ||
+                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->reactionCoefficientName() ) &&
+                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->reactionCoefficientName() ).hasSymbolDependency( trialSymbolNames ) ) ||
+                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->sourceCoefficientName() ) &&
+                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->sourceCoefficientName() ).hasSymbolDependency( trialSymbolNames ) ) ||
+                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->firstTimeDerivativeCoefficientName() ) &&
+                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( trialSymbolNames ) )
+                                                             )
+                                                        {
+                                                            coeffDependOnUnknown = true;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if ( coeffDependOnUnknown )
+                                                    {
+                                                        int colId = this->startSubBlockSpaceIndex( cfpde2->physicDefault() );
+                                                        myblockGraph(rowId,colId) = stencil(_test=cfpde->spaceUnknown(),
+                                                                                     _trial=cfpde2->spaceUnknown() )->graph();
+                                                    }
+                                                });
                             }
+
                         });
     }
     myblockGraph.close();
