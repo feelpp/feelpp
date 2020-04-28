@@ -166,7 +166,22 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initInitialConditions()
 {
-    // TODO
+    if ( !this->doRestart() )
+    {
+        std::vector<element_unknown_ptrtype> icFields;
+        if ( this->isStationary() )
+            icFields = { this->fieldUnknownPtr() };
+        else
+            icFields = this->timeStepBdfUnknown()->unknowns();
+
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+        this->updateInitialConditions( this->unknownName(), this->rangeMeshElements(), this->symbolsExpr(), icFields );
+
+        if ( !this->isStationary() )
+            *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);
+    }
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
