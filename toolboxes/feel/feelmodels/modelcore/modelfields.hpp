@@ -157,7 +157,9 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
     template <typename SelectorModelFieldType>
     auto trialSymbolsExpr( SelectorModelFieldType const& smf ) const
         {
-            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExpr_ID( smf ) );
+            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( this->trialSymbolsExpr_ID( smf ),
+                                                                           this->trialSymbolsExpr_GRAD( smf )
+                                                                           );
         }
   private :
 
@@ -259,6 +261,42 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
                             uint16_type c2 = compArray[1];
                             tse.add( theSpace, symbolWithSuffix, idt(mfield.field())(c1,c2), smf.blockSpaceIndex() );
                         }
+                    }
+                    break;
+                }
+            }
+            return Feel::FeelModels::trialSymbolsExpr<functionspace_type>( tse );
+        }
+        else
+            return trial_symbols_expr_empty_t<functionspace_type>{};
+    }
+
+    template <typename SelectorModelFieldType>
+    auto trialSymbolsExpr_GRAD( SelectorModelFieldType const& smfs ) const
+    {
+        if constexpr ( has_value_v<Ctx,FieldCtx::GRAD> && nComponents2 == 1 )
+        {
+            SymbolExprComponentSuffix secs( nComponents1, nRealDim );
+            using _expr_type = std::decay_t<decltype( gradt( (*this).front().field())(0,0) )>;
+            trial_symbol_expr_t<functionspace_type,_expr_type> tse;
+            for ( auto const& mfield : *this )
+            {
+                for ( auto const& smf : smfs )
+                {
+                    if ( smf.name() != mfield.name() )
+                        continue;
+                    if ( smf.tag() != mfield.tag() )
+                        continue;
+
+                    std::string symbolNameBase = prefixvm( mfield.prefixSymbol(),"grad_" + mfield.symbol(),"_" );
+                    auto theSpace = unwrap_ptr( mfield.field() ).functionSpace();
+
+                    for ( auto const& [_suffix,compArray] : secs )
+                    {
+                        std::string symbolWithSuffix = symbolNameBase+ _suffix;
+                        uint16_type c1 = compArray[0];
+                        uint16_type c2 = compArray[1];
+                        tse.add( theSpace, symbolWithSuffix, gradt(mfield.field())(c1,c2), smf.blockSpaceIndex() );
                     }
                     break;
                 }
