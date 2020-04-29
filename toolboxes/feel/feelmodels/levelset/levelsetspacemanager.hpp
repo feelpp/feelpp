@@ -105,17 +105,19 @@ public:
 
     //--------------------------------------------------------------------//
     // High-order visu spaces
-    typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
-    typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
-    typedef std::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
-    typedef typename space_scalar_hovisu_type::element_type element_scalar_hovisu_type;
-    typedef std::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
-
-    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_hovisu_type>::type basis_vectorial_hovisu_type;
+    typedef Lagrange<1, Vectorial, Continuous, PointSetFekete> basis_vectorial_hovisu_type;
     typedef FunctionSpace<mesh_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
     typedef std::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
     typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
     typedef std::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
+
+    //typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
+    //typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
+    typedef typename space_vectorial_hovisu_type::component_functionspace_type space_scalar_hovisu_type;
+    typedef std::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
+    typedef typename space_scalar_hovisu_type::element_type element_scalar_hovisu_type;
+    typedef std::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
+
 
     //--------------------------------------------------------------------//
     // Lagrange P1isoPn operators
