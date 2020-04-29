@@ -74,6 +74,9 @@ public:
     double timeStep() const { return M_timeStep; }
     void setTimeStep( double dt ) { M_timeStep = dt; }
 
+    TimeDiscretisation timeDiscretisation() const { return M_timeDiscretisation; }
+    void setTimeDiscretisation( TimeDiscretisation d );
+
     element_type solveGalpha( element_type const& phi ) const;
     element_type solveGalpha( element_ptrtype const& phi ) const { return this->solveGalpha( *phi ); }
     element_type solveGbeta( element_type const& phi ) const;
@@ -88,8 +91,8 @@ public:
     element_type willmore( element_ptrtype const& phi ) const { return this->willmore( *phi ); }
 
 private:
-    void initCurvatureDiffusionOrder1();
-    void initCurvatureDiffusionOrder2();
+    void initCurvatureDiffusionAlpha();
+    void initCurvatureDiffusionBeta();
 
     element_type willmoreImpl( element_type const& phi, mpl::int_<1> /*Dim*/ ) const {}
     element_type willmoreImpl( element_type const& phi, mpl::int_<2> /*Dim*/ ) const;
@@ -151,9 +154,18 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::LevelSetCurvatureDiffusion( funct
     else
         CHECK( false ) << timeDiscretisation << " is not in the list of available time discretisations\n";
 
-    this->initCurvatureDiffusionOrder1();
-    this->initCurvatureDiffusionOrder2();
+    this->initCurvatureDiffusionAlpha();
+    this->initCurvatureDiffusionBeta();
     M_vector = M_backendAlpha->newVector( this->functionSpace() );
+}
+
+template<typename FunctionSpaceType>
+void
+LevelSetCurvatureDiffusion<FunctionSpaceType>::setTimeDiscretisation( TimeDiscretisation d )
+{
+    M_timeDiscretisation = d;
+    this->initCurvatureDiffusionAlpha();
+    this->initCurvatureDiffusionBeta();
 }
 
 template<typename FunctionSpaceType>
@@ -233,24 +245,11 @@ template<typename FunctionSpaceType>
 typename LevelSetCurvatureDiffusion<FunctionSpaceType>::element_type
 LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder1( element_type const& phi ) const
 {
-    auto linearForm = form1( _test=this->functionSpace(), _vector=M_vector );
-    // Crank-Nicolson scheme
-    linearForm = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=idv(phi) * id(phi) / (M_alpha*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
-            );
-    // Explicit Neumann BC
-    linearForm += integrate(
-            _range=this->rangeMeshBoundaryFaces(),
-            _expr=id(phi) * gradv(phi) * vf::N()
-            );
-
-    // Solve
-    auto Galpha = this->functionSpace()->element();
-    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    // Solve Gbeta
+    auto Gbeta = this->solveGbeta( phi );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
-            _expr=(idv(Galpha)-idv(phi))/(M_alpha*M_timeStep) 
+            _expr=(idv(Gbeta)-idv(phi))/(M_beta*M_timeStep) 
             );
 }
 
@@ -258,37 +257,10 @@ template<typename FunctionSpaceType>
 typename LevelSetCurvatureDiffusion<FunctionSpaceType>::element_type
 LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder2( element_type const& phi ) const
 {
-    auto linearForm = form1( _test=this->functionSpace(), _vector=M_vector );
     /* Galpha */
-    // Crank-Nicolson scheme
-    linearForm = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=idv(phi) * id(phi) / (M_alpha*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
-            );
-    // Explicit Neumann BC
-    linearForm += integrate(
-            _range=this->rangeMeshBoundaryFaces(),
-            _expr=id(phi) * gradv(phi) * vf::N()
-            );
-
-    // Solve
-    auto Galpha = this->functionSpace()->element();
-    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    auto Galpha = this->solveGalpha( phi );
     /* Gbeta */
-    // Crank-Nicolson scheme
-    linearForm = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=idv(phi) * id(phi) / (M_beta*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
-            );
-    // Explicit Neumann BC
-    linearForm += integrate(
-            _range=this->rangeMeshBoundaryFaces(),
-            _expr=id(phi) * gradv(phi) * vf::N()
-            );
-
-    // Solve
-    auto Gbeta = this->functionSpace()->element();
-    M_backendBeta->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
+    auto Gbeta = this->solveGbeta( phi );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
             _expr=(-idv(Galpha) + 4*idv(Gbeta) - 3*idv(phi))/(M_alpha*M_timeStep) 
@@ -297,7 +269,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::curvatureOrder2( element_type con
 
 template<typename FunctionSpaceType>
 void
-LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder1()
+LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionAlpha()
 {
     if( !M_curvatureDiffusion_alphaDt )
         M_curvatureDiffusion_alphaDt = M_backendAlpha->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
@@ -332,7 +304,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder1()
 
 template<typename FunctionSpaceType>
 void
-LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionOrder2()
+LevelSetCurvatureDiffusion<FunctionSpaceType>::initCurvatureDiffusionBeta()
 {
     if( !M_curvatureDiffusion_betaDt )
         M_curvatureDiffusion_betaDt = M_backendBeta->newMatrix( _trial=this->functionSpace(), _test=this->functionSpace() );
@@ -369,35 +341,10 @@ template<typename FunctionSpaceType>
 typename LevelSetCurvatureDiffusion<FunctionSpaceType>::element_type
 LevelSetCurvatureDiffusion<FunctionSpaceType>::willmoreImpl( element_type const& phi, mpl::int_<2> /*Dim*/ ) const
 {
-    auto linearForm = form1( _test=this->functionSpace(), _vector=M_vector );
     /* Galpha */
-    // Crank-Nicolson scheme
-    linearForm = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=idv(phi) * id(phi) / (M_alpha*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
-            );
-    // Explicit Neumann BC
-    linearForm += integrate(
-            _range=this->rangeMeshBoundaryFaces(),
-            _expr=id(phi) * gradv(phi) * vf::N()
-            );
-    // Solve
-    auto Galpha = this->functionSpace()->element();
-    M_backendAlpha->solve( _matrix=M_curvatureDiffusion_alphaDt, _rhs=M_vector, _solution=Galpha );
+    auto Galpha = this->solveGalpha( phi );
     /* Gbeta */
-    // Crank-Nicolson scheme
-    linearForm = integrate(
-            _range=this->rangeMeshElements(),
-            _expr=idv(phi) * id(phi) / (M_beta*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
-            );
-    // Explicit Neumann BC
-    linearForm += integrate(
-            _range=this->rangeMeshBoundaryFaces(),
-            _expr=id(phi) * gradv(phi) * vf::N()
-            );
-    // Solve
-    auto Gbeta = this->functionSpace()->element();
-    M_backendBeta->solve( _matrix=M_curvatureDiffusion_betaDt, _rhs=M_vector, _solution=Gbeta );
+    auto Gbeta = this->solveGbeta( phi );
 
     return vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(), 
             _expr=(idv(phi) + idv(Galpha) - 2*idv(Gbeta))/(M_timeStep*M_timeStep) 
