@@ -227,7 +227,7 @@ LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
     }
     if( !M_spaceVectorialHovisu )
     {
-        M_spaceVectorialHovisu = space_vectorial_type::New( 
+        M_spaceVectorialHovisu = space_vectorial_hovisu_type::New( 
                 _mesh=this->meshHovisu(),
                 _worldscomm=this->worldsComm()
                 );
