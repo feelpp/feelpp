@@ -568,11 +568,13 @@ macro( genLibLevelsetBase )
       set(LEVELSETBASE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSETBASE_LIB_VARIANTS})
       set(LEVELSETBASE_CODEGEN_FILES_TO_COPY
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbase_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetspacemanager_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_hj_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_fm_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
       set(LEVELSETBASE_CODEGEN_SOURCES
           ${LEVELSETBASE_LIB_DIR}/levelsetbase_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetspacemanager_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_hj_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_fm_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/parameter_map.cpp )
