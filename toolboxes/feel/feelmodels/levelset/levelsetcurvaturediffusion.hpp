@@ -221,6 +221,7 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::solveGbeta( element_type const& p
                     _expr=idv(phi) * id(phi) / (M_beta*M_timeStep) - 0.5 * inner(gradv(phi), grad(phi))
                     );
         } break;
+        case TimeDiscretisation::EULER1:
         {
             // Euler1 scheme
             linearForm = integrate(
