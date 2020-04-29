@@ -105,8 +105,10 @@ public:
 
     //--------------------------------------------------------------------//
     // High-order visu spaces
+    typedef Mesh< Simplex< nDim, 1, nDim > > mesh_hovisu_type;
+    typedef std::shared_ptr<mesh_hovisu_type> mesh_hovisu_ptrtype;
     typedef Lagrange<1, Vectorial, Continuous, PointSetFekete> basis_vectorial_hovisu_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
+    typedef FunctionSpace<mesh_hovisu_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
     typedef std::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
     typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
     typedef std::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
@@ -126,7 +128,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Lagrange P1hovisu operators
-    typedef OperatorLagrangeP1<space_scalar_hovisu_type> op_lagrangeP1_hovisu_type;
+    typedef OperatorLagrangeP1<space_scalar_type> op_lagrangeP1_hovisu_type;
     typedef std::shared_ptr<op_lagrangeP1_hovisu_type> op_lagrangeP1_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -211,7 +213,7 @@ public:
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     mesh_ptrtype const& meshIsoPN() const { return M_meshIsoPN; }
-    mesh_ptrtype const& meshHovisu() const { return M_meshHovisu; }
+    mesh_hovisu_ptrtype const& meshHovisu() const { return M_meshHovisu; }
 
     range_elements_type const& rangeMeshElements() { return M_rangeMeshElements; }
     range_elements_type const& rangeMeshPNElements() { return M_rangeMeshElements; }
@@ -247,7 +249,7 @@ private:
     // Meshes
     mesh_ptrtype M_mesh;
     mesh_ptrtype M_meshIsoPN;
-    mesh_ptrtype M_meshHovisu;
+    mesh_hovisu_ptrtype M_meshHovisu;
 
     // Ranges
     range_elements_type M_rangeMeshElements;
