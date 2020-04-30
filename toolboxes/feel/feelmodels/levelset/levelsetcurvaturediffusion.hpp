@@ -72,7 +72,7 @@ public:
     range_faces_type rangeMeshBoundaryFaces() const { return M_rangeMeshBoundaryFaces; }
 
     double timeStep() const { return M_timeStep; }
-    void setTimeStep( double dt ) { M_timeStep = dt; }
+    void setTimeStep( double dt );
 
     TimeDiscretisation timeDiscretisation() const { return M_timeDiscretisation; }
     void setTimeDiscretisation( TimeDiscretisation d );
@@ -157,6 +157,15 @@ LevelSetCurvatureDiffusion<FunctionSpaceType>::LevelSetCurvatureDiffusion( funct
     this->initCurvatureDiffusionAlpha();
     this->initCurvatureDiffusionBeta();
     M_vector = M_backendAlpha->newVector( this->functionSpace() );
+}
+
+template<typename FunctionSpaceType>
+void
+LevelSetCurvatureDiffusion<FunctionSpaceType>::setTimeStep( double dt )
+{
+    M_timeStep = dt;
+    this->initCurvatureDiffusionAlpha();
+    this->initCurvatureDiffusionBeta();
 }
 
 template<typename FunctionSpaceType>
