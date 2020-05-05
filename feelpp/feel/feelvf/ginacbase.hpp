@@ -172,7 +172,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
         M_params = p;
     }
-    void setParameterValues( std::map<std::string, value_type> const& mp )
+    virtual void setParameterValues( std::map<std::string, value_type> const& mp )
     {
         CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
         for ( auto const& p : mp )
