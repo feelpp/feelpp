@@ -51,6 +51,7 @@
 #include <feel/feelvf/detail/gmc.hpp>
 #include <feel/feelvf/shape.hpp>
 #include <feel/feelvf/lambda.hpp>
+#include <feel/feelvf/symbolsexpr.hpp>
 
 namespace Feel
 {
@@ -538,6 +539,11 @@ public:
         {
         }
 
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            M_expr.updateParameterValues( pv );
+        }
+
     template<typename ExprTT>
     explicit Expr( ExprTT const& )
         {
@@ -560,7 +566,27 @@ public:
         {
             return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
         }
-    
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    void dependentSymbols( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return M_expr.dependentSymbols( symb, res, se );
+        }
+
+    template <int diffOrder,typename TheSymbolExprType = symbols_expression_empty_t>
+    auto diff( std::string const& diffSymbol,
+               WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr = "",
+               TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return Feel::vf::expr( M_expr.template diff<diffOrder>( diffSymbol, world, dirLibExpr, se ) );
+        }
+
     template<typename Geo_t, typename Basis_i_t = fusion::map<fusion::pair<vf::detail::gmc<0>,boost::shared_ptr<vf::detail::gmc<0> > >,fusion::pair<vf::detail::gmc<1>,std::shared_ptr<vf::detail::gmc<1> > > >, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
