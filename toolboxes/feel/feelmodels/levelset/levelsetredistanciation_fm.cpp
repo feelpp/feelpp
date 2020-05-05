@@ -397,8 +397,11 @@ template<typename FunctionSpaceType>
 typename LevelSetRedistanciationFM<FunctionSpaceType>::element_type 
 LevelSetRedistanciationFM<FunctionSpaceType>::run( element_type const& phi ) const
 {
-    auto rangeInitialElements = levelsetInterfaceElements( phi );
-    return this->run( phi, rangeInitialElements );
+    // Ensures phi is closed for proper rangeInterfaceElements detection
+    element_type phiSync( phi );
+    sync( phiSync, "=" );
+    auto rangeInitialElements = levelsetInterfaceElements( phiSync );
+    return this->run( phiSync, rangeInitialElements );
 }
 
 } // namespace Feel
