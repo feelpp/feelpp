@@ -327,10 +327,7 @@ public:
     virtual void meshModified() = 0;
 
     //! set sub mesh data
-    void setSubMeshData( smd_ptrtype smd )
-        {
-            M_smd = smd;
-        }
+    void setSubMeshData( smd_ptrtype smd );
 
     //! \return true if mesh holds sub mesh data
     bool hasSubMeshData() const { return M_smd.use_count() > 0; }
@@ -454,90 +451,20 @@ public:
         }
 
     //! \return id in parent mesh given the id in the sub mesh
-    size_type subMeshToMesh( size_type id ) const
-        {
-            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-            return M_smd->bm.left.find( id )->second;
-        }
+    size_type subMeshToMesh( size_type id ) const;
 
     //! \return id in sub mesh given the id in the parent mesh
-    size_type meshToSubMesh( size_type id ) const
-        {
-            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-            if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
-                return M_smd->bm.right.find( id )->second;
-            // the submesh element id has not been found, return invalid value
-            return invalid_v<size_type>;
-        }
+    size_type meshToSubMesh( size_type id ) const;
 
     //! \return ids in sub mesh given the ids in the parent mesh
-    std::pair<std::vector<size_type>,bool> meshToSubMesh( std::vector<size_type> const& p, bool add_invalid_indices = false ) const
-        {
-            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-            std::vector<size_type> sid;//(std::distance(p.first,p.second) );
-            bool has_invalid_values = false;
-            std::for_each( p.begin(), p.end(), [&]( auto const& id ){
-                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
-                        sid.push_back( M_smd->bm.right.find( id )->second );
-                    else
-                    {
-                        if ( add_invalid_indices )
-                            sid.push_back( invalid_v<size_type> );
-                        has_invalid_values = true;
-                    }
-                    // the submesh element id has not been found, return invalid value
-                    //return invalid_v<size_type>;
-                });
-            return std::make_pair(sid,has_invalid_values);
-        }
+    std::pair<std::vector<size_type>,bool> meshToSubMesh(std::vector<size_type> const& p, 
+                                                         bool add_invalid_indices = false ) const;
 
     //! \return id in parent mesh given the id in the sub mesh
-    size_type subMeshToMesh( std::shared_ptr<MeshBase> m, size_type id ) const
-        {
-            if ( this == m.get() )
-                return id;
-            if ( isRelatedTo( m ) )
-            {
-                if ( this->isSubMeshFrom( m ) )
-                {
-                    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-                    return M_smd->bm.left.find( id )->second;
-                }
-                else if ( this->isSiblingOf( m ) )
-                {
-                    size_type id_in_parent =  M_smd->bm.left.find( id )->second;
-                    size_type id_in_sibling =  m->meshToSubMesh( id_in_parent );
-                    return id_in_sibling;
-                }
-            }
-            return invalid_v<size_type>;
-        }
+    size_type subMeshToMesh( std::shared_ptr<MeshBase> const& m, size_type id ) const;
 
     //! \return id in sub mesh given the id in the parent mesh
-    size_type meshToSubMesh( std::shared_ptr<MeshBase> m, size_type id ) const
-        {
-            if ( this == m.get() )
-                return id;
-            if ( isRelatedTo( m ) )
-            {
-                if ( this->isSubMeshFrom( m ) )
-                {
-                    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
-                    if ( M_smd->bm.right.find( id ) != M_smd->bm.right.end() )
-                        return M_smd->bm.right.find( id )->second;
-
-                }
-                else if ( this->isSiblingOf( m ) )
-                {
-                    size_type id_in_parent =  m->subMeshToMesh( id );
-                    size_type id_in_sibling =  this->meshToSubMesh( id_in_parent );
-                    return id_in_sibling;
-                }
-                // the submesh element id has not been found, return invalid value
-                // will return invalid_v<size_type>
-            }
-            return invalid_v<size_type>;
-        }
+    size_type meshToSubMesh( std::shared_ptr<MeshBase> const& m, size_type id ) const;
 
     //! store a mesh which has nodes shared with the current mesh
     template<typename MeshType>
@@ -804,22 +731,7 @@ private:
             ar & M_markername;
         }
 
-    void meshesWithNodesSharedImpl( std::vector<std::shared_ptr<MeshBase<IndexT>>> & ret ) const
-    {
-        for ( std::weak_ptr<MeshBase<IndexT>> m : M_meshesWithNodesShared )
-        {
-            if ( m.expired() )
-                continue;
-            auto otherPtr = m.lock();
-            auto foundOther = std::find_if(ret.begin(), ret.end(),
-                                           [&otherPtr](auto const& ptr) { return otherPtr == ptr; });
-            if ( foundOther == ret.end() )
-            {
-                ret.push_back( otherPtr );
-                otherPtr->meshesWithNodesSharedImpl( ret );
-            }
-        }
-    }
+    void meshesWithNodesSharedImpl( std::vector<std::shared_ptr<MeshBase<IndexT>>> & ret ) const;
 
     //! remove a mesh which has nodes shared with the current mesh (typically when the mesh is deleted)
     void removeMeshWithNodesShared( MeshBase<IndexT> * m );

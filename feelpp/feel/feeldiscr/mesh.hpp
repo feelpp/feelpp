@@ -2059,7 +2059,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
         auto eit = new_mesh->addElement( new_elem );
         auto const& e = eit.first->second;
         if ( keepMeshRelation )
-            smd->bm.insert( typename SubMeshData<>::bm_type::value_type( e.id(), old_elem.id() ) );
+            smd->insert( std::pair{ e.id(), old_elem.id() });
 
         //!  increment the new element counter
         n_new_elem++;

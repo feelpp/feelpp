@@ -61,6 +61,12 @@ MeshBase<IndexT>::~MeshBase()
 
 template <typename IndexT>
 void
+MeshBase<IndexT>::setSubMeshData( smd_ptrtype smd )
+{
+    M_smd = smd;
+}
+template <typename IndexT>
+void
 MeshBase<IndexT>::removeMeshWithNodesShared( MeshBase<IndexT> * m )
 {
     auto newEnd = std::remove_if(M_meshesWithNodesShared.begin(), M_meshesWithNodesShared.end(),
@@ -197,6 +203,112 @@ MeshBase<IndexT>::markersId( boost::any const& markerAny ) const
     }
     return theflags;
 }
+
+
+template <typename IndexT>
+typename MeshBase<IndexT>::size_type 
+MeshBase<IndexT>::subMeshToMesh( size_type id ) const
+{
+    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+    return M_smd->leftFind( id ).value();
+}
+
+template <typename IndexT>
+typename MeshBase<IndexT>::size_type 
+MeshBase<IndexT>::meshToSubMesh( size_type id ) const
+{
+    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+    // if the submesh element id has not been found, return invalid value
+    return M_smd->rightFind( id ).value_or( invalid_v<size_type> );
+}
+template <typename IndexT>
+std::pair<std::vector<typename MeshBase<IndexT>::size_type>,bool> 
+MeshBase<IndexT>::meshToSubMesh( std::vector<size_type> const& p, bool add_invalid_indices ) const
+{
+    CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+    std::vector<size_type> sid;//(std::distance(p.first,p.second) );
+    bool has_invalid_values = false;
+    std::for_each( p.begin(), p.end(), [&]( auto const& id ){
+            if ( auto pid = M_smd->rightFind( id ); pid )
+                sid.push_back( *pid );
+            else
+            {
+                if ( add_invalid_indices )
+                    sid.push_back( invalid_v<size_type> );
+                has_invalid_values = true;
+            }
+            // the submesh element id has not been found, return invalid value
+            //return invalid_v<size_type>;
+        });
+    return std::make_pair(sid,has_invalid_values);
+}
+
+template <typename IndexT>
+typename MeshBase<IndexT>::size_type 
+MeshBase<IndexT>::subMeshToMesh( std::shared_ptr<MeshBase> const& m, size_type id ) const
+{
+    if ( this == m.get() )
+        return id;
+    if ( isRelatedTo( m ) )
+    {
+        if ( this->isSubMeshFrom( m ) )
+        {
+            CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+            return M_smd->leftFind( id ).value();
+        }
+        else if ( this->isSiblingOf( m ) )
+        {
+            size_type id_in_parent =  M_smd->leftFind( id ).value();
+            size_type id_in_sibling =  m->meshToSubMesh( id_in_parent );
+            return id_in_sibling;
+        }
+    }
+    return invalid_v<size_type>;
+}
+
+template <typename IndexT>
+typename MeshBase<IndexT>::size_type 
+MeshBase<IndexT>::meshToSubMesh( std::shared_ptr<MeshBase> const& m, size_type id ) const
+{
+        if ( this == m.get() )
+            return id;
+        if ( isRelatedTo( m ) )
+        {
+            if ( this->isSubMeshFrom( m ) )
+            {
+                CHECK( M_smd ) << "mesh doesn't have any submesh data\n";
+                if ( auto p = M_smd->rightFind( id ); p )
+                    return *p;
+            }
+            else if ( this->isSiblingOf( m ) )
+            {
+                size_type id_in_parent =  m->subMeshToMesh( id );
+                size_type id_in_sibling =  this->meshToSubMesh( id_in_parent );
+                return id_in_sibling;
+            }
+            // the submesh element id has not been found, return invalid value
+            // will return invalid_v<size_type>
+        }
+        return invalid_v<size_type>;
+}
+template <typename IndexT>
+void
+MeshBase<IndexT>::meshesWithNodesSharedImpl( std::vector<std::shared_ptr<MeshBase<IndexT>>> & ret ) const
+    {
+        for ( std::weak_ptr<MeshBase<IndexT>> m : M_meshesWithNodesShared )
+        {
+            if ( m.expired() )
+                continue;
+            auto otherPtr = m.lock();
+            auto foundOther = std::find_if(ret.begin(), ret.end(),
+                                           [&otherPtr](auto const& ptr) { return otherPtr == ptr; });
+            if ( foundOther == ret.end() )
+            {
+                ret.push_back( otherPtr );
+                otherPtr->meshesWithNodesSharedImpl( ret );
+            }
+        }
+    }
 
 template class MeshBase<uint32_type>;
 } // Feel

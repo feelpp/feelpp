@@ -403,7 +403,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_ELEMENTS
             auto [eit,inserted] = newMesh->addElement( newElem,true );
             auto const& [eid,e] = *eit;
             new_element_id[oldElem.id()] = eid;
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
+            M_smd->insert( std::pair{ eid, oldElem.id() } );
 
             // add marked faces for this element
             for ( uint16_type s=0; s<oldElem.numTopologicalFaces; s++ )
@@ -654,7 +654,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
             auto const& [eid,e] = *eit;
             // update mesh relation
             new_element_id[oldElem.id()]= eid;
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
+            M_smd->insert( std::pair{ eid, oldElem.id() } );
             DVLOG(2) << "connecting new face to " << e.id() << " face " << oldElem.id();
             // add marked edges in 3d as marked faces for this element
             Feel::detail::addMarkedEdgesInSubMesh( M_mesh, oldElem, new_node_numbers, n_new_faces,
@@ -860,7 +860,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_EDGES> /
             auto const& [eid,e] = *eit;
             // update mesh relation
             new_element_id[oldElem.id()]= eid;
-            M_smd->bm.insert( typename smd_type::bm_type::value_type( eid, oldElem.id() ) );
+            M_smd->insert( std::pair{ eid, oldElem.id() } );
         } // end for it
     } // for ( ; itListRange!=enListRange ; ++itListRange)
 
@@ -1226,7 +1226,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
 
                 ghostOldEltDone[oldElem.id()]= std::make_pair(newEltId,e.processId());
                 // update mesh relation
-                M_smd->bm.insert( typename smd_type::bm_type::value_type( newEltId, oldEltId ) );
+                M_smd->insert( std::pair{ newEltId, oldEltId } );
             }
             else // already stored as active element
             {

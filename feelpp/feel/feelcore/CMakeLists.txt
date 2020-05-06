@@ -25,6 +25,7 @@ set(SRC
   info.cpp
   feel.cpp
   feelio.cpp
+  bimap.cpp
   application.cpp
   environment.cpp
   simget.cpp
