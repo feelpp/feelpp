@@ -51,10 +51,10 @@ auto diffSymbolicExpr( SymbolicExprType const& theExpr, TrialSymbolsExpr<SpaceTy
                             if ( !e2.isDefinedOn( trialSpace, trialBlockSpaceIndex ) )
                                 continue;
 
-                            if ( !theExpr.expression().hasSymbol( e2.symbol() ) )
+                            if ( !theExpr.hasSymbolDependency( e2.symbol() ) )
                                 continue;
 
-                            auto diffExpr = diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
+                            auto diffExpr = theExpr.template diff<1>( e2.symbol(),world, dirLibExpr );// diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
                             auto trialExpr = e2.expr();
                             //std::cout << "diffSymbolicExpr add expr" << std::endl;
 
