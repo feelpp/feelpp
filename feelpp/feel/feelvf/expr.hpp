@@ -377,6 +377,15 @@ struct has_symbolic_parameter_values_type <T, std::void_t<decltype(std::declval<
 template <typename T>
 constexpr bool has_symbolic_parameter_values_v = has_symbolic_parameter_values_type<T>::value;
 
+#if 0
+template <typename T, int diffOrder, typename TheSymbolExprType, typename = void>
+struct has_symbolic_diff_type : std::false_type {};
+template <typename T, int diffOrder, typename TheSymbolExprType>
+struct has_symbolic_diff_type <T, diffOrder, TheSymbolExprType, std::void_t<decltype(std::declval<T>().template diff<diffOrder>( "", Feel::worldcomm_t{},"", TheSymbolExprType{} )) >>
+    : std::true_type {};
+template <typename T, int diffOrder, typename TheSymbolExprType>
+constexpr bool has_symbolic_diff_v = has_symbolic_diff_type<T,diffOrder,TheSymbolExprType>::value;
+#endif
 
 // forward declarations
 template<typename ExprT>

@@ -382,6 +382,15 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 return *this;                                           \
             }                                                           \
                                                                         \
+            template <typename TheSymbolExprType>                       \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const { return false; } \
+            template <typename TheSymbolExprType>                       \
+            void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const {} \
+                                                                        \
+            template <int diffOrder, typename TheSymbolExprType>        \
+                auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                           TheSymbolExprType const& se ) const { return *this; } \
+                                                                        \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
                 struct tensor                                           \
             {                                                           \

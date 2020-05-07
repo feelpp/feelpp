@@ -72,18 +72,58 @@ public:
     /** @name Typedefs
      */
     //@{
-    struct GetContextExpr
+    struct FunctorsVariadicExpr
     {
-        template <typename R,typename T>
-        constexpr auto operator()(R /*const&*/ r, T const& t) const
-            {
-                return hana::integral_constant<size_type, r.value | std::decay_t<decltype(t)>::context >{};
-            }
+        struct GetContextExpr
+        {
+            template <typename R,typename T>
+            constexpr auto operator()(R /*const&*/ r, T const& t) const
+                {
+                    return hana::integral_constant<size_type, r.value | std::decay_t<decltype(t)>::context >{};
+                }
+        };
+
+        template<typename Funct>
+        struct HasTestFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template HasTestFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialFunction
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template HasTrialFunction<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTestBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template has_test_basis<Funct>::result >{};
+                }
+        };
+        template<typename Funct>
+        struct HasTrialBasis
+        {
+            template <typename T1,typename T2>
+            constexpr auto operator()( T1 const& res,T2 const& e ) const
+                {
+                    return hana::integral_constant<bool, T1::value || T2::template has_trial_basis<Funct>::result >{};
+                }
+        };
     };
 
     static const size_type context = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                         hana::integral_constant<size_type, 0>{},
-                                                                        GetContextExpr{}
+                                                                        typename FunctorsVariadicExpr::GetContextExpr{}
                                                                         ) )>::value;
     static const bool is_terminal = false;
 
@@ -92,28 +132,26 @@ public:
     {
         static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
-                                                                      []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTestFunction<Func>::result >{}; }
+                                                                      typename FunctorsVariadicExpr::template HasTestFunction<Func>{}
                                                                       ) )>::value;
-
     };
     template<typename Func>
     struct HasTrialFunction
     {
         static const bool result = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                       hana::integral_constant<bool,false>{},
-                                                                      []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template HasTrialFunction<Func>::result >{}; }
+                                                                      typename FunctorsVariadicExpr::template HasTrialFunction<Func>{}
                                                                       ) )>::value;
-
     };
     template<typename Func>
     static const bool has_test_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                           hana::integral_constant<bool,false>{},
-                                                                          []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_test_basis<Func>::result >{}; }
+                                                                          typename FunctorsVariadicExpr::template HasTestBasis<Func>{}
                                                                           ) )>::value;
     template<typename Func>
     static const bool has_trial_basis = std::decay_t<decltype( hana::fold( tuple_expr_type{},
                                                                            hana::integral_constant<bool,false>{},
-                                                                           []( auto const& res, auto const& e ) { hana::integral_constant<bool, res.value || std::decay_t<decltype(e)>::template has_trial_basis<Func>::result >{}; }
+                                                                           typename FunctorsVariadicExpr::template HasTrialBasis<Func>{}
                                                                            ) )>::value;
 
     using test_basis = std::nullptr_t;
@@ -134,16 +172,17 @@ public:
     template<typename... TheExpr>
     struct Lambda
     {
-        template<typename CompExprType>
-        struct GetLambdaComponentExpr
+        struct TransformLambdaExpr
         {
-            typedef typename CompExprType::template Lambda<TheExpr...>::type type;
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    return typename T::template Lambda<TheExpr...>::type{};
+                }
         };
 
-        typedef typename mpl::transform< expression_matrix_type,
-                                         GetLambdaComponentExpr<mpl::_1>,
-                                         mpl::back_inserter<fusion::vector<> > >::type the_fusionvector_type;
-        typedef Mat<M,N,the_fusionvector_type> type;
+        using lambda_tuple_type = std::decay_t<decltype( hana::transform( expression_matrix_type{}, TransformLambdaExpr{} ) ) >;
+        using type = Mat<M,N,lambda_tuple_type>;
     };
 
     template<typename... TheExpr>
