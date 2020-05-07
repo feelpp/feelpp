@@ -296,7 +296,7 @@ public :
                             {
                                 for ( std::string const& symbolStr : symbolsStr )
                                 {
-                                    if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
+                                    if ( this->expr<ni,nj>().hasSymbolDependency( symbolStr ) )
                                     {
                                         res = true;
                                         break;

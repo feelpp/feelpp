@@ -122,6 +122,16 @@ public:
             return res;
         }
 
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newLeftExpr = this->left().applySymbolsExpr( se );
+            auto newRightExpr = this->right().applySymbolsExpr( se );
+            using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+            using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+            return Pow<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+        }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
