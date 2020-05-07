@@ -282,8 +282,81 @@ public:
     bool isPolynomial() const { return M_isPolynomial; }
 
     symbols_expression_type const& symbolsExpression() const { return M_expr; }
+    symbols_expression_type & symbolsExpression() { return M_expr; }
 
     tuple_expand_symbols_expr_type const& expandSymbolsExpression() const { return M_expandSymbolsExpr; }
+    tuple_expand_symbols_expr_type & expandSymbolsExpression() { return M_expandSymbolsExpr; }
+
+    void setParameterValues( std::map<std::string, value_type> const& mp ) override
+    {
+        if ( M_isNumericExpression )
+            return;
+
+        super::setParameterValues( mp );
+
+        auto exprIndex = this->indices();
+        uint16_type k=0;
+        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&mp,&k,&exprIndex]( auto seId )
+                        {
+                            auto & evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
+                            auto & evecExpand = hana::at( this->expandSymbolsExpression(), hana::int_c<seId> );
+                            int nSubExpr = evec.size();
+                            DCHECK( evecExpand.size() == nSubExpr ) << "something wrong";
+                            for (int l=0;l<nSubExpr;++l,++k)
+                            {
+                                if ( exprIndex[k].empty() )
+                                    continue;
+                                auto & e = evec[l];
+                                auto & theexprBase = std::get<1>( e );
+                                auto & theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))>&>(evecExpand[l]);
+                                theexprBase.setParameterValues( mp );
+                                theexpr.setParameterValues( mp );
+                            }
+                        });
+    }
+
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+    {
+        for ( auto const& [param,val] : this->symbolNameToValue() )
+            pv[param] = val;
+
+        auto exprIndex = this->indices();
+        uint16_type k=0;
+        hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSymbolsExpr> ), [this,&pv,&k,&exprIndex]( auto seId )
+                        {
+                            auto const& evec = hana::at( this->symbolsExpression().tuple(), hana::int_c<seId> );
+                            auto const& evecExpand = hana::at( this->expandSymbolsExpression(), hana::int_c<seId> );
+                            int nSubExpr = evec.size();
+                            DCHECK( evecExpand.size() == nSubExpr ) << "something wrong";
+                            for (int l=0;l<nSubExpr;++l,++k)
+                            {
+                                if ( exprIndex[k].empty() )
+                                    continue;
+                                auto const& e = evec[l];
+                                auto const& theexprBase = std::get<1>( e );
+                                auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))>const&>(evecExpand[l]);
+                                theexpr.updateParameterValues( pv );
+                            }
+                        });
+    }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        if constexpr ( nSymbolsExpr > 0 )
+            return this->hasSymbolDependencyImpl( symb, Feel::vf::symbolsExpr( this->symbolsExpression(), se ) );
+        else
+            return this->hasSymbolDependencyImpl( symb, se );
+    }
+
+    template <typename TheSymbolExprType>
+        void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+    {
+        if constexpr ( nSymbolsExpr > 0 )
+            this->dependentSymbolsImpl( symb, res, Feel::vf::symbolsExpr( this->symbolsExpression(), se ) );
+        else
+            this->dependentSymbolsImpl( symb, res, se );
+    }
 
     template <typename ExpandSymbolsExprType>
     auto applySymbolsExpr( ExpandSymbolsExprType const& se ) const
@@ -294,6 +367,83 @@ public:
         res.setParameterValues( this->symbolNameToValue() );
         return res;
     }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto newse = Feel::vf::symbolsExpr( this->symbolsExpression(), se );
+
+        std::map<std::string,std::set<std::string>> symbolToApplyDiff;
+        this->dependentSymbolsImpl( diffVariable, symbolToApplyDiff, newse );
+
+        auto tupleDiffSymbolsExpr = hana::transform( this->symbolsExpression().tuple(), [this,&diffVariable,&symbolToApplyDiff,&newse,&world,&dirLibExpr](auto const& evec)
+                                                     {
+                                                         int nSubExpr = evec.size();
+                                                         using _expr_type = std::decay_t<decltype( std::get<1>( evec.front() ) )>;
+                                                         using _expr_diff_type =  std::decay_t<decltype(  std::get<1>( evec.front() ).template diff<diffOrder>( diffVariable,world,dirLibExpr,newse ) )>;
+                                                         symbol_expression_t<_expr_diff_type> seDiffExpr;
+                                                         for (int l=0;l<nSubExpr;++l)
+                                                         {
+                                                             auto const& e = evec[l];
+                                                             std::string const& currentSymbName = std::get<0>( e );
+
+                                                             auto itFindSymb = symbolToApplyDiff.find( currentSymbName );
+                                                             if ( itFindSymb == symbolToApplyDiff.end() ) // not depend on diffVariable
+                                                                 continue;
+                                                             auto const& theexpr = std::get<1>( e );
+
+                                                             auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
+                                                             std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
+                                                             seDiffExpr.add( currentDiffSymbName, currentDiffExpr, std::get<2>( e ) );
+                                                         }
+                                                         return seDiffExpr;
+                                                     });
+
+
+        std::vector<GiNaC::symbol> resSymbol = this->symbols();
+        std::vector<GiNaC::ex> res(M*N);
+        CHECK( GiNaC::is_a<GiNaC::lst>(this->expression()) ) << "something wrong";
+        if ( super::hasSymbol( diffVariable ) )
+        {
+            GiNaC::symbol diffSymb = Feel::symbols( std::vector<std::string>( { diffVariable } ), this->symbols() )[0];
+            for( int i = 0; i < M*N; ++i )
+                res[i] += this->expression().op(i).diff( diffSymb, diffOrder );
+        }
+
+        for ( auto const& [currentSymbName,currentSymbSuffixes] : symbolToApplyDiff )
+        {
+            std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
+            for ( std::string const& currentSymbSuffix : currentSymbSuffixes )
+            {
+                std::string currentSymbNameWithSuffix = currentSymbName + currentSymbSuffix;
+                auto itSym = std::find_if( this->symbols().begin(), this->symbols().end(),
+                                           [&currentSymbNameWithSuffix]( GiNaC::symbol const& s ) { return s.get_name() == currentSymbNameWithSuffix; } );
+                if ( itSym == this->symbols().end() )
+                    continue;
+                GiNaC::symbol const& currentSymb = *itSym;
+
+                GiNaC::symbol currentDiffSymb(currentDiffSymbName+currentSymbSuffix);
+                for( int i = 0; i < M*N; ++i )
+                    res[i] += currentDiffSymb*this->expression().op(i).diff( currentSymb, diffOrder );
+                resSymbol.push_back( currentDiffSymb );
+            }
+        }
+
+        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( tupleDiffSymbolsExpr ) );
+        using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
+        using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
+        GiNaC::matrix resmat(M,N,res);
+        std::string exprDesc = str( resmat );
+        _expr_type resExpr( resmat, resSymbol, exprDesc, ""/*filename*/, world, dirLibExpr, seWithDiff );
+
+        std::map<std::string,double> pv;
+        this->updateParameterValues( pv );
+        resExpr.setParameterValues( pv );
+
+        return resExpr;
+    }
+
     //@}
 
     /** @name  Mutators
@@ -829,6 +979,94 @@ private :
         return res;
     }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependencyImpl( std::string const& symb, TheSymbolExprType const& se ) const
+    {
+        if ( super::hasSymbol( symb ) )
+            return true;
+        bool res = false;
+
+        hana::for_each( se.tuple(), [this,&symb,&res,&se]( auto const& evec )
+                        {
+                            if ( res )
+                                return;
+
+                            int nSubExpr = evec.size();
+                            for (int l=0;l<nSubExpr;++l)
+                            {
+                                auto const& e = evec[l];
+                                std::string const& currentSymbName = std::get<0>( e );
+                                // if ( !super::hasSymbol( currentSymbName ) )
+                                //     continue;
+                                if ( !this->hasAtLeastOneSymbolDependency( e ) )
+                                    continue;
+
+                                auto const& currentExpr = std::get<1>( e );
+                                res = currentExpr.hasSymbolDependency( symb, se );
+                                if ( res )
+                                    break;
+                            }
+                        });
+        return res;
+    }
+
+    template <typename TheSymbolExprType>
+        void dependentSymbolsImpl( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+    {
+        hana::for_each( se.tuple(), [this,&symb,&res,&se]( auto const& evec )
+                        {
+                            int nSubExpr = evec.size();
+                            for (int l=0;l<nSubExpr;++l)
+                            {
+                                auto const& e = evec[l];
+                                std::string const& currentSymbName = std::get<0>( e );
+                                if ( res.find( currentSymbName ) != res.end() )
+                                    continue;
+
+                                // if ( !super::hasSymbol( currentSymbName ) )
+                                //     continue;
+                                if ( !this->hasAtLeastOneSymbolDependency( e ) )
+                                    continue;
+
+                                auto const& currentExpr = std::get<1>( e );
+                                if ( !currentExpr.hasSymbolDependency( symb, se ) )
+                                    continue;
+
+                                if ( std::get<2>( e ).empty() )
+                                    res[currentSymbName].insert( "" );
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                        res[currentSymbName].insert( _suffix );
+                                }
+
+                                //if ( res.insert( std::get<0>( e ) ).second )
+                                currentExpr.dependentSymbols( symb, res, se );
+                            }
+                        });
+    }
+    // template <typename TheSymbolExprType>
+    // void dependentSymbolsImpl( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se ) const
+    // {
+    //     hana::for_each( se.tuple(), [this,&symb,&res,&se]( auto const& evec )
+    //                     {
+    //                         int nSubExpr = evec.size();
+    //                         for (int l=0;l<nSubExpr;++l)
+    //                         {
+    //                             auto const& e = evec[l];
+    //                             std::string const& currentSymbName = std::get<0>( e );
+    //                             if ( !super::hasSymbol( currentSymbName ) )
+    //                                 continue;
+
+    //                             auto const& currentExpr = std::get<1>( e );
+    //                             if ( !currentExpr.hasSymbolDependency( symb, se ) )
+    //                                 continue;
+
+    //                             if ( res.insert( std::get<0>( e ) ).second )
+    //                                 currentExpr.dependentSymbols( symb, res, se );
+    //                         }
+    //                     });
+    // }
 
 private:
     mutable expression_type  M_fun;

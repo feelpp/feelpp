@@ -406,7 +406,7 @@ public:
     }
 
     template <typename TheSymbolExprType>
-    void dependentSymbols( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se ) const
+        void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
     {
         if constexpr ( nSymbolsExpr > 0 )
             this->dependentSymbolsImpl( symb, res, Feel::vf::symbolsExpr( this->symbolsExpression(), se ) );
@@ -414,14 +414,13 @@ public:
             this->dependentSymbolsImpl( symb, res, se );
     }
 
-
     template <int diffOrder, typename TheSymbolExprType>
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
     {
         auto newse = Feel::vf::symbolsExpr( this->symbolsExpression(), se );
 
-        std::set<std::string> symbolToApplyDiff;
+        std::map<std::string,std::set<std::string>> symbolToApplyDiff;
         this->dependentSymbolsImpl( diffVariable, symbolToApplyDiff, newse );
 
         auto tupleDiffSymbolsExpr = hana::transform( this->symbolsExpression().tuple(), [this,&diffVariable,&symbolToApplyDiff,&newse,&world,&dirLibExpr](auto const& evec)
@@ -442,7 +441,7 @@ public:
 
                                                              auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
                                                              std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
-                                                             seDiffExpr.add( currentDiffSymbName, currentDiffExpr );
+                                                             seDiffExpr.add( currentDiffSymbName, currentDiffExpr, std::get<2>( e ) );
                                                          }
                                                          return seDiffExpr;
                                                      });
@@ -456,18 +455,22 @@ public:
             res += this->expression().diff( diffSymb, diffOrder );
         }
 
-        for ( std::string const& currentSymbName : symbolToApplyDiff )
+        for ( auto const& [currentSymbName,currentSymbSuffixes] : symbolToApplyDiff )
         {
-            auto itSym = std::find_if(  this->symbols().begin(), this->symbols().end(),
-                                       [&currentSymbName]( GiNaC::symbol const& s ) { return s.get_name() == currentSymbName; } );
-            if ( itSym == this->symbols().end() )
-                continue;
-            GiNaC::symbol const& currentSymb = *itSym;
-
             std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
-            GiNaC::symbol currentDiffSymb(currentDiffSymbName);
-            res += currentDiffSymb*this->expression().diff( currentSymb, diffOrder );
-            resSymbol.push_back( currentDiffSymb );
+            for ( std::string const& currentSymbSuffix : currentSymbSuffixes )
+            {
+                std::string currentSymbNameWithSuffix = currentSymbName + currentSymbSuffix;
+                auto itSym = std::find_if( this->symbols().begin(), this->symbols().end(),
+                                           [&currentSymbNameWithSuffix]( GiNaC::symbol const& s ) { return s.get_name() == currentSymbNameWithSuffix; } );
+                if ( itSym == this->symbols().end() )
+                    continue;
+                GiNaC::symbol const& currentSymb = *itSym;
+
+                GiNaC::symbol currentDiffSymb(currentDiffSymbName+currentSymbSuffix);
+                res += currentDiffSymb*this->expression().diff( currentSymb, diffOrder );
+                resSymbol.push_back( currentDiffSymb );
+            }
         }
 
         auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( tupleDiffSymbolsExpr ) );
@@ -934,7 +937,9 @@ private :
                             {
                                 auto const& e = evec[l];
                                 std::string const& currentSymbName = std::get<0>( e );
-                                if ( !super::hasSymbol( currentSymbName ) )
+                                // if ( !super::hasSymbol( currentSymbName ) )
+                                //     continue;
+                                if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                     continue;
 
                                 auto const& currentExpr = std::get<1>( e );
@@ -947,7 +952,7 @@ private :
     }
 
     template <typename TheSymbolExprType>
-    void dependentSymbolsImpl( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se ) const
+        void dependentSymbolsImpl( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
     {
         hana::for_each( se.tuple(), [this,&symb,&res,&se]( auto const& evec )
                         {
@@ -956,15 +961,28 @@ private :
                             {
                                 auto const& e = evec[l];
                                 std::string const& currentSymbName = std::get<0>( e );
-                                if ( !super::hasSymbol( currentSymbName ) )
+                                if ( res.find( currentSymbName ) != res.end() )
+                                    continue;
+
+                                // if ( !super::hasSymbol( currentSymbName ) )
+                                //     continue;
+                                if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                     continue;
 
                                 auto const& currentExpr = std::get<1>( e );
                                 if ( !currentExpr.hasSymbolDependency( symb, se ) )
                                     continue;
 
-                                if ( res.insert( std::get<0>( e ) ).second )
-                                    currentExpr.dependentSymbols( symb, res, se );
+                                if ( std::get<2>( e ).empty() )
+                                    res[currentSymbName].insert( "" );
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                        res[currentSymbName].insert( _suffix );
+                                }
+
+                                //if ( res.insert( std::get<0>( e ) ).second )
+                                currentExpr.dependentSymbols( symb, res, se );
                             }
                         });
     }

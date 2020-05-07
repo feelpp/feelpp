@@ -369,6 +369,15 @@ struct evaluate_expression_type<T, std::void_t<typename T::evaluate_type>>
 template <typename T>
 using evaluate_expression_t = typename evaluate_expression_type<T>::type;
 
+template <typename T, typename = void>
+struct has_symbolic_parameter_values_type : std::false_type {};
+template <typename T>
+struct has_symbolic_parameter_values_type <T, std::void_t<decltype(std::declval<T>().setParameterValues( std::map<std::string,typename T::value_type>{} )) >>
+    : std::true_type {};
+template <typename T>
+constexpr bool has_symbolic_parameter_values_v = has_symbolic_parameter_values_type<T>::value;
+
+
 // forward declarations
 template<typename ExprT>
 class Expr;
@@ -528,9 +537,10 @@ public:
         }
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
-            //this->setParameterValues( mp, boost::is_base_of<Feel::vf::GiNaCBase,expression_type>() );
-            M_expr.setParameterValues( mp );
+            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
+                 M_expr.setParameterValues( mp );
         }
+#if 0
     void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<true> )
         {
             M_expr.setParameterValues( mp );
@@ -538,10 +548,11 @@ public:
     void setParameterValues( std::map<std::string,value_type> const& mp, mpl::bool_<false> )
         {
         }
-
+#endif
     void updateParameterValues( std::map<std::string,double> & pv ) const
         {
-            M_expr.updateParameterValues( pv );
+            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
+                  M_expr.updateParameterValues( pv );
         }
 
     template<typename ExprTT>
@@ -574,7 +585,7 @@ public:
         }
 
     template <typename TheSymbolExprType = symbols_expression_empty_t>
-    void dependentSymbols( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
             return M_expr.dependentSymbols( symb, res, se );
         }
