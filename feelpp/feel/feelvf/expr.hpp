@@ -590,13 +590,17 @@ public:
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
-            return M_expr.hasSymbolDependency( symb, se );
+            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
+                return M_expr.hasSymbolDependency( symb, se );
+            else
+                return false;
         }
 
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
-            return M_expr.dependentSymbols( symb, res, se );
+            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
+                    return M_expr.dependentSymbols( symb, res, se );
         }
 
     template <int diffOrder,typename TheSymbolExprType = symbols_expression_empty_t>
