@@ -292,7 +292,7 @@ public:
     {
         std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > > indices_vec;
 
-        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
+        hana::for_each( M_expr.tuple(), [this,&indices_vec]( auto const& evec )
                         {
                             for ( auto const& e : evec )
                             {
@@ -473,7 +473,7 @@ public:
             }
         }
 
-        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( tupleDiffSymbolsExpr ) );
+        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( std::move( tupleDiffSymbolsExpr ) ) );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacExVF<Order,symbols_expression_with_diff_type>;
         std::string exprDesc = str( res );
@@ -633,12 +633,13 @@ public:
                 update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
             }
 
+#if 0
         value_type
         evalij( uint16_type i, uint16_type j ) const
             {
                 return 0;
             }
-
+#endif
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
             {

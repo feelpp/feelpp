@@ -1091,14 +1091,14 @@ operator<<( std::ostream& os, GinacMatrix<M,N,Order,SymbolsExprType> const& e )
 
 template<int M, int N, int Order,typename SymbolsExprType>
 FEELPP_EXPORT std::string
-str( GinacMatrix<M,N,Order> && e )
+str( GinacMatrix<M,N,Order,SymbolsExprType> && e )
 {
     return str( std::forward<GinacMatrix<M,N,Order,SymbolsExprType>>(e).expression() );
 }
 
-template<int M, int N, int Order>
+template<int M, int N, int Order,typename SymbolsExprType>
 FEELPP_EXPORT std::string
-str( GinacMatrix<M,N,Order> const& e )
+str( GinacMatrix<M,N,Order,SymbolsExprType> const& e )
 {
     return str( e.expression() );
 }
