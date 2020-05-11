@@ -173,6 +173,7 @@ public :
                                         }
                                     }
                             });
+            CHECK( applyAdd ) << "cannot add the expression, the type is not register";
         }
 
 #if 0

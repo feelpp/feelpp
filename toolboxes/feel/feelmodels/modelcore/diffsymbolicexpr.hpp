@@ -20,7 +20,11 @@ struct TransformDiffSymbolicExpr
     constexpr auto operator()(T const& t) const
         {
             auto firstTse = *t.begin();
+#if 0
             auto diffExpr = diff( M_expr, firstTse.symbol(),1);
+#else
+            auto diffExpr = M_expr.template diff<1>( firstTse.symbol()/*,world, dirLibExpr*/ );
+#endif
             auto trialExpr = firstTse.expr();
             return trialExpr*diffExpr;
         }
@@ -53,8 +57,16 @@ auto diffSymbolicExpr( SymbolicExprType const& theExpr, TrialSymbolsExpr<SpaceTy
 
                             if ( !theExpr.hasSymbolDependency( e2.symbol() ) )
                                 continue;
+#if 0
+                            auto diffExpr = diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
+#else
+                            auto diffExpr = theExpr.template diff<1>( e2.symbol(),world, dirLibExpr );
+#endif
+                            // std::cout << "diffExprBIS = " << str( diffExprBIS.expression() ) << std::endl;
+                            // std::cout << "diffExpr    = " << str( diffExpr.expression() ) << std::endl;
+                            // std::cout << "diffExprBIS se names : " << diffExprBIS.expression().symbolsExpression().names() << std::endl;
+                            // std::cout << "diffExpr    se names : " << diffExpr.expression().symbolsExpression().names() << std::endl;
 
-                            auto diffExpr = theExpr.template diff<1>( e2.symbol(),world, dirLibExpr );// diff( theExpr, e2.symbol(),1,"",world, dirLibExpr);
                             auto trialExpr = e2.expr();
                             //std::cout << "diffSymbolicExpr add expr" << std::endl;
 
