@@ -466,10 +466,8 @@ public:
                 if ( itSym == this->symbols().end() )
                     continue;
                 GiNaC::symbol const& currentSymb = *itSym;
-
-                GiNaC::symbol currentDiffSymb(currentDiffSymbName+currentSymbSuffix);
-                res += currentDiffSymb*this->expression().diff( currentSymb, diffOrder );
-                resSymbol.push_back( currentDiffSymb );
+                resSymbol.push_back(  GiNaC::symbol(currentDiffSymbName+currentSymbSuffix) );
+                res += resSymbol.back()*this->expression().diff( currentSymb, diffOrder );
             }
         }
 

@@ -422,15 +422,13 @@ public:
                 if ( itSym == this->symbols().end() )
                     continue;
                 GiNaC::symbol const& currentSymb = *itSym;
-
-                GiNaC::symbol currentDiffSymb(currentDiffSymbName+currentSymbSuffix);
+                resSymbol.push_back( GiNaC::symbol(currentDiffSymbName+currentSymbSuffix) );
                 for( int i = 0; i < M*N; ++i )
-                    res[i] += currentDiffSymb*this->expression().op(i).diff( currentSymb, diffOrder );
-                resSymbol.push_back( currentDiffSymb );
+                    res[i] += resSymbol.back()*this->expression().op(i).diff( currentSymb, diffOrder );
             }
         }
 
-        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( tupleDiffSymbolsExpr ) );
+        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( std::move( tupleDiffSymbolsExpr ) ) );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
         GiNaC::matrix resmat(M,N,res);
@@ -483,7 +481,7 @@ public:
     const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > >  indices() const
     {
         std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > > indices_vec;
-        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
+        hana::for_each( M_expr.tupleExpr, [this,&indices_vec]( auto const& evec )
                         {
                             for ( auto const& e : evec )
                             {
