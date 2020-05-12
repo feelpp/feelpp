@@ -280,13 +280,14 @@ public :
     }
 
 
-    bool hasSymbolDependency( std::set<std::string> const& symbolsStr ) const
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::set<std::string> const& symbolsStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         if ( this->isConstant() )
             return false;
 
         bool res = false;
-        hana::for_each( expr_shapes, [this,&symbolsStr,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&symbolsStr,&se,&res]( auto const& e_ij )
                         {
                             if ( res )
                                 return;
@@ -296,7 +297,7 @@ public :
                             {
                                 for ( std::string const& symbolStr : symbolsStr )
                                 {
-                                    if ( this->expr<ni,nj>().hasSymbolDependency( symbolStr ) )
+                                    if ( this->expr<ni,nj>().hasSymbolDependency( symbolStr, se ) )
                                     {
                                         res = true;
                                         break;
@@ -307,9 +308,10 @@ public :
         return res;
     }
 
-    bool hasSymbolDependency( std::string const& symbolStr ) const
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::string const& symbolStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
-        return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ) );
+        return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ), se );
     }
 
 private :
