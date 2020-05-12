@@ -46,7 +46,8 @@ auto diffSymbolicExpr( SymbolicExprType const& theExpr, TrialSymbolsExpr<SpaceTy
                        std::shared_ptr<SpaceType> const& trialSpace, size_type trialBlockSpaceIndex,
                        WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr = Environment::exprRepository() )
 {
-    auto resExpr = TransformDiffSymbolicExpr<SymbolicExprType>::toExpr( hana::transform( tse.tuple(), TransformDiffSymbolicExpr<SymbolicExprType>(theExpr) ) );
+    using the_expr_type = std::decay_t<decltype( TransformDiffSymbolicExpr<SymbolicExprType>::toExpr( hana::transform( tse.tuple(), TransformDiffSymbolicExpr<SymbolicExprType>(theExpr) ) ) )>;
+    the_expr_type resExpr;
 
     hana::for_each( tse.tuple(), [&theExpr,&trialSpace,&trialBlockSpaceIndex,&world,&dirLibExpr,&resExpr]( auto const& e )
                     {
