@@ -422,7 +422,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         if ( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) )
         {
             auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
-            bool coeffDiffusionDependOnUnknown = coeff_c.hasSymbolDependency( trialSymbolNames );
+            bool coeffDiffusionDependOnUnknown = coeff_c.hasSymbolDependency( trialSymbolNames, se );
             if ( coeff_c.template hasExpr<nDim,nDim>() )
             {
                 auto coeff_c_expr = expr( coeff_c.template expr<nDim,nDim>(), se );
@@ -467,6 +467,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                             auto trialBlockIndex = trialSpacePair.second;
 
                             auto coeff_c_diff_expr = diffSymbolicExpr( coeff_c_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
                             if ( !coeff_c_diff_expr.expression().hasExpr() )
                                 continue;
 
@@ -524,7 +525,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         {
             auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
 
-            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames );
+            bool sourceDependOnUnknown = coeff_f.hasSymbolDependency( trialSymbolNames, se );
             if ( sourceDependOnUnknown && buildNonCstPart )
             {
                 auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
