@@ -36,18 +36,14 @@
     {
         "Cu":
         {
-            "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
-            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T",
+            "sigma":"sigma0/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:heat_T",
+            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T",
            // "k":0.370, //[ W/(m*K) ]
            // "sigma":53e3,
 
-            // "heat_c":"k:k",
-            // "heat_f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
-            //"electric_c":"sigma:sigma"
-
-            "heat_c":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
-            "heat_f":"sigma0/(1+alpha*(heat_T-T0))*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):electric_grad_P_0:electric_grad_P_1:electric_grad_P_2:sigma0:alpha:T0:heat_T",
-            "electric_c":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
+            "heat_c":"materials_Cu_k:materials_Cu_k",
+            "heat_f":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
+            "electric_c":"materials_Cu_sigma:materials_Cu_sigma"
         }
     },
     "InitialConditions":
