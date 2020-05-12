@@ -36,6 +36,20 @@
             "electric_c":"sigma:sigma"
         }
     },
+    "InitialConditions":
+    {
+        "temperature":
+        {
+            "Expression":
+            {
+                "myic":
+                {
+                    "markers":"Cu",
+                    "expr":"290"
+                }
+            }
+        }
+    },
     "BoundaryConditions":
     {
         "heat":
