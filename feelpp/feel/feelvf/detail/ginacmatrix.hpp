@@ -432,7 +432,11 @@ public:
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
         GiNaC::matrix resmat(M,N,res);
+#if 0
         std::string exprDesc = str( resmat );
+#else
+        std::string exprDesc = (boost::format("diff(%1%)_%2%_o%3%")% this->exprDesc() %diffVariable %diffOrder ).str();
+#endif
         _expr_type resExpr( resmat, resSymbol, exprDesc, ""/*filename*/, world, dirLibExpr, seWithDiff );
 
         std::map<std::string,double> pv;
