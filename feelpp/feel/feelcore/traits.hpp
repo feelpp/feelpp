@@ -78,6 +78,14 @@ decltype(auto) remove_shared_ptr_f( T&& e )
 
 }
 
+template< typename T >
+struct type_identity
+{
+    using type = T;
+};
+template< typename T>
+using type_identity_t = typename type_identity<T>::type;
+
 
 template <typename T, typename = void>
 struct is_iterable : std::false_type {};
