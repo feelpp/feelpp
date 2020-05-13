@@ -516,7 +516,6 @@ void runTest3()
 
     // vectorial expressions
     auto exprVecA = expr<2,1>("{2*x*y+x*x*y,4*x-y}:x:y");
-    auto exprVecAvf = expr(exprVecA);
     auto exprVecB = expr<2,1>("{2*u*y+u*x*y,4*u-y}:u:x:y");
     auto exprVecBvf = expr(exprVecB, symbolExpr( "u",idv(u1) ) );
     auto exprVecC = expr<2,1>("{2*u*v+x*x*y,4*u-v}:u:v:x:y");
