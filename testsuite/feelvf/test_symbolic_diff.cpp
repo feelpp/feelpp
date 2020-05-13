@@ -39,7 +39,6 @@ FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( symbolic_diff )
 
-
 BOOST_AUTO_TEST_CASE( test1 )
 {
     using namespace Feel;
@@ -71,7 +70,34 @@ BOOST_AUTO_TEST_CASE( test1 )
     g4.setParameterValues( { "u", 2 } );
     auto diff_g4_u = g4.diff<1>( "u" );
     BOOST_CHECK_CLOSE( diff_g4_u.evaluate()(0,0), -0.125, 1e-10 );
+}
 
+BOOST_AUTO_TEST_CASE( test2 )
+{
+    using namespace Feel;
+
+    auto a1 = expr( "3*u^2:u" );
+    auto a2 = expr( "2*u:u" );
+    auto a3 = expr( "u*a1:u:a1" );
+
+    auto my_eval_diff = [&a1,&a2,&a3]( auto && a4 )
+        {
+            auto a5base = expr( "5*a4:a4" );
+            auto a5 = expr( a5base, symbolExpr("a1",a1), symbolExpr("a2",a3), symbolExpr("a3",a3), symbolExpr("a4",a4) );
+            a5.setParameterValues( { "u", 2 } );
+
+            auto diff_a5_u = a5.template diff<1>( "u" );
+            BOOST_CHECK_CLOSE( diff_a5_u.evaluate()(0,0),1520,1e-10 );
+
+        };
+
+    my_eval_diff( a1*a1+a2*a2 );
+    auto myvec = vec( a1, a2 );
+    my_eval_diff( inner( myvec ) );
+    my_eval_diff( inner( myvec, vec( a1, a2 )  ) );
+    my_eval_diff( pow( inner( myvec, mpl::int_<InnerProperties::SQRT>() ), cst(2.) ) );
+    my_eval_diff( pow( inner( myvec, vec( a1, a2 ), mpl::int_<InnerProperties::SQRT>() ), cst(2.) ) );
+    my_eval_diff( pow(myvec(0,0),2.0) + pow(myvec(1,0),2.0) );
 }
 
 BOOST_AUTO_TEST_SUITE_END()
