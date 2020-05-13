@@ -13,10 +13,9 @@
     {
         "Cu":
         {
-            "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
-            //"Cp":"1000.005", //[ J/(kg*K) ]
-            // "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
+            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T",
+            //"k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
+            "k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T"
         }
     },
     "BoundaryConditions":
