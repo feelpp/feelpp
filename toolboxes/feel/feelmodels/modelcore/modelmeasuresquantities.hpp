@@ -46,6 +46,8 @@ public:
     std::string const& name() const { return M_name; }
     std::string const& prefix() const { return M_prefix; }
     quantity_type const& quantity() const { return M_quantity; }
+    
+    std::string nameWithPrefix() const { return prefixvm( M_prefix, M_name ); }
 
     value_type value() const
     {
