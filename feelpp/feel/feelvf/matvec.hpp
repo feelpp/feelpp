@@ -204,6 +204,11 @@ public:
         M_expr( expr )
     {
     }
+    Mat( MatrixExpr && expr )
+        :
+        M_expr( expr )
+    {
+    }
     Mat( Mat const & expr )
         :
         M_expr( expr.M_expr )
@@ -274,16 +279,46 @@ public:
             return res;
         }
 
-    template <typename SymbolsExprType>
-    auto applySymbolsExpr( SymbolsExprType const& se ) const
-        {
-            // TODO !!!!!!!!
-            return *this;
-        }
-
     void setParameterValues( std::map<std::string,value_type> const& mp )
         {
             hana::for_each( M_expr, [&mp]( auto & e ) { e.setParameterValues( mp ); } );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            hana::for_each( M_expr, [&pv]( auto const& e ) { e.updateParameterValues( pv ); } );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newTupleExprs = hana::transform( M_expr, [&se](auto const& t){ return t.applySymbolsExpr( se ); });
+            return Mat<M, N, std::decay_t<decltype(newTupleExprs)> >( std::move( newTupleExprs ) );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            bool res = false;
+            hana::for_each( M_expr, [&symb,&se,&res]( auto const& e )
+                            {
+                                if ( res )
+                                    return;
+                                res = e.hasSymbolDependency( symb, se );
+                            } );
+            return res;
+        }
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            hana::for_each( M_expr, [&symb,&res,&se]( auto const& e ) { e.dependentSymbols( symb,res,se ); } );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            auto newTupleExprs = hana::transform( M_expr, [&diffVariable,&world,&dirLibExpr,&se](auto const& t){ return t.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); });
+            return Mat<M, N, std::decay_t<decltype(newTupleExprs)> >( std::move( newTupleExprs ) );
         }
 
     //@}

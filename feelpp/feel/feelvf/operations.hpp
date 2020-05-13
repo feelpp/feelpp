@@ -380,6 +380,8 @@
                                                                         \
         static const bool is_op_mul = std::is_same_v< expression_type, vf_mul<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
         static const bool is_op_div = std::is_same_v< expression_type, vf_div<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static const bool is_op_add = std::is_same_v< expression_type, vf_add<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static const bool is_op_sub = std::is_same_v< expression_type, vf_sub<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
         size_type dynamicContext() const { return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right ); } \
@@ -443,7 +445,7 @@
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \
-        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        void setParameterValues( std::map<std::string,double> const& mp ) \
         {                                                               \
             M_left.setParameterValues( mp );                            \
             M_right.setParameterValues( mp );                           \
@@ -482,8 +484,10 @@
             if constexpr( is_op_mul )                                   \
                             return ldiff*M_right + M_left*rdiff;        \
             else if constexpr( is_op_div )                              \
-                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2); \
-            else return *this;                                          \
+                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2.0); \
+            else if constexpr( is_op_add || is_op_sub )                 \
+                                 return ldiff VF_OP_SYMBOL( O ) rdiff;  \
+            else { CHECK(false ) << "TODO or not possible";return *this; } \
         }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \

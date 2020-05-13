@@ -152,7 +152,7 @@ public:
     auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
                TheSymbolExprType const& se ) const
     {
-        return expression_type(0.);
+        return expression_type(0);
     }
 
 
