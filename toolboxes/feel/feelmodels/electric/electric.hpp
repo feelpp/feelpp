@@ -224,6 +224,11 @@ public :
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::potential(this), "electric-potential", startBlockSpaceIndex ) );
+        }
+
     //___________________________________________________________________________________//
     // symbols expressions
     //___________________________________________________________________________________//
@@ -258,6 +263,12 @@ public :
             return Feel::vf::symbolsExpr( se_currentdensity );
         }
 
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
+
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -275,9 +286,10 @@ public :
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
-
 
     //___________________________________________________________________________________//
     // apply assembly and solver

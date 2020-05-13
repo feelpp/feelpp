@@ -1,6 +1,8 @@
 #ifndef FEELPP_TOOLBOXES_ELECTRIC_ASSEMBLY_HPP
 #define FEELPP_TOOLBOXES_ELECTRIC_ASSEMBLY_HPP 1
 
+#include <feel/feelmodels/modelcore/diffsymbolicexpr.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -174,10 +176,10 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
 
     auto mesh = this->mesh();
     auto XhV = this->spaceElectricPotential();
-    // auto const& v = this->fieldElectricPotential();
-    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto const& v = mctx.field( FieldTag::potential(this), "electric-potential" );
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
 
     auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -190,14 +192,40 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
-            bool buildDiffusion = ( electricConductivity.isConstant() )? buildCstPart : buildNonCstPart;
+            bool electricConductivityDependOnTrialSymbol = electricConductivity.hasSymbolDependency( trialSymbolNames,se );
+            auto sigmaExpr = expr(electricConductivity.expr(),se);
+            bool buildDiffusion = sigmaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( buildDiffusion )
             {
-                auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= sigmaExpr*inner(gradt(v),grad(v)),
                                _geomap=this->geomap() );
+            }
+            if ( electricConductivityDependOnTrialSymbol && buildNonCstPart )
+            {
+                hana::for_each( tse.map(), [this,&sigmaExpr,&v,&J,&range,&XhV]( auto const& e )
+                    {
+                        // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+
+                            auto sigmaDiffExpr = diffSymbolicExpr( sigmaExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                            if ( !sigmaDiffExpr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=XhV,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr= sigmaDiffExpr*inner(gradv(v),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
             }
         }
     }
@@ -210,7 +238,7 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
         {
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
-                           _expr= expression1(d,symbolsExpr)*idt(v)*id(v),
+                           _expr= expression1(d,se)*idt(v)*id(v),
                            _geomap=this->geomap() );
         }
     }
@@ -251,10 +279,10 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
             auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
 
-            bool buildDiffusion = ( electricConductivity.isConstant() )? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+            auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
+            bool buildDiffusion = sigmaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
             if ( buildDiffusion )
             {
-                auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);
                 myLinearForm +=
                     integrate( _range=range,
                                _expr= sigmaExpr*inner(gradv(v),grad(v)),

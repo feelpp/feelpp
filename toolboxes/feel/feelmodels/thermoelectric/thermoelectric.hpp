@@ -149,6 +149,13 @@ public :
             return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsElectric );
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric ) const
+        {
+            return Feel::FeelModels::selectorModelFields( this->heatModel()->trialSelectorModelFields( startBlockSpaceIndexHeat ),
+                                                          this->electricModel()->trialSelectorModelFields( startBlockSpaceIndexElectric ) );
+        }
+
+
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -163,10 +170,12 @@ public :
             auto mfields = this->modelFields( prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
-    auto modelContext( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorElectric, std::string const& prefix = "" ) const
+    auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric, std::string const& prefix = "" ) const
         {
-            auto mfields = this->modelFields( sol, rowStartInVectorHeat, rowStartInVectorElectric, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto mfields = this->modelFields( sol, startBlockSpaceIndexHeat, startBlockSpaceIndexElectric, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexElectric ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
 
     //___________________________________________________________________________________//
@@ -184,6 +193,12 @@ public :
             return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
 
     //___________________________________________________________________________________//
     // apply assembly and solver

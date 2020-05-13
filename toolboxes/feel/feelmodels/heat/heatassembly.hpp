@@ -1,6 +1,8 @@
 #ifndef FEELPP_TOOLBOXES_HEAT_ASSEMBLY_HPP
 #define FEELPP_TOOLBOXES_HEAT_ASSEMBLY_HPP 1
 
+#include <feel/feelmodels/modelcore/diffsymbolicexpr.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -47,7 +49,6 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     auto myLinearForm = form1( _test=Xh, _vector=F,
                                _rowstart=this->rowStartInVector() );
 
-    std::string symbolStr = "heat_T";
     //--------------------------------------------------------------------------------------------------//
 
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -311,7 +312,9 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     auto Xh = this->spaceTemperature();
     auto const& u = mctx.field( FieldTag::temperature(this), "temperature" );
     auto const& v = this->fieldTemperature();
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=J,
                                               _pattern=size_type(Pattern::COUPLED),
@@ -324,12 +327,11 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
-        std::string symbolStr = "heat_T";
-        bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
-        bool buildDiffusion = thermalConductivityDependOnTemperature? buildNonCstPart : buildCstPart;
+        bool thermalConductivityDependOnTrialSymbol = thermalConductivity.hasSymbolDependency( trialSymbolNames,se );
         if ( thermalConductivity.template hasExpr<nDim,nDim>() )
         {
-            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+            auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), se );
+            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( buildDiffusion )
             {
                 bilinearForm_PatternCoupled +=
@@ -338,14 +340,15 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                _geomap=this->geomap() );
             }
 
-            if ( thermalConductivityDependOnTemperature && buildNonCstPart )
+            if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
             {
                 CHECK( false ) << "TODO";
             }
         }
         else
         {
-            auto kappaExpr = expr( thermalConductivity.expr(), symbolsExpr );
+            auto kappaExpr = expr( thermalConductivity.expr(), se );
+            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( buildDiffusion )
             {
                 bilinearForm_PatternCoupled +=
@@ -353,14 +356,30 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
                                _expr= timeSteppingScaling*kappaExpr*inner(gradt(u),grad(v)),
                                _geomap=this->geomap() );
             }
-            if ( thermalConductivityDependOnTemperature && buildNonCstPart )
+            if ( thermalConductivityDependOnTrialSymbol && buildNonCstPart )
             {
-                auto kappaDiffExpr = diff( kappaExpr,symbolStr,1,"",this->worldComm(),this->repository().expr());
-                //auto kappaDiffEval = expr( kappaDiff.expression(), symbolsExpr );
-                bilinearForm_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*kappaDiffExpr*idt(u)*inner(gradv(u),grad(v)),
-                               _geomap=this->geomap() );
+                hana::for_each( tse.map(), [this,&kappaExpr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+
+                            auto kappaDiffExpr = diffSymbolicExpr( kappaExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                            if ( !kappaDiffExpr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr= timeSteppingScaling*kappaDiffExpr*inner(gradv(u),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
             }
         }
 
@@ -368,11 +387,11 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
         if ( this->hasVelocityConvectionExpr( matName ) || !this->isStationary() )
         {
             auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),symbolsExpr);
+            auto rhoHeatCapacityExpr = expr(rhoHeatCapacity.expr(),se);
 
             if ( buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
+                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
                 bilinearForm_PatternCoupled +=
                     integrate( _range=range,
                                _expr= timeSteppingScaling*rhoHeatCapacityExpr*(gradt(u)*velConvExpr)*id(v),
@@ -394,15 +413,15 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
             // update stabilization gls
             if ( M_stabilizationGLS && buildNonCstPart && this->hasVelocityConvectionExpr( matName ) )
             {
-                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), symbolsExpr );
+                auto velConvExpr = expr( this->velocityConvectionExpr( matName ), se );
                 if ( thermalConductivity.isMatrix() )
                 {
-                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+                    auto const& kappa = expr( thermalConductivity.template expr<nDim,nDim>(), se );
                     this->updateJacobianStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
                 }
                 else
                 {
-                    auto const& kappa = expr(thermalConductivity.expr(),symbolsExpr);
+                    auto const& kappa = expr(thermalConductivity.expr(),se);
                     this->updateJacobianStabilizationGLS( rhoHeatCapacityExpr, kappa, velConvExpr, range, data );
                 }
             }
@@ -417,7 +436,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     {
         for( auto const& d : this->M_bcRobin )
         {
-            auto theExpr1 = expression1( d,symbolsExpr );
+            auto theExpr1 = expression1( d,se );
             bilinearForm_PatternCoupled +=
                 integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                            _expr= timeSteppingScaling*theExpr1*idt(v)*id(v),
@@ -477,12 +496,10 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
-        std::string symbolStr = "heat_T";
-        bool thermalConductivityDependOnTemperature = thermalConductivity.hasSymbolDependency( symbolStr );
-        bool buildDiffusion = thermalConductivityDependOnTemperature? buildNonCstPart : buildNonCstPart && !UseJacobianLinearTerms;
         if ( thermalConductivity.template hasExpr<nDim,nDim>() )
         {
             auto const& kappaExpr = expr( thermalConductivity.template expr<nDim,nDim>(), symbolsExpr );
+            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
             if ( buildDiffusion )
             {
                 myLinearForm +=
@@ -494,6 +511,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
         else
         {
             auto kappaExpr = expr(thermalConductivity.expr(),symbolsExpr);
+            bool buildDiffusion = kappaExpr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
             if ( buildDiffusion )
             {
                 myLinearForm +=
