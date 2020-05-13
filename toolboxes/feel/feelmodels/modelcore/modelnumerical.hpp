@@ -576,22 +576,22 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
 {
     bool hasMeasure = false;
     std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
-    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& e )
+    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& mquantity )
             {
-                if constexpr( is_iterable_v<decltype(e)> )
+                if constexpr( is_iterable_v<decltype(mquantity)> )
                 {
-                    for( auto const& [quantityName,quantityValue] : e )
+                    for( auto const& quantity : mquantity )
                     {
+                        std::string quantityName = quantity.nameWithPrefix();
                         if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                         {
-                            if constexpr( is_iterable_v<decltype(quantityValue)> )
+                            if constexpr( is_iterable_v<decltype(quantity.value())> )
                             {
-                                std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
-                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantity.value() );
                             }
                             else
                             {
-                                this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
+                                this->postProcessMeasuresIO().setMeasure( quantityName, quantity.value() );
                             }
                             hasMeasure = true;
                         }
@@ -599,18 +599,16 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                 }
                 else
                 {
-                    std::string const& quantityName = e.first;
-                    auto const& quantityValue = e.second;
+                    std::string quantityName = mquantity.nameWithPrefix();
                     if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                     {
-                        if constexpr( is_iterable_v<decltype(quantityValue)> )
+                        if constexpr( is_iterable_v<decltype(mquantity.value())> )
                         {
-                            std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
-                            this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                            this->postProcessMeasuresIO().setMeasureComp( quantityName, mquantity.value() );
                         }
                         else
                         {
-                            this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
+                            this->postProcessMeasuresIO().setMeasure( quantityName, mquantity.value() );
                         }
                         hasMeasure = true;
                     }
