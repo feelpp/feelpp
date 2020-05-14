@@ -21,14 +21,14 @@ steps:
    async: true
    if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )
  - wait
- - trigger: "feelpp-singularity"
-   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
-   async: true
-   build:
-     env:
-       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp"
-       TAG: ${BUILDKITE_BRANCH}
+# - trigger: "feelpp-singularity"
+#   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
+#   async: true
+#   build:
+#     env:
+#       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+#       PROJECT: "feelpp"
+#       TAG: ${BUILDKITE_BRANCH}
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
@@ -42,19 +42,23 @@ steps:
    agents:
      docker: true
  - wait
+ - trigger: "pkg-feelpp-toolboxes"
+   label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
+   async: true
+   if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )
  - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
  - wait
- - trigger: "feelpp-singularity"
-   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
-   async: true
-   build:
-     env:
-       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-toolboxes"
-       TAG: ${BUILDKITE_BRANCH}
+# - trigger: "feelpp-singularity"
+#   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
+#   async: true
+#   build:
+#     env:
+#       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+#       PROJECT: "feelpp-toolboxes"
+#       TAG: ${BUILDKITE_BRANCH}
  - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
@@ -64,14 +68,14 @@ steps:
    name: ":docker: push images to the hub :rocket:"
    agents:
      docker: true
- - wait
- - trigger: "feelpp-singularity"
-   label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
-   async: true
-   build:
-     env:
-       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
-       PROJECT: "feelpp-mor"
-       TAG: ${BUILDKITE_BRANCH}
+# - wait
+#- trigger: "feelpp-singularity"
+#  label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
+#  async: true
+#  build:
+#    env:
+#      GIRDER_ID: "5a4fa90ab0e9571f842931e5"
+#      PROJECT: "feelpp-mor"
+#      TAG: ${BUILDKITE_BRANCH}
 # notify:
 #   - slack: #env-buildkite

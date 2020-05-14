@@ -270,6 +270,11 @@ class Heat : public ModelNumerical,
                 return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
             }
 
+        auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+            {
+                return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::temperature(this), "temperature", startBlockSpaceIndex ) );
+            }
+
         //___________________________________________________________________________________//
         // symbols expressions
         //___________________________________________________________________________________//
@@ -300,6 +305,12 @@ class Heat : public ModelNumerical,
                 return Feel::vf::symbolsExpr( se_nflux );
             }
 
+        template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+        auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+            {
+                return mfields.trialSymbolsExpr( tsmf );
+            }
+
         //___________________________________________________________________________________//
         // model context helper
         //___________________________________________________________________________________//
@@ -317,7 +328,9 @@ class Heat : public ModelNumerical,
         auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
             {
                 auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-                return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+                auto se = this->symbolsExpr( mfields );
+                auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
+                return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
             }
 
         //___________________________________________________________________________________//

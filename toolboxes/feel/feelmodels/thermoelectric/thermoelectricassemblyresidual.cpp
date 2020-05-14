@@ -51,17 +51,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                             _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
 
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            if ( M_modelUseJouleEffect )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                mylfT +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*inner(gradv(v))*id( t ),
-                               _geomap=this->geomap() );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                if ( M_modelUseJouleEffect )
+                {
+                    mylfT +=
+                        integrate( _range=range,
+                                   _expr= -sigmaExpr*inner(gradv(v))*id( t ),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }

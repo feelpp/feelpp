@@ -452,8 +452,8 @@ public :
             return false;
         }
 
-    template <int TheDim, typename SymbolsExpr = symbols_expression_empty_t>
-    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExpr const& se = symbols_expression_empty_t{} ) const
+    template <int TheDim, typename SymbolsExprType = symbols_expression_empty_t>
+    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
             auto Id = eye<TheDim,TheDim>();
             using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
@@ -480,14 +480,14 @@ public :
                 }
             }
 
-            if constexpr ( std::is_same_v<SymbolsExpr,symbols_expression_empty_t> )
+            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
                 return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
             else
                 return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix ).applySymbolsExpr( se );
         }
 
-    template <int M,int N, typename SymbolsExpr = symbols_expression_empty_t>
-    auto materialPropertyExpr( std::string const& propName, SymbolsExpr const& se = symbols_expression_empty_t{} ) const
+    template <int M,int N, typename SymbolsExprType = symbols_expression_empty_t>
+    auto materialPropertyExpr( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
             using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<M,N>() ) >;
             std::vector<std::pair<std::string,_expr_type>> theExprs;
@@ -504,7 +504,7 @@ public :
                 }
             }
 
-            if constexpr ( std::is_same_v<SymbolsExpr,symbols_expression_empty_t> )
+            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
                 return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, theExprs );
             else
                 return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, theExprs ).applySymbolsExpr( se );
@@ -529,14 +529,14 @@ public :
             return this->hasMaterialPropertyDependingOnSymbol( "thermal-conductivity", symbolStr );
         }
 
-    template <typename SymbolsExpr = symbols_expression_empty_t>
-    auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto thermalConductivityExpr( SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             return this->materialPropertyExprScalarOrMatrix<nDim>( "thermal-conductivity", symbolsExpr );
         }
 
-    template <typename SymbolsExpr = symbols_expression_empty_t>
-    auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr = symbols_expression_empty_t{} ) const
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto thermalConductivityScalarExpr( SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             return this->materialPropertyExpr<1,1>( "thermal-conductivity", symbolsExpr );
         }
