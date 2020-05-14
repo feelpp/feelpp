@@ -806,4 +806,23 @@ BOOST_AUTO_TEST_CASE( test_6 )
 {
     runTest6();
 }
+BOOST_AUTO_TEST_CASE( test_7 )
+{
+    auto a1 = expr( "3*u+v:u:v");
+    a1.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 11, 1e-12 );
+    auto a2 = expr( "{3*u+v}:u:v");
+    a2.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a2.evaluate()(0,0), 11, 1e-12 );
+    auto a3 = expr<1,1>( "3*u+v:u:v");
+    a3.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a3.evaluate()(0,0), 11, 1e-12 );
+    auto a4 = expr<1,1>( "{3*u+v}:u:v");
+    a4.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    BOOST_CHECK_CLOSE( a4.evaluate()(0,0), 11, 1e-12 );
+    auto a5 = expr<1,1>( "{3*u*x^2+2*v*y^2}:u:v:x:y");
+    a5.setParameterValues( { { "u", 2 }, { "v",5 } } );
+    auto lap_a5 = laplacian( a5 );
+    BOOST_CHECK_CLOSE( lap_a5.evaluate()(0,0), 32, 1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
