@@ -40,6 +40,8 @@
 #include <feel/feelmodels/levelset/levelsetredistanciation_hj.hpp>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
+#include <feel/feelmodels/modelcore/modelfields.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresquantities.hpp>
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
@@ -461,12 +463,16 @@ public:
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
-        std::vector<double> vecPositionCOM( this->positionCOM().size() );
-        Eigen::Matrix<value_type, nDim, 1>::Map( &vecPositionCOM[0], vecPositionCOM.size() ) = this->positionCOM();
+        auto eigenToVec = []( Eigen::Matrix<value_type, nDim, 1> const& m )
+        {
+            std::vector<value_type> v( m.size() );
+            Eigen::Matrix<value_type, nDim, 1>::Map( &v[0], v.size() ) = m;
+            return v;
+        };
         return hana::make_tuple(
-                std::make_pair( prefixvm( prefix, "volume" ), this->volume() ),
-                std::make_pair( prefixvm( prefix, "perimeter" ), this->perimeter() ),
-                std::make_pair( prefixvm( prefix, "position-com" ), vecPositionCOM )
+                ModelMeasuresQuantity( prefix, "volume", std::bind( &self_type::volume, this ) ),
+                ModelMeasuresQuantity( prefix, "perimeter", std::bind( &self_type::perimeter, this ) ),
+                ModelMeasuresQuantity( prefix, "position-com", std::bind( eigenToVec, std::bind( &self_type::positionCOM, this ) ) )
                 );
     }
     //--------------------------------------------------------------------//
