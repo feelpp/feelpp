@@ -538,6 +538,8 @@ public:
         this->setInitialValue(expr, M_redistInitialValue );
     }
 
+    element_levelset_ptrtype const& initialValue() const { return M_initialPhi; }
+
     double initialVolume() const { return M_initialVolume; }
     double initialPerimeter() const { return M_initialPerimeter; }
 

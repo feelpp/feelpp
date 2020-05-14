@@ -521,6 +521,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"modgradphi-method").c_str(), Feel::po::value<std::string>()->default_value( "nodal-projection" ), "method to compute gradphi (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
         (prefixvm(prefix,"curvature-method").c_str(), Feel::po::value<std::string>()->default_value( "smooth-projection" ), "method to compute curvature (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
         (prefixvm(prefix,"curvature-diffusion.time-step").c_str(), Feel::po::value<double>()->default_value( 0.01 ), "time step used for the heat equations in diffusion-order1 and diffusion-order2 curvature methods")
+        (prefixvm(prefix,"curvature-diffusion.time-discretisation").c_str(), Feel::po::value<std::string>()->default_value( "crank-nicolson" ), "time discretisation scheme used for the heat equations in diffusion-order1 and diffusion-order2 curvature methods")
 
         (prefixvm(prefix,"projector-sm-scalar.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for projector-sm-scalar")
         (prefixvm(prefix,"projector-sm-vectorial.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for projector-sm-vectorial")
