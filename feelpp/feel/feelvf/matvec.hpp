@@ -345,7 +345,9 @@ public:
             constexpr auto operator()(T const& t) const
                 {
                     using _tensor_type = typename TransformExprToTensor::template apply<T>::type;
-                    return _tensor_type( t, Geo_t{} );
+                    //return _tensor_type( t, Geo_t{} );
+                    std::unique_ptr<_tensor_type> result;
+                    return *result;
                 }
             template <typename T>
             constexpr auto operator()(T const& t, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu ) const
