@@ -24,6 +24,8 @@
 #ifndef FEELPP_DETAIL_GINACMATRIX_HPP
 #define FEELPP_DETAIL_GINACMATRIX_HPP 1
 
+#include <any>
+
 namespace Feel
 {
 namespace vf {
@@ -160,12 +162,26 @@ public:
     //@{
 
     GinacMatrix() : super() {}
+
+    explicit GinacMatrix( value_type value )
+        :
+        super(),
+        M_fun( value ),
+        M_cfun( new GiNaC::FUNCP_CUBA() ),
+        M_exprDesc( std::to_string( value ) ),
+        M_isPolynomial( true ),
+        M_polynomialOrder( 0 ),
+        M_numericValue( evaluate_type::Constant( value ) )
+        {
+            M_isNumericExpression = true ;
+        }
+
     explicit GinacMatrix( GiNaC::matrix const & fun, std::vector<GiNaC::symbol> const& syms, std::string const& exprDesc,
                           std::string filename="", WorldComm const& world=Environment::worldComm(), std::string const& dirLibExpr=Environment::exprRepository(),
                           symbols_expression_type const& expr = symbols_expression_type() )
         :
         super( syms ),
-        M_fun( fun.evalm() ),
+        //M_fun( fun.evalm() ),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
         M_exprDesc( exprDesc ),
@@ -174,6 +190,17 @@ public:
         M_polynomialOrder( Order ),
         M_numericValue( evaluate_type::Zero() )
         {
+            GiNaC::ex funWithEvalm = fun.evalm();
+            if constexpr ( M*N == 1 )
+            {
+                CHECK( funWithEvalm.nops() == 1 ) << "expression " << funWithEvalm << "should have only one element, but " << funWithEvalm.nops();
+                M_fun = funWithEvalm.op( 0 );
+                if ( GiNaC::is_a<GiNaC::lst>( M_fun ) )
+                    CHECK( false ) << "scalar expression should not be a lst";
+            }
+            else
+                M_fun = funWithEvalm;
+
             this->updateNumericExpression();
 
             if ( !M_isNumericExpression )
@@ -183,7 +210,15 @@ public:
 
                 DVLOG(2) << "Ginac matrix matrix constructor with expression_type \n";
                 GiNaC::lst exprs;
-                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
+                if constexpr ( M*N == 1 )
+                {
+                    exprs.append( M_fun );
+                }
+                else
+                {
+                    for( int i = 0; i < M_fun.nops(); ++i )
+                        exprs.append( M_fun.op(i) );
+                }
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
@@ -205,7 +240,7 @@ public:
                           symbols_expression_type const& expr = symbols_expression_type() )
         :
         super(syms),
-        M_fun(fun.evalm()),
+        //M_fun(fun.evalm()),
         M_cfun( new GiNaC::FUNCP_CUBA() ),
         M_filename(),
         M_exprDesc( exprDesc ),
@@ -214,6 +249,22 @@ public:
         M_polynomialOrder( Order ),
         M_numericValue( evaluate_type::Zero() )
         {
+            GiNaC::ex funWithEvalm = fun.evalm();
+            if constexpr ( M*N == 1 )
+            {
+                if ( GiNaC::is_a<GiNaC::lst>( funWithEvalm ) )
+                {
+                    CHECK( funWithEvalm.nops() == 1 ) << "expression " << funWithEvalm << "should have only one element, but " << funWithEvalm.nops();
+                    M_fun = funWithEvalm.op( 0 );
+                    if ( GiNaC::is_a<GiNaC::lst>( M_fun ) )
+                        CHECK( false ) << "scalar expression should not be a lst";
+                }
+                else
+                    M_fun = funWithEvalm;
+            }
+            else
+                M_fun = funWithEvalm;
+
             this->updateNumericExpression();
 
             if ( !M_isNumericExpression )
@@ -223,7 +274,15 @@ public:
 
                 DVLOG(2) << "Ginac matrix ex constructor with expression_type \n";
                 GiNaC::lst exprs;
-                for( int i = 0; i < M_fun.nops(); ++i ) exprs.append( M_fun.op(i) );
+                if constexpr ( M*N == 1 )
+                {
+                    exprs.append( M_fun );
+                }
+                else
+                {
+                    for( int i = 0; i < M_fun.nops(); ++i )
+                        exprs.append( M_fun.op(i) );
+                }
 
                 GiNaC::lst syml;
                 std::for_each( M_syms.begin(),M_syms.end(), [&]( GiNaC::symbol const& s ) { syml.append(s); } );
@@ -403,12 +462,17 @@ public:
 
         std::vector<GiNaC::symbol> resSymbol = this->symbols();
         std::vector<GiNaC::ex> res(M*N);
-        CHECK( GiNaC::is_a<GiNaC::lst>(this->expression()) ) << "something wrong";
+        //CHECK( GiNaC::is_a<GiNaC::lst>(this->expression()) ) << "something wrong";
         if ( super::hasSymbol( diffVariable ) )
         {
             GiNaC::symbol diffSymb = Feel::symbols( std::vector<std::string>( { diffVariable } ), this->symbols() )[0];
-            for( int i = 0; i < M*N; ++i )
-                res[i] += this->expression().op(i).diff( diffSymb, diffOrder );
+            if constexpr ( M*N==1 )
+                res[0] += this->expression().diff( diffSymb, diffOrder );
+            else
+            {
+                for( int i = 0; i < M*N; ++i )
+                    res[i] += this->expression().op(i).diff( diffSymb, diffOrder );
+            }
         }
 
         for ( auto const& [currentSymbName,currentSymbSuffixes] : symbolToApplyDiff )
@@ -423,8 +487,13 @@ public:
                     continue;
                 GiNaC::symbol const& currentSymb = *itSym;
                 resSymbol.push_back( GiNaC::symbol(currentDiffSymbName+currentSymbSuffix) );
-                for( int i = 0; i < M*N; ++i )
-                    res[i] += resSymbol.back()*this->expression().op(i).diff( currentSymb, diffOrder );
+                if constexpr ( M*N==1 )
+                    res[0] += resSymbol.back()*this->expression().diff( currentSymb, diffOrder );
+                else
+                {
+                    for( int i = 0; i < M*N; ++i )
+                        res[i] += resSymbol.back()*this->expression().op(i).diff( currentSymb, diffOrder );
+                }
             }
         }
 
@@ -481,6 +550,9 @@ public:
         return M_isNumericExpression || ( M_indexSymbolXYZ.empty() && M_indexSymbolN.empty() && (M_syms.size() == M_symbolNameToValue.size()) );
     }
     bool isConstant() const { return this->isEvaluable(); }
+
+    void setNumericValue( double val ) { M_isNumericExpression = true; M_numericValue = evaluate_type::Constant( val ); }
+
 
     const std::vector<std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > >  indices() const
     {
@@ -837,8 +909,9 @@ private :
                             }
                         });
 
-        int no = M_fun.nops();
-        CHECK( no == M*N )  << "invalid size " << no << " vs " << M*N << "\n" ;
+        // int no = M_fun.nops();
+        // CHECK( no == M*N )  << "invalid size " << no << " vs " << M*N << "\n" ;
+        static constexpr int no = M*N;
         if ( symbExprArePolynomials )
         {
             GiNaC::lst symlIsPoly;
@@ -846,8 +919,13 @@ private :
                 symlIsPoly.append( thesymb.first );
 
             std::vector<bool> compExprIsPoly( no );
-            for( int i = 0; i < no; ++i )
-                compExprIsPoly[i] = M_fun.op(i).is_polynomial( symlIsPoly );
+            if constexpr ( no == 1 )
+                 compExprIsPoly[0] = M_fun.is_polynomial( symlIsPoly );
+            else
+            {
+                for( int i = 0; i < no; ++i )
+                    compExprIsPoly[i] = M_fun.op(i).is_polynomial( symlIsPoly );
+            }
             M_isPolynomial = std::accumulate( compExprIsPoly.begin(), compExprIsPoly.end(), true, std::logical_and<bool>() );
         }
         else
@@ -856,8 +934,13 @@ private :
         if ( M_isPolynomial )
         {
             std::vector<uint16_type>  compExprPolyOrder( no );
-            for( int i = 0; i < no; ++i )
-                compExprPolyOrder[i] = totalDegree( M_fun.op(i), symbTotalDegree );
+            if constexpr ( no == 1 )
+                compExprPolyOrder[0] = totalDegree( M_fun, symbTotalDegree );
+            else
+            {
+                for( int i = 0; i < no; ++i )
+                    compExprPolyOrder[i] = totalDegree( M_fun.op(i), symbTotalDegree );
+            }
             M_polynomialOrder = *std::max_element( compExprPolyOrder.begin(), compExprPolyOrder.end() );
         }
         else
@@ -1105,8 +1188,16 @@ str( GinacMatrix<M,N,Order,SymbolsExprType> const& e )
     return str( e.expression() );
 }
 
+template<int Order=2, typename SymbolsExprType = symbols_expression_empty_t >
+using GinacExVF =GinacMatrix<1,1,Order,SymbolsExprType>;
+
+template<int Order = 2>
+using GinacEx = GinacExVF<Order>;
+
 /// \endcond
 /// \endcond
 }} // Feel
+
+
 
 #endif /* FEELPP_DETAIL_GINACMATRIX_HPP */
