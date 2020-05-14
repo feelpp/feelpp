@@ -1048,7 +1048,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     //this->exportResults( time, this->symbolsExpr() );
-    this->exportResults( time, this->symbolsExpr(mfields), mfields, hana::tuple<>{} /*this->allMeasuresQuantities()*/ );  // TODO allMeasuresQuantities 
+    this->exportResults( time, this->symbolsExpr(mfields), mfields, this->allMeasuresQuantities() );
 }
 
 //----------------------------------------------------------------------------//
