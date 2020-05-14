@@ -197,7 +197,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
-    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_x,%1%_U_y}:%1%_U_x:%1%_U_y":"{%1%_U_x,%1%_U_y,%1%_U_z}:%1%_U_x:%1%_U_y:%1%_U_z"  )%M_fluidModel->keyword() ).str();
+    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_0,%1%_U_1}:%1%_U_0:%1%_U_1":"{%1%_U_0,%1%_U_1,%1%_U_2}:%1%_U_0:%1%_U_1:%1%_U_2" )%M_fluidModel->keyword() ).str();
     auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
     for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
         M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );

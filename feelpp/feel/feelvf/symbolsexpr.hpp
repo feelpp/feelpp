@@ -37,9 +37,8 @@ struct SymbolExprComponentSuffix : public std::vector< std::tuple<std::string,st
     SymbolExprComponentSuffix( SymbolExprComponentSuffix const& ) = default;
     SymbolExprComponentSuffix( SymbolExprComponentSuffix && ) = default;
 
-    SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2 )
+    SymbolExprComponentSuffix( uint16_type nComp1, uint16_type nComp2, bool useXYZ = false )
     {
-        bool useXYZ = false;
         if ( nComp1 > 1 && nComp2 > 1 )
         {
             for (uint16_type c1=0;c1<nComp1;++c1 )
@@ -144,42 +143,42 @@ template<typename ExprT>
 using symbol_expression_t = SymbolExpr<ExprT>;
 
 //! build a SymbolExpr object
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::string const& s,Expr<T> const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} ) { return SymbolExpr<Expr<T>>( std::make_tuple(s,e,secs,seuf) ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::string const& s,ExprT const& e, SymbolExprComponentSuffix const& secs = SymbolExprComponentSuffix(), SymbolExprUpdateFunction const& seuf = SymbolExprUpdateFunction{} ) { return SymbolExpr<ExprT>( std::make_tuple(s,e,secs,seuf) ); }
 
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::initializer_list<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( std::vector<std::pair<std::string,Expr<T>>>( e ) ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::initializer_list<std::pair<std::string,ExprT>> const& e ) { return SymbolExpr<ExprT>( std::vector<std::pair<std::string,ExprT>>( e ) ); }
 
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( std::vector<std::tuple<std::string,Expr<T>>>( e ) ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::initializer_list<std::tuple<std::string,ExprT>> const& e ) { return SymbolExpr<ExprT>( std::vector<std::tuple<std::string,ExprT>>( e ) ); }
 #if 0
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 #endif
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::initializer_list<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::initializer_list<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::vector<std::pair<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::vector<std::pair<std::string,ExprT>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::vector<std::tuple<std::string,Expr<T>>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::vector<std::tuple<std::string,ExprT>> const& e ) { return SymbolExpr<ExprT>( e ); }
 #if 0
 template <typename T>
 SymbolExpr<Expr<T>>
 symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
 #endif
 
-template <typename T>
-SymbolExpr<Expr<T>>
-symbolExpr( std::vector<std::tuple<std::string,Expr<T>,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<Expr<T>>( e ); }
+template <typename ExprT>
+SymbolExpr<ExprT>
+symbolExpr( std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
 
 struct SymbolsExprTag {};
@@ -225,6 +224,7 @@ struct SymbolsExpr
         }
 
     tuple_type const& tuple() const { return tupleExpr; }
+    tuple_type & tuple() { return tupleExpr; }
 
     tuple_type tupleExpr;
 };
