@@ -451,7 +451,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
                 Feel::cout << "Neumann condition on " << marker << ": " << g << std::endl;
                 blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                        _expr= inner(expr(g)*N(), id(m)) );
+                                        _expr= inner(g*N(), id(m)) );
             }
         }
 
