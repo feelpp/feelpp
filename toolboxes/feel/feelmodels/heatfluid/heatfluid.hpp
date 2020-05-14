@@ -144,6 +144,13 @@ public :
             return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsFluid );
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid ) const
+        {
+            return Feel::FeelModels::selectorModelFields( this->heatModel()->trialSelectorModelFields( startBlockSpaceIndexHeat ),
+                                                          this->fluidModel()->trialSelectorModelFields( startBlockSpaceIndexFluid ) );
+        }
+
+
     //___________________________________________________________________________________//
     // symbols expressions
     //___________________________________________________________________________________//
@@ -160,6 +167,12 @@ public :
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
+
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -174,15 +187,16 @@ public :
             auto mfields = this->modelFields( prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
-    auto modelContext( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
+    auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
         {
-            auto mfields = this->modelFields( sol, rowStartInVectorHeat, rowStartInVectorFluid, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto mfields = this->modelFields( sol, startBlockSpaceIndexHeat, startBlockSpaceIndexFluid, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexFluid ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
     auto modelContext( vector_ptrtype sol, heat_model_ptrtype const& heatModel, fluid_model_ptrtype const& fluidModel, std::string const& prefix = "" ) const
         {
-            auto mfields = this->modelFields( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            return this->modelContext( sol, heatModel->startBlockSpaceIndexVector(), fluidModel->startBlockSpaceIndexVector(), prefix );
         }
 
     //___________________________________________________________________________________//

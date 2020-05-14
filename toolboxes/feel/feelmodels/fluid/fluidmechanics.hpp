@@ -984,6 +984,13 @@ public :
                                                   );
         }
 
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::velocity(this), "velocity", startBlockSpaceIndex + this->startSubBlockSpaceIndex("velocity") ),
+                                                          selectorModelField( FieldTag::pressure(this), "pressure", startBlockSpaceIndex + this->startSubBlockSpaceIndex("pressure") )
+                                                          );
+        }
+
     //___________________________________________________________________________________//
     // symbols expression
     //___________________________________________________________________________________//

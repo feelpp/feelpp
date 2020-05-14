@@ -31,7 +31,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateJacobian", "start"+sc);
 
-    auto mctx = this->modelContext( XVec, /*this->rowStartInVector()+*/this->heatModel()->rowStartInVector(), /*this->rowStartInVector()+*/this->fluidModel()->rowStartInVector() );
+    auto mctx = this->modelContext( XVec, this->heatModel(), this->fluidModel() );
     auto const& symbolsExpr = mctx.symbolsExpr();
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
     auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
@@ -42,17 +42,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     auto XhT = this->heatModel()->spaceTemperature();
     auto XhV = this->fluidModel()->functionSpaceVelocity();
     auto XhP = this->fluidModel()->functionSpacePressure();
-    size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
-    size_type blockIndexVelocity = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("velocity");
-    size_type blockIndexPressure = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
-    // auto const t = XhT->element(XVec, blockIndexTemperature );
-    // auto const u = XhV->element(XVec, blockIndexVelocity );
-    // auto const p = XhP->element(XVec, blockIndexPressure );
-
-    //auto symbolsExpr = this->symbolsExpr(t,u,p);
-    // auto mfield = this->modelFields( XVec, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
-    // auto symbolsExpr = this->symbolsExpr( mfield );
-
+    size_type blockIndexTemperature = this->heatModel()->startBlockSpaceIndexVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
+    size_type blockIndexVelocity = this->fluidModel()->startBlockSpaceIndexVector() + this->fluidModel()->startSubBlockSpaceIndex("velocity");
+    size_type blockIndexPressure = this->fluidModel()->startBlockSpaceIndexVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
 
     M_heatModel->updateJacobian( data, mctx );
     M_fluidModel->updateJacobian( data/*, symbolsExpr*/ );
@@ -65,13 +57,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
         double timeSteppingScaling_heat = 1.;
         if ( !M_heatModel->isStationary() )
             timeSteppingScaling_heat = data.doubleInfo( prefixvm(M_heatModel->prefix(),"time-stepping.scaling") );
-
-        //auto XhV = M_fluidModel->functionSpaceVelocity();
-        //auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
-
-        //auto XhT = M_heatModel->spaceTemperature();
-        //auto t = XhT->element(XVec, M_heatModel->rowStartInVector() );
-        //auto const& thermalProperties = M_heatModel->thermalProperties();
 
         auto bfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
                             _rowstart=M_fluidModel->rowStartInMatrix(),
