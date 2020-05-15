@@ -52,7 +52,7 @@ PYBIND11_MODULE(_models, m )
         .def("type",&ModelParameter::type, "type of the parameter: value, expression, fit")
         .def("value",&ModelParameter::value, "value of the parameter")
         .def("setValue",&ModelParameter::setValue, "set value of the parameter")
-        .def("hasExpression",&ModelParameter::hasExpression, "return true if the parameter has an expression, false otherwise")
+        //.def("hasExpression",&ModelParameter::hasExpression, "return true if the parameter has an expression, false otherwise")
         .def("hasFitInterpolator",&ModelParameter::hasFitInterpolator, "return true if the parameter has a fit interpolator, false otherwise")
         .def("setParameterValues",&ModelParameter::setParameterValues, "set parameter values from a map of string/double pairs")
         .def("__str__", parameter_to_str, "");

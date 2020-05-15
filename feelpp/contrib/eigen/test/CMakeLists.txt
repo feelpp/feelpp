@@ -1,16 +1,7 @@
-# generate split test header file only if it does not yet exist
-# in order to prevent a rebuild everytime cmake is configured
-if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h)  
-  file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h "")
-  foreach(i RANGE 1 999)
-    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h
-      "#ifdef EIGEN_TEST_PART_${i}\n"
-      "#define CALL_SUBTEST_${i}(FUNC) CALL_SUBTEST(FUNC)\n"
-      "#else\n"
-      "#define CALL_SUBTEST_${i}(FUNC)\n"
-      "#endif\n\n"
-    )
-  endforeach()
+# The file split_test_helper.h was generated at first run,
+# it is now included in test/
+if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h)
+  file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/split_test_helper.h)
 endif()
 
 # check if we have a Fortran compiler
@@ -30,6 +21,15 @@ if(NOT EIGEN_Fortran_COMPILER_WORKS)
   find_package(LAPACK QUIET)
 endif()
 
+# TODO do the same for EXTERNAL_LAPACK
+option(EIGEN_TEST_EXTERNAL_BLAS "Use external BLAS library for testsuite" OFF)
+if(EIGEN_TEST_EXTERNAL_BLAS)
+  find_package(BLAS REQUIRED)
+  message(STATUS "BLAS_COMPILER_FLAGS: ${BLAS_COMPILER_FLAGS}")
+  add_definitions("-DEIGEN_USE_BLAS") # is adding  ${BLAS_COMPILER_FLAGS} necessary?
+  list(APPEND EXTERNAL_LIBS "${BLAS_LIBRARIES}")
+endif()
+
 # configure blas/lapack (use Eigen's ones)
 set(EIGEN_BLAS_LIBRARIES eigen_blas)
 set(EIGEN_LAPACK_LIBRARIES eigen_lapack)
@@ -39,10 +39,10 @@ if(EIGEN_TEST_MATRIX_DIR)
   if(NOT WIN32)
     message(STATUS "Test realworld sparse matrices: ${EIGEN_TEST_MATRIX_DIR}")
     add_definitions( -DTEST_REAL_CASES="${EIGEN_TEST_MATRIX_DIR}" )
-  else(NOT WIN32)
+  else()
     message(STATUS "REAL CASES CAN NOT BE CURRENTLY TESTED ON WIN32")
-  endif(NOT WIN32)
-endif(EIGEN_TEST_MATRIX_DIR)
+  endif()
+endif()
 
 set(SPARSE_LIBS " ")
 
@@ -68,6 +68,17 @@ else()
   ei_add_property(EIGEN_MISSING_BACKENDS "UmfPack, ")
 endif()
 
+find_package(KLU)
+if(KLU_FOUND)
+  add_definitions("-DEIGEN_KLU_SUPPORT")
+  include_directories(${KLU_INCLUDES})
+  set(SPARSE_LIBS ${SPARSE_LIBS} ${KLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
+  set(KLU_ALL_LIBS ${KLU_LIBRARIES} ${EIGEN_BLAS_LIBRARIES})
+  ei_add_property(EIGEN_TESTED_BACKENDS "KLU, ")
+else()
+  ei_add_property(EIGEN_MISSING_BACKENDS "KLU, ")
+endif()
+
 find_package(SuperLU 4.0)
 if(SUPERLU_FOUND)
   add_definitions("-DEIGEN_SUPERLU_SUPPORT")
@@ -80,7 +91,7 @@ else()
 endif()
 
 
-find_package(PASTIX QUIET COMPONENTS METIS SCOTCH)
+find_package(PASTIX QUIET COMPONENTS METIS SEQ)
 # check that the PASTIX found is a version without MPI
 find_path(PASTIX_pastix_nompi.h_INCLUDE_DIRS
   NAMES pastix_nompi.h
@@ -99,9 +110,9 @@ if(PASTIX_FOUND AND PASTIX_pastix_nompi.h_INCLUDE_DIRS)
   elseif(METIS_FOUND)
     include_directories(${METIS_INCLUDE_DIRS})
     set(PASTIX_LIBRARIES ${PASTIX_LIBRARIES} ${METIS_LIBRARIES})
-  else(SCOTCH_FOUND)
+  else()
     ei_add_property(EIGEN_MISSING_BACKENDS  "PaStiX, ")
-  endif(SCOTCH_FOUND)
+  endif()
   set(SPARSE_LIBS ${SPARSE_LIBS} ${PASTIX_LIBRARIES_DEP} ${ORDERING_LIBRARIES})
   set(PASTIX_ALL_LIBS ${PASTIX_LIBRARIES_DEP})
   ei_add_property(EIGEN_TESTED_BACKENDS  "PaStiX, ")
@@ -137,11 +148,11 @@ if(NOT EIGEN_TEST_NOQT)
   else()
     ei_add_property(EIGEN_MISSING_BACKENDS  "Qt4 support, ")
   endif()
-endif(NOT EIGEN_TEST_NOQT)
+endif()
 
 if(TEST_LIB)
   add_definitions("-DEIGEN_EXTERN_INSTANTIATIONS=1")
-endif(TEST_LIB)
+endif()
 
 set_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT "Official")
 add_custom_target(BuildOfficial)
@@ -153,8 +164,10 @@ ei_add_test(sizeof)
 ei_add_test(dynalloc)
 ei_add_test(nomalloc)
 ei_add_test(first_aligned)
+ei_add_test(type_alias)
 ei_add_test(nullary)
 ei_add_test(mixingtypes)
+ei_add_test(io)
 ei_add_test(packetmath "-DEIGEN_FAST_MATH=1")
 ei_add_test(unalignedassert)
 ei_add_test(vectorization_logic)
@@ -172,6 +185,7 @@ ei_add_test(block)
 ei_add_test(corners)
 ei_add_test(symbolic_index)
 ei_add_test(indexed_view)
+ei_add_test(reshape)
 ei_add_test(swap)
 ei_add_test(resize)
 ei_add_test(conservative_resize)
@@ -187,7 +201,7 @@ ei_add_test(smallvectors)
 ei_add_test(mapped_matrix)
 ei_add_test(mapstride)
 ei_add_test(mapstaticmethods)
-ei_add_test(array)
+ei_add_test(array_cwise)
 ei_add_test(array_for_matrix)
 ei_add_test(array_replicate)
 ei_add_test(array_reverse)
@@ -256,6 +270,7 @@ ei_add_test(sparselu)
 ei_add_test(sparseqr)
 ei_add_test(umeyama)
 ei_add_test(nesting_ops "${CMAKE_CXX_FLAGS_DEBUG}")
+ei_add_test(nestbyvalue)
 ei_add_test(zerosized)
 ei_add_test(dontalign)
 ei_add_test(evaluators)
@@ -272,6 +287,12 @@ ei_add_test(mpl2only)
 ei_add_test(inplace_decomposition)
 ei_add_test(half_float)
 ei_add_test(array_of_string)
+ei_add_test(num_dimensions)
+ei_add_test(stl_iterators)
+if(EIGEN_TEST_CXX11)
+  ei_add_test(initializer_list_construction)
+  ei_add_test(diagonal_matrix_variadic_ctor)
+endif()
 
 add_executable(bug1213 bug1213.cpp bug1213_main.cpp)
 
@@ -291,10 +312,14 @@ ei_add_test(fastmath " ${EIGEN_FASTMATH_FLAGS} ")
 
 if(QT4_FOUND)
   ei_add_test(qtvector "" "${QT_QTCORE_LIBRARY}")
-endif(QT4_FOUND)
+endif()
 
 if(UMFPACK_FOUND)
   ei_add_test(umfpack_support "" "${UMFPACK_ALL_LIBS}")
+endif()
+
+if(KLU_FOUND OR SuiteSparse_FOUND)
+  ei_add_test(klu_support "" "${KLU_ALL_LIBS}")
 endif()
 
 if(SUPERLU_FOUND)
@@ -341,7 +366,7 @@ if(EIGEN_TEST_EIGEN2)
 endif()
 
 # boost MP unit test
-find_package(Boost)
+find_package(Boost 1.53.0)
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   ei_add_test(boostmultiprec "" "${Boost_LIBRARIES}")
@@ -369,24 +394,63 @@ if(CUDA_FOUND)
     set(CUDA_NVCC_FLAGS "-ccbin ${CMAKE_C_COMPILER}" CACHE STRING "nvcc flags" FORCE)
   endif()
   if(EIGEN_TEST_CUDA_CLANG)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 --cuda-gpu-arch=sm_30")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    string(APPEND CMAKE_CXX_FLAGS " --cuda-path=${CUDA_TOOLKIT_ROOT_DIR}")
+    foreach(GPU IN LISTS EIGEN_CUDA_COMPUTE_ARCH)
+      string(APPEND CMAKE_CXX_FLAGS " --cuda-gpu-arch=sm_${GPU}")
+    endforeach()
   endif()
-  cuda_include_directories(${CMAKE_CURRENT_BINARY_DIR})
   set(EIGEN_ADD_TEST_FILENAME_EXTENSION  "cu")
   
-  ei_add_test(cuda_basic)
+  ei_add_test(gpu_basic)
   
   unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
 
-endif(CUDA_FOUND)
+endif()
 
-endif(EIGEN_TEST_CUDA)
+endif()
 
 
-file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/failtests)    
-add_test(NAME failtests WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/failtests COMMAND ${CMAKE_COMMAND} ${Eigen_SOURCE_DIR} -G "${CMAKE_GENERATOR}" -DEIGEN_FAILTEST=ON)
+# HIP unit tests
+option(EIGEN_TEST_HIP "Add HIP support." OFF)
+if (EIGEN_TEST_HIP)
+
+  set(HIP_PATH "/opt/rocm/hip" CACHE STRING "Path to the HIP installation.")
+
+  if (EXISTS ${HIP_PATH})
+    
+    list(APPEND CMAKE_MODULE_PATH ${HIP_PATH}/cmake) 
+
+    find_package(HIP REQUIRED)
+    if (HIP_FOUND)
+
+      execute_process(COMMAND ${HIP_PATH}/bin/hipconfig --platform OUTPUT_VARIABLE HIP_PLATFORM)
+
+      if (${HIP_PLATFORM} STREQUAL "hcc")
+
+	include_directories(${HIP_PATH}/include)
+
+	set(EIGEN_ADD_TEST_FILENAME_EXTENSION  "cu")
+	ei_add_test(gpu_basic)
+	unset(EIGEN_ADD_TEST_FILENAME_EXTENSION)
+	
+      elseif (${HIP_PLATFORM} STREQUAL "nvcc")
+	message(FATAL_ERROR "HIP_PLATFORM = nvcc is not supported within Eigen")
+      else ()
+	message(FATAL_ERROR "Unknown HIP_PLATFORM = ${HIP_PLATFORM}")
+      endif()
+      
+    endif()
+    
+  else ()
+
+    message(FATAL_ERROR "EIGEN_TEST_HIP is ON, but the specified HIP_PATH (${HIP_PATH}) does not exist")
+    
+  endif()
+    
+endif()
 
 option(EIGEN_TEST_BUILD_DOCUMENTATION "Test building the doxygen documentation" OFF)
-IF(EIGEN_TEST_BUILD_DOCUMENTATION)
+if(EIGEN_TEST_BUILD_DOCUMENTATION)
   add_dependencies(buildtests doc)
-ENDIF()
+endif()

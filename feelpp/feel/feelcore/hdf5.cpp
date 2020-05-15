@@ -65,7 +65,7 @@ void Feel::HDF5::openFile( const std::string& fileName,
                            const bool& existing, const bool& rdwr )
 {
     hid_t plistId;
-    MPI_Comm mpiComm = comm.comm();
+    MPI_Comm mpiComm = comm;
     MPI_Info info = MPI_INFO_NULL;
 
     // Set up file access property list with parallel I/O access

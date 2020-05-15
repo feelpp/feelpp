@@ -47,7 +47,11 @@ public :
                                                           hana::make_tuple(hana::int_c<2>,hana::int_c<2>),
                                                           hana::make_tuple(hana::int_c<3>,hana::int_c<3>) );
 
+    using value_type = typename expr_scalar_type::value_type;
+    using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >;
+
     ModelExpression() = default;
+    ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
     ModelExpression( ModelExpression const& ) = default;
     ModelExpression( ModelExpression && ) = default;
     ModelExpression& operator=( ModelExpression const& ) = default;
@@ -92,9 +96,38 @@ public :
     bool isVector() const { return hasExprVectorial2() || hasExprVectorial3(); }
     bool isMatrix() const { return hasExprMatrix22() || hasExprMatrix33(); }
 
-    // TODO : not necessary specific to scalar expression
-    bool isConstant() const { return this->hasExprScalar() && this->exprScalar().expression().isConstant(); }
-    double value() const { CHECK( this->isConstant() ) << "expression is not constant";return this->exprScalar().evaluate()(0,0); }
+    bool isEvaluable() const
+    {
+        if ( !this->hasAtLeastOneExpr() )
+            return false;
+        bool res = true;
+        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                res = res && this->expr<ni,nj>().expression().isEvaluable();
+                        });
+        return res;
+    }
+    bool isConstant() const { return this->isEvaluable(); }
+
+    evaluate_type evaluate() const
+    {
+        evaluate_type res;
+        hana::for_each( expr_shapes, [this,&res]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                res = this->expr<ni,nj>().evaluate();
+                        });
+        return res;
+    }
+
+
+    value_type value() const { CHECK( this->hasExprScalar() && this->exprScalar().expression().isEvaluable() ) << "expression is not scalar or evaluable";return this->exprScalar().evaluate()(0,0); }
+    void setValue( value_type val ) { CHECK( this->hasExprScalar() ) << "expr should be scalar"; this->exprScalar().expression().setNumericValue( val ); }
 
     expr_scalar_type const& exprScalar() const { CHECK( this->hasExprScalar() ) << "no Scalar expression"; return *M_exprScalar; }
     expr_vectorial2_type const& exprVectorial2() const { CHECK( this->hasExprVectorial2() ) << "no Vectorial2 expression"; return *M_exprVectorial2; }
@@ -156,8 +189,78 @@ public :
                         });
     }
 
+    void eraseParameterValues( std::set<std::string> const& symbNames )
+    {
+        hana::for_each( expr_shapes, [this,&symbNames]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                this->expr<ni,nj>().expression().eraseParameterValues( symbNames );
+                        });
+    }
+
+    void updateParameterValues( std::set<std::string> const& symbNames, std::map<std::string,double> & pv ) const
+    {
+        hana::for_each( expr_shapes, [this,&symbNames,&pv]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                auto const& theexpr = this->expr<ni,nj>();
+                                if ( theexpr.expression().isEvaluable() )
+                                {
+                                    auto theEvalExpr = theexpr.evaluate();
+                                    if constexpr ( ni == 1 && nj == 1 )
+                                                 {
+                                                     for ( std::string const& s : symbNames )
+                                                         pv[s] = theEvalExpr(0,0);
+                                                 }
+                                    else
+                                    {
+                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
+                                        {
+                                            uint16_type c1 = compArray[0];
+                                            uint16_type c2 = compArray[1];
+                                            for ( std::string const& s : symbNames )
+                                                pv[ s + _suffix ] = theEvalExpr(c1,c2);
+                                        }
+                                    }
+                                }
+                            }
+                        });
+    }
+
+    void updateParameterValues( std::string const& symbName, std::map<std::string,double> & pv ) const { this->updateParameterValues( std::set<std::string>({ symbName }), pv );}
+
+    void updateSymbolNames( std::set<std::string> const& symbNames, std::set<std::string> & outputSymbNames ) const
+    {
+        hana::for_each( expr_shapes, [this,&symbNames,&outputSymbNames]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                            {
+                                if constexpr ( ni == 1 && nj == 1 )
+                                {
+                                    outputSymbNames.insert( symbNames.begin(), symbNames.end() );
+                                }
+                                else
+                                {
+                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
+                                    {
+                                        for ( std::string const& s : symbNames )
+                                            outputSymbNames.insert( s + _suffix );
+                                    }
+                                }
+                            }
+                        });
+    }
+    void updateSymbolNames( std::string const& symbName, std::set<std::string> & outputSymbNames ) const { this->updateSymbolNames( std::set<std::string>({ symbName }), outputSymbNames ); }
+
     template<typename ExprT>
-    constexpr auto //Expr< GinacExVF<ExprT,expr_order> >
+    constexpr auto
     exprScalar( std::string const& symb, ExprT const& e ) const
     {
         return Feel::vf::expr( this->exprScalar(), symbolExpr(symb, e) );
@@ -176,23 +279,39 @@ public :
         return res;
     }
 
-    bool hasSymbolDependency( std::string const& symbolStr ) const
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::set<std::string> const& symbolsStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         if ( this->isConstant() )
             return false;
 
         bool res = false;
-        hana::for_each( expr_shapes, [this,&symbolStr,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&symbolsStr,&se,&res]( auto const& e_ij )
                         {
                             if ( res )
                                 return;
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
-                                    res = true;
+                            {
+                                for ( std::string const& symbolStr : symbolsStr )
+                                {
+                                    if ( this->expr<ni,nj>().hasSymbolDependency( symbolStr, se ) )
+                                    {
+                                        res = true;
+                                        break;
+                                    }
+                                }
+                            }
                         });
         return res;
+    }
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::string const& symbolStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ), se );
     }
 
 private :

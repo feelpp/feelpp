@@ -48,6 +48,10 @@ feel_options( std::string const& prefix = "" );
 inline po::options_description
 feel_nooptions() { return po::options_description(); }
 
+//! case options
+po::options_description
+case_options( int default_dim, std::string const& default_discr, std::string const& prefix = "" );
+
 //! add benchmark options to feel++ applications
 po::options_description benchmark_options( std::string const& prefix = "" );
 

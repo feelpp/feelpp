@@ -123,128 +123,141 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     //--------------------------------------------------------------------------------------------------//
     this->timerTool("Solve").start();
 
-    // stress tensor sigma : grad(v)
-    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-
-        if ( ( dynamicViscosity.isNewtonianLaw() && BuildCstPart ) ||
-             ( !dynamicViscosity.isNewtonianLaw() && build_StressTensorNonNewtonian ) )
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        // stress tensor sigma : grad(v)
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
-            if ( fieldVelocityPressureExtrapolated )
+            std::string const& matName = rangeData.first;
+            auto const& range = rangeData.second;
+            auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+
+            if ( ( dynamicViscosity.isNewtonianLaw() && BuildCstPart ) ||
+                 ( !dynamicViscosity.isNewtonianLaw() && build_StressTensorNonNewtonian ) )
             {
-                auto const& betaU = *fieldVelocityPressureExtrapolated;
-                auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*this->materialProperties(),matName);
-                bilinearFormVV_PatternCoupled +=
+                if ( fieldVelocityPressureExtrapolated )
+                {
+                    auto const& betaU = *fieldVelocityPressureExtrapolated;
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*this->materialProperties(),matName);
+                    bilinearFormVV_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    // case with steady Stokes
+                    CHECK( dynamicViscosity.isNewtonianLaw() ) << "not allow with non newtonian law";
+
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*this->materialProperties(),matName);
+                    bilinearFormVV_PatternCoupled +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+            if ( BuildCstPart )
+            {
+                bilinearFormVP +=
                     integrate( _range=range,
-                               _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
+                               _expr= -div(v)*idt(p),
                                _geomap=this->geomap() );
+            }
+        }
+        // incompressibility term
+        if ( BuildCstPart )
+        {
+            bilinearFormPV +=
+                integrate( _range=M_rangeMeshElements,
+                           _expr= -divt(u)*id(q),
+                           _geomap=this->geomap() );
+        }
+
+        double timeElapsedStressTensor = this->timerTool("Solve").stop();
+        this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
+
+        //--------------------------------------------------------------------------------------------------//
+        // convection
+        if ( physicFluidData->equation() == "Navier-Stokes" && build_ConvectiveTerm )
+        {
+            this->timerTool("Solve").start();
+
+            CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
+            auto const& betaU = *fieldVelocityPressureExtrapolated;
+#if 0
+            //velocityExprFromFields
+            double myvelX=0;
+            for ( auto const& [bpname,bpbc] : M_bodySetBC )
+            {
+                myvelX = bpbc.fieldTranslationalVelocityPtr()->operator()( 0 );
+                break;
+            }
+            auto myVelXEXPR = vec( cst(myvelX), cst(0.) );
+#endif
+            if ( this->isMoveDomain() )
+            {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                bilinearFormVV_PatternDefault +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )   /*-  myVelXEXPR*/  ))*id(v),
+                               _geomap=this->geomap() );
+#endif
             }
             else
             {
-                // case with steady Stokes
-                CHECK( dynamicViscosity.isNewtonianLaw() ) << "not allow with non newtonian law";
+                bilinearFormVV_PatternDefault +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
+                               _geomap=this->geomap() );
+            }
 
-                auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*this->materialProperties(),matName);
+            if ( this->doStabConvectionEnergy() )
+            {
                 bilinearFormVV_PatternCoupled +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= timeSteppingScaling*0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
+                               _geomap=this->geomap() );
+            }
+
+            double timeElapsedConvection = this->timerTool("Solve").stop();
+            this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
+        }
+        else if ( (  physicFluidData->equation() == "Stokes" ||  physicFluidData->equation() == "StokesTransient")
+                  && build_ConvectiveTerm && this->isMoveDomain() )
+        {
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+            bilinearFormVV_PatternDefault +=
+                integrate( _range=M_rangeMeshElements,
+                           _expr= -timeSteppingScaling*idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
+                           _geomap=this->geomap() );
+#endif
+        }
+
+
+        //--------------------------------------------------------------------------------------------------//
+        //transients terms
+        if ( !this->isStationary() && physicFluidData->equation() != "Stokes" )  //!this->isStationaryModel())
+        {
+            if (build_Form2TransientTerm)
+            {
+                bilinearFormVV_PatternDefault +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= idv(rho)*trans(idt(u))*id(v)*M_bdfVelocity->polyDerivCoefficient(0),
+                               _geomap=this->geomap() );
+            }
+
+            if (build_Form1TransientTerm)
+            {
+                auto buzz = M_bdfVelocity->polyDeriv();
+                myLinearFormV +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= idv(rho)*trans(idv(buzz))*id(v),
                                _geomap=this->geomap() );
             }
         }
-        if ( BuildCstPart )
-        {
-            bilinearFormVP +=
-                integrate( _range=range,
-                           _expr= -div(v)*idt(p),
-                           _geomap=this->geomap() );
-        }
-    }
-    // incompressibility term
-    if ( BuildCstPart )
-    {
-        bilinearFormPV +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= -divt(u)*id(q),
-                       _geomap=this->geomap() );
-    }
-
-    double timeElapsedStressTensor = this->timerTool("Solve").stop();
-    this->log("FluidMechanics","updateLinearPDE","assembly stress tensor + incompressibility in "+(boost::format("%1% s") %timeElapsedStressTensor).str() );
-
-    //--------------------------------------------------------------------------------------------------//
-    // convection
-    if ( this->modelName() == "Navier-Stokes" && build_ConvectiveTerm )
-    {
-        this->timerTool("Solve").start();
-
-        CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-        auto const& betaU = *fieldVelocityPressureExtrapolated;
-        if ( this->isMoveDomain() )
-        {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-            bilinearFormVV_PatternDefault +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )))*id(v),
-                           _geomap=this->geomap() );
-#endif
-        }
-        else
-        {
-            bilinearFormVV_PatternDefault +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(betaU) )*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        if ( this->doStabConvectionEnergy() )
-        {
-            bilinearFormVV_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*0.5*idv(rho)*divt(u)*trans(idv(betaU))*id(v),
-                           _geomap=this->geomap() );
-        }
-
-        double timeElapsedConvection = this->timerTool("Solve").stop();
-        this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
-    }
-    else if ( (this->modelName() == "Stokes" || this->modelName() == "StokesTransient") 
-            && build_ConvectiveTerm && this->isMoveDomain() )
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        bilinearFormVV_PatternDefault +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= -timeSteppingScaling*idv(rho)*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
-                       _geomap=this->geomap() );
-#endif
-    }
-
-
-
-    //--------------------------------------------------------------------------------------------------//
-    //transients terms
-    if (!this->isStationaryModel())
-    {
-        if (build_Form2TransientTerm)
-        {
-            bilinearFormVV_PatternDefault +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= idv(rho)*trans(idt(u))*id(v)*M_bdfVelocity->polyDerivCoefficient(0),
-                           _geomap=this->geomap() );
-        }
-
-        if (build_Form1TransientTerm)
-        {
-            auto buzz = M_bdfVelocity->polyDeriv();
-            myLinearFormV +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= idv(rho)*trans(idv(buzz))*id(v),
-                           _geomap=this->geomap() );
-        }
-    }
-
+    } //  for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     //--------------------------------------------------------------------------------------------------//
     // body forces
     if ( this->M_overwritemethod_updateSourceTermLinearPDE != NULL )
@@ -398,9 +411,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     vector_ptrtype& F = data.rhs();
     auto XhV = this->functionSpaceVelocity();
     auto mesh = this->mesh();
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
     auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                 _rowstart=this->rowStartInMatrix(),
-                                 _colstart=this->colStartInMatrix() );
+                                 _rowstart=this->rowStartInMatrix()+startBlockIndexVelocity,
+                                 _colstart=this->colStartInMatrix()+startBlockIndexVelocity );
     auto const& u = this->fieldVelocity();
 
     // store markers for each entities in order to apply strong bc with priority (points erase edges erace faces)
@@ -512,36 +526,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
                     _element=*M_fieldLagrangeMultiplierPressureBC2, _expr=cst(0.));
         }
     }
-#if 0
-    if ( M_hasNoSlipRigidParticlesBC )
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
-        this->log("FluidMechanics","updateLinearPDEDofElimination","M_hasNoSlipRigidParticlesBC");
-        size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("particles-bc.translational-velocity");
-        size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("particles-bc.angular-velocity");
-        auto vTranslation = expr<2,1>( "{0.2,0.5}" );
-#if 0
-        form2( _test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,_matrix=A,
-               _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
-               _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
-            on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
-                _element=*M_fieldNoSlipRigidParticlesTranslationalVelocity, _expr=vTranslation/*vf::zero<nDim,1>()*/);
-#endif
-        if constexpr ( nDim == 2 )
+        if ( bpbc.hasTranslationalVelocityExpr() )
         {
-#if 0
-            form2( _test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,_matrix=A,
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            form2( _test= bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),_matrix=A,
+                   _rowstart=this->rowStartInMatrix()+startBlockIndexTranslationalVelocity,
+                   _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
+                on( _range=elements(bpbc.mesh()), _rhs=F,
+                    _element=*bpbc.fieldTranslationalVelocityPtr(), _expr=bpbc.translationalVelocityExpr() );
+        }
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+            form2( _test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),_matrix=A,
                    _rowstart=this->rowStartInMatrix()+startBlockIndexAngularVelocity,
                    _colstart=this->colStartInMatrix()+startBlockIndexAngularVelocity ) +=
-                on( _range=elements(M_meshNoSlipRigidParticles), _rhs=F,
-                    _element=*M_fieldNoSlipRigidParticlesAngularVelocity, _expr=cst(0.));
-#endif
-        }
-        else
-        {
-            //TODO
+                on( _range=elements(bpbc.mesh()), _rhs=F,
+                    _element=*bpbc.fieldAngularVelocityPtr(), _expr=bpbc.angularVelocityExpr() );
         }
     }
-#endif
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDEDofElimination","finish in "+(boost::format("%1% s") %timeElapsed).str() );

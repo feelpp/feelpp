@@ -314,6 +314,50 @@ public :
     element_advection_velocity_ptrtype const& fieldAdvectionVelocityPtr() const;
     element_advection_velocity_type const& fieldAdvectionVelocity() const { return *(this->fieldAdvectionVelocityPtr()); }
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    struct FieldTag
+    {
+        static auto field( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldSolutionPtr(), prefix );
+        }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto field_t = this->functionSpace()->elementPtr( *sol, rowStartInVector /*+ this->startSubBlockSpaceIndex( "field" )*/ );
+            return this->modelFields( field_t, prefix );
+        }
+    template <typename TemperatureFieldType>
+    auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::field(this), prefix, "phi", field_t, "phi", this->keyword() ) );
+        }
+
+        //___________________________________________________________________________________//
+        // symbols expressions
+        //___________________________________________________________________________________//
+
+        template <typename ModelFieldsType>
+        auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/ );
+        }
+        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+        template <typename ModelFieldsType>
+        auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+            {
+                return mfields.symbolsExpr();
+            }
+#if 0
     //--------------------------------------------------------------------//
     // Symbols
     auto symbolsExpr( std::string const& prefix_symbol = "adr_" ) const { 
@@ -335,7 +379,7 @@ public :
         // generate symbols adr_phi, adr_grad_phi(_x,_y,_z), adr_dn_phi
         return Feel::vf::symbolsExpr( 
                 symbolExpr( (boost::format("%1%phi")%prefix_symbol).str(),idv(f) ),
-                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim,true ) ),
+                symbolExpr( (boost::format("%1%grad_phi")%prefix_symbol).str(),gradv(f), SymbolExprComponentSuffix( 1,nDim ) ),
                 symbolExpr( (boost::format("%1%dn_phi")%prefix_symbol).str(),dnv(f) )
                 );
     }
@@ -350,7 +394,7 @@ public :
                 std::make_pair( prefixvm( prefix, "source" ), M_fieldSource )
                 );
     }
-
+#endif
     // Measures quantities
     auto allMeasuresQuantities() const
     {
@@ -635,9 +679,9 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::updateSourceAdded( vf::Expr<ExprT> const& f_exp
 //----------------------------------------------------------------------------//
 // Exports
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-template<typename SymbolsExpr, typename TupleFieldsType, typename TupleMeasuresQuantitiesType>
+template<typename SymbolsExpr, typename ModelFieldsType, typename TupleMeasuresQuantitiesType>
 void
-ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, TupleFieldsType const& tupleFields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
+ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& symbolsExpr, ModelFieldsType const& mfields, TupleMeasuresQuantitiesType const& tupleMeasuresQuantities )
 {
     this->log("AdvDiffReac","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -646,9 +690,9 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time, SymbolsExpr const& 
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->modelProperties().postProcess().setParameterValues( paramValues );
 
-    this->executePostProcessExports( M_exporter, time, tupleFields, symbolsExpr );
-    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, tupleFields, tupleMeasuresQuantities );
-    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdf->iteration(), tupleFields );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr );
+    this->executePostProcessMeasures( time, this->mesh(), this->rangeMeshElements(), M_measurePointsEvaluation, symbolsExpr, mfields, tupleMeasuresQuantities );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdf->iteration(), mfields );
 
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )

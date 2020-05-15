@@ -51,7 +51,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::Electric( std::string const& prefix,
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelPhysics<nDim>( "electric" )
-    //M_electricProperties( new electricproperties_type( prefix ) )
 {
     this->log("Electric","constructor", "start" );
 
@@ -124,35 +123,33 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Electric","init", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
     if ( !M_mesh )
         this->initMesh();
 
     // physical properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
         M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
     }
 
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
-        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
+        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physicsAvailableFromCurrentType() ));
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
-        M_XhElectricField = space_electricfield_type::New(_mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
-    M_fieldElectricField.reset( new element_electricfield_type(M_XhElectricField,"E"));
-    M_fieldCurrentDensity.reset( new element_electricfield_type(M_XhElectricField,"j"));
-    M_fieldJoulesLosses.reset( new element_component_electricfield_type(M_XhElectricField->compSpace(),"joules-losses"));
 
     this->initBoundaryConditions();
 
@@ -161,8 +158,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // post-process
     this->initPostProcess();
 
-    // update fields
-    this->updateFields( this->symbolsExpr() );
+    // update constant parameters
+    this->updateParameterValues();
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -178,7 +175,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     // init petsc vector associated to the block
     M_blockVectorSolution.buildVector( this->backend() );
-
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -200,6 +196,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initInitialConditions()
         std::vector<element_electricpotential_ptrtype> icElectricPotentialFields;
         CHECK( this->isStationary() ) << "TODO";
         icElectricPotentialFields = { this->fieldElectricPotentialPtr() };
+
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+
         this->updateInitialConditions( "electric-potential", M_rangeMeshElements, this->symbolsExpr(), icElectricPotentialFields );
     }
 }
@@ -208,20 +208,20 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerRobinBC();
+    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
+    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
+    M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC("elimination", name(d), markers(d) );
+        M_bcDirichletMarkerManagement.addMarkerDirichletBC("elimination", name(d), markers(d) );
     this->M_bcNeumann = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "Neumann" );
     for( auto const& d : this->M_bcNeumann )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().getScalarFieldsList( "electric-potential", "Robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( name(d),markers(d) );
+         M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().getScalarFields( "electric-potential", "VolumicForces" );
 
@@ -233,7 +233,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on electric-potential from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
+        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         electricPotentialMarkers.insert( listMark.begin(), listMark.end() );
     }
     auto meshMarkersElectricPotentialByEntities = detail::distributeMarkerListOnSubEntity( mesh, electricPotentialMarkers );
@@ -241,14 +241,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // on topological faces
     auto const& listMarkedFacesElectricPotential = std::get<0>( meshMarkersElectricPotentialByEntities );
     if ( !listMarkedFacesElectricPotential.empty() )
-    {
-        auto therange = markedfaces( mesh,listMarkedFacesElectricPotential );
-        auto dofsToAdd = XhElectricPotential->dofs( therange );
-        XhElectricPotential->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("potential-electric",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhElectricPotential->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("potential-electric",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "potential-electric", XhElectricPotential, markedfaces( mesh,listMarkedFacesElectricPotential ) );
 }
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
@@ -258,7 +251,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->log("Electric","initPostProcess", "start");
     this->timerTool("Constructor").start();
 
-    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","current-density","joules-losses"} );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();
@@ -280,8 +274,8 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // point measures
     auto fieldNamesWithSpaceElectricPotential = std::make_pair( std::set<std::string>({"electric-potential"}), this->spaceElectricPotential() );
-    auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
-    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential, fieldNamesWithSpaceElectricField );
+    //auto fieldNamesWithSpaceElectricField = std::make_pair( std::set<std::string>({"electric-field"}), this->spaceElectricField() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceElectricPotential/*, fieldNamesWithSpaceElectricField*/ );
     M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
@@ -327,15 +321,15 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     // Boundary Conditions
     subPt.clear();
     subPt2.clear();
-    this->updateInformationObjectDirichletBC( subPt2 );
+    M_bcDirichletMarkerManagement.updateInformationObjectDirichletBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectNeumannBC( subPt2 );
+    M_bcNeumannMarkerManagement.updateInformationObjectNeumannBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     subPt2.clear();
-    this->updateInformationObjectRobinBC( subPt2 );
+    M_bcRobinMarkerManagement.updateInformationObjectRobinBC( subPt2 );
     for( const auto& ptIter : subPt2 )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
@@ -381,9 +375,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
     *_ostr << "\n   Boundary conditions"
-           << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoRobinBC();
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
@@ -408,9 +402,11 @@ ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 }
-
+#if 0
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
@@ -424,19 +420,40 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateElectricField()
     else
         CHECK( false ) << "invalid M_computeElectricFieldProjType " << M_computeElectricFieldProjType << "\n";
 }
+#endif
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
 ELECTRIC_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
+    if ( !this->manageParameterValues() )
+        return;
+
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->materialsProperties()->updateParameterValues( paramValues );
 
-    this->materialsProperties()->setParameterValues( paramValues );
+    this->setParameterValues( paramValues );
+}
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+void
+ELECTRIC_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    this->log("Electric","setParameterValues", "start");
+
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
+    }
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
     M_volumicForcesProperties.setParameterValues( paramValues );
+
+    this->log("Electric","setParameterValues", "finish");
 }
 
 
@@ -447,15 +464,11 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     this->log("Electric","solve", "start");
     this->timerTool("Solve").start();
 
-    this->updateParameterValues();
-
     this->setStartBlockSpaceIndex( 0 );
 
     M_blockVectorSolution.updateVectorFromSubVectors();
     M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
     M_blockVectorSolution.localize();
-
-    this->updateFields( this->symbolsExpr() );
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -467,110 +480,6 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::solve()
     this->log("Electric","solve", (boost::format("finish in %1% s")%tElapsed).str() );
 }
 
-
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-    this->updateLinearPDE( data, this->symbolsExpr() );
-}
-
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
-{
-    if ( M_bcDirichlet.empty() ) return;
-
-    this->log("Electric","updateNewtonInitialGuess","start" );
-
-    vector_ptrtype& U = data.initialGuess();
-    auto mesh = this->mesh();
-    size_type startBlockIndexElectricPotential = this->startSubBlockSpaceIndex( "potential-electric" );
-    auto v = this->spaceElectricPotential()->element( U, this->rowStartInVector()+startBlockIndexElectricPotential );
-    for( auto const& d : M_bcDirichlet )
-    {
-        v.on(_range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-             _expr=expression(d) );
-    }
-
-    // update info for synchronization
-    this->updateDofEliminationIds( "potential-electric", data );
-
-    this->log("Electric","updateNewtonInitialGuess","finish" );
-}
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
-    this->updateJacobian( data, this->symbolsExpr(v) );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
-{
-    if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Electric","updateJacobianDofElimination","start" );
-
-    this->updateDofEliminationIds( "potential-electric", data );
-
-    this->log("Electric","updateJacobianDofElimination","finish" );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
-{
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto const v = this->spaceElectricPotential()->element(XVec, this->rowStartInVector());
-    this->updateResidual( data, this->symbolsExpr(v) );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
-{
-    if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Electric","updateResidualDofElimination","start" );
-
-    this->updateDofEliminationIds( "potential-electric", data );
-
-    this->log("Electric","updateResidualDofElimination","finish" );
-}
-
-ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
-void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
-{
-    if ( this->M_bcDirichlet.empty() ) return;
-
-    this->log("Electric","updateLinearPDEDofElimination","start" );
-
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    auto XhV = this->spaceElectricPotential();
-    auto const& v = this->fieldElectricPotential();
-    auto mesh = XhV->mesh();
-
-    auto bilinearForm_PatternCoupled = form2( _test=XhV,_trial=XhV,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
-    for( auto const& d : this->M_bcDirichlet )
-    {
-        bilinearForm_PatternCoupled +=
-            on( _range=markedfaces(mesh, this->markerDirichletBCByNameId( "elimination",name(d) ) ),
-                _element=v,_rhs=F,_expr=expression(d) );
-    }
-
-    this->log("Electric","updateLinearPDEDofElimination","finish" );
-}
 
 } // end namespace FeelModels
 } // end namespace Feel

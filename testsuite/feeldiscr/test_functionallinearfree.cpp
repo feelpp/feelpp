@@ -86,7 +86,7 @@ testFunctionalLinearFree()
     auto Xh = Pch<Order>( mesh );
 
     auto v = Xh->element();
-    auto element = project( Xh, elements(mesh) , cos( Px() ) );
+    auto element = project( _space=Xh, _range=elements(mesh) , _expr=cos( Px() ) );
 
     auto expr = integrate( _range=elements(mesh), _expr=grad(v)*trans(grad(v)) );
     auto functionalfree = functionalLinearFree( _space=Xh, _expr=expr, _backend=backend );
@@ -130,7 +130,7 @@ testFunctionalLinearComposite()
     auto compositefree = functionalLinearComposite( _space=Xh, _backend=backend );
 
     auto v = Xh->element();
-    auto element = project( Xh, elements(mesh) , cos( Px() ) );
+    auto element = project( _space=Xh, _range=elements(mesh) , _expr=cos( Px() ) );
 
     //operators
     auto expr1 = integrate( _range=elements(mesh), _expr=grad(v)*trans(grad(v)) );

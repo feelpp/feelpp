@@ -2,6 +2,12 @@
 {
     "Name": "Test heat toolbox",
     "ShortName":"TestHeat",
+    "Parameters":
+    {
+        "param1":3.0,
+        "param2":"2*param1:param1",
+        "param3":"x*y*(param1+param2):x:y:param1:param2"
+    },
     "Materials":
     {
         "mymat1":
@@ -55,6 +61,18 @@
                 }
             }
         }
+        // not yet implemented
+        // "heat":
+        // {
+        //     "convective-heat-flux":
+        //     {
+        //         "mybc":
+        //         {
+        //             "h":"16.667",
+        //             "T_ext":"287"
+        //         }
+        //     }
+        // }
     },
     "InitialConditions":
     {
@@ -96,25 +114,28 @@
             "fields":["temperature","all"],
             "expr":
             {
+                "param1":"param1:param1",
+                "param2":"param2:param2",
+                "param3":"param3:param3",
                 "toto":"2*x*y:x:y",
                 "titi":
                 {
                     //"tag":"todo",
-                    "part":
-                    {
-                        "expr":"3*x*y:x:y",
-                        "markers":"Omega1"
-                    },
-                    "part":
-                    {
-                        "expr":"4*x*y:x:y",
-                        "markers":"Omega2"
-                    },
+                    "parts": [
+                        {
+                            "expr":"3*x*y:x:y",
+                            "markers":"Omega1"
+                        },
+                        {
+                            "expr":"4*x*y:x:y",
+                            "markers":"Omega2"
+                        }
+                    ],
                     "representation":["nodal","element"]
                 },
                 "tutu":
                 {
-                    "expr":"{heat_k_xx,heat_k_xy,heat_k_yx,heat_k_yy}:heat_k_xx:heat_k_xy:heat_k_yx:heat_k_yy",
+                    "expr":"{materials_k_00,materials_k_01,materials_k_10,materials_k_11}:materials_k_00:materials_k_01:materials_k_10:materials_k_11",
                     "representation":["nodal","element"]
                 }
             }
@@ -134,12 +155,25 @@
             },
             "Statistics":
             {
+                "fluxOnNeumann_1":
+                {
+                    "type":"integrate",
+                    "expr":"materials_mymat1_k*heat_dn_T:materials_mymat1_k:heat_dn_T",
+                    "markers":"MarkerNeumann_1"
+                },
                 "fluxOnRobin":
                 {
                     "type":"integrate",
-                    "expr":"heat_mymat2_k*heat_dn_T:heat_mymat2_k:heat_dn_T",
+                    "expr":"-(materials_mymat2_k_00*heat_grad_T_0+materials_mymat2_k_01*heat_grad_T_1)*nx - (materials_mymat2_k_10*heat_grad_T_0+materials_mymat2_k_11*heat_grad_T_1)*ny :materials_mymat2_k_00:materials_mymat2_k_01:materials_mymat2_k_10:materials_mymat2_k_11:heat_grad_T_0:heat_grad_T_1:nx:ny",
+                    "markers":"MarkerRobin"
+                },
+                "fluxOnRobinBIS":
+                {
+                    "type":"integrate",
+                    "expr":"heat_nflux:heat_nflux",
                     "markers":"MarkerRobin"
                 }
+
             },
             "Points":
             {

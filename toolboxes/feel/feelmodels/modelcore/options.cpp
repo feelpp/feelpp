@@ -58,11 +58,9 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"linearsystem-cst-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update matrix and rhs cst part")
         (prefixvm(prefix,"jacobian-linear-update").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the jacobian")
         (prefixvm(prefix,"residual-uselinearjac").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the residual with linear jacobian")
-        (prefixvm(prefix,"preconditioner.contribution").c_str(), Feel::po::value< std::string >()->default_value("same_matrix"),
-         "contribution in preconditioner : same_matrix, standart, extended ")
         (prefixvm(prefix,"use-cst-matrix").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-matrix")
         (prefixvm(prefix,"use-cst-vector").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-vector")
-        (prefixvm(prefix,"error-if-solver-not-converged").c_str(), Feel::po::value< bool >()->default_value( false ), "error-if-solver-not-converged")
+        (prefixvm(prefix,"error-if-solver-not-converged").c_str(), Feel::po::value< bool >()->default_value( true ), "error-if-solver-not-converged")
         (prefixvm(prefix,"clear-preconditioner-after-use").c_str(), Feel::po::value< bool >()->default_value( false ), "clear-preconditioner-after-use")
         (prefixvm(prefix,"graph-print-python").c_str(), Feel::po::value<bool>()->default_value( false ), "print graph in python script")
         (prefixvm(prefix,"graph-print-python-filename").c_str(), Feel::po::value< std::string >(), "filename python graph")
@@ -101,6 +99,47 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( modelalgebraic_options( prefix ))
         .add( backend_options( prefix ) )
         .add( ptree_options( prefix ) );
+}
+
+Feel::po::options_description
+coefficientformpde_options(std::string const& prefix)
+{
+    Feel::po::options_description cfpdeOptions("coefficient-form-pde options");
+    cfpdeOptions.add_options()
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"stabilization").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
+        (prefixvm(prefix,"stabilization.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
+        (prefixvm(prefix,"stabilization.gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
+        ;
+
+    return cfpdeOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+}
+
+Feel::po::options_description
+coefficientformpdes_options(std::string const& prefix)
+{
+    Feel::po::options_description cfpdesOptions("coefficient-form-pdes options");
+    cfpdesOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard")
+
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"stabilization").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
+        (prefixvm(prefix,"stabilization.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
+        (prefixvm(prefix,"stabilization.gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
+        ;
+    return cfpdesOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
 
 /**
@@ -647,39 +686,40 @@ alemesh_options(std::string const& prefix)
 }
 
 
-
 Feel::po::options_description
-toolboxes_options(std::string const& type)
+toolboxes_options( std::string const& type, std::string const& prefix )
 {
     Feel::po::options_description toolboxesOptions("toolboxes options");
 
     if (type == "fluid")
-        toolboxesOptions.add(fluidMechanics_options("fluid"));
+        toolboxesOptions.add(fluidMechanics_options(prefix));
     else if (type == "solid")
-        toolboxesOptions.add(solidMechanics_options("solid"));
+        toolboxesOptions.add(solidMechanics_options(prefix));
     else if ( type == "heat" )
-        toolboxesOptions.add( heat_options("heat") );
+        toolboxesOptions.add( heat_options(prefix) );
     else if (type == "fsi")
         toolboxesOptions
             .add(fluidMechanics_options("fluid"))
             .add(solidMechanics_options("solid"))
             .add(fluidStructInteraction_options("fsi"));
     else if (type == "advection")
-        toolboxesOptions.add(advection_options("advection"));
+        toolboxesOptions.add(advection_options(prefix));
     else if (type == "levelset")
-        toolboxesOptions.add(levelset_options("levelset"));
+        toolboxesOptions.add(levelset_options(prefix));
     else if (type == "multifluid")
-        toolboxesOptions.add(multifluid_options("multifluid"));
+        toolboxesOptions.add(multifluid_options(prefix));
     else if (type == "electric")
-        toolboxesOptions.add(electricity_options("electric"));
+        toolboxesOptions.add(electricity_options(prefix));
     else if (type == "thermo-electric")
-        toolboxesOptions.add(thermoElectric_options("thermo-electric"));
+        toolboxesOptions.add(thermoElectric_options(prefix));
     else if (type == "heat-fluid")
-        toolboxesOptions.add(heatFluid_options("heat-fluid"));
+        toolboxesOptions.add(heatFluid_options(prefix));
     else if (type == "maxwell")
-        toolboxesOptions.add(maxwell_options("maxwell"));
+        toolboxesOptions.add(maxwell_options(prefix));
+    else if (type == "coefficient-form-pdes")
+        toolboxesOptions.add(coefficientformpdes_options(prefix));
     else
-        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric";
+        CHECK( false ) << "invalid type : " << type << " -> must be : fluid, solid, heat, fsi, advection, levelset, multifluid, thermo-electric, heat-fluid, heat-fluid, coefficient-form-pdes";
 
     return toolboxesOptions;
 }

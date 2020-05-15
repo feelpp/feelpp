@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
@@ -597,9 +598,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
                                                     "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    // this->modelProperties().parameters().updateParameterValues();
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().postProcess().setParameterValues( paramValues );
     for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
     {
         auto const& ptPos = evalPoints.pointPosition();
@@ -742,30 +743,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 
-    auto fieldTuple = hana::make_tuple( std::make_pair( "displacement",this->fieldDisplacementPtr() ),
-                                        std::make_pair( "velocity",this->fieldVelocityPtr() ),
-                                        std::make_pair( "acceleration",this->fieldAccelerationPtr() ),
-                                        std::make_pair( (M_useDisplacementPressureFormulation)?"pressure":"",this->fieldPressurePtr() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( modelName ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( modelName ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
+    auto mfields = this->modelFields();
+    auto symbolsExpr = this->symbolsExpr( mfields );
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = false;//this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
 
     if ( hasMeasure )
     {
@@ -822,6 +806,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         // up current time
         this->updateTime( M_newmark_displ_1dReduced->time() );
     }
+
+    this->updateParameterValues();
+
     this->log("SolidMechanics","startTimeStep", "finish" );
 }
 
@@ -866,6 +853,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             this->updateTime( M_newmark_displ_1dReduced->time() );
         }
     }
+
+    this->updateParameterValues();
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -959,9 +948,26 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->modelProperties().parameters().updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
 
+    this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
+    //this->materialsProperties()->updateParameterValues( paramValues );
+
+    this->setParameterValues( paramValues );
+}
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        //this->materialsProperties()->setParameterValues( paramValues );
+    }
+
     this->M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : this->M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
@@ -982,7 +988,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
     this->log("SolidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
-    this->updateParameterValues();
+    //this->updateParameterValues();
 
     if ( this->isStandardModel() )
     {

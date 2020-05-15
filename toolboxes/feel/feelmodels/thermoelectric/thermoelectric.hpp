@@ -99,6 +99,7 @@ public :
     void exportResults( double time );
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     //___________________________________________________________________________________//
 
@@ -112,6 +113,10 @@ public :
     electric_model_ptrtype const& electricModel() const { return M_electricModel; }
     electric_model_ptrtype electricModel() { return M_electricModel; }
 
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
 
     backend_ptrtype const& backend() const { return M_backendMonolithic; }
     BlocksBaseVector<double> const& blockVectorSolutionMonolithic() const { return M_blockVectorSolutionMonolithic; }
@@ -121,21 +126,80 @@ public :
 
     std::shared_ptr<TSBase> timeStepBase() { return this->heatModel()->timeStepBase(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->heatModel()->timeStepBase(); }
-    void startTimeStep() { this->heatModel()->startTimeStep(); }
-    void updateTimeStep() {  this->heatModel()->updateTimeStep(); }
+    void startTimeStep();
+    void updateTimeStep();
 
-    auto symbolsExpr() const { return this->symbolsExpr( M_heatModel->fieldTemperature(), M_electricModel->fieldElectricPotential() ); }
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
 
-    template <typename FieldTemperatureType,typename FieldElectricPotentialType>
-    auto symbolsExpr( FieldTemperatureType const& t, FieldElectricPotentialType const& v ) const
+    auto modelFields( std::string const& prefix = "" ) const
         {
-            auto symbolExprField = Feel::vf::symbolsExpr( M_heatModel->symbolsExprField( t ), M_electricModel->symbolsExprField( v ) );
-            auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-            //auto symbolExprMaterial = this->materialsProperties()->symbolsExpr( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ), prefix_symbol );
-            auto symbolExprMaterial = Feel::vf::symbolsExpr( M_heatModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ),
-                                                             M_electricModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-            return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( prefixvm( prefix, this->heatModel()->keyword() ) ),
+                                                  this->electricModel()->modelFields( prefixvm( prefix, this->electricModel()->keyword() ) ) );
         }
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorElectric, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( sol, rowStartInVectorHeat, prefixvm( prefix,this->heatModel()->keyword() ) ),
+                                                  this->electricModel()->modelFields( sol, rowStartInVectorElectric, prefixvm( prefix,this->electricModel()->keyword() ) ) );
+        }
+    template <typename ModelFieldsHeatType,typename ModelFieldsElectricType>
+    auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsElectricType const& mfieldsElectric, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( mfieldsHeat, mfieldsElectric );
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric ) const
+        {
+            return Feel::FeelModels::selectorModelFields( this->heatModel()->trialSelectorModelFields( startBlockSpaceIndexHeat ),
+                                                          this->electricModel()->trialSelectorModelFields( startBlockSpaceIndexElectric ) );
+        }
+
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    // template <typename ModelFieldsType>
+    // auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+    //     {
+    //         return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+    //     }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type startBlockSpaceIndexHeat, size_type startBlockSpaceIndexElectric, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, startBlockSpaceIndexHeat, startBlockSpaceIndexElectric, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( startBlockSpaceIndexHeat, startBlockSpaceIndexElectric ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
+            auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seHeat,seElectric,seParam,seMat,seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
+
     //___________________________________________________________________________________//
     // apply assembly and solver
     void solve();
@@ -171,9 +235,6 @@ private :
     bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
     mesh_ptrtype M_mesh;
-    //elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
-    // materials range
-    std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial;
 
     // physical parameter
     std::string M_modelName;

@@ -12,6 +12,7 @@ if( FEELPP_ENABLE_PCH_MODELS )
   add_precompiled_header( feelpp_modelalg )
 endif()
 include(GNUInstallDirs)
+set_target_properties(feelpp_modelalg PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
 install(TARGETS feelpp_modelalg EXPORT feelpp-toolboxes-targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

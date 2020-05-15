@@ -355,6 +355,7 @@ public:
     // Symbols expressions
     using super_type::symbolsExpr;
     // Fields
+#if 0
     auto allFields( std::string const& prefix = "" ) const
     {
         return hana::concat( super_type::allFields( prefix ), hana::make_tuple(
@@ -363,6 +364,13 @@ public:
                 this->optionalVectorialFields( prefix )
                 ) );
     }
+#else
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return super_type::modelFields( prefix );
+        }
+
+#endif
     auto optionalScalarFields( std::string const& prefix = "" ) const
     {
         std::map<std::string, element_scalar_ptrtype> fields;
@@ -392,10 +400,14 @@ public:
         // TODO : we need to explicitly convert Eigen::Matrix to std::vector as
         // the begin and end iterators used in ModelNumerical::588 are only implemented from
         // Eigen v3.4 on (not released yet).
-        std::vector<double> vecVelocityCOM( this->velocityCOM().size() );
-        Eigen::Matrix<value_type, nDim, 1>::Map( &vecVelocityCOM[0], vecVelocityCOM.size() ) = this->velocityCOM();
+        auto eigenToVec = []( Eigen::Matrix<value_type, nDim, 1> const& m )
+        {
+            std::vector<value_type> v( m.size() );
+            Eigen::Matrix<value_type, nDim, 1>::Map( &v[0], v.size() ) = m;
+            return v;
+        };
         return hana::concat( super_type::allMeasuresQuantities( prefix ), hana::make_tuple(
-                    std::make_pair( prefixvm( prefix, "velocity-com" ), vecVelocityCOM )
+                    ModelMeasuresQuantity( prefix, "velocity-com", std::bind( eigenToVec, std::bind( &self_type::velocityCOM, this ) ) )
                     ) );
     }
     //--------------------------------------------------------------------//
@@ -406,7 +418,7 @@ public:
     using super_type::exportResults;
     void exportResults( double time ) override;
     template<typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->allFields(), this->allMeasuresQuantities() ); }
+    void exportResults( double time, SymbolsExpr const& symbolsExpr ) { this->exportResults( time, symbolsExpr, this->modelFields(), this->allMeasuresQuantities() ); }
     //--------------------------------------------------------------------//
     // Physical quantities
     Eigen::Matrix<value_type, nDim, 1> velocityCOM() const { 

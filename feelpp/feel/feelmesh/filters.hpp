@@ -42,6 +42,7 @@
 
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
+#include <feel/feelcore/enums.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
@@ -957,12 +958,12 @@ internalpoints( MeshType const& mesh )
  */
 template<typename MT, typename Iterator>
 size_type
-nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false )
+nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -986,7 +987,7 @@ nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false )
  */
 template<typename MT, typename Iterator>
 size_type
-nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool global = false )
+nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = 0;
     std::for_each( its.begin(), its.end(),
@@ -996,7 +997,7 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool globa
                    } );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -1021,12 +1022,12 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool globa
  */
 template<typename MT, typename Iterator,typename Container>
 size_type
-nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global = false )
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -1051,7 +1052,7 @@ nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global 
  */
 template<typename MT, typename Iterator,typename Container>
 size_type
-nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, bool global = false )
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = 0;
     std::for_each( its.begin(), its.end(),
@@ -1061,13 +1062,26 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, 
                    } );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
     return gd;
 }
 
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, Zone const& z,  worldcomm_t const& worldComm = Environment::worldComm()  )
+{
+    return nelements( its, ( z == Zone::GLOBAL ), worldComm );
+}
+
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container>> const& its, Zone const& z,  worldcomm_t const& worldComm = Environment::worldComm()  )
+{
+    return nelements( its, ( z == Zone::GLOBAL ), worldComm );
+}
 
 
 template<typename ElementType>

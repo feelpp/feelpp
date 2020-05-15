@@ -103,7 +103,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- pde name  : " << M_modelName
+        //<< "\n     -- pde name  : " << M_modelName
         //<< "\n     -- stress tensor law  : " << this->materialProperties()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
@@ -226,7 +226,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
@@ -258,6 +258,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::modelName() const
 {
     return M_modelName;
 }
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -295,10 +296,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
 {
+#if 0
     if( this->modelName() == "Stokes" )
         return true;
     else
         return this->isStationary();
+#else
+
+// TODO : should be detected in loop assembly (only works with one physic)
+bool isStokes = true;
+for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+ {
+      auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+      if ( physicFluidData->equation() != "Stokes" )
+      {
+          isStokes = false;
+          break;
+      }
+}
+if ( isStokes )
+    return true;
+ else
+     return this->isStationary();
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -719,7 +739,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    this->executePostProcessMeasures( time, this->allFields(), this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
 
 
@@ -729,21 +750,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->modelProperties().parameters().updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
 
+    this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     //this->modelProperties().materials().setParameterValues( paramValues );
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcPressure.setParameterValues( paramValues );
-    M_bcMovingBoundaryImposed.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
-    this->updateFluidInletVelocity();
+
+    this->setParameterValues( paramValues );
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        //this->materialsProperties()->setParameterValues( paramValues );
+    }
+
+    M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : M_bcDirichletComponents )
+        bcDirComp.second.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
+    M_bcMovingBoundaryImposed.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
+    this->updateFluidInletVelocity();
+    M_bodySetBC.setParameterValues( paramValues );
+
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -752,14 +793,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
-    this->updateParameterValues();
-
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
-    if ( M_applyMovingMeshBeforeSolve && !M_bcMovingBoundaryImposed.empty() )
+    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
 
+    M_bodySetBC.updateForUse( *this );
+    M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
+#if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
@@ -790,6 +832,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->setSolverName( saveSolverName );
         this->setStationary( saveIsStationary );
     }
+#endif
 #if 0 // TODO
     if ( this->startBySolveNewtonian() && this->materialProperties()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
@@ -840,9 +883,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
             ++cptBlock;
         }
     }
-    
-    //M_fieldNoSlipRigidParticlesTranslationalVelocity->setConstant(1.);
-    
     //--------------------------------------------------
 
     double tElapsed = this->timerTool("Solve").stop("solve");
@@ -974,77 +1014,82 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 
     myOpPCD->updateStart();
 
-    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& therange = rangeData.second;
-        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-        auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-        //auto rhoExpr = this->materialProperties()->density( matName ).expr();
-        auto const& fieldRho = this->materialProperties()->fieldRho();
-        auto rhoExpr = idv( fieldRho );
-        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
-            if (this->isMoveDomain() )
+            std::string const& matName = rangeData.first;
+            auto const& therange = rangeData.second;
+            auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
+            //auto rhoExpr = this->materialProperties()->density( matName ).expr();
+            auto const& fieldRho = this->materialProperties()->fieldRho();
+            auto rhoExpr = idv( fieldRho );
+            if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
+                }
             }
-            else
+            else if ( ( physicFluidData->equation() == "Navier-Stokes" && this->solverName() == "Oseen" ) /*|| this->modelName() == "Oseen"*/ )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
-            }
-        }
-        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
-        {
-            auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
-            if (this->isMoveDomain() )
-            {
+                auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
+                }
             }
-            else
+            else if ( physicFluidData->equation() == "Navier-Stokes" )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
-            }
-        }
-        else if ( this->modelName() == "Navier-Stokes" )
-        {
-            if (this->isMoveDomain() )
-            {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
+                }
             }
-            else
-            {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
-            }
-        }
 
-        if ( !this->isStationaryModel() )
-        {
-            myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
-        }
-        if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
-        {
-            //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
-            //Warning : it's a copy past, should be improve : TODO!
-            double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
-            auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
-            auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
-            auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
-            norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+            if ( !this->isStationaryModel() )
+            {
+                myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
+            }
+            if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
+            {
+                //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
+                //Warning : it's a copy past, should be improve : TODO!
+                double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+                auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+                auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+                auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+                norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
 
-            myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+                myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+            }
         }
-    }
+    } // foreach physic
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
@@ -1226,11 +1271,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     {
         M_bdfVelocity->start( *M_fieldVelocity );
         M_savetsPressure->start( *M_fieldPressure );
-        if ( M_hasNoSlipRigidParticlesBC )
-        {
-            M_bdfNoSlipRigidParticlesTranslationalVelocity->start();
-            M_bdfNoSlipRigidParticlesAngularVelocity->start();
-        }
+        M_bodySetBC.startTimeStep();
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1306,11 +1347,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_meshALE->updateTimeStep();
 #endif
 
-    if ( M_hasNoSlipRigidParticlesBC )
-    {
-        M_bdfNoSlipRigidParticlesTranslationalVelocity->next(*M_fieldNoSlipRigidParticlesTranslationalVelocity);
-        M_bdfNoSlipRigidParticlesAngularVelocity->next(*M_fieldNoSlipRigidParticlesAngularVelocity);
-    }
+    M_bodySetBC.updateTimeStep();
 
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )
@@ -1329,6 +1366,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( M_bdfVelocity->time() );
     }
 
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
+
     if ( this->solverName() == "Oseen" )
         this->updateConvectionVelocityExtrapolated();
 
@@ -1336,21 +1376,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
-
-    // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory && rebuildCstAssembly )
-    {
-        if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
-            M_algebraicFactory->rebuildCstJacobian( this->blockVectorSolution().vectorMonolithic() );
-        }
-        else if (this->solverName() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE( this->blockVectorSolution().vectorMonolithic() );
-        }
-    }
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -1539,7 +1564,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() )
+    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
@@ -1551,9 +1576,30 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                                                _expr=expression(d,this->symbolsExpr()),
                                                _geomap=this->geomap() );
         }
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            if ( bpbc.hasElasticVelocityFromExpr() )
+                bpbc.updateElasticVelocityFromExpr(*this);
+        }
+
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
     }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+        else if ( bpbc.hasElasticVelocityFromExpr() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+        else
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, bpbc.rangeMarkedFacesOnFluid() );
+#if 0
+        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
+#endif
+    }
+
+
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
@@ -1577,6 +1623,42 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
             std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->assemble();
     }
+
+#if 0
+    if ( this->algebraicFactory() && !M_bodySetBC.empty() )
+    {
+        this->functionSpaceVelocity()->rebuildDofPoints();
+        // not very nice, we need to update direclty P, not rebuild
+
+        int nBlock = this->nBlockMatrixGraph();
+        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+        for (int i=0;i<nBlock;++i)
+            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
+
+        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            // rebuild matrixPTilde_angular
+            bpbc.updateForUse( *this );
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+            auto dofsBody = this->functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
+            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+            for ( auto dofid : dofsBody )
+                matFI_Id->set( dofid,dofid, 0.);
+            matFI_Id->close();
+        }
+
+        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+        M_algebraicFactory->initSolverPtAP( matP );
+    }
+#endif
 
     this->log("FluidMechanics","updateALEmesh", "finish");
 }
@@ -1915,8 +1997,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
-    if ( M_hasNoSlipRigidParticlesBC )
-        nBlock += 2;
+    nBlock += 2*M_bodySetBC.size();
     return nBlock;
 }
 
@@ -2035,30 +2116,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhV,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesTranslationalVelocity,_trial=XhP,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesTranslationalVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhV,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,1) = stencil(_test=M_XhNoSlipRigidParticlesAngularVelocity,_trial=XhP,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhNoSlipRigidParticlesAngularVelocity,
-                                             _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
 
@@ -2184,36 +2248,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // on topological faces
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
     if ( !listMarkedFacesVelocity.empty() )
-    {
-        auto therange = markedfaces( mesh,listMarkedFacesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces( mesh,listMarkedFacesVelocity ) );
     // on marked edges (only 3d)
-    auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-    if ( !listMarkedEdgesVelocity.empty() )
+    if constexpr ( nDim == 3)
     {
-        auto therange = markededges(mesh,listMarkedEdgesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
+        if ( !listMarkedEdgesVelocity.empty() )
+            this->updateDofEliminationIds( "velocity", XhVelocity, markededges( mesh,listMarkedEdgesVelocity ) );
     }
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
     if ( !listMarkedPointsVelocity.empty() )
-    {
-        auto therange = markedpoints(mesh,listMarkedPointsVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints( mesh,listMarkedPointsVelocity ) );
+
     //-------------------------------------//
     // on velocity components
     for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
@@ -2221,46 +2268,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = meshMarkersPair.first;
         auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
         if ( !listMarkedFacesCompVelocity.empty() )
-        {
-            auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces(mesh,listMarkedFacesCompVelocity ), comp );
         // edges (only 3d)
-        auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-        if ( !listMarkedEdgesCompVelocity.empty() )
+        if constexpr ( nDim == 3)
         {
-            auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+            auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
+            if ( !listMarkedEdgesCompVelocity.empty() )
+                this->updateDofEliminationIds( "velocity", XhVelocity, markededges(mesh,listMarkedEdgesCompVelocity ), comp );
         }
         // points
         auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
         if ( !listMarkedPointsCompVelocity.empty() )
-        {
-            auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints(mesh,listMarkedPointsCompVelocity ), comp );
     }
 
     if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
     {
-        auto therange = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
-        auto dofsToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange );
-        M_spaceLagrangeMultiplierPressureBC->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("pressurebc-lm",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
+    }
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
     }
 }
 
