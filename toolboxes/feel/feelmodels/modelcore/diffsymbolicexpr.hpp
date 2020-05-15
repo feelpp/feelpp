@@ -15,7 +15,7 @@ namespace FeelModels
 template <typename SymbolicExprType>
 struct TransformDiffSymbolicExpr
 {
-    TransformDiffSymbolicExpr( SymbolicExprType const& expr ) : M_expr( expr ) {}
+    explicit TransformDiffSymbolicExpr( SymbolicExprType const& expr ) : M_expr( expr ) {}
 
     template <typename T>
     constexpr auto operator()(T const& t) const

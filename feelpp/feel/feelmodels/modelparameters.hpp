@@ -69,7 +69,6 @@ struct FEELPP_EXPORT ModelParameter
         :
         M_name( name ),
         M_type( "fit" ),
-        M_value( 0. ),
         M_min( 0. ),
         M_max( 0. ),
         M_expr( mexpr ),
@@ -135,7 +134,7 @@ struct FEELPP_EXPORT ModelParameter
     }
 private:
     std::string M_name, M_type;
-    double M_value, M_min, M_max;
+    double M_min, M_max;
     ModelExpression M_expr;
     std::shared_ptr<Interpolator> M_interpolator;
 
