@@ -544,6 +544,21 @@ class Geo0D
     {
         return M_markers[1];
     }
+    Marker1 markerOr( uint16_type v ) const
+    {
+        if ( hasMarker() )
+            return M_markers.find( 1 )->second;
+        else
+            return Marker1{v};
+    }
+    Marker1 markerOr( uint16_type v  = 0 )
+    {
+        if ( hasMarker() )
+            return M_markers[1];
+        else
+            return Marker1{v};
+    }
+    
     void setMarker( flag_type v )
     {
         M_markers[1].assign( v );

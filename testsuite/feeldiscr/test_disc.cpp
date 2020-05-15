@@ -152,33 +152,33 @@ struct test_disc: public Application
 
         // this is the way to take into account the discontinuity at x = 0
         // properly
-        u = vf::project( Xh, elements( mesh ),
-                         ( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )+
+        u = vf::project( _space=Xh, _range=elements( mesh ),
+                         _expr=( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )+
                          ( emarker()==mesh->markerName( "k1" ) )*Px() );
         BOOST_TEST_MESSAGE( "here\n" );
-        double len1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), cst( 1.0 ) ).evaluate()( 0,0 );
+        double len1 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=cst( 1.0 ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( len1, 2, 1e-12 );
         BOOST_TEST_MESSAGE( "here 1\n" );
-        double len11 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( cst( 1.0 ) )+rightfacev( cst( 1. ) ) ).evaluate()( 0,0 );
+        double len11 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=leftfacev( cst( 1.0 ) )+rightfacev( cst( 1. ) ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( len11, 4, 1e-12 );
         BOOST_TEST_MESSAGE( "here 2\n" );
-        double len2 = integrate( markedfaces( mesh, "Tline" ), cst( 1.0 ) ).evaluate()( 0,0 );
+        double len2 = integrate( _range=markedfaces( mesh, "Tline" ), _expr=cst( 1.0 ) ).evaluate()( 0,0 );
         BOOST_CHECK_CLOSE( len2, 2, 1e-12 );
-        auto int1 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        auto int1 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=jumpv( idv( u ) ) ).evaluate();
         BOOST_CHECK_CLOSE( int1( 0,0 ), 4, 1e-12 );
         BOOST_CHECK_SMALL( int1( 1,0 ), 1e-12 );
-        auto int2 = integrate( markedfaces( mesh, "Tdiscontinuity" ), leftfacev( idv( u ) )+rightfacev( idv( u ) ) ).evaluate();
+        auto int2 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=leftfacev( idv( u ) )+rightfacev( idv( u ) ) ).evaluate();
         BOOST_CHECK_CLOSE( int2( 0,0 ), 4, 1e-12 );
 
-        u = vf::project( Xh, elements( mesh ),
-                         ( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )*Py()-
+        u = vf::project( _space=Xh, _range=elements( mesh ),
+                         _expr=( emarker()==mesh->markerName( "k2" ) )*( 2-Px() )*Py()-
                          ( emarker()==mesh->markerName( "k1" ) )*Px()*Py() );
-        auto int3 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        auto int3 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=jumpv( idv( u ) ) ).evaluate();
         BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
         BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
 
-        u = vf::project( Xh, elements( mesh ), sin( Px() ) );
-        auto int4 = integrate( markedfaces( mesh, "Tdiscontinuity" ), jumpv( idv( u ) ) ).evaluate();
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=sin( Px() ) );
+        auto int4 = integrate( _range=markedfaces( mesh, "Tdiscontinuity" ), _expr=jumpv( idv( u ) ) ).evaluate();
         BOOST_CHECK_SMALL( int3( 0,0 ), 1e-12 );
         BOOST_CHECK_SMALL( int3( 1,0 ), 1e-12 );
     }

@@ -47,6 +47,7 @@ namespace FeelModels
         typedef std::shared_ptr<model_type> model_ptrtype;
         typedef std::weak_ptr<model_type> model_weakptrtype;
 
+        using index_type = typename model_type::index_type;
         typedef typename model_type::value_type value_type;
         typedef typename model_type::backend_type backend_type;
         typedef typename model_type::backend_ptrtype backend_ptrtype;
@@ -97,6 +98,11 @@ namespace FeelModels
                    graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
         void init( backend_ptrtype const& backend, graph_ptrtype const& graph, indexsplit_ptrtype const& indexSplit );
 
+        void initExplictPartOfSolution();
+        vector_ptrtype explictPartOfSolution() { return M_explictPartOfSolution; }
+
+        void initSolverPtAP( sparse_matrix_ptrtype matP );
+        void solverPtAP_setDofEliminationIds( std::set<index_type> const& dofId ) { M_solverPtAP_dofEliminationIds = dofId; }
 #if 0
         template <typename SpaceType>
         void
@@ -197,6 +203,14 @@ namespace FeelModels
         void updateJacobian( const vector_ptrtype& X, sparse_matrix_ptrtype& J );
         void updateResidual( const vector_ptrtype& X, vector_ptrtype& R);
 
+        void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+        void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const;
+
+
         void rebuildCstJacobian( vector_ptrtype U );
         void rebuildCstLinearPDE( vector_ptrtype U );
 
@@ -251,7 +265,19 @@ namespace FeelModels
         sparse_matrix_ptrtype M_J;
         sparse_matrix_ptrtype M_CstJ;
         sparse_matrix_ptrtype M_Prec;
-        sparse_matrix_ptrtype M_Extended;
+
+        vector_ptrtype M_explictPartOfSolution;
+        vector_ptrtype M_contributionsExplictPartOfSolutionWithNewton;
+
+        bool M_useSolverPtAP;
+        sparse_matrix_ptrtype M_solverPtAP_matP;
+        sparse_matrix_ptrtype M_solverPtAP_matPtAP;
+        vector_ptrtype M_solverPtAP_PtF;
+        vector_ptrtype M_solverPtAP_solution;
+        vector_ptrtype M_solverPtAP_Psolution;
+        preconditioner_ptrtype M_solverPtAP_prec;
+        backend_ptrtype M_solverPtAP_backend;
+        std::optional<std::set<index_type>> M_solverPtAP_dofEliminationIds;
 
         double M_dofElimination_valueOnDiagonal;
         Feel::Context M_dofElimination_strategy;

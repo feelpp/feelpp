@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 
@@ -695,6 +696,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->updateBoundaryConditionsForUse();
 
+    // update constant parameters
+    this->updateParameterValues();
+
     // update block vector (index + data struct)
     if (this->isStandardModel())
     {
@@ -1083,10 +1087,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
     std::string modelName = "solid";
 
-    // update post-process expression
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
+    // // update post-process expression
+    // this->modelProperties().parameters().updateParameterValues();
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().postProcess().setParameterValues( paramValues );
 
     M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
     // clean doExport with fields not available

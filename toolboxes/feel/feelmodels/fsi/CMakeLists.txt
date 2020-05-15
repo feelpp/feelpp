@@ -89,7 +89,12 @@ add_library(Feelpp::feelpp_toolbox_fsi_lib ALIAS feelpp_toolbox_fsi_lib )  # to 
 set_target_properties(feelpp_toolbox_fsi_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_fsi_lib")
 target_link_libraries(feelpp_toolbox_fsi_lib ${FEELPP_MODELS_LIBRARIES_FSI})
 set_property(TARGET feelpp_toolbox_fsi_lib PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_toolbox_fsi_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+set_target_properties(feelpp_toolbox_fsi_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_fsi_lib EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/fsi COMPONENT Devel)

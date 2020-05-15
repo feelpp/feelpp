@@ -1129,7 +1129,8 @@ ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
 void
 ADVDIFFREAC_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr(), this->allFields(), this->allMeasuresQuantities() );
+    auto mfields = this->modelFields();
+    this->exportResults( time, this->symbolsExpr( mfields ), mfields, this->allMeasuresQuantities() );
 }
 
 ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS

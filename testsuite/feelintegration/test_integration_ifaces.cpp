@@ -94,8 +94,8 @@ struct test_integration_internal_faces_v: public Application
         space_ptrtype Xh = space_type::New( _mesh=mesh,_extended_doftable=std::vector<bool>(1,true) );
 
         // int ([-1,1],[-1,x]) 1 dx
-        value_type meas = integrate( elements( mesh ), cst( 1. ) ).evaluate()( 0, 0 );
-        value_type v0 = integrate( elements( mesh ), vf::min( constant( 1.0 ),constant( 2.0 ) ) ).evaluate()( 0, 0 );
+        value_type meas = integrate( _range=elements( mesh ), _expr=cst( 1. ) ).evaluate()( 0, 0 );
+        value_type v0 = integrate( _range=elements( mesh ), _expr=vf::min( constant( 1.0 ),constant( 2.0 ) ) ).evaluate()( 0, 0 );
 
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_CLOSE( v0, meas, eps );
@@ -103,9 +103,9 @@ struct test_integration_internal_faces_v: public Application
         FEELPP_ASSERT( math::abs( v0-1.0 ) < eps )( v0 )( math::abs( v0-1.0 ) )( eps ).warn ( "v0 != 1" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v1 = integrate( internalfaces( mesh ), jumpv( trans( 2*P() ) ) ).evaluate()( 0, 0 );
-        value_type v1l = integrate( internalfaces( mesh ), leftfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
-        value_type v1r = integrate( internalfaces( mesh ), rightfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
+        value_type v1 = integrate( _range=internalfaces( mesh ), _expr=jumpv( trans( 2*P() ) ) ).evaluate()( 0, 0 );
+        value_type v1l = integrate( _range=internalfaces( mesh ), _expr=leftfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
+        value_type v1r = integrate( _range=internalfaces( mesh ), _expr=rightfacev( trans( 2*P() )*N() ) ).evaluate()( 0, 0 );
 
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "int jump(2*X^t) =" << v1 << "\n" );
@@ -119,7 +119,7 @@ struct test_integration_internal_faces_v: public Application
 
         auto normp = vf::sqrt( trans( P() )*P() );
         auto vnormp = normp*unitX()+normp*unitY()+normp*unitZ();
-        value_type v2 = integrate( internalfaces( mesh ), leftfacev( trans( vnormp )*N() )+rightfacev( trans( vnormp )*N() ) ).evaluate()( 0, 0 );
+        value_type v2 = integrate( _range=internalfaces( mesh ), _expr=leftfacev( trans( vnormp )*N() )+rightfacev( trans( vnormp )*N() ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_TEST_MESSAGE( "int jump(vnormp) =" << v2 << "\n" );
         BOOST_CHECK_SMALL( v2, eps );
@@ -127,8 +127,8 @@ struct test_integration_internal_faces_v: public Application
         FEELPP_ASSERT( math::abs( v2-0.0 ) < eps )( v2 )( math::abs( v2-0.0 ) )( eps ).warn ( "v2 != 0" );
 #endif /* USE_BOOST_TEST */
 
-        value_type v3 = integrate( internalfaces( mesh ),
-                                   leftfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) )-rightfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) ) ).evaluate()( 0, 0 );
+        value_type v3 = integrate( _range=internalfaces( mesh ),
+                                   _expr=leftfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) )-rightfacev( vf::sqrt( trans( P()*P() )*( P()*P() ) ) ) ).evaluate()( 0, 0 );
 #if defined(USE_BOOST_TEST)
         BOOST_CHECK_SMALL( v3, eps );
 #else
@@ -140,42 +140,42 @@ struct test_integration_internal_faces_v: public Application
         //auto u_exact = Px()*Px()+Py()*Py()+Pz()*Pz();
         auto u_exact = Px()*Px()*Pz()+Py()*Py()*Px()+Pz()*Pz()*Py();
         //auto u_exact = Px();
-        u = vf::project( Xh, elements( mesh ), u_exact );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=u_exact );
 
-        double avgv = integrate( internalfaces( mesh ), averagev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
+        double avgv = integrate( _range=internalfaces( mesh ), _expr=averagev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "avg(v-uexact)=" << avgv << "\n" );
-        double avgv1 = integrate( internalfaces( mesh ), .5*( leftfacev( idv( u )-( u_exact ) )+rightfacev( idv( u )-( u_exact ) ) ) ).evaluate()( 0, 0 );
+        double avgv1 = integrate( _range=internalfaces( mesh ), _expr=.5*( leftfacev( idv( u )-( u_exact ) )+rightfacev( idv( u )-( u_exact ) ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( ".5*(left(v-uexact)+right(v-uexact))=" << avgv1 << "\n" );
-        double avgv2 = integrate( internalfaces( mesh ), .5*( leftfacev( idv( u ) )-leftfacev( u_exact )+rightfacev( idv( u ) )-rightfacev( u_exact ) ) ).evaluate()( 0, 0 );
+        double avgv2 = integrate( _range=internalfaces( mesh ), _expr=.5*( leftfacev( idv( u ) )-leftfacev( u_exact )+rightfacev( idv( u ) )-rightfacev( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( avgv, eps );
         BOOST_CHECK_SMALL( avgv1, eps );
         BOOST_CHECK_SMALL( avgv2, eps );
 
 
-        double leftv = integrate( internalfaces( mesh ), leftfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
-        double rightv = integrate( internalfaces( mesh ), rightfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
+        double leftv = integrate( _range=internalfaces( mesh ), _expr=leftfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
+        double rightv = integrate( _range=internalfaces( mesh ), _expr=rightfacev( idv( u )-( u_exact ) ) ).evaluate()( 0, 0 );
         BOOST_TEST_MESSAGE( "leftv=" << leftv << "\n" );
         BOOST_CHECK_SMALL( leftv, eps );
         BOOST_TEST_MESSAGE( "rightv=" << rightv << "\n" );
         BOOST_CHECK_SMALL( rightv, eps );
 
 
-        double n_jumpun = integrate( internalfaces( mesh ), trans( leftfacev( N() ) )*jumpv( idv( u ) ) ).evaluate()( 0, 0 );
+        double n_jumpun = integrate( _range=internalfaces( mesh ), _expr=trans( leftfacev( N() ) )*jumpv( idv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( n_jumpun, eps );
-        double n_leftun_rightun = integrate( internalfaces( mesh ), trans( leftfacev( N() ) )*( leftfacev( idv( u )*N() )+rightfacev( idv( u )*N() ) ) ).evaluate()( 0, 0 );
+        double n_leftun_rightun = integrate( _range=internalfaces( mesh ), _expr=trans( leftfacev( N() ) )*( leftfacev( idv( u )*N() )+rightfacev( idv( u )*N() ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_SMALL( n_leftun_rightun, eps );
 
         BOOST_CHECK_CLOSE( n_leftun_rightun, n_jumpun, eps );
 
-        double left_n = integrate( internalfaces( mesh ), leftfacev( N() ) ).evaluate()( 0, 0 );
-        double right_n = integrate( internalfaces( mesh ), rightfacev( N() ) ).evaluate()( 0, 0 );
+        double left_n = integrate( _range=internalfaces( mesh ), _expr=leftfacev( N() ) ).evaluate()( 0, 0 );
+        double right_n = integrate( _range=internalfaces( mesh ), _expr=rightfacev( N() ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( left_n, -right_n, eps );
 
-        u = vf::project( Xh, elements( mesh ), cst( 1. ) );
-        double leftv_1 = integrate( internalfaces( mesh ), leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
-        double rightv_1 = integrate( internalfaces( mesh ), rightfacev( idv( u ) ) ).evaluate()( 0, 0 );
-        double sumv_1 = integrate( internalfaces( mesh ),  rightfacev( idv( u ) )+leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
-        double avgv_1 = integrate( internalfaces( mesh ),  averagev( idv( u ) ) ).evaluate()( 0, 0 );
+        u = vf::project( _space=Xh, _range=elements( mesh ), _expr=cst( 1. ) );
+        double leftv_1 = integrate( _range=internalfaces( mesh ), _expr=leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double rightv_1 = integrate( _range=internalfaces( mesh ), _expr=rightfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double sumv_1 = integrate( _range=internalfaces( mesh ),  _expr=rightfacev( idv( u ) )+leftfacev( idv( u ) ) ).evaluate()( 0, 0 );
+        double avgv_1 = integrate( _range=internalfaces( mesh ),  _expr=averagev( idv( u ) ) ).evaluate()( 0, 0 );
         BOOST_CHECK_CLOSE( leftv_1, rightv_1, eps );
         BOOST_CHECK_CLOSE( leftv_1+rightv_1, sumv_1, eps );
         BOOST_CHECK_CLOSE( 2*avgv_1, sumv_1, eps );
@@ -234,8 +234,8 @@ struct test_integration_internal_faces_lf : public Application
 
         auto F = backend->newVector( Xh );
         form1( _test=Xh, _vector=F ) =
-            integrate( internalfaces( mesh ),
-                       trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
+            integrate( _range=internalfaces( mesh ),
+                       _expr=trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() ) );
         //  integrate( internalfaces( mesh ),
         //        //print(trans(print(leftface(id(u)*print(N(),"leftN:")),"leftuN=")+print(rightface(id(u)*print(N(),"rightN:")),"rightuN=")),"leftuN+rightuN=" )*print(leftfacev(N()),"leftN=")
         //        trans( leftface( id( u )*N() )+rightface( id( u )*N() ) )*leftfacev( N() )

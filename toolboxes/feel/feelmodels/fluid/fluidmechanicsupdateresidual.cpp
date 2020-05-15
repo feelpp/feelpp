@@ -34,6 +34,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
+    bool doAssemblyRhs = !data.hasInfo( "ignore-assembly.rhs" );
+    // if ( !doAssemblyRhs )
+    //     std::cout << "hola \n";
+
+
     double timeSteppingScaling = 1.;
     bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationaryModel() )
@@ -55,20 +60,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto XhV = this->functionSpaceVelocity();
     auto XhP = this->functionSpacePressure();
 
+    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
     size_type rowStartInVector = this->rowStartInVector();
     auto linearFormV_PatternDefault = form1( _test=XhV, _vector=R,
                                             _pattern=size_type(Pattern::DEFAULT),
-                                            _rowstart=rowStartInVector );
+                                            _rowstart=rowStartInVector+startBlockIndexVelocity );
     auto linearFormV_PatternCoupled = form1( _test=XhV, _vector=R,
                                              _pattern=size_type(Pattern::COUPLED),
-                                             _rowstart=rowStartInVector );
+                                             _rowstart=rowStartInVector+startBlockIndexVelocity );
     auto linearFormP = form1( _test=XhP, _vector=R,
                               _pattern=size_type(Pattern::COUPLED),
-                              _rowstart=rowStartInVector+1 );
+                              _rowstart=rowStartInVector+startBlockIndexPressure );
 
-    auto u = XhV->element(XVec, rowStartInVector+0);
+    auto u = XhV->element(XVec, rowStartInVector+startBlockIndexVelocity);
     auto const& v = u;
-    auto p = XhP->element(XVec, rowStartInVector+1);
+    auto p = XhP->element(XVec, rowStartInVector+startBlockIndexPressure);
     auto const& q = p;
 
     //--------------------------------------------------------------------------------------------------//
@@ -85,40 +92,56 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     thetimerBis.restart();
-    if ( BuildNonCstPart && this->modelName() == "Navier-Stokes" )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+
+        if ( BuildNonCstPart && physicFluidData->equation() == "Navier-Stokes" )
         {
-            auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
-            linearFormV_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
-                           _geomap=this->geomap() );
-            if ( this->doStabConvectionEnergy() )
-                CHECK( false ) << "TODO";
-        }
-        else
-        {
-            if ( this->doStabConvectionEnergy() )
+            if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
             {
+                auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
                 linearFormV_PatternCoupled +=
                     integrate( _range=M_rangeMeshElements,
-                               //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
-                               _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                               _expr= timeSteppingScaling*idv(rho)*trans( gradv(u)*idv(betaU) )*id(v),
                                _geomap=this->geomap() );
+                if ( this->doStabConvectionEnergy() )
+                    CHECK( false ) << "TODO";
             }
             else
             {
-                // convection term
-                // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
-                auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
-                linearFormV_PatternCoupled +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr=timeSteppingScaling*convecTerm,
-                               _geomap=this->geomap() );
+                if ( this->doStabConvectionEnergy() )
+                {
+                    linearFormV_PatternCoupled +=
+                        integrate( _range=M_rangeMeshElements,
+                                   //_expr= /*idv(*M_P0Rho)**/inner( Feel::vf::FSI::fluidMecConvection(u,*M_P0Rho) + idv(*M_P0Rho)*0.5*divv(u)*idv(u), id(v) ),
+                                   _expr=timeSteppingScaling*inner( Feel::FeelModels::fluidMecConvectionWithEnergyStab(u,rho), id(v) ),
+                                   _geomap=this->geomap() );
+                }
+                else
+                {
+                    // convection term
+                    // auto convecTerm = val( idv(rho)*trans( gradv(u)*idv(u) ))*id(v);
+                    auto convecTerm = inner( Feel::FeelModels::fluidMecConvection(u,rho),id(v) );
+                    linearFormV_PatternCoupled +=
+                        integrate( _range=M_rangeMeshElements,
+                                   _expr=timeSteppingScaling*convecTerm,
+                                   _geomap=this->geomap() );
+                }
             }
         }
-    }
+
+
+        if ( !BuildCstPart && !UseJacobianLinearTerms && physicFluidData->equation() == "Navier-Stokes" && data.hasVectorInfo( "explicit-part-of-solution" ) )
+        {
+            auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+            linearFormV_PatternCoupled +=
+                integrate( _range=M_rangeMeshElements,
+                           _expr= timeSteppingScaling*val( idv(rho)*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
+                           _geomap=this->geomap() );
+        }
+    } // foreach physic
 
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
     this->log("FluidMechanics","updateResidual","build convective--1-- term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
@@ -165,7 +188,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
     // take into account that div u != 0
-    if (!this->velocityDivIsEqualToZero() && BuildCstPart)
+    if (!this->velocityDivIsEqualToZero() && BuildCstPart && doAssemblyRhs )
     {
         linearFormP +=
             integrate( _range=M_rangeMeshElements,
@@ -193,7 +216,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     //--------------------------------------------------------------------------------------------------//
 
     // body forces
-    if (BuildCstPart)
+    if (BuildCstPart && doAssemblyRhs)
     {
         if ( this->M_overwritemethod_updateSourceTermResidual != NULL )
         {
@@ -243,7 +266,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _geomap=this->geomap() );
         }
 
-        if (BuildCstPart)
+        if (BuildCstPart && doAssemblyRhs)
         {
             auto buzz = M_bdfVelocity->polyDeriv();
             linearFormV_PatternDefault +=
@@ -288,7 +311,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                 }
             }
 #if defined(FLUIDMECHANICS_USE_LAGRANGEMULTIPLIER_MEANPRESSURE)
-            if ( BuildCstPart )
+            if ( BuildCstPart && doAssemblyRhs )
             {
                 for ( int k=0;k<M_XhMeanPressureLM.size();++k )
                 {
@@ -449,6 +472,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialG
         }
     }
 
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex( spaceName );
+            auto uBodyTranslationalVelocity = bpbc.spaceTranslationalVelocity()->element( U, rowStartInVector+startBlockIndexTranslationalVelocity );
+            uBodyTranslationalVelocity.on(_range=elements(bpbc.mesh()), _expr=bpbc.translationalVelocityExpr() );
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+        }
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex( spaceName );
+            auto uBodyAngularVelocity = bpbc.spaceAngularVelocity()->element( U, rowStartInVector+startBlockIndexAngularVelocity );
+            uBodyAngularVelocity.on(_range=elements(bpbc.mesh()), _expr=bpbc.angularVelocityExpr() );
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+        }
+    }
+
     // imposed mean pressure (TODO use updateDofEliminationIds)
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
@@ -481,6 +525,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResi
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
             this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
+    }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+        }
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+        }
     }
 }
 

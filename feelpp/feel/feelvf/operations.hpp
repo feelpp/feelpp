@@ -255,8 +255,8 @@
 #
 # define VF_TYPE_TYPE(L)                                                                       \
    BOOST_PP_IF(VF_TYPE_IS_EXPR(L),                                                             \
-               VF_TYPE_NAME(L),                                                                \
-               Cst<VF_TYPE_NAME( L )> )                                                        \
+               Expr<VF_TYPE_NAME(L)>,                                   \
+               Expr<Cst<VF_TYPE_NAME( L )>> )                           \
    /**/
 #
 # define VF_TYPE_TYPE_EXPR(L)                                                                  \
@@ -268,12 +268,12 @@
 # define VF_TYPE_TYPE_EXPR_CST(L)                                                              \
    BOOST_PP_IF(VF_TYPE_IS_EXPR(L),                                                             \
                Expr<VF_TYPE_NAME(L)>,                                                          \
-               Cst<VF_TYPE_NAME( L )> )                                                        \
+               VF_TYPE_NAME( L )/*Expr<Cst<VF_TYPE_NAME( L )>>*/ )      \
    /**/
 #
 # define VF_TYPE_TYPE_CST(L)                                                                  \
    BOOST_PP_IF(BOOST_PP_NOT(VF_TYPE_IS_EXPR(L)),                                              \
-               BOOST_PP_IDENTITY(Cst<VF_TYPE_NAME( L )>),                                     \
+               BOOST_PP_IDENTITY(cst/*Cst<VF_TYPE_NAME( L )>*/),        \
                BOOST_PP_EMPTY )()                                                             \
    /**/
 #
@@ -288,7 +288,7 @@
 # define VF_SPECIALIZATION_IF_BUILTIN(L,R)                         \
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
-              BOOST_PP_IDENTITY(<VF_TYPE_TYPE(L)),                 \
+              BOOST_PP_IDENTITY(</*VF_TYPE_TYPE*/VF_TYPE_NAME(L)), \
               BOOST_PP_EMPTY)()                                    \
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
@@ -296,7 +296,7 @@
               BOOST_PP_EMPTY)()                                    \
   BOOST_PP_IF(BOOST_PP_OR( BOOST_PP_NOT( VF_TYPE_IS_EXPR(L) ),     \
                            BOOST_PP_NOT( VF_TYPE_IS_EXPR(R) ) ),   \
-              BOOST_PP_IDENTITY(VF_TYPE_TYPE(R)>),                 \
+              BOOST_PP_IDENTITY(/*VF_TYPE_TYPE*/VF_TYPE_NAME(R)>), \
               BOOST_PP_EMPTY)()                                    \
     /**/
 
@@ -323,6 +323,32 @@
 #
 # define VF_BOOST_PP_EMPTY() \
    /**/
+
+
+# /* Generates code for all binary operators and integral type pairs. */
+# define VF_BINARY_ARRAY_OP_DECLARATION(_, OLR) \
+      VF_BINARY_ARRAY_OP_CODE_DECLARATION OLR \
+   /**/
+
+#define VF_BINARY_ARRAY_OP_CODE_DECLARATION(O,L,R)                      \
+    template <BOOST_PP_IF( VF_TYPE_IS_EXPR( L ),                        \
+                           BOOST_PP_IDENTITY(class VF_TYPE_NAME(L)),    \
+                           BOOST_PP_EMPTY                               \
+                           )()                                          \
+              BOOST_PP_IF( BOOST_PP_AND( VF_TYPE_IS_EXPR(L),            \
+                                         VF_TYPE_IS_EXPR(R) ),          \
+                           BOOST_PP_COMMA,                              \
+                           BOOST_PP_EMPTY )()                           \
+              BOOST_PP_IF( VF_TYPE_IS_EXPR( R ),                        \
+                           BOOST_PP_IDENTITY(class VF_TYPE_NAME(R)),    \
+                           BOOST_PP_EMPTY                               \
+                           )()>                                         \
+    class VF_OP_NAME( O )  VF_SPECIALIZATION_IF_BUILTIN( L, R ) ;       \
+    /**/
+
+
+
+
 #
 # /* Generates code for all binary operators and integral type pairs. */
 # define VF_BINARY_ARRAY_OP(_, OLR) \
@@ -345,12 +371,17 @@
     class VF_OP_NAME( O ) VF_SPECIALIZATION_IF_BUILTIN( L, R ) : public ExprDynamicBase        \
     {                                                                   \
       public:                                                           \
-        typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> expression_type; \
-        typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> this_type; \
-        typedef VF_TYPE_VALUE_TYPE( L ) VF_VALUE_TYPE(L);               \
-        typedef VF_TYPE_VALUE_TYPE( R ) VF_VALUE_TYPE(R);               \
+        typedef VF_OP_NAME( O )<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> expression_type; \
+        using this_type = expression_type;                              \
         typedef VF_TYPE_TYPE( L ) L_type;                               \
         typedef VF_TYPE_TYPE( R ) R_type;                               \
+        using value_left_type = typename L_type::value_type;            \
+        using value_right_type = typename R_type::value_type;           \
+                                                                        \
+        static const bool is_op_mul = std::is_same_v< expression_type, vf_mul<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static const bool is_op_div = std::is_same_v< expression_type, vf_div<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static const bool is_op_add = std::is_same_v< expression_type, vf_add<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
+        static const bool is_op_sub = std::is_same_v< expression_type, vf_sub<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> >; \
                                                                         \
         static const size_type context = L_type::context | R_type::context; \
         size_type dynamicContext() const { return vf::dynamicContext( M_left ) | vf::dynamicContext( M_right ); } \
@@ -372,13 +403,13 @@
             static const bool has_test_basis = L_type::template HasTestFunction<Func>::result|R_type::template HasTestFunction<Func>::result; \
         template<typename Func>                                         \
             static const bool has_trial_basis = L_type::template HasTrialFunction<Func>::result|R_type::template HasTrialFunction<Func>::result; \
-        using test_basis = std::nullptr_t;                              \
+        using test_basis =  typename mpl::if_< std::is_null_pointer<typename L_type::test_basis >, typename R_type::test_basis , typename L_type::test_basis >::type; \
         using trial_basis = std::nullptr_t;                             \
                                                                         \
-        typedef typename mpl::if_<mpl::greater<mpl::sizeof_<VF_VALUE_TYPE(L)>, \
-            mpl::sizeof_<VF_VALUE_TYPE(R)> >,                           \
-                                  mpl::identity<VF_VALUE_TYPE(L)>,      \
-                                  mpl::identity<VF_VALUE_TYPE(R)> >::type::type value_type; \
+        typedef typename mpl::if_<mpl::greater<mpl::sizeof_<value_left_type>, \
+            mpl::sizeof_<value_right_type> >,                           \
+                                  mpl::identity<value_left_type>,      \
+                                  mpl::identity<value_right_type> >::type::type value_type; \
         using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >; \
                                                                         \
         VF_OP_NAME( O )( L_type const& left, R_type const& right )      \
@@ -396,7 +427,7 @@
         template<typename... TheExpr>                                   \
         struct Lambda                                                   \
         {                                                               \
-            typedef VF_OP_NAME( O )<typename L_type::template Lambda<TheExpr...>::type,typename R_type::template Lambda<TheExpr...>::type> type; \
+            typedef VF_OP_NAME( O )<typename L_type::template Lambda<TheExpr...>::type::expression_type,typename R_type::template Lambda<TheExpr...>::type::expression_type> type; \
         };                                                              \
                                                                         \
         template<typename... TheExpr>                                      \
@@ -414,10 +445,49 @@
         L_type VF_TYPE_CV(L) left() const { return M_left; }           \
         R_type VF_TYPE_CV(R) right() const { return M_right; }         \
                                                                         \
-        void setParameterValues( std::map<std::string,value_type> const& mp ) \
+        void setParameterValues( std::map<std::string,double> const& mp ) \
         {                                                               \
             M_left.setParameterValues( mp );                            \
             M_right.setParameterValues( mp );                           \
+        }                                                               \
+        void updateParameterValues( std::map<std::string,double> & pv ) const \
+        {                                                               \
+            M_left.updateParameterValues( pv );                         \
+            M_right.updateParameterValues( pv );                        \
+        }                                                               \
+                                                                        \
+        template <typename SymbolsExprType>                             \
+            auto applySymbolsExpr( SymbolsExprType const& se ) const    \
+        {                                                               \
+            return  M_left.applySymbolsExpr( se ) VF_OP_SYMBOL( O ) M_right.applySymbolsExpr( se ); \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+        {                                                               \
+            return M_left.hasSymbolDependency( symb, se ) || M_right.hasSymbolDependency( symb, se ); \
+        }                                                               \
+                                                                        \
+        template <typename TheSymbolExprType>                           \
+            void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const \
+        {                                                               \
+            M_left.dependentSymbols( symb,res,se );                     \
+            M_right.dependentSymbols( symb,res,se );                    \
+        }                                                               \
+                                                                        \
+        template <int diffOrder, typename TheSymbolExprType>            \
+            auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                       TheSymbolExprType const& se ) const              \
+        {                                                               \
+            auto ldiff = M_left.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); \
+            auto rdiff = M_right.template diff<diffOrder>( diffVariable, world, dirLibExpr, se ); \
+            if constexpr( is_op_mul )                                   \
+                            return ldiff*M_right + M_left*rdiff;        \
+            else if constexpr( is_op_div )                              \
+                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2.0); \
+            else if constexpr( is_op_add || is_op_sub )                 \
+                                 return ldiff VF_OP_SYMBOL( O ) rdiff;  \
+            else { CHECK(false ) << "TODO or not possible";return *this; } \
         }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
@@ -658,21 +728,32 @@
         evaluate_type                                                   \
             evaluate(bool p,  worldcomm_ptr_t const& worldcomm ) const  \
         {                                                               \
-            auto leval = M_left.evaluate(p,worldcomm);                  \
-            auto reval = M_right.evaluate(p,worldcomm);                 \
+            auto leval = M_left.evaluate(p,worldcomm).template cast<value_type>(); \
+            auto reval = M_right.evaluate(p,worldcomm).template cast<value_type>(); \
             if ( leval.rows() == 1 && leval.cols() == 1 )               \
             {                                                           \
                 if ( reval.rows() == 1 && reval.cols() == 1 )           \
                     return Eigen::Matrix<value_type,1,1>::Constant( leval(0,0) VF_OP_SYMBOL( O ) reval(0,0) ); \
+                else if constexpr( is_op_mul )                          \
+                    return leval(0,0) VF_OP_SYMBOL( O ) reval; \
                 else                                                    \
-                    return leval(0,0) VF_OP_SYMBOL( O ) reval;          \
+                {                                                       \
+                    CHECK( false ) << "should not go here";             \
+                    return evaluate_type::Constant( 1,1,0. );           \
+                }                                                       \
             }                                                           \
             else if ( reval.rows() == 1 && reval.cols() == 1 )          \
             {                                                           \
-                return leval VF_OP_SYMBOL( O ) reval(0,0);              \
+                if constexpr( is_op_mul || is_op_div )                  \
+                    return leval VF_OP_SYMBOL( O ) reval(0,0); \
+                else                                                    \
+                {                                                       \
+                    CHECK( false ) << "should not go here";             \
+                    return evaluate_type::Constant( 1,1,0. );           \
+                }                                                       \
             }                                                           \
-            else if constexpr( L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
-                               R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) \
+            else if constexpr( (L_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic || \
+                                R_type::evaluate_type::SizeAtCompileTime == Eigen::Dynamic) && !is_op_div) \
                                  return leval VF_OP_SYMBOL( O ) reval;  \
             else if constexpr( L_type::evaluate_type::SizeAtCompileTime > 1 && R_type::evaluate_type::SizeAtCompileTime > 1 ) \
             {                                                           \
@@ -680,7 +761,7 @@
             }                                                           \
             else                                                        \
             {                                                           \
-                CHECK( false ) << "should notx go here";                 \
+                CHECK( false ) << "should not go here";                 \
                 return Eigen::Matrix<value_type,1,1>::Constant( 0 );    \
             }                                                           \
         }                                                               \
@@ -716,10 +797,10 @@
                            BOOST_PP_EMPTY                               \
                            )()>                                         \
     inline                                                              \
-    Expr< VF_OP_NAME( O )< VF_TYPE_TYPE_EXPR_CST(L), VF_TYPE_TYPE_EXPR_CST(R) > > \
+        Expr< VF_OP_NAME( O )< VF_TYPE_NAME(L), VF_TYPE_NAME(R) > >     \
     operator VF_OP_SYMBOL( O )( VF_TYPE_TYPE_EXPR(L) VF_TYPE_CV(L) v, VF_TYPE_TYPE_EXPR(R) VF_TYPE_CV(R) w ) \
     {                                                                   \
-        typedef VF_OP_NAME( O )<VF_TYPE_TYPE_EXPR_CST( L ), VF_TYPE_TYPE_EXPR_CST( R )> expr_t; \
+        typedef VF_OP_NAME( O )<VF_TYPE_NAME( L ), VF_TYPE_NAME( R )> expr_t; \
         return Expr<expr_t> (expr_t ( VF_TYPE_TYPE_CST(L)(v) , VF_TYPE_TYPE_CST(R)(w) )); \
     }                                                                   \
     /**/
@@ -752,6 +833,11 @@ namespace Feel
 {
 namespace vf
 {
+
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP_DECLARATION, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_EXPRR_TYPES ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP_DECLARATION, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_BUILTIN_TYPES ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP_DECLARATION, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_BUILTIN_TYPES, VF_EXPRR_TYPES ) )
+
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_EXPRR_TYPES ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_EXPRL_TYPES, VF_BUILTIN_TYPES ) )
 BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_BINARY_ARRAY_OP, 3, ( VF_APPLICATIVE_BINARY_OPS, VF_BUILTIN_TYPES, VF_EXPRR_TYPES ) )

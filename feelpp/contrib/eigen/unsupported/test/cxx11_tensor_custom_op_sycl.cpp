@@ -13,7 +13,7 @@
 
 #define EIGEN_TEST_NO_LONGDOUBLE
 #define EIGEN_TEST_NO_COMPLEX
-#define EIGEN_TEST_FUNC cxx11_tensor_custom_op_sycl
+
 #define EIGEN_DEFAULT_DENSE_INDEX_TYPE int64_t
 #define EIGEN_USE_SYCL
 
@@ -80,6 +80,8 @@ static void test_custom_unary_op_sycl(const Eigen::SyclDevice &sycl_device)
       VERIFY_IS_EQUAL(out(i, j), 0);
     }
   }
+  sycl_device.deallocate(gpu_in1_data);
+sycl_device.deallocate(gpu_out_data);
 }
 
 template<typename TensorType>
@@ -147,6 +149,9 @@ static void test_custom_binary_op_sycl(const Eigen::SyclDevice &sycl_device)
       }
     }
   }
+  sycl_device.deallocate(gpu_in1_data);
+  sycl_device.deallocate(gpu_in2_data);
+  sycl_device.deallocate(gpu_out_data);
 }
 
 template <typename DataType, typename Dev_selector> void custom_op_perDevice(Dev_selector s){
@@ -158,7 +163,7 @@ template <typename DataType, typename Dev_selector> void custom_op_perDevice(Dev
   test_custom_binary_op_sycl<DataType, RowMajor, int64_t>(sycl_device);
 
 }
-void test_cxx11_tensor_custom_op_sycl() {
+EIGEN_DECLARE_TEST(cxx11_tensor_custom_op_sycl) {
   for (const auto& device :Eigen::get_sycl_supported_devices()) {
     CALL_SUBTEST(custom_op_perDevice<float>(device));
   }

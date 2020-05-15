@@ -6,6 +6,7 @@ feelpp_add_application( fsi_2d SRCS main_fsi.cpp
   #feelpp_toolbox_fsi_lib_2dP1P1G1_2dP1G1
   DEFS FEELPP_DIM=2 FEELPP_GEO_ORDER=1
   INSTALL
+  MAN fsi
   )
 
 feelpp_add_application( fsi_3d SRCS main_fsi.cpp
@@ -30,8 +31,6 @@ feelpp_add_application( fsi_3d_g2 SRCS main_fsi.cpp
   INSTALL
   )
 
-
-feelpp_add_testcase( TurekHron PREFIX feelmodels_fsi CATEGORY FSI)
-feelpp_add_testcase( wavepressure2d PREFIX feelmodels_fsi CATEGORY FSI)      
-feelpp_add_testcase( wavepressure3d PREFIX feelmodels_fsi CATEGORY FSI)      
-feelpp_add_testcase( movingboundary PREFIX feelmodels_fsi CATEGORY FSI)
+foreach( _testcase IN ITEMS "TurekHron" "wavepressure2d" "wavepressure3d" "movingboundary" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fsi CATEGORY toolboxes/fsi)
+endforeach()

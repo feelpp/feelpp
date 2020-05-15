@@ -285,6 +285,12 @@ public:
 
     //___________________________________________________________________________________//
 
+     struct FieldTag
+     {
+         static auto displacement( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+         static auto pressure( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+     };
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -422,6 +428,7 @@ private :
 public :
 
     void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
 
     void predictorDispl();
 
@@ -501,9 +508,49 @@ public :
     element_displacement_scalar_type const& fieldUserScalar( std::string const& key ) const { return *this->fieldUserScalarPtr( key ); }
     element_displacement_type const& fieldUserVectorial( std::string const& key ) const { return *this->fieldUserVectorialPtr( key ); }
 
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldDisplacementPtr(), this->fieldVelocityPtr(), this->fieldPressurePtr(), prefix );
+        }
+    template <typename DisplacementFieldType, typename VelocityFieldType,typename PressureFieldType>
+    auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
+        {
+            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
+            //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
+            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"velocity", this->fieldPressurePtr(), "p", this->keyword() );
+
+            return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+        }
+
+
+    //___________________________________________________________________________________//
     // symbols expression
-    auto symbolsExpr() const { return Feel::vf::symbolsExpr( this->symbolsExprField(), this->symbolsExprFit() ); }
-    constexpr auto symbolsExprField() const { return this->symbolsExprField( hana::int_<nDim>() ); }
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            return symbols_expression_empty_t{};
+        }
+
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
     backend_ptrtype const& backendStandard() const { return M_backend; }
@@ -638,25 +685,6 @@ private :
 
 private :
     void updateBoundaryConditionsForUse();
-
-    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
-        }
-    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr("solid_Dx",idv(this->fieldDisplacement())(0,0) ),
-                                          symbolExpr("solid_Dy",idv(this->fieldDisplacement())(1,0) ),
-                                          symbolExpr("solid_Dz",idv(this->fieldDisplacement())(2,0) ),
-                                          symbolExpr("solid_D_magnitude",inner(idv(this->fieldDisplacement()),mpl::int_<InnerProperties::SQRT>()) )
-                                          );
-        }
-    auto symbolsExprFit() const { return super_type::symbolsExprFit( this->symbolsExprField() ); }
-
-protected:
 
     // model
     std::string M_modelName, M_solverName;

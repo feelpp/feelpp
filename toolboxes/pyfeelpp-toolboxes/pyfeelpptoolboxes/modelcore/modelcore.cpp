@@ -47,8 +47,9 @@ PYBIND11_MODULE(_modelcore, m )
     m.def( "modelbase_options", &modelbase_options, "get modelbase command line options");
     m.def( "modelalgebraic_options", &modelalgebraic_options, "get modelalgebraic command line options");
     m.def( "modelnumerical_options", &modelnumerical_options, "get modelnumerical command line options");
-    m.def( "toolboxes_options", &toolboxes_options, "get fluid command line options");
-    m.def( "alemesh_options", &toolboxes_options, "get alemesh command line options");
+    m.def( "toolboxes_options",py::overload_cast<std::string const&>(&toolboxes_options), "get fluid command line options");
+    m.def( "toolboxes_options",py::overload_cast<std::string const&,std::string const&>(&toolboxes_options), "get fluid command line options");
+    m.def( "alemesh_options", &alemesh_options, "get alemesh command line options");
 
     py::class_<ModelBase, std::shared_ptr<ModelBase>>(m,"ModelBase")
         .def(py::init<std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),

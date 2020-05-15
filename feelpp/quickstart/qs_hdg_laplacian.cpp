@@ -21,12 +21,28 @@
 //! @date 26 Aug 2017
 //! @copyright 2017 Feel++ Consortium
 //!
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/checker.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pdh.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feeldiscr/traits.hpp>
+#include <feel/feeldiscr/check.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <tabulate/table.hpp>
+#include <feel/feelpython/pyexpr.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
+
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
 #include <feel/feelvf/operators2.hpp>
 #include <feel/feelpython/pyexpr.hpp>
+
+#include "cg_laplacian.hpp"
+
 namespace Feel {
 
 
@@ -67,7 +83,7 @@ makeAbout()
                      "0.1",
                      "Quickstart HDG Laplacian",
                      AboutData::License_GPL,
-                     "Copyright (c) 2017 Feel++ Consortium" );
+                     "Copyright (c) 2017-2020 Feel++ Consortium" );
     about.addAuthor( "Christophe Prud'homme", "developer", "christophe.prudhomme@feelpp.org", "" );
     return about;
 
@@ -89,20 +105,26 @@ int hdg_laplacian()
     
 #if defined(FEELPP_HAS_SYMPY)
 
-    std::map<std::string,std::string> locals{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("solution.sympy.p")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
-    Feel::pyexprFromFile( Environment::expand(soption("pyexpr.filename")), locals );
-
-    for( auto d: locals )
-        cout << d.first << ":" << d.second << std::endl;
+    std::map<std::string,std::string> inputs{{"dim",std::to_string(Dim)},{"k",soption("k")},{"p",soption("checker.solution")},{"grad_p",""}, {"u",""}, {"un",""}, {"f",""}, {"g",""}, {"r_1",soption("r_1")}, {"r_2",soption("r_2")}};
+    // if we do not check the results with a manufactured solution,
+    // the right hand side is given by functions.f otherwise it is computed by the python script
+    auto thechecker = checker( _name= "L2/H1 convergence", 
+                               _solution_key="p",
+                               _gradient_key="grad_p",
+                               _inputs=inputs
+                               );
+    auto locals = thechecker.runScript();
 
     std::string p_exact_str = locals.at("p");
     std::string u_exact_str = locals.at("u");
     auto p_exact = expr( p_exact_str );
-    auto u_exact = expr<Dim,1>( u_exact_str );
-    auto un_exact = expr( locals.at("un") );
-    auto f_exact = expr( locals.at("f") );
+    auto u_exact = expr<FEELPP_DIM,1>( u_exact_str );
+    auto k = expr( locals.at("k") );
+    auto un = expr( locals.at("un") );
+    auto f = expr( locals.at("f") );
+    auto g = expr( locals.at("g") );
     auto r_1 = expr( locals.at("r_1") );
-    auto r_2 = expr( locals.at("r_2") );
+    auto r_2 = expr( locals.at("r_2") ); 
 #else
     std::string p_exact_str = soption("solution.p");
     std::string u_exact_str = soption("solution.u");
@@ -141,56 +163,19 @@ int hdg_laplacian()
     cout << mesh->numGlobalElements()  << " " << mesh->numGlobalFaces() << " "
          << Vh->nDof() << " " << Wh->nDof() << " " << Mh->nDof() << std::endl;
 
+    int status_cg = 0;
     if ( boption( "solvecg" ) == true )
     {
         Feel::cout << "-- CG<" << OrderP+1 << "> starts ----------------------------------------------------------\n";
         auto cgXh = Pch<OrderP+1>(mesh);
         Feel::cout << "cgXh<" << OrderP+1 << "> : " << cgXh->nDof() << std::endl;
-        auto u = cgXh->element();
-        tic(); // assembly + solve
-        tic(); // assembly
-        tic();
-        auto l = form1( _test=cgXh );
-        l = integrate( _range=elements(mesh), _expr=f_exact*id(u), _quad=ioption("rhs_quad") );
-        l += integrate(_range=markedfaces(mesh,"Neumann"),
-                       _quad=ioption("rhs_quad"),
-                       _expr=id(u)*un_exact );
-        l += integrate( _range=markedfaces(mesh, "Robin"),
-                        _expr=id(u)*r_2);
-        toc("cg.assembly.l",FLAGS_v>0);
-        tic();
-        auto a = form2(_trial=cgXh, _test=cgXh );
-        a = integrate( _range=elements(mesh), _expr=K*gradt(u)*trans(grad(u)) );
-        a += integrate( _range=markedfaces(mesh, "Robin"),
-                        _expr=id(u)*idt(u)*r_1);
-        a += on(_range=markedfaces(mesh,"Dirichlet"),
-                _rhs=l,
-                _element=u,
-                _expr=p_exact);
-        toc("cg.assembly.a",FLAGS_v>0);
-        toc("cg.assembly");
-        tic();
-        a.solve( _rhs=l,_solution=u );
-        toc("cg.solve");
-        toc("cg.assembly+cg.solve");
-        auto norms = [=]( std::string const& solution ) ->std::map<std::string,double>
-            {
-                tic();
-                double l2_p = normL2(_range=elements(mesh), _expr=expr(solution) );
-                double l2 = normL2(_range=elements(mesh), _expr=idv(u)-expr(solution) );
-                toc("L2 error norm");
-                tic();
-                double h1_p = normH1(_range=elements(mesh), _expr=expr(solution), _grad_expr=expr<1,Dim>(u_exact_str)  );
-                double h1 = normH1(_range=elements(mesh), _expr=idv(u)-expr(solution), _grad_expr=gradv(u)-expr<1,Dim>(u_exact_str) );
-                toc("H1 error norm");
-                tic();
-                double semih1 = normL2(_range=elements(mesh), _expr=gradv(u)-expr<1,Dim>(u_exact_str) );
-                double semih1_p = normL2(_range=elements(mesh), _expr=expr<1,Dim>(u_exact_str) );
-                toc("semi H1 error norm");
-                return { { "L2", l2/l2_p }, {  "H1", h1/h1_p }, {"semih1",semih1/semih1_p} };
-            };
-
-        int status = checker("L2/H1 and SemiH1 norms on potential",p_exact_str).runOnce( norms, rate::hp( mesh->hMax(), cgXh->fe()->order() ) );
+        auto u = cgLaplacian( cgXh, std::tuple{K,f,p_exact,un,r_1,r_2} );
+        if ( u )        
+            status_cg = check( checker( _name= "L2/H1 convergence cG", 
+                                        _solution_key="p",
+                                        _gradient_key="grad_p",
+                                        _inputs=locals
+                                       ), *u );
         Feel::cout << "-- CG<" << OrderP+1 << "> done ----------------------------------------------------------\n";
     }
     auto u = Vh->element( "u" );
@@ -220,10 +205,10 @@ int hdg_laplacian()
     // imagine we moved it to the left? SKIPPING boundary conditions for the moment.
     // How to identify Dirichlet/Neumann boundaries?
     rhs(1_c) += integrate(_range=elements(mesh),
-                          _expr=f_exact*id(w), _quad=ioption("rhs_quad") );
+                          _expr=f*id(w), _quad=ioption("rhs_quad") );
 
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Neumann"),
-                          _expr=id(l)*un_exact, _quad=ioption("rhs_quad")  );
+                          _expr=id(l)*un, _quad=ioption("rhs_quad")  );
     rhs(2_c) += integrate(_range=markedfaces(mesh,"Dirichlet"),
                           _expr=id(l)*p_exact, _quad=ioption("rhs_quad") );
     rhs(2_c) += integrate( _range=markedfaces(mesh, "Robin"),
@@ -393,62 +378,24 @@ int hdg_laplacian()
     tic();
 
     bool has_dirichlet = nelements(markedfaces(mesh,"Dirichlet"),true) >= 1;
-
-
-    // tag::check[]
-    // compute l2 and h1 norm of u-u_h where u=solution
-    auto norms_u = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            auto l2_u = normL2( _range=elements(mesh), _expr=u_exact );
-            auto l2err_u = normL2( _range=elements(mesh), _expr=u_exact - idv(up) );
-            toc("L2 error norm u");
-            return { { "L2", l2err_u/l2_u }};
-        };
-
-    auto norms_p = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            double l2_p = 1;
-            double l2err_p = 1e+30;
-            if ( has_dirichlet )
-            {
-                l2_p = normL2( _range=elements(mesh), _expr=expr(solution) );
-                l2err_p = normL2( _range=elements(mesh), _expr=expr(solution) - idv(pp) );
-            }
-            else
-            {
-                auto mean_p_exact = mean( elements(mesh), expr(solution) )(0,0);
-                auto mean_p = mean( elements(mesh), idv(pp) )(0,0);
-                l2err_p = normL2( elements(mesh),
-                                  (expr(solution) - cst(mean_p_exact)) - (idv(pp) - cst(mean_p)) );
-                l2_p = normL2( _range=elements(mesh), _expr=expr(solution)- cst(mean_p_exact) );
-            }
-            toc("L2 error norm p");
-            return { { "L2", l2err_p/l2_p }};
-        };
-    auto norms_ppp = [=]( std::string const& solution ) ->std::map<std::string,double>
-        {
-            tic();
-            double l2_p = normL2( elements(mesh), expr(solution) );
-            double l2err_p = 1e+30;
-            l2err_p = normL2( elements(mesh), expr(solution) - idv(ppp) );
-            toc("L2 error norm ppp");
-            return { { "L2", l2err_p/l2_p }};
-        };
-#if 0
-    int status = checker().runOnce( {norms_p,norms_u},
-                                    { rate::hp( mesh->hMax(), Vh->fe()->order() ), rate::hp( mesh->hMax(), Vh->fe()->order() ) } );
-#else
-    int status1 = checker("L2 Convergence potential",p_exact_str).runOnce( norms_p, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status2 = checker("L2 Convergence flux",u_exact_str).runOnce( norms_u, rate::hp( mesh->hMax(), Vh->fe()->order() ) );
-    int status3 = checker("L2 Convergence post-processed potential",p_exact_str).runOnce( norms_ppp, rate::hp( mesh->hMax(), Vh->fe()->order()+1 ) );
-#endif
-
-    
+    solution_t s_t = has_dirichlet?solution_t::unique:solution_t::up_to_a_constant;
+    int status1 = check( checker( _name= "L2/H1 convergence of potential", 
+                                  _solution_key="p",
+                                  _gradient_key="grad_p",
+                                  _inputs=locals
+                                ), pp, s_t );
+    int status2 = check( checker( _name= "L2 convergence of the flux", 
+                                  _solution_key="u",
+                                  _inputs=locals
+                                ), up );
+    int status3 = check( checker( _name= "L2/H1 convergence of postprocessed potential", 
+                                  _solution_key="p",
+                                  _gradient_key="grad_p",
+                                  _inputs=locals
+                                ), ppp, s_t );    
     // end::check[]
 
-    return status1 || status2 || status3;
+    return status_cg || status1 || status2 || status3;
 }
 
 
@@ -467,18 +414,16 @@ int main( int argc, char** argv )
                                   _email="feelpp-devel@feelpp.org"));
     // end::env[]
     if ( ioption( "order" ) == 1 )
-        return !hdg_laplacian<FEELPP_DIM,1>();
-
-    
+        return hdg_laplacian<FEELPP_DIM,1>();
     if ( ioption( "order" ) == 2 )
-        return !hdg_laplacian<FEELPP_DIM,2>();
+        return hdg_laplacian<FEELPP_DIM,2>();
 
-#if 0
+ #if 0   
     if ( ioption( "order" ) == 3 )
-        return !hdg_laplacian<FEELPP_DIM,3>();
+        return hdg_laplacian<FEELPP_DIM,3>();
 
     if ( ioption( "order" ) == 4 )
-        return !hdg_laplacian<FEELPP_DIM,4>();
+        return hdg_laplacian<FEELPP_DIM,4>();
 #endif
     return 1;
 }

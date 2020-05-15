@@ -312,7 +312,7 @@ ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi,
     }
     else
     {
-        phi_reinitP1 = vf::project( M_spaceReinitP1, elements(this->mesh()), idv(phi) );
+        phi_reinitP1 = vf::project( _space=M_spaceReinitP1, _range=elements(this->mesh()), _expr=idv(phi) );
     }
 
     phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1 );
@@ -323,7 +323,7 @@ ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi,
     }
     else
     {
-        phi_reinit = vf::project( this->functionSpace(), elements(this->mesh()), idv(phi_reinitP1) );
+        phi_reinit = vf::project( _space=this->functionSpace(), _range=elements(this->mesh()), _expr=idv(phi_reinitP1) );
     }
     
     return phi_reinit;

@@ -23,6 +23,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, s
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
+    ModelPhysics<nDim>( "fluid" ),
     M_materialProperties( new material_properties_type( prefix ) ),
     M_applyMovingMeshBeforeSolve( true )
 {
@@ -117,9 +118,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
+#if 0
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         this->setModelName( soption(_name="model",_prefix=this->prefix()) );
-
+#endif
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
@@ -518,21 +520,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "VolumicForces" );
 
 
-    
-    M_hasNoSlipRigidParticlesBC = false;
+
     if ( auto _bcPTree = this->modelProperties().pTree().get_child_optional("BoundaryConditions") )
     {
         if ( auto _fluidPTree = _bcPTree->get_child_optional("fluid") )
         {
-            if ( auto _particlesPtree = _fluidPTree->get_child_optional("particles") )
+            if ( auto _bodyPtree = _fluidPTree->get_child_optional("body") )
             {
-                if ( this->worldComm().isMasterRank() )
-                    std::cout << "use oSlipRigidParticlesBC" << std::endl;
-                M_hasNoSlipRigidParticlesBC = true;
+                for ( auto const& item : *_bodyPtree )
+                {
+                    std::string bodyName = item.first;
+                    BodyBoundaryCondition bpbc;
+                    bpbc.setup( bodyName, item.second, *this );
+                    if ( true ) // check if setup is enough
+                    {
+                        M_bodySetBC.emplace(bpbc.name(), bpbc );
+                        for( std::string const& bcMarker : bpbc.markers() )
+                            this->addMarkerALEMeshBC("moving",bcMarker);
+                    }
+                }
             }
         }
     }
-    
+
     // Dirichlet bc using a lagrange multiplier
     if (this->hasMarkerDirichletBClm())
     {
@@ -565,18 +575,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
-
-    if ( M_hasNoSlipRigidParticlesBC )
-    {
-        M_meshNoSlipRigidParticles = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"wall2"}),_view=true );
-        M_XhNoSlipRigidParticlesTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_meshNoSlipRigidParticles );
-        if constexpr ( nDim == 2 )
-            M_XhNoSlipRigidParticlesAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_meshNoSlipRigidParticles ); //M_XhNoSlipRigidParticlesTranslationalVelocity->compSpace();
-        else
-            M_XhNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity;
-        M_fieldNoSlipRigidParticlesTranslationalVelocity = M_XhNoSlipRigidParticlesTranslationalVelocity->elementPtr();
-        M_fieldNoSlipRigidParticlesAngularVelocity = M_XhNoSlipRigidParticlesAngularVelocity->elementPtr();
-    }
+    // init bc body
+    M_bodySetBC.init( *this );
 
 
     this->updateBoundaryConditionsForUse();
@@ -919,27 +919,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-    boost::timer thetimer;
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     if ( !M_mesh )
         this->initMesh();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-
+#if 0
     if ( M_modelName.empty() )
     {
         std::string theFluidModel = this->modelProperties().models().model( this->keyword() ).equations();
         this->setModelName( theFluidModel );
     }
+#endif
     if ( M_solverName.empty() )
     {
-        if ( M_modelName == "Stokes" || M_modelName == "StokesTransient" )
+        bool isLinear = true;
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        {
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+            if ( physicFluidData->equation() == "Navier-Stokes" )
+            {
+                isLinear = false;
+                break;
+            }
+        }
+        if ( isLinear )
             M_solverName="LinearSystem";
         else
             M_solverName="Newton";
     }
 
+#if 0
+    // material properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
+#endif
     // functionSpaces and elements
     this->createFunctionSpaces();
 
@@ -1021,6 +1043,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 #endif
     }
 
+    //-------------------------------------------------//
+    // bc body (call after meshALE->init() in case of restart)
+    M_bodySetBC.updateForUse( *this );
+
+    // update constant parameters
+    this->updateParameterValues();
 
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
@@ -1093,6 +1121,51 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         if ( M_stabilizationGLS )
             M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
     }
+
+
+    if ( !M_bodySetBC.empty() )
+    {
+        int nBlock = this->nBlockMatrixGraph();
+        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+        for (int i=0;i<nBlock;++i)
+            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
+
+        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+        std::set<size_type> dofsAllBodies;
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+            auto rangeBody = bpbc.rangeMarkedFacesOnFluid();
+            auto dofsBody = this->functionSpaceVelocity()->dofs( rangeBody );
+            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+            for ( auto dofid : dofsBody )
+            {
+                matFI_Id->set( dofid,dofid, 0.);
+                dofsAllBodies.insert( dofid );
+            }
+            matFI_Id->close();
+        }
+
+        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+        M_algebraicFactory->initSolverPtAP( matP );
+
+        this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
+        std::set<size_type> dofEliminationIdsPtAP;
+        matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
+        M_algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
+
+        if ( M_bodySetBC.hasElasticVelocity() )
+            M_algebraicFactory->initExplictPartOfSolution();
+    }
+
+
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1162,6 +1235,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         M_timeStepping = "BDF";
 
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
+#if 0
     std::string suffixName = "";
     if ( myFileFormat == "binary" )
          suffixName = (boost::format("_rank%1%_%2%")%this->worldComm().rank()%this->worldComm().size() ).str();
@@ -1170,11 +1244,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
     double ti = this->timeInitial();
     double tf = this->timeFinal();
     double dt = this->timeStep();
-
+#endif
     int bdfOrder = 1;
     if ( M_timeStepping == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order");
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
+#if 0
     M_bdfVelocity = bdf( _space=this->functionSpaceVelocity(),
                          _name="velocity"+suffixName,
                          _prefix=this->prefix(),
@@ -1201,13 +1276,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                             _n_consecutive_save=nConsecutiveSave );
     M_savetsPressure->setfileFormat( myFileFormat );
     M_savetsPressure->setPathSave( ( saveTsDir/"pressure" ).string() );
-
-    if ( M_hasNoSlipRigidParticlesBC )
+#else
+    M_bdfVelocity = this->createBdf( this->functionSpaceVelocity(),"velocity", bdfOrder, nConsecutiveSave, myFileFormat );
+    M_savetsPressure = this->createBdf( this->functionSpacePressure(),"pressure", 1, nConsecutiveSave, myFileFormat );
+#endif
+    double tir = M_bdfVelocity->timeInitial();
+    if ( this->doRestart() )
     {
-        M_bdfNoSlipRigidParticlesTranslationalVelocity = this->createBdf( M_XhNoSlipRigidParticlesTranslationalVelocity, "NoSlipRigidParticlesTranslationalVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
-        M_bdfNoSlipRigidParticlesAngularVelocity = this->createBdf( M_XhNoSlipRigidParticlesAngularVelocity, "NoSlipRigidParticlesAngularVelocity", bdfOrder, nConsecutiveSave, myFileFormat );
+        // start time step
+        tir = M_bdfVelocity->restart();
+        M_savetsPressure->restart();
+        // load a previous solution as current solution
+        *M_fieldVelocity = M_bdfVelocity->unknown(0);
+        *M_fieldPressure = M_savetsPressure->unknown(0);
     }
 
+    M_bodySetBC.initTimeStep( *this, bdfOrder, nConsecutiveSave, myFileFormat );
+
+    if ( this->doRestart() )
+        this->setTimeInitial( tir );
+
+    this->updateTime( tir );
+
+#if 0
     // start or restart time step scheme
     if ( !this->doRestart() )
     {
@@ -1219,8 +1310,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
         // start time step
         double tir = M_bdfVelocity->restart();
         M_savetsPressure->restart();
-        if ( M_hasNoSlipRigidParticlesBC )
-            CHECK( false ) << "TODO";
         // load a previous solution as current solution
         *M_fieldVelocity = M_bdfVelocity->unknown(0);
         *M_fieldPressure = M_savetsPressure->unknown(0);
@@ -1231,6 +1320,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
 
         this->log("FluidMechanics","initTimeStep", "restart bdf/exporter done" );
     }
+#endif
+
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
     this->log("FluidMechanics","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -1520,41 +1611,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
     return res;
 }
 
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::set<std::string>
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix ) const
-{
-    std::set<std::string> res;
-    for ( auto const& o : ifields )
-    {
-        if ( o == prefixvm(prefix,"normal-stress") || o == prefixvm(prefix,"all") )
-            res.insert( "normal-stress" );
-        if ( o == prefixvm(prefix,"wall-shear-stress") || o == prefixvm(prefix,"all") )
-            res.insert( "wall-shear-stress" );
-#if 1
-        if ( o == prefixvm(prefix,"particles.translational-velocity") || o == prefixvm(prefix,"all") )
-            res.insert( "particles.translational-velocity" );
-        if ( o == prefixvm(prefix,"particles.angular-velocity") || o == prefixvm(prefix,"all") )
-            res.insert( "particles.angular-velocity" );
-#endif
-    }
-    return res;
-}
-#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    // update post-process expression
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-
     this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     this->setPostProcessExportsPidName( "pid" );
-    this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress", "trace.particles.translational-velocity", "trace.particles.angular-velocity" } );
+    this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress" /*, "trace.body.translational-velocity", "trace.body.angular-velocity"*/ } );
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
     super_type::initPostProcess();
@@ -1584,12 +1648,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         {
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
-#if 0
+#if 1
             auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 #else
-            auto rangeTrace = markedfaces(this->mesh(),{"wall2"});
-            M_meshTrace = M_meshNoSlipRigidParticles;
+            auto rangeTrace = M_bodySetBC.begin()->second.rangeMarkedFacesOnFluid();
+            M_meshTrace = M_bodySetBC.begin()->second.mesh();
 #endif
             this->updateRangeDistributionByMaterialName( "trace_mesh", rangeTrace );
             std::string geoExportType = "static";//change_coords_only, change, static
@@ -1718,11 +1782,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "windkessel", currentStartIndex++ );
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
-        this->setStartSubBlockSpaceIndex( "particles-bc.translational-velocity", currentStartIndex++ );
-        this->setStartSubBlockSpaceIndex( "particles-bc.angular-velocity", currentStartIndex++ );
+        this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
+        this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
     }
+
 
     return currentStartIndex;
 }
@@ -1772,10 +1837,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         }
     }
 
-    if ( M_hasNoSlipRigidParticlesBC )
+    if ( !M_bodySetBC.empty() )
     {
-        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesTranslationalVelocity;
-        M_blockVectorSolution(cptBlock++) = M_fieldNoSlipRigidParticlesAngularVelocity;
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
+            M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
+        }
     }
 
     return cptBlock;
@@ -1849,6 +1917,322 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
     }
 
 }
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh, std::string const& exprRepository )
+{
+    std::set<std::string> matNames;
+    if ( auto ptMatNames = p.get_child_optional("names") )
+    {
+        if ( ptMatNames->empty() ) // value case
+            matNames.insert( ptMatNames->get_value<std::string>() );
+        else // array case
+        {
+            for ( auto const& item : *ptMatNames )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                matNames.insert( item.second.template get_value<std::string>() );
+            }
+        }
+    }
+
+   ModelMarkers onlyMarkers;
+    if ( auto ptmarkers = p.get_child_optional("markers") )
+        onlyMarkers.setPTree(*ptmarkers/*, indexes*/);
+
+    M_materialsProperties.reset( new materialsproperties_type( "",exprRepository/*this->prefix(), this->repository().expr()*/ ) );
+    M_materialsProperties->updateForUse( mesh, mats, *this, matNames, onlyMarkers );
+
+    this->updateForUse();
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
+{
+    CHECK( M_materialsProperties ) << "no materialsProperties defined";
+
+    M_mass = 0;
+    M_massCenter = eigen_vector_type<nRealDim>::Zero();
+    for ( auto const& rangeData : M_materialsProperties->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& density = M_materialsProperties->density( matName );
+        auto const& densityExpr = density.exprScalar();
+
+        M_mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
+        M_massCenter += integrate(_range=range,_expr=densityExpr*P()).evaluate();
+    }
+    M_massCenter /= M_mass;
+
+    M_momentOfInertia = moment_of_inertia_type::Zero();
+    for ( auto const& rangeData : M_materialsProperties->rangeMeshElementsByMaterial() )
+    {
+        std::string const& matName = rangeData.first;
+        auto const& range = rangeData.second;
+        auto const& density = M_materialsProperties->density( matName );
+        auto const& densityExpr = density.exprScalar();
+
+        if constexpr ( nDim == 2 )
+                     {
+                         M_momentOfInertia(0,0) += integrate(_range=range,_expr=densityExpr*( inner(P()-this->massCenterExpr()) ) ).evaluate()(0,0);
+                     }
+        else
+        {
+            auto rvec = P()-this->massCenterExpr();
+            M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
+        }
+    }
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string const& bodyName, pt::ptree const& pt, self_type const& fluidToolbox )
+{
+    M_name = bodyName;
+    if ( auto ptmarkers = pt.get_child_optional("markers") )
+        M_markers.setPTree(*ptmarkers/*, indexes*/);
+    else
+        M_markers.insert( bodyName );
+
+    if ( auto ptmaterials = pt.get_child_optional("materials") )
+    {
+        if ( M_body.physics().empty() )
+            M_body.initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+        M_body.setup( *ptmaterials, fluidToolbox.modelProperties().materials(), fluidToolbox.mesh(), fluidToolbox.repository().expr() );
+    }
+    else
+    {
+        ModelExpression massExpr, momentOfInertiaExpr, initialMassCenterExpr;
+        massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if ( massExpr.template hasExpr<1,1>() )
+            M_body.setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
+        momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if constexpr ( nDim == 2 )
+        {
+            if ( momentOfInertiaExpr.template hasExpr<1,1>() )
+                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+        }
+        else
+        {
+            if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
+                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
+        }
+        initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+        if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
+        {
+            auto initMassCenter = initialMassCenterExpr.template expr<nRealDim,1>();
+            M_massCenterRef = initMassCenter.evaluate();
+            M_body.setMassCenter( M_massCenterRef );
+        }
+    }
+
+    M_translationalVelocityExpr.setExpr( "translational-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+    M_angularVelocityExpr.setExpr( "angular-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+
+    if ( auto ptElasticVelocity = pt.get_child_optional("elastic-velocity") )
+    {
+        if ( ptElasticVelocity->empty() )
+        {
+            std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+            std::get<0>( dataExpr ).setExpr( "elastic-velocity", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+            if ( std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                M_elasticVelocityExprBC.emplace( "", dataExpr );
+        }
+        else
+        {
+            for ( auto const& item : *ptElasticVelocity )
+            {
+                std::string bcElasticVelocityName = item.first;
+                std::tuple< ModelExpression, std::set<std::string>> dataExpr;
+                std::get<0>( dataExpr ).setExpr( "expr", item.second, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
+                if ( !std::get<0>( dataExpr ).template hasExpr<nDim,1>() )
+                    continue;
+                ModelMarkers bcElasticVelocityMarkers;
+                if ( auto ptmarkers = item.second.get_child_optional("markers") )
+                    bcElasticVelocityMarkers.setPTree(*ptmarkers/*, indexes*/);
+                std::get<1>( dataExpr ) = bcElasticVelocityMarkers;
+                M_elasticVelocityExprBC.emplace( bcElasticVelocityName, dataExpr );
+            }
+        }
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const& fluidToolbox )
+{
+    auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
+    M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
+    M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeBodyBoundary,_view=true );
+    M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    if constexpr ( nDim == 2 )
+                     M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
+    else
+        M_XhAngularVelocity = M_XhTranslationalVelocity;
+    M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
+    M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
+
+    if ( this->hasElasticVelocityFromExpr() )
+    {
+        M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
+        M_fieldElasticVelocity = M_XhElasticVelocity->elementPtr();
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_type const& fluidToolbox )
+{
+    if ( !M_mesh )
+        this->init( fluidToolbox );
+
+    auto const& w = *M_fieldAngularVelocity;
+
+    if (fluidToolbox.isMoveDomain())
+    {
+        if ( M_body.hasMaterialsProperties() )
+        {
+            M_body.updateForUse();
+        }
+        else
+        {
+            auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
+            //M_massCenter = M_massCenterRef + disp;
+            M_body.setMassCenter( M_massCenterRef + disp );
+        }
+
+        //if ( fluidToolbox.worldComm().isMasterRank() )
+        //    std::cout << "M_massCenter=\n " << M_body.massCenter() << std::endl;
+    }
+
+    auto XhV = fluidToolbox.functionSpaceVelocity();
+
+    XhV->rebuildDofPoints(); // TODO REMOVE this line, interpolation operator must not use dofPoint!!!
+
+    // matrix interpolation of translational velocity
+    if ( !M_matrixPTilde_translational )
+    {
+        auto opI_partTranslationalVelocity = opInterpolation( _domainSpace=M_XhTranslationalVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid );
+        M_matrixPTilde_translational = opI_partTranslationalVelocity->matPtr();
+    }
+
+    // matrix interpolation with angular velocity expr (depends on mesh position and mass center -> rebuild at each call of updateForUse)
+    auto massCenter = this->massCenterExpr();
+    if constexpr (nDim == 2 )
+    {
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity ,_imageSpace=XhV,_range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( id(w)*vec(-Py()+massCenter(1,0),Px()-massCenter(0,0) ), nonconforming_t() ) );
+        M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+    }
+    else
+    {
+        auto r = vec(Px()-massCenter(0,0),Py()-massCenter(1,0),Pz()-massCenter(2,0) );
+        auto opI_AngularVelocity = opInterpolation( _domainSpace=M_XhAngularVelocity,
+                                                    _imageSpace=XhV,
+                                                    _range=M_rangeMarkedFacesOnFluid,
+                                                    _type= makeExprInterpolation( cross(id(w),r), nonconforming_t() ) );
+        M_matrixPTilde_angular = opI_AngularVelocity->matPtr();
+    }
+
+
+#if 0
+    if ( this->hasElasticVelocityFromExpr() )
+    {
+        bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
+        if ( !meshIsOnRefAtBegin )
+            fluidToolbox.meshALE()->revertReferenceMesh( false );
+        for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
+        {
+            auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
+            auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
+            M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
+        }
+        if ( !meshIsOnRefAtBegin )
+            fluidToolbox.meshALE()->revertMovingMesh( false );
+    }
+#endif
+
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateElasticVelocityFromExpr(  self_type const& fluidToolbox )
+{
+    if ( !this->hasElasticVelocityFromExpr() )
+        return;
+
+    bool meshIsOnRefAtBegin = fluidToolbox.meshALE()->isOnReferenceMesh();
+    if ( !meshIsOnRefAtBegin )
+        fluidToolbox.meshALE()->revertReferenceMesh( false );
+    for ( auto const& [bcName,eve] : M_elasticVelocityExprBC )
+    {
+        auto eveRange = std::get<1>( eve ).empty()? elements(this->mesh())/*bpbc.rangeMarkedFacesOnFluid()*/ : markedelements(this->mesh(),std::get<1>( eve ) );
+        auto eveExpr =  std::get<0>( eve ).template expr<nDim,1>();
+        M_fieldElasticVelocity->on(_range=eveRange,_expr=eveExpr,_close=true ); // TODO crash if use here markedfaces of fluid with partial mesh support
+    }
+    if ( !meshIsOnRefAtBegin )
+        fluidToolbox.meshALE()->revertMovingMesh( false );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateForUse( self_type const& fluidToolbox )
+{
+    for ( auto & [name,bpbc] : *this )
+        bpbc.updateForUse( fluidToolbox );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory )
+{
+    if ( this->empty() )
+        return;
+
+    // not very nice, we need to update direclty P, not rebuild
+
+    int nBlock = fluidToolbox.nBlockMatrixGraph();
+    BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+    for (int i=0;i<nBlock;++i)
+        myblockMat(i,i) = fluidToolbox.backend()->newIdentityMatrix( fluidToolbox.blockVectorSolution()(i)->mapPtr(),fluidToolbox.blockVectorSolution()(i)->mapPtr() );
+
+    size_type startBlockIndexVelocity = fluidToolbox.startSubBlockSpaceIndex("velocity");
+    for ( auto & [bpname,bpbc] : *this )
+    {
+        //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+        //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+        size_type startBlockIndexTranslationalVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+        size_type startBlockIndexAngularVelocity = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+        myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+        myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+        auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
+        auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+        for ( auto dofid : dofsBody )
+            matFI_Id->set( dofid,dofid, 0.);
+        matFI_Id->close();
+    }
+
+    auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+    algebraicFactory->initSolverPtAP( matP );
+
+
+    if ( this->hasElasticVelocity() )
+    {
+        auto uExplictiPart = fluidToolbox.functionSpaceVelocity()->element( algebraicFactory->explictPartOfSolution(), fluidToolbox.rowStartInVector()+0);
+        for ( auto const& [bpname,bpbc] : *this )
+            uExplictiPart.on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=idv(bpbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
+    }
+
+}
+
 
 } // namespace FeelModels
 } // namespace Feel

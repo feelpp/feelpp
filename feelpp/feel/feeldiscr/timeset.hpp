@@ -66,7 +66,6 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/interpolate.hpp>
-#include <feel/feeldiscr/subelements.hpp>
 
 #include <feel/feelmesh/filters.hpp>
 #include <feel/feelvf/vf.hpp>
@@ -362,11 +361,11 @@ public:
                 M_state.clear( STEP_ON_DISK );
             }
 
-        void addComplex( std::string const& name, complex_type const& __s )
+        void addComplex( std::string const& name, complex_type const& __s, bool cst = false )
         {
             if ( this->isIgnored() )
                 return;
-            M_complex[sanitize(name)] =  __s;
+            M_complex[sanitize(name)] =  std::pair{__s,cst};
             M_state.set( STEP_HAS_DATA|STEP_IN_MEMORY );
             M_state.clear( STEP_ON_DISK );
         }
@@ -416,23 +415,6 @@ public:
             add( str, func );
         }
 
-
-        template<typename TSet>
-        struct AddFunctionProduct
-        {
-            AddFunctionProduct( TSet& tset ) : M_tset( tset ) {}
-            TSet& M_tset;
-
-            template<typename T>
-            void
-            operator()( T const& fun ) const
-                {
-                    LOG(INFO) << "export "  << fun.name() << " ...\n";
-                    M_tset.add_( fun.name(), fun );
-                }
-        };
-
-
         template<typename FunctionType>
         void add( std::variant<std::string,std::vector<std::string>> const& __n, FunctionType const& func, variant_representation_arg_type const& reps = "",
                   typename std::enable_if<is_functionspace_element_v<decay_type<FunctionType>>>::type* = nullptr )
@@ -462,7 +444,13 @@ public:
                     for(int i=0; i<nSpaces; i++)
                         names[i] = (boost::format("%1%_%2%")%nameGiven %i).str();
                 }
-                fusion::for_each( subelements(func,names), AddFunctionProduct<step_type>( *this ) );
+
+                hana::for_each( hana::make_range( hana::int_c<0>, hana::int_c<nSpaces> ), [this,&names,&func,&reps]( auto const& e )
+                                 {
+                                     constexpr int subId = std::decay_t<decltype(e)>::value;
+                                     auto const& subFunc = func.template element<subId>();
+                                     this->add( names[subId], names[subId], subFunc, reps );
+                                 } );
             }
             else
             {
@@ -688,7 +676,9 @@ public:
                     fieldsMap[ __fname].second.resize( nCompExpr );
                     for ( int c1 = 0; c1 < nCompExpr ;++c1 )
                     {
-                        fieldsMap[ __fname].second[c1] = { scalarSpace->elementPtr( __n ) };
+                        fieldsMap[ __fname].second[c1].resize( 1 );
+                        if ( !fieldsMap[ __fname].second[c1][0] )
+                            fieldsMap[ __fname].second[c1][0] = scalarSpace->elementPtr( __n );
                         if constexpr ( ExprShapeType::is_transposed )
                             fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(0,c1)); // TODO : optimize
                         else
@@ -705,7 +695,8 @@ public:
                         fieldsMap[ __fname].second[c1].resize( ExprShapeType::N );
                         for ( int c2 = 0; c2 < ExprShapeType::N ;++c2 )
                         {
-                            fieldsMap[ __fname].second[c1][c2] = scalarSpace->elementPtr( __n );
+                            if ( !fieldsMap[ __fname].second[c1][c2] )
+                                fieldsMap[ __fname].second[c1][c2] = scalarSpace->elementPtr( __n );
                             fieldsMap[__fname].second[c1][0]->on(_range=rangeElt,_expr=expr(c1,c2));  // TODO : optimize
                         }
                     }

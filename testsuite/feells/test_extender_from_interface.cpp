@@ -111,8 +111,8 @@ public:
         phio.on( _range=elements(M_mesh), _expr=h());
         phio.on( _range=boundaryfaces(M_mesh), _expr= -h()/100. );
         auto phi = thefms->march(phio);
-        auto dist = vf::project( Xh, elements(M_mesh), M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
-        auto err = vf::project( Xh, elements(M_mesh), abs( idv(phi) - idv(dist) ) );
+        auto dist = vf::project( _space=Xh, _range=elements(M_mesh), _expr=M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
+        auto err = vf::project( _space=Xh, _range=elements(M_mesh), _expr=abs( idv(phi) - idv(dist) ) );
 
         auto psi = Xh->element();
         psi.on( _range=boundaryelements(M_mesh), _expr=Px() );

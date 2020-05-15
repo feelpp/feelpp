@@ -1,12 +1,13 @@
 project(Eigen3)
 
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.11)
 
 # guard against in-source builds
 
-if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
+
 
 # Alias Eigen_*_DIR to Eigen3_*_DIR:
 
@@ -41,28 +42,55 @@ string(REGEX MATCH "define[ \t]+EIGEN_MINOR_VERSION[ \t]+([0-9]+)" _eigen_minor_
 set(EIGEN_MINOR_VERSION "${CMAKE_MATCH_1}")
 set(EIGEN_VERSION_NUMBER ${EIGEN_WORLD_VERSION}.${EIGEN_MAJOR_VERSION}.${EIGEN_MINOR_VERSION})
 
-# if the mercurial program is absent, this will leave the EIGEN_HG_CHANGESET string empty,
-# but won't stop CMake.
-execute_process(COMMAND hg tip -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_HGTIP_OUTPUT)
-execute_process(COMMAND hg branch -R ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE EIGEN_BRANCH_OUTPUT)
+# if we are not in a git clone
+if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/.git)
+  # if the git program is absent or this will leave the EIGEN_GIT_REVNUM string empty,
+  # but won't stop CMake.
+  execute_process(COMMAND git ls-remote --refs -q ${CMAKE_SOURCE_DIR} HEAD OUTPUT_VARIABLE EIGEN_GIT_OUTPUT)
+endif()
 
-# if this is the default (aka development) branch, extract the mercurial changeset number from the hg tip output...
-if(EIGEN_BRANCH_OUTPUT MATCHES "default")
-string(REGEX MATCH "^changeset: *[0-9]*:([0-9;a-f]+).*" EIGEN_HG_CHANGESET_MATCH "${EIGEN_HGTIP_OUTPUT}")
-set(EIGEN_HG_CHANGESET "${CMAKE_MATCH_1}")
-endif(EIGEN_BRANCH_OUTPUT MATCHES "default")
+# extract the git rev number from the git output...
+if(EIGEN_GIT_OUTPUT)
+string(REGEX MATCH "^([0-9;a-f]+).*" EIGEN_GIT_CHANGESET_MATCH "${EIGEN_GIT_OUTPUT}")
+set(EIGEN_GIT_REVNUM "${CMAKE_MATCH_1}")
+endif()
 #...and show it next to the version number
-if(EIGEN_HG_CHANGESET)
-  set(EIGEN_VERSION "${EIGEN_VERSION_NUMBER} (mercurial changeset ${EIGEN_HG_CHANGESET})")
-else(EIGEN_HG_CHANGESET)
+if(EIGEN_GIT_REVNUM)
+  set(EIGEN_VERSION "${EIGEN_VERSION_NUMBER} (git rev ${EIGEN_GIT_REVNUM})")
+else()
   set(EIGEN_VERSION "${EIGEN_VERSION_NUMBER}")
-endif(EIGEN_HG_CHANGESET)
-
+endif()
 
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+
+option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." ON)
+
+macro(ei_add_cxx_compiler_flag FLAG)
+  string(REGEX REPLACE "-" "" SFLAG1 ${FLAG})
+  string(REGEX REPLACE "\\+" "p" SFLAG ${SFLAG1})
+  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
+  if(COMPILER_SUPPORT_${SFLAG})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
+  endif()
+endmacro()
+
+check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
+
+if(EIGEN_TEST_CXX11)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+  if(EIGEN_COMPILER_SUPPORT_CPP11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+  endif()
+else()
+  #set(CMAKE_CXX_STANDARD 03)
+  #set(CMAKE_CXX_EXTENSIONS OFF)
+  ei_add_cxx_compiler_flag("-std=c++03")
+endif()
 
 #############################################################################
 # find how to link to the standard libraries                                #
@@ -104,7 +132,7 @@ if(NOT WIN32 OR NOT CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
   option(EIGEN_BUILD_PKGCONFIG "Build pkg-config .pc file for Eigen" ON)
 endif()
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 
 option(EIGEN_SPLIT_LARGE_TESTS "Split large tests into smaller executables" ON)
 
@@ -114,15 +142,6 @@ if(EIGEN_DEFAULT_TO_ROW_MAJOR)
 endif()
 
 set(EIGEN_TEST_MAX_SIZE "320" CACHE STRING "Maximal matrix/vector size, default is 320")
-
-macro(ei_add_cxx_compiler_flag FLAG)
-  string(REGEX REPLACE "-" "" SFLAG1 ${FLAG})
-  string(REGEX REPLACE "\\+" "p" SFLAG ${SFLAG1})
-  check_cxx_compiler_flag(${FLAG} COMPILER_SUPPORT_${SFLAG})
-  if(COMPILER_SUPPORT_${SFLAG})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAG}")
-  endif()
-endmacro(ei_add_cxx_compiler_flag)
 
 if(NOT MSVC)
   # We assume that other compilers are partly compatible with GNUCC
@@ -137,7 +156,7 @@ if(NOT MSVC)
   ei_add_cxx_compiler_flag("-Wall")
   ei_add_cxx_compiler_flag("-Wextra")
   #ei_add_cxx_compiler_flag("-Weverything")              # clang
-  
+
   ei_add_cxx_compiler_flag("-Wundef")
   ei_add_cxx_compiler_flag("-Wcast-align")
   ei_add_cxx_compiler_flag("-Wchar-subscripts")
@@ -152,29 +171,25 @@ if(NOT MSVC)
   ei_add_cxx_compiler_flag("-Wc++11-extensions")
   ei_add_cxx_compiler_flag("-Wdouble-promotion")
 #  ei_add_cxx_compiler_flag("-Wconversion")
-  
-  # -Wshadow is insanely too strict with gcc, hopefully it will become usable with gcc 6
-  # if(NOT CMAKE_COMPILER_IS_GNUCXX OR (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "5.0.0"))
-  if(NOT CMAKE_COMPILER_IS_GNUCXX)
-    ei_add_cxx_compiler_flag("-Wshadow")
-  endif()
-  
+
+  ei_add_cxx_compiler_flag("-Wshadow")
+
   ei_add_cxx_compiler_flag("-Wno-psabi")
   ei_add_cxx_compiler_flag("-Wno-variadic-macros")
   ei_add_cxx_compiler_flag("-Wno-long-long")
-  
+
   ei_add_cxx_compiler_flag("-fno-check-new")
   ei_add_cxx_compiler_flag("-fno-common")
   ei_add_cxx_compiler_flag("-fstrict-aliasing")
   ei_add_cxx_compiler_flag("-wd981")                    # disable ICC's "operands are evaluated in unspecified order" remark
   ei_add_cxx_compiler_flag("-wd2304")                   # disable ICC's "warning #2304: non-explicit constructor with single argument may cause implicit type conversion" produced by -Wnon-virtual-dtor
-  
-  
+
+
   # The -ansi flag must be added last, otherwise it is also used as a linker flag by check_cxx_compiler_flag making it fails
   # Moreover we should not set both -strict-ansi and -ansi
   check_cxx_compiler_flag("-strict-ansi" COMPILER_SUPPORT_STRICTANSI)
   ei_add_cxx_compiler_flag("-Qunused-arguments")        # disable clang warning: argument unused during compilation: '-ansi'
-  
+
   if(COMPILER_SUPPORT_STRICTANSI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -strict-ansi")
   else()
@@ -185,7 +200,7 @@ if(NOT MSVC)
     ei_add_cxx_compiler_flag("-pie")
     ei_add_cxx_compiler_flag("-fPIE")
   endif()
-  
+
   set(CMAKE_REQUIRED_FLAGS "")
 
   option(EIGEN_TEST_SSE2 "Enable/Disable SSE2 in tests/examples" OFF)
@@ -232,7 +247,10 @@ if(NOT MSVC)
 
   option(EIGEN_TEST_AVX512 "Enable/Disable AVX512 in tests/examples" OFF)
   if(EIGEN_TEST_AVX512)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -fabi-version=6 -DEIGEN_ENABLE_AVX512")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx512f -mfma -DEIGEN_ENABLE_AVX512")
+    if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fabi-version=6")
+    endif()
     message(STATUS "Enabling AVX512 in tests/examples")
   endif()
 
@@ -254,6 +272,12 @@ if(NOT MSVC)
     message(STATUS "Enabling VSX in tests/examples")
   endif()
 
+  option(EIGEN_TEST_MSA "Enable/Disable MSA in tests/examples" OFF)
+  if(EIGEN_TEST_MSA)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmsa")
+    message(STATUS "Enabling MSA in tests/examples")
+  endif()
+
   option(EIGEN_TEST_NEON "Enable/Disable Neon in tests/examples" OFF)
   if(EIGEN_TEST_NEON)
     if(EIGEN_TEST_FMA)
@@ -271,9 +295,15 @@ if(NOT MSVC)
     message(STATUS "Enabling NEON in tests/examples")
   endif()
 
-  option(EIGEN_TEST_ZVECTOR "Enable/Disable S390X(zEC13) ZVECTOR in tests/examples" OFF)
-  if(EIGEN_TEST_ZVECTOR)
+  option(EIGEN_TEST_Z13 "Enable/Disable S390X(zEC13) ZVECTOR in tests/examples" OFF)
+  if(EIGEN_TEST_Z13)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=z13 -mzvector")
+    message(STATUS "Enabling S390X(zEC13) ZVECTOR in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_Z14 "Enable/Disable S390X(zEC14) ZVECTOR in tests/examples" OFF)
+  if(EIGEN_TEST_Z14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=z14 -mzvector")
     message(STATUS "Enabling S390X(zEC13) ZVECTOR in tests/examples")
   endif()
 
@@ -286,7 +316,7 @@ if(NOT MSVC)
     endif()
   endif()
 
-else(NOT MSVC)
+else()
 
   # C4127 - conditional expression is constant
   # C4714 - marked as __forceinline not inlined (I failed to deactivate it selectively)
@@ -294,7 +324,7 @@ else(NOT MSVC)
   #         because we are oftentimes returning objects that have a destructor or may
   #         throw exceptions - in particular in the unit tests we are throwing extra many
   #         exceptions to cover indexing errors.
-  # C4505 - unreferenced local function has been removed (impossible to deactive selectively)
+  # C4505 - unreferenced local function has been removed (impossible to deactivate selectively)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4127 /wd4505 /wd4714")
 
   # replace all /Wx by /W4
@@ -314,10 +344,23 @@ else(NOT MSVC)
     if(NOT CMAKE_CL_64)
       # arch is not supported on 64 bit systems, SSE is enabled automatically.
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2")
-    endif(NOT CMAKE_CL_64)
+    endif()
     message(STATUS "Enabling SSE2 in tests/examples")
-  endif(EIGEN_TEST_SSE2)
-endif(NOT MSVC)
+  endif()
+
+  option(EIGEN_TEST_AVX "Enable/Disable AVX in tests/examples" OFF)
+  if(EIGEN_TEST_AVX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX")
+    message(STATUS "Enabling AVX in tests/examples")
+  endif()
+
+  option(EIGEN_TEST_FMA "Enable/Disable FMA/AVX2 in tests/examples" OFF)
+  if(EIGEN_TEST_FMA AND NOT EIGEN_TEST_NEON)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:AVX2")
+    message(STATUS "Enabling FMA/AVX2 in tests/examples")
+  endif()
+
+endif()
 
 option(EIGEN_TEST_NO_EXPLICIT_VECTORIZATION "Disable explicit vectorization in tests/examples" OFF)
 option(EIGEN_TEST_X87 "Force using X87 instructions. Implies no vectorization." OFF)
@@ -359,11 +402,9 @@ if(EIGEN_TEST_NO_EXCEPTIONS)
   message(STATUS "Disabling exceptions in tests/examples")
 endif()
 
-option(EIGEN_TEST_CXX11 "Enable testing with C++11 and C++11 features (e.g. Tensor module)." OFF)
-
 set(EIGEN_CUDA_COMPUTE_ARCH 30 CACHE STRING "The CUDA compute architecture level to target when compiling CUDA code")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Backward compatibility support for EIGEN_INCLUDE_INSTALL_DIR
 if(EIGEN_INCLUDE_INSTALL_DIR)
@@ -375,16 +416,16 @@ if(EIGEN_INCLUDE_INSTALL_DIR AND NOT INCLUDE_INSTALL_DIR)
       CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed")
 else()
   set(INCLUDE_INSTALL_DIR
-      "${CMAKE_INSTALL_INCLUDEDIR}/feelpp/eigen"
+      "${CMAKE_INSTALL_INCLUDEDIR}/eigen3"
       CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed"
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/feelpp/feel/cmake/modules/"#eigen/cmake"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen/pkgconfig"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/pkgconfig"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
     )
 
@@ -396,9 +437,9 @@ macro(ei_add_target_property target prop value)
   # if the property wasn't previously set, ${previous} is now "previous-NOTFOUND" which cmake allows catching with plain if()
   if(NOT previous)
     set(previous "")
-  endif(NOT previous)
+  endif()
   set_target_properties(${target} PROPERTIES ${prop} "${previous} ${value}")
-endmacro(ei_add_target_property)
+endmacro()
 
 install(FILES
   signature_of_eigen3_matrix_library
@@ -412,28 +453,35 @@ if(EIGEN_BUILD_PKGCONFIG)
         )
 endif()
 
-add_subdirectory(Eigen)
+install(DIRECTORY Eigen DESTINATION ${INCLUDE_INSTALL_DIR} COMPONENT Devel)
 
-# add_subdirectory(doc EXCLUDE_FROM_ALL)
 
-# option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
-# if(BUILD_TESTING)
-#   include(EigenConfigureTesting)
+option(BUILD_DOC "Enable creation of Eigen doc." OFF)
+if (0)# BUILD_DOC )
+  add_subdirectory(doc EXCLUDE_FROM_ALL)
+endif()
 
-#   if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-#     add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
-#   else()
-#     add_subdirectory(test EXCLUDE_FROM_ALL)
-#   endif()
-# endif()
+option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
+message(STATUS "[eigen] BUILD_TESTING set to ${BUILD_TESTING}")
+if(0)#BUILD_TESTING)
+  include(EigenConfigureTesting)
 
-# if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
-#   add_subdirectory(blas)
-#   add_subdirectory(lapack)
-# else()
-#   add_subdirectory(blas EXCLUDE_FROM_ALL)
-#   add_subdirectory(lapack EXCLUDE_FROM_ALL)
-# endif()
+  if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+    add_subdirectory(test) # can't do EXCLUDE_FROM_ALL here, breaks CTest
+  else()
+    add_subdirectory(test EXCLUDE_FROM_ALL)
+  endif()
+
+  add_subdirectory(failtest)
+endif()
+
+if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
+  add_subdirectory(blas)
+  add_subdirectory(lapack)
+else()
+  add_subdirectory(blas EXCLUDE_FROM_ALL)
+  add_subdirectory(lapack EXCLUDE_FROM_ALL)
+endif()
 
 # add SYCL
 option(EIGEN_TEST_SYCL "Add Sycl support." OFF)
@@ -443,42 +491,52 @@ if(EIGEN_TEST_SYCL)
   if(EIGEN_SYCL_TRISYCL)
     message(STATUS "Using triSYCL")
     include(FindTriSYCL)
-  else(EIGEN_SYCL_TRISYCL)
+  else()
     message(STATUS "Using ComputeCPP SYCL")
     include(FindComputeCpp)
+    set(COMPUTECPP_DRIVER_DEFAULT_VALUE OFF)
+    if (NOT MSVC)
+      set(COMPUTECPP_DRIVER_DEFAULT_VALUE ON)
+    endif()
+    option(COMPUTECPP_USE_COMPILER_DRIVER
+      "Use ComputeCpp driver instead of a 2 steps compilation"
+      ${COMPUTECPP_DRIVER_DEFAULT_VALUE}
+    )
   endif(EIGEN_SYCL_TRISYCL)
-endif(EIGEN_TEST_SYCL)
+  option(EIGEN_DONT_VECTORIZE_SYCL "Don't use vectorisation in the SYCL tests." OFF)
+  if(EIGEN_DONT_VECTORIZE_SYCL)
+    message(STATUS "Disabling SYCL vectorization in tests/examples")
+    # When disabling SYCL vectorization, also disable Eigen default vectorization
+    add_definitions(-DEIGEN_DONT_VECTORIZE=1)
+    add_definitions(-DEIGEN_DONT_VECTORIZE_SYCL=1)
+  endif()
+endif()
 
 add_subdirectory(unsupported)
 
 #add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # must be after test and unsupported, for configuring buildtests.in
-#add_subdirectory(scripts EXCLUDE_FROM_ALL)
+add_subdirectory(scripts EXCLUDE_FROM_ALL)
 
 # TODO: consider also replacing EIGEN_BUILD_BTL by a custom target "make btl"?
-# if(EIGEN_BUILD_BTL)
-#   add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
-# endif(EIGEN_BUILD_BTL)
+if(EIGEN_BUILD_BTL)
+#  add_subdirectory(bench/btl EXCLUDE_FROM_ALL)
+endif()
 
-# if(NOT WIN32)
-#   add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
-# endif(NOT WIN32)
+if(NOT WIN32)
+#  add_subdirectory(bench/spbench EXCLUDE_FROM_ALL)
+endif()
 
-# configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
+configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-# if(BUILD_TESTING)
-#   ei_testing_print_summary()
-# endif()
+if(0)#BUILD_TESTING)
+  ei_testing_print_summary()
+endif()
 
-message(STATUS "")
-message(STATUS "[feelpp/eigen] Configured Eigen ${EIGEN_VERSION_NUMBER}")
-message(STATUS "")
-
-# option(EIGEN_FAILTEST "Enable failtests." OFF)
-# if(EIGEN_FAILTEST)
-#   add_subdirectory(failtest)
-# endif()
+# message(STATUS "")
+# message(STATUS "Configured Eigen ${EIGEN_VERSION_NUMBER}")
+# message(STATUS "")
 
 # string(TOLOWER "${CMAKE_GENERATOR}" cmake_generator_tolower)
 # if(cmake_generator_tolower MATCHES "makefile")
@@ -496,8 +554,10 @@ message(STATUS "")
 #   message(STATUS "              |   Or:")
 #   message(STATUS "              |     cmake . -DINCLUDE_INSTALL_DIR=yourdir")
 #   message(STATUS "make doc      | Generate the API documentation, requires Doxygen & LaTeX")
-#   message(STATUS "make check    | Build and run the unit-tests. Read this page:")
-#   message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
+#   if(BUILD_TESTING)
+#     message(STATUS "make check    | Build and run the unit-tests. Read this page:")
+#     message(STATUS "              |   http://eigen.tuxfamily.org/index.php?title=Tests")
+#   endif()
 #   message(STATUS "make blas     | Build BLAS library (not the same thing as Eigen)")
 #   message(STATUS "make uninstall| Removes files installed by make install")
 #   message(STATUS "--------------+--------------------------------------------------------------")
@@ -523,14 +583,12 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.0)
 
   # Imported target support
   add_library (eigen INTERFACE)
-
+  add_library (Eigen3::Eigen ALIAS eigen)
   target_compile_definitions (eigen INTERFACE ${EIGEN_DEFINITIONS})
   target_include_directories (eigen INTERFACE
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/unsupported>
-    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}/>
-    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}/unsupported>
-    )
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+  )
 
   # Export as title case Eigen
   set_target_properties (eigen PROPERTIES EXPORT_NAME Eigen)
@@ -564,13 +622,13 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.0)
 
   install (EXPORT Eigen3Targets NAMESPACE Eigen3:: DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
 
-else (NOT CMAKE_VERSION VERSION_LESS 3.0)
+else ()
   # Fallback to legacy Eigen3Config.cmake without the imported target
-  
+
   # If CMakePackageConfigHelpers module is available (CMake >= 2.8.8)
-  # create a relocatable Config file, otherwise leave the hardcoded paths       
+  # create a relocatable Config file, otherwise leave the hardcoded paths
   include(CMakePackageConfigHelpers OPTIONAL RESULT_VARIABLE CPCH_PATH)
-  
+
   if(CPCH_PATH)
     configure_package_config_file (
       ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Eigen3ConfigLegacy.cmake.in
@@ -579,7 +637,7 @@ else (NOT CMAKE_VERSION VERSION_LESS 3.0)
       INSTALL_DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
       NO_CHECK_REQUIRED_COMPONENTS_MACRO # Eigen does not provide components
     )
-  else() 
+  else()
     # The PACKAGE_* variables are defined by the configure_package_config_file
     # but without it we define them manually to the hardcoded paths
     set(PACKAGE_INIT "")
@@ -594,7 +652,7 @@ else (NOT CMAKE_VERSION VERSION_LESS 3.0)
                                     VERSION ${EIGEN_VERSION_NUMBER}
                                     COMPATIBILITY SameMajorVersion )
 
-endif (NOT CMAKE_VERSION VERSION_LESS 3.0)
+endif ()
 
 install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
                 ${CMAKE_CURRENT_BINARY_DIR}/Eigen3Config.cmake
@@ -602,5 +660,5 @@ install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/UseEigen3.cmake
           DESTINATION ${CMAKEPACKAGE_INSTALL_DIR} )
 
 # Add uninstall target
-add_custom_target ( uninstall-eigen
+add_custom_target ( uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/EigenUninstall.cmake)

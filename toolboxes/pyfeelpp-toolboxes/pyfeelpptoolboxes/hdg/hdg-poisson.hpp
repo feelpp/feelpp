@@ -62,12 +62,19 @@ void defHDGPoisson( py::module& m )
     using op_interp_ptr_t = typename toolbox_t::op_interp_ptrtype;
     using opv_interp_ptr_t = typename toolbox_t::opv_interp_ptrtype;
 
+    py::enum_<MixedPoissonPhysics>(m,"MixedPoissonPhysics")
+        .value("none", MixedPoissonPhysics::None)
+        .value("electric", MixedPoissonPhysics::Electric)
+        .value("heat", MixedPoissonPhysics::Heat);
+
     std::string pyclass_name = std::string("HDGPoisson_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,
+             MixedPoissonPhysics const&,
              //bool,
              worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
+             py::arg("physic")=MixedPoissonPhysics::None,
              //py::arg("buildmesh")=true,
              py::arg("worldComm"),
              py::arg("subprefix")=std::string(""),

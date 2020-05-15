@@ -32,7 +32,7 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
+#include <pybind11/embed.h>
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
@@ -136,6 +136,8 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+namespace py = pybind11;
+using namespace py::literals;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -463,9 +465,41 @@ Environment::Environment( int argc, char** argv,
     CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
+
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
+
+    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
+    {
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( S_worldcomm->isMasterRank() )
+            {
+                if ( !fs::exists( p ) )
+                {
+                    try {
+                        fs::create_directories( p );
+                    }
+                    catch (...) {}
+                }
+            }
+            S_worldcomm->barrier();
+
+            if ( !fs::exists( p ) )
+                continue;
+            else if ( !fs::is_directory( p ) )
+                continue;
+            S_rootdir = p;
+            break;
+        }
+    }
+
 
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
@@ -507,6 +541,7 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
+    py::initialize_interpreter();
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -519,24 +554,6 @@ Environment::Environment( int argc, char** argv,
     S_informationObject = std::make_unique<JournalWatcher>( std::bind( &Environment::updateInformationObject, this, std::placeholders::_1 ), "Environment", "", false );
 
     S_timers = std::make_unique<TimerTable>();
-
-    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( !fs::exists( p ) )
-                fs::create_directories( p );
-            else if ( !fs::is_directory( p ) )
-                continue;
-            S_rootdir = p;
-            break;
-        }
-    }
 
     boost::gregorian::date today = boost::gregorian::day_clock::local_day();
     tic();
@@ -773,6 +790,7 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+    py::finalize_interpreter();
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
@@ -2433,7 +2451,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-
+    boost::replace_all( res, "$np", std::to_string(Environment::numberOfProcessors()) );
 
     typedef std::vector< std::string > split_vector_type;
 
@@ -2523,7 +2541,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
-fs::path Environment::S_rootdir;
+fs::path Environment::S_rootdir = fs::current_path();
 fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;

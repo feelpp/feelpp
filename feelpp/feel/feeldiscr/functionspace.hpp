@@ -28,8 +28,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2004-11-22
 */
-#ifndef __FunctionSpace_H
-#define __FunctionSpace_H 1
+#ifndef FEELPP_DISCR_FUNCTIONSPACE_H
+#define FEELPP_DISCR_FUNCTIONSPACE_H 1
 
 #include <type_traits>
 
@@ -88,6 +88,7 @@
 #include <feel/feelpoly/geomap.hpp>
 
 
+#include <feel/feeldiscr/enums.hpp>
 #include <feel/feeldiscr/mesh.hpp>
 #include <feel/feeldiscr/periodic.hpp>
 #include <feel/feelpoly/expansiontypes.hpp>
@@ -1521,27 +1522,6 @@ struct FunctionSpaceMeshSupport
 
 } // detail
 
-enum class ComponentType
-{
-    NO_COMPONENT = -1,
-    X = 0,
-    Y,
-    Z,
-    NX,
-    NY,
-    NZ,
-    TX,
-    TY,
-    TZ
-};
-using Component = ComponentType;
-enum FunctionSpaceType
-{
-    SCALAR = 0,
-    VECTORIAL = 1,
-    TENSOR2,
-    TENSOR2_SYMM
-};
 
 template<uint16_type PN,
          uint16_type GN = 1>
@@ -1861,6 +1841,16 @@ public:
             mpl::identity<typename basis_0_type::PreCompute> >::type pc_type;
     typedef std::shared_ptr<pc_type> pc_ptrtype;
 
+    /**
+     * interpolate type if available
+     */
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolant<basis_0_type>> >::type::type::type local_interpolant_type;
+
+    typedef typename mpl::if_<mpl::bool_<is_modal>,
+                              mpl::identity<mpl::identity<boost::none_t>>,
+                              mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
     // component basis
 #if 0
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -6499,14 +6489,17 @@ operator<<( std::ostream& os, FunctionSpace<A0, A1, A2, A3, A4> const& Xh )
 
 #include <feel/feeldiscr/detail/element_impl.hpp>
 
+namespace Feel {
 //!
 //! @return the support of a function space
 //!
-template<typename SpaceT>
-typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
+constexpr typename SpaceT::template GetMeshSupport<typename SpaceT::mesh_ptrtype,0>::ptrtype
 support( std::shared_ptr<SpaceT> const& X )
 {
     return X->template meshSupport<0>();
 }
 
-#endif /* __FunctionSpace_H */
+} // Feel
+
+#endif /* FEELPP_DISCR_FUNCTIONSPACE_H */

@@ -9,11 +9,11 @@ _heats={
     'heat(3,2)':Heat_3DP2,
 }
 
-def heat( dim=2, order=1, buildMesh=True, worldComm=None ):
+def heat( dim=2, order=1, worldComm=None ):
     """create a heat toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
-    orderTemperature -- the polynomial order for the temperature (default: 1)
+    order -- the polynomial order for the temperature (default: 1)
     worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
     """
     if worldComm is None:
@@ -23,4 +23,4 @@ def heat( dim=2, order=1, buildMesh=True, worldComm=None ):
         print(key)
     if key not in _heats:
         raise RuntimeError('Heat solver '+key+' not existing')
-    return _heats[key]( "heat", buildMesh, worldComm )
+    return _heats[key]( "heat", "heat", worldComm )

@@ -5,7 +5,7 @@
    Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 Date: 2014-06-04
 
-Copyright (C) 2014 Feel++ Consortium
+Copyright (C) 2014-2020 Feel++ Consortium
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -26,33 +26,47 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #include <feel/feelcore/environment.hpp>
 //#include <fftw3.h>
 #include <feel/feelfilters/hbf.hpp>
-
+#include <map>
 
 namespace Feel
 {
-holo3_image<float>
-readHBF( std::string const& s )
+
+std::tuple<int32_t, int32_t, std::string>
+readHBFHeaderAndSizes( std::string const& s )
 {
-    #if 0
-        std::ifstream in( Environment::expand(s).c_str(), std::ios::binary );
-    #else
-        std::ifstream in( s, std::ios::binary );
-    #endif  
+    LOG(INFO) << "Reading Header and sizes " << s << std::endl;
+    std::ifstream in( s, std::ios::binary );
     if ( !in )
     {
-        std::cout << "Error opening file " << s.c_str() << std::endl;
-        exit(0);
+        using namespace std::string_literals;
+        throw std::invalid_argument ( "readHBFHeaderAndSizes - Error opening file "s + s.c_str() );
     }
-
+    return readHBFHeaderAndSizes( in );
+}
+std::tuple<int32_t, int32_t, std::string>
+readHBFHeaderAndSizes( std::ifstream& in )
+{
+    LOG(INFO) << "Reading Header and sizes" << std::endl;
     std::string header;
+    std::string data_type;
     char ch;
     size_t count = 0;
+    bool inside_type = false;
     while ((ch = in.get()) != '\0')
     {
         header += ch;
+
+        if ( ch == '>' || ch == 'c' )
+            inside_type = false;
+        if ( inside_type )
+            data_type += ch;
+        if ( ch == '<' )
+            inside_type = true;
+
         ++count;
     }
-    LOG(INFO) << "header: " << header << "\n";
+    LOG(INFO) << "header: " << header << std::endl;
+    LOG(INFO) << "data type:" << data_type << std::endl;
     LOG(INFO) << count << std::endl;
 
     int32_t version = 0;
@@ -61,17 +75,34 @@ readHBF( std::string const& s )
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
     LOG(INFO) << "rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
-    Eigen::MatrixXf x( cols, rows  );
-    in.read( (char*)x.data(), x.size()*sizeof(float) );
-    if(x.rows() <= 6 && x.cols() <= 6)
+    return {rows, cols, data_type};
+}
+
+template <typename T>
+holo3_image<T>
+readHBF( std::string const& s )
+{
+    std::ifstream in( s, std::ios::binary );
+    if ( !in )
+    {
+        using namespace std::string_literals;
+        throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
+    }
+    auto [rows,cols, data_type] = readHBFHeaderAndSizes( in );
+
+    holo3_image<T> x ( cols, rows );
+    in.read( (char*)x.data(), x.size()*sizeof(T) );
+    if (x.rows() <= 6 && x.cols() <= 6)
         LOG(INFO) << x << std::endl;
-   // if ( Environment::isMasterRank() )
-       // std::cout << "x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
+    LOG(INFO) << "rows: " << x.transpose().rows() 
+                << ", cols: " << x.transpose().cols()
+                << ", data type: " << data_type << std::endl;
     return x.transpose();
 }
-   
+
+template <typename T>
 void
-writeHBF( std::string const& s, holo3_image<float> const& x )
+writeHBF( std::string const& s, holo3_image<T> const& x )
 {
     if ( Environment::isMasterRank() )
     {
@@ -82,12 +113,28 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
 #endif    
         if ( !out )
         {
-            Feel::cout << "Error opening file " << s.c_str() << std::endl;
-            exit(0);
+            using namespace std::string_literals;
+            throw std::invalid_argument ( "writeHBF - Error opening file "s + s.c_str() );
         }
-        const char* header = "class CH3Array2D<float> *";
-        out.write( header, strlen(header) );
-        out.write( "\0",sizeof(char) );
+
+        std::map<std::string,std::string> data_sizes;
+        data_sizes[typeid(int8_t).name()]="__int8";
+        data_sizes[typeid(int16_t).name()]="__int16";
+        data_sizes[typeid(int32_t).name()]="__int32";
+        data_sizes[typeid(int64_t).name()]="__int64";
+        data_sizes[typeid(long).name()]="long";
+        data_sizes[typeid(uint8_t).name()]="unsigned __int8";
+        data_sizes[typeid(uint16_t).name()]="unsigned __int16";
+        data_sizes[typeid(uint32_t).name()]="unsigned __int32";
+        data_sizes[typeid(uint64_t).name()]="unsigned __int64";
+        data_sizes[typeid(float).name()]="float";
+        data_sizes[typeid(double).name()]="double";
+
+        std::string data_type = data_sizes[typeid(T).name()];
+        std::string header = "class CH3Array2D<"+data_type+"> *";
+
+        out.write( header.c_str(), header.size() );
+        out.write( "\0", sizeof(char) );
         
         LOG(INFO) << "writeHBF: write header " << header << "\n";
 
@@ -98,14 +145,15 @@ writeHBF( std::string const& s, holo3_image<float> const& x )
         out.write( (char*)&cols, sizeof(int32_t) );
         LOG(INFO) << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
 
-        out.write( (char*)x.data(),x.size()*sizeof(float) );
+        out.write( (char*)x.data(),x.size()*sizeof(T) );
 
         LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
 
         if(x.rows() <= 6 && x.cols() <= 6)
-            Feel::cout << x << std::endl;
+            LOG(INFO) << x << std::endl;
         LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     }
+    Environment::worldComm().barrier();
 }
 
 
@@ -477,5 +525,27 @@ std::pair<int,int> ElemFineToCoarse::operator()( int num)
     return std::make_pair(ki*SizeElem,kj*SizeElem);
 }
 
+
+template holo3_image<double> readHBF(std::string const&);
+template holo3_image<float> readHBF(std::string const&);
+template holo3_image<int8_t> readHBF(std::string const&);
+template holo3_image<int16_t> readHBF(std::string const&);
+template holo3_image<int32_t> readHBF(std::string const&);
+template holo3_image<int64_t> readHBF(std::string const&);
+template holo3_image<uint8_t> readHBF(std::string const&);
+template holo3_image<uint16_t> readHBF(std::string const&);
+template holo3_image<uint32_t> readHBF(std::string const&);
+template holo3_image<uint64_t> readHBF(std::string const&);
+
+template void writeHBF( std::string const& , holo3_image<double> const& );
+template void writeHBF( std::string const& , holo3_image<float> const& );
+template void writeHBF( std::string const& , holo3_image<int8_t> const& );
+template void writeHBF( std::string const& , holo3_image<int16_t> const& );
+template void writeHBF( std::string const& , holo3_image<int32_t> const& );
+template void writeHBF( std::string const& , holo3_image<int64_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint8_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint16_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint32_t> const& );
+template void writeHBF( std::string const& , holo3_image<uint64_t> const& );
 
 }// Feel

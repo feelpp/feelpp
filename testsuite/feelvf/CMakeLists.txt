@@ -30,4 +30,5 @@ feelpp_add_test( idf2_functor )
 feelpp_add_test( divergence )
 feelpp_add_test(productspace_dofs)
 feelpp_add_test( expr_evaluate )
+feelpp_add_test( symbolic_diff )
 

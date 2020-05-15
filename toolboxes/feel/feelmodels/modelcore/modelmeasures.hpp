@@ -49,11 +49,16 @@ public :
     FEELPP_DEPRECATED void setParameter(std::string const& key,double val);
     void setMeasure(std::string const& key,double val);
     void setMeasureComp( std::string const& key,std::vector<double> const& values );
+    void setMeasures( std::map<std::string,double> const& m );
     FEELPP_DEPRECATED bool hasParameter( std::string const& key ) const { return this->hasMeasure( key ); }
     bool hasMeasure( std::string const& key ) const { return M_dataNameToIndex.find( key ) != M_dataNameToIndex.end(); }
     //! return measure from a key
     double measure( std::string const& key ) const;
+    //! return the current measures in memory
+    std::map<std::string,double> currentMeasures() const;
+    //! return path of file where measures are stored
     std::string const& pathFile() const { return M_pathFile; }
+    //! set path of file where measures are stored
     void setPathFile( std::string const& s ) { M_pathFile = s; }
 private :
     void writeHeader();

@@ -141,12 +141,14 @@ measureNormEvaluation( RangeType const& range,
 
     if ( ppNorm.hasField() )
     {
-        ( Feel::for_each( fieldTuple, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tuple(), [&]( auto const& e )
                         {
                             if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    for ( auto const& [fieldName,fieldFunc] : e )
+                                    for ( auto const& mfield : e )
                                     {
+                                        std::string fieldName = mfield.nameWithPrefix();
+                                        auto const& fieldFunc = mfield.field();
                                         if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
                                             {
                                                 if ( !fieldFunc )
@@ -154,6 +156,7 @@ measureNormEvaluation( RangeType const& range,
                                             }
                                         if ( ppNorm.field() == fieldName )
                                         {
+                                            mfield.applyUpdateFunction();
                                             for ( std::string const& normType : ppNorm.types() )
                                                 measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
                                         }
@@ -161,6 +164,7 @@ measureNormEvaluation( RangeType const& range,
                                 }
                             else
                             {
+#if 0
                                 if ( ppNorm.field() == e.first )
                                 {
                                     auto const& fieldFunc = e.second;
@@ -172,6 +176,7 @@ measureNormEvaluation( RangeType const& range,
                                     for ( std::string const& normType : ppNorm.types() )
                                         measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
                                 }
+#endif
                             }
                         }), ... );
     }

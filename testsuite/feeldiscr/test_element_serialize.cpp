@@ -215,7 +215,7 @@ TestElementSerialize<Dim>::run( const double* X, unsigned long P, double* Y, uns
         M_element = Xh->element();
         M_vector_element.resize( M_nb_element );
         std::cout<<"DB will be created "<<std::endl;
-        M_element = vf::project( Xh , elements(mesh), cst( 1 ) );
+        M_element = vf::project( _space=Xh , _range=elements(mesh), _expr=cst( 1 ) );
         M_element.setName("element");
         for( int i = 0 ; i < M_nb_element ; i++ )
         {

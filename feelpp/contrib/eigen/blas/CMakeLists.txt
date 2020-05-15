@@ -30,6 +30,7 @@ endif()
 
 add_library(eigen_blas_static ${EigenBlas_SRCS})
 add_library(eigen_blas SHARED ${EigenBlas_SRCS})
+set_target_properties(eigen_blas PROPERTIES SOVERSION 1)
 
 if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
   target_link_libraries(eigen_blas_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
@@ -45,7 +46,7 @@ install(TARGETS eigen_blas eigen_blas_static
 
 if(EIGEN_Fortran_COMPILER_WORKS)
 
-if(BUILD_TESTING)
+if(0)#BUILD_TESTING)
   if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
     add_subdirectory(testing) # can't do EXCLUDE_FROM_ALL here, breaks CTest
   else()

@@ -29,9 +29,10 @@
 #define BOOST_TEST_MODULE test_operatorlinearfree
 #include <feel/feelcore/testsuite.hpp>
 
-#include <fstream>
-
-#include <feel/feel.hpp>
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feelalg/backend.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/operatorlinearfree.hpp>
 #include <feel/feeldiscr/operatorlinearcomposite.hpp>
 #include <feel/feelcrb/eim.hpp>
@@ -39,37 +40,6 @@
 
 /** use Feel namespace */
 using namespace Feel;
-
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testoperatorlinearfree( "operatorlinearfree options" );
-    testoperatorlinearfree.add_options()
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ;
-    return testoperatorlinearfree.add( Feel::feel_options() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_operatorlinearfree" ,
-                     "test_operatorlinearfree" ,
-                     "0.2",
-                     "nD(n=1,2,3) test OperatorLinearFree and OperatorLinearComposite",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2013 Feel++ Consortium" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-
-}
-
-
 
 template<int Dim, int Order>
 void
@@ -88,7 +58,7 @@ testOperatorLinearFree()
 
     auto u = Xh->element();
     auto v = Xh->element();
-    auto vector = project( Xh, elements(mesh) , cos( Px() ) );
+    auto vector = project( _space=Xh, _range=elements(mesh) , _expr=cos( Px() ) );
     auto result = Xh->element();
 
     auto expr = integrate( _range=elements(mesh), _expr=gradt(u)*trans(grad(v)) );
@@ -143,7 +113,7 @@ testOperatorLinearComposite()
 
     auto u = Xh->element();
     auto v = Xh->element();
-    auto vector = project( Xh, elements(mesh) , cos( Px() ) );
+    auto vector = project( _space=Xh, _range=elements(mesh) , _expr=cos( Px() ) );
     auto result = Xh->element();
 
     //operators
@@ -273,10 +243,10 @@ testExpression()
     std::vector< operator_type > operators_free_vector;
     std::vector< element_type > elements_vector;
 
-    auto x = project( Xh, elements(mesh), Px() );         elements_vector.push_back( x );
-    auto xx = project( Xh, elements(mesh), Px()*Px() );   elements_vector.push_back( xx );
-    auto cosy = project( Xh, elements(mesh), cos(Py()) ); elements_vector.push_back( cosy );
-    auto xy = project( Xh, elements(mesh), Px()*Py() );   elements_vector.push_back( xy );
+    auto x = project( _space=Xh, _range=elements(mesh), _expr=Px() );         elements_vector.push_back( x );
+    auto xx = project( _space=Xh, _range=elements(mesh), _expr=Px()*Px() );   elements_vector.push_back( xx );
+    auto cosy = project( _space=Xh, _range=elements(mesh), _expr=cos(Py()) ); elements_vector.push_back( cosy );
+    auto xy = project( _space=Xh, _range=elements(mesh), _expr=Px()*Py() );   elements_vector.push_back( xy );
 
     double last_value=0;
 
@@ -321,11 +291,7 @@ testExpression()
 
 }
 
-/**
- * main code
- */
-
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
+FEELPP_ENVIRONMENT_NO_OPTIONS
 
 BOOST_AUTO_TEST_SUITE( operatorlinearfree )
 
