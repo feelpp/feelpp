@@ -737,13 +737,13 @@ public:
                 boost::fusion::vector<CTX...> ctxvec( ctx... );
                 update( boost::fusion::at_c<0>( ctxvec )->gmContext() );
             }
-
+#if 0
         value_type
         evalij( uint16_type i, uint16_type j ) const
             {
                 return 0;
             }
-
+#endif
         value_type
         evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
             {
@@ -759,6 +759,11 @@ public:
         value_type
         evalq( uint16_type c1, uint16_type c2, uint16_type q ) const
             {
+#if !defined( NDEBUG )
+                CHECK( c1 < M ) << "invalid c1 " << c1 << " sould be less than " << M
+                                << "shape : " << shape::M << " " << shape::N << " is_scalar=" << shape::is_scalar << " is_vectorial=" << shape::is_vectorial << " is_tensor2="<<shape::is_tensor2;
+                CHECK( c2 < N ) << "invalid c2 " << c2 << " sould be less than " << N;
+#endif
                 return ( M_is_constant )? M_yConstant(c1,c2) : M_y[q](c1,c2);
             }
 
@@ -848,11 +853,16 @@ private :
             for( int i = 0; i < M; ++i )
                 for( int j = 0; j < N; ++j )
                     M_numericValue(i,j) = resToNum[i*N+j].second;
+            M_isPolynomial = 1;
+            M_polynomialOrder = 0;
         }
     }
 
     void updateForUse()
     {
+        if ( M_isNumericExpression )
+            return;
+
         std::vector<std::pair<GiNaC::symbol,int>> symbTotalDegree;
         for ( auto const& thesymbxyz : this->indexSymbolXYZ() )
             symbTotalDegree.push_back( std::make_pair( M_syms[thesymbxyz.second], 1 ) );
