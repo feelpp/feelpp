@@ -77,7 +77,7 @@ main( int argc, char** argv )
     auto diffusion_diff = diff( option(_name="diffusion").as<std::string>(), "u", "u", idv(u), "diffusion_diff" );
     // end::diffusion[]
 
-    // tag::jacobian[]	 
+    // tag::jacobian[]
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
         {
             if (!J) J = backend()->newMatrix( Vh, Vh );
@@ -89,8 +89,8 @@ main( int argc, char** argv )
                               + trans( idt( u ) )*( (diffusion+diffusion_diff*idv(u))*grad( v )*N() )
                               + penalbc*trans( idt( u ) )*id( v )/hFace() ) );
         };
-    // end::jacobian[]	 	
-    // tag::residual[]	 	
+    // end::jacobian[]
+    // tag::residual[]
     auto Residual = [=](const vector_ptrtype& X, vector_ptrtype& R)
         {
             auto u = Vh->element();
@@ -103,13 +103,13 @@ main( int argc, char** argv )
                                + diffusion*trans( idv( u ) )*( diffusion*grad( v )*N() )
                                + penalbc*trans( idv( u ) )*id( v )/hFace() ) );
         };
-    // end::jacobian[]	 
-    // tag::nlsolve[]	 
+    // end::jacobian[]
+    // tag::nlsolve[]
     u.zero();
     backend()->nlSolver()->residual = Residual;
     backend()->nlSolver()->jacobian = Jacobian;
     backend()->nlSolve( _solution=u );
-    // end::nlsolve[]	 
+    // end::nlsolve[]
     auto e = exporter( _mesh=mesh );
     e->add( "u", u );
     e->save();
