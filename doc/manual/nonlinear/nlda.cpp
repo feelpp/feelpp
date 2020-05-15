@@ -68,14 +68,14 @@ main( int argc, char** argv )
     auto v = Vh->element();
     double penalbc = option(_name="penalbc").as<double>();
 
-    // tag::reaction-terms[]
+    // tag::reaction[]
     auto reaction = expr( option(_name="reaction").as<std::string>(), "u", idv(u), "reaction" );
     auto reaction_diff = diff( option(_name="reaction").as<std::string>(), "u", "u", idv(u), "reaction_diff"  );
-    // end::reaction-terms[]
-    // tag::diffusion-terms[]
+    // end::reaction[]
+    // tag::diffusion[]
     auto diffusion = expr( option(_name="diffusion").as<std::string>(), "u", idv(u), "diffusion" );
     auto diffusion_diff = diff( option(_name="diffusion").as<std::string>(), "u", "u", idv(u), "diffusion_diff" );
-    // end::reaction-terms[]
+    // end::diffusion[]
 
     // tag::jacobian[]	 
     auto Jacobian = [=](const vector_ptrtype& X, sparse_matrix_ptrtype& J)
