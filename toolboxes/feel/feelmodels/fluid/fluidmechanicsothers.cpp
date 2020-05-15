@@ -1010,7 +1010,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         std::dynamic_pointer_cast<op_pcd_type>( this->operatorPCD() );
 
     auto u = this->functionSpaceVelocity()->element( vecSol, this->rowStartInVector() );
-    auto p = this->functionSpacePressure()->element( vecSol, this->rowStartInVector()+1 );
+    //auto p = this->functionSpacePressure()->element( vecSol, this->rowStartInVector()+1 );
 
     myOpPCD->updateStart();
 

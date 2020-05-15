@@ -199,12 +199,12 @@ public:
      */
     //@{
 
-    Mat( MatrixExpr const& expr )
+    explicit Mat( MatrixExpr const& expr )
         :
         M_expr( expr )
     {
     }
-    Mat( MatrixExpr && expr )
+    explicit Mat( MatrixExpr && expr )
         :
         M_expr( expr )
     {

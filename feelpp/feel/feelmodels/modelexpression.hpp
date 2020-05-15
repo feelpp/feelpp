@@ -51,7 +51,7 @@ public :
     using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >;
 
     ModelExpression() = default;
-    ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
+    explicit ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
     ModelExpression( ModelExpression const& ) = default;
     ModelExpression( ModelExpression && ) = default;
     ModelExpression& operator=( ModelExpression const& ) = default;
