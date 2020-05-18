@@ -329,9 +329,7 @@ public:
         typedef this_type expression_type;
         typedef typename expression_type::expression_matrix_type expression_matrix_type;
 
-        using shape = typename mpl::if_c<expression_type::matrix_size1 == 1 || expression_type::matrix_size2 == 1,
-                                         Shape<expression_type::matrix_size1, Vectorial, expression_type::matrix_size1 == 1, false>,
-                                         Shape<expression_type::matrix_size1, Tensor2, false, false> >::type;
+        using shape = ShapeGeneric<gmc_t<Geo_t>::nDim,M,N>;
 
         using value_type = expression_type::value_type;
 

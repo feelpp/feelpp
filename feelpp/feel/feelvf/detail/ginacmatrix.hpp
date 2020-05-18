@@ -642,7 +642,7 @@ public:
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type* gmc_ptrtype;
         typedef typename fusion::result_of::value_at_key<Geo_t,key_type>::type::element_type gmc_type;
 
-        typedef typename mn_to_shape<gmc_type::nDim,M,N>::type shape;
+        using shape = ShapeGeneric<gmc_t<Geo_t>::nDim,M,N>;
         typedef std::vector<evaluate_type> loc_type;
         //typedef Eigen::Matrix<value_type,Eigen::Dynamic,1> vec_type;
         struct is_zero
