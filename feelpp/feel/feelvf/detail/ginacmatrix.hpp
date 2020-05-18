@@ -399,6 +399,27 @@ public:
                         });
     }
 
+    void renameSymbols( std::map<std::string,std::string> const& old2new )
+    {
+        for ( auto const& [oldSymbName,newSymbName] : old2new )
+        {
+            uint16_type indexOldSymb = this->index( oldSymbName );
+            if ( indexOldSymb == invalid_uint16_type_value )
+                continue;
+
+            GiNaC::symbol oldSymb = M_syms[indexOldSymb];
+            M_syms[indexOldSymb] = GiNaC::symbol( newSymbName );
+            M_fun = M_fun.subs( oldSymb == M_syms[indexOldSymb] );
+
+            auto itFindSymbToValue = M_symbolNameToValue.find( oldSymbName );
+            if ( itFindSymbToValue != M_symbolNameToValue.end() )
+                M_symbolNameToValue[newSymbName] = itFindSymbToValue->second;
+            else
+                M_symbolNameToValue[newSymbName] = 0;
+            M_symbolNameToValue.erase( oldSymbName );
+        }
+    }
+
     template <typename TheSymbolExprType>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
     {
