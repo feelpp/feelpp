@@ -438,6 +438,11 @@ std::ostream& operator<<( std::ostream& os, Shape<Dim, Type, is_transposed, diag
     return os;
 }
 /// \endcond
+
+
+template<typename Shape1Type, typename Shape2Type>
+constexpr bool is_same_shape_v = Shape1Type::M == Shape2Type::M && Shape1Type::N == Shape2Type::N && Shape1Type::O == Shape2Type::O;
+
 } // vf
 } // Feel
 #endif /* __Shape_H */
