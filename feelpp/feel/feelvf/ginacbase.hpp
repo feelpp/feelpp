@@ -74,7 +74,6 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         for ( auto const& is : M_indexSymbolN )
             VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
 
-        this->setParameterFromOption();
         if ( hasSymbol( "x" ) || hasSymbol( "y" ) || hasSymbol( "z" ) )
             M_context = M_context | vm::POINT;
         if ( hasAnySymbolN() )
@@ -125,47 +124,6 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
             }
             return invalid_uint16_type_value;
         }
-
-    void setParameterFromOption()
-    {
-        using namespace GiNaC;
-        std::map<std::string, value_type> m;
-        for ( auto const& s : M_syms )
-        {
-            if ( Environment::vm().count( s.get_name() ) )
-            {
-                // use try/catch in order to catch casting exception for
-                // option that do not return double. Indeed we are only
-                // collecting symbols in option database which can be cast
-                // to numerical types
-                try
-                {
-                    value_type v = option( _name = s.get_name() ).as<double>();
-                    m.insert( std::make_pair( s.get_name(), v ) );
-                    VLOG( 1 ) << "symbol " << s.get_name() << " found in option with value " << v;
-                }
-                catch ( ... )
-                {
-                }
-
-                //                    try
-                //                    {
-                //                        expression_type e( soption( _name=s.get_name() ), 0 );
-                //                        if( is_a<numeric>(e) )
-                //                        {
-                //                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-                //                        }
-                //                        else
-                //                        {
-                //                            ;
-                //                        }
-                //                    }
-                //                    catch(...)
-                //                    {}
-            }
-        }
-        this->setParameterValues( m );
-    }
 
     void setParameterValues( vec_type const& p )
     {
