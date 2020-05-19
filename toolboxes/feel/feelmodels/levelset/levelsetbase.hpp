@@ -45,8 +45,6 @@
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
-#include <boost/bimap.hpp>
-
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
