@@ -14,6 +14,8 @@
 
 namespace Feel {
 
+extern template class FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE;
+
 template class LevelSetRedistanciationFM< 
     typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
     >;
