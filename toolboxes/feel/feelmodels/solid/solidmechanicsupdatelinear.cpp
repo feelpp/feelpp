@@ -76,11 +76,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     auto const& v = this->fieldDisplacement();
 #endif
 
+    auto se = this->symbolsExpr();
     //auto buzz1 = M_timeStepNewmark->previousUnknown();
     //---------------------------------------------------------------------------------------//
-    auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
-    auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
-    auto const& rho = this->mechanicalProperties()->fieldRho();
+    // auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
+    // auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
+    // auto const& rho = this->mechanicalProperties()->fieldRho();
     // Identity Matrix
     auto const Id = eye<nDim,nDim>();
     // deformation tensor
@@ -96,182 +97,194 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     //#endif
 #endif
     //#if (SOLIDMECHANICS_DIM==3)  // cas 3d
-    auto sigmat = idv(coeffLame1)*trace(epst)*Id + 2*idv(coeffLame2)*epst;
+    // auto sigmat = idv(coeffLame1)*trace(epst)*Id + 2*idv(coeffLame2)*epst;
     //auto sigmaold = idv(coeffLame1)*trace(epsold)*Id + 2*idv(coeffLame2)*epsold;
     //#endif
     //---------------------------------------------------------------------------------------//
-
-#if 0
-    //double rho_s=0.8;
-    double alpha_f=M_genAlpha_alpha_f;
-    double alpha_m=M_genAlpha_alpha_m;
-    double gamma=0.5+alpha_m-alpha_f;
-    double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-#endif
     //---------------------------------------------------------------------------------------//
-    // internal force term
-    if (BuildCstPart)
-    {
-        if ( !this->useDisplacementPressureFormulation() )
-        {
-            form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                integrate (_range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*inner(sigmat,grad(v)), // trace( sigmat*trans(grad(v))),
-                           _geomap=this->geomap() );
-        }
-        else
-        {
-            form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                integrate (_range=M_rangeMeshElements,
-                           _expr= 2*idv(coeffLame2)*inner(epst,grad(v)),
-                           _geomap=this->geomap() );
 
-            auto p = M_XhPressure->element();//*M_fieldPressure;
-            size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
-            form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
-                   _rowstart=rowStartInMatrix,
-                   _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-                integrate (_range=M_rangeMeshElements,
-                           _expr= idt(p)*div(v),
-                           _geomap=this->geomap() );
-            form2( _test=M_XhPressure, _trial=Xh, _matrix=A,
-                   _rowstart=rowStartInMatrix+startBlockIndexPressure,
-                   _colstart=colStartInMatrix ) +=
-                integrate(_range=M_rangeMeshElements,
-                          _expr= id(p)*divt(u),
-                          _geomap=this->geomap() );
-            form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=A,
-                   _rowstart=rowStartInMatrix+startBlockIndexPressure,
-                   _colstart=colStartInMatrix+startBlockIndexPressure ) +=
-                integrate(_range=M_rangeMeshElements,
-                          _expr= -(cst(1.)/idv(coeffLame1))*idt(p)*id(p),
-                          _geomap=this->geomap() );
-        }
-    }
-    //---------------------------------------------------------------------------------------//
-    // discretisation acceleration term
-    if ( !this->isStationary() )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if ( M_timeStepping == "Newmark" )
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            if ( BuildNonCstPart_TransientForm2Term )
+            auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+
+            // internal force term
+            if (BuildCstPart)
             {
-                if ( !this->useMassMatrixLumped() )
+                auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
+                auto lameSecondExpr = expr( matProperties.property( "Lame-second-parameter" ).exprScalar(), se );
+                auto sigmat = lameFirstExpr*trace(epst)*Id + 2*lameSecondExpr*epst;
+
+                if ( !physicSolidData->useDisplacementPressureFormulation() )
                 {
                     form2( _test=Xh, _trial=Xh, _matrix=A )  +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*idv(rho)*inner(idt(u),id(v)),
+                        integrate (_range=range,
+                                   _expr= timeSteppingScaling*inner(sigmat,grad(v)), // trace( sigmat*trans(grad(v))),
                                    _geomap=this->geomap() );
                 }
                 else
                 {
-                    A->close();
-                    double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
-                    if ( this->massMatrixLumped()->size1() == A->size1() )
-                        A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
-                    else
-                    {
-                        auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
-                        auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
-                        uAddDiagA = *M_vecDiagMassMatrixLumped;
-                        uAddDiagA.scale( thecoeff );
-                        A->addDiagonal( vecAddDiagA );
-                    }
-                }
-            }
-            if ( BuildNonCstPart_TransientForm1Term )
-            {
-                auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
-                if ( !this->useMassMatrixLumped() )
-                {
-                    form1( _test=Xh, _vector=F ) +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
+                    form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                        integrate (_range=range,
+                                   _expr= 2*lameSecondExpr*inner(epst,grad(v)),
                                    _geomap=this->geomap() );
-                }
-                else
-                {
-                    if ( this->massMatrixLumped()->size1() == F->size() )
-                    {
-                        auto myvec = this->backend()->newVector(M_XhDisplacement);
-                        *myvec = polySecondDerivDisp;
-                        F->close();
-                        F->addVector( myvec, this->massMatrixLumped() );
-                    }
-                    else
-                    {
-                        F->close();
-                        auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
-                        auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                        uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
-                    }
-                }
-            }
-        }
-        else // if BDF
-        {
-            CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
-            size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
 
-            if ( BuildNonCstPart_TransientForm2Term )
-            {
-                if ( !this->useMassMatrixLumped() )
-                {
-                    form2( _test=Xh, _trial=Xh, _matrix=A,
+                    auto p = M_XhPressure->element();//*M_fieldPressure;
+                    size_type startBlockIndexPressure = this->startSubBlockSpaceIndex("pressure");
+                    form2( _test=Xh, _trial=M_XhPressure, _matrix=A,
                            _rowstart=rowStartInMatrix,
-                           _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
+                           _colstart=colStartInMatrix+startBlockIndexPressure ) +=
+                        integrate (_range=range,
+                                   _expr= idt(p)*div(v),
                                    _geomap=this->geomap() );
+                    form2( _test=M_XhPressure, _trial=Xh, _matrix=A,
+                           _rowstart=rowStartInMatrix+startBlockIndexPressure,
+                           _colstart=colStartInMatrix ) +=
+                        integrate(_range=range,
+                                  _expr= id(p)*divt(u),
+                                  _geomap=this->geomap() );
+                    form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=A,
+                           _rowstart=rowStartInMatrix+startBlockIndexPressure,
+                           _colstart=colStartInMatrix+startBlockIndexPressure ) +=
+                        integrate(_range=range,
+                                  _expr= -(cst(1.)/lameFirstExpr)*idt(p)*id(p),
+                                  _geomap=this->geomap() );
                 }
-                else
-                {
-                    double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
-                    for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
-                        A->add( A->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
-                                A->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
-                                thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
-                }
-                form2( _test=Xh, _trial=Xh, _matrix=A,
-                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
-                       _colstart=colStartInMatrix ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
-                               _geomap=this->geomap() );
-                form2( _test=Xh, _trial=Xh, _matrix=A,
-                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
-                       _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= -timeSteppingScaling*idv(rho)*inner(idt(u),id(v)),
-                               _geomap=this->geomap() );
             }
-            if ( BuildNonCstPart_TransientForm1Term )
+            //---------------------------------------------------------------------------------------//
+            // discretisation acceleration term
+            if ( !this->isStationary() )
             {
-                auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
-                if ( !this->useMassMatrixLumped() )
+                auto const& densityProp = this->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr(), se );
+
+                if ( M_timeStepping == "Newmark" )
                 {
-                    form1( _test=Xh, _vector=F,
-                           _rowstart=rowStartInVector ) +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= idv(rho)*inner(idv(rhsTimeStepVelocity),id(v)),
-                                   _geomap=this->geomap() );
+                    if ( BuildNonCstPart_TransientForm2Term )
+                    {
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            form2( _test=Xh, _trial=Xh, _matrix=A )  +=
+                                integrate( _range=range,
+                                           _expr= this->timeStepNewmark()->polySecondDerivCoefficient()*densityExpr*inner(idt(u),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            A->close();
+                            double thecoeff = this->timeStepNewmark()->polyDerivCoefficient();
+                            if ( this->massMatrixLumped()->size1() == A->size1() )
+                                A->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                            else
+                            {
+                                auto vecAddDiagA = this->backend()->newVector( A->mapRowPtr() );
+                                auto uAddDiagA = M_XhDisplacement->element( vecAddDiagA, rowStartInVector );
+                                uAddDiagA = *M_vecDiagMassMatrixLumped;
+                                uAddDiagA.scale( thecoeff );
+                                A->addDiagonal( vecAddDiagA );
+                            }
+                        }
+                    }
+                    if ( BuildNonCstPart_TransientForm1Term )
+                    {
+                        auto polySecondDerivDisp = this->timeStepNewmark()->polySecondDeriv();
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            form1( _test=Xh, _vector=F ) +=
+                                integrate( _range=range,
+                                           _expr= densityExpr*inner(idv(polySecondDerivDisp),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            if ( this->massMatrixLumped()->size1() == F->size() )
+                            {
+                                auto myvec = this->backend()->newVector(M_XhDisplacement);
+                                *myvec = polySecondDerivDisp;
+                                F->close();
+                                F->addVector( myvec, this->massMatrixLumped() );
+                            }
+                            else
+                            {
+                                F->close();
+                                auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
+                                auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                                uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                            }
+                        }
+                    }
                 }
-                else
+                else // if BDF
                 {
-                    F->close();
-                    auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
-                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
+                    CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+                    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+
+                    if ( BuildNonCstPart_TransientForm2Term )
+                    {
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            form2( _test=Xh, _trial=Xh, _matrix=A,
+                                   _rowstart=rowStartInMatrix,
+                                   _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                                integrate( _range=range,
+                                           _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*densityExpr*inner(idt(u),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
+                            for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
+                                A->add( A->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
+                                        A->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
+                                        thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
+                        }
+                        form2( _test=Xh, _trial=Xh, _matrix=A,
+                               _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                               _colstart=colStartInMatrix ) +=
+                            integrate( _range=range,
+                                       _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*densityExpr*inner(idt(u),id(v)),
+                                       _geomap=this->geomap() );
+                        form2( _test=Xh, _trial=Xh, _matrix=A,
+                               _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                               _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                            integrate( _range=range,
+                                       _expr= -timeSteppingScaling*densityExpr*inner(idt(u),id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                    if ( BuildNonCstPart_TransientForm1Term )
+                    {
+                        auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            form1( _test=Xh, _vector=F,
+                                   _rowstart=rowStartInVector ) +=
+                                integrate( _range=range,
+                                           _expr= densityExpr*inner(idv(rhsTimeStepVelocity),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            F->close();
+                            auto uAddRhs = M_XhDisplacement->element( F, rowStartInVector );
+                            auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                            uAddRhs.add( 1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
+                        }
+                        auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
+                        form1( _test=Xh, _vector=F,
+                               _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                            integrate( _range=range,
+                                       _expr= densityExpr*inner(idv(rhsTimeStepDisplacement),id(v)),
+                                       _geomap=this->geomap() );
+                    }
                 }
-                auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
-                form1( _test=Xh, _vector=F,
-                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= idv(rho)*inner(idv(rhsTimeStepDisplacement),id(v)),
-                               _geomap=this->geomap() );
             }
-        }
-    }
+
+        } // matName
+    } // physics
+
     //---------------------------------------------------------------------------------------//
     // source term
     if ( BuildNonCstPart_SourceTerm )
