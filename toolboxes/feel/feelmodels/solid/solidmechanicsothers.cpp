@@ -80,6 +80,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- use displacement-pressure formulation : " << std::boolalpha << M_useDisplacementPressureFormulation
            << "\n     -- time mode : " << StateTemporal;
     *_ostr << this->mechanicalProperties()->getInfoMaterialParameters()->str();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
@@ -953,7 +954,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    //this->materialsProperties()->updateParameterValues( paramValues );
+    this->materialsProperties()->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -965,7 +966,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
-        //this->materialsProperties()->setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
     }
 
     this->M_bcDirichlet.setParameterValues( paramValues );
@@ -1088,6 +1089,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     }
     else if ( M_modelName == "Hyper-Elasticity" )
     {
+#if 0 // TODO VINCENT
         auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
@@ -1103,7 +1105,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
                                                _expr=sigmaWithPressure*N(),
                                                _geomap=this->geomap() );
         }
+#endif
     }
+
 }
 
 
@@ -1139,6 +1143,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     }
     else if ( M_modelName == "Hyper-Elasticity" )
     {
+#if 0 // TODO VINCENT
         auto sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
@@ -1157,7 +1162,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
         M_fieldVonMisesCriterions->on(_range=M_rangeMeshElements,
                                       _expr=sqrt((3./2.)*inner(sigma_dev,sigma_dev, mpl::int_<InnerProperties::IS_SAME>() )) );
 #endif
-
+#endif
     }
 
     typedef Eigen::Matrix<double, nDim, nDim> matrixN_type;

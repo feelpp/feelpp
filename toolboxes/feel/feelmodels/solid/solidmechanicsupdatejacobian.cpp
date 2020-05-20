@@ -47,13 +47,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto const u = M_XhDisplacement->element(X, rowStartInVector);
     auto const& v = this->fieldDisplacement();
 
+    auto se = this->symbolsExpr();
+
     //--------------------------------------------------------------------------------------------------//
-#if 0
-    double alpha_f=M_genAlpha_alpha_f;
-    double alpha_m=M_genAlpha_alpha_m;
-    double gamma=0.5+alpha_m-alpha_f;
-    double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-#endif
 
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
@@ -64,161 +60,150 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
     //--------------------------------------------------------------------------------------------------//
 
-    auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
-    auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
-    auto const& rho = this->mechanicalProperties()->fieldRho();
+    // auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
+    // auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
+    // auto const& rho = this->mechanicalProperties()->fieldRho();
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
-    auto Fv = Id + gradv(u);
-    auto dF = gradt(u);
-    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-    auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
-    auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
-    auto dS = idv(coeffLame1)*trace(dE)*Id + 2*idv(coeffLame2)*dE;
+    // auto Fv = Id + gradv(u);
+    // auto dF = gradt(u);
+    // auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+    // auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
+    // auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
+    // auto dS = idv(coeffLame1)*trace(dE)*Id + 2*idv(coeffLame2)*dE;
     //case elastic
     auto dE_elastic = sym(gradt(u));
-    auto dS_elastic = idv(coeffLame1)*trace(dE_elastic)*Id + 2*idv(coeffLame2)*dE_elastic;
 
     //--------------------------------------------------------------------------------------------------//
-    // stress tensor terms
-    //thetimerBis.restart();
-    this->timerTool("Solve").start();
-
-    if ( M_modelName == "Hyper-Elasticity" )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            if (!BuildCstPart)
-            {
-                auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
-                bilinearForm_PatternCoupled +=
-                    integrate (_range=M_rangeMeshElements,
-                               //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
-                               //_expr=Feel::vf::FSI::stressStVenantKirchhoffJacobian(u,coeffLame1,coeffLame2), //le dernier
-                               _expr= timeSteppingScaling*inner( dFS_neohookean, grad(v) ),
-                               _geomap=this->geomap() );
-            }
-        }
-        else if (this->mechanicalProperties()->materialLaw() == "NeoHookean")
-        {
-            if ( !BuildCstPart )
-            {
-                auto const dFS_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian<2*nOrderDisplacement>(u,*this->mechanicalProperties());
-                bilinearForm_PatternCoupled +=
-                    integrate (_range=M_rangeMeshElements,
-                               //_expr= trace(idv(coeffLame2)*dF*trans(grad(v)) ),
-                               _expr= timeSteppingScaling*inner( dFS_neohookean, grad(v) ),
-                               _quad=_Q<2*nOrderDisplacement+1>(),
-                               _geomap=this->geomap() );
-            }
+            auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 
-        }
-#if 0
-        else if (this->mechanicalProperties()->materialLaw() == "MooneyRivlin")
-        {
-            if (!BuildCstPart)
-            {
-                bilinearForm_PatternCoupled +=
-                    integrate (_range=M_rangeMeshElements,
-                               _expr= trace( (dF*val(Sv_mooneyrivlin) + val(Fv)*dS_mooneyrivlin)*trans(grad(v)) ),
-                               _geomap=this->geomap() );
-            }
-        }
-#endif
-    }
-    else if ( M_modelName == "Elasticity-Large-Deformation" )
-    {
-        if (!BuildCstPart)
-            bilinearForm_PatternCoupled +=
-                integrate (_range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*inner( dS, grad(v) ),
-                           _geomap=this->geomap() );
-    }
-    else if ( M_modelName == "Elasticity" )
-    {
-        if (BuildCstPart)
-            bilinearForm_PatternCoupled +=
-                integrate (_range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*inner( dS_elastic, grad(v) ),
-                           _geomap=this->geomap() );
-    }
+            // stress tensor terms
+            this->timerTool("Solve").start();
 
-    double timeElapsedBis = this->timerTool("Solve").stop();
-    this->log("SolidMechanics","updateJacobian",
-              "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
-
-    //--------------------------------------------------------------------------------------------------//
-    // discretisation acceleration term
-    if ( !this->isStationary() )
-    {
-        if ( M_timeStepping == "Newmark" )
-        {
-            if ( BuildCstPart )
+            if ( physicSolidData->equation() == "Hyper-Elasticity" )
             {
-                if ( !this->useMassMatrixLumped() )
+                if (!BuildCstPart)
                 {
-                    bilinearForm_PatternDefault +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= M_timeStepNewmark->polyDerivCoefficient()*idv(rho)*inner( idt(u),id(v) ),
+                    auto dFS = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian(u,*physicSolidData,matProperties,se);
+                    bilinearForm_PatternCoupled +=
+                        integrate (_range=range,
+                                   //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
+                                   //_expr=Feel::vf::FSI::stressStVenantKirchhoffJacobian(u,coeffLame1,coeffLame2), //le dernier
+                                   _expr= timeSteppingScaling*inner( dFS, grad(v) ),
                                    _geomap=this->geomap() );
                 }
-                else
+            }
+            // else if ( M_modelName == "Elasticity-Large-Deformation" )
+            // {
+            //     if (!BuildCstPart)
+            //         bilinearForm_PatternCoupled +=
+            //             integrate (_range=range,
+            //                        _expr= timeSteppingScaling*inner( dS, grad(v) ),
+            //                        _geomap=this->geomap() );
+            // }
+            else if (  physicSolidData->equation() == "Elasticity" )
+            {
+                if (BuildCstPart)
                 {
-                    J->close();
-                    double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
-                    if ( this->massMatrixLumped()->size1() == J->size1() )
-                        J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
-                    else
+                    auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
+                    auto lameSecondExpr = expr( matProperties.property( "Lame-second-parameter" ).exprScalar(), se );
+                    auto dS_elastic = lameFirstExpr*trace(dE_elastic)*Id + 2*lameSecondExpr*dE_elastic;
+                    bilinearForm_PatternCoupled +=
+                        integrate (_range=range,
+                                   _expr= timeSteppingScaling*inner( dS_elastic, grad(v) ),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            double timeElapsedBis = this->timerTool("Solve").stop();
+            this->log("SolidMechanics","updateJacobian",
+                      "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
+
+            //--------------------------------------------------------------------------------------------------//
+            // discretisation acceleration term
+            if ( !this->isStationary() )
+            {
+                auto const& densityProp = this->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr(), se );
+
+                if ( M_timeStepping == "Newmark" )
+                {
+                    if ( BuildCstPart )
                     {
-                        auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
-                        auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
-                        uAddDiagJ = *M_vecDiagMassMatrixLumped;
-                        uAddDiagJ.scale( thecoeff );
-                        J->addDiagonal( vecAddDiagJ );
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            bilinearForm_PatternDefault +=
+                                integrate( _range=range,
+                                           _expr= M_timeStepNewmark->polyDerivCoefficient()*densityExpr*inner( idt(u),id(v) ),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            J->close();
+                            double thecoeff = M_timeStepNewmark->polyDerivCoefficient();
+                            if ( this->massMatrixLumped()->size1() == J->size1() )
+                                J->addMatrix( thecoeff, this->massMatrixLumped(), Feel::SUBSET_NONZERO_PATTERN );
+                            else
+                            {
+                                auto vecAddDiagJ = this->backend()->newVector( J->mapRowPtr() );
+                                auto uAddDiagJ = M_XhDisplacement->element( vecAddDiagJ, rowStartInVector );
+                                uAddDiagJ = *M_vecDiagMassMatrixLumped;
+                                uAddDiagJ.scale( thecoeff );
+                                J->addDiagonal( vecAddDiagJ );
+                            }
+                        }
                     }
-                }
-            }
-        } // Newmark
-        else // bdf
-        {
-            if ( BuildCstPart )
-            {
-                CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
-                size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
-
-                if ( !this->useMassMatrixLumped() )
+                } // Newmark
+                else // bdf
                 {
-                    form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
-                           _rowstart=rowStartInMatrix,
-                           _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
-                                   _geomap=this->geomap() );
-                }
-                else
-                {
-                    double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
-                    for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
-                        J->add( J->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
-                                J->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
-                                thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
+                    if ( BuildCstPart )
+                    {
+                        CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+                        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
 
-                }
-                form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
-                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
-                       _colstart=colStartInMatrix ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(rho)*inner(idt(u),id(v)),
-                               _geomap=this->geomap() );
-                form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
-                       _rowstart=rowStartInMatrix+startBlockIndexVelocity,
-                       _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= -timeSteppingScaling*idv(rho)*inner(idt(u),id(v)),
-                               _geomap=this->geomap() );
-            }
-        } // BDF
-    }
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                                   _rowstart=rowStartInMatrix,
+                                   _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                                integrate( _range=range,
+                                           _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*densityExpr*inner(idt(u),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            double thecoeff = M_timeStepBdfVelocity->polyDerivCoefficient(0);
+                            for ( size_type i=0;i<M_XhDisplacement->nLocalDofWithoutGhost();++i)
+                                J->add( J->mapRowPtr()->dofIdToContainerId(rowStartInMatrix)[i],
+                                        J->mapColPtr()->dofIdToContainerId(rowStartInMatrix+startBlockIndexVelocity)[i],
+                                        thecoeff*M_vecDiagMassMatrixLumped->operator()(i) );
+
+                        }
+                        form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                               _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                               _colstart=colStartInMatrix ) +=
+                            integrate( _range=range,
+                                       _expr= M_timeStepBdfDisplacement->polyDerivCoefficient(0)*densityExpr*inner(idt(u),id(v)),
+                                       _geomap=this->geomap() );
+                        form2( _test=M_XhDisplacement, _trial=M_XhDisplacement, _matrix=J,
+                               _rowstart=rowStartInMatrix+startBlockIndexVelocity,
+                               _colstart=colStartInMatrix+startBlockIndexVelocity ) +=
+                            integrate( _range=range,
+                                       _expr= -timeSteppingScaling*densityExpr*inner(idt(u),id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                } // BDF
+            } // if ( !this->isStationary() )
+
+        } //matName
+    } // physics
+
     //--------------------------------------------------------------------------------------------------//
     // peusdo transient continuation
     if ( !BuildCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )

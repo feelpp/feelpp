@@ -46,6 +46,7 @@
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
+#include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 #include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
@@ -57,6 +58,7 @@ namespace FeelModels
 
 template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
 class SolidMechanics : public ModelNumerical,
+                       public ModelPhysics<ConvexType::nDim>,
                        public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
@@ -171,6 +173,10 @@ public:
     // mechanical properties desc
     typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
     typedef std::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
+
+    // materials properties
+    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     //___________________________________________________________________________________//
     // trace mesh
     typedef typename mesh_type::trace_mesh_type trace_mesh_type;
@@ -319,13 +325,13 @@ private :
     void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
-    void createWorldsComm() override;
 
     void initFunctionSpaces();
     void initFunctionSpaces1dReduced();
 
     void initMesh();
     void initMesh1dReduced();
+    void initMaterialProperties();
     void createExporters();
     void createExporters1dReduced();
 
@@ -358,6 +364,11 @@ public :
 
     void setModelName( std::string const& type );
     void setSolverName( std::string const& type );
+
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
     mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
@@ -539,9 +550,9 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -695,6 +706,10 @@ private :
 
     //model parameters
     mechanicalproperties_ptrtype M_mechanicalProperties;
+
+    // physical parameter
+    materialsproperties_ptrtype M_materialsProperties;
+
 
     // boundary conditions
     map_vector_field<nDim,1,2> M_bcDirichlet;

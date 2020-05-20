@@ -25,6 +25,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelPhysics<nDim>( "solid" ),
     M_mechanicalProperties( new mechanicalproperties_type( prefix ) )
 {
     this->log("SolidMechanics","constructor", "start" );
@@ -44,9 +45,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
     //-----------------------------------------------------------------------------//
     // option in cfg files
     this->loadParameterFromOptionsVm();
-    //-----------------------------------------------------------------------------//
-    // set of worldComm for the function spaces
-    this->createWorldsComm();
     //-----------------------------------------------------------------------------//
     this->log("SolidMechanics","constructor", "finish" );
 }
@@ -145,61 +143,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     this->log("SolidMechanics","loadParameterFromOptionsVm", "finish" );
 }
 
-//---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createWorldsComm()
-{
-    this->log("SolidMechanics","createWorldsComm", "start" );
-
-    if (this->worldComm().localSize()==this->worldComm().globalSize())
-    {
-        auto vecWorldComm{ makeWorldsComm(space_displacement_type::nSpaces,this->worldCommPtr())};
-        auto vecLocalWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
-        this->setWorldsComm(vecWorldComm);
-        this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
-    }
-    else
-    {
-#if 0
-        // manage world comm : WARNING only true without the lagrange multiplier
-        const int DisplacementWorld=0;
-        const int PressureWorld=1;
-        int CurrentWorld=0;
-        if (this->worldComm().globalRank() < this->worldComm().globalSize()/2 )
-            CurrentWorld=DisplacementWorld;
-        else
-            CurrentWorld=PressureWorld;
-
-        std::vector<WorldComm> vecWorldComm(2);
-        std::vector<WorldComm> vecLocalWorldComm(1);
-        if (this->worldComm().globalSize()>1)
-        {
-            vecWorldComm[0]=this->worldComm().subWorldComm(DisplacementWorld);
-            vecWorldComm[1]=this->worldComm().subWorldComm(PressureWorld);
-            vecLocalWorldComm[0]=this->worldComm().subWorldComm(CurrentWorld);
-        }
-        else
-        {
-            vecWorldComm[0]=WorldComm();
-            vecWorldComm[1]=WorldComm();
-            vecLocalWorldComm[0]=WorldComm();
-        }
-        this->setWorldsComm(vecWorldComm);
-        this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
-#else
-        // non composite case
-        worldscomm_ptr_t vecWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
-        worldscomm_ptr_t vecLocalWorldComm{ makeWorldsComm(1,this->worldCommPtr()) };
-        this->setWorldsComm(vecWorldComm);
-        this->setLocalNonCompositeWorldsComm(vecLocalWorldComm);
-#endif
-
-    }
-
-    this->log("SolidMechanics","createWorldsComm", "finish" );
-}
 
 //---------------------------------------------------------------------------------------------------//
 
@@ -349,6 +293,31 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh1dReduced()
     this->log("SolidMechanics","initMesh1dReduced", "finish" );
 } // createMesh1dReduced
 
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
+{
+    if ( this->is1dReducedModel() )
+    {
+        //this->initFunctionSpaces1dReduced();
+        return;
+    }
+
+    this->log("SolidMechanics","initMaterialProperties", "start" );
+    this->timerTool("Constructor").start();
+
+    if ( !M_materialsProperties )
+    {
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
+        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+    }
+
+    double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
+    this->log("SolidMechanics","initMaterialProperties",(boost::format("finish in %1% s")%tElpased).str() );
+}
 
 //---------------------------------------------------------------------------------------------------//
 //---------------------------------------------------------------------------------------------------//
@@ -678,8 +647,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
             this->setSolverName( "Newton" );
     }
 
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
     if ( !M_mesh && !M_mesh_1dReduced )
         this->initMesh();
+
+    this->initMaterialProperties();
 
     this->initFunctionSpaces();
 

@@ -138,6 +138,29 @@ private :
 };
 
 template <uint16_type Dim>
+class ModelPhysicSolid : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+public :
+    ModelPhysicSolid( std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicSolid( ModelPhysicSolid const& ) = default;
+    ModelPhysicSolid( ModelPhysicSolid && ) = default;
+
+    std::string const& equation() const { return M_equation; }
+    void setEquation( std::string const& eq );
+
+    std::string const& materialModel() const { return M_materialModel; }
+    std::string const& formulation() const { return M_formulation; }
+    std::string const& decouplingEnergyVolumicLaw() const { return M_decouplingEnergyVolumicLaw; }
+    std::string const& compressibleNeoHookeanVariantName() const { return M_compressibleNeoHookeanVariantName; }
+
+    bool useDisplacementPressureFormulation() const { return M_formulation == "displacement-pressure"; }
+private :
+    std::string M_equation, M_materialModel, M_formulation;
+    std::string M_decouplingEnergyVolumicLaw, M_compressibleNeoHookeanVariantName;
+};
+
+template <uint16_type Dim>
 class ModelPhysics
 {
 public :

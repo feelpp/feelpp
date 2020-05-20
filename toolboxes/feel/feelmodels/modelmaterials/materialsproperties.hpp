@@ -209,6 +209,12 @@ public :
 
                 for ( auto const& [propSymbol,propExpr] : mat.properties() )
                 {
+                    std::string propName = propSymbol;
+                    auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
+                    if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
+                        propName = itFindSymbolInDesc->second;
+                    this->addProperty( matProperties, propName, propExpr );
+#if 0
                     auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
                     if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
                     {
@@ -249,6 +255,7 @@ public :
                                             }
                                         });
                     }
+#endif
                 }
 
                 // TODO : move in heat toolbox
@@ -262,6 +269,44 @@ public :
                     M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
                 }
 
+                // update Lame's parameters and bulk modulus if required
+                bool hasLameFirstParameterInPhysicDesc = M_materialPropertyPhysicDescription.find( "Lame-first-parameter" ) != M_materialPropertyPhysicDescription.end();
+                bool hasLameSecondParameterInPhysicDesc = M_materialPropertyPhysicDescription.find( "Lame-second-parameter" ) != M_materialPropertyPhysicDescription.end();
+                bool hasBulkModulusInPhysicDesc = M_materialPropertyPhysicDescription.find( "bulk-modulus" ) != M_materialPropertyPhysicDescription.end();
+                auto itFindYoungModulusInPhysicDesc = M_materialPropertyPhysicDescription.find( "Young-modulus" );
+                auto itFindPoissonRatioInPhysicDesc = M_materialPropertyPhysicDescription.find( "Poisson-ratio" );
+                bool hasYoungModulusInPhysicDesc = itFindYoungModulusInPhysicDesc != M_materialPropertyPhysicDescription.end();
+                bool hasPoissonRatioInPhysicDesc = itFindPoissonRatioInPhysicDesc != M_materialPropertyPhysicDescription.end();
+                if ( hasLameFirstParameterInPhysicDesc && hasYoungModulusInPhysicDesc && hasPoissonRatioInPhysicDesc &&
+                     !matProperties.has( "Lame-first-parameter" ) && matProperties.has( "Young-modulus" ) && matProperties.has( "Poisson-ratio" ) )
+                {
+                    std::string const& YoungModulusSymb = itFindYoungModulusInPhysicDesc->second.symbol();
+                    std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
+                    std::string lame1ExprStr = (boost::format("%1%*%2%/((1+%2%)*(1-2*%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
+                    ModelExpression lame1Expr;
+                    lame1Expr.setExpr( lame1ExprStr,mesh->worldComm(),M_exprRepository);
+                    this->addProperty( matProperties, "Lame-first-parameter", lame1Expr, true );
+                }
+                if ( hasLameSecondParameterInPhysicDesc && hasYoungModulusInPhysicDesc && hasPoissonRatioInPhysicDesc &&
+                     !matProperties.has( "Lame-second-parameter" ) && matProperties.has( "Young-modulus" ) && matProperties.has( "Poisson-ratio" ) )
+                {
+                    std::string const& YoungModulusSymb = itFindYoungModulusInPhysicDesc->second.symbol();
+                    std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
+                    std::string lame2ExprStr = (boost::format("%1%/(2*(1+%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
+                    ModelExpression lame2Expr;
+                    lame2Expr.setExpr( lame2ExprStr,mesh->worldComm(),M_exprRepository);
+                    this->addProperty( matProperties, "Lame-second-parameter", lame2Expr, true );
+                }
+                if ( hasBulkModulusInPhysicDesc && hasYoungModulusInPhysicDesc && hasPoissonRatioInPhysicDesc &&
+                     !matProperties.has( "bulk-modulus" ) && matProperties.has( "Young-modulus" ) && matProperties.has( "Poisson-ratio" ) )
+                {
+                    std::string const& YoungModulusSymb = itFindYoungModulusInPhysicDesc->second.symbol();
+                    std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
+                    std::string bulkModulusExprStr = (boost::format("%1%/(3*(1-2*%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
+                    ModelExpression bulkModulusExpr;
+                    bulkModulusExpr.setExpr( bulkModulusExprStr,mesh->worldComm(),M_exprRepository);
+                    this->addProperty( matProperties, "bulk-modulus", bulkModulusExpr, true );
+                }
 
                 // rename symbols in current material : <propName> -> materials_<matName>_<propName>
                 std::string prefix_symbol = "materials_";
@@ -368,6 +413,47 @@ public :
     //bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> exprSelectorByMeshElementMapping() const { return M_exprSelectorByMeshElementMapping; }
+
+
+    void addProperty( MaterialProperties<mesh_type> & matProperties, std::string const& propName, ModelExpression const& propExpr, bool onlyInPhysicDescription = false )
+        {
+            auto itFindPropPhysicDesc = M_materialPropertyPhysicDescription.find( propName );
+            if ( itFindPropPhysicDesc != M_materialPropertyPhysicDescription.end() )
+            {
+                auto const& desc = itFindPropPhysicDesc->second;
+                bool findProp = false;
+                for ( auto [nComp1,nComp2] : desc.shapes() )
+                {
+                    if ( propExpr.hasExpr(nComp1,nComp2) )
+                    {
+                        matProperties.add( propName/*symbol*/, propExpr );
+                        findProp = true;
+                        break;
+                    }
+                }
+                CHECK( findProp ) << "shape of the material property " << propName << " is not compatible with the physic";
+                M_materialPropertyDescription.try_emplace( propName,desc );
+            }
+            else if ( !onlyInPhysicDescription )
+            {
+                std::string const& propSymbol = propName;
+                hana::for_each( ModelExpression::expr_shapes, [this,&propName,&propExpr,&propSymbol,&matProperties]( auto const& e_ij )
+                                {
+                                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                    if ( propExpr.template hasExpr<ni,nj>() )
+                                    {
+                                        matProperties.add( propName, propExpr );
+                                        auto propShape = MaterialPropertyDescription::shape(ni,nj);
+                                        auto itFindPropDesc = M_materialPropertyDescription.find( propName);
+                                        if( itFindPropDesc == M_materialPropertyDescription.end() )
+                                            M_materialPropertyDescription.emplace( propName, MaterialPropertyDescription( propSymbol, { propShape } ) );
+                                        else
+                                            itFindPropDesc->second.add( propShape );
+                                    }
+                                });
+            }
+        }
 
     MaterialProperties<mesh_type> const&
     materialProperties( std::string const& matName ) const

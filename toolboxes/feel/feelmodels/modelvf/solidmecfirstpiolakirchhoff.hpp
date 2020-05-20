@@ -38,6 +38,8 @@ namespace FeelModels
 {
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
+    struct tensorFirstPiolaKirchhoffBase;
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
     struct tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic;
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
     struct tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985;
@@ -53,50 +55,41 @@ namespace FeelModels
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::gmc_type gmc_type;
 
-        typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
-        static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
-        typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_classic_type;
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_simo1985_type;
 
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& theexpr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( geom,fev,feu ),
-            M_expr( expr ),
-            M_locEvalBulkModulus( M_expr.mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
-            M_locRes( expr.displacement().gradExtents(*this->gmc() ) )
+            M_expr( theexpr ),
+            M_locRes( M_expr.displacement().gradExtents(*this->gmc() ) )
             {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& theexpr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( geom,fev ),
-            M_expr( expr ),
-            M_locEvalBulkModulus( M_expr.mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
+            M_expr( theexpr ),
             M_locRes( M_expr.displacement().gradExtents(*this->gmc() ) )
             {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& expr, Geo_t const& geom )
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartBase( expr_type const& theexpr, Geo_t const& geom )
             :
             super_type( geom ),
-            M_expr( expr ),
-            M_locEvalBulkModulus( M_expr.mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
+            M_expr( theexpr ),
             M_locRes( M_expr.displacement().gradExtents(*this->gmc() ) )
             {}
+
+        std::set<std::string> propertiesUsed() const { return std::set<std::string>({ "bulk-modulus" }); }
 
         void update( Geo_t const& geom ) { CHECK( false ) << "TODO"; }
         void update( Geo_t const& geom, uint16_type face ) { CHECK( false ) << "TODO"; }
-        virtual
-        void updateImpl( ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
-        {
-            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            M_expr.mechanicalPropertiesDesc().fieldBulkModulus().id( ctxMechProp, M_locEvalBulkModulus );
-        }
+        virtual void updateImpl( tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK ) = 0;
 
         using super_type::evalijq; // fix clang warning
         using ret_type = Eigen::Map<typename super_type::matrix_shape_type const>;
-        
+
         virtual
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q,
+                 tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK,
                  const value_type detFv, const value_type ddetF,
                  typename super_type::loc_matrix_tensor2_type const& dFmt ) const = 0;
 
@@ -143,148 +136,6 @@ namespace FeelModels
     protected :
         typename super_type::array_scalar_type M_locEvalBulkModulus;
         typename super_type::array_shape_type M_locRes;
-
-    };
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
-    struct tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic : public tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType >
-    {
-        typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType > super_type;
-        typedef ExprType expr_type;
-        typedef typename super_type::value_type value_type;
-
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            super_type( expr,geom,fev,feu ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
-            :
-            super_type( expr,geom,fev ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr, Geo_t const& geom )
-            :
-            super_type( expr,geom ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-            {}
-
-        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
-        {
-            super_type::updateImpl( ctxMechProp, locGradEval );
-            updateImpl( locGradEval );
-        }
-        void updateImpl( typename super_type::array_matrix_tensor2_type const& locGradEval )
-        {
-            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-            {
-                // F*\kappa*(J-1)*J*C^{-1} = \kappa*(J-1)*J*F^{-T}
-                const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
-                auto const& gradDisplacementEval = locGradEval[q];
-                auto Id = super_type::loc_matrix_tensor2_type::Identity();
-                auto F = Id + gradDisplacementEval;
-                const value_type detFv = F.determinant();
-
-                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
-                {
-                    auto InvFvmt = F.inverse().transpose();
-                    this->M_locRes[q] = bulkModulus*detFv*(detFv-1)*InvFvmt;
-                }
-                else
-                {
-                    M_locEvalFmt[q] = F.inverse().transpose();
-                }
-            }
-        }
-        using super_type::evalijq; // fix clang warning
-        using ret_type = typename super_type::ret_type;
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q,
-                 const value_type detFv, const value_type ddetF,
-                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const
-        {
-            const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
-            this->locMatrixShape() = bulkModulus*(detFv*(detFv-1)*dFmt + ddetF*(2*detFv-1)*M_locEvalFmt[q]);
-            return ret_type(this->locMatrixShape().data());
-        }
-
-    private :
-        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
-    };
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
-    struct tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985 : public tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType >
-    {
-        typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType > super_type;
-        typedef ExprType expr_type;
-        typedef typename super_type::value_type value_type;
-        using ret_type = typename super_type::ret_type;
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            super_type( expr,geom,fev,feu ),
-            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
-            :
-            super_type( expr,geom,fev ),
-            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
-        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr, Geo_t const& geom )
-            :
-            super_type( expr,geom ),
-            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
-            {}
-
-        void updateImpl( typename super_type::ctx_mechprop_scalar_type const& ctxMechProp, typename super_type::array_matrix_tensor2_type const& locGradEval )
-        {
-            super_type::updateImpl( ctxMechProp, locGradEval );
-            updateImpl( locGradEval );
-        }
-        void updateImpl( typename super_type::array_matrix_tensor2_type const& locGradEval )
-        {
-            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
-            {
-                // F*\kappa*ln(J)*C^{-1} = \kappa*ln(J)*F^{-T}
-                const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
-                auto const& gradDisplacementEval = locGradEval[q];
-                auto Id = super_type::loc_matrix_tensor2_type::Identity();
-                auto F = Id + gradDisplacementEval;
-                const value_type detFv = F.determinant();
-
-                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
-                {
-                    auto InvFvmt = F.inverse().transpose();
-                    this->M_locRes[q] = bulkModulus*math::log(detFv)*InvFvmt;
-                }
-                else
-                {
-                    M_locEvalFmt[q] = F.inverse().transpose();
-                    M_locEvalPrecomputeLogDetF[q] = bulkModulus*math::log(detFv);
-                }
-            }
-        }
-        using super_type::evalijq; // fix clang warning
-        ret_type 
-        evalijq( uint16_type i, uint16_type j, uint16_type q,
-                 const value_type detFv, const value_type ddetF,
-                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const
-        {
-            typename super_type::matrix_shape_type& locMat = this->locMatrixShape();
-            const value_type bulkModulus = this->M_locEvalBulkModulus[q](0,0);
-            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q];
-            locMat = precomputeLog*dFmt;
-            const value_type factorOther2 = bulkModulus*ddetF/detFv;
-            typename super_type::loc_matrix_tensor2_type const& Fmt = M_locEvalFmt[q];
-            locMat += factorOther2*Fmt;
-            return ret_type(this->locMatrixShape().data());
-        }
-
-    private :
-        typename super_type::array_value_type M_locEvalPrecomputeLogDetF;
-        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
     };
 
 
@@ -309,23 +160,27 @@ namespace FeelModels
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         typedef typename super_type::array_shape_type array_shape_type;
         using ret_type = Eigen::Map<const matrix_shape_type>;
-        
+
         typedef typename super_type::loc_tensor2_type loc_tensor2_type;
         typedef typename super_type::array_tensor2_type array_tensor2_type;
         typedef typename super_type::loc_matrix_tensor2_type loc_matrix_tensor2_type;
         typedef typename super_type::array_matrix_tensor2_type array_matrix_tensor2_type;
 
-        tensorFirstPiolaKirchhoffBase( expr_type const& expr,
+        using expr_mat_properity_scalar_type = std::decay_t<decltype(expr( typename ModelExpression::expr_scalar_type{},typename ExprType::symbols_expr_type{} ) )>;
+        using tensor_mat_properity_scalar_type = typename expr_mat_properity_scalar_type::template tensor<Geo_t,Basis_i_t,Basis_j_t>;
+
+        tensorFirstPiolaKirchhoffBase( expr_type const& theexpr,
                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( geom,fev,feu ),
-            M_expr( expr ),
-            M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_expr( theexpr ),
+            M_pcDisplacement( new pc_displacement_type( theexpr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
+            M_ctxDisplacement( new ctx_displacement_type( theexpr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
+            M_locRes( theexpr.displacement().gradExtents(*this->gmc()) ),
+            M_locGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) ),
+            M_locMatrixGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) )
         {}
+
         tensorFirstPiolaKirchhoffBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( geom,fev ),
@@ -348,11 +203,12 @@ namespace FeelModels
             M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
 
-
         expr_type const& expr() const { return M_expr; }
 
         array_matrix_tensor2_type const& locGradDisplacement() const { return M_locMatrixGradDisplacement; }
         loc_matrix_tensor2_type const& locGradDisplacement( uint16_type q ) const { return M_locMatrixGradDisplacement[q]; }
+
+        std::vector<value_type> const& localAssemblyBulkModulus() const { return M_localAssemblyBulkModulus; }
 
         array_shape_type & locRes() { return M_locRes; }
         array_shape_type const& locRes() const { return M_locRes; }
@@ -367,11 +223,37 @@ namespace FeelModels
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
             std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
             this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
-            for ( uint16_type q=0;q<this->gmc()->nPoints();++q )
+
+            uint16_type nPt = this->gmc()->nPoints();
+
+            if ( M_tensorLameFirst )
+            {
+                M_tensorLameFirst->update( geom );
+                M_localAssemblyLameFirst.resize( nPt );
+            }
+            if ( M_tensorLameSecond )
+            {
+                M_tensorLameSecond->update( geom );
+                M_localAssemblyLameSecond.resize( nPt );
+            }
+            if ( M_tensorBulkModulus )
+            {
+                M_tensorBulkModulus->update( geom );
+                M_localAssemblyBulkModulus.resize( nPt );
+            }
+
+            for ( uint16_type q=0;q<nPt;++q )
             {
                 Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
                     gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
                 M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+
+                if ( M_tensorLameFirst )
+                    M_localAssemblyLameFirst[q] = M_tensorLameFirst->evalq(0,0,q);
+                if ( M_tensorLameSecond )
+                    M_localAssemblyLameSecond[q] = M_tensorLameSecond->evalq(0,0,q);
+                if ( M_tensorBulkModulus )
+                    M_localAssemblyBulkModulus[q] =  M_tensorBulkModulus->evalq(0,0,q);
             }
         }
         void update( Geo_t const& geom, uint16_type face )
@@ -382,11 +264,37 @@ namespace FeelModels
             M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
             std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
             this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
-            for ( uint16_type q=0;q<this->gmc()->nPoints();++q )
+
+            uint16_type nPt = this->gmc()->nPoints();
+
+            if ( M_tensorLameFirst )
+            {
+                M_tensorLameFirst->update( geom,face );
+                M_localAssemblyLameFirst.resize( nPt );
+            }
+            if ( M_tensorLameSecond )
+            {
+                M_tensorLameSecond->update( geom,face );
+                M_localAssemblyLameSecond.resize( nPt );
+            }
+            if ( M_tensorBulkModulus )
+            {
+                M_tensorBulkModulus->update( geom,face );
+                M_localAssemblyBulkModulus.resize( nPt );
+            }
+
+            for ( uint16_type q=0;q<nPt;++q )
             {
                 Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
                     gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
                 M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+
+                if ( M_tensorLameFirst )
+                    M_localAssemblyLameFirst[q] = M_tensorLameFirst->evalq(0,0,q);
+                if ( M_tensorLameSecond )
+                    M_localAssemblyLameSecond[q] = M_tensorLameSecond->evalq(0,0,q);
+                if ( M_tensorBulkModulus )
+                    M_localAssemblyBulkModulus[q] =  M_tensorBulkModulus->evalq(0,0,q);
             }
         }
 
@@ -428,6 +336,27 @@ namespace FeelModels
             return ret_type(M_locRes[q].data());
         }
 
+    protected :
+        template<typename... TheArgsType>
+        void initSubTensor( std::set<std::string> const& subexprUsed, const TheArgsType&... theInitArgs )
+            {
+                if ( subexprUsed.find( "Lame-first-parameter" ) != subexprUsed.end() )
+                {
+                    M_exprLameFirst.emplace( Feel::vf::expr( M_expr.matProperties().property( "Lame-first-parameter" ).exprScalar(), M_expr.symbolsExpr() ) );
+                    M_tensorLameFirst.emplace( *M_exprLameFirst, theInitArgs... );
+                }
+                if ( subexprUsed.find( "Lame-second-parameter" ) != subexprUsed.end() )
+                {
+                    M_exprLameSecond.emplace( Feel::vf::expr( M_expr.matProperties().property( "Lame-second-parameter" ).exprScalar(), M_expr.symbolsExpr() ) );
+                    M_tensorLameSecond.emplace( *M_exprLameSecond, theInitArgs... );
+                }
+                if ( subexprUsed.find( "bulk-modulus" ) != subexprUsed.end() )
+                {
+                    M_exprBulkModulus.emplace( Feel::vf::expr( M_expr.matProperties().property( "bulk-modulus" ).exprScalar(), M_expr.symbolsExpr() ) );
+                    M_tensorBulkModulus.emplace( *M_exprBulkModulus, theInitArgs... );
+                }
+            }
+
     private :
         expr_type const& M_expr;
 
@@ -437,7 +366,151 @@ namespace FeelModels
         array_shape_type M_locRes;
         array_tensor2_type M_locGradDisplacement;
         typename super_type::array_matrix_tensor2_type M_locMatrixGradDisplacement;
+    protected :
+        std::optional<expr_mat_properity_scalar_type> M_exprLameFirst, M_exprLameSecond, M_exprBulkModulus;
+        std::optional<tensor_mat_properity_scalar_type> M_tensorLameFirst, M_tensorLameSecond, M_tensorBulkModulus;
+        std::vector<value_type> M_localAssemblyLameFirst, M_localAssemblyLameSecond, M_localAssemblyBulkModulus;
 
+    };
+
+
+
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
+    struct tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic : public tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType >
+    {
+        typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType > super_type;
+        typedef ExprType expr_type;
+        typedef typename super_type::value_type value_type;
+
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            super_type( expr,geom,fev,feu ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+        {}
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            super_type( expr,geom,fev ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+        {}
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic( expr_type const& expr, Geo_t const& geom )
+            :
+            super_type( expr,geom ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+            {}
+
+        void updateImpl( tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK ) override
+        {
+            auto const& locGradEval = tFPK.locGradDisplacement();
+            auto const& locBulkModulus = tFPK.localAssemblyBulkModulus();
+            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+            {
+                // F*\kappa*(J-1)*J*C^{-1} = \kappa*(J-1)*J*F^{-T}
+                const value_type bulkModulus = locBulkModulus[q];
+                auto const& gradDisplacementEval = locGradEval[q];
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
+                auto F = Id + gradDisplacementEval;
+                const value_type detFv = F.determinant();
+
+                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                {
+                    auto InvFvmt = F.inverse().transpose();
+                    this->M_locRes[q] = bulkModulus*detFv*(detFv-1)*InvFvmt;
+                }
+                else
+                {
+                    M_locEvalFmt[q] = F.inverse().transpose();
+                }
+            }
+        }
+        using super_type::evalijq; // fix clang warning
+        using ret_type = typename super_type::ret_type;
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q,
+                 tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK,
+                 const value_type detFv, const value_type ddetF,
+                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const override
+        {
+            const value_type bulkModulus = tFPK.localAssemblyBulkModulus()[q];
+            this->locMatrixShape() = bulkModulus*(detFv*(detFv-1)*dFmt + ddetF*(2*detFv-1)*M_locEvalFmt[q]);
+            return ret_type(this->locMatrixShape().data());
+        }
+
+    private :
+        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
+    };
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType>
+    struct tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985 : public tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType >
+    {
+        typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType > super_type;
+        typedef ExprType expr_type;
+        typedef typename super_type::value_type value_type;
+        using ret_type = typename super_type::ret_type;
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            super_type( expr,geom,fev,feu ),
+            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+        {}
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            super_type( expr,geom,fev ),
+            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+        {}
+        tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985( expr_type const& expr, Geo_t const& geom )
+            :
+            super_type( expr,geom ),
+            M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_locEvalFmt( boost::extents[ this->gmc()->xRefs().size2()] )
+            {}
+
+        void updateImpl( tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK ) override
+        {
+            auto const& locGradEval = tFPK.locGradDisplacement();
+            auto const& locBulkModulus = tFPK.localAssemblyBulkModulus();
+            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+            {
+                // F*\kappa*ln(J)*C^{-1} = \kappa*ln(J)*F^{-T}
+                const value_type bulkModulus = locBulkModulus[q];
+                auto const& gradDisplacementEval = locGradEval[q];
+                auto Id = super_type::loc_matrix_tensor2_type::Identity();
+                auto F = Id + gradDisplacementEval;
+                const value_type detFv = F.determinant();
+
+                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                {
+                    auto InvFvmt = F.inverse().transpose();
+                    this->M_locRes[q] = bulkModulus*math::log(detFv)*InvFvmt;
+                }
+                else
+                {
+                    M_locEvalFmt[q] = F.inverse().transpose();
+                    M_locEvalPrecomputeLogDetF[q] = bulkModulus*math::log(detFv);
+                }
+            }
+        }
+        using super_type::evalijq; // fix clang warning
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q,
+                 tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> const& tFPK,
+                 const value_type detFv, const value_type ddetF,
+                 typename super_type::loc_matrix_tensor2_type const& dFmt ) const override
+        {
+            typename super_type::matrix_shape_type& locMat = this->locMatrixShape();
+            const value_type bulkModulus = tFPK.localAssemblyBulkModulus()[q];
+            const value_type precomputeLog = M_locEvalPrecomputeLogDetF[q];
+            locMat = precomputeLog*dFmt;
+            const value_type factorOther2 = bulkModulus*ddetF/detFv;
+            typename super_type::loc_matrix_tensor2_type const& Fmt = M_locEvalFmt[q];
+            locMat += factorOther2*Fmt;
+            return ret_type(this->locMatrixShape().data());
+        }
+
+    private :
+        typename super_type::array_value_type M_locEvalPrecomputeLogDetF;
+        typename super_type::array_matrix_tensor2_type M_locEvalFmt;
     };
 
     /**
@@ -460,65 +533,61 @@ namespace FeelModels
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
 
-        // fe material scalar context
-        typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
-        static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
-        typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
-        typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
         using ret_type = Eigen::Map<const Eigen::Matrix<value_type, super_type::shape::M, super_type::shape::N>>;
-        
-        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& expr,
-                                                  Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            super_type( expr,geom,fev,feu ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame1( this->expr().mechanicalPropertiesDesc().fieldCoeffLame1().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) )
-        {}
-        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
-            :
-            super_type( expr,geom,fev ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame1( this->expr().mechanicalPropertiesDesc().fieldCoeffLame1().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) )
-        {}
-        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& expr,Geo_t const& geom )
-            :
-            super_type( expr,geom ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame1( this->expr().mechanicalPropertiesDesc().fieldCoeffLame1().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) )
-        {}
 
-        void update( Geo_t const& geom )
+        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& _expr,
+                                                            Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            super_type( _expr,geom,fev,feu )
+        {
+            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+            if ( !useDispPresForm )
+                subexprUsed.insert( "Lame-first-parameter" );
+            this->initSubTensor(subexprUsed,geom,fev,feu);
+        }
+        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& _expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            super_type( _expr,geom,fev )
+        {
+            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+            if ( !useDispPresForm )
+                subexprUsed.insert( "Lame-first-parameter" );
+            this->initSubTensor(subexprUsed,geom,fev);
+        }
+        tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& _expr,Geo_t const& geom )
+            :
+            super_type( _expr,geom )
+        {
+            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+            if ( !useDispPresForm )
+                subexprUsed.insert( "Lame-first-parameter" );
+            this->initSubTensor(subexprUsed,geom);
+        }
+
+        void update( Geo_t const& geom ) override
         {
             super_type::update( geom );
             updateImpl( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::update( geom,face );
             updateImpl( geom );
         }
+
+        // using super_type::evalijq; // fix clang warning
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+            {
+                return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
+            }
+
+    private :
         void updateImpl( Geo_t const& geom )
         {
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
-            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            if ( !useDispPresForm )
-            {
-                std::fill( M_locEvalFieldCoefflame1.data(), M_locEvalFieldCoefflame1.data()+M_locEvalFieldCoefflame1.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-                this->expr().mechanicalPropertiesDesc().fieldCoeffLame1().id( *M_ctxMechPropField, M_locEvalFieldCoefflame1 );
-            }
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
-
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
         void updateImpl( mpl::int_<2> /**/ )
@@ -539,14 +608,14 @@ namespace FeelModels
 
                 typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
 
-                if ( useDispPresForm )
+                if constexpr ( useDispPresForm )
                 {
-                    const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type S11 = 2*coefflame2*E11;
                     const value_type S12 = 2*coefflame2*E12;
                     const value_type S21 = 2*coefflame2*E21;
                     const value_type S22 = 2*coefflame2*E22;
-                    if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                     {
                         // F*S
                         theLocRes(0,0) = (1+du1vdx)*S11 + du1vdy*S21;
@@ -564,15 +633,15 @@ namespace FeelModels
                 }
                 else
                 {
-                    const value_type coefflame1 = M_locEvalFieldCoefflame1[q](0,0);
-                    const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                    const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type traceE = E11 + E22;
                     const value_type S11 = coefflame1*traceE + 2*coefflame2*E11;
                     const value_type S12 = 2*coefflame2*E12;
                     const value_type S21 = 2*coefflame2*E21;
                     const value_type S22 = coefflame1*traceE + 2*coefflame2*E22;
 
-                    if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                     {
                         // F*S
                         theLocRes(0,0) = (1+du1vdx)*S11 + du1vdy*S21;
@@ -615,9 +684,9 @@ namespace FeelModels
                 const value_type E33 = du3vdz + subtraceE3;
 
                 typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
-                if ( useDispPresForm )
+                if constexpr ( useDispPresForm )
                 {
-                    const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type S11 = 2*coefflame2*E11;
                     const value_type S12 = 2*coefflame2*E12;
                     const value_type S13 = 2*coefflame2*E13;
@@ -628,7 +697,7 @@ namespace FeelModels
                     const value_type S32 = 2*coefflame2*E32;
                     const value_type S33 = 2*coefflame2*E33;
 
-                    if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                     {
                         // F*S
                         theLocRes(0,0) = (1+du1vdx)*S11 + du1vdy*S21 + du1vdz*S31;
@@ -657,8 +726,8 @@ namespace FeelModels
                 }
                 else
                 {
-                    const value_type coefflame1 = M_locEvalFieldCoefflame1[q](0,0);
-                    const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                    const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type traceE = E11+E22+E33;
                     const value_type S11 = coefflame1*traceE + 2*coefflame2*E11;
                     const value_type S12 = 2*coefflame2*E12;
@@ -670,7 +739,7 @@ namespace FeelModels
                     const value_type S32 = 2*coefflame2*E32;
                     const value_type S33 = coefflame1*traceE + 2*coefflame2*E33;
 
-                    if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                    if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                     {
                         // F*S
                         theLocRes(0,0) = (1+du1vdx)*S11 + du1vdy*S21 + du1vdz*S31;
@@ -699,13 +768,7 @@ namespace FeelModels
                 }
             }
         }
-        using super_type::evalijq; // fix clang warning
 
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
-        {
-            return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
-        }
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
@@ -743,9 +806,9 @@ namespace FeelModels
             const value_type dE22 = du2tdy + du1vdy*du1tdy + du2vdy*du2tdy;
 
             typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
-            if ( useDispPresForm )
+            if constexpr ( useDispPresForm )
             {
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                 // auto dS = 2*idv(CoeffLame2)*dE;
                 const value_type dS11 = 2*coefflame2*dE11;
                 const value_type dS12 = 2*coefflame2*dE12;
@@ -766,8 +829,8 @@ namespace FeelModels
             }
             else
             {
-                const value_type coefflame1 = M_locEvalFieldCoefflame1[q](0,0);
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                 const value_type tracedE = dE11 + dE22;
 
                 // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
@@ -830,9 +893,9 @@ namespace FeelModels
             const value_type dE33 = du3tdz + du1vdz*du1tdz + du2vdz*du2tdz + du3vdz*du3tdz;
 
             typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
-            if ( useDispPresForm )
+            if constexpr ( useDispPresForm )
             {
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
                 // auto dS = 2*idv(CoeffLame2)*dE;
                 const value_type dS11 = 2*coefflame2*dE11;
@@ -869,8 +932,8 @@ namespace FeelModels
             }
             else
             {
-                const value_type coefflame1 = M_locEvalFieldCoefflame1[q](0,0);
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                 const value_type tracedE = dE11 + dE22 + dE33;
 
                 // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
@@ -908,11 +971,6 @@ namespace FeelModels
             }
             return ret_type(this->locMatrixShape().data());
         }
-    private :
-        pc_mechprop_scalar_ptrtype M_pcMechPropField;
-        ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
-
-        typename super_type::array_scalar_type M_locEvalFieldCoefflame1, M_locEvalFieldCoefflame2;
 
     }; // tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff
 
@@ -956,23 +1014,11 @@ namespace FeelModels
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
 
-        // fe mech prop context
-        typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
-        static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
-        typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
-        typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
-
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_type;
 
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),
-                                                              this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeDetF1( boost::extents[ this->gmc()->xRefs().size2()] ),
             //M_locEvalPrecomputeDetF2( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF3( boost::extents[ this->gmc()->xRefs().size2()] ),
@@ -980,16 +1026,11 @@ namespace FeelModels
             M_locEvalPrecomputeTraceC( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeTrialDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom,fev,feu );
+                this->updateForUse( geom, fev, feu );
             }
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),
-                                                              this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeDetF1( boost::extents[ this->gmc()->xRefs().size2()] ),
             //M_locEvalPrecomputeDetF2( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF3( boost::extents[ this->gmc()->xRefs().size2()] ),
@@ -997,16 +1038,11 @@ namespace FeelModels
             M_locEvalPrecomputeTraceC( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeTrialDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom,fev );
+                this->updateForUse( geom, fev );
             }
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible( expr_type const& expr,Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),
-                                                              this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeDetF1( boost::extents[ this->gmc()->xRefs().size2()] ),
             //M_locEvalPrecomputeDetF2( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF3( boost::extents[ this->gmc()->xRefs().size2()] ),
@@ -1014,31 +1050,35 @@ namespace FeelModels
             M_locEvalPrecomputeTraceC( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeTrialDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom );
+                this->updateForUse( geom );
             }
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
             super_type::update( geom );
             updateImpl( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::update( geom,face );
             updateImpl( geom );
         }
+
+        // using super_type::evalijq; // fix clang warning
+        using ret_type = typename super_type::ret_type;
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+        {
+            return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
+        }
+
+    private :
 #if 1
         void updateImpl( Geo_t const& geom )
         {
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update(this->gmc()->pc()->nodes() );
-            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
 
             if ( !useDispPresForm )
-                M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
+                M_tensorVolumicPart->updateImpl( *this );
 
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             //updateImpl( /*mpl::int_<expr_type::nRealDim>()*/ );
@@ -1099,7 +1139,7 @@ namespace FeelModels
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1);
@@ -1107,7 +1147,7 @@ namespace FeelModels
                 const value_type detFv = Fv11*Fv22-Fv12*Fv21;
                 const value_type traceCv = std::pow(Fv11,2) + std::pow(Fv21,2) + std::pow(Fv12,2) + std::pow(Fv22,2);
 
-                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                 {
                     const value_type scaleUsedWithInvFv = 1./detFv;
                     const value_type factorWithDetFv = coefflame2*std::pow(detFv,-2./2.);
@@ -1120,7 +1160,7 @@ namespace FeelModels
                     matLoc(1,0) = factorWithDetFv*(Fv21 + factorOther*Fv12);
                     matLoc(0,1) = factorWithDetFv*(Fv12 + factorOther*Fv21);
                     matLoc(1,1) = factorWithDetFv*(Fv22 - factorOther*Fv11);
-                    if ( !useDispPresForm )
+                    if constexpr ( !useDispPresForm )
                         matLoc += M_tensorVolumicPart->locRes(q);
                 }
                 else
@@ -1150,7 +1190,7 @@ namespace FeelModels
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 =    gradDisplacementEval(0,1), Fv13 =    gradDisplacementEval(0,2);
@@ -1186,7 +1226,7 @@ namespace FeelModels
                 const value_type InvFv32 = Fv12*Fv31-Fv11*Fv32;
                 const value_type InvFv33 = Fv11*Fv22-Fv12*Fv21;
 
-                if ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == ExprApplyType::EVAL )
                 {
 
                     //auto FSv_neohookean = idv(CoeffLame2)*pow(detFv,-2./3.)*( Fv - (1./3.)*traceCv*trans(InvFv) );
@@ -1204,7 +1244,7 @@ namespace FeelModels
                     matLoc(0,2) = factorWithDetFv*(Fv13 - factorOther*InvFv31);
                     matLoc(1,2) = factorWithDetFv*(Fv23 - factorOther*InvFv32);
                     matLoc(2,2) = factorWithDetFv*(Fv33 - factorOther*InvFv33);
-                    if ( !useDispPresForm )
+                    if constexpr ( !useDispPresForm )
                         matLoc += M_tensorVolumicPart->locRes(q);
                 }
                 else
@@ -1236,13 +1276,6 @@ namespace FeelModels
 
         }
 
-        using super_type::evalijq; // fix clang warning
-        using ret_type = typename super_type::ret_type;
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
-        {
-            return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
-        }
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
@@ -1309,13 +1342,13 @@ namespace FeelModels
             matLoc(1,0) += precomputeDetF3*( dF21 - (1./2.)*(-dtraceC*precomputeInvDetF*Fv12+traceCv*dFmt21) );
             matLoc(1,1) += precomputeDetF3*( dF22 - (1./2.)*(dtraceC*precomputeInvDetF*Fv11+traceCv*dFmt22) );
 #endif
-            if ( !useDispPresForm )
+            if constexpr ( !useDispPresForm )
             {
                 typename super_type::loc_matrix_tensor2_type dFmt;
                 dFmt(0,0) = dFmt11;dFmt(0,1) = dFmt12;
                 dFmt(1,0) = dFmt21;dFmt(1,1) = dFmt22;
                 const value_type detFv = 1./precomputeInvDetF;
-                matLoc += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
+                matLoc += M_tensorVolumicPart->evalijq( i,j,q, *this, detFv, ddetF, dFmt );
             }
             return ret_type(this->locMatrixShape().data());
         }
@@ -1444,23 +1477,33 @@ namespace FeelModels
             matLoc(2,1) += precomputeDetF3*( dF32 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv23+traceCv*dFmt32) );
             matLoc(2,2) += precomputeDetF3*( dF33 - (1./3.)*(dtraceC*precomputeInvDetF*InvFv33+traceCv*dFmt33) );
 #endif
-            if ( !useDispPresForm )
+            if constexpr ( !useDispPresForm )
             {
                 typename super_type::loc_matrix_tensor2_type dFmt;
                 dFmt(0,0) = dFmt11;dFmt(0,1) = dFmt12;dFmt(0,2) = dFmt13;
                 dFmt(1,0) = dFmt21;dFmt(1,1) = dFmt22;dFmt(1,2) = dFmt23;
                 dFmt(2,0) = dFmt31;dFmt(2,1) = dFmt32;dFmt(2,2) = dFmt33;
                 const value_type detFv = 1./precomputeInvDetF;
-                matLoc += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
+                matLoc += M_tensorVolumicPart->evalijq( i,j,q, *this, detFv, ddetF, dFmt );
             }
 
             return ret_type(this->locMatrixShape().data());
         }
-    private :
-        pc_mechprop_scalar_ptrtype M_pcMechPropField;
-        ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
 
-        typename super_type::array_scalar_type M_locEvalFieldCoefflame2;
+        template<typename... TheArgsType>
+        void updateForUse( const TheArgsType&... theInitArgs )
+            {
+                std::set<std::string> propUsed = { "Lame-second-parameter" };
+                if ( !useDispPresForm )
+                {
+                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().physicSolidData().decouplingEnergyVolumicLaw(),this->expr(),theInitArgs... );
+                    auto propToAdd = M_tensorVolumicPart->propertiesUsed();
+                    propUsed.insert( propToAdd.begin(), propToAdd.end() );
+                }
+                this->initSubTensor(propUsed,theInitArgs...);
+            }
+
+    private :
         typename super_type::array_value_type M_locEvalPrecomputeDetF1/*,M_locEvalPrecomputeDetF2*/,M_locEvalPrecomputeDetF3, M_locEvalPrecomputeInvDetF, M_locEvalPrecomputeTraceC;
         typename super_type::array_matrix_tensor2_type M_locEvalPrecomputeTrialDetF;
 
@@ -1478,78 +1521,49 @@ namespace FeelModels
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
 
-        // fe mech prop context
-        typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
-        static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
-        typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
-        typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
         using ret_type = typename super_type::ret_type;
 
-        
-        //
         typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_type;
-        //typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartClassic<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_classic_type;
-        //typedef tensorFirstPiolaKirchhoffCompressibleVolumicPartSimo1985<Geo_t,Basis_i_t,Basis_j_t,ExprType> tensor_volumic_part_simo1985_type;
+
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom,fev,feu );
+                this->updateForUse( geom, fev, feu );
             }
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom,fev );
+                this->updateForUse( geom, fev );
             }
-        tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory( expr_type const& expr,Geo_t const& geom )
+        tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory( expr_type const& expr, Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
             {
-                if ( !useDispPresForm )
-                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().mechanicalPropertiesDesc().decouplingEnergyVolumicLaw(),expr,geom );
+                this->updateForUse( geom );
             }
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
             super_type::update( geom );
             updateImpl( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::update( geom,face );
             updateImpl( geom );
         }
         void updateImpl( Geo_t const& geom )
         {
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
-            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
-            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::loc_res_type::Zero() );
-
-            if ( !useDispPresForm )
-                M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
+            if constexpr ( !useDispPresForm )
+                M_tensorVolumicPart->updateImpl( *this );
 
             updateImpl();
         }
@@ -1557,7 +1571,7 @@ namespace FeelModels
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 auto Id = super_type::loc_matrix_tensor2_type::Identity();
                 auto F = Id + gradDisplacementEval;
@@ -1566,7 +1580,7 @@ namespace FeelModels
                 {
                     auto InvFvmt = F.inverse().transpose();
                     this->locRes(q) = coefflame2*(F-InvFvmt);
-                    if ( !useDispPresForm )
+                    if constexpr ( !useDispPresForm )
                         this->locRes(q) += M_tensorVolumicPart->locRes(q);
                 }
                 else
@@ -1577,13 +1591,16 @@ namespace FeelModels
             }
         }
 
-        using super_type::evalijq; // fix clang warning
+        // using super_type::evalijq; // fix clang warning
 
         ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
+
+    private :
+
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
@@ -1599,7 +1616,7 @@ namespace FeelModels
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
-            const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+            const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
             const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1);
@@ -1628,15 +1645,15 @@ namespace FeelModels
 
             //typename super_type::matrix_shape_type& locMat = this->locMatrixShape();
             this->locMatrixShape() = coefflame2*(gradTrial - dFmt);
-            if ( !useDispPresForm )
-                this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
+            if constexpr ( !useDispPresForm )
+                this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, *this, detFv, ddetF, dFmt );
 
             return ret_type(this->locMatrixShape().data());
         }
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
-            const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+            const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
             const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 =    gradDisplacementEval(0,1), Fv13 =    gradDisplacementEval(0,2);
@@ -1711,15 +1728,26 @@ namespace FeelModels
             dFmt(2,2) = -factorOther*InvFv33 + scaleUsedWithInvFv*FmtNL33;
 
             this->locMatrixShape() = coefflame2*(gradTrial - dFmt);
-            if ( !useDispPresForm )
-                this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, detFv, ddetF, dFmt );
+            if constexpr ( !useDispPresForm )
+                 this->locMatrixShape() += M_tensorVolumicPart->evalijq( i,j,q, *this, detFv, ddetF, dFmt );
 
             return ret_type(this->locMatrixShape().data());
         }
+
+        template<typename... TheArgsType>
+        void updateForUse( const TheArgsType&... theInitArgs )
+            {
+                std::set<std::string> propUsed = { "Lame-second-parameter" };
+                if ( !useDispPresForm )
+                {
+                    M_tensorVolumicPart = tensor_volumic_part_type::New( this->expr().physicSolidData().decouplingEnergyVolumicLaw(),this->expr(),theInitArgs... );
+                    auto propToAdd = M_tensorVolumicPart->propertiesUsed();
+                    propUsed.insert( propToAdd.begin(), propToAdd.end() );
+                }
+                this->initSubTensor(propUsed,theInitArgs...);
+            }
+
     private :
-        pc_mechprop_scalar_ptrtype M_pcMechPropField;
-        ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
-        typename super_type::array_scalar_type M_locEvalFieldCoefflame2;
         typename super_type::array_value_type M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
         std::shared_ptr<tensor_volumic_part_type> M_tensorVolumicPart;
     };
@@ -1744,69 +1772,48 @@ namespace FeelModels
         typedef typename super_type::gm_type gm_type;
         typedef typename super_type::value_type value_type;
 
-        // fe mech prop context
-        typedef typename expr_type::fe_mechprop_scalar_type fe_mechprop_scalar_type;
-        static const size_type context_mechprop_scalar = expr_type::context_mechprop_scalar;
-        typedef typename fe_mechprop_scalar_type::PreCompute pc_mechprop_scalar_type;
-        typedef std::shared_ptr<pc_mechprop_scalar_type> pc_mechprop_scalar_ptrtype;
-        typedef typename fe_mechprop_scalar_type::template Context<context_mechprop_scalar, fe_mechprop_scalar_type, gm_type,geoelement_type,gmc_type::context> ctx_mechprop_scalar_type;
-        typedef std::shared_ptr<ctx_mechprop_scalar_type> ctx_mechprop_scalar_ptrtype;
         using ret_type = typename super_type::ret_type;
-        
+
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985( expr_type const& expr,Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalBulkModulus( this->expr().mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
+            {
+                this->updateForUse( geom, fev, feu );
+            }
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalBulkModulus( this->expr().mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
+            {
+                this->updateForUse( geom, fev );
+            }
         tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985( expr_type const& expr,Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_pcMechPropField( new pc_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxMechPropField( new ctx_mechprop_scalar_type( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().functionSpace()->fe(),this->gmc(),(pc_mechprop_scalar_ptrtype const&)M_pcMechPropField ) ),
-            M_locEvalBulkModulus( this->expr().mechanicalPropertiesDesc().fieldBulkModulus().idExtents(*this->gmc()) ),
-            M_locEvalFieldCoefflame2( this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().idExtents(*this->gmc()) ),
             M_locEvalPrecomputeLogDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputePowDetF( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalPrecomputeDetF( boost::extents[ this->gmc()->xRefs().size2()] )
-        {}
+            {
+                this->updateForUse( geom );
+            }
 
-        void update( Geo_t const& geom )
+        void update( Geo_t const& geom ) override
         {
             super_type::update( geom );
             updateImpl( geom );
         }
-        void update( Geo_t const& geom, uint16_type face )
+        void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::update( geom,face );
             updateImpl( geom );
         }
         void updateImpl( Geo_t const& geom )
         {
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update( this->gmc()->pc()->nodes() );
-            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalBulkModulus.data(), M_locEvalBulkModulus.data()+M_locEvalBulkModulus.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), /*typename*/ this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            this->expr().mechanicalPropertiesDesc().fieldBulkModulus().id( *M_ctxMechPropField, M_locEvalBulkModulus );
-            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
-
             std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
@@ -1814,8 +1821,8 @@ namespace FeelModels
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1);
@@ -1856,8 +1863,8 @@ namespace FeelModels
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
-                const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+                const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 =    gradDisplacementEval(0,1), Fv13 =    gradDisplacementEval(0,2);
@@ -1906,13 +1913,15 @@ namespace FeelModels
 
             }
         }
-        using super_type::evalijq; // fix clang warning
+        // using super_type::evalijq; // fix clang warning
 
         ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
         {
             return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
         }
+
+    private :
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::EVAL> /**/ ) const
         {
@@ -1928,8 +1937,8 @@ namespace FeelModels
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<2> /**/ ) const
         {
-            const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
-            const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+            const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
+            const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
             const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 = gradDisplacementEval(0,1);
@@ -1993,8 +2002,8 @@ namespace FeelModels
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplyType::JACOBIAN> /**/, mpl::int_<3> /**/ ) const
         {
-            const value_type bulkModulus = M_locEvalBulkModulus[q](0,0);
-            const value_type coefflame2 = M_locEvalFieldCoefflame2[q](0,0);
+            const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
+            const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
 
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
             const value_type Fv11 = 1.+gradDisplacementEval(0,0), Fv12 =    gradDisplacementEval(0,1), Fv13 =    gradDisplacementEval(0,2);
@@ -2113,11 +2122,14 @@ namespace FeelModels
 
             return ret_type(this->locMatrixShape().data());
         }
-    private :
-        pc_mechprop_scalar_ptrtype M_pcMechPropField;
-        ctx_mechprop_scalar_ptrtype M_ctxMechPropField;
 
-        typename super_type::array_scalar_type M_locEvalBulkModulus, M_locEvalFieldCoefflame2;
+        template<typename... TheArgsType>
+        void updateForUse( const TheArgsType&... theInitArgs )
+            {
+                std::set<std::string> propUsed = { "Lame-second-parameter", "bulk-modulus" };
+                this->initSubTensor(propUsed,theInitArgs...);
+            }
+    private :
         typename super_type::array_value_type M_locEvalPrecomputeLogDetF,M_locEvalPrecomputePowDetF,M_locEvalPrecomputeDetF;
     };
 
@@ -2168,30 +2180,27 @@ namespace FeelModels
  * @author Vincent Chabannes
  * @see
  */
-template<typename ElementDisplacementType, typename ElementMechPropType, typename SpecificExprType, int QuadOrder>
+template<typename ElementDisplacementType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType, typename SpecificExprType, int QuadOrder>
 class SolidMecStressTensorImpl
 {
 public:
 
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementMechPropType,SpecificExprType,QuadOrder> this_type;
+    typedef SolidMecStressTensorImpl<ElementDisplacementType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,SpecificExprType,QuadOrder> this_type;
 
     static const size_type context_displacement = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_mechprop_scalar = vm::JACOBIAN;
     static const size_type context = context_displacement;
 
     typedef ElementDisplacementType element_displacement_type;
-    typedef ElementMechPropType element_mechprop_type;
     typedef SpecificExprType specific_expr_type;
-    typedef Feel::FeelModels::MechanicalPropertiesDescription<element_mechprop_type> mechanical_properties_desc_type;
+
+    using symbols_expr_type = SymbolsExprType;
+
     //------------------------------------------------------------------------------//
     // displacement functionspace
     typedef typename element_displacement_type::functionspace_type functionspace_displacement_type;
     typedef typename functionspace_displacement_type::reference_element_type* fe_displacement_ptrtype;
     typedef typename functionspace_displacement_type::reference_element_type fe_displacement_type;
-    //------------------------------------------------------------------------------//
-    // mech prop functionspace
-    typedef typename element_mechprop_type::functionspace_type functionspace_mechprop_type;
-    typedef typename functionspace_mechprop_type::reference_element_type fe_mechprop_scalar_type;
     //------------------------------------------------------------------------------//
     // expression desc
     typedef typename functionspace_displacement_type::geoelement_type geoelement_type;
@@ -2234,27 +2243,37 @@ public:
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    SolidMecStressTensorImpl( element_displacement_type const & u,
-                              Feel::FeelModels::MechanicalPropertiesDescription<element_mechprop_type> const& mechanicalPropertiesDesc )
+    SolidMecStressTensorImpl( element_displacement_type const & u, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
         :
         M_displacement( boost::cref(u) ),
-        M_mechanicalPropertiesDesc( mechanicalPropertiesDesc )
+        M_physicSolidData( physicSolidData ),
+        M_matProperties( matProperties ),
+        M_se( se )
     {}
-    SolidMecStressTensorImpl( SolidMecStressTensorImpl const & op )
-        :
-        M_displacement( op.M_displacement ),
-        M_mechanicalPropertiesDesc( op.M_mechanicalPropertiesDesc )
-    {}
-    ~SolidMecStressTensorImpl() {}
+    SolidMecStressTensorImpl( SolidMecStressTensorImpl const& ) = default;
+    SolidMecStressTensorImpl( SolidMecStressTensorImpl && ) = default;
 
     //! polynomial order
-    uint16_type polynomialOrder() const { return (QuadOrder>=0)?QuadOrder:imorderAuto; }
+    uint16_type polynomialOrder() const
+        {
+            if ( QuadOrder>=0 )
+                return QuadOrder;
+            if ( physicSolidData().materialModel() == "StVenantKirchhoff" )
+                return 3*(orderdisplacement-1);
+            else if ( physicSolidData().materialModel() == "NeoHookean" )
+                return 2*orderdisplacement;
+            else
+                return 3*(orderdisplacement-1); // default
+        }
 
     //! expression is polynomial?
     bool isPolynomial() const { return true; }
 
     element_displacement_type const& displacement() const { return M_displacement; }
-    mechanical_properties_desc_type const& mechanicalPropertiesDesc() const { return M_mechanicalPropertiesDesc; }
+
+    ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
+    MaterialPropertiesType const& matProperties() const { return M_matProperties; }
+    SymbolsExprType const& symbolsExpr() const { return M_se; }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -2268,119 +2287,23 @@ public:
 
         typedef typename tensorbase_type::matrix_shape_type matrix_shape_type;
         using ret_type = Eigen::Map<const matrix_shape_type>;
-        
+
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev,feu) );
-                else
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev,feu) );
-            }
-            else if ( expr.mechanicalPropertiesDesc().materialLaw() == "NeoHookean" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev,feu) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev,feu) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-                else
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev,feu) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev,feu) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev,feu) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-            }
-            else
-                CHECK ( false ) << "invalid materialLaw : "<< expr.mechanicalPropertiesDesc().materialLaw() <<"\n";
+            this->initTensor( expr,geom,fev,feu );
         }
 
         tensor( this_type const& expr,
                 Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev) );
-                else
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev) );
-            }
-            else if ( expr.mechanicalPropertiesDesc().materialLaw() == "NeoHookean" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom,fev) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-                else
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom,fev) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,fev) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-            }
-            else
-                CHECK ( false ) << "invalid materialLaw : "<< expr.mechanicalPropertiesDesc().materialLaw() <<"\n";
+            this->initTensor( expr,geom,fev );
         }
         tensor( this_type const& expr, Geo_t const& geom )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom) );
-                else
-                    M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom) );
-            }
-            else if ( expr.mechanicalPropertiesDesc().materialLaw() == "NeoHookean" )
-            {
-                if ( expr.mechanicalPropertiesDesc().useDisplacementPressureFormulation() )
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,geom) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-                else
-                {
-                    if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "default" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,geom) );
-                    else if ( expr.mechanicalPropertiesDesc().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom) );
-                    else
-                        CHECK( false ) << "invalid";
-                }
-            }
-            else
-                CHECK ( false ) << "invalid materialLaw : "<< expr.mechanicalPropertiesDesc().materialLaw() <<"\n";
+            this->initTensor( expr,geom );
         }
-        tensor( tensor const& t )
-            :
-            M_tensorbase( t.M_tensorbase )
-            {}
+        tensor( tensor const& t ) = default;
 
         template<typename IM>
         void init( IM const& im )
@@ -2436,6 +2359,45 @@ public:
         {
             return ret_type(M_tensorbase->evalq( q ).data());
         }
+    private :
+        template<typename... TheArgsType>
+        void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
+            {
+                if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
+                {
+                    if ( expr.physicSolidData().useDisplacementPressureFormulation() )
+                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                    else
+                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                }
+                else if ( expr.physicSolidData().materialModel() == "NeoHookean" )
+                {
+                    if ( expr.physicSolidData().useDisplacementPressureFormulation() )
+                    {
+                        if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                        else
+                            CHECK( false ) << "invalid";
+                    }
+                    else
+                    {
+                        if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                        else
+                            CHECK( false ) << "invalid";
+                    }
+                }
+                else
+                    CHECK ( false ) << "invalid materialLaw : "<< expr.physicSolidData().materialModel();
+
+            }
+
 
     private:
         tensorbase_ptrtype M_tensorbase;
@@ -2443,31 +2405,31 @@ public:
 
 private:
     boost::reference_wrapper<const element_displacement_type> M_displacement;
-    mechanical_properties_desc_type const& M_mechanicalPropertiesDesc;
+    ModelPhysicSolidType const& M_physicSolidData;
+    MaterialPropertiesType const& M_matProperties;
+    SymbolsExprType const& M_se;
 };
 
 /**
  * \brief FirstPiolaKirchhoffTensor
  */
 
-template<int QuadOrder=-1,class ElementDisplacementType, class ElementMechPropType >
+template<int QuadOrder=-1,typename ElementDisplacementType, typename ModelPhysicSolidType, typename MaterialPropertiesType,typename SymbolsExprType>
 inline
-Expr< SolidMecStressTensorImpl<ElementDisplacementType,ElementMechPropType,mpl::int_<ExprApplyType::EVAL>,QuadOrder > >
-solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u,
-                                   Feel::FeelModels::MechanicalPropertiesDescription<ElementMechPropType> const& mechanicalPropertiesDesc )
+auto
+solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
 {
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementMechPropType,mpl::int_<ExprApplyType::EVAL>, QuadOrder > smstresstensor_t;
-    return Expr< smstresstensor_t >(  smstresstensor_t( u,mechanicalPropertiesDesc ) );
+    typedef SolidMecStressTensorImpl<ElementDisplacementType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL>, QuadOrder > smstresstensor_t;
+    return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se ) );
 }
 
-template<int QuadOrder=-1,class ElementDisplacementType, class ElementMechPropType >
+template<int QuadOrder=-1,typename ElementDisplacementType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
 inline
-Expr< SolidMecStressTensorImpl<ElementDisplacementType,ElementMechPropType,mpl::int_<ExprApplyType::JACOBIAN>,QuadOrder > >
-solidMecFirstPiolaKirchhoffTensorJacobian( ElementDisplacementType const& u,
-                                           Feel::FeelModels::MechanicalPropertiesDescription<ElementMechPropType> const& mechanicalPropertiesDesc )
+auto
+solidMecFirstPiolaKirchhoffTensorJacobian( ElementDisplacementType const& u, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
 {
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementMechPropType,mpl::int_<ExprApplyType::JACOBIAN>, QuadOrder > smstresstensor_t;
-    return Expr< smstresstensor_t >(  smstresstensor_t( u,mechanicalPropertiesDesc ) );
+    typedef SolidMecStressTensorImpl<ElementDisplacementType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplyType::JACOBIAN>, QuadOrder > smstresstensor_t;
+    return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se ) );
 }
 
 

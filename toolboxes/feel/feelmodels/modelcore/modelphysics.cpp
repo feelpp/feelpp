@@ -42,6 +42,14 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
+    if ( M_type == "solid" )
+    {
+        this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
+        this->addMaterialPropertyDescription( "Poisson-ratio", "nu", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
+    }
 }
 
 template <uint16_type Dim>
@@ -50,6 +58,8 @@ ModelPhysic<Dim>::New( std::string const& type, std::string const& name, ModelMo
 {
     if ( type == "fluid" )
         return std::make_shared<ModelPhysicFluid<Dim>>( name, model );
+    else if ( type == "solid" )
+        return std::make_shared<ModelPhysicSolid<Dim>>( name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( type, name, model );
 }
@@ -73,6 +83,52 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 {
     CHECK( eq == "Navier-Stokes" || eq == "Stokes" || eq == "StokesTransient" ) << "invalid equation of fluid : " << eq;
     M_equation = eq;
+}
+
+template <uint16_type Dim>
+ModelPhysicSolid<Dim>::ModelPhysicSolid( std::string const& name, ModelModel const& model )
+    :
+    super_type( "solid", name, model ),
+    M_equation( "Hyper-Elasticity" ),
+    M_materialModel( "StVenantKirchhoff" ),
+    M_formulation( "displacement" ),
+    M_decouplingEnergyVolumicLaw( "classic" ),
+    M_compressibleNeoHookeanVariantName( "default" )
+{
+    auto const& pt = model.ptree();
+    if ( auto eq = pt.template get_optional<std::string>("equations") )
+        this->setEquation( *eq );
+    if ( auto eq = pt.template get_optional<std::string>("equation") )
+        this->setEquation( *eq );
+
+    if ( auto e = pt.template get_optional<std::string>("material-model") )
+        M_materialModel = *e;
+    CHECK( M_materialModel == "StVenantKirchhoff" || M_materialModel == "NeoHookean" ) << "invalid material-model :" << M_materialModel;
+
+    if ( auto e = pt.template get_optional<std::string>("formulation") )
+        M_formulation = *e;
+
+    if ( auto e = pt.template get_optional<std::string>("volumetric-strain-energy") )
+        M_decouplingEnergyVolumicLaw = *e;
+    if ( auto e = pt.template get_optional<std::string>("neo-Hookean.variant") )
+        M_compressibleNeoHookeanVariantName = *e;
+
+    CHECK( M_decouplingEnergyVolumicLaw == "classic" || M_decouplingEnergyVolumicLaw == "simo1985" ) << "invalid decouplingEnergyVolumicLaw : " << M_decouplingEnergyVolumicLaw;
+    CHECK( M_compressibleNeoHookeanVariantName == "default" || M_compressibleNeoHookeanVariantName == "molecular-theory" ||
+           M_compressibleNeoHookeanVariantName == "molecular-theory-simo1985" ) << "invalid compressibleNeoHookeanVariantName : " <<  M_compressibleNeoHookeanVariantName;
+
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
+{
+    CHECK( eq == "Hyper-Elasticity" || eq == "hyperelasticity" || eq == "Elasticity" || eq == "linear-elasticity" || eq == "Generalised-String" ) << "invalid equation of solid : " << eq;
+    M_equation = eq;
+#if 0
+    if ( M_equation == "Elasticity" )
+        M_equation = "linear-elasticity";
+#endif
 }
 
 template <uint16_type Dim>

@@ -60,6 +60,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto const u = M_XhDisplacement->element(X, rowStartInVector);
     auto const& v = this->fieldDisplacement();
 
+    auto se = this->symbolsExpr();
     //--------------------------------------------------------------------------------------------------//
 
     //#if defined(SOLIDMECHANICS_VOLUME_FORCE)
@@ -86,62 +87,192 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
     //case elastic
     auto Ev_elastic = sym(gradv(u));
-    auto Sv_elastic = idv(coeffLame1)*trace(Ev_elastic)*Id + 2*idv(coeffLame2)*Ev_elastic;
 
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
-    // stress tensor terms
-    this->timerTool("Solve").start();
 
-    if ( M_modelName == "Hyper-Elasticity" )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            if (!BuildCstPart)
+            auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+
+            // stress tensor terms
+            this->timerTool("Solve").start();
+
+            if ( physicSolidData->equation() == "Hyper-Elasticity" )
             {
-                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<3*(nOrderDisplacement-1)>(u,*this->mechanicalProperties());
-                linearFormDisplacement +=
-                    integrate( _range=M_rangeMeshElements,
-                               //_expr= trace(val(Fv*Sv)*trans(grad(v))),
-                               //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
-                               //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
-                               _expr= timeSteppingScaling*inner(FSv_neohookean,grad(v)),
-                               _geomap=this->geomap() );
+                if (!BuildCstPart)
+                {
+                    auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*physicSolidData,matProperties,se);
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   //_expr= trace(val(Fv*Sv)*trans(grad(v))),
+                                   //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
+                                   //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
+                                   _expr= timeSteppingScaling*inner(FSv,grad(v)),
+                                   _geomap=this->geomap() );
+                }
             }
-        }
-        else if (this->mechanicalProperties()->materialLaw() == "NeoHookean")
-        {
-            if (!BuildCstPart)
+            // else if ( M_modelName =="Elasticity-Large-Deformation" )
+            // {
+            //     if (!BuildCstPart)
+            //         linearFormDisplacement +=
+            //             integrate( _range=range,
+            //                        _expr= timeSteppingScaling*inner(Sv,grad(v)),
+            //                        _geomap=this->geomap() );
+            // }
+            else if ( physicSolidData->equation() == "Elasticity" )
             {
-                auto const FSv_neohookean = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
-                linearFormDisplacement +=
-                    integrate( _range=M_rangeMeshElements,
-                               //_expr= trace(val(FSv_neohookean)*trans(grad(v))),
-                               _expr= timeSteppingScaling*inner(FSv_neohookean,grad(v)),
-                               _quad=_Q<2*nOrderDisplacement+1>(),
-                               _geomap=this->geomap() );
+                if (!BuildCstPart && !UseJacobianLinearTerms)
+                {
+                    auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
+                    auto lameSecondExpr = expr( matProperties.property( "Lame-second-parameter" ).exprScalar(), se );
+                    auto Sv_elastic = lameFirstExpr*trace(Ev_elastic)*Id + 2*lameSecondExpr*Ev_elastic;
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*inner( Sv_elastic,grad(v) ),
+                                   _geomap=this->geomap() );
+                }
             }
-        }
-    }
-    else if ( M_modelName =="Elasticity-Large-Deformation" )
-    {
-        if (!BuildCstPart)
-            linearFormDisplacement +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*inner(Sv,grad(v)),
-                           _geomap=this->geomap() );
-    }
-    else if ( M_modelName == "Elasticity" )
-    {
-        if (!BuildCstPart && !UseJacobianLinearTerms)
-            linearFormDisplacement +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= timeSteppingScaling*inner( Sv_elastic,grad(v) ),
-                           _geomap=this->geomap() );
-    }
-    double timeElapsedBis = this->timerTool("Solve").stop();
-    this->log("SolidMechanics","updateResidual",
-              "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
+            double timeElapsedBis = this->timerTool("Solve").stop();
+            this->log("SolidMechanics","updateResidual",
+                      "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
+
+            //--------------------------------------------------------------------------------------------------//
+            // discretisation acceleration term
+            if (!this->isStationary())
+            {
+                auto const& densityProp = this->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr(), se );
+
+                if ( M_timeStepping == "Newmark" )
+                {
+                    if (!BuildCstPart && !UseJacobianLinearTerms)
+                    {
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            linearFormDisplacement +=
+                                integrate( _range=range,
+                                           _expr= M_timeStepNewmark->polySecondDerivCoefficient()*densityExpr*inner(idv(u),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            if ( this->massMatrixLumped()->size1() == R->size() )
+                            {
+                                auto myvec = this->backend()->newVector(M_XhDisplacement);
+                                *myvec = u;
+                                myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
+                                R->close();
+                                R->addVector( myvec, this->massMatrixLumped() );
+                            }
+                            else
+                            {
+                                CHECK( false ) << "TODO";
+                            }
+                        }
+                    }
+                    if (BuildCstPart)
+                    {
+                        auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            linearFormDisplacement +=
+                                integrate( _range=range,
+                                           _expr= -densityExpr*inner(idv(polySecondDerivDisp),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            if ( this->massMatrixLumped()->size1() == R->size() )
+                            {
+                                auto myvec = this->backend()->newVector(M_XhDisplacement);
+                                *myvec = polySecondDerivDisp;
+                                myvec->scale(-1.0);
+                                R->close();
+                                R->addVector( myvec, this->massMatrixLumped() );
+                            }
+                            else
+                            {
+                                R->close();
+                                auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
+                                auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                                uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
+                            }
+                        }
+                    }
+                } // Newmark
+                else
+                {
+                    CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
+                    size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+                    //std::cout << "RESIDUAL bdf\n";
+                    if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+                    {
+                        if ( !BuildCstPart )
+                        {
+                            auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
+                            form1( _test=M_XhDisplacement, _vector=R,
+                                   _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                                integrate( _range=range,
+                                           _expr= -timeSteppingScaling*densityExpr*inner(idv(curVel),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    }
+                    else if (!BuildCstPart && !UseJacobianLinearTerms)
+                    {
+                        auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            linearFormDisplacement +=
+                                integrate( _range=range,
+                                           _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*densityExpr*inner(idv(curVel),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            CHECK( false ) << "TODO";
+                        }
+
+                        form1( _test=M_XhDisplacement, _vector=R,
+                               _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                            integrate( _range=range,
+                                       _expr= densityExpr*inner(M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(u)-timeSteppingScaling*idv(curVel),id(v)),
+                                       _geomap=this->geomap() );
+                    }
+
+                    if ( BuildCstPart && !timeSteppingEvaluateResidualWithoutTimeDerivative )
+                    {
+                        auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
+                        if ( !this->useMassMatrixLumped() )
+                        {
+                            linearFormDisplacement +=
+                                integrate( _range=range,
+                                           _expr= -densityExpr*inner(idv(rhsTimeStepVelocity),id(v)),
+                                           _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            R->close();
+                            auto uAddRhs = M_XhDisplacement->element( R, rowStartInVector );
+                            auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
+                            uAddRhs.add( -1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
+                        }
+                        auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
+                        form1( _test=M_XhDisplacement, _vector=R,
+                               _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
+                            integrate( _range=range,
+                                       _expr= -densityExpr*inner(idv(rhsTimeStepDisplacement),id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                } // BDF
+            }
+
+        } // matName
+    } // physics
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
@@ -164,132 +295,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     if (BuildCstPart)
     {
         this->updateSourceTermResidual( R, timeSteppingScaling );
-    }
-    //--------------------------------------------------------------------------------------------------//
-    // discretisation acceleration term
-    if (!this->isStationary())
-    {
-        if ( M_timeStepping == "Newmark" )
-        {
-            if (!BuildCstPart && !UseJacobianLinearTerms)
-            {
-                if ( !this->useMassMatrixLumped() )
-                {
-                    linearFormDisplacement +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= M_timeStepNewmark->polySecondDerivCoefficient()*idv(rho)*inner(idv(u),id(v)),
-                                   _geomap=this->geomap() );
-                }
-                else
-                {
-                    if ( this->massMatrixLumped()->size1() == R->size() )
-                    {
-                        auto myvec = this->backend()->newVector(M_XhDisplacement);
-                        *myvec = u;
-                        myvec->scale(M_timeStepNewmark->polySecondDerivCoefficient());
-                        R->close();
-                        R->addVector( myvec, this->massMatrixLumped() );
-                    }
-                    else
-                    {
-                        CHECK( false ) << "TODO";
-                    }
-                }
-            }
-            if (BuildCstPart)
-            {
-                auto polySecondDerivDisp = M_timeStepNewmark->polySecondDeriv();
-                if ( !this->useMassMatrixLumped() )
-                {
-                    linearFormDisplacement +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= -idv(rho)*inner(idv(polySecondDerivDisp),id(v)),
-                                   _geomap=this->geomap() );
-                }
-                else
-                {
-                    if ( this->massMatrixLumped()->size1() == R->size() )
-                    {
-                        auto myvec = this->backend()->newVector(M_XhDisplacement);
-                        *myvec = polySecondDerivDisp;
-                        myvec->scale(-1.0);
-                        R->close();
-                        R->addVector( myvec, this->massMatrixLumped() );
-                    }
-                    else
-                    {
-                        R->close();
-                        auto uAddResidual = M_XhDisplacement->element( R, rowStartInVector );
-                        auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                        uAddResidual.add(-1.0, element_product( uDiagMassMatrixLumped, polySecondDerivDisp ) );
-                    }
-                }
-            }
-        } // Newmark
-        else
-        {
-            CHECK( this->hasStartSubBlockSpaceIndex( "velocity" ) ) << "no SubBlockSpaceIndex velocity";
-            size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
-            //std::cout << "RESIDUAL bdf\n";
-            if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
-            {
-                if ( !BuildCstPart )
-                {
-                    auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
-                    form1( _test=M_XhDisplacement, _vector=R,
-                           _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= -timeSteppingScaling*idv(rho)*inner(idv(curVel),id(v)),
-                                   _geomap=this->geomap() );
-                }
-            }
-            else if (!BuildCstPart && !UseJacobianLinearTerms)
-            {
-                auto const curVel = M_XhDisplacement->element(X, rowStartInVector+startBlockIndexVelocity);
-                if ( !this->useMassMatrixLumped() )
-                {
-                    linearFormDisplacement +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= M_timeStepBdfVelocity->polyDerivCoefficient(0)*idv(rho)*inner(idv(curVel),id(v)),
-                                   _geomap=this->geomap() );
-                }
-                else
-                {
-                    CHECK( false ) << "TODO";
-                }
-
-                form1( _test=M_XhDisplacement, _vector=R,
-                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= idv(rho)*inner(M_timeStepBdfDisplacement->polyDerivCoefficient(0)*idv(u)-timeSteppingScaling*idv(curVel),id(v)),
-                               _geomap=this->geomap() );
-            }
-
-            if ( BuildCstPart && !timeSteppingEvaluateResidualWithoutTimeDerivative )
-            {
-                auto rhsTimeStepVelocity = M_timeStepBdfVelocity->polyDeriv();
-                if ( !this->useMassMatrixLumped() )
-                {
-                    linearFormDisplacement +=
-                        integrate( _range=M_rangeMeshElements,
-                                   _expr= -idv(rho)*inner(idv(rhsTimeStepVelocity),id(v)),
-                                   _geomap=this->geomap() );
-                }
-                else
-                {
-                    R->close();
-                    auto uAddRhs = M_XhDisplacement->element( R, rowStartInVector );
-                    auto uDiagMassMatrixLumped = M_XhDisplacement->element( M_vecDiagMassMatrixLumped );
-                    uAddRhs.add( -1., element_product( uDiagMassMatrixLumped, rhsTimeStepVelocity ) );
-                }
-                auto rhsTimeStepDisplacement = M_timeStepBdfDisplacement->polyDeriv();
-                form1( _test=M_XhDisplacement, _vector=R,
-                       _rowstart=rowStartInVector+startBlockIndexVelocity ) +=
-                    integrate( _range=M_rangeMeshElements,
-                               _expr= -idv(rho)*inner(idv(rhsTimeStepDisplacement),id(v)),
-                               _geomap=this->geomap() );
-            }
-        } // BDF
     }
     //--------------------------------------------------------------------------------------------------//
     // neumann bc
