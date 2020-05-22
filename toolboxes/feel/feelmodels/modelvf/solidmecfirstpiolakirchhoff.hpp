@@ -2205,7 +2205,7 @@ public:
     typedef typename functionspace_displacement_type::geoelement_type geoelement_type;
     //typedef typename functionspace_displacement_type::gm_type gm_type;
     typedef typename functionspace_displacement_type::value_type value_type;
-    typedef value_type evaluate_type;
+
     static const uint16_type nDim = fe_displacement_type::nDim;
     static const uint16_type nRealDim = fe_displacement_type::nRealDim;
     static const uint16_type rank = fe_displacement_type::rank;

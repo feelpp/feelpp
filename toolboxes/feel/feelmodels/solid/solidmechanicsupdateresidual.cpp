@@ -65,7 +65,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     size_type blockIndexPressure = invalid_v<size_type>;
     std::decay_t<decltype(M_XhPressure->elementPtr(*X, blockIndexPressure))> p;
-    if ( this->useDisplacementPressureFormulation() )
+    if ( this->hasDisplacementPressureFormulation() )
     {
         // define pressure field
         blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
@@ -376,7 +376,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u,
@@ -498,7 +498,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualViscoElasticityTerms( element_
     if (this->verbose()) std::cout << "[SolidMechanics] : updateResidualViscoElasticityTerms finish\n";
 #endif
 }
-
+#endif
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//

@@ -64,7 +64,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     std::string doExport_str;
-    for ( std::string const& fieldName : M_postProcessFieldExported )
+    for ( std::string const& fieldName : this->postProcessExportsFields() )
         doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
@@ -77,7 +77,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Physical Model"
            << "\n     -- model : " << M_modelName
            << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
-           << "\n     -- use displacement-pressure formulation : " << std::boolalpha << M_useDisplacementPressureFormulation
+           << "\n     -- use displacement-pressure formulation : " << std::boolalpha << this->hasDisplacementPressureFormulation()
            << "\n     -- time mode : " << StateTemporal;
     *_ostr << this->mechanicalProperties()->getInfoMaterialParameters()->str();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
@@ -94,7 +94,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- nb elt in mesh : " << nElt
            << "\n     -- nb dof (displacement) : " << nDof
            << "\n     -- polynomial order : " << nOrder;
-    if ( M_useDisplacementPressureFormulation )
+    if ( this->hasDisplacementPressureFormulation() )
         *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
     *_ostr << "\n     -- mechanical properties : "
            << (boost::format("P%1%%2%")%mechanicalproperties_type::space_type::basis_type::nOrder %std::string( (use_continous_mechanical_properties)? "c":"d")).str();
@@ -203,7 +203,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->isStandardModel() )
     {
         ++nBlock;
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
             ++nBlock;
         if ( M_timeSteppingUseMixedFormulation )
             ++nBlock;
@@ -230,7 +230,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                  _close=(nBlock==1) )->graph();
     ++indexBlock;
 
-    if ( M_useDisplacementPressureFormulation )
+    if ( this->hasDisplacementPressureFormulation() )
     {
         myblockGraph(indexBlock,0) = stencil(_test=M_XhPressure,_trial=M_XhDisplacement,
                                              _diag_is_nonzero=false,_close=false)->graph();
@@ -302,29 +302,33 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("SolidMechanics","exportResults",(boost::format("start at time %1%")%time).str() );
-    this->timerTool("PostProcessing").start();
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
 
-    if (!M_isHOVisu)
-        this->exportFields( time );
-    else
-        this->exportFieldsImplHO( time );
+    // this->log("SolidMechanics","exportResults",(boost::format("start at time %1%")%time).str() );
+    // this->timerTool("PostProcessing").start();
 
-    this->exportMeasures( time );
+    // if (!M_isHOVisu)
+    //     this->exportFields( time );
+    // else
+    //     this->exportFieldsImplHO( time );
 
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
+    // this->exportMeasures( time );
 
-    this->log("SolidMechanics","exportResults", "finish" );
+    // this->timerTool("PostProcessing").stop("exportResults");
+    // if ( this->scalabilitySave() )
+    // {
+    //     if ( !this->isStationary() )
+    //         this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+    //     this->timerTool("PostProcessing").save();
+    // }
+
+    // this->log("SolidMechanics","exportResults", "finish" );
 
 } // SolidMechanics::export
 
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
@@ -373,12 +377,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( exporter_ptrtype expor
         exporter->step( time )->add( prefixvm(this->prefix(),"pressure"), *M_fieldPressure );
         hasFieldToExport = true;
     }
-    if ( fields.find( "velocity" ) != fields.end() )
+    if ( fields.find( "velocity" ) != fields.end() && M_fieldVelocity )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"velocity"), this->fieldVelocity() );
         hasFieldToExport = true;
     }
-    if ( fields.find( "acceleration" ) != fields.end() )
+    if ( fields.find( "acceleration" ) != fields.end() && M_fieldAcceleration )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"acceleration"), this->fieldAcceleration() );
         hasFieldToExport = true;
@@ -485,6 +489,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields1dReduced( exporter_1dre
     return hasFieldToExport;
 }
 
+
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
@@ -542,6 +547,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFieldsImplHO( double time )
     }
 
 }
+#endif
+
 #if 0
 namespace detail
 {
@@ -574,6 +581,8 @@ componentFieldFromTensor2Field( ElementTensor2Type const uTensor2, uint16_type c
 } // namespace detail
 #endif
 
+
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
@@ -761,7 +770,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
     }
 
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -796,7 +805,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
             this->updateTime( M_timeStepBdfDisplacement->time() );
         }
         // start save pressure
-        if ( M_useDisplacementPressureFormulation && !this->doRestart() )
+        if ( this->hasDisplacementPressureFormulation() && !this->doRestart() )
             M_savetsPressure->start( *M_fieldPressure );
     }
     else if (this->is1dReducedModel())
@@ -841,7 +850,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             this->updateTime( M_timeStepBdfDisplacement->time() );
         }
 
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
             M_savetsPressure->next(*M_fieldPressure);
     }
     else if (this->is1dReducedModel())
@@ -1067,7 +1076,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 
         auto const Id = eye<nDim,nDim>();
         auto eps = sym(gradv(u));//0.5*(gradv(u)+trans(gradv(u)));
-        if ( !this->useDisplacementPressureFormulation() )
+        if ( !this->hasDisplacementPressureFormulation() )
         {
             auto sigma = idv(coeffLame1)*trace(eps)*Id + 2*idv(coeffLame2)*eps;
             M_fieldNormalStressFromStruct->on( _range=range,
@@ -1112,7 +1121,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
@@ -1236,49 +1245,20 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressCriterions()
     this->log("SolidMechanics","updateStressCriterions", "finish" );
 
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::super_type::block_pattern_type
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::blockPattern() const
 {
-    if (M_useDisplacementPressureFormulation)
+    if ( this->hasDisplacementPressureFormulation() )
         return BlocksStencilPattern(2,2) << size_type(Pattern::COUPLED) << size_type(Pattern::COUPLED)
                                          << size_type(Pattern::COUPLED) << size_type(Pattern::ZERO);
     else
         return BlocksStencilPattern(1,1) << size_type(Pattern::COUPLED);
 }
 
-//---------------------------------------------------------------------------------------------------//
-#if 0
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateStressTensorBis( element_stress_ptrtype stressN)
-{
-
-    if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor start\n";
-
-    boost::timer btime; btime.restart();
-
-    // maybe just pointer??
-    *M_normalStressFromFluid = *stressN;
-#if 0
-    if (M_is1dReduced)
-    {
-#if 0
-        auto bcDef = SOLIDMECHANICS_BC(this->shared_from_this());
-        ForEachBC( bcDef,cl::paroi_mobile,
-                   TransfertStress2dTo1d(PhysicalName); )
-#else
-            this->transfertNormalStress2dTo1dWithInterpolation();
-#endif
-    }
-#endif
-    if (this->verbose()) std::cout << "[SolidMechanics] : updateStressTensor finish in "<<btime.elapsed()<<"\n";
-
-}
-#endif
 //---------------------------------------------------------------------------------------------------//
 #if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1364,7 +1344,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& fie
     }
     else if ( field == "pressure" )
     {
-        CHECK( M_useDisplacementPressureFormulation ) << "model does not take into account the pressure";
+        CHECK( this->hasDisplacementPressureFormulation() ) << "model does not take into account the pressure";
         CHECK( false ) << "TODO pressure max/min";
     }
 
