@@ -30,7 +30,6 @@
 #define __FEELPP_MODELS_VF_SOLIDMECINCOMPRESSIBILITY_H 1
 
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {
@@ -626,12 +625,12 @@ private:
 
 
 
-template<typename ElementDispType, typename ElementPressureType, typename MechPropType,typename SpecificExprType>
+template<typename ElementDispType, typename ElementPressureType, typename ModelPhysicSolidType,typename SpecificExprType>
 class SolidMecPressureFormulationMultiplier
 {
 public:
 
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,SpecificExprType> self_type;
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,SpecificExprType> self_type;
 
     static const size_type context_disp = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
@@ -639,7 +638,6 @@ public:
 
     typedef ElementDispType element_disp_type;
     typedef ElementPressureType element_pressure_type;
-    typedef MechPropType mechprop_type;
     typedef SpecificExprType spec_expr_type;
     //------------------------------------------------------------------------------//
     // displacement functionspace
@@ -688,11 +686,11 @@ public:
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    SolidMecPressureFormulationMultiplier( element_disp_type const& disp, element_pressure_type const& p, mechprop_type const& mechprop )
+    SolidMecPressureFormulationMultiplier( element_disp_type const& disp, element_pressure_type const& p, ModelPhysicSolidType const& physicSolidData )
         :
         M_disp( disp ),
         M_pressure( p ),
-        M_mechProp( mechprop )
+        M_physicSolidData( physicSolidData )
     {}
     SolidMecPressureFormulationMultiplier( SolidMecPressureFormulationMultiplier const & op ) = default;
 
@@ -707,7 +705,7 @@ public:
 
     element_disp_type const& disp() const { return M_disp; }
     element_pressure_type const& pressure() const { return M_pressure; }
-    mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
+    ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
 
     typedef Shape<nDim, Tensor2, false, false> my_shape_type;
 
@@ -726,21 +724,21 @@ public:
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
         }
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
         }
         tensor( self_type const& expr, Geo_t const& geom )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationMultiplierClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
@@ -804,7 +802,7 @@ public:
 private:
     element_disp_type const& M_disp;
     element_pressure_type const& M_pressure;
-    mechprop_type const& M_mechProp;
+    ModelPhysicSolidType const& M_physicSolidData;
 };
 
 
@@ -1200,18 +1198,17 @@ private:
 };
 
 
-template<typename ElementDispType, typename MechPropType,typename SpecificExprType>
+template<typename ElementDispType, typename ModelPhysicSolidType, typename SpecificExprType>
 class SolidMecPressureFormulationConstraint
 {
 public:
 
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,SpecificExprType> self_type;
+    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,SpecificExprType> self_type;
 
     static const size_type context_disp = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context = context_disp;
 
     typedef ElementDispType element_disp_type;
-    typedef MechPropType mechprop_type;
     typedef SpecificExprType spec_expr_type;
     //------------------------------------------------------------------------------//
     // displacement functionspace
@@ -1251,10 +1248,10 @@ public:
     using trial_basis = std::nullptr_t;
 
 
-    SolidMecPressureFormulationConstraint( element_disp_type const& disp, mechprop_type const& mechprop )
+    SolidMecPressureFormulationConstraint( element_disp_type const& disp, ModelPhysicSolidType const& physicSolidData )
         :
         M_disp( disp ),
-        M_mechProp( mechprop )
+        M_physicSolidData( physicSolidData )
     {}
 
     SolidMecPressureFormulationConstraint( SolidMecPressureFormulationConstraint const & op ) = default;
@@ -1269,8 +1266,7 @@ public:
     bool isPolynomial() const { return true; }
 
     element_disp_type const& disp() const { return M_disp; }
-    mechprop_type const& mechanicalPropertiesDesc() const { return M_mechProp; }
-
+    ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
 
     typedef Shape<nDim, Scalar, false, false> my_shape_type;
 
@@ -1288,21 +1284,21 @@ public:
 
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev,feu) );
         }
         tensor( self_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom,fev) );
         }
         tensor( self_type const& expr, Geo_t const& geom )
         {
-            if ( expr.mechanicalPropertiesDesc().materialLaw() == "StVenantKirchhoff" )
+            if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
             else
                 M_tensorbase.reset( new tensorSolidMecPressureFormulationConstraintClassic<Geo_t, Basis_i_t, Basis_j_t,self_type>(expr,geom) );
@@ -1367,7 +1363,7 @@ public:
 
 private:
     element_disp_type const& M_disp;
-    mechprop_type const& M_mechProp;
+    ModelPhysicSolidType const& M_physicSolidData;
 };
 
 
@@ -1387,60 +1383,60 @@ private:
  * keywords
  */
 
-template<class ElementDispType,class ElementPressureType,class MechPropType >
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > >
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > >
 solidMecPressureFormulationMultiplier( ElementDispType const& v, ElementPressureType const& p,
-                                       MechPropType const& mechanicalPropertiesDesc )
+                                       ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >( myexpr_type( v,p,physicSolidData ) );
 }
 
-template<class ElementDispType,class ElementPressureType,class MechPropType>
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                             mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> > >
 solidMecPressureFormulationMultiplierJacobianTrialDisp( ElementDispType const& v,ElementPressureType const& p,
-                                                        MechPropType const& mechanicalPropertiesDesc )
+                                                        ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                                   mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_DISP> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    return Expr< myexpr_type >( myexpr_type( v,p,physicSolidData ) );
 }
 
-template<class ElementDispType,class ElementPressureType,class MechPropType>
+template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                             mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> > >
 solidMecPressureFormulationMultiplierJacobianTrialPressure( ElementDispType const& v,ElementPressureType const& p,
-                                                            MechPropType const& mechanicalPropertiesDesc )
+                                                            ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,MechPropType,
+    typedef SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,
                                                   mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v,p,mechanicalPropertiesDesc ) );
+    return Expr< myexpr_type >(  myexpr_type( v,p,physicSolidData ) );
 }
 
 
 
-template<class ElementDispType,class MechPropType>
+template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::EVAL> > >
+Expr< SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::EVAL> > >
 solidMecPressureFormulationConstraint( ElementDispType const& v,
-                                       MechPropType const& mechanicalPropertiesDesc )
+                                       ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >( myexpr_type( v,physicSolidData ) );
 }
 
-template<class ElementDispType,class MechPropType>
+template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::JACOBIAN> > >
+Expr< SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::JACOBIAN> > >
 solidMecPressureFormulationConstraintJacobian( ElementDispType const& v,
-                                             MechPropType const& mechanicalPropertiesDesc )
+                                               ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,MechPropType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v,mechanicalPropertiesDesc ) );
+    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( v,physicSolidData ) );
 }
 
 } // namespace FeelModels
