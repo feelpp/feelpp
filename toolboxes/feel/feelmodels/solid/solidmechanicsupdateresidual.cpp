@@ -63,6 +63,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
     auto se = this->symbolsExpr();
     //--------------------------------------------------------------------------------------------------//
 
+    size_type blockIndexPressure = invalid_v<size_type>;
+    std::decay_t<decltype(M_XhPressure->elementPtr(*X, blockIndexPressure))> p;
+    if ( this->useDisplacementPressureFormulation() )
+    {
+        // define pressure field
+        blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
+        p = M_XhPressure->elementPtr(*X, rowStartInVector+blockIndexPressure);
+    }
+
     //#if defined(SOLIDMECHANICS_VOLUME_FORCE)
     //auto f = SOLIDMECHANICS_VOLUME_FORCE(this->shared_from_this());
     //#endif
@@ -77,14 +86,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
     //--------------------------------------------------------------------------------------------------//
 
-    auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
-    auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
-    auto const& rho = this->mechanicalProperties()->fieldRho();
+    // auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
+    // auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
+    // auto const& rho = this->mechanicalProperties()->fieldRho();
     //Identity Matrix
     auto Id = eye<nDim,nDim>();
-    auto Fv = Id + gradv(u);
-    auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-    auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
+    // auto Fv = Id + gradv(u);
+    // auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
+    // auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
     //case elastic
     auto Ev_elastic = sym(gradv(u));
 
@@ -99,7 +108,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             auto const& matProperties = this->materialsProperties()->materialProperties( matName );
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 
+            //--------------------------------------------------------------------------------------------------//
             // stress tensor terms
+            //--------------------------------------------------------------------------------------------------//
             this->timerTool("Solve").start();
 
             if ( physicSolidData->equation() == "Hyper-Elasticity" )
@@ -116,14 +127,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                    _geomap=this->geomap() );
                 }
             }
-            // else if ( M_modelName =="Elasticity-Large-Deformation" )
-            // {
-            //     if (!BuildCstPart)
-            //         linearFormDisplacement +=
-            //             integrate( _range=range,
-            //                        _expr= timeSteppingScaling*inner(Sv,grad(v)),
-            //                        _geomap=this->geomap() );
-            // }
             else if ( physicSolidData->equation() == "Elasticity" )
             {
                 if (!BuildCstPart && !UseJacobianLinearTerms)
@@ -142,7 +145,58 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                       "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
             //--------------------------------------------------------------------------------------------------//
+            // constraint on compressibility
+            //--------------------------------------------------------------------------------------------------//
+            if ( physicSolidData->useDisplacementPressureFormulation() && !BuildCstPart )
+            {
+                if ( physicSolidData->equation() == "Hyper-Elasticity" )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   //_expr= trace(val(-idv(p)*trans(InvFv))*trans(grad(v))),
+                                   //_expr=inner( -idv(p)*Feel::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
+                                   _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,*p,*physicSolidData),grad(v) ),
+                                   _geomap=this->geomap() );
+                }
+                else if ( physicSolidData->equation() == "Elasticity" )
+                {
+                    linearFormDisplacement +=
+                        integrate( _range= range,
+                                   _expr= inner( -idv(p)*Id ,grad(v)),
+                                   _geomap=this->geomap() );
+                }
+
+                auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,_rowstart=rowStartInVector+blockIndexPressure );
+                linearFormPressure +=
+                    integrate( _range=range,
+                               //_expr=val(Fav22+Fav11+Fav11*Fav22-Fav21*Fav12)*id(q),
+                               //_expr= detFvM1*id(q),
+                               _expr= Feel::FeelModels::solidMecPressureFormulationConstraint(u,*physicSolidData)*id(p),
+                               _geomap=this->geomap() );
+
+
+                if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
+                {
+                    auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
+                    linearFormPressure +=
+                        integrate(_range=range,
+                                  _expr= -(cst(1.)/lameFirstExpr)*idv(p)*id(p),
+                                  _geomap=this->geomap() );
+                }
+                else
+                {
+                    auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
+                    linearFormPressure +=
+                        integrate( _range=range,
+                                   _expr= -(cst(1.)/K)*idv(p)*id(p),
+                                   _geomap=this->geomap() );
+                }
+
+            }
+
+            //--------------------------------------------------------------------------------------------------//
             // discretisation acceleration term
+            //--------------------------------------------------------------------------------------------------//
             if (!this->isStationary())
             {
                 auto const& densityProp = this->materialsProperties()->density( matName );
@@ -273,7 +327,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
         } // matName
     } // physics
-
+#if 0
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
     if ( this->useDisplacementPressureFormulation() && !BuildCstPart)
@@ -284,6 +338,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         // assemble
         this->updateResidualIncompressibilityTerms(u,p,R);
     }
+#endif
     //--------------------------------------------------------------------------------------------------//
 #if 0
     // viscoelastic terms
@@ -349,7 +404,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
                                          _rowstart=rowStartInVector );
     auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,
                                      _rowstart=rowStartInVector+blockIndexPressure );
-
+#if 0
     if ( M_modelName == "Hyper-Elasticity" )
     {
         linearFormDisplacement +=
@@ -394,7 +449,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualIncompressibilityTerms( elemen
                        _geomap=this->geomap() );
     }
 
-
+#endif
     double timeElapsed=thetimer.elapsed();
     this->log("SolidMechanics","updateResidualIncompressibilityTerms",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );

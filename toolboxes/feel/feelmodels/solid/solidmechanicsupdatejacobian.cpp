@@ -49,6 +49,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     auto se = this->symbolsExpr();
 
+    size_type blockIndexPressure = invalid_v<size_type>;
+    std::decay_t<decltype(M_XhPressure->elementPtr(*X, blockIndexPressure))> p;
+    if ( this->useDisplacementPressureFormulation() )
+    {
+        // define pressure field
+        blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
+        p = M_XhPressure->elementPtr(*X, rowStartInVector+blockIndexPressure);
+    }
+
     //--------------------------------------------------------------------------------------------------//
 
     double timeSteppingScaling = 1.;
@@ -60,17 +69,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
     //--------------------------------------------------------------------------------------------------//
 
-    // auto const& coeffLame1 = this->mechanicalProperties()->fieldCoeffLame1();
-    // auto const& coeffLame2 = this->mechanicalProperties()->fieldCoeffLame2();
-    // auto const& rho = this->mechanicalProperties()->fieldRho();
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
-    // auto Fv = Id + gradv(u);
-    // auto dF = gradt(u);
-    // auto Ev = sym(gradv(u)) + 0.5*trans(gradv(u))*gradv(u);
-    // auto dE = sym(gradt(u)) + 0.5*(trans(gradv(u))*gradt(u) + trans(gradt(u))*gradv(u));
-    // auto Sv = idv(coeffLame1)*trace(Ev)*Id + 2*idv(coeffLame2)*Ev;
-    // auto dS = idv(coeffLame1)*trace(dE)*Id + 2*idv(coeffLame2)*dE;
     //case elastic
     auto dE_elastic = sym(gradt(u));
 
@@ -99,14 +99,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                                    _geomap=this->geomap() );
                 }
             }
-            // else if ( M_modelName == "Elasticity-Large-Deformation" )
-            // {
-            //     if (!BuildCstPart)
-            //         bilinearForm_PatternCoupled +=
-            //             integrate (_range=range,
-            //                        _expr= timeSteppingScaling*inner( dS, grad(v) ),
-            //                        _geomap=this->geomap() );
-            // }
             else if (  physicSolidData->equation() == "Elasticity" )
             {
                 if (BuildCstPart)
@@ -125,8 +117,73 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             this->log("SolidMechanics","updateJacobian",
                       "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
 
+
+            //--------------------------------------------------------------------------------------------------//
+            // constraint on compressibility
+            //--------------------------------------------------------------------------------------------------//
+            if ( physicSolidData->useDisplacementPressureFormulation() && !BuildCstPart )
+            {
+                if ( physicSolidData->equation() == "Hyper-Elasticity" )
+                {
+                    auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,*p,*physicSolidData);
+                    form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
+                           _rowstart=rowStartInMatrix,
+                           _colstart=colStartInMatrix+blockIndexPressure ) +=
+                        integrate ( _range=range,
+                                    _expr= inner(pFmtNLa,grad(v) ),
+                                    _geomap=this->geomap() );
+
+                    // -dF*idv(p) or -d(F*C^{-1})*idv(p)
+                    auto pFmtNLb = /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialDisp(u,*p,*physicSolidData);
+                    bilinearForm_PatternCoupled +=
+                        integrate ( _range=range,
+                                    _expr= inner(pFmtNLb,grad(v) ),
+                                    _geomap=this->geomap() );
+                }
+                else if ( physicSolidData->equation() == "Elasticity")
+                {
+                    form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
+                           _rowstart=rowStartInMatrix,
+                           _colstart=colStartInMatrix+blockIndexPressure ) +=
+                        integrate ( _range=range,
+                                    _expr= -trace(idt(p)*Id*trans(grad(v))),
+                                    _geomap=this->geomap() );
+                }
+
+                auto detJm1 = Feel::FeelModels::solidMecPressureFormulationConstraintJacobian(u,/*p,*/  *physicSolidData);
+
+                form2( _test=M_XhPressure, _trial=M_XhDisplacement, _matrix=J,
+                       _rowstart=rowStartInMatrix+blockIndexPressure,
+                       _colstart=colStartInMatrix ) +=
+                    integrate( _range=range,
+                               _expr=detJm1*id(p),
+                               _geomap=this->geomap() );
+
+
+                if ( physicSolidData->materialModel() == "StVenantKirchhoff")
+                {
+                    auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
+                    form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
+                           _rowstart=rowStartInMatrix+blockIndexPressure,
+                           _colstart=colStartInMatrix+blockIndexPressure ) +=
+                        integrate(_range=range,
+                                  _expr= -(cst(1.)/lameFirstExpr)*idt(p)*id(p),
+                                  _geomap=this->geomap() );
+                }
+                else
+                {
+                    auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
+                    form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
+                           _rowstart=rowStartInMatrix+blockIndexPressure,
+                           _colstart=colStartInMatrix+blockIndexPressure ) +=
+                        integrate( _range=range,
+                                   _expr= -(cst(1.)/K)*idt(p)*id(p),
+                                   _geomap=this->geomap() );
+                }
+            }
             //--------------------------------------------------------------------------------------------------//
             // discretisation acceleration term
+            //--------------------------------------------------------------------------------------------------//
             if ( !this->isStationary() )
             {
                 auto const& densityProp = this->materialsProperties()->density( matName );
@@ -215,7 +272,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                       _expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
                       _geomap=this->geomap() );
     }
-
+#if 0
     //--------------------------------------------------------------------------------------------------//
     // incompressibility terms
     if (M_useDisplacementPressureFormulation && !BuildCstPart)
@@ -226,6 +283,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         // assemble
         this->updateJacobianIncompressibilityTerms(u,p,J);
     }
+#endif
     //--------------------------------------------------------------------------------------------------//
 #if 0
     // viscoelastic terms
@@ -283,7 +341,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
 
-
+#if 0
     if ( M_modelName == "Hyper-Elasticity")
     {
         auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,p,*this->mechanicalProperties());
@@ -346,7 +404,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
                        _geomap=this->geomap() );
     }
 
-
+#endif
     //--------------------------------------------------------------------------------------------//
 
     double timeElapsed=thetimer.elapsed();
