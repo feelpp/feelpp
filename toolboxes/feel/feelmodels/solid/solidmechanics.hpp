@@ -38,6 +38,8 @@
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/meshmover.hpp>
 #include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/vonmises.hpp>
+#include <feel/feelvf/eig.hpp>
 
 #include <feel/feelts/bdf.hpp>
 #include <feel/feelts/newmark.hpp>
@@ -50,6 +52,8 @@
 #include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
+
+#include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 
 namespace Feel
 {
@@ -231,13 +235,18 @@ public:
     typedef Exporter<mesh_visu_ho_type> export_ho_type;
     typedef std::shared_ptr<export_ho_type> export_ho_ptrtype;
 #endif
-    // context for evaluation
-    typedef typename space_displacement_type::Context context_displacement_type;
-    typedef std::shared_ptr<context_displacement_type> context_displacement_ptrtype;
-    typedef typename space_pressure_type::Context context_pressure_type;
-    typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
-    typedef typename space_stress_scal_type::Context context_stress_scal_type;
-    typedef std::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
+    // // context for evaluation
+    // typedef typename space_displacement_type::Context context_displacement_type;
+    // typedef std::shared_ptr<context_displacement_type> context_displacement_ptrtype;
+    // typedef typename space_pressure_type::Context context_pressure_type;
+    // typedef std::shared_ptr<context_pressure_type> context_pressure_ptrtype;
+    // typedef typename space_stress_scal_type::Context context_stress_scal_type;
+    // typedef std::shared_ptr<context_stress_scal_type> context_stress_scal_ptrtype;
+
+
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<space_displacement_type> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -351,12 +360,21 @@ public :
 
     bool is1dReducedModel() const { return M_is1dReducedModel; }
     bool isStandardModel() const { return M_isStandardModel; }
-    bool useDisplacementPressureFormulation() const { return M_useDisplacementPressureFormulation; }
-    void setUseDisplacementPressureFormulation( bool b )
-    {
-        M_useDisplacementPressureFormulation = b;
-        if (M_mechanicalProperties) M_mechanicalProperties->setUseDisplacementPressureFormulation(b);
-    }
+
+    bool hasDisplacementPressureFormulation() const
+        {
+            bool res = false;
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+                if ( physicSolidData->useDisplacementPressureFormulation() )
+                {
+                    res = true;
+                    break;
+                }
+            }
+            return res;
+        }
 
     //-----------------------------------------------------------------------------------//
     // all models
@@ -421,19 +439,74 @@ public :
 
     // post process
     void initPostProcess() override;
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+    // std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
+    // bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
+
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
+
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        {
+            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+        }
+
+    template <typename ModelFieldsType,typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr );
+
+
+    template <typename SymbExprType>
+    auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
+        {
+            auto const& u = this->fieldDisplacement();
+            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
+            using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
+            using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
+            std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
+            std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprPrincipalStress;
+
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                {
+                    auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+
+                    auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*physicSolidData,matProperties,se);
+                    auto vonmisesExpr = vonmises( fpk );
+                    mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+
+                    auto principalStressExpr = eig( fpk );
+                    mapExprPrincipalStress[prefixvm(prefix,"princial-stress")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
+                }
+            }
+
+            return hana::make_tuple( mapExprVonMisses,mapExprPrincipalStress );
+
+        }
+    template <typename SymbExprType>
+    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        {
+            return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
+                                 this->exprPostProcessExportsToolbox( se, prefix ) );
+        }
+
+
+#if 0
     void exportFields( double time );
     bool updateExportedFields( exporter_ptrtype exporter, std::set<std::string> const& fields, double time );
     bool updateExportedFields1dReduced( exporter_1dreduced_ptrtype exporter, std::set<std::string> const& fields, double time );
     void exportMeasures( double time );
+#endif
     void restartExporters() { this->restartExporters( this->timeInitial() ); }
     void restartExporters( double time );
 private :
     //void exportFieldsImpl( double time );
-    void exportFieldsImplHO( double time );
+    // void exportFieldsImplHO( double time );
 
     void updateTimeStepCurrentResidual();
 public :
@@ -639,7 +712,7 @@ public :
     std::set<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
 
     void updateNormalStressFromStruct();
-    void updateStressCriterions();
+    //void updateStressCriterions();
 
     void updatePreStress() { *U_displ_struct_prestress=*M_fieldDisplacement; }
 
@@ -681,8 +754,8 @@ private :
     void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const;
     void updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
 
-    void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
-    void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
+    //void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
+    //void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
     void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
     void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
@@ -699,7 +772,7 @@ private :
 
     // model
     std::string M_modelName, M_solverName;
-    bool M_useDisplacementPressureFormulation;
+
     bool M_is1dReducedModel;
     bool M_isStandardModel;
 
@@ -769,7 +842,7 @@ private :
     //element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
 
     // post-process
-    std::set<std::string> M_postProcessFieldExported;
+    // std::set<std::string> M_postProcessFieldExported;
 
     // exporter
     exporter_ptrtype M_exporter;
@@ -786,9 +859,12 @@ private :
     op_interpolation_visu_ho_pressure_ptrtype M_opIpressure;
 #endif
     // post-process point evaluation
-    context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
-    context_pressure_ptrtype M_postProcessMeasuresContextPressure;
-    context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
+    // context_displacement_ptrtype M_postProcessMeasuresContextDisplacement;
+    // context_pressure_ptrtype M_postProcessMeasuresContextPressure;
+    // context_stress_scal_ptrtype M_postProcessMeasuresContextStressScalar;
+
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
+
 
     std::map<std::string,std::set<std::string> > M_postProcessVolumeVariation; // (name,list of markers)
     //-------------------------------------------//
@@ -848,6 +924,65 @@ private :
     std::map<std::string,element_displacement_ptrtype> M_fieldsUserVectorial;
 
 }; // SolidMechanics
+
+template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
+void
+SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+{
+    this->log("Heat","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    // TODO
+    //this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("Heat","exportResults", "finish");
+}
+
+template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp>
+template <typename ModelFieldsType, typename SymbolsExpr>
+void
+SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+{
+    bool hasMeasure = false;
+
+#if 0
+    auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+
+    // compute measures
+    for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
+    {
+        //auto const& t = this->fieldTemperature();
+        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
+                                    _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
+        this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
+        hasMeasure = true;
+    }
+#endif
+    bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+    bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+
+    if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+        hasMeasure = true;
+
+    if ( hasMeasure )
+    {
+        if ( !this->isStationary() )
+            this->postProcessMeasuresIO().setMeasure( "time", time );
+        this->postProcessMeasuresIO().exportMeasures();
+        this->upload( this->postProcessMeasuresIO().pathFile() );
+    }
+}
 
 
 } // FeelModels

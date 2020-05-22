@@ -87,13 +87,13 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 {
     this->log("SolidMechanics","loadParameterFromOptionsVm", "start" );
-
+#if 0
     std::string formulation = soption(_name="formulation",_prefix=this->prefix());
     M_useDisplacementPressureFormulation = false;
     if ( formulation == "displacement-pressure" )
         M_useDisplacementPressureFormulation = true;
     M_mechanicalProperties->setUseDisplacementPressureFormulation(M_useDisplacementPressureFormulation);
-
+#endif
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         this->setModelName( soption(_name="model",_prefix=this->prefix()) );
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
@@ -337,13 +337,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("SolidMechanics","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    M_mechanicalProperties->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm() );
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().materials().setParameterValues( paramValues );
+    // M_mechanicalProperties->updateForUse( this->mesh(), this->modelProperties().materials(),  this->localNonCompositeWorldsComm() );
 
     //--------------------------------------------------------//
     // function space for displacement
-    if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
+    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
@@ -356,14 +356,27 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     }
     // field displacement
     M_fieldDisplacement.reset( new element_displacement_type( M_XhDisplacement, "structure displacement" ));
+
     //--------------------------------------------------------//
-    if ( M_useDisplacementPressureFormulation )
+    // init pressure space with displcaement-pressure formulation
+    std::set<std::string> physicUseDisplacementPressureFormulation;
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if ( M_mechanicalProperties->isDefinedOnWholeMesh() )
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        if ( physicSolidData->useDisplacementPressureFormulation() )
+            physicUseDisplacementPressureFormulation.insert(physicName);
+    }
+    if ( !physicUseDisplacementPressureFormulation.empty() )
+    {
+        if ( this->materialsProperties()->isDefinedOnWholeMesh( physicUseDisplacementPressureFormulation ) )
             M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
         else
+        {
+            //auto matNamesWithDisplacementPressureFormulation = this->materialsProperties()->physicToMaterials( physicUseDisplacementPressureFormulation );
+            auto rangePressure =  markedelements(this->mesh(), this->materialsProperties()->markers( physicUseDisplacementPressureFormulation ) );
             M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
-                                                     _range=M_rangeMeshElements );
+                                                     _range=rangePressure );
+        }
         M_fieldPressure.reset( new element_pressure_type( M_XhPressure, "pressure" ) );
     }
     if ( M_timeSteppingUseMixedFormulation )
@@ -519,7 +532,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
                                                 _type=InterpolationNonConforme(false) );
         }
 #endif
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
         {
             //M_XhScalarVisuHO = space_scalar_visu_ho_type::New(_mesh=opLagP1->mesh(), _worldscomm=this->localNonCompositeWorldsComm());
             M_XhScalarVisuHO = M_XhVectorialVisuHO->compSpace();
@@ -679,7 +692,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         // define start dof index
         size_type currentStartIndex = 0;
         this->setStartSubBlockSpaceIndex( "displacement", currentStartIndex++ );
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
             this->setStartSubBlockSpaceIndex( "pressure", currentStartIndex++ );
         if ( M_timeSteppingUseMixedFormulation )
             this->setStartSubBlockSpaceIndex( "velocity", currentStartIndex++ );
@@ -689,7 +702,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         M_blockVectorSolution.resize( nBlock );
         int cptBlock = 0;
         M_blockVectorSolution(cptBlock++) = this->fieldDisplacementPtr();
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
             M_blockVectorSolution(cptBlock++) = M_fieldPressure;
         if ( M_timeSteppingUseMixedFormulation )
             M_blockVectorSolution(cptBlock++) = M_fieldVelocity;
@@ -831,7 +844,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
             M_timeStepBdfVelocity->setPathSave(  ( saveTsDir/"velocity" ).string() );
         }
 
-        if ( M_useDisplacementPressureFormulation )
+        if ( this->hasDisplacementPressureFormulation() )
         {
             M_savetsPressure = bdf( _space=this->functionSpacePressure(),
                                     _name="pressure"+suffixName,
@@ -904,7 +917,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initTimeStep()
                 this->setTimeInitial( tir );
                 this->updateTime( tir );
             }
-            if ( M_useDisplacementPressureFormulation )
+            if ( this->hasDisplacementPressureFormulation() )
             {
                 M_savetsPressure->restart();
                 *M_fieldPressure = M_savetsPressure->unknown(0);
@@ -1023,7 +1036,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
 }
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
@@ -1058,29 +1071,26 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
     }
     return res;
 }
-
+#endif
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    std::string modelName = "solid";
+    this->log("SolidMechanics","initPostProcess", "start");
+    this->timerTool("Constructor").start();
 
-    // // update post-process expression
-    // this->modelProperties().parameters().updateParameterValues();
-    // auto paramValues = this->modelProperties().parameters().toParameterValues();
-    // this->modelProperties().postProcess().setParameterValues( paramValues );
+    std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterions", "tresca-criterions", "princial-stress" };
+    if ( this->hasDisplacementPressureFormulation() )
+        fieldsAvailable.insert( "pressure" );
+    this->setPostProcessExportsAllFieldsAvailable( fieldsAvailable );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->setPostProcessExportsPidName( "pid" );
+    this->setPostProcessSaveAllFieldsAvailable( {"displacement" } );
+    super_type::initPostProcess();
 
-    M_postProcessFieldExported = this->postProcessFieldExported( this->modelProperties().postProcess().exports( modelName ).fields() );
-    // clean doExport with fields not available
-    if ( !M_useDisplacementPressureFormulation )
-        M_postProcessFieldExported.erase( "pressure" );
-    if ( this->is1dReducedModel() )
-        M_postProcessFieldExported.erase( "normal-stress" );
-
-    // init exporter
-    if ( !M_postProcessFieldExported.empty() )
+    if ( !this->postProcessExportsFields().empty() )
     {
         if (this->isStandardModel())
             this->createExporters();
@@ -1092,7 +1102,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
             this->restartExporters( this->timeInitial() );
     }
 
-    auto const& ptree = this->modelProperties().postProcess().pTree( modelName );
+
+    auto const& ptree = this->modelProperties().postProcess().pTree( this->keyword() );
 
     // volume variation
     std::string ppTypeMeasures = "Measures";
@@ -1117,10 +1128,19 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         }
     }
 
+    // point measures
+    auto fieldNamesWithSpaceDisplacement = std::make_pair( std::set<std::string>({"displacement"}), this->functionSpaceDisplacement() );
+    auto fieldNamesWithSpaces = hana::make_tuple( fieldNamesWithSpaceDisplacement );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+        M_measurePointsEvaluation->init( evalPoints );
+
+
+#if 0
     std::set<std::string> fieldNameStressScalar = { "Von-Mises","Tresca","princial-stress-1","princial-stress-2","princial-stress-3",
                                                     "stress_xx","stress_xy","stress_xz","stress_yx","stress_yy","stress_yz","stress_zx","stress_zy","stress_zz" };
     // points evaluation
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( modelName ) )
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
     {
         if (!this->isStandardModel()) break;// TODO
 
@@ -1165,7 +1185,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
         }
     }
-
+#endif
     if ( !this->isStationary() )
     {
         if ( this->doRestart() )

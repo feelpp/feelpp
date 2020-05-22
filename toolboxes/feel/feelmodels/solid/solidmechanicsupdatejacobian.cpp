@@ -51,7 +51,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 
     size_type blockIndexPressure = invalid_v<size_type>;
     std::decay_t<decltype(M_XhPressure->elementPtr(*X, blockIndexPressure))> p;
-    if ( this->useDisplacementPressureFormulation() )
+    if ( this->hasDisplacementPressureFormulation() )
     {
         // define pressure field
         blockIndexPressure = this->startSubBlockSpaceIndex("pressure");
@@ -312,6 +312,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u,
@@ -411,7 +412,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianIncompressibilityTerms( elemen
     this->log("SolidMechanics","updateJacobianIncompressibilityTerms",
               "finish in "+(boost::format("%1% s") % timeElapsed).str() );
 }
-
+#endif
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
 //--------------------------------------------------------------------------------------------------//
