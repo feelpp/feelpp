@@ -112,17 +112,19 @@ ModelPostprocessExports::setup( pt::ptree const& p )
                     M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
                 }
 
-                for ( auto const& item2 : item.second )
+                if ( auto ptparts = item.second.get_child_optional("parts") )
                 {
-                    if ( item2.first != "part" )
-                        continue;
-                    ModelExpression modelexpr;
-                    ModelMarkers markers;
-                    modelexpr.setExpr( "expr",  item2.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
-                    if ( auto ptmarkers = item2.second.get_child_optional("markers") )
-                        markers.setPTree(*ptmarkers/*, indexes*/);
-                    CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
-                    M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                    for ( auto const& itemPart : *ptparts )
+                    {
+                        CHECK( itemPart.first.empty() ) << "should be an array, not a subtree";
+                        ModelExpression modelexpr;
+                        ModelMarkers markers;
+                        modelexpr.setExpr( "expr",  itemPart.second, this->worldComm(), M_directoryLibExpr/*,indexes*/ );
+                        if ( auto ptmarkers = itemPart.second.get_child_optional("markers") )
+                            markers.setPTree(*ptmarkers/*, indexes*/);
+                        CHECK( modelexpr.hasAtLeastOneExpr() ) << "expr not given correctly";
+                        M_exprs.push_back( std::make_tuple(exprName,modelexpr,markers,representations,tags) );
+                    }
                 }
             }
 

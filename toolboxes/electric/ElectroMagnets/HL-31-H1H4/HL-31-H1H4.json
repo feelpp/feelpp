@@ -34,23 +34,19 @@
     },
     "PostProcess":
     {
-        "use-model-name":1,
-        "electric":
+        "Exports":
         {
-            "Exports":
+            "fields":["electric-potential","current-density","electric-field"]
+        },
+        "Measures":
+        {
+            "Statistics":
             {
-                "fields":["electric.electric-potential","electric.current-density","electric.electric-field"]
-            },
-            "Measures":
-            {
-                "Statistics":
+                "meanH2V0": 
                 {
-                    "meanH2V0": 
-                    {
-                        "type":"mean", 
-                        "field":"electric-potential",
-                        "markers":"H2_V0"
-                    }
+                    "type":"mean", 
+                    "field":"electric-potential",
+                    "markers":"H2_V0"
                 }
             }
         }

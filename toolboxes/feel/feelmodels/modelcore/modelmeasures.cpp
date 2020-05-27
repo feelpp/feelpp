@@ -216,12 +216,32 @@ ModelMeasuresIO::setMeasureComp( std::string const& key,std::vector<double> cons
         this->setMeasure( key+"_z",values[2] );
 }
 
+void
+ModelMeasuresIO::setMeasures( std::map<std::string,double> const& m )
+{
+    for ( auto const& [key,val] : m )
+        this->setMeasure(key,val);
+}
+
 double
 ModelMeasuresIO::measure( std::string const& key ) const
 {
     CHECK( this->hasMeasure( key ) ) << "no measure with key " << key;
     uint16_type k = M_dataNameToIndex.find( key )->second;
     return M_data[k];
+}
+
+std::map<std::string,double>
+ModelMeasuresIO::currentMeasures() const
+{
+    std::map<std::string,double> res;
+    for ( int k=0;k<M_data.size();++k )
+    {
+        double dataValue = M_data[k];
+        std::string const& dataName = M_dataIndexToName[k];
+        res[dataName] = dataValue;
+    }
+    return res;
 }
 
 void

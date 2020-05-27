@@ -986,7 +986,7 @@ MatrixPetsc<T>::multVector( const Vector<T>& arg, Vector<T>& dest, bool transpos
     if ( !arg.closed() )
         const_cast<Vector<T>*>( &arg )->close();
     if ( !dest.isInitialized() )
-        dest.init( this->mapColPtr() );
+        dest.init( (transpose)? this->mapRowPtr() :this->mapColPtr() );
     else if ( !dest.closed() )
         dest.close();
 
@@ -1112,7 +1112,7 @@ MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
         int ierr=0;
         if ( matC.isInitialized() )
         {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,3,0)
             ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_REUSE_MATRIX, 1.0, &matC_petsc->mat() );
             CHKERRABORT( this->comm(),ierr );
 #else
@@ -1121,7 +1121,7 @@ MatrixPetsc<T>::PtAP( MatrixSparse<value_type> const& matP, MatrixSparse<value_t
         }
         else
         {
-#if (PETSC_VERSION_MAJOR == 3) && (PETSC_VERSION_MINOR >= 3)
+#if PETSC_VERSION_GREATER_OR_EQUAL_THAN(3,3,0)
             ierr = MatPtAP( this->mat(), matP_petsc->mat(), MAT_INITIAL_MATRIX, 1.0, &matC_petsc->mat() );
             CHKERRABORT( this->comm(),ierr );
 #else

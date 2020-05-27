@@ -15,8 +15,14 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
+#include <feel/feelmodels/modelcore/modelmeasurespointsevaluation.hpp>
 #include <feel/feeldiscr/product.hpp>
 #include <feel/feelvf/blockforms.hpp>
+#include <boost/hana/tuple.hpp>
+
+#include <feel/feelmodels/hdg/enums.hpp>
 
 #define USE_SAME_MAT 1
 
@@ -144,10 +150,19 @@ public:
     // typedef Bdf<Pdh_type<mesh_type,Order>> bdf_type;
     typedef std::shared_ptr<bdf_type> bdf_ptrtype;
 
+    // measure tools for points evaluation
+    typedef MeasurePointsEvaluation<Wh_t,Vh_t> measure_points_evaluation_type;
+    typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
+    struct FieldTag
+    {
+        static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto flux( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+    };
     //private:
 protected:
     mesh_ptrtype M_mesh;
+    elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     Vh_ptr_t M_Vh; // flux
     Wh_ptr_t M_Wh; // potential
@@ -175,6 +190,9 @@ protected:
     // time discretization
     bdf_ptrtype M_bdf_mixedpoisson;
 
+    MixedPoissonPhysics M_physic;
+    std::string M_potentialKey;
+    std::string M_fluxKey;
 
     int M_tauOrder;
     double M_tauCst;
@@ -190,23 +208,29 @@ protected:
     bool M_isPicard;
     std::map<std::string,value_type> M_paramValues;
 
+    measure_points_evaluation_ptrtype M_measurePointsEvaluation;
+
     int M_quadError;
     bool M_setZeroByInit;
 public:
 
     // constructor
     MixedPoisson( std::string const& prefix = "hdg.poisson",
+                  MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                   worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                   std::string const& subPrefix = "",
                   ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     MixedPoisson( self_type const& MP ) = default;
     static self_ptrtype New( std::string const& prefix = "hdg.poisson",
+                             MixedPoissonPhysics const& physic = MixedPoissonPhysics::None,
                              worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                              std::string const& subPrefix = "",
                              ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
     // Get Methods
+    std::string potentialKey() const { return M_potentialKey; }
+    std::string fluxKey() const { return M_fluxKey; }
     mesh_ptrtype mesh() const { return M_mesh; }
     Vh_ptr_t fluxSpace() const { return M_Vh; }
     Wh_ptr_t potentialSpace() const { return M_Wh; }
@@ -301,6 +325,84 @@ public:
     void solvePostProcess();
     virtual void postProcess( bool isNL = false );
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields(
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->potentialField(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fluxField(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() )
+                                                 );
+            // return this->modelFields( /*this->potentialField(), */prefix );
+        }
+    // auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+    //     {
+    //         auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
+    //         return this->modelFields( field_p, prefix );
+    //     }
+    // template <typename PotentialFieldType>
+    // auto modelFields( /*PotentialFieldType const& field_p, */std::string const& prefix = "" ) const
+    //     {
+    //     }
+
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            // auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            // auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
+            //Feel::cout << seFields.names() << std::endl;
+            //std::cout << "Info field potential = " << mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] ).functionSpace()->nDof() << std::endl;
+            //std::cout << "Info field flux = " << mfields.field( FieldTag::flux(this), MixedPoissonPhysicsMap[M_physic]["fluxK"] ).functionSpace()->nDof() << std::endl;
+            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, /*seMat,*/ seFields );
+        }
+#if 0 // NOT USE this one because field not use shared ptr : (object modelfields is temporary here and the fields are stored inside)
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+#endif
+#if 0
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            auto const& v = mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] );
+
+            // generate symbol electric_matName_current_density
+            typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
+            std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            {
+                std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
+                auto _currentDensityExpr = this->currentDensityExpr( v, matName );
+                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1 ) ) );
+            }
+
+            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
+        }
+#endif
+    template <typename ModelFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+        {
+            bool hasMeasure = false;
+            bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+            bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+            bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
+            if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
+                hasMeasure = true;
+
+            if ( hasMeasure )
+            {
+                if ( !this->isStationary() )
+                    this->postProcessMeasuresIO().setMeasure( "time", time );
+                this->postProcessMeasuresIO().exportMeasures();
+                this->upload( this->postProcessMeasuresIO().pathFile() );
+            }
+        }
 };
 
 template<int Dim, int Order, int G_Order, int E_Order>
@@ -320,13 +422,13 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::updateConductivityTerm(Expr<ExprT> e
 #endif
 
     if ( marker.empty() )
-        bbf(0_c,0_c) += integrate( _range=elements(M_mesh), _expr=inner(idt(u),id(v))/expr);
+        bbf(0_c,0_c) += integrate( _range=elements(support(M_Wh)), _expr=inner(idt(u),id(v))/expr);
     else
         bbf(0_c,0_c) += integrate( _range=markedelements(M_mesh, marker), _expr=inner(idt(u),id(v))/expr);
 
     // (1/delta_t p, w)_Omega  [only if it is not stationary]
     if ( !this->isStationary() ) {
-        bbf( 1_c, 1_c ) += integrate(_range=elements(M_mesh),
+        bbf( 1_c, 1_c ) += integrate(_range=elements(support(M_Wh)),
                                      _expr = -(this->timeStepBDF()->polyDerivCoefficient(0)*idt(p)*id(w)) );
     }
 
@@ -341,7 +443,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assembleFluxRHS( Expr<ExprT> ex
     auto v = M_Vh->element();
 
     if ( marker.empty() )
-        blf(0_c) += integrate( _range=elements(M_mesh),
+        blf(0_c) += integrate( _range=elements(support(M_Wh)),
                               _expr=inner(expr,id(v)) );
     else
         blf(0_c) += integrate( _range=markedelements(M_mesh,marker),
@@ -359,7 +461,7 @@ void MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePotentialRHS( Expr<Expr
 
     if ( marker.empty() )
     {
-        blf(1_c) += integrate( _range=elements(M_mesh),
+        blf(1_c) += integrate( _range=elements(support(M_Wh)),
                               _expr=inner(expr,id(w)) );
     }
     else
@@ -380,7 +482,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsDirichlet( Expr<ExprT> ex
     auto l = M_Mh->element( "lambda" );
 
     // <g_D, mu>_Gamma_D
-    blf(2_c) += integrate(_range=markedfaces(M_mesh,marker),
+    blf(2_c) += integrate(_range=markedfaces(support(M_Wh),marker),
                           _expr=id(l)*expr);
     toc("assembleRhsDirichlet", this->verbose() || FLAGS_v > 0);
 }
@@ -395,7 +497,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsNeumann( Expr<ExprT> expr
     auto l = M_Mh->element( "lambda" );
 
     // <g_N,mu>_Gamma_N
-    blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+    blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
                           _expr=id(l)*expr);
     toc("assembleRhsNeumann", this->verbose() || FLAGS_v > 0);
 }
@@ -443,19 +545,19 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRhsInterfaceCondition( Expr<
  auto tau_constant = cst(doption(prefixvm(prefix(), "tau_constant")));
 
  // <j.n,mu>_Gamma_R
- bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+ bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
  _expr=( id(l)*(trans(idt(u))*N()) ));
  // <tau p, mu>_Gamma_R
- bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+ bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
  _expr=tau_constant * id(l) * ( pow(idv(H),M_tau_order)*idt(p) ) );
  // <-tau phat, mu>_Gamma_R
- bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+ bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
  _expr=-tau_constant * idt(phat) * id(l) * ( pow(idv(H),M_tau_order) ) );
  // <g_R^1 phat, mu>_Gamma_R
- bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+ bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
  _expr=expr1*idt(phat) * id(l) );
  // <g_R^2,mu>_Gamma_R
- blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+ blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
  _expr=id(l)*expr2);
  }
  */
@@ -488,20 +590,20 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assembleRobin( Expr<ExprT1> const& e
     if ( !update_only )
     {
         // <j.n,mu>_Gamma_R
-        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(M_mesh,marker),
+        bbf( 2_c, 0_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                      _expr=id(l)*normalt(u) );
         // <tau p, mu>_Gamma_R
-        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(M_mesh,marker),
+        bbf( 2_c, 1_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                      _expr=tau_constant * id(l) * idt(p)  );
         // <-tau phat, mu>_Gamma_R
-        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+        bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                      _expr=-tau_constant * idt(phat) * id(l) );
     }
     // <g_R^1 phat, mu>_Gamma_R
-    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(M_mesh,marker),
+    bbf( 2_c, 2_c ) += integrate(_range=markedfaces(support(M_Wh),marker),
                                  _expr=expr1*idt(phat) * id(l) );
     // <g_R^2,mu>_Gamma_R
-    blf(2_c) += integrate( _range=markedfaces(M_mesh, marker),
+    blf(2_c) += integrate( _range=markedfaces(support(M_Wh), marker),
                            _expr=id(l)*expr2);
     toc("assembleRobin", this->verbose() || FLAGS_v > 0);
 }
@@ -514,7 +616,7 @@ MixedPoisson<Dim, Order, G_Order, E_Order>::assemblePostProcessRhs(Expr<ExprT> e
 {
     auto pps = product( M_Whp );
     auto ell = blockform1( pps, M_Fpp);
-    ell(0_c) += integrate( _range=markedelements(M_mesh,marker),
+    ell(0_c) += integrate( _range=markedelements(support(M_Wh),marker),
                           _expr=-grad(M_ppp)*idv(M_up)/expr);
 }
 

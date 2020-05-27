@@ -174,7 +174,8 @@ public:
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
-    element_levelset_ptrtype const& globalLevelsetElt() const;
+    element_levelset_ptrtype const& globalLevelsetElt( bool up = true ) const;
+    void updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const;
 
     // Fluid density-viscosity model
     material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
@@ -190,6 +191,47 @@ public:
     decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    struct FieldTag
+    {
+        static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            auto mfieldsFluid = M_fluidModel->modelFields( prefixvm( prefix, M_fluidModel->keyword() ) );
+
+            using mfields_levelset_type = std::decay_t<decltype(M_levelsets.begin()->second->modelFields( "" ) )>;
+            mfields_levelset_type mfieldsLevelsets;
+            // for ( auto const& [lsName,lsObject] : M_levelsets )
+            //     mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, lsObject->modelFields(  prefixvm( prefix,  lsObject->keyword() ) ) );
+            for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
+                mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) );
+
+            return Feel::FeelModels::modelFields( mfieldsFluid, mfieldsLevelsets,
+                                                  modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefixvm( prefix, "global-levelset"), "phi", this->globalLevelsetElt(false), "phi", this->keyword(),
+                                                                            std::bind( &self_type::updateGlobalLevelsetElt, this, std::placeholders::_1, std::ref(M_doUpdateGlobalLevelset) ) )
+                                                  );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expression
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+#if 0
     //--------------------------------------------------------------------//
     // Symbols expr
     auto symbolsExpr() const { 
@@ -200,11 +242,12 @@ public:
     template <typename FieldVelocityType, typename FieldPressureType>
     auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
     {
-        auto symbolExprField = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprField( u, p ) );
-        auto symbolExprFit = super_type::symbolsExprFit( symbolExprField );
-        auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
-        return Feel::vf::symbolsExpr( symbolExprField,symbolExprFit,symbolExprMaterial );
+        auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
+        auto seParam = this->symbolsExprParameter();
+        //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+        return Feel::vf::symbolsExpr( seFluid, seParam );
     }
+#endif
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;

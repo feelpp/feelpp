@@ -1046,7 +1046,9 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 void
 LEVELSET_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->exportResults( time, this->symbolsExpr() );
+    auto mfields = this->modelFields();
+    //this->exportResults( time, this->symbolsExpr() );
+    this->exportResults( time, this->symbolsExpr(mfields), mfields, this->allMeasuresQuantities() );
 }
 
 //----------------------------------------------------------------------------//
@@ -1090,8 +1092,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto phi = this->phiPtr();
     auto phio = this->phiPreviousTimeStepPtr();
 
-    auto prod = vf::project(this->functionSpace(), this->rangeMeshElements(),
-                            idv(phio) * idv(phi) );
+    auto prod = vf::project(_space=this->functionSpace(),
+                            _range=this->rangeMeshElements(),
+                            _expr=idv(phio) * idv(phi) );
 
 
     for (; it_elt!=en_elt; it_elt++)

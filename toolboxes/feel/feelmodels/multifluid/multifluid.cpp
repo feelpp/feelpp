@@ -295,19 +295,28 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt() const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt( bool up ) const
 {
     if( !M_globalLevelsetElt )
         M_globalLevelsetElt.reset( new element_levelset_type(this->functionSpaceLevelset(), "GlobalLevelset") );
-    if( M_doUpdateGlobalLevelset )
-    {
-        M_globalLevelsetElt->on( 
-                _range=elements( M_globalLevelsetElt->mesh() ),
-                _expr=this->globalLevelsetExpr()
-                );
-        M_doUpdateGlobalLevelset = false;
-    }
+    if( up && M_doUpdateGlobalLevelset )
+        this->updateGlobalLevelsetElt( M_globalLevelsetElt, M_doUpdateGlobalLevelset );
+
     return M_globalLevelsetElt;
+}
+
+MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const
+{
+    if ( !doUpdateGlobalLevelset )
+        return;
+
+    globalLevelsetElt->on(
+        _range=elements( M_globalLevelsetElt->mesh() ),
+        _expr=this->globalLevelsetExpr()
+                            );
+    doUpdateGlobalLevelset = false;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -1256,7 +1265,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     {
         interfaceForcesFields[prefixvm("additional", force.first)] = force.second->lastInterfaceForce();
     }
-
+#if 0
     //auto const ls_fields = []( std::pair<std::string, levelset_model_ptrtype> const& p ) 
         //-> decltype( p.second->allFields() )
     //{
@@ -1306,7 +1315,11 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     auto exprExport = M_fluidModel->exprPostProcessExports( symbolsExpr, M_fluidModel->keyword() );
     // TODO: add exprPostProcessExports support in LevelSet
     this->executePostProcessExports( M_exporter, time, fields, symbolsExpr, exprExport );
-
+#else
+    auto mfields = this->modelFields();
+    auto symbolExpr = this->symbolsExpr( mfields );
+    this->executePostProcessExports( M_exporter, time, mfields, symbolExpr );
+#endif
     // Export measures
     this->exportMeasures( time );
 
@@ -1454,6 +1467,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
     for( auto const& lsForces : M_levelsetInterfaceForcesModels )
         for( auto const& f : lsForces.second )
             ppExportsAllFieldsAvailable.insert( prefixvm( lsForces.first, f.first ) );
+    ppExportsAllFieldsAvailable.insert( "global-levelset.phi" );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
@@ -1611,15 +1625,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
             );
 
     auto rho = vf::project( 
-            this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            elements(this->mesh()),
-            idv(M_fluidMaterialProperties->fieldRho())*globalH
+        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        _range=elements(this->mesh()),
+        _expr=idv(M_fluidMaterialProperties->fieldRho())*globalH
             );
 
     auto mu = vf::project( 
-            this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            elements(this->mesh()),
-            idv(M_fluidMaterialProperties->fieldMu())*globalH
+        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        _range=elements(this->mesh()),
+        _expr=idv(M_fluidMaterialProperties->fieldMu())*globalH
             );
 
     for( auto const& ls: M_levelsets )
@@ -1629,14 +1643,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
                 cst( this->globalLevelsetThicknessInterface() )
                 );
         rho += vf::project( 
-                this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-                elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
+            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
                 );
         mu += vf::project( 
-                this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-                elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
+            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
                 );
     }
 

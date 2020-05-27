@@ -268,6 +268,50 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        _geomap=this->geomap()
                        );
     }
+
+    //--------------------------------------------------------------------------------------------------//
+    if ( !M_bodySetBC.empty() )
+    {
+        this->log("FluidMechanics","updateJacobianWeakBC","assembly of body bc");
+
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+            double massBody = bpbc.massExpr().evaluate()(0,0);
+            auto const& momentOfInertia = bpbc.body().momentOfInertia();
+
+            bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+            int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
+            bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+            if ( BuildCstPart )
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
+                    auto const& basisToContainerGpTranslationalVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocity );
+                    for (int d=0;d<nDim;++d)
+                    {
+                        J->add( basisToContainerGpTranslationalVelocityRow[d], basisToContainerGpTranslationalVelocityCol[d],
+                                bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massBody );
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityRow = J->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
+                    auto const& basisToContainerGpAngularVelocityCol = J->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
+                    {
+                        for (int j=0;j<nLocalDofAngularVelocity;++j)
+                        {
+                            J->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
+                                    bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                        }
+                    }
+                }
+            }
+        }
+    }
     //--------------------------------------------------------------------------------------------------//
     double timeElapsed=t1.elapsed();
     this->log("FluidMechanics","updateJacobianWeakBC","finish in "+(boost::format("%1% s") % timeElapsed).str() );
@@ -292,6 +336,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJaco
         this->updateDofEliminationIds( "pressurelm1", this->dofEliminationIds( "pressurebc-lm" ), data );
         if ( nDim == 3 )
             this->updateDofEliminationIds( "pressurelm2", this->dofEliminationIds( "pressurebc-lm" ), data );
+    }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".translational-velocity";
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.translational-velocity" ), data );
+        }
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            std::string spaceName = "body-bc."+bpbc.name()+".angular-velocity";
+            this->updateDofEliminationIds( spaceName, this->dofEliminationIds( "body-bc.angular-velocity" ), data );
+        }
     }
 
     double timeElapsed = this->timerTool("Solve").stop();

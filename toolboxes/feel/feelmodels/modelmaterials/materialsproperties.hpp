@@ -1,9 +1,11 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_MODELMATERIALS_H
 #define FEELPP_TOOLBOXES_MODELMATERIALS_H 1
 
 #include <feel/feelvf/cst.hpp>
+#include <feel/feelvf/ones.hpp>
 #include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelvf/exprselectorbymeshelement.hpp>
 #include <feel/feelmodels/modelcore/modelphysics.hpp>
@@ -80,35 +82,34 @@ public :
     MaterialsProperties( std::string const& prefix, std::string const& exprRepository )
         :
         M_exprRepository( exprRepository )
-        //M_thermalConductivityDefaultValue( doption(_name="thermal-conductivity",_prefix=prefix) ),// [ W/(m*K) ]
-        //M_heatCapacityDefaultValue( doption(_name="heat-capacity",_prefix=prefix) ), // [ J/(kg*K) ]
-        //M_rhoDefaultValue( doption(_name="rho",_prefix=prefix) ),
-        //M_thermalExpansionDefaultValue( doption(_name="thermal-expansion",_prefix=prefix) ) // [ 1/K ]
         {}
 
     MaterialsProperties( MaterialsProperties const& ) = default;
 
-    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics )
+    void updateForUse( mesh_ptrtype const& mesh, ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics,
+                       std::set<std::string> const& onlyTheseMaterialNames = std::set<std::string>{},
+                       std::set<std::string> const& onlyTheseMarkers = std::set<std::string>{} )
         {
-            std::set<std::string> eltMarkersInMesh;
+            M_eltMarkersInMesh.clear();
             for (auto const& markPair : mesh->markerNames() )
             {
                 std::string meshMarker = markPair.first;
                 if ( mesh->hasElementMarker( meshMarker ) )
-                    eltMarkersInMesh.insert( meshMarker );
+                    M_eltMarkersInMesh.insert( meshMarker );
             }
 
-            auto const& mapPhysicsToSubphysics = modelphysics.mapPhysicsToSubphysics();
-            auto const& defaultPhysics = modelphysics.physic();
-            auto const& physicsAvailable = modelphysics.physics();
+            //auto const& mapPhysicsToSubphysics = modelphysics.mapPhysicsToSubphysics();
+            auto const& defaultPhysics = modelphysics.physicDefault();
+            auto const& physicsAvailable = modelphysics.physicsAvailable();
 
             std::map<std::string,std::set<std::string>> markersByMaterial;
             M_markers.clear();
-            std::set<std::string> currentPhysics;
 
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
+                if ( !onlyTheseMaterialNames.empty() && (onlyTheseMaterialNames.find( matName ) == onlyTheseMaterialNames.end()) )
+                    continue;
                 auto const& mat = m.second;
 
                 std::set<std::string> currentPhysicsReaded;
@@ -127,20 +128,27 @@ public :
                 }
 
 
+                std::set<std::string> currentPhysics;
                 for ( std::string const& p : currentPhysicsReaded )
                 {
-                    currentPhysics.insert( p );
-                    auto itFindPhysics = mapPhysicsToSubphysics.find( p );
-                    if ( itFindPhysics != mapPhysicsToSubphysics.end() )
-                        currentPhysics.insert( itFindPhysics->second.begin(), itFindPhysics->second.end() );
+                    auto thePhysicsShared = modelphysics.physicsShared( p );
+                    currentPhysics.insert( thePhysicsShared.begin(), thePhysicsShared.end() );
+                    // auto itFindPhysics = mapPhysicsToSubphysics.find( p );
+                    // if ( itFindPhysics != mapPhysicsToSubphysics.end() )
+                    //     currentPhysics.insert( itFindPhysics->second.begin(), itFindPhysics->second.end() );
                 }
 
                 if ( currentPhysics.empty() )
                     continue;
 
+                for ( std::string const& p : currentPhysics )
+                    M_materialsNames[p].insert( matName );
+
                 for ( std::string const& matmarker : mat.meshMarkers() )
                 {
-                    if ( eltMarkersInMesh.find( matmarker ) == eltMarkersInMesh.end() )
+                    if ( !onlyTheseMarkers.empty() && (onlyTheseMarkers.find( matmarker ) == onlyTheseMarkers.end()) )
+                        continue;
+                    if ( M_eltMarkersInMesh.find( matmarker ) == M_eltMarkersInMesh.end() )
                         continue;
                     for ( std::string const& p : currentPhysics )
                         M_markers[p].insert( matmarker );
@@ -148,16 +156,45 @@ public :
                 }
             }
 
-            for ( std::string const& p : currentPhysics )
-                M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == eltMarkersInMesh.size() );
+            for ( std::string const& p : physicsAvailable /*currentPhysics*/ )
+                M_isDefinedOnWholeMesh[p] = ( this->markers( p ).size() == M_eltMarkersInMesh.size() );
 
 
-            for ( auto const& [propName, propDesc] : modelphysics.matertialPropertyDescription() )
-                M_matertialPropertyDescription[propName] = propDesc;
+            std::map<std::string,std::string> propSymbolToPropNameInDescription;
+#if 0
+            for ( auto const& [propName, propDesc] : modelphysics.materialPropertyDescription() )
+            {
+                 M_materialPropertyPhysicDescription[propName] = propDesc;
+                propSymbolToPropNameInDescription[std::get<0>( propDesc )] = propName;
+            }
+#else
+            for ( auto const& [physicName,physicData] : modelphysics.physics() )
+            {
+                for ( auto const& [propName, propDesc] : physicData->materialPropertyDescription() )
+                {
+                    M_materialPropertyPhysicDescription[propName] = propDesc;
+                    propSymbolToPropNameInDescription[std::get<0>( propDesc )] = propName;
+                }
+            }
+#endif
 
             for( auto const& m : mats )
             {
                 std::string const& matName = m.first;
+#if 0
+                if ( !this->hasMaterial( matName ) )
+                    continue;
+#else
+
+                bool _hasThisMat = false;
+                for ( auto const& [physic, matNames] : M_materialsNames )
+                    if ( matNames.find( matName ) != matNames.end() )
+                        _hasThisMat = true;
+                if ( !_hasThisMat )
+                    continue;
+#endif
+
+
                 auto const& mat = m.second;
                 auto itFindMat = markersByMaterial.find( matName );
                 if ( itFindMat == markersByMaterial.end() )
@@ -171,23 +208,51 @@ public :
                 auto [itProp,isAdded] = M_materialNameToProperties.emplace( matName, MaterialProperties<mesh_type>( matName ) );
                 auto & matProperties = itProp->second;
 
-                for ( auto const& [propName,desc] : M_matertialPropertyDescription  )
+                for ( auto const& [propSymbol,propExpr] : mat.properties() )
                 {
-                    std::string const& symbol = std::get<0>( desc );
-                    if ( !mat.hasProperty( symbol ) )
-                        continue;
-                    auto const& possibleExprShapes = std::get<1>( desc );
-                    auto const& matExprProperty = mat.property( symbol );
-                    for ( auto [nComp1,nComp2] : std::get<1>( desc ) )
+                    auto itFindSymbolInDesc = propSymbolToPropNameInDescription.find( propSymbol );
+                    if ( itFindSymbolInDesc != propSymbolToPropNameInDescription.end() )
                     {
-                        if ( matExprProperty.hasExpr(nComp1,nComp2) )
+                        std::string propName = itFindSymbolInDesc->second;
+                        auto const& desc = M_materialPropertyPhysicDescription.find( propName )->second;
+                        bool findProp = false;
+                        for ( auto [nComp1,nComp2] : desc.shapes() )
                         {
-                            matProperties.add( propName/*symbol*/, matExprProperty );
-                            break;
+                            if ( propExpr.hasExpr(nComp1,nComp2) )
+                            {
+                                matProperties.add( propName/*symbol*/, propExpr );
+                                findProp = true;
+                                break;
+                            }
                         }
+                        CHECK( findProp ) << "shape of the material property " << propName << " is not compatible with the physic";
+                        M_materialPropertyDescription.try_emplace( propName,desc );
+                    }
+                    else
+                    {
+                        // we need to copy these variable elses the lambda don't capture, I don't know why
+                        auto propSymbol2 = propSymbol;
+                        auto propExpr2 = propExpr;
+                        hana::for_each( ModelExpression::expr_shapes, [this,&propSymbol2,&propExpr2,&matProperties]( auto const& e_ij )
+                                        {
+                                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                                            if ( propExpr2.template hasExpr<ni,nj>() )
+                                            {
+                                                std::string propName = propSymbol2;
+                                                matProperties.add( propName, propExpr2 );
+                                                auto propShape = MaterialPropertyDescription::shape(ni,nj);
+                                                auto itFindPropDesc = M_materialPropertyDescription.find( propName);
+                                                if( itFindPropDesc == M_materialPropertyDescription.end() )
+                                                    M_materialPropertyDescription.emplace( propName, MaterialPropertyDescription( propSymbol2, { propShape } ) );
+                                                else
+                                                    itFindPropDesc->second.add( propShape );
+                                            }
+                                        });
                     }
                 }
 
+                // TODO : move in heat toolbox
                 // rho * Cp
                 M_rhoHeatCapacityByMaterial[matName];
                 if ( this->hasDensity( matName ) && this->density( matName ).hasExprScalar()  && this->hasHeatCapacity( matName ) && this->heatCapacity( matName ).hasExprScalar() )
@@ -203,13 +268,61 @@ public :
             M_exprSelectorByMeshElementMapping->template updateForUse<mesh_type>( this->rangeMeshElementsByMaterial() );
         }
 
-    std::set<std::string> /*const&*/ markers( std::string const& p ) const
+
+    //! return the number of materials
+    int numberOfMaterials() const { return M_materialNameToProperties.size(); }
+
+    //! return true if the material matName has been defined
+    bool hasMaterial( std::string const& matName ) const
+        {
+            return (M_materialNameToProperties.find( matName ) != M_materialNameToProperties.end());
+#if 0
+            for ( auto const& [physic, matNames] : M_materialsNames )
+                if ( matNames.find( matName ) != matNames.end() )
+                    return true;
+            return false;
+#endif
+        }
+
+    //! return the materials names used with a set of physic
+    std::set<std::string> physicToMaterials( std::set<std::string> const& physics ) const
+        {
+            std::set<std::string> res;
+            for ( std::string const& physic : physics )
+            {
+                auto itFindMat = M_materialsNames.find( physic );
+                if( itFindMat != M_materialsNames.end() )
+                    res.insert( itFindMat->second.begin(), itFindMat->second.end() );
+            }
+            return res;
+        }
+
+    //! return the materials names used with a physic
+    std::set<std::string> physicToMaterials( std::string const& physic ) const
+        {
+            return this->physicToMaterials( std::set<std::string>({ physic }) );
+        }
+
+    void markers( std::string const& p, std::set<std::string> & res ) const
         {
             auto itFindMarkers = M_markers.find( p );
-            if ( itFindMarkers == M_markers.end() )
-                return std::set<std::string>{};
-            else
-                return itFindMarkers->second;
+            if ( itFindMarkers != M_markers.end() )
+                res.insert( itFindMarkers->second.begin(), itFindMarkers->second.end() );
+        }
+
+    std::set<std::string> markers( std::string const& p ) const
+        {
+            std::set<std::string> res;
+            this->markers( p, res );
+            return res;
+        }
+
+    std::set<std::string> markers( std::set<std::string> const& setOfPhysics ) const
+        {
+            std::set<std::string> res;
+            for ( std::string p : setOfPhysics )
+                this->markers( p, res );
+            return res;
         }
 
     bool isDefinedOnWholeMesh( std::string const& p ) const
@@ -221,6 +334,12 @@ public :
                 return itFindMarkers->second;
         }
 
+
+    bool isDefinedOnWholeMesh( std::set<std::string> const& setOfPhysics ) const
+        {
+            return this->markers( setOfPhysics ).size() == M_eltMarkersInMesh.size();
+        }
+
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > const& rangeMeshElementsByMaterial() const { return M_rangeMeshElementsByMaterial; }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElementsByMaterial( std::string const& matName ) const
         {
@@ -228,7 +347,7 @@ public :
             return M_rangeMeshElementsByMaterial.find( matName )->second;
         }
 
-    bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
+    //bool hasMaterial( std::string const& matName ) const { return M_rangeMeshElementsByMaterial.find( matName ) != M_rangeMeshElementsByMaterial.end(); }
 
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> exprSelectorByMeshElementMapping() const { return M_exprSelectorByMeshElementMapping; }
 
@@ -238,6 +357,17 @@ public :
             auto itFindMatProp = M_materialNameToProperties.find( matName );
             CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
             return itFindMatProp->second;
+        }
+
+    //! return true is the property \propName is defined in at leat one material
+    bool hasMaterialProperty( std::string const& propName ) const
+        {
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( matProps.has( propName ) )
+                    return true;
+            }
+            return false;
         }
 
     //! return true is the property \propName is defined in material \matName
@@ -252,29 +382,50 @@ public :
     MaterialProperty const&
     materialProperty( std::string const& matName, std::string const& propName ) const
         {
-            CHECK( this->hasProperty( matName, propName ) ) << "material property not registered";
+            CHECK( this->hasProperty( matName, propName ) ) << "material property " << propName << " is not registered in material " << matName;
             return this->materialProperties( matName ).property( propName );
+        }
+
+    //! return true is the property \propName has the same expression shape (M \times N) in all materials
+    template <int M,int N>
+    bool materialPropertyHasSameExprShapeInAllMaterials( std::string const& propName ) const
+        {
+            auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+            if ( itFindPropDesc == M_materialPropertyDescription.end() )
+                return false;
+
+            // look if the prop has only one shape available and exists
+            auto const& theShapes = std::get<1>( itFindPropDesc->second );
+            if ( theShapes.size() == 1 )
+                if ( theShapes[0].first == M && theShapes[0].second == N && this->hasMaterialProperty( propName ) )
+                    return true;
+
+            // else loop on prop for each material
+            bool findProp = false ;
+            for ( auto & [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( !matProps.has( propName ) )
+                    continue;
+                findProp = true;
+                if ( !matProps.property( propName ).template hasExpr<M,N>() )
+                    return false;
+            }
+            return findProp;
         }
 
     //! return true is the property \propName is defined as a scalar expression in all materials
     bool materialPropertyIsScalarInAllMaterials( std::string const& propName ) const
         {
-            for ( auto & [matName,matProps] : M_materialNameToProperties )
-            {
-                if ( !matProps.has( propName ) )
-                    continue;
-                if ( !matProps.property( propName ).isScalar() )
-                    return false;
-            }
-            return true;
+            return this->materialPropertyHasSameExprShapeInAllMaterials<1,1>( propName );
         }
+
 
     //! return true is the property \propName is defined as a scalar or a matrix TheDim x TheDim in all materials
     template <int TheDim>
     bool materialPropertyIsScalarOrMatrixInAllMaterials( std::string const& propName ) const
         {
-            auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
-            if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+            auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+            if ( itFindPropDesc == M_materialPropertyDescription.end() )
                 return false;
             auto const& theShapes = std::get<1>( itFindPropDesc->second );
             if ( theShapes.size() != 2 )
@@ -301,13 +452,14 @@ public :
             return false;
         }
 
-    template <int TheDim, typename SymbolsExpr>
-    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+    template <int TheDim, typename SymbolsExprType = symbols_expression_empty_t>
+    auto materialPropertyExprScalarOrMatrix( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
             auto Id = eye<TheDim,TheDim>();
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)*Id) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar_as_matrix;
-            typedef decltype(expr(matrix_field_expression<TheDim,TheDim,2>{},symbolsExpr)) _expr_matrix_type;
+            using _expr_scalar_type = std::decay_t< decltype( ModelExpression{}.template expr<1,1>() ) >;
+            using _expr_matrix_type = std::decay_t< decltype( ModelExpression{}.template expr<TheDim,TheDim>() ) >;
+            using _expr_scalar_as_matrix_type = std::decay_t< decltype(_expr_scalar_type{}*Id) >;
+            std::vector<std::pair<std::string,_expr_scalar_as_matrix_type>> exprs_scalar_as_matrix;
             std::vector<std::pair<std::string,_expr_matrix_type>> exprs_matrix;
 
             for ( auto & [matName,matProps] : M_materialNameToProperties )
@@ -318,40 +470,45 @@ public :
 
                 if ( matProp.template hasExpr<TheDim,TheDim>() )
                 {
-                    auto matPropExpr = expr( matProp.template expr<TheDim,TheDim>(), symbolsExpr );
+                    auto const& matPropExpr = matProp.template expr<TheDim,TheDim>();
                     exprs_matrix.push_back( std::make_pair( matName, matPropExpr ) );
                 }
                 else if ( matProp.hasExprScalar() )
                 {
-                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
+                    auto const& matPropExpr = matProp.exprScalar();
                     exprs_scalar_as_matrix.push_back( std::make_pair( matName, matPropExpr*Id ) );
                 }
             }
 
-            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix );
+            else
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar_as_matrix, exprs_matrix ).applySymbolsExpr( se );
         }
 
-    template <typename SymbolsExpr>
-    auto materialPropertyExprScalar( std::string const& propName, SymbolsExpr const& symbolsExpr ) const
+    template <int M,int N, typename SymbolsExprType = symbols_expression_empty_t>
+    auto materialPropertyExpr( std::string const& propName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},symbolsExpr)) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> exprs_scalar;
+            using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<M,N>() ) >;
+            std::vector<std::pair<std::string,_expr_type>> theExprs;
             for ( auto & [matName,matProps] : M_materialNameToProperties )
             {
                 if ( !matProps.has( propName ) )
                     continue;
                 auto const& matProp = matProps.property( propName );
 
-                if ( matProp.isScalar() )
+                if ( matProp.template hasExpr<M,N>() )
                 {
-                    auto matPropExpr = expr( matProp.exprScalar(), symbolsExpr );
-                    exprs_scalar.push_back( std::make_pair( matName, matPropExpr ) );
+                    auto const& matPropExpr = matProp.template expr<M,N>();
+                    theExprs.push_back( std::make_pair( matName, matPropExpr ) );
                 }
             }
 
-            return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, exprs_scalar );
+            if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, theExprs );
+            else
+                return expr<typename mesh_type::index_type>( M_exprSelectorByMeshElementMapping, theExprs ).applySymbolsExpr( se );
         }
-
 
     // thermal conductivity
     bool hasThermalConductivity( std::string const& matName ) const
@@ -372,16 +529,16 @@ public :
             return this->hasMaterialPropertyDependingOnSymbol( "thermal-conductivity", symbolStr );
         }
 
-    template <typename SymbolsExpr>
-    auto thermalConductivityExpr( SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto thermalConductivityExpr( SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
             return this->materialPropertyExprScalarOrMatrix<nDim>( "thermal-conductivity", symbolsExpr );
         }
 
-    template <typename SymbolsExpr>
-    auto thermalConductivityScalarExpr( SymbolsExpr const& symbolsExpr ) const
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto thermalConductivityScalarExpr( SymbolsExprType const& symbolsExpr = symbols_expression_empty_t{} ) const
         {
-            return this->materialPropertyExprScalar( "thermal-conductivity", symbolsExpr );
+            return this->materialPropertyExpr<1,1>( "thermal-conductivity", symbolsExpr );
         }
 
 
@@ -480,73 +637,268 @@ public :
                 matProps.setParameterValues( mp );
         }
 
-    template <typename SymbExprType>
-    auto symbolsExpr( SymbExprType const& se, std::string const& prefix_symbol ) const
+    std::map<std::string,double>
+    toParameterValues( std::string const& prefix_symbol ) const
         {
-            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
-            typedef decltype(expr(matrix_field_expression<nDim,nDim,2>{},se)) _expr_matrix_type;
-            std::vector<std::tuple<std::string,_expr_matrix_type,SymbolExprComponentSuffix>> matPropSymbsMatrix;
-
-            // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
+            std::map<std::string,double> pv;
+            int nMat = this->numberOfMaterials();
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
                 for ( auto const& [propName,matProp] : matProps )
                 {
-                    auto itFindPropDesc = M_matertialPropertyDescription.find( propName );
-                    if ( itFindPropDesc == M_matertialPropertyDescription.end() )
+                    auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_materialPropertyDescription.end() )
                         continue;
+
                     std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
-                    std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
-                    if ( matProp.template hasExpr<nDim,nDim>() )
-                    {
-                        auto matPropExpr = expr( matProp.template expr<nDim,nDim>(), se );
-                        matPropSymbsMatrix.push_back( std::make_tuple( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+                    std::set<std::string> symbolMatProp( { (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str() } );
+                    if ( nMat == 1 )
+                        symbolMatProp.insert( (boost::format("%1%%2%")%prefix_symbol %symbolProp).str() );
 
-                    }
-                    else if ( matProp.hasExprScalar() )
-                    {
-                        auto matPropExpr = expr( matProp.exprScalar(), se );
-                        matPropSymbsScalar.push_back( std::make_pair( symbolPrefixMatProp, matPropExpr ) );
-                    }
+                    matProp.updateParameterValues( symbolMatProp, pv );
                 }
             }
+            return pv;
+        }
 
-            typedef decltype( this->materialPropertyExprScalar( "", se ) ) _expr_scalar_selector_type;
-            std::vector<std::pair<std::string,_expr_scalar_selector_type>> matPropSymbsScalarSelector;
-            typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "", se ) ) _expr_scalar_or_matrix_selector_type;
-            std::vector<std::tuple<std::string,_expr_scalar_or_matrix_selector_type,SymbolExprComponentSuffix>> matPropSymbsScalarOrMatrixSelector;
 
-            // generate the symbol heat_k if the all conductivities are scalar or heat_k(_xx,_xy,...) if at least one conductivity is a matrix
-            for ( auto const& [propName,propDesc] : M_matertialPropertyDescription )
+    //! update constant (and scalar) material properties into the mapping of values \mp
+    void updateParameterValues( std::map<std::string,double> & mp, std::string const& prefix_symbol = "materials_" )// const
+        {
+            // start by updated the expression from mp
+            this->setParameterValues( mp );
+
+            // get all symbol names from material properties
+            int nMat = this->numberOfMaterials();
+            std::set<std::string> allSymbNames;
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
             {
-                std::string const& symbolProp = std::get<0>( propDesc );
-                if ( this->materialPropertyIsScalarInAllMaterials( propName ) )
+                for ( auto const& [propName,matProp] : matProps )
                 {
-                    auto propExpr = this->materialPropertyExprScalar( propName,se );
-                    matPropSymbsScalarSelector.push_back( std::make_pair( (boost::format("%1%%2%")% prefix_symbol %symbolProp).str(), propExpr ) );
-                }
-                else if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
-                {
-                    auto propExpr = materialPropertyExprScalarOrMatrix<nDim>( propName,se );
-                    matPropSymbsScalarOrMatrixSelector.push_back( std::make_tuple( (boost::format("%1%%2%")% prefix_symbol %symbolProp).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim,true ) ) );
+                    auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_materialPropertyDescription.end() )
+                        continue;
+
+                    std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
+                    std::set<std::string> symbolMatProp( { (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str() } );
+                    if ( nMat == 1 )
+                        symbolMatProp.insert( (boost::format("%1%%2%")%prefix_symbol %symbolProp).str() );;
+                    matProp.updateSymbolNames( symbolMatProp, allSymbNames );
                 }
             }
 
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ), symbolExpr( matPropSymbsMatrix ), symbolExpr(matPropSymbsScalarSelector), symbolExpr( matPropSymbsScalarOrMatrixSelector ) );
+            // erase parameters values from material properties
+            for ( auto & [matName,matProps] : M_materialNameToProperties )
+                for ( auto & [propName,matProp] : matProps )
+                    matProp.eraseParameterValues( allSymbNames );
+
+            // get value of symbols evaluables
+            int previousParam = 0;
+            std::map<std::string,double> curmp;
+            while ( true )
+            {
+                curmp = this->toParameterValues( prefix_symbol );
+                if ( curmp.size() == previousParam )
+                    break;
+                previousParam = curmp.size();
+                this->setParameterValues( curmp );
+            }
+
+            // update output parameter values
+            for ( auto const& [_name,_value] : curmp )
+                mp[_name] = _value;
+        }
+
+    auto symbolsExpr( std::string const& prefix_symbol = "materials_" ) const
+        {
+            int nMat = this->numberOfMaterials();
+            std::map<std::string,std::string> propertyNamesToSymbol; //usefull for expression on whole mesh
+            // generate symbols heat_matName_k or heat_matName_k(_xx,_xy,...,_zz)
+            auto tupleSymbolExprsByMaterial = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol,&nMat,&propertyNamesToSymbol](auto const& e_ij) {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+
+                    using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
+                    symbol_expression_t<_expr_type> se;
+                    for ( auto const& [matName,matProps] : M_materialNameToProperties )
+                    {
+                        for ( auto const& [propName,matProp] : matProps )
+                        {
+                            auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+                            if ( itFindPropDesc == M_materialPropertyDescription.end() )
+                                continue;
+
+                            if ( !matProp.template hasExpr<ni,nj>() )
+                                continue;
+
+                            std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
+
+                            if ( nMat>1 )
+                                propertyNamesToSymbol[propName] = symbolProp; // need for define the global expr
+
+                            auto const& matPropExpr = matProp.template expr<ni,nj>();
+                            if ( matPropExpr.expression().isEvaluable() )
+                                continue;
+
+                            std::string symbolPrefixMatProp = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %symbolProp).str();
+                            std::string symbolGlobalMatProp = (boost::format("%1%%2%")%prefix_symbol %symbolProp).str();
+
+                            se.add( symbolPrefixMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj ) );
+                            if ( nMat == 1 )
+                                se.add( symbolGlobalMatProp, matPropExpr, SymbolExprComponentSuffix( ni,nj ) );
+                        }
+                    }
+                    return se;
+                });
+
+            // generate symbol heat_k(_xx,_xy,...) if the all property k has same shape
+            std::map<std::string,std::string> propertyNamesToSymbol2;
+            auto tupleSymbolExprsOnAllMaterials = hana::transform( ModelExpression::expr_shapes, [this,&prefix_symbol/*,&nMat*/,&propertyNamesToSymbol,&propertyNamesToSymbol2](auto const& e_ij) {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                    using _expr_type =  std::decay_t< decltype( this->materialPropertyExpr<ni,nj>( "" ) ) >;
+                    symbol_expression_t<_expr_type> se;
+                    for ( auto const& [propName,propSymbol] : propertyNamesToSymbol )
+                    {
+                        if ( this->materialPropertyHasSameExprShapeInAllMaterials<ni,nj>( propName ) )
+                        {
+                            std::string symbolGlobalMatProp = (boost::format("%1%%2%")% prefix_symbol %propSymbol).str();
+                            auto globalMatPropExpr = this->materialPropertyExpr<ni,nj>( propName );
+                            se.add( symbolGlobalMatProp, globalMatPropExpr, SymbolExprComponentSuffix( ni,nj ) );
+                        }
+                        else
+                            propertyNamesToSymbol2[propName] = propSymbol;
+                    }
+                    return se;
+                });
+
+            // generate symbols heat_k_xx, heat_k_xy,... if a prop is scalar in one mat and matrix in another mat
+            typedef decltype( this->materialPropertyExprScalarOrMatrix<nDim>( "" ) ) _expr_scalar_or_matrix_selector_type;
+            symbol_expression_t<_expr_scalar_or_matrix_selector_type> seScalarOrMatrixSelector;
+            for ( auto const& [propName,propSymbol] : propertyNamesToSymbol2 )
+            {
+                if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
+                {
+                    auto propExpr = this->materialPropertyExprScalarOrMatrix<nDim>( propName );
+                    seScalarOrMatrixSelector.add( (boost::format("%1%%2%")% prefix_symbol %propSymbol).str(), propExpr,  SymbolExprComponentSuffix( nDim,nDim ) );
+                }
+            }
+
+            return Feel::vf::symbolsExpr( Feel::vf::SymbolsExpr( tupleSymbolExprsByMaterial ),
+                                          Feel::vf::SymbolsExpr( tupleSymbolExprsOnAllMaterials ),
+                                          seScalarOrMatrixSelector
+                                          );
+        }
+
+        template <typename SymbExprType>
+        auto exprPostProcessExports( std::set<std::string> const& physics, SymbExprType const& se, std::string const& prefix = "materials" ) const
+        {
+            auto setOfMatNameUsed = this->physicToMaterials( physics );
+            std::map<std::string,std::map<std::string,const MaterialProperty* >> propertiesNotHaveSameShape;
+
+            auto tupleExportsExprs = hana::transform( ModelExpression::expr_shapes, [this,&setOfMatNameUsed,&se,&prefix,&propertiesNotHaveSameShape](auto const& e_ij) {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+
+                    using _expr_type = std::decay_t< decltype( expr( ModelExpression{}.template expr<ni,nj>(), se ) ) >;
+                    std::map<std::string,std::vector<std::tuple<_expr_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprExported;
+
+                    for ( auto const& [matName,matProps] : M_materialNameToProperties )
+                    {
+                        if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
+                            continue;
+                        auto const& range = this->rangeMeshElementsByMaterial( matName );
+                        for ( auto const& [propName,matProp] : matProps )
+                        {
+                            // only properties in physic descroption
+                            auto itFindPropDesc = M_materialPropertyPhysicDescription.find( propName );
+                            if ( itFindPropDesc == M_materialPropertyPhysicDescription.end() )
+                                continue;
+
+                            if ( !matProp.template hasExpr<ni,nj>() )
+                                continue;
+                            if ( this->materialPropertyHasSameExprShapeInAllMaterials<ni,nj>( propName ) )
+                            {
+                                auto matPropExpr = expr( matProp.template expr<ni,nj>(), se );
+                                mapExprExported[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr, range, "element" ) );
+                            }
+                            else
+                            {
+                                propertiesNotHaveSameShape[matName][propName] = &matProp;
+                            }
+                        }
+                    }
+                    return mapExprExported;
+                });
+
+            typedef decltype(expr(ModelExpression{}.template expr<nDim,nDim>(),se)) _expr_tensor2_type;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2;
+
+            auto Id = eye<nDim,nDim>();
+            typedef decltype(expr(typename ModelExpression::expr_scalar_type{},se)*Id) _expr_tensor2_from_scalar_type;
+            std::map<std::string,std::vector<std::tuple<_expr_tensor2_from_scalar_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprTensor2FromScalar;
+
+            for ( auto const& [matName,matProps] : propertiesNotHaveSameShape )
+            {
+                auto const& range = this->rangeMeshElementsByMaterial( matName );
+                for ( auto const& [propName,matPropPtr] : matProps )
+                {
+                    if ( this->materialPropertyIsScalarOrMatrixInAllMaterials<nDim>( propName ) )
+                    {
+                        auto const& matProp = *matPropPtr;
+                        if ( matProp.template hasExpr<nDim,nDim>() )
+                        {
+                            auto matPropExpr = expr( matProp.template expr<nDim,nDim>(), se );
+                            // TODO : insert mapExprTensor2 into tupleExportsExprs
+                            mapExprTensor2[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr, range, "element" ) );
+                        }
+                        else
+                        {
+                            auto matPropExpr = expr( matProp.exprScalar(), se );
+                            mapExprTensor2FromScalar[prefixvm(prefix,propName)].push_back( std::make_tuple( matPropExpr*Id, range, "element" ) );
+                        }
+                    }
+                }
+
+            }
+
+            return  hana::concat( tupleExportsExprs, hana::make_tuple( mapExprTensor2,mapExprTensor2FromScalar ) );
+        }
+
+    std::set<std::string> postProcessExportsAllFieldsAvailable( std::set<std::string> const& physics, std::string const& prefix = "materials" ) const
+        {
+            std::set<std::string> res;
+            auto setOfMatNameUsed = this->physicToMaterials( physics );
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( setOfMatNameUsed.find( matName ) == setOfMatNameUsed.end() )
+                    continue;
+                auto range = this->rangeMeshElementsByMaterial( matName );
+                for ( auto const& [propName,matProp] : matProps )
+                {
+                    auto itFindPropDesc =  M_materialPropertyPhysicDescription.find( propName );
+                    if ( itFindPropDesc ==  M_materialPropertyPhysicDescription.end() )
+                        continue;
+                    res.insert(prefixvm(prefix,propName));
+                }
+            }
+            return res;
         }
 
 private :
     std::string M_exprRepository;
+    std::set<std::string> M_eltMarkersInMesh;
     std::map<std::string,std::set<std::string>> M_markers; // physic -> markers
     std::map<std::string,bool> M_isDefinedOnWholeMesh; // physics -> bool
+    std::map<std::string,std::set<std::string>> M_materialsNames; // physic -> matNames
     std::map<std::string, elements_reference_wrapper_t<mesh_type> > M_rangeMeshElementsByMaterial; // matName -> range
     std::shared_ptr<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>> M_exprSelectorByMeshElementMapping;
 
     std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;
 
     std::map<std::string,MaterialProperties<mesh_type>> M_materialNameToProperties;
-    std::map<std::string,typename ModelPDE<nDim>::material_property_description_type> M_matertialPropertyDescription; // name -> (symbol, shapes.. )
+    std::map<std::string,MaterialPropertyDescription> M_materialPropertyPhysicDescription; // name -> (symbol, shapes.. )   only defined in phycis
+    std::map<std::string,MaterialPropertyDescription> M_materialPropertyDescription; // name -> (symbol, shapes.. )   all props read
 };
 
 

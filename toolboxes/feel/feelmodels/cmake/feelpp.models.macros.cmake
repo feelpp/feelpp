@@ -3,7 +3,7 @@
 #############################################################################
 macro(genLibBase)
   PARSE_ARGUMENTS(FEELMODELS_GENLIB_BASE
-    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH"
+    "LIB_NAME;LIB_DIR;LIB_DEPENDS;FILES_TO_COPY;FILES_SOURCES;CONFIG_PATH;TARGET_COPY_FILES"
     ""
     ${ARGN}
     )
@@ -24,7 +24,12 @@ macro(genLibBase)
     CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_PATH} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${FEELMODELS_GENLIB_CONFIG_FILENAME_WE}.h  )
   endif()
 
-  add_custom_target(codegen_${LIB_APPLICATION_NAME}  ALL COMMENT "Copying modified files"  )
+  if ( FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES )
+    set( TARGET_COPY_FILES ${FEELMODELS_GENLIB_BASE_TARGET_COPY_FILES} )
+  else()
+    set( TARGET_COPY_FILES ${LIB_APPLICATION_NAME}_copyfiles)
+    add_custom_target(${TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+  endif()
 
   # lib files
   foreach(filepath ${CODEGEN_FILES_TO_COPY})
@@ -33,7 +38,7 @@ macro(genLibBase)
       #configure_file( ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} COPYONLY)
       file(WRITE ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} "") #write empty file
     endif()
-    add_custom_command(TARGET codegen_${LIB_APPLICATION_NAME} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    add_custom_command(TARGET ${TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
       ${filepath} ${FEELMODELS_GENLIB_APPLICATION_DIR}/${filename} )
   endforeach()
 
@@ -45,7 +50,7 @@ macro(genLibBase)
     SHARED
     ${CODEGEN_SOURCES}
     )
-  add_dependencies(${LIB_APPLICATION_NAME} codegen_${LIB_APPLICATION_NAME})
+  add_dependencies(${LIB_APPLICATION_NAME} ${TARGET_COPY_FILES})
   target_link_libraries(${LIB_APPLICATION_NAME} ${LIB_DEPENDS} )
   set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${FEELMODELS_GENLIB_APPLICATION_DIR}")
   set_property(TARGET ${LIB_APPLICATION_NAME} PROPERTY MACOSX_RPATH ON)
@@ -55,7 +60,13 @@ macro(genLibBase)
   endif()
 
   # install process
-  INSTALL(TARGETS ${LIB_APPLICATION_NAME} DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+  set_target_properties(${LIB_APPLICATION_NAME} PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+  INSTALL(TARGETS ${LIB_APPLICATION_NAME} EXPORT feelpp-toolboxes-targets
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+      INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
+
 
 endmacro(genLibBase)
 
@@ -87,9 +98,15 @@ macro( genLibHeat )
     set(HEAT_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heat/${HEAT_LIB_VARIANTS})
     set(HEAT_CODEGEN_FILES_TO_COPY
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heat_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heat/heatassemblyresidual_inst.cpp
       )
     set(HEAT_CODEGEN_SOURCES
       ${HEAT_LIB_DIR}/heat_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblylinear_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyjacobian_inst.cpp
+      ${HEAT_LIB_DIR}/heatassemblyresidual_inst.cpp
       )
     set(HEAT_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  ) 
     # generate the lib target
@@ -132,9 +149,17 @@ macro( genLibElectric )
     # configure the lib
     set(ELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/electric/${ELECTRIC_LIB_VARIANTS})
     set(ELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/electric/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_CODEGEN_SOURCES
-      ${ELECTRIC_LIB_DIR}/electric_inst.cpp )
+      ${ELECTRIC_LIB_DIR}/electric_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblylinear_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyjacobian_inst.cpp
+      ${ELECTRIC_LIB_DIR}/electricassemblyresidual_inst.cpp
+      )
     set(ELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore  )
     # generate the lib target
     genLibBase(
@@ -402,6 +427,137 @@ endmacro( genLibFSI )
 #############################################################################
 #############################################################################
 #############################################################################
+
+macro( genLibCoefficientFormPDEs )
+  PARSE_ARGUMENTS(FEELMODELS_APP
+    "DIM;UNKNOWN_BASIS_TYPE;UNKNOWN_BASIS_TAG;GEO_ORDER"
+    ""
+    ${ARGN}
+    )
+
+  if ( NOT ( FEELMODELS_APP_DIM OR FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER ) )
+    message(FATAL_ERROR "miss argument! FEELMODELS_APP_DIM OR  FEELMODELS_APP_UNKNOWN_BASIS_TYPE OR FEELMODELS_APP_UNKNOWN_BASIS_TAG OR  FEELMODELS_APP_GEO_ORDER")
+  endif()
+
+  set(COEFFICIENTFORMPDES_DIM ${FEELMODELS_APP_DIM})
+  set(COEFFICIENTFORMPDES_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
+
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TYPE count)
+  list(LENGTH FEELMODELS_APP_UNKNOWN_BASIS_TAG count2)
+  if ( NOT (count EQUAL count2) )
+    message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
+  endif()
+
+  math(EXPR count "${count}-1")
+  foreach(i RANGE ${count})
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+    list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+    if ( i EQUAL 0 )
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "\"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    else()
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TYPE} , ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE}")
+      set( COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG "${COEFFICIENTFORMPDES_LIST_UNKNOWN_BASIS_TAG} , \"${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}\"")
+    endif()
+    set(COEFFICIENTFORMPDE_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}d${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG}G${COEFFICIENTFORMPDES_ORDERGEO} )
+    set(COEFFICIENTFORMPDE_LIB_NAME feelpp_toolbox_coefficientformpde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+
+    set(COEFFICIENTFORMPDES_LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS} ${COEFFICIENTFORMPDE_LIB_NAME})
+
+    if ( NOT TARGET ${COEFFICIENTFORMPDE_LIB_NAME} )
+      # configure the lib
+      set(COEFFICIENTFORMPDE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pde_${COEFFICIENTFORMPDE_LIB_VARIANTS})
+      set(COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_CODEGEN_SOURCES
+        ${COEFFICIENTFORMPDE_LIB_DIR}/coefficientformpde_inst.cpp
+        )
+      set(COEFFICIENTFORMPDE_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdebase  ) 
+      # generate the lib target
+      genLibBase(
+        LIB_NAME ${COEFFICIENTFORMPDE_LIB_NAME}
+        LIB_DIR ${COEFFICIENTFORMPDE_LIB_DIR}
+        LIB_DEPENDS ${COEFFICIENTFORMPDE_LIB_DEPENDS}
+        FILES_TO_COPY ${COEFFICIENTFORMPDE_CODEGEN_FILES_TO_COPY}
+        FILES_SOURCES ${COEFFICIENTFORMPDE_CODEGEN_SOURCES}
+        CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdeconfig.h.in
+        )
+    endif()
+  endforeach()
+
+  set(COEFFICIENTFORMPDES_LIB_VARIANTS ${COEFFICIENTFORMPDES_DIM}dG${COEFFICIENTFORMPDES_ORDERGEO} )
+  set(COEFFICIENTFORMPDES_LIB_NAME feelpp_toolbox_coefficientformpdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+
+  if ( NOT TARGET ${COEFFICIENTFORMPDES_LIB_NAME} )
+    # configure the lib
+    set(COEFFICIENTFORMPDES_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/coefficientformpdes/pdes_${COEFFICIENTFORMPDES_LIB_VARIANTS})
+    set(COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdes_inst.cpp
+      )
+    set(COEFFICIENTFORMPDES_CODEGEN_SOURCES
+      ${COEFFICIENTFORMPDES_LIB_DIR}/coefficientformpdes_inst.cpp
+      )
+
+    set(COEFFICIENTFORMPDES_TARGET_COPY_FILES ${COEFFICIENTFORMPDES_LIB_NAME}_copyfiles)
+    add_custom_target(${COEFFICIENTFORMPDES_TARGET_COPY_FILES}  ALL COMMENT "Copying modified files"  )
+
+    # specialisation
+    foreach(i RANGE ${count})
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
+      list(GET FEELMODELS_APP_UNKNOWN_BASIS_TAG ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG)
+
+      set( COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION ${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE} )
+      set( COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR  ${COEFFICIENTFORMPDES_LIB_DIR}/${COEFFICIENTFORMPDE_UNKNOWN_BASIS_TAG} )
+
+      set(FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH  ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesbasisspecialisation.h.in)
+      get_filename_component(FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} NAME_WE)
+      CONFIGURE_FILE( ${FEELMODELS_GENLIB_CONFIG_BASISSPEC_PATH} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${FEELMODELS_GENLIB_CONFIG_BASISSPEC_FILENAME_WE}.h )
+
+
+      set( COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblylinear_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyjacobian_spec.cpp
+        ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesassemblyresidual_spec.cpp
+        )
+      # lib files
+      foreach(filepath ${COEFFICIENTFORMPDES_SPECIALISATION_CODEGEN_FILES_TO_COPY})
+        get_filename_component(filename ${filepath} NAME)
+        if ( NOT EXISTS ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+          file(WRITE ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} "") #write empty file
+        endif()
+        add_custom_command(TARGET ${COEFFICIENTFORMPDES_TARGET_COPY_FILES} COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${filepath} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+
+        set(COEFFICIENTFORMPDES_CODEGEN_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES} ${COEFFICIENTFORMPDES_LIB_SPECIALISATION_DIR}/${filename} )
+      endforeach()
+
+    endforeach()
+
+
+    # generate the lib target
+    genLibBase(
+      LIB_NAME ${COEFFICIENTFORMPDES_LIB_NAME}
+      LIB_DIR ${COEFFICIENTFORMPDES_LIB_DIR}
+      LIB_DEPENDS ${COEFFICIENTFORMPDES_LIB_DEPENDS}
+      FILES_TO_COPY ${COEFFICIENTFORMPDES_CODEGEN_FILES_TO_COPY}
+      FILES_SOURCES ${COEFFICIENTFORMPDES_CODEGEN_SOURCES}
+      CONFIG_PATH ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/coefficientformpdes/coefficientformpdesconfig.h.in
+      TARGET_COPY_FILES ${COEFFICIENTFORMPDES_TARGET_COPY_FILES}
+      )
+  endif()
+
+
+
+endmacro(genLibCoefficientFormPDEs)
+
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+#############################################################################
+
 macro( genLibAdvection )
   PARSE_ARGUMENTS(FEELMODELS_APP
       "DIM;POLY_ORDER;CONTINUITY;POLY_SET;GEO_ORDER;DIFFUSION_REACTION_ORDER;DIFFUSIONCOEFF_POLY_SET;REACTIONCOEFF_POLY_SET;DIFFUSION_REACTION_CONTINUITY"
@@ -568,11 +724,13 @@ macro( genLibLevelsetBase )
       set(LEVELSETBASE_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/levelset/${LEVELSETBASE_LIB_VARIANTS})
       set(LEVELSETBASE_CODEGEN_FILES_TO_COPY
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetbase_inst.cpp
+          ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetspacemanager_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_hj_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/levelsetredistanciation_fm_inst.cpp
           ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/levelset/parameter_map.cpp )
       set(LEVELSETBASE_CODEGEN_SOURCES
           ${LEVELSETBASE_LIB_DIR}/levelsetbase_inst.cpp
+          ${LEVELSETBASE_LIB_DIR}/levelsetspacemanager_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_hj_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/levelsetredistanciation_fm_inst.cpp
           ${LEVELSETBASE_LIB_DIR}/parameter_map.cpp )
@@ -756,9 +914,17 @@ macro( genLibThermoElectric )
     # configure the lib
     set(THERMOELECTRIC_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/thermoelectric/${THERMOELECTRIC_LIB_VARIANTS})
     set(THERMOELECTRIC_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectric_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/thermoelectric/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_CODEGEN_SOURCES
-      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp )
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectric_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblylinear_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyjacobian_inst.cpp
+      ${THERMOELECTRIC_LIB_DIR}/thermoelectricassemblyresidual_inst.cpp
+      )
     set(THERMOELECTRIC_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(THERMOELECTRIC_LIB_DEPENDS ${HEAT_LIB_NAME} ${ELECTRIC_LIB_NAME} ${THERMOELECTRIC_LIB_DEPENDS} )
     # generate the lib target
@@ -815,9 +981,17 @@ macro( genLibHeatFluid )
     # configure the lib
     set(HEATFLUID_LIB_DIR ${FEELPP_TOOLBOXES_BINARY_DIR}/feel/feelmodels/heatfluid/${HEATFLUID_LIB_VARIANTS})
     set(HEATFLUID_CODEGEN_FILES_TO_COPY
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp )
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluid_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblylinear_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyjacobian_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/heatfluid/heatfluidassemblyresidual_inst.cpp
+      )
     set(HEATFLUID_CODEGEN_SOURCES
-      ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp )
+      ${HEATFLUID_LIB_DIR}/heatfluid_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblylinear_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblyjacobian_inst.cpp
+      ${HEATFLUID_LIB_DIR}/heatfluidassemblyresidual_inst.cpp
+      )
     set(HEATFLUID_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore )
     set(HEATFLUID_LIB_DEPENDS ${HEAT_LIB_NAME} ${FLUIDMECHANICS_LIB_NAME} ${HEATFLUID_LIB_DEPENDS} )
     # generate the lib target

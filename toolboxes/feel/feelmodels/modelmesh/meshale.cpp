@@ -297,13 +297,9 @@ template< class Convex >
 void
 MeshALE<Convex>::updateTimeStep()
 {
-    M_bdf_ale_identity->shiftRight( *M_identity_ale );
-    M_bdf_ale_velocity->shiftRight( *M_meshVelocity );
-    M_bdf_ale_displacement_ref->shiftRight( *M_displacement_ref );
-
-    M_bdf_ale_identity->next();
-    M_bdf_ale_velocity->next();
-    M_bdf_ale_displacement_ref->next();
+    M_bdf_ale_identity->next( *M_identity_ale );
+    M_bdf_ale_velocity->next( *M_meshVelocity );
+    M_bdf_ale_displacement_ref->next( *M_displacement_ref );
 }
 //------------------------------------------------------------------------------------------------//
 

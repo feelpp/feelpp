@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/solid/solidmechanics.hpp>
 
@@ -22,7 +23,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     const vector_ptrtype& X = data.currentSolution();
     sparse_matrix_ptrtype& J = data.jacobian();
     bool BuildCstPart = data.buildCstPart();
-    bool _doBCStrongDirichlet = data.doBCStrongDirichlet();
 
     std::string sc=(BuildCstPart)?" (cst part)":" (non cst part)";
     this->log("SolidMechanics","updateJacobian", "start"+sc);

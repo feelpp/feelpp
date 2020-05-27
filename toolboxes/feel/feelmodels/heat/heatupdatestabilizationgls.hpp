@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_HEAT_UPDATESTABILIZATIONGLS_HPP
 #define FEELPP_TOOLBOXES_HEAT_UPDATESTABILIZATIONGLS_HPP 1
@@ -218,7 +219,7 @@ updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
                        _expr=-timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
                        _geomap=heatToolbox.geomap() );
     }
-
+#if 0 // TODO VINCENT
     if ( heatToolbox.timeStepping() == "Theta" )
     {
         if ( heatToolbox.fieldVelocityConvectionIsUsedAndOperational() )
@@ -247,6 +248,7 @@ updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
         }
         // TODO body forces
     }
+#endif
 
     heatToolbox.log("Heat","updateResidualStabilizationGLS", "finish"+sc);
 }
@@ -329,7 +331,7 @@ updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
                        _expr=timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
                        _geomap=heatToolbox.geomap() );
     }
-
+#if 0 // TODO VINCENT
     if ( heatToolbox.timeStepping() == "Theta" )
     {
         auto previousSol = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-solution") );
@@ -345,7 +347,7 @@ updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
                        _geomap=heatToolbox.geomap() );
         // TODO body forces
     }
-
+#endif
     heatToolbox.log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
 }
 

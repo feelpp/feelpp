@@ -122,12 +122,14 @@ measureStatisticsEvaluation( RangeType const& range,
 
     if ( ppStat.hasField() )
     {
-        ( Feel::for_each( fieldTuple, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tuple(), [&]( auto const& e )
                         {
                             if constexpr ( is_iterable_v<decltype(e)> )
                                 {
-                                    for ( auto const& [fieldName,fieldFunc] : e )
+                                    for ( auto const& mfield : e )
                                     {
+                                        std::string fieldName = mfield.nameWithPrefix();
+                                        auto const& fieldFunc = mfield.field();
                                         if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
                                             {
                                                 if ( !fieldFunc )
@@ -135,6 +137,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                             }
                                         if ( ppStat.field() == fieldName )
                                         {
+                                            mfield.applyUpdateFunction();
                                             for ( std::string const& statType : ppStatType )
                                             {
                                                 if ( statType == "min" || statType == "max" || statType == "min-max"  )
@@ -149,6 +152,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                 }
                             else
                             {
+#if 0
                                 if ( ppStat.field() == e.first )
                                 {
                                     auto const& fieldFunc = e.second;
@@ -167,6 +171,7 @@ measureStatisticsEvaluation( RangeType const& range,
                                             measureStatisticsEvaluationIntegrate( range, idv(fieldFunc), ppStat, res, false );
                                     }
                                 }
+#endif
                             }
                         }), ... );
     }

@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType; 
@@ -58,7 +57,14 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
   VERIFY_IS_APPROX(m3.rowwise() -= rv1, m1.rowwise() - rv1);
   
   // empty objects
-  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().sum(),  RowVectorType::Zero(cols));
+  VERIFY_IS_APPROX((m1.template block<0,Dynamic>(0,0,0,cols).colwise().sum()), RowVectorType::Zero(cols));
+  VERIFY_IS_APPROX((m1.template block<Dynamic,0>(0,0,rows,0).rowwise().sum()), ColVectorType::Zero(rows));
+  VERIFY_IS_APPROX((m1.template block<0,Dynamic>(0,0,0,cols).colwise().prod()), RowVectorType::Ones(cols));
+  VERIFY_IS_APPROX((m1.template block<Dynamic,0>(0,0,rows,0).rowwise().prod()), ColVectorType::Ones(rows));
+
+  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().sum(), RowVectorType::Zero(cols));
+  VERIFY_IS_APPROX(m1.block(0,0,rows,0).rowwise().sum(), ColVectorType::Zero(rows));
+  VERIFY_IS_APPROX(m1.block(0,0,0,cols).colwise().prod(), RowVectorType::Ones(cols));
   VERIFY_IS_APPROX(m1.block(0,0,rows,0).rowwise().prod(), ColVectorType::Ones(rows));
   
   // verify the const accessors exist
@@ -83,7 +89,6 @@ template<typename MatrixType> void array_for_matrix(const MatrixType& m)
 template<typename MatrixType> void comparisons(const MatrixType& m)
 {
   using std::abs;
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
 
@@ -140,7 +145,7 @@ template<typename MatrixType> void comparisons(const MatrixType& m)
   RealScalar a = m1.cwiseAbs().mean();
   VERIFY( ((m1.array()<-a).matrix() || (m1.array()>a).matrix()).count() == (m1.cwiseAbs().array()>a).count());
 
-  typedef Matrix<typename MatrixType::Index, Dynamic, 1> VectorOfIndices;
+  typedef Matrix<Index, Dynamic, 1> VectorOfIndices;
 
   // TODO allows colwise/rowwise for array
   VERIFY_IS_APPROX(((m1.array().abs()+1)>RealScalar(0.1)).matrix().colwise().count(), VectorOfIndices::Constant(cols,rows).transpose());
@@ -172,7 +177,6 @@ template<typename VectorType> void lpNorm(const VectorType& v)
 
 template<typename MatrixType> void cwise_min_max(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   Index rows = m.rows();
@@ -211,7 +215,6 @@ template<typename MatrixType> void cwise_min_max(const MatrixType& m)
 
 template<typename MatrixTraits> void resize(const MatrixTraits& t)
 {
-  typedef typename MatrixTraits::Index Index;
   typedef typename MatrixTraits::Scalar Scalar;
   typedef Matrix<Scalar,Dynamic,Dynamic> MatrixType;
   typedef Array<Scalar,Dynamic,Dynamic> Array2DType;
@@ -260,7 +263,7 @@ void regrrssion_bug_1410()
   VERIFY((internal::traits<MatrixWrapper<Array4i> >::Flags&LvalueBit)==LvalueBit);
 }
 
-void test_array_for_matrix()
+EIGEN_DECLARE_TEST(array_for_matrix)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( array_for_matrix(Matrix<float, 1, 1>()) );
