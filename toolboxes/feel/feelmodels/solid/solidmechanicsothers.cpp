@@ -23,7 +23,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
-    if (isStandardModel()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
+    if (this->hasSolidEquationStandard()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
     else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
 
     std::string ResartMode;
@@ -32,7 +32,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq=1;
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
     {
         if ( M_isHOVisu && M_exporter_ho )
         {
@@ -75,11 +75,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- model : " << M_modelName
-           << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
-           << "\n     -- use displacement-pressure formulation : " << std::boolalpha << this->hasDisplacementPressureFormulation()
+        //<< "\n     -- model : " << M_modelName
+        //           << "\n     -- material law : " << this->mechanicalProperties()->materialLaw()
+           << "\n     -- has displacement-pressure formulation : " << std::boolalpha << this->hasDisplacementPressureFormulation()
            << "\n     -- time mode : " << StateTemporal;
-    *_ostr << this->mechanicalProperties()->getInfoMaterialParameters()->str();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
@@ -96,8 +95,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- polynomial order : " << nOrder;
     if ( this->hasDisplacementPressureFormulation() )
         *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
-    *_ostr << "\n     -- mechanical properties : "
-           << (boost::format("P%1%%2%")%mechanicalproperties_type::space_type::basis_type::nOrder %std::string( (use_continous_mechanical_properties)? "c":"d")).str();
     if ( !this->isStationary() )
     {
         *_ostr << "\n   Time Discretization"
@@ -107,14 +104,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- type : " << M_timeStepping;
         if ( M_timeStepping == "Newmark" )
         {
-            if (this->isStandardModel())
+            if (this->hasSolidEquationStandard())
                 *_ostr << " ( gamma="<< this->timeStepNewmark()->gamma() <<", beta="<< this->timeStepNewmark()->beta() << " )";
-            else if (this->is1dReducedModel())
+            else// if (this->is1dReducedModel())
                 *_ostr << " ( gamma="<< this->timeStepNewmark1dReduced()->gamma() <<", beta="<< this->timeStepNewmark1dReduced()->beta() << " )";
         }
         else if ( M_timeStepping == "BDF" )
         {
-            if (this->isStandardModel())
+            if (this->hasSolidEquationStandard())
                 *_ostr << " ( order=" << M_timeStepBdfDisplacement->timeOrder() << " )";
         }
         else if ( M_timeStepping == "Theta" )
@@ -140,10 +137,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- local rank : " << this->worldComm().localRank()
            << "\n   Numerical Solver"
            << "\n     -- solver : " << M_solverName;
-    if (this->isStandardModel() && M_algebraicFactory)
+    if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
-    else if (this->is1dReducedModel() && M_algebraicFactory_1dReduced)
-        *_ostr << M_algebraicFactory_1dReduced->getInfo()->str();
     *_ostr << "\n||==============================================||"
            << "\n";
 
@@ -153,7 +148,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------//
-
+#if 0
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
@@ -177,22 +172,25 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
     M_is1dReducedModel=!M_isStandardModel;
 }
 //---------------------------------------------------------------------------------------------------//
+#endif
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setSolver( std::string const& type )
 {
     // if solver change -> force to rebuild all algebraic data at next solve
     if ( type != M_solverName )
         this->setNeedToRebuildCstPart(true);
-
-    if ( type == "LinearSystem" )
+    if ( type == "automatic" )
+        M_solverName = "automatic";
+    else if ( type == "LinearSystem" )
         M_solverName="LinearSystem";
     else if ( type == "Newton" )
         M_solverName="Newton";
     else
         CHECK( false ) << "invalid solver name " << type << "\n";
 }
+
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -200,7 +198,7 @@ int
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
     int nBlock = 0;
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
     {
         ++nBlock;
         if ( this->hasDisplacementPressureFormulation() )
@@ -208,7 +206,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         if ( M_timeSteppingUseMixedFormulation )
             ++nBlock;
     }
-    else if ( this->is1dReducedModel() )
+    if ( this->hasSolidEquationAxisymmetric1d() )
     {
         ++nBlock;
     }
@@ -284,9 +282,9 @@ typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 {
     BlocksBaseGraphCSR blockGraph;
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
         blockGraph = this->buildBlockMatrixGraph();
-    else if (this->is1dReducedModel())
+    else if (this->hasSolidEquationAxisymmetric1d())
         blockGraph = buildBlockMatrixGraph1dReduced();
 
     if (  blockGraph.nRow() == 0 || blockGraph.nCol() == 0 )
@@ -783,7 +781,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     this->updateTimeStepCurrentResidual();
 
     // go to next time step : ti + \Delta t
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
     {
         if ( M_timeStepping == "Newmark" )
         {
@@ -808,7 +806,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         if ( this->hasDisplacementPressureFormulation() && !this->doRestart() )
             M_savetsPressure->start( *M_fieldPressure );
     }
-    else if (this->is1dReducedModel())
+    else // if (this->is1dReducedModel())
     {
         // start time step
         if ( !this->doRestart() )
@@ -834,7 +832,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTimeStepCurrentResidual();
 
     // go to next time step
-    if (this->isStandardModel())
+    if (this->hasSolidEquationStandard())
     {
         if ( M_timeStepping == "Newmark" )
         {
@@ -853,7 +851,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         if ( this->hasDisplacementPressureFormulation() )
             M_savetsPressure->next(*M_fieldPressure);
     }
-    else if (this->is1dReducedModel())
+    else// if (this->is1dReducedModel())
     {
         if ( M_timeStepping == "Newmark" )
         {
@@ -881,7 +879,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
     {
         if ( !M_algebraicFactory || M_timeStepping == "BDF" || M_timeStepping == "Newmark" )
             return;
@@ -896,7 +894,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
         }
     }
-    else if ( this->is1dReducedModel() )
+    else // if ( this->is1dReducedModel() )
     {
     }
 }
@@ -909,7 +907,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
 {
     this->log("SolidMechanics","predictorDispl", "start" );
 
-    if (isStandardModel())
+    if (this->hasSolidEquationStandard())
     {
         if ( M_timeStepping == "Newmark" )
         {
@@ -1000,23 +998,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::solve( bool upVelAcc )
 
     //this->updateParameterValues();
 
-    if ( this->isStandardModel() )
-    {
-        if ( M_solverName == "LinearSystem" )
-            CHECK( M_modelName == "Elasticity" ) << "model is not linear";
-        M_blockVectorSolution.updateVectorFromSubVectors();
-        M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
-        M_blockVectorSolution.localize();
-    }
-    else if ( this->is1dReducedModel() )
-    {
-        if ( M_solverName == "LinearSystem" )
-            CHECK( M_modelName =="Generalised-String" ) << "model is not linear";
-        M_blockVectorSolution_1dReduced.updateVectorFromSubVectors();
-        M_algebraicFactory_1dReduced->solve( M_solverName, M_blockVectorSolution_1dReduced.vectorMonolithic() );
-        M_blockVectorSolution_1dReduced.localize();
-    }
-
+    M_blockVectorSolution.updateVectorFromSubVectors();
+    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
+    M_blockVectorSolution.localize();
 
     if ( upVelAcc && !this->isStationary() )
         this->updateVelocity();
@@ -1043,11 +1027,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
 
     this->log("SolidMechanics","updateVelocityAndAcceleration", "start" );
 
-    if (this->isStandardModel())
+    if (this->hasSolidEquationStandard())
     {
         M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
     }
-    else if (this->is1dReducedModel())
+    else// if (this->is1dReducedModel())
     {
         M_newmark_displ_1dReduced->updateFromDisp(*M_disp_1dReduced);
     }
@@ -1061,6 +1045,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
 {
+#if 0 // TODO VINCENT
     if ( !M_XhNormalStress )
         this->createAdditionalFunctionSpacesNormalStress();
 
@@ -1098,7 +1083,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
     }
     else if ( M_modelName == "Hyper-Elasticity" )
     {
-#if 0 // TODO VINCENT
+
         auto const sigma = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor<2*nOrderDisplacement>(u,*this->mechanicalProperties());
         if ( !this->useDisplacementPressureFormulation() )
         {
@@ -1114,8 +1099,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressFromStruct()
                                                _expr=sigmaWithPressure*N(),
                                                _geomap=this->geomap() );
         }
-#endif
     }
+#endif
 
 }
 
@@ -1308,7 +1293,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeExtremumValue( std::string const& field, std::set<std::string> const& markers, std::string const& type ) const
 {
-    if(!this->isStandardModel()) return 0.;
+    if(!this->hasSolidEquationStandard()) return 0.;
     CHECK( type == "max" || type == "min" ) << "invalid type " << type;
 
     if ( field == "displacement" || field == "velocity" || field == "acceleration" )
@@ -1361,7 +1346,7 @@ double
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_wrapper_t<mesh_type> const& rangeElt ) const
 {
     //using namespace Feel::vf;
-    if(!this->isStandardModel()) return 0.;
+    if(!this->hasSolidEquationStandard()) return 0.;
 
     auto const Id = eye<nDim,nDim>();
     auto const& u = this->fieldDisplacement();
@@ -1429,144 +1414,32 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
     M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
 }
 #endif
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
-{
-    if ( !this->isStandardModel() )
-        return;
-
-    auto XhDisp = this->functionSpaceDisplacement();
-    auto XhCompDisp = XhDisp->compSpace();
-    static const uint16_type nDofComponentsDisp = XhDisp->dof()->nDofComponents();
-    auto mesh = this->mesh();
-
-    std::set<std::string> dispMarkers;
-    std::map<ComponentType,std::set<std::string> > compDispMarkers;
-
-    auto & dofsWithValueImposedDisp = M_dofsWithValueImposed["displacement"];
-    dofsWithValueImposedDisp.clear();
-
-    // strong Dirichlet bc on displacement from expression
-    for( auto const& d : M_bcDirichlet )
-    {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
-        dispMarkers.insert( listMark.begin(), listMark.end() );
-    }
-    // strong Dirichlet bc on displacement component from expression
-    for ( auto const& bcDirComp : M_bcDirichletComponents )
-    {
-        ComponentType comp = bcDirComp.first;
-        for( auto const& d : bcDirComp.second )
-        {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
-            compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
-        }
-    }
-
-
-
-    //-------------------------------------//
-    // distribute mesh markers by entity
-    std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > meshMarkersDispByEntities;
-    std::map<ComponentType, std::tuple< std::set<std::string>,std::set<std::string>,std::set<std::string>,std::set<std::string> > > meshMarkersCompDispByEntities;
-    meshMarkersDispByEntities = detail::distributeMarkerListOnSubEntity( mesh, dispMarkers );
-    for ( auto const& compMarkerPair : compDispMarkers )
-    {
-        meshMarkersCompDispByEntities[compMarkerPair.first] = detail::distributeMarkerListOnSubEntity( mesh, compMarkerPair.second );
-    }
-    //-------------------------------------//
-    // on topological faces
-    auto const& listMarkedFacesDisp = std::get<0>( meshMarkersDispByEntities );
-    if ( !listMarkedFacesDisp.empty() )
-    {
-        auto therange = markedfaces( mesh,listMarkedFacesDisp );
-        auto dofsToAdd = XhDisp->dofs( therange );
-        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("displacement",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
-    // on marked edges (only 3d)
-    auto const& listMarkedEdgesDisp = std::get<1>( meshMarkersDispByEntities );
-    if ( !listMarkedEdgesDisp.empty() )
-    {
-        auto therange = markededges(mesh,listMarkedEdgesDisp );
-        auto dofsToAdd = XhDisp->dofs( therange );
-        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
-    // on marked points
-    auto const& listMarkedPointsDisp = std::get<2>( meshMarkersDispByEntities );
-    if ( !listMarkedPointsDisp.empty() )
-    {
-        auto therange = markedpoints(mesh,listMarkedPointsDisp );
-        auto dofsToAdd = XhDisp->dofs( therange );
-        XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("displacement",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhDisp->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
-    //-------------------------------------//
-    // on disp components
-    for ( auto const& meshMarkersPair : meshMarkersCompDispByEntities )
-    {
-        ComponentType comp = meshMarkersPair.first;
-        // topological faces
-        auto const& listMarkedFacesCompDisp = std::get<0>( meshMarkersPair.second );
-        if ( !listMarkedFacesCompDisp.empty() )
-        {
-            auto therange = markedfaces(mesh,listMarkedFacesCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-        // edges (only 3d)
-        auto const& listMarkedEdgesCompDisp = std::get<1>( meshMarkersPair.second );
-        if ( !listMarkedEdgesCompDisp.empty() )
-        {
-            auto therange = markededges(mesh,listMarkedEdgesCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-        // points
-        auto const& listMarkedPointsCompDisp = std::get<2>( meshMarkersPair.second );
-        if ( !listMarkedPointsCompDisp.empty() )
-        {
-            auto therange = markedpoints(mesh,listMarkedPointsCompDisp );
-            auto dofsToAdd = XhDisp->dofs( therange, comp );
-            XhDisp->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("displacement",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhDisp->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("displacement",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
-    }
-
-
-}
 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
 {
-    CHECK ( this->isStandardModel() ) << "only compute when isStandardModel";
+    CHECK ( this->hasSolidEquationStandard() ) << "only compute when isStandardModel";
     auto Vh = this->functionSpaceDisplacement();
     auto const& u = this->fieldDisplacement();
-    auto const& rho = this->mechanicalProperties()->fieldRho();
     auto mesh = Vh->mesh();
+    auto se = this->symbolsExpr();
     // mass matrix of Vh
     auto massMatrix = this->backend()->newMatrix(_test=Vh,_trial=Vh);
-    form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
-        integrate(_range=M_rangeMeshElements,
-                  _expr=idv(rho)*inner(idt(u),id(u)) );
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& densityProp = this->materialsProperties()->density( matName );
+            auto densityExpr = expr( densityProp.expr(), se );
+            form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
+                integrate(_range=M_rangeMeshElements,
+                          _expr=densityExpr*inner(idt(u),id(u)) );
+        }
+    }
     massMatrix->close();
 
     // mass matrix lumped

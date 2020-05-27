@@ -117,7 +117,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             {
                 if (!BuildCstPart)
                 {
-                    auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*physicSolidData,matProperties,se);
+                    auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se);
                     linearFormDisplacement +=
                         integrate( _range=range,
                                    //_expr= trace(val(Fv*Sv)*trans(grad(v))),
@@ -149,7 +149,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             //--------------------------------------------------------------------------------------------------//
             if ( physicSolidData->useDisplacementPressureFormulation() && !BuildCstPart )
             {
-                if ( physicSolidData->equation() == "Hyper-Elasticity" )
+#if 0
+                if ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() != "StVenantKirchhoff" )
                 {
                     linearFormDisplacement +=
                         integrate( _range=range,
@@ -158,7 +159,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                    _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,*p,*physicSolidData),grad(v) ),
                                    _geomap=this->geomap() );
                 }
-                else if ( physicSolidData->equation() == "Elasticity" )
+                else
+#endif
+                    if ( physicSolidData->equation() == "Elasticity" )
                 {
                     linearFormDisplacement +=
                         integrate( _range= range,
@@ -175,7 +178,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                _geomap=this->geomap() );
 
 
-                if (this->mechanicalProperties()->materialLaw() == "StVenantKirchhoff")
+                if ( physicSolidData->materialModel() == "StVenantKirchhoff")
                 {
                     auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
                     linearFormPressure +=
