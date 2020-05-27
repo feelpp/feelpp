@@ -10,7 +10,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearGeneralizedString( DataUpdateLinear & data ) const
 {
-#if (SOLIDMECHANICS_DIM==2)
+#if 0 // (SOLIDMECHANICS_DIM==2)  TODO VINCENT
     this->log( "SolidMechanics","updateLinearGeneralizedString","start");
 
     sparse_matrix_ptrtype& A = data.matrix();

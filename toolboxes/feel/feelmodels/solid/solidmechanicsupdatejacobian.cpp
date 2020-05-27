@@ -90,7 +90,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             {
                 if (!BuildCstPart)
                 {
-                    auto dFS = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobian(u,*physicSolidData,matProperties,se);
+                    auto dFS = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,*physicSolidData,matProperties,se);
                     bilinearForm_PatternCoupled +=
                         integrate (_range=range,
                                    //_expr= trace( (dF*val(Sv) + val(Fv)*dS)*trans(grad(v)) ),
@@ -125,7 +125,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
             {
                 if ( physicSolidData->equation() == "Hyper-Elasticity" )
                 {
-                    auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,*p,*physicSolidData);
+                    //auto pFmtNLa = Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialPressure(u,*p,*physicSolidData);
+                    auto pFmtNLa = solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure(u,p,*physicSolidData,matProperties,se);
                     form2( _test=M_XhDisplacement, _trial=M_XhPressure, _matrix=J,
                            _rowstart=rowStartInMatrix,
                            _colstart=colStartInMatrix+blockIndexPressure ) +=
@@ -133,12 +134,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                                     _expr= inner(pFmtNLa,grad(v) ),
                                     _geomap=this->geomap() );
 
+#if 0
                     // -dF*idv(p) or -d(F*C^{-1})*idv(p)
                     auto pFmtNLb = /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplierJacobianTrialDisp(u,*p,*physicSolidData);
                     bilinearForm_PatternCoupled +=
                         integrate ( _range=range,
                                     _expr= inner(pFmtNLb,grad(v) ),
                                     _geomap=this->geomap() );
+#endif
                 }
                 else if ( physicSolidData->equation() == "Elasticity")
                 {

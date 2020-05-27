@@ -49,11 +49,13 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
+
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
+
+#include <feel/feelmodels/solid/solidmechanicsaxisymmetric1d.hpp>
 
 namespace Feel
 {
@@ -163,20 +165,20 @@ public:
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
     // functionspace for rho,coefflame1,coefflame2
-    typedef bases<Lagrange<0, Scalar,Continuous> > basis_scalar_P0_continuous_type;
-    typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_discontinuous_type;
-    static const bool use_continous_mechanical_properties = UseCstMechProp;
-    typedef typename mpl::if_< mpl::bool_<use_continous_mechanical_properties>,
-                               basis_scalar_P0_continuous_type,
-                               basis_scalar_P0_discontinuous_type >::type basis_scalar_P0_type;
+    // typedef bases<Lagrange<0, Scalar,Continuous> > basis_scalar_P0_continuous_type;
+    // typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_discontinuous_type;
+    // static const bool use_continous_mechanical_properties = UseCstMechProp;
+    // typedef typename mpl::if_< mpl::bool_<use_continous_mechanical_properties>,
+    //                            basis_scalar_P0_continuous_type,
+    //                            basis_scalar_P0_discontinuous_type >::type basis_scalar_P0_type;
 
-    typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-    typedef typename space_scalar_P0_type::element_type element_scalar_P0_type;
-    typedef std::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
-    // mechanical properties desc
-    typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
-    typedef std::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
+    // typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
+    // typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
+    // typedef typename space_scalar_P0_type::element_type element_scalar_P0_type;
+    // typedef std::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
+    // // mechanical properties desc
+    // typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
+    // typedef std::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
 
     // materials properties
     typedef MaterialsProperties<mesh_type> materialsproperties_type;
@@ -255,6 +257,10 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
+
+    using solid_axisymmetric1d_type = SolidMechanicsAxisymmetric1d<Simplex<1,1/*nOrderGeo*/,nDim>,basis_u_type>;
+    using solid_axisymmetric1d_ptrtype = std::shared_ptr<solid_axisymmetric1d_type>;
+
     // mesh
     typedef Simplex<1,1/*nOrderGeo*/,nDim> convex_1dreduced_type;
     typedef Mesh<convex_1dreduced_type> mesh_1dreduced_type;
@@ -330,22 +336,24 @@ public:
 
 private :
 
-    void loadConfigBCFile();
     void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
 
-    void initFunctionSpaces();
-    void initFunctionSpaces1dReduced();
-
     void initMesh();
-    void initMesh1dReduced();
+    void initFunctionSpaces();
     void initMaterialProperties();
+
+    void initBoundaryConditions();
+
+
+    void initMesh1dReduced();
+    void initFunctionSpaces1dReduced();
     void createExporters();
     void createExporters1dReduced();
 
     void createAdditionalFunctionSpacesNormalStress();
-    void createAdditionalFunctionSpacesStressTensor();
+    //    void createAdditionalFunctionSpacesStressTensor();
 
 public :
 
@@ -358,8 +366,11 @@ public :
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
-    bool is1dReducedModel() const { return M_is1dReducedModel; }
-    bool isStandardModel() const { return M_isStandardModel; }
+    bool hasSolidEquationAxisymmetric1d() const { return M_solidAxisymmetric1d.use_count() > 0; }
+    bool hasSolidEquationStandard() const { return !this->hasSolidEquationAxisymmetric1d(); } // TOOD
+
+    bool isStandardModel() const { return this->hasSolidEquationStandard(); } // TODO DEPRECATED
+    bool is1dReducedModel() const { return this->hasSolidEquationAxisymmetric1d(); }
 
     bool hasDisplacementPressureFormulation() const
         {
@@ -376,20 +387,15 @@ public :
             return res;
         }
 
+    void setSolver( std::string const& type );
     //-----------------------------------------------------------------------------------//
     // all models
     //-----------------------------------------------------------------------------------//
-
-    void setModelName( std::string const& type );
-    void setSolverName( std::string const& type );
 
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
-
-    mechanicalproperties_ptrtype const& mechanicalProperties() const { return M_mechanicalProperties; }
-    mechanicalproperties_ptrtype & mechanicalProperties() { return M_mechanicalProperties; }
 
     bool hasDirichletBC() const
         {
@@ -405,7 +411,7 @@ public :
     {
         if ( M_timeStepping == "Newmark" )
         {
-            if (this->isStandardModel())
+            if (this->hasSolidEquationStandard())
                 return this->timeStepNewmark();
             else// if (this->is1dReducedModel())
                 return this->timeStepNewmark1dReduced();
@@ -419,7 +425,7 @@ public :
     {
         if ( M_timeStepping == "Newmark" )
         {
-            if (this->isStandardModel())
+            if (this->hasSolidEquationStandard())
                 return this->timeStepNewmark();
             else// if (this->is1dReducedModel())
                 return this->timeStepNewmark1dReduced();
@@ -439,8 +445,6 @@ public :
 
     // post process
     void initPostProcess() override;
-    // std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    // bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
 
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
@@ -462,7 +466,7 @@ public :
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
             auto const& u = this->fieldDisplacement();
-            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
+            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
             std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
@@ -476,7 +480,7 @@ public :
                     auto const& matProperties = this->materialsProperties()->materialProperties( matName );
                     auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
 
-                    auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,*physicSolidData,matProperties,se);
+                    auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
                     auto vonmisesExpr = vonmises( fpk );
                     mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
 
@@ -518,13 +522,6 @@ public :
 
     block_pattern_type blockPattern() const override;
 
-    backend_ptrtype const& backend() const
-    {
-        if (this->isStandardModel())
-            return this->backendStandard();
-        else// if (this->is1dReducedModel())
-            return this->backend1dReduced();
-    }
 
     //-----------------------------------------------------------------------------------//
     // standart model
@@ -608,7 +605,7 @@ public :
             mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
             mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
             //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
-            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"velocity", this->fieldPressurePtr(), "p", this->keyword() );
+            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", this->fieldPressurePtr(), "p", this->keyword() );
 
             return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
         }
@@ -637,7 +634,7 @@ public :
 
     //----------------------------------//
     //backend_ptrtype backend() { return M_backend; }
-    backend_ptrtype const& backendStandard() const { return M_backend; }
+    backend_ptrtype const& backend() const { return M_backend; }
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
     graph_ptrtype buildMatrixGraph() const override;
@@ -768,17 +765,13 @@ private :
     void updateBCRobinJacobian( sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
 
 private :
-    void updateBoundaryConditionsForUse();
+
 
     // model
-    std::string M_modelName, M_solverName;
-
-    bool M_is1dReducedModel;
-    bool M_isStandardModel;
-
+    std::string /*M_modelName,*/ M_solverName;
 
     //model parameters
-    mechanicalproperties_ptrtype M_mechanicalProperties;
+    // mechanicalproperties_ptrtype M_mechanicalProperties;
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
@@ -870,6 +863,7 @@ private :
     //-------------------------------------------//
     // 1d_reduced model
     //-------------------------------------------//
+    solid_axisymmetric1d_ptrtype M_solidAxisymmetric1d;
 
     // mesh
     mesh_1dreduced_ptrtype M_mesh_1dReduced;

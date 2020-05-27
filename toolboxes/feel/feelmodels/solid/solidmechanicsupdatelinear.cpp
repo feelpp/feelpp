@@ -17,7 +17,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    if ( M_modelName == "Generalised-String" )
+    if ( this->hasSolidEquationAxisymmetric1d() )
     {
         this->updateLinearGeneralizedString( data );
         return;
@@ -320,7 +320,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
  
-    if ( this->isStandardModel() )
+    if ( this->hasSolidEquationStandard() )
     {
         if ( !this->hasMarkerDirichletBCelimination() ) return;
 
@@ -378,7 +378,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
             }
         }
     }
-    else if ( this->is1dReducedModel() )
+    else if ( this->hasSolidEquationAxisymmetric1d() )
     {
         if ( this->M_bcDirichlet.empty() ) return;
 
