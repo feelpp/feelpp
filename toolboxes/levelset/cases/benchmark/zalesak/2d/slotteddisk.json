@@ -33,7 +33,6 @@
 	    "PhysicalQuantities": ["volume, perimeter, velocity_com"],
         "Exports":
         {
-            //"fields":["advection-velocity"]
             //"fields":["advection-velocity", "heaviside", "modgradphi", "pid"]
             "fields":["phi","dirac","heaviside","modgradphi","pid"]
         },
@@ -41,34 +40,30 @@
         {
             "Statistics":
             {
-                "TestStat":
+                "ModGradPhi":
                 {
                     "type":["min", "max", "mean"],
-                    "field":"advection-velocity",
+                    "field":"modgradphi",
+                    "marker":"Omega"
+                },
+                "Phi":
+                {
+                    "type":["min", "max", "mean"],
+                    "field":"phi",
                     "marker":"Omega"
                 }
             },
             "Norm":
             {
-                "VelocityNorm":
+                "PhiNorm":
                 {
                     "type":"L2",
-                    "field":"velocity"
+                    "field":"phi"
                 },
-                "AvectionVelocityNorm":
+                "ModGradPhiNorm":
                 {
                     "type":"L2",
-                    "field":"advection-velocity"
-                },
-                "HeavisideNorm":
-                {
-                    "type":"L2",
-                    "field":"heaviside"
-                },
-                "DiracNorm":
-                {
-                    "type":"L2",
-                    "field":"dirac"
+                    "field":"modgradphi"
                 }
             }
         }

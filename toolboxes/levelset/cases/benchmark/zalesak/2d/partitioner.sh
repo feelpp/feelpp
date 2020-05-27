@@ -9,6 +9,8 @@ PART_LIST="1 2 4 8 10 12 16 20 24"
 
 # coarse hsizes for space convergence analysis:
 H_SIZES="0.032 0.016 0.008 0.004"
+# additional tests
+H_SIZES="0.0064"
 # hsizes for space convergence analysis:
 #H_SIZES="0.0032 0.0016 0.0008 0.0004"
 # hsizes for redistanciation frequency analysis:

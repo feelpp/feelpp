@@ -6,8 +6,15 @@ LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_build_benchmark_zalesak_march202
 NARGS=3
 CFG_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/2d
 MESH_ROOT_DIR=/home/u2/derhovsepian/feel/toolboxes/levelset/cases/benchmark/zalesak/2d/meshes
-EXPERIMENT_PREFIX=""
-EXPERIMENT_PREFIX="check_freq_"
+#EXPERIMENT_PREFIX=""
+#EXPERIMENT_PREFIX="check_freq_"
+EXPERIMENT_PREFIX="auto_freq_"
+
+MINMODGRADPHI="0.0001"
+MAXMODGRADPHI="1.55"
+MODGRADPHIOPTIONS=""
+MODGRADPHIOPTIONS="--redist-triggering-minmodgradphi=${MINMODGRADPHI} --redist-triggering-maxmodgradphi=${MAXMODGRADPHI}"
+
 #EXPERIMENT_PREFIX="full_export_fast_curv_and_dist_methods_"
 LOGPATH=logs/${EXPERIMENT_PREFIX}space_convergence
 TIME_FINAL=628.0
@@ -18,15 +25,22 @@ TIME_FINAL=628.0
 
 TIME_SCHEME=BDF2
 LS_REDIST_EVERY="-1"
-LS_REDIST_EVERY="50"
-LS_REDIST_EVERY="1"
+#LS_REDIST_EVERY="30"
+#LS_REDIST_EVERY="1"
 QUAD_ORDER=1
 QUAD_ORDER=2
 #HN=${hostname 2>&1}
 RESTART=""
 #RESTART="--ts.restart=true --ts.restart.at-last-save=true"
-EXPORTER_EXPORT_FREQ="1"
-#EXPORTER_EXPORT_FREQ=10
+
+#EXPORTER_EXPORT_FREQ=17
+# for h=0.0032
+EXPORTER_EXPORT_FREQ=24
+# for h=0.0016
+#EXPORTER_EXPORT_FREQ=24
+# for h=0.0008
+#EXPORTER_EXPORT_FREQ=229
+
 EXPORTER_EXPORT=""
 #EXPORTER_EXPORT="--exporter.export=false"
 FAST_METHOD_FOR_UNUSED_FIELDS=""
@@ -87,6 +101,9 @@ case ${HSIZE} in
     0.008 )
         DELTA_T=0.914
         ;;
+    0.0064 )
+        DELTA_T=0.7314285714285714
+        ;;
     0.004 )
         DELTA_T=0.457
         ;;
@@ -125,7 +142,7 @@ printf "h = $HSIZE, dt = ${DELTA_T}\n"
 CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
     --config-file=${CFG_DIR}/slotteddisk.cfg \
     --levelset.mesh.filename=${MESH_ROOT_DIR}/h_${HSIZE}/domain_0_p${NCORE}.json \
-    --directory=toolboxes/levelset/cases/benchmark/zalesak/2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_redistevery_${LS_REDIST_EVERY}/h_${HSIZE}/quadorder_${QUAD_ORDER} \
+    --directory=toolboxes/levelset/cases/benchmark/zalesak/2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_redistevery_${LS_REDIST_EVERY}/h_${HSIZE}/minmodgradphi_${MINMODGRADPHI}_maxmodgradphi_${MAXMODGRADPHI}/quadorder_${QUAD_ORDER} \
     --ts.time-step=${DELTA_T} \
     --ts.time-final=${TIME_FINAL} \
     --levelset.redist-every=${LS_REDIST_EVERY} \
@@ -135,9 +152,10 @@ CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
     --levelset.quad.order=$QUAD_ORDER \
     --exporter.freq=${EXPORTER_EXPORT_FREQ} \
     ${FAST_METHOD_FOR_UNUSED_FIELDS} \
+    ${MODGRADPHIOPTIONS} \
     ${EXPORTER_EXPORT} \
     ${RESTART} \
-    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_redistevery_${LS_REDIST_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}.log"
+    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_redistevery_${LS_REDIST_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}_minmodgradphi_${MINMODGRADPHI}_maxmodgradphi_${MAXMODGRADPHI}.log"
 
 printf "${CMD} \n"
 printf "${CMD} \n\n" >> sc_cmd.txt
