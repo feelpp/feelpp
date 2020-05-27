@@ -24,9 +24,9 @@ runLevelsetApplication()
         space_advection_velocity_type,
         basis_PN_type
         > model_type;
-    
+
     auto LS = model_type::New("levelset");
-    
+
     Feel::cout << "============================================================\n";
     Feel::cout << "Level set benchmark : redistanciation\n";
     Feel::cout << "============================================================\n";
@@ -39,11 +39,11 @@ runLevelsetApplication()
     LS->printAndSaveInfo();
     toc("print(AndSaveInfo(): ");
     if( !LS->doRestart() )
-      {
+    {
         tic();
-	LS->exportResults(0.);
-	toc("exportResults(0.): ");
-      }
+        LS->exportResults(0.);
+        toc("exportResults(0.): ");
+    }
 
     std::shared_ptr<Exporter<typename model_type::mesh_type>> myExporter;
 
@@ -51,13 +51,13 @@ runLevelsetApplication()
     int nDof = LS->functionSpace()->nDof();
     int nElements = LS->mesh()->numGlobalElements();
     double redistTime;
-    // TODO : create meaningful base names : 
+    // TODO : create meaningful base names :
     std::string timeFileBaseName = "timeFileBaseName";
     std::string geoBaseName = "geoBaseName";
     std::string jsonBaseName = "jsonBaseName";
     std::string timeFileExtension = "csv";
     std::string timeFileName = timeFileBaseName + "_" + geoBaseName + "_" + jsonBaseName + "_" + std::to_string(hSize) + "." + timeFileExtension;
-    
+
     Feel::cout << "Redistanciation started. Will write results to " << timeFileName << std::endl;
     tic();
     LS->redistanciate();
@@ -67,16 +67,16 @@ runLevelsetApplication()
 
     tic();
     if ( Environment::isMasterRank() )
-      {
-	std::ofstream timerFile;
-	timerFile.open( timeFileName, std::ofstream::app );
-	// write the number of MPI processes, the hsize, the number of dof, the number of elements, and the redistanciation time
-	timerFile << Environment::worldComm().globalSize() << ", " << hSize << ", " << nDof << ", " << nElements << ", " << redistTime << std::endl;
-	Feel::cout << "Timing results written to " << timeFileName <<  std::endl;
-	timerFile.close();
-	// TODO handle errors :
-	//Feel::cout << "Could not write to file : " << timeFileName <<  std::endl;
-      }
+    {
+        std::ofstream timerFile;
+        timerFile.open( timeFileName, std::ofstream::app );
+        // write the number of MPI processes, the hsize, the number of dof, the number of elements, and the redistantiation time
+        timerFile << Environment::worldComm().globalSize() << ", " << hSize << ", " << nDof << ", " << nElements << ", " << redistTime << std::endl;
+        Feel::cout << "Timing results written to " << timeFileName <<  std::endl;
+        timerFile.close();
+        // TODO handle errors :
+        //Feel::cout << "Could not write to file : " << timeFileName <<  std::endl;
+    }
     toc("Write to file block :");
     tic();
     LS->exportResults();
@@ -97,7 +97,7 @@ int main( int argc, char** argv )
         ("levelset.redistanciation-timer-file", Feel::po::value<std::string>()->default_value( "redistanciation_FEELPP_DIMd_timer.csv" ), "Path to a file to write the redistanciation time" )
         ;
 
-    Environment env( 
+    Environment env(
             _argc=argc, _argv=argv,
             _desc=levelsetoptions,
             _about=about(_name="application_levelset_benchmark_fast_marching",
@@ -109,7 +109,7 @@ int main( int argc, char** argv )
         runLevelsetApplication<2>();
     else if ( feapprox == "P1" )
         runLevelsetApplication<1>();
-    
+
     else CHECK( false ) << "invalid feapprox " << feapprox;
 
     return 0;
