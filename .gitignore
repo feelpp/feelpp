@@ -1,4 +1,4 @@
-build/
+build*/
 *.bak
 *.aux
 *.cppbck
@@ -131,3 +131,4 @@ autom4te.cache
 pyfeelpp-env
 projects
 *bak
+/build*

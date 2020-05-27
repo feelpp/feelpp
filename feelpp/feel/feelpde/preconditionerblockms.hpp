@@ -491,7 +491,7 @@ template< typename space_type >
     typedef std::shared_ptr<type> ptrtype;
 };
 }
-BOOST_PARAMETER_MEMBER_FUNCTION( ( typename meta::blockms<
+BOOST_PARAMETER_FUNCTION( ( typename meta::blockms<
                                    typename parameter::value_type<Args, tag::space >::type::element_type
                                    >::ptrtype ),
                                  blockms,

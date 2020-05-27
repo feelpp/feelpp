@@ -109,7 +109,7 @@ struct test_interpolation_op
     typename space_type::element_type u( Xh, "u" );
 
     auto u_exact = Px()*Px();
-    u = vf::project( Xh, elements( *mesh ), u_exact );
+    u = vf::project( _space=Xh, _range=elements( *mesh ), _expr=u_exact );
 
     typename imesh<Dim,GeoOrder,RDim>::ptrtype mesh1( createMesh<Dim,GeoOrder,RDim>( meshSize/2 ) );
     typedef typename imesh<Dim,GeoOrder,RDim>::type mesh1_type;
@@ -208,7 +208,7 @@ template<int DimDomain, int OrderDomain, int RealDimDomain,
 
     typename domain_space_type::element_type u( Xh, "u" );
 
-    u = vf::project( Xh, elements( mesh ), Px() );
+    u = vf::project( _space=Xh, _range=elements( mesh ), _expr=Px() );
 
     typename imesh<DimImage,1,RealDimImage>::ptrtype image_mesh( createMesh<DimImage,1,RealDimImage>( meshSize/2 ) );
 
@@ -280,7 +280,7 @@ struct test_lagrange_p1_op
 
     typename space_type::element_type u( Xh, ( boost::format( "u_%1%.%2%.%3%" ) % Dim % Order % GeoOrder ).str() );
 
-    u = vf::project( Xh, elements( *mesh ), Px() );
+    u = vf::project( _space=Xh, _range=elements( *mesh ), _expr=Px() );
 
 #if 0
     std::ostringstream ostr1;
@@ -319,7 +319,7 @@ struct test_lagrange_p1_op
     //std::cout << "e=" << e << "\n" );
     BOOST_MESSAGE(  "[test_lagrange_p1_op] ||x-w||_infty = " << e.linftyNorm() << "\n" );
 
-    yy = vf::project( Yh, elements( Yh->mesh() ), Px() );
+    yy = vf::project( _space=Yh, _range=elements( Yh->mesh() ), _expr=Px() );
     std::ostringstream ostr;
     ostr << "olagp1-" << Dim << "." << Order << "." << GeoOrder;
     ExporterQuick<image_mesh_type> exp( ostr.str(), "ensight" );

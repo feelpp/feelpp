@@ -421,9 +421,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::interfaceRectangularFunction( element_levelset_typ
         ;
 
     return vf::project( 
-            this->functionSpace(), 
-            this->rangeMeshElements(),
-            R_expr
+        _space=this->functionSpace(), 
+        _range=this->rangeMeshElements(),
+        _expr=R_expr
             );
 }
 
@@ -1167,8 +1167,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateDirac()
     //}
 
     if ( M_useHeavisideDiracNodalProj )
-        *M_dirac = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                this->diracExpr() );
+        *M_dirac = vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(),
+                                _expr=this->diracExpr() );
     else
         *M_dirac = M_projectorL2Scalar->project( this->diracExpr() );
 
@@ -1192,8 +1192,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto psi = idv(this->phi()) / idv(this->modGradPhi());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *M_heaviside = vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(),
+                                        _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
             *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
@@ -1202,8 +1202,8 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateHeaviside()
         auto psi = idv(this->phi());
 
         if ( M_useHeavisideDiracNodalProj )
-            *M_heaviside = vf::project( this->functionSpace(), this->rangeMeshElements(),
-                   Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
+            *M_heaviside = vf::project( _space=this->functionSpace(), _range=this->rangeMeshElements(),
+                   _expr=Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
         else
             *M_heaviside = M_projectorL2Scalar->project( Feel::FeelModels::levelsetHeaviside(psi, cst(eps)) );
     }
@@ -3227,8 +3227,9 @@ LEVELSET_CLASS_TEMPLATE_TYPE::updateMarkerCrossedElements()
     auto phi = this->phi();
     auto phio = this->phio();
 
-    auto prod = vf::project(this->functionSpace(), this->rangeMeshElements(),
-                            idv(phio) * idv(phi) );
+    auto prod = vf::project(_space=this->functionSpace(),
+                            _range=this->rangeMeshElements(),
+                            _expr=idv(phio) * idv(phi) );
 
 
     for (; it_elt!=en_elt; it_elt++)
