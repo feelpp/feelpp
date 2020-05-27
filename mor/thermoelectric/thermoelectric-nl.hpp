@@ -23,8 +23,8 @@
 //!
 //!
 
-#ifndef FEELPP_CRB_MINIMAL_NL_HPP
-#define FEELPP_CRB_MINIMAL_NL_HPP
+#ifndef FEELPP_CRB_THERMOELECTRIC_NL_HPP
+#define FEELPP_CRB_THERMOELECTRIC_NL_HPP
 
 #include <feel/feelcrb/modelcrbbase.hpp>
 #include <feel/options.hpp>
@@ -75,7 +75,7 @@ public :
 
 };
 
-class FEELPP_EXPORT PoissonNL : public ModelCrbBase<ParameterDefinition,
+class FEELPP_EXPORT ThermoElectricNL : public ModelCrbBase<ParameterDefinition,
                                                     FunctionSpaceDefinition,
                                                     NonLinear,
                                                     EimDefinition<ParameterDefinition,
@@ -108,6 +108,11 @@ public:
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string, mat_type>;
 
+    using rb_space_type = typename super_type::rbfunctionspace_type;
+    using ctx_electro_type = rb_space_type::template sub_rbfunctionspace<0>::type::ctxrbset_type;
+    using ctx_thermo_type = rb_space_type::template sub_rbfunctionspace<1>::type::ctxrbset_type;
+
+
 private:
     mesh_ptrtype M_mesh;
     prop_ptrtype M_modelProps;
@@ -129,10 +134,21 @@ private:
 
     std::vector< std::vector< element_ptrtype > > M_InitialGuess;
 
+    ctx_electro_type M_ctxElectro;
+    ctx_thermo_type M_ctxThermo;
+
+    std::string M_propertyPath;
+    double M_gamma;
+    double M_tolerance;
+    int M_maxit;
+    int M_trainsetEimSize;
+    int M_verbose;
+
 public:
     static po::options_description makeOptions();
     static AboutData makeAbout( std::string const& str = "poissonnlcrbmodel" );
-    PoissonNL();
+    ThermoElectricNL();
+    prop_ptrtype modelProperties() const { return M_modelProps; }
     int Qa();
     int mMaxA(int q );
     int Nl();
@@ -149,8 +165,10 @@ public:
     functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const override;
     void initModel() override;
     void setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir ) override;
-    value_type
-    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
+    void initOutputsPoints();
+    vectorN_type computeOutputsPointsElectro( vectorN_type const& urb );
+    vectorN_type computeOutputsPointsThermo( vectorN_type const& urb );
+
     void assemble() override;
     betaqm_type computeBetaQm( parameter_type const& mu ) override;
     betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu) override;
@@ -160,10 +178,13 @@ public:
     beta_vector_type computeBetaInitialGuess( parameter_type const& mu) override;
     std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;
     beta_vector_type computeBetaLinearDecompositionA( parameter_type const& mu, double time=0 ) override;
+
     element_type solve(parameter_type const& mu) override;
     element_type solveLinear(parameter_type const& mu);
+    value_type
+    output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
 
-}; // PoissonNL class
+}; // ThermoElectricNL class
 
 } // Feel namespace
 

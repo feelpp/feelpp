@@ -134,4 +134,27 @@ ModelOutputs::getOutput( pt::ptree const& v, std::string const& name )
     return o;
 }
 
+std::map<std::string,ModelOutput> ModelOutputs::outputsOfType( std::string const& type ) const
+{
+    std::map<std::string,ModelOutput> out;
+    std::copy_if(this->begin(),this->end(),std::inserter(out,out.begin()),
+                 [type](std::pair<std::string,ModelOutput> const& mo)
+                 { return mo.second.type() == type; });
+    return out;
+}
+
+std::map<std::string,ModelOutput> ModelOutputs::outputsOfType( std::vector<std::string> const& types ) const
+{
+    std::map<std::string,ModelOutput> out;
+    std::copy_if(this->begin(),this->end(),std::inserter(out,out.begin()),
+                 [types](std::pair<std::string,ModelOutput> const& mo)
+                 {
+                     for( auto const& t : types )
+                         if( mo.second.type() == t )
+                             return true;
+                     return false;
+                 });
+    return out;
+}
+
 } // namespace Feel

@@ -23,7 +23,7 @@
 //!
 //!
 
-#include "poissonCRB-nl.hpp"
+#include "thermoelectric-nl.hpp"
 #include <feel/feelcrb/ser.hpp>
 
 #define DO_CVG_TEST 0
@@ -70,7 +70,7 @@ void printStats(fs::ofstream& out, std::vector<double > const& min, std::vector<
 
 int main( int argc, char** argv)
 {
-    using rb_model_type = PoissonNL;
+    using rb_model_type = ThermoElectricNL;
     using rb_model_ptrtype = std::shared_ptr<rb_model_type>;
     using crb_model_type = CRBModel<rb_model_type>;
     using crb_model_ptrtype = std::shared_ptr<crb_model_type>;
@@ -99,7 +99,7 @@ int main( int argc, char** argv)
                      .add(backend_options("backend-l2"))
                      .add(bdf_options("PoissonCRB")) );
 
-    auto crb = crb_type::New("poissonmodel-nl_crb", crb::stage::offline);
+    auto crb = crb_type::New(soption("thermoelectric.basename"), crb::stage::offline);
     auto crbmodel = crb->model();
     auto model = crb->model()->model();
     auto ser = std::make_shared<ser_type>(crb, crbmodel);
@@ -108,6 +108,7 @@ int main( int argc, char** argv)
     else
         crb->offline();
     // crb->loadDBFromId( soption("online.dbid"), crb::load::all );
+    // model->initOutputsPoints();
 
     int N = crb->dimension();
     int timeSteps = 1;
@@ -212,7 +213,21 @@ int main( int argc, char** argv)
         sampling->clear();
         sampling->randomize( size, true );
 
-        int nbErr = ioption("crb.output-index") != 0 ? 3 : 2;
+        auto modelOutputs = model->modelProperties()->outputs().outputsOfType("point");
+        auto ctxFeV = Xh->template functionSpace<0>()->context();
+        auto ctxFeT = Xh->template functionSpace<1>()->context();
+        for( auto const& [name,output] : modelOutputs )
+        {
+            node_type t(3);
+            auto coord = expr<3,1>(output.getString("coord")).evaluate();
+            t(0) = coord(0); t(1) = coord(1); t(2) = coord(2);
+            if( output.getString("field") == "electric-potential" )
+                ctxFeV.add( t );
+            else if( output.getString("field") == "temperature" )
+                ctxFeT.add( t );
+        }
+
+        int nbErr = 2 + modelOutputs.size() + (ioption("crb.output-index") != 0 ? 1 : 0);
         std::vector<std::vector<std::vector<double> > > errs(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
         std::vector<std::vector<std::vector<double> > > errsRel(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
         Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
@@ -221,6 +236,8 @@ int main( int argc, char** argv)
         {
             Feel::cout << "solving for mu = " << mu.toString() << std::endl;
             VTFE = model->solve(mu);
+            // auto evV = evaluateFromContext( _context=ctxFeV, _expr=idv(VFE));
+            // auto evT = evaluateFromContext( _context=ctxFeT, _expr=idv(TFE));
             if( ioption("crb.output-index") != 0 )
                 outFE = model->output(ioption("crb.output-index"), mu, VTFE);
             auto normV = normL2( rangeU, idv(VFE) );
@@ -234,11 +251,23 @@ int main( int argc, char** argv)
                 errs[1][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
                 errsRel[0][n][i] = errs[0][n][i]/normV;
                 errsRel[1][n][i] = errs[1][n][i]/normT;
+                // auto evRbV = model->computeOutputsPointsElectro(uN);
+                // auto evRbT = model->computeOutputsPointsThermo(uN);
+                // for( int j = 0; j < evRbV.size(); ++j )
+                // {
+                //     errs[j+2][n][i] = std::abs(evV(j)-evRbV(j));
+                //     errsRel[j+2][n][i] = errs[j+2][n][i]/std::abs(evV(j));
+                // }
+                // for( int j = 0; j < evRbT.size(); ++j )
+                // {
+                //     errs[j+2+evRbV.size()][n][i] = std::abs(evT(j)-evRbT(j));
+                //     errsRel[j+2+evRbV.size()][n][i] = errs[j+2+evRbV.size()][n][i]/std::abs(evT(j));
+                // }
                 if( ioption("crb.output-index") != 0 )
                 {
                     outRB = outputs[0];
-                    errs[2][n][i] = std::abs(outFE-outRB);
-                    errsRel[2][n][i] = errs[2][n][i]/std::abs(outFE);
+                    errs[2+modelOutputs.size()][n][i] = std::abs(outFE-outRB);
+                    errsRel[2+modelOutputs.size()][n][i] = errs[2+modelOutputs.size()][n][i]/std::abs(outFE);
                 }
             }
             ++i;
@@ -256,30 +285,23 @@ int main( int argc, char** argv)
             }
         }
 
-        fs::ofstream cvgErrV( "errV.dat" ), cvgErrT( "errT.dat" );
-        fs::ofstream cvgErrVR( "errVR.dat" ), cvgErrTR( "errTR.dat" );
-        fs::ofstream cvgStatV( "statV.dat" ), cvgStatT( "statT.dat" );
-        writeErrors(cvgErrV, errs[0]);
-        writeErrors(cvgErrTR, errsRel[0]);
-        writeErrors(cvgErrT, errs[1]);
-        writeErrors(cvgErrTR, errsRel[1]);
-        printStats(cvgStatV, min[0], max[0], mean[0]);
-        printStats(cvgStatT, min[1], max[1], mean[1]);
-        cvgErrV.close();
-        cvgErrVR.close();
-        cvgErrT.close();
-        cvgErrTR.close();
-        cvgStatV.close();
-        cvgStatT.close();
+        std::vector<std::string> values({"V","T"});
+        for( auto const& [name,o] : modelOutputs )
+            values.push_back("P_"+name);
         if( ioption("crb.output-index") != 0 )
+            values.push_back("O");
+        for( int i = 0; i < values.size(); ++i )
         {
-            fs::ofstream cvgErrO( "errO.dat"), cvgErrOR( "errOR.dat" ), cvgStatO("statO.dat");
-            writeErrors(cvgErrO, errs[2]);
-            writeErrors(cvgErrOR, errsRel[2]);
-            printStats(cvgStatO, min[2], max[2], mean[2]);
-            cvgErrO.close();
-            cvgErrOR.close();
-            cvgStatO.close();
+            Feel::cout << values[i] << std::endl;
+            fs::ofstream cvgErr( "err"+values[i]+".dat" );
+            fs::ofstream cvgErrR( "err"+values[i]+"R.dat" );
+            fs::ofstream stat( "stat"+values[i]+".dat" );
+            writeErrors(cvgErr, errs[i]);
+            writeErrors(cvgErrR, errsRel[i]);
+            cvgErr.close();
+            cvgErrR.close();
+            printStats(stat, min[i], max[i], mean[i]);
+            stat.close();
         }
 
         auto mesh = model->mesh();

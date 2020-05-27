@@ -6,49 +6,51 @@
     {
         "omega":
         {
-            "name": "copper",
             "physics": ["thermic","electric"],
-            "sigmaKey": "sigma",
-            "alphaKey": "alpha"
+            "misc":
+            {
+                "sigmaKey": "sigma",
+                "alphaKey": "alpha"
+            }
         }
     },
     "Parameters":
     {
         "sigma":
         {
-            "value":50e+3,
-            "min":48e+3,
-            "max":52e+3
+            "value":55e+3,
+            "min":50e+3,
+            "max":60e+3
         },
         "alpha":
         {
-            "value":3.4e-3,
-            "min":3.3e-3,
-            "max":3.5e-3
+            "value":3.6e-3,
+            "min":3.4e-3,
+            "max":3.8e-3
         },
         "L":
         {
-            "value":2.7e-8,
-            "min":2.5e-8,
-            "max":2.9e-8
+            "value":2.47e-8,
+            "min":2.3e-8,
+            "max":2.7e-8
         },
         "current":
         {
-            "value":-0.14,
-            "min":-0.25,
-            "max":-0.1
+            "value":0.025,
+            "min":0.015,
+            "max":0.05
         },
         "h":
         {
             "value":0.08,
-            "min":0.05,
+            "min":0.03,
             "max":0.1
         },
         "Tw":
         {
-            "value":300,
-            "min":290,
-            "max":310
+            "value":283,
+            "min":270,
+            "max":300
         }
     },
     "BoundaryConditions":
@@ -57,12 +59,12 @@
         {
             "Dirichlet":
             {
-                "in":
+                "V0":
                 {
                     "expr":"current:current",
                     "material":"omega"
                 },
-                "out":
+                "V1":
                 {
                     "expr":"0",
                     "material":"omega"
@@ -73,12 +75,7 @@
         {
             "Robin":
             {
-                "Rext":
-                {
-                    "expr1":"h:h",
-                    "expr2":"h*Tw:h:Tw"
-                },
-                "Rint":
+                "R":
                 {
                     "expr1":"h:h",
                     "expr2":"h*Tw:h:Tw"
@@ -91,8 +88,20 @@
         "average_temp":
         {
             "type":"averageTemp",
-            "range":"omega",
+            "markers":"omega",
             "topodim":3
+        },
+        "point1":
+        {
+            "type":"point",
+            "coord":"{0,1.5,1}",
+            "field":"electric-potential"
+        },
+        "point2":
+        {
+            "type":"point",
+            "coord":"{1,1,2}",
+            "field":"temperature"
         }
     }
 

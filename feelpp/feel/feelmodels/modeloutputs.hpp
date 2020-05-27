@@ -109,6 +109,9 @@ class FEELPP_EXPORT ModelOutputs: public std::map<std::string,ModelOutput>, publ
 
     void setDirectoryLibExpr( std::string const& directoryLibExpr ) { M_directoryLibExpr = directoryLibExpr; }
 
+    std::map<std::string,ModelOutput> outputsOfType( std::string const& type ) const;
+    std::map<std::string,ModelOutput> outputsOfType( std::vector<std::string> const& types ) const;
+
   private:
     void setup();
 

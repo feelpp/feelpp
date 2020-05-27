@@ -23,23 +23,22 @@
 //!
 //!
 
-#include <feel/feelcrb/crbplugin.hpp>
-#include "poissonCRB-nl.hpp"
+#include "thermoelectric-nl.hpp"
 
 namespace Feel {
 
 po::options_description
-PoissonNL::makeOptions()
+ThermoElectricNL::makeOptions()
 {
-    FEELPP_EXPORT po::options_description options( "Poisson" );
+    FEELPP_EXPORT po::options_description options( "Thermoelectric" );
     options.add_options()
-        ( "poisson.filename", Feel::po::value<std::string>()->default_value("poisson.json"),
-          "json file containing application parameters")
-        ( "poisson.gamma", po::value<double>()->default_value( 1e4 ), "penalisation term" )
-        ( "poisson.tolerance", po::value<double>()->default_value(1e-8), "tolerance for picard" )
-        ( "poisson.maxit", po::value<int>()->default_value(50), "maximum number of iteration for picard" )
-        ( "poisson.trainset-eim-size", po::value<int>()->default_value(10), "size of the trainset" )
-        ( "poisson.verbose", po::value<int>()->default_value(0), "level of verbosity" )
+        ( "thermoelectric.basename", po::value<std::string>()->default_value("thermoelectric-nl"), "basename for the database" )
+        ( "thermoelectric.filename", Feel::po::value<std::string>()->default_value("thermoelectric.json"), "json file containing application parameters")
+        ( "thermoelectric.gamma", po::value<double>()->default_value( 1e4 ), "penalisation term" )
+        ( "thermoelectric.tolerance", po::value<double>()->default_value(1e-8), "tolerance for picard" )
+        ( "thermoelectric.maxit", po::value<int>()->default_value(50), "maximum number of iteration for picard" )
+        ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(10), "size of the trainset" )
+        ( "thermoelectric.verbose", po::value<int>()->default_value(0), "level of verbosity" )
         ;
     options.add(backend_options("thermo-electro") );
     options.add(backend_options("electro") );
@@ -48,7 +47,7 @@ PoissonNL::makeOptions()
 }
 
 AboutData
-PoissonNL::makeAbout( std::string const& str )
+ThermoElectricNL::makeAbout( std::string const& str )
 {
     AboutData about( str.c_str() );
     return about;
@@ -56,9 +55,17 @@ PoissonNL::makeAbout( std::string const& str )
 
 
 
-PoissonNL::PoissonNL() : super_type("poissonmodel-nl_crb") {}
+ThermoElectricNL::ThermoElectricNL() :
+    super_type(soption("thermoelectric.basename")),
+    M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
+    M_gamma(doption("thermoelectric.gamma")),
+    M_tolerance(doption("thermoelectric.tolerance")),
+    M_maxit(ioption("thermoelectric.maxit")),
+    M_trainsetEimSize(ioption("thermoelectric.trainset-eim-size")),
+    M_verbose(ioption("thermoelectric.verbose"))
+{}
 
-int PoissonNL::Qa()
+int ThermoElectricNL::Qa()
 {
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
@@ -67,7 +74,7 @@ int PoissonNL::Qa()
     return M_nbTherMat + M_nbElecMat + potentialDirichlet.size() + temperatureRobin.size();
 }
 
-int PoissonNL::mMaxA(int q)
+int ThermoElectricNL::mMaxA(int q)
 {
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
@@ -88,13 +95,13 @@ int PoissonNL::mMaxA(int q)
         return 0;
 }
 
-int PoissonNL::Nl()
+int ThermoElectricNL::Nl()
 {
-    auto outputs = M_modelProps->outputs();
+    auto outputs = M_modelProps->outputs().outputsOfType(std::vector<std::string>({"intensity","averageTemp"}));
     return 1 + outputs.size();
 }
 
-int PoissonNL::Ql( int l)
+int ThermoElectricNL::Ql( int l)
 {
     if( l == 0 )
     {
@@ -106,7 +113,7 @@ int PoissonNL::Ql( int l)
     }
     else if( l < Nl() )
     {
-        auto outputs = M_modelProps->outputs();
+        auto outputs = M_modelProps->outputs().outputsOfType(std::vector<std::string>({"intensity","averageTemp"}));
         auto output = std::next(outputs.begin(), l-1)->second;
         if( output.type() == "intensity" )
             return QIntensity( output );
@@ -119,7 +126,7 @@ int PoissonNL::Ql( int l)
         return 0;
 }
 
-int PoissonNL::mMaxF(int l, int q)
+int ThermoElectricNL::mMaxF(int l, int q)
 {
     if( l == 0 )
     {
@@ -141,7 +148,7 @@ int PoissonNL::mMaxF(int l, int q)
     }
     else if( l < Nl() )
     {
-        auto outputs = M_modelProps->outputs();
+        auto outputs = M_modelProps->outputs().outputsOfType(std::vector<std::string>({"intensity","averageTemp"}));
         auto output = std::next(outputs.begin(), l-1)->second;
         if( output.type() == "intensity" )
             return mMaxIntensity( q, output );
@@ -154,29 +161,29 @@ int PoissonNL::mMaxF(int l, int q)
         return 0;
 }
 
-int PoissonNL::QIntensity( ModelOutput const& out ) const
+int ThermoElectricNL::QIntensity( ModelOutput const& out ) const
 {
     return 1;
 }
 
-int PoissonNL::QAverageTemp( ModelOutput const& out ) const
+int ThermoElectricNL::QAverageTemp( ModelOutput const& out ) const
 {
     return 1;
 }
 
-int PoissonNL::mMaxIntensity(int q, ModelOutput const& out ) const
+int ThermoElectricNL::mMaxIntensity(int q, ModelOutput const& out ) const
 {
     auto mat = out.getString("material");
     auto eimSigma = this->scalarContinuousEim()[M_elecEimIndex.at(mat)];
     return eimSigma->mMax();
 }
 
-int PoissonNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
+int ThermoElectricNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
 {
     return 1;
 }
 
-void PoissonNL::resize()
+void ThermoElectricNL::resize()
 {
     M_eimGradSize = this->scalarDiscontinuousEim()[0]->mMax();
     M_Aqm.resize(Qa());
@@ -202,8 +209,8 @@ void PoissonNL::resize()
 
 
 /*************************** mesh support of functionspace **********************/
-PoissonNL::functionspace_type::mesh_support_vector_type
-PoissonNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
+ThermoElectricNL::functionspace_type::mesh_support_vector_type
+ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 {
     Feel::cout << "init model" << std::endl;
     auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
@@ -213,11 +220,10 @@ PoissonNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
     return fusion::make_vector(suppElec,suppTher);
 }
 
-void PoissonNL::initModel()
+void ThermoElectricNL::initModel()
 {
-    auto propertyPath = Environment::expand( soption("poisson.filename"));
-    this->addModelFile("property-file", propertyPath);
-    M_modelProps = std::make_shared<prop_type>(propertyPath);
+    this->addModelFile("property-file", M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
@@ -279,22 +285,21 @@ void PoissonNL::initModel()
     auto VTInit = this->solveLinear(mu);
     M_InitialGuess[0][0]->template element<0>() = VTInit.template element<0>();
     M_InitialGuess[1][0]->template element<1>() = VTInit.template element<1>();
-
+#if 0
     auto ex = exporter(_mesh=M_mesh, _name="initial-guess");
     ex->add("V_Init",VTInit.template element<0>() );
     ex->add("T_Init",VTInit.template element<1>() );
     ex->save();
-
+#endif
     auto Pset = this->Dmu->sampling();
 
-    int trainsetEimSize = ioption("poisson.trainset-eim-size");
     std::string supersamplingname = (boost::format("DmuEim-Ne%1%-generated-by-master-proc")
-                                     % trainsetEimSize ).str();
+                                     % M_trainsetEimSize ).str();
     std::ifstream file ( supersamplingname );
     bool all_proc_same_sampling=true;
     if( ! file )
     {
-        Pset->randomize( trainsetEimSize , all_proc_same_sampling , supersamplingname );
+        Pset->randomize( M_trainsetEimSize , all_proc_same_sampling , supersamplingname );
         Pset->writeOnFile( supersamplingname );
     }
     else
@@ -316,7 +321,7 @@ void PoissonNL::initModel()
         auto k = sigma*L*_e1;
         auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
 
-        auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                           _element=M_u.template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -335,7 +340,7 @@ void PoissonNL::initModel()
         auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
         auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
         auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
-        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                               _element=M_u.template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma/M_sigmaMax,
@@ -351,7 +356,7 @@ void PoissonNL::initModel()
     auto gradgrad = _e2v*trans(_e2v);
     auto Jh = eimd_space_type::New( _mesh=M_mesh,
                                     _range=elements(support(Xh->template functionSpace<0>())));
-    auto eim_grad = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+    auto eim_grad = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                          _element=M_u.template element<1>(),
                          _element2=M_u.template element<0>(),
                          _parameter=M_mu,
@@ -385,7 +390,7 @@ void PoissonNL::initModel()
     this->assemble();
 }
 
-void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
+void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const& ptree, std::string const& dbDir )
 {
     Feel::cout << "setup specificity model" << std::endl;
     auto const& ptreeEim = ptree.get_child( "eim" );
@@ -404,7 +409,7 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
         eim_space_ptrtype Eh;
         auto const& ptreeEimK = ptreeEim.get_child( name );
         std::string dbNameEimK = ptreeEimK.template get<std::string>( "database-filename" );
-        auto eim_k = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                           _element=M_u.template element<1>(),
                           _parameter=M_mu,
                           _expr=k,
@@ -426,7 +431,7 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
         eim_space_ptrtype Eh;
         auto const& ptreeEimSigma = ptreeEim.get_child( name );
         std::string dbNameEimSigma = ptreeEimSigma.template get<std::string>( "database-filename" );
-        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                               _element=M_u.template element<1>(),
                               _parameter=M_mu,
                               _expr=sigma/M_sigmaMax,
@@ -444,7 +449,7 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
     auto const& ptreeEimGrad = ptreeEim.get_child( name );
     std::string dbNameEimGrad = ptreeEimGrad.template get<std::string>( "database-filename" );
     eimd_space_ptrtype Jh;
-    auto eim_grad = eim( _model=std::dynamic_pointer_cast<PoissonNL>(this->shared_from_this() ),
+    auto eim_grad = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                          _element=M_u.template element<1>(),
                          _element2=M_u.template element<0>(),
                          _parameter=M_mu,
@@ -458,34 +463,126 @@ void PoissonNL::setupSpecificityModel( boost::property_tree::ptree const& ptree,
     Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
 
     this->resize();
-}
 
-double PoissonNL::output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve)
-{
-    if ( need_to_solve )
-        u = this->solve( mu );
-
-    this->computeBetaQm( u, mu );
-
-
-    double output=0;
-    if ( output_index < Nl() )
+    auto outputs = M_modelProps->outputs().outputsOfType("point");
+    bool hasCtxElectro = false, hasCtxThermo = false;
+    for( auto const& [name,output] : outputs )
     {
-        for ( int q = 0; q < Ql(output_index); q++ )
+        if( output.getString("field") == "electric-potential" )
+            hasCtxElectro = true;
+        else if( output.getString("field") == "temperature" )
+            hasCtxThermo = true;
+    }
+    if( hasCtxElectro )
+    {
+        fs::path dbdir(M_crbModelDb.dbRepository());
+        std::string filename = ( dbdir / "ctxelectro.crbdb").string();
+        if ( this->worldComm().isMasterRank() )
         {
-            for( int m = 0; m < mMaxF(output_index, q); ++m )
+            fs::ifstream ifs( filename );
+            if ( ifs )
             {
-                element_ptrtype eltF( new element_type( Xh ) );
-                *eltF = *M_Fqm[output_index][q][m];
-                output += M_betaFqm[output_index][q][m]*dot( *eltF, u );
-                // output += M_betaFqm[output_index][q][m]*dot( M_Fqm[output_index][q][m], u );
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> M_ctxElectro;
+                M_ctxElectro.setRbFunctionSpace(this->rBFunctionSpace()->template rbFunctionSpace<0>());
             }
         }
     }
-    else
-        throw std::logic_error( "[Heat2d::output] error with output_index : only 0 or 1 " );
-    return output;
+    if( hasCtxThermo )
+    {
+        fs::path dbdir(M_crbModelDb.dbRepository());
+        std::string filename = ( dbdir / "ctxthermo.crbdb").string();
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::ifstream ifs( filename );
+            if ( ifs )
+            {
+                boost::archive::binary_iarchive ia( ifs );
+                ia >> M_ctxThermo;
+                M_ctxThermo.setRbFunctionSpace(this->rBFunctionSpace()->template rbFunctionSpace<1>());
+            }
+        }
+    }
 }
 
-// FEELPP_CRB_PLUGIN( PoissonNL, poissonnl )
+void ThermoElectricNL::initOutputsPoints()
+{
+    auto outputs = M_modelProps->outputs().outputsOfType("point");
+    M_ctxElectro = this->rBFunctionSpace()->template rbFunctionSpace<0>()->context();
+    M_ctxThermo = this->rBFunctionSpace()->template rbFunctionSpace<1>()->context();
+    bool hasCtxElectro = false, hasCtxThermo = false;
+    for( auto const& [name,output] : outputs )
+    {
+        node_type t(3);
+        auto coord = expr<3,1>(output.getString("coord")).evaluate();
+        t(0) = coord(0); t(1) = coord(1); t(2) = coord(2);
+        if( output.getString("field") == "electric-potential" )
+        {
+            hasCtxElectro = true;
+            M_ctxElectro.add( t );
+        }
+        else if( output.getString("field") == "temperature" )
+        {
+            hasCtxThermo = true;
+            M_ctxThermo.add( t );
+        }
+    }
+    if( hasCtxElectro )
+    {
+        M_ctxElectro.update();
+
+        fs::path dbdir(M_crbModelDb.dbRepository());
+        std::string filename = ( dbdir / "ctxelectro.crbdb").string();
+        this->addModelFile("context-points-electro", filename);
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::ofstream ofs( filename );
+            if ( ofs )
+            {
+                boost::archive::binary_oarchive oa( ofs );
+                oa << M_ctxElectro;
+            }
+        }
+    }
+    if( hasCtxThermo )
+    {
+        M_ctxThermo.update();
+
+        fs::path dbdir(M_crbModelDb.dbRepository());
+        std::string filename = ( dbdir / "ctxthermo.crbdb").string();
+        this->addModelFile("context-points-thermo", filename);
+        if ( this->worldComm().isMasterRank() )
+        {
+            fs::ofstream ofs( filename );
+            if ( ofs )
+            {
+                boost::archive::binary_oarchive oa( ofs );
+                oa << M_ctxThermo;
+            }
+        }
+    }
+}
+
+ThermoElectricNL::vectorN_type ThermoElectricNL::computeOutputsPointsElectro( vectorN_type const& urb )
+{
+    auto VRbElt = M_ctxElectro.rbFunctionSpace()->element();
+    int dimRb = std::min((int)VRbElt.size(),(int)urb.size());
+    for ( int k=0; k<dimRb; ++k )
+        VRbElt(k) = urb(k);
+    auto evaluations = evaluateFromContext( _context=M_ctxElectro , _expr=idv(VRbElt) );
+    return evaluations;
+}
+
+ThermoElectricNL::vectorN_type ThermoElectricNL::computeOutputsPointsThermo( vectorN_type const& urb )
+{
+    auto TRbElt = M_ctxThermo.rbFunctionSpace()->element();
+    int dimRb = std::min((int)TRbElt.size(),(int)urb.size());
+    for ( int k=0; k<dimRb; ++k )
+        TRbElt(k) = urb(k);
+    auto evaluations = evaluateFromContext( _context=M_ctxThermo , _expr=idv(TRbElt) );
+    return evaluations;
+}
+
+// #include <feel/feelcrb/crbplugin.hpp>
+// FEELPP_CRB_PLUGIN( ThermoElectricNL, thermoelectricnl )
 }
