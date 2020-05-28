@@ -122,13 +122,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
 
                 if ( buildFPK )
                 {
-                    auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se);
+                    auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se,timeSteppingScaling);
                     linearFormDisplacement +=
                         integrate( _range=range,
                                    //_expr= trace(val(Fv*Sv)*trans(grad(v))),
                                    //_expr=trace(Feel::FeelModels::stressStVenantKirchhoff(u,coeffLame1,coeffLame2)*trans(grad(v))),
                                    //_expr=Feel::FeelModels::stressStVenantKirchhoffResidual(u,coeffLame1,coeffLame2),// le dernier 
-                                   _expr= timeSteppingScaling*inner(FSv,grad(v)),
+                                   _expr= inner(FSv,grad(v)),
                                    _geomap=this->geomap() );
                 }
             }

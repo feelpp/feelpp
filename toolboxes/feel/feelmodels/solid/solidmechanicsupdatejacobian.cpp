@@ -96,7 +96,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                     // stress tensor terms
                     this->timerTool("Solve").start();
 
-                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,*physicSolidData,matProperties,se);
+                    auto dFPK_disp = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement(u,p,*physicSolidData,matProperties,se/*,timeSteppingScaling*/);
                     bilinearForm_PatternCoupled +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*inner( dFPK_disp, grad(v) ),

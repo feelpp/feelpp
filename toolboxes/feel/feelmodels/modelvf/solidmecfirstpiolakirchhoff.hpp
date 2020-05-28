@@ -800,6 +800,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                  return;
 
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             typename super_type::matrix_shape_type E;
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
@@ -838,13 +839,14 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     // p*Id+S_bis
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type pEval = this->locIdPressure()[q](0,0);
-                    theLocRes = pEval*M_mId + 2*coefflame2*E;
+                    theLocRes = pEval*M_mId + (2*coefflame2*timeSteppingScaling)*E;
                 }
                 else
                 {
                     const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     theLocRes = coefflame1*E.trace()*M_mId + 2*coefflame2*E;
+                    theLocRes *= timeSteppingScaling;
                 }
 
             }
@@ -1008,6 +1010,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         }
         void updateImpl( mpl::int_<2> /**/ )
         {
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
@@ -1027,10 +1030,11 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 if constexpr ( useDispPresForm )
                 {
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
-                    const value_type S11 = 2*coefflame2*E11;
-                    const value_type S12 = 2*coefflame2*E12;
-                    const value_type S21 = 2*coefflame2*E21;
-                    const value_type S22 = 2*coefflame2*E22;
+                    const value_type coeffMult = 2*coefflame2*timeSteppingScaling;
+                    const value_type S11 = coeffMult*E11;
+                    const value_type S12 = coeffMult*E12;
+                    const value_type S21 = coeffMult*E21;
+                    const value_type S22 = coeffMult*E22;
                     if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                     {
 #if 0
@@ -1061,10 +1065,14 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type traceE = E11 + E22;
-                    const value_type S11 = coefflame1*traceE + 2*coefflame2*E11;
-                    const value_type S12 = 2*coefflame2*E12;
-                    const value_type S21 = 2*coefflame2*E21;
-                    const value_type S22 = coefflame1*traceE + 2*coefflame2*E22;
+
+                    const value_type coeffOnDiag = coefflame1*traceE*timeSteppingScaling;
+                    const value_type coeffMult = 2*coefflame2*timeSteppingScaling;
+
+                    const value_type S11 = coeffOnDiag + coeffMult*E11;
+                    const value_type S12 = coeffMult*E12;
+                    const value_type S21 = coeffMult*E21;
+                    const value_type S22 = coeffOnDiag + coeffMult*E22;
 
                     if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                     {
@@ -1087,6 +1095,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
 
         void updateImpl( mpl::int_<3> /**/ )
         {
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
@@ -1112,15 +1121,16 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 if constexpr ( useDispPresForm )
                 {
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
-                    const value_type S11 = 2*coefflame2*E11;
-                    const value_type S12 = 2*coefflame2*E12;
-                    const value_type S13 = 2*coefflame2*E13;
-                    const value_type S21 = 2*coefflame2*E21;
-                    const value_type S22 = 2*coefflame2*E22;
-                    const value_type S23 = 2*coefflame2*E23;
-                    const value_type S31 = 2*coefflame2*E31;
-                    const value_type S32 = 2*coefflame2*E32;
-                    const value_type S33 = 2*coefflame2*E33;
+                    const value_type coeffMult = 2*coefflame2*timeSteppingScaling;
+                    const value_type S11 = coeffMult*E11;
+                    const value_type S12 = coeffMult*E12;
+                    const value_type S13 = coeffMult*E13;
+                    const value_type S21 = coeffMult*E21;
+                    const value_type S22 = coeffMult*E22;
+                    const value_type S23 = coeffMult*E23;
+                    const value_type S31 = coeffMult*E31;
+                    const value_type S32 = coeffMult*E32;
+                    const value_type S33 = coeffMult*E33;
 
                     if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                     {
@@ -1168,15 +1178,18 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type traceE = E11+E22+E33;
-                    const value_type S11 = coefflame1*traceE + 2*coefflame2*E11;
-                    const value_type S12 = 2*coefflame2*E12;
-                    const value_type S13 = 2*coefflame2*E13;
-                    const value_type S21 = 2*coefflame2*E21;
-                    const value_type S22 = coefflame1*traceE + 2*coefflame2*E22;
-                    const value_type S23 = 2*coefflame2*E23;
-                    const value_type S31 = 2*coefflame2*E31;
-                    const value_type S32 = 2*coefflame2*E32;
-                    const value_type S33 = coefflame1*traceE + 2*coefflame2*E33;
+                    const value_type coeffOnDiag = coefflame1*traceE*timeSteppingScaling;
+                    const value_type coeffMult = 2*coefflame2*timeSteppingScaling;
+
+                    const value_type S11 = coeffOnDiag + coeffMult*E11;
+                    const value_type S12 = coeffMult*E12;
+                    const value_type S13 = coeffMult*E13;
+                    const value_type S21 = coeffMult*E21;
+                    const value_type S22 = coeffOnDiag + coeffMult*E22;
+                    const value_type S23 = coeffMult*E23;
+                    const value_type S31 = coeffMult*E31;
+                    const value_type S32 = coeffMult*E32;
+                    const value_type S33 = coeffOnDiag + coeffMult*E33;
 
                     if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                     {
@@ -1223,6 +1236,9 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP> /**/, mpl::int_<2> /**/ ) const
         {
+            // not use time scaling, we put this scaling directly in the bilinearform
+            //double timeSteppingScaling = this->expr().timeSteppingScaling();
+
             auto const& gradDisplacementEval = this->locGradDisplacement(q);
             const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
             const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
@@ -1248,11 +1264,12 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( useDispPresForm )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
                 // auto dS = 2*idv(CoeffLame2)*dE;
-                const value_type dS11 = 2*coefflame2*dE11;
-                const value_type dS12 = 2*coefflame2*dE12;
-                const value_type dS21 = 2*coefflame2*dE21;
-                const value_type dS22 = 2*coefflame2*dE22;
+                const value_type dS11 = coeffMult*dE11;
+                const value_type dS12 = coeffMult*dE12;
+                const value_type dS21 = coeffMult*dE21;
+                const value_type dS22 = coeffMult*dE22;
 
                 // FvdS = val(Fv)*dS
                 const value_type FvdS11 = (1.+du1vdx)*dS11 + du1vdy*dS21;
@@ -1274,15 +1291,18 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             }
             else
             {
+                const value_type tracedE = dE11 + dE22;
                 const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
-                const value_type tracedE = dE11 + dE22;
+
+                const value_type coeffOnDiag = coefflame1*tracedE/**timeSteppingScaling*/;
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
 
                 // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
-                const value_type dS11 = coefflame1*tracedE + 2*coefflame2*dE11;
-                const value_type dS12 = 2*coefflame2*dE12;
-                const value_type dS21 = 2*coefflame2*dE21;
-                const value_type dS22 = coefflame1*tracedE + 2*coefflame2*dE22;
+                const value_type dS11 = coeffOnDiag + coeffMult*dE11;
+                const value_type dS12 = coeffMult*dE12;
+                const value_type dS21 = coeffMult*dE21;
+                const value_type dS22 = coeffOnDiag + 2*coefflame2*dE22;
 
                 // FvdS = val(Fv)*dS
                 const value_type FvdS11 = (1.+du1vdx)*dS11 + du1vdy*dS21;
@@ -1341,17 +1361,18 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( useDispPresForm )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
 
                 // auto dS = 2*idv(CoeffLame2)*dE;
-                const value_type dS11 = 2*coefflame2*dE11;
-                const value_type dS12 = 2*coefflame2*dE12;
-                const value_type dS13 = 2*coefflame2*dE13;
-                const value_type dS21 = 2*coefflame2*dE21;
-                const value_type dS22 = 2*coefflame2*dE22;
-                const value_type dS23 = 2*coefflame2*dE23;
-                const value_type dS31 = 2*coefflame2*dE31;
-                const value_type dS32 = 2*coefflame2*dE32;
-                const value_type dS33 = 2*coefflame2*dE33;
+                const value_type dS11 = coeffMult*dE11;
+                const value_type dS12 = coeffMult*dE12;
+                const value_type dS13 = coeffMult*dE13;
+                const value_type dS21 = coeffMult*dE21;
+                const value_type dS22 = coeffMult*dE22;
+                const value_type dS23 = coeffMult*dE23;
+                const value_type dS31 = coeffMult*dE31;
+                const value_type dS32 = coeffMult*dE32;
+                const value_type dS33 = coeffMult*dE33;
 
                 // FvdS = val(Fv)*dS
                 const value_type FvdS11 = (1.+du1vdx)*dS11 + du1vdy*dS21 + du1vdz*dS31;
@@ -1387,16 +1408,19 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                 const value_type tracedE = dE11 + dE22 + dE33;
 
+                const value_type coeffOnDiag = coefflame1*tracedE/**timeSteppingScaling*/;
+                const value_type coeffMult = 2*coefflame2/**timeSteppingScaling*/;
+
                 // auto dS = idv(CoeffLame1)*trace(dE)*Id + 2*idv(CoeffLame2)*dE;
-                const value_type dS11 = coefflame1*tracedE + 2*coefflame2*dE11;
-                const value_type dS12 = 2*coefflame2*dE12;
-                const value_type dS13 = 2*coefflame2*dE13;
-                const value_type dS21 = 2*coefflame2*dE21;
-                const value_type dS22 = coefflame1*tracedE + 2*coefflame2*dE22;
-                const value_type dS23 = 2*coefflame2*dE23;
-                const value_type dS31 = 2*coefflame2*dE31;
-                const value_type dS32 = 2*coefflame2*dE32;
-                const value_type dS33 = coefflame1*tracedE + 2*coefflame2*dE33;
+                const value_type dS11 = coeffOnDiag + coeffMult*dE11;
+                const value_type dS12 = coeffMult*dE12;
+                const value_type dS13 = coeffMult*dE13;
+                const value_type dS21 = coeffMult*dE21;
+                const value_type dS22 = coeffOnDiag + 2*coefflame2*dE22;
+                const value_type dS23 = coeffMult*dE23;
+                const value_type dS31 = coeffMult*dE31;
+                const value_type dS32 = coeffMult*dE32;
+                const value_type dS33 = coeffOnDiag + coeffMult*dE33;
 
                 // FvdS = val(Fv)*dS
                 const value_type FvdS11 = (1.+du1vdx)*dS11 + du1vdy*dS21 + du1vdz*dS31;
@@ -1563,19 +1587,10 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
 #else
-        // generic update but seems more slow
+        // generic update but seems slower
         void updateImpl( Geo_t const& geom )
         {
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcMechPropField->update(this->gmc()->pc()->nodes() );
-            M_ctxMechPropField->update( this->gmc(),  (pc_mechprop_scalar_ptrtype const&) M_pcMechPropField );
-            std::fill( M_locEvalFieldCoefflame2.data(), M_locEvalFieldCoefflame2.data()+M_locEvalFieldCoefflame2.num_elements(), this->M_zeroLocScalar/*super_type::loc_scalar_type::Zero()*/ );
-            this->expr().mechanicalPropertiesDesc().fieldCoeffLame2().id( *M_ctxMechPropField, M_locEvalFieldCoefflame2 );
-
-            if ( !useDispPresForm )
-                M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
-
-            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
@@ -1593,9 +1608,15 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     //const value_type A10 = coefflame2/2;
                     this->locRes(q) = coefflame2*std::pow(detFv,-2./expr_type::nRealDim)*(F - (1./expr_type::nRealDim)*traceCv*InvFvmt);
                     if constexpr ( useDispPresForm )
+                    {
+                        matLoc *= timeSteppingScaling;
                         matLoc += this->M_tensorLagrangeMultiplier->localAssembly(q);
+                    }
                     else
+                    {
                         this->locRes(q) += M_tensorVolumicPart->locRes(q);
+                        matLoc *= timeSteppingScaling;
+                    }
                 }
                 else
                 {
@@ -1618,6 +1639,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
 #endif
         void updateImpl( mpl::int_<2> /**/ )
         {
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
@@ -1642,9 +1664,15 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     matLoc(0,1) = factorWithDetFv*(Fv12 + factorOther*Fv21);
                     matLoc(1,1) = factorWithDetFv*(Fv22 - factorOther*Fv11);
                     if constexpr ( useDispPresForm )
+                    {
+                        matLoc *= timeSteppingScaling;
                         matLoc += this->M_tensorLagrangeMultiplier->localAssembly(q);
+                    }
                     else
+                    {
                         matLoc += M_tensorVolumicPart->locRes(q);
+                        matLoc *= timeSteppingScaling;
+                    }
                 }
                 else
                 {
@@ -1670,7 +1698,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
 
         void updateImpl( mpl::int_<3> /**/ )
         {
-
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
@@ -1728,9 +1756,15 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     matLoc(1,2) = factorWithDetFv*(Fv23 - factorOther*InvFv32);
                     matLoc(2,2) = factorWithDetFv*(Fv33 - factorOther*InvFv33);
                     if constexpr ( useDispPresForm )
+                    {
+                        matLoc *= timeSteppingScaling;
                         matLoc += this->M_tensorLagrangeMultiplier->localAssembly(q);
+                    }
                     else
+                    {
                         matLoc += M_tensorVolumicPart->locRes(q);
+                        matLoc *= timeSteppingScaling;
+                    }
                 }
                 else
                 {
@@ -2066,6 +2100,17 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             super_type::update( geom,face );
             updateImpl( geom );
         }
+
+        // using super_type::evalijq; // fix clang warning
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+        {
+            return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
+        }
+
+    private :
+
         void updateImpl( Geo_t const& geom )
         {
             if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
@@ -2074,10 +2119,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( !useDispPresForm )
                 M_tensorVolumicPart->updateImpl( *this );
 
-            updateImpl();
-        }
-        void updateImpl()
-        {
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
@@ -2090,9 +2133,15 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     auto InvFvmt = F.inverse().transpose();
                     this->locRes(q) = coefflame2*(F-InvFvmt);
                     if constexpr ( useDispPresForm )
+                    {
+                        this->locRes(q) *= timeSteppingScaling;
                         this->locRes(q) += this->M_tensorLagrangeMultiplier->localAssembly(q);
+                    }
                     else
+                    {
                         this->locRes(q) += M_tensorVolumicPart->locRes(q);
+                        this->locRes(q) *= timeSteppingScaling;
+                    }
                 }
                 else
                 {
@@ -2101,16 +2150,6 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 }
             }
         }
-
-        // using super_type::evalijq; // fix clang warning
-
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
-        {
-            return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
-        }
-
-    private :
 
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::EVAL> /**/ ) const
@@ -2354,6 +2393,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         }
         void updateImpl( mpl::int_<2> /**/ )
         {
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
@@ -2365,7 +2405,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 const value_type detFv = Fv11*Fv22-Fv12*Fv21;
                 //const value_type traceCv = std::pow(Fv11,2) + std::pow(Fv21,2) + std::pow(Fv12,2) + std::pow(Fv22,2);
 
-                if ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                 {
                     //auto InvFv = (cst(1.)/detFv)*mat<2,2>( Fv22,-Fv12,-Fv21,Fv11);
                     const value_type scaleUsedWithInvFv = 1./detFv;
@@ -2382,6 +2422,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     this->locRes(q)(0,1) = coefflame2*(Fv12-InvFv21) + factorWithLogDetFv*InvFv21;
                     this->locRes(q)(1,0) = coefflame2*(Fv21-InvFv12) + factorWithLogDetFv*InvFv12;
                     this->locRes(q)(1,1) = coefflame2*(Fv22-InvFv22) + factorWithLogDetFv*InvFv22;
+                    this->locRes(q) *= timeSteppingScaling;
                 }
                 else
                 {
@@ -2396,6 +2437,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
 
         void updateImpl( mpl::int_<3> /**/ )
         {
+            double timeSteppingScaling = this->expr().timeSteppingScaling();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
                 const value_type bulkModulus = this->M_localAssemblyBulkModulus[q];
@@ -2410,7 +2452,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 //const value_type traceCv = math::pow(Fv11,2) + math::pow(Fv21,2) + math::pow(Fv31,2) + math::pow(Fv12,2) +
                 //    math::pow(Fv22,2) + math::pow(Fv32,2) + math::pow(Fv13,2) + math::pow(Fv23,2) + math::pow(Fv33,2);
 
-                if ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
                 {
                     // InvFv
                     /*auto InvFv = (cst(1.)/detFv)*mat<3,3>( Fv22*Fv33-Fv23*Fv32 , Fv13*Fv32-Fv12*Fv33 , Fv12*Fv23-Fv13*Fv22,
@@ -2787,20 +2829,24 @@ public:
     using test_basis = std::nullptr_t;
     using trial_basis = std::nullptr_t;
 
-    SolidMecStressTensorImpl( element_displacement_type const & u, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
+    SolidMecStressTensorImpl( element_displacement_type const & u, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                              SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
         :
         M_displacement( boost::cref(u) ),
         M_physicSolidData( physicSolidData ),
         M_matProperties( matProperties ),
-        M_se( se )
+        M_se( se ),
+        M_timeSteppingScaling( timeSteppingScaling )
     {}
-    SolidMecStressTensorImpl( element_displacement_type const & u, element_pressure_type const& p, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
+    SolidMecStressTensorImpl( element_displacement_type const & u, element_pressure_type const& p, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                              SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
         :
         M_displacement( boost::cref(u) ),
         M_pressure( boost::cref(p) ),
         M_physicSolidData( physicSolidData ),
         M_matProperties( matProperties ),
-        M_se( se )
+        M_se( se ),
+        M_timeSteppingScaling( timeSteppingScaling )
     {}
     SolidMecStressTensorImpl( SolidMecStressTensorImpl const& ) = default;
     SolidMecStressTensorImpl( SolidMecStressTensorImpl && ) = default;
@@ -2832,6 +2878,7 @@ public:
     ModelPhysicSolidType const& physicSolidData() const { return M_physicSolidData; }
     MaterialPropertiesType const& matProperties() const { return M_matProperties; }
     SymbolsExprType const& symbolsExpr() const { return M_se; }
+    double timeSteppingScaling() const { return M_timeSteppingScaling; }
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -2977,6 +3024,7 @@ private:
     ModelPhysicSolidType const& M_physicSolidData;
     MaterialPropertiesType const& M_matProperties;
     SymbolsExprType const& M_se;
+    double M_timeSteppingScaling;
 };
 
 /**
@@ -2985,19 +3033,23 @@ private:
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType,typename SymbolsExprType>
 inline
 auto
-solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
+solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p,
+                                       ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                                       SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
 {
     typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::EVAL>, QuadOrder > smstresstensor_t;
     if ( p && physicSolidData.useDisplacementPressureFormulation() )
-        return Expr< smstresstensor_t >( smstresstensor_t( u,*p, physicSolidData,matProperties,se ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( u,*p, physicSolidData,matProperties,se,timeSteppingScaling ) );
     else
-        return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se,timeSteppingScaling ) );
 }
 
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
 inline
 auto
-solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
+solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p,
+                                                                ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                                                                SymbolsExprType const& se  )
 {
     typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP>, QuadOrder > smstresstensor_t;
     if ( p && physicSolidData.useDisplacementPressureFormulation() )

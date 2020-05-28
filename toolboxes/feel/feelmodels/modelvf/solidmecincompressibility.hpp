@@ -40,7 +40,7 @@ struct ExprApplySolidMecPresFormType
 {
     enum ExprApplyType { EVAL=0,JACOBIAN_TRIAL_DISP=1,JACOBIAN_TRIAL_PRES=2 };
 };
-
+#if 0
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType >
 struct tensorSolidMecPressureFormulationMultiplierBase : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,typename ExprType::my_shape_type,typename ExprType::value_type >
 {
@@ -805,6 +805,7 @@ private:
     ModelPhysicSolidType const& M_physicSolidData;
 };
 
+#endif
 
  
   
@@ -1382,7 +1383,7 @@ private:
 /**
  * keywords
  */
-
+#if 0
 template<typename ElementDispType,typename ElementPressureType,typename ModelPhysicSolidType>
 inline
 Expr< SolidMecPressureFormulationMultiplier<ElementDispType,ElementPressureType,ModelPhysicSolidType,mpl::int_<ExprApplySolidMecPresFormType::EVAL> > >
@@ -1416,7 +1417,7 @@ solidMecPressureFormulationMultiplierJacobianTrialPressure( ElementDispType cons
                                                   mpl::int_<ExprApplySolidMecPresFormType::JACOBIAN_TRIAL_PRES> > myexpr_type;
     return Expr< myexpr_type >(  myexpr_type( v,p,physicSolidData ) );
 }
-
+#endif
 
 
 template<typename ElementDispType,typename ModelPhysicSolidType>
