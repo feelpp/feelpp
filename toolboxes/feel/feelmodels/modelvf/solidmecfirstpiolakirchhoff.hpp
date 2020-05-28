@@ -243,34 +243,19 @@ private :
                                      Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( geom,fev,feu ),
-            M_expr( theexpr ),
-            M_pcDisplacement( new pc_displacement_type( theexpr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxDisplacement( new ctx_displacement_type( theexpr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            //M_locRes( theexpr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) ),
-            M_locMatrixGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) )
+            M_expr( theexpr )
         {}
 
         tensorFirstPiolaKirchhoffBase( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( geom,fev ),
-            M_expr( expr ),
-            M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            //M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_expr( expr )
         {}
 
         tensorFirstPiolaKirchhoffBase( expr_type const& expr, Geo_t const& geom )
             :
             super_type( geom ),
-            M_expr( expr ),
-            M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
-            M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            //M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
-            M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
+            M_expr( expr )
         {}
 
         expr_type const& expr() const { return M_expr; }
@@ -290,11 +275,15 @@ private :
         void update( Geo_t const& geom )
         {
             this->setGmc( geom );
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcDisplacement->update( this->gmc()->pc()->nodes() );
-            M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
-            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
-            this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+
+            if ( M_ctxDisplacement )
+            {
+                if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                    M_pcDisplacement->update( this->gmc()->pc()->nodes() );
+                M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
+                std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
+                this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+            }
 
             if ( M_ctxPressure )
             {
@@ -325,9 +314,12 @@ private :
 
             for ( uint16_type q=0;q<nPt;++q )
             {
-                Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
-                    gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
-                M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+                if ( M_ctxDisplacement )
+                {
+                    Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                        gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
+                    M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+                }
 
                 if ( M_tensorLameFirst )
                     M_localAssemblyLameFirst[q] = M_tensorLameFirst->evalq(0,0,q);
@@ -343,11 +335,15 @@ private :
         void update( Geo_t const& geom, uint16_type face )
         {
             this->setGmc( geom );
-            if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
-                M_pcDisplacement->update( this->gmc()->pc()->nodes() );
-            M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
-            std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
-            this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+
+            if ( M_ctxDisplacement )
+            {
+                if ( this->gmc()->faceId() != invalid_uint16_type_value ) /*face case*/
+                    M_pcDisplacement->update( this->gmc()->pc()->nodes() );
+                M_ctxDisplacement->update( this->gmc(),  (pc_displacement_ptrtype const&) M_pcDisplacement );
+                std::fill( M_locGradDisplacement.data(), M_locGradDisplacement.data()+M_locGradDisplacement.num_elements(), this->M_zeroLocTensor2/*matrix_shape_type::Zero()*/ );
+                this->expr().displacement().grad( *M_ctxDisplacement, M_locGradDisplacement );
+            }
 
             if ( M_ctxPressure )
             {
@@ -377,9 +373,12 @@ private :
 
             for ( uint16_type q=0;q<nPt;++q )
             {
-                Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
-                    gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
-                M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+                if ( M_ctxDisplacement )
+                {
+                    Eigen::Map< Eigen::Matrix<typename super_type::value_type,Eigen::Dynamic,Eigen::Dynamic/*,Eigen::ColMajor*/ > >
+                        gradDisplacementEval( M_locGradDisplacement[q].data(), super_type::shape_tensor2::M,super_type::shape_tensor2::N);
+                    M_locMatrixGradDisplacement[q] = gradDisplacementEval;
+                }
 
                 if ( M_tensorLameFirst )
                     M_localAssemblyLameFirst[q] = M_tensorLameFirst->evalq(0,0,q);
@@ -450,6 +449,14 @@ private :
                 {
                     M_exprBulkModulus.emplace( Feel::vf::expr( M_expr.matProperties().property( "bulk-modulus" ).exprScalar(), M_expr.symbolsExpr() ) );
                     M_tensorBulkModulus.emplace( *M_exprBulkModulus, theInitArgs... );
+                }
+
+                if ( subexprUsed.find( "displacement" ) != subexprUsed.end() )
+                {
+                    M_pcDisplacement.reset( new pc_displacement_type( M_expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) );
+                    M_ctxDisplacement.reset( new ctx_displacement_type( M_expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) );
+                    M_locGradDisplacement.resize( M_expr.displacement().gradExtents(*this->gmc()) );
+                    M_locMatrixGradDisplacement.resize( M_expr.displacement().gradExtents(*this->gmc()) );
                 }
 
                 if ( subexprUsed.find( "pressure" ) != subexprUsed.end() )
@@ -919,7 +926,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         template<typename... TheArgsType>
         void updateForUse( const TheArgsType&... theInitArgs )
             {
-                std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+                std::set<std::string> subexprUsed = { "displacement","Lame-second-parameter" };
                 if constexpr ( !useDispPresForm )
                     subexprUsed.insert( "Lame-first-parameter" );
                 if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
@@ -1461,13 +1468,18 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         template<typename... TheArgsType>
         void updateForUse( const TheArgsType&... theInitArgs )
             {
-                std::set<std::string> subexprUsed = { "Lame-second-parameter" };
-                if ( !useDispPresForm )
-                    subexprUsed.insert( "Lame-first-parameter" );
-                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                    subexprUsed.insert( "pressure" );
-                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                    subexprUsed.clear();
+                std::set<std::string> subexprUsed;
+                if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                    subexprUsed.insert("displacement");
+                else
+                {
+                    subexprUsed.insert("displacement");
+                    subexprUsed.insert( "Lame-second-parameter" );
+                    if constexpr ( !useDispPresForm )
+                        subexprUsed.insert( "Lame-first-parameter" );
+                    else
+                        subexprUsed.insert( "pressure" );
+                }
                 this->initSubTensor(subexprUsed,theInitArgs...);
             }
 
@@ -2022,7 +2034,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         template<typename... TheArgsType>
         void updateForUse( const TheArgsType&... theInitArgs )
             {
-                std::set<std::string> propUsed;
+                std::set<std::string> propUsed = { "displacement" };
                 if constexpr ( useDispPresForm )
                 {
                     propUsed.insert( "lagange_multiplier" );
@@ -2299,7 +2311,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         template<typename... TheArgsType>
         void updateForUse( const TheArgsType&... theInitArgs )
             {
-                std::set<std::string> propUsed;
+                std::set<std::string> propUsed = { "displacement" };
                 if constexpr ( useDispPresForm )
                 {
                     propUsed.insert( "lagange_multiplier" );
@@ -2710,7 +2722,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         template<typename... TheArgsType>
         void updateForUse( const TheArgsType&... theInitArgs )
             {
-                std::set<std::string> propUsed = { "Lame-second-parameter", "bulk-modulus" };
+                std::set<std::string> propUsed = { "displacement", "Lame-second-parameter", "bulk-modulus" };
                 this->initSubTensor(propUsed,theInitArgs...);
             }
     private :
@@ -2856,17 +2868,27 @@ public:
         {
             if ( QuadOrder>=0 )
                 return QuadOrder;
-            if ( physicSolidData().materialModel() == "StVenantKirchhoff" )
+            if ( this->physicSolidData().equation() == "Elasticity" )
             {
                 if constexpr( SpecificExprType::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                    return (orderdisplacement-1)+orderpressure;
+                    return orderpressure;
                 else
-                    return 3*(orderdisplacement-1);
+                    return std::max( orderdisplacement-1, (int)orderpressure );
             }
-            else if ( physicSolidData().materialModel() == "NeoHookean" )
-                return 2*orderdisplacement;
             else
-                return 3*(orderdisplacement-1); // default
+            {
+                if ( this->physicSolidData().materialModel() == "StVenantKirchhoff" )
+                {
+                    if constexpr( SpecificExprType::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                                    return (orderdisplacement-1)+orderpressure;
+                    else
+                        return 3*(orderdisplacement-1);
+                }
+                else if ( this->physicSolidData().materialModel() == "NeoHookean" )
+                    return 2*orderdisplacement;
+                else
+                    return 3*(orderdisplacement-1); // default
+            }
         }
 
     //! expression is polynomial?
