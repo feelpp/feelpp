@@ -377,6 +377,9 @@ public :
             bool res = false;
             for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
             {
+                if ( !this->materialsProperties()->hasPhysic( physicName ) )
+                    continue;
+
                 auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
                 if ( physicSolidData->useDisplacementPressureFormulation() )
                 {

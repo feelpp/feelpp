@@ -246,7 +246,7 @@ private :
             M_expr( theexpr ),
             M_pcDisplacement( new pc_displacement_type( theexpr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( theexpr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            M_locRes( theexpr.displacement().gradExtents(*this->gmc()) ),
+            //M_locRes( theexpr.displacement().gradExtents(*this->gmc()) ),
             M_locGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) ),
             M_locMatrixGradDisplacement( theexpr.displacement().gradExtents(*this->gmc()) )
         {}
@@ -257,7 +257,7 @@ private :
             M_expr( expr ),
             M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
+            //M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
             M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
             M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
@@ -268,7 +268,7 @@ private :
             M_expr( expr ),
             M_pcDisplacement( new pc_displacement_type( expr.displacement().functionSpace()->fe(), this->gmc()->xRefs() ) ),
             M_ctxDisplacement( new ctx_displacement_type( expr.displacement().functionSpace()->fe(),this->gmc(),(pc_displacement_ptrtype const&)M_pcDisplacement ) ),
-            M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
+            //M_locRes( expr.displacement().gradExtents(*this->gmc()) ),
             M_locGradDisplacement( expr.displacement().gradExtents(*this->gmc()) ),
             M_locMatrixGradDisplacement( expr.displacement().gradExtents(*this->gmc()) )
         {}
@@ -282,8 +282,8 @@ private :
 
         std::vector<value_type> const& localAssemblyBulkModulus() const { return M_localAssemblyBulkModulus; }
 
-        array_shape_type & locRes() { return M_locRes; }
-        array_shape_type const& locRes() const { return M_locRes; }
+        std::vector<matrix_shape_type>/*array_shape_type*/ & locRes() { return M_locRes; }
+        std::vector<matrix_shape_type>/*array_shape_type*/ const& locRes() const { return M_locRes; }
         matrix_shape_type & locRes( uint16_type q ) { return M_locRes[q]; }
         matrix_shape_type const& locRes( uint16_type q ) const { return M_locRes[q]; }
 
@@ -474,7 +474,8 @@ private :
         pc_pressure_ptrtype M_pcPressure;
         ctx_pressure_ptrtype M_ctxPressure;
 
-        array_shape_type M_locRes;
+        //array_shape_type M_locRes;
+        std::vector<matrix_shape_type> M_locRes;
         array_tensor2_type M_locGradDisplacement;
         typename super_type::array_matrix_tensor2_type M_locMatrixGradDisplacement;
         //typename super_type::array_scalar_type M_locIdPressure;
@@ -729,6 +730,207 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         typename super_type::array_matrix_tensor2_type M_locEvalFmt;
     };
 
+
+    /**
+     * -------------------------------------------------------------------------------------------------  *
+     * -------------------------------------------------------------------------------------------------  *
+     * Linear elasticity
+     *   sigma = P = FS  = \lambda trace(E)*Id + 2*\mu*E    ( E is linear part)
+     *   sigma = 2*\mu*E ( + pressure part : p*Id )
+     * -------------------------------------------------------------------------------------------------  *
+     * -------------------------------------------------------------------------------------------------  *
+     */
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t,typename ExprType,bool useDispPresForm>
+    struct tensorSolidMecFirstPiolaKirchhoffLinearElasticity : public tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType>
+    {
+        typedef tensorFirstPiolaKirchhoffBase<Geo_t,Basis_i_t,Basis_j_t,ExprType> super_type;
+    public :
+        typedef ExprType expr_type;
+        typedef typename super_type::geoelement_type geoelement_type;
+        typedef typename super_type::gmc_type gmc_type;
+        typedef typename super_type::gm_type gm_type;
+        typedef typename super_type::value_type value_type;
+
+        using ret_type = typename super_type::ret_type;
+
+        tensorSolidMecFirstPiolaKirchhoffLinearElasticity( expr_type const& _expr,
+                                                           Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            super_type( _expr,geom,fev,feu ),
+            M_mId( super_type::matrix_shape_type::Identity() )
+            {
+                this->updateForUse( geom, fev, feu );
+            }
+        tensorSolidMecFirstPiolaKirchhoffLinearElasticity( expr_type const& _expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            super_type( _expr,geom,fev ),
+            M_mId( super_type::matrix_shape_type::Identity() )
+            {
+                this->updateForUse( geom, fev );
+            }
+        tensorSolidMecFirstPiolaKirchhoffLinearElasticity( expr_type const& _expr,Geo_t const& geom )
+            :
+            super_type( _expr,geom ),
+            M_mId( super_type::matrix_shape_type::Identity() )
+            {
+                this->updateForUse( geom );
+            }
+
+        void update( Geo_t const& geom ) override
+        {
+            super_type::update( geom );
+            updateImpl( geom );
+        }
+        void update( Geo_t const& geom, uint16_type face ) override
+        {
+            super_type::update( geom,face );
+            updateImpl( geom );
+        }
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
+            {
+                return evalijq( i,j,q, mpl::int_<expr_type::specific_expr_type::value>() );
+            }
+
+    private :
+
+        void updateImpl( Geo_t const& geom )
+        {
+            if constexpr ( expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::EVAL )
+                 return;
+
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            typename super_type::matrix_shape_type E;
+            for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+            {
+                typename super_type::matrix_shape_type & theLocRes = this->locRes(q);
+
+                auto const& gradDisplacementEval = this->locGradDisplacement(q);
+                const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
+                const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
+
+                if constexpr ( expr_type::nRealDim == 2 )
+                {
+                    E(0,0) = du1vdx;
+                    E(0,1) = 0.5*(du1vdy+du2vdx);
+                    E(1,0) = E(0,1);
+                    E(1,1) = du2vdy;
+                }
+                else if constexpr ( expr_type::nRealDim == 3 )
+                {
+                    const value_type du1vdz = gradDisplacementEval(0,2);
+                    const value_type du2vdz = gradDisplacementEval(1,2);
+                    const value_type du3vdx = gradDisplacementEval(2,0), du3vdy = gradDisplacementEval(2,1), du3vdz = gradDisplacementEval(2,2);
+                    E(0,0) = du1vdx;
+                    E(0,1) = 0.5*(du1vdy+du2vdx);
+                    E(0,2) = 0.5*(du1vdz+du3vdx);
+                    E(1,0) = E(0,1);
+                    E(1,1) = du2vdy;
+                    E(1,2) = 0.5*(du2vdz+du3vdy);
+                    E(2,0) = E(0,2);
+                    E(2,1) = E(1,2);
+                    E(2,2) = du3vdz;
+                }
+
+                if constexpr ( useDispPresForm )
+                {
+                    // p*Id+S_bis
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                    const value_type pEval = this->locIdPressure()[q](0,0);
+                    theLocRes = pEval*M_mId + 2*coefflame2*E;
+                }
+                else
+                {
+                    const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                    const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                    theLocRes = coefflame1*E.trace()*M_mId + 2*coefflame2*E;
+                }
+
+            }
+        }
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::EVAL> /**/ ) const
+        {
+            CHECK( false ) << "not allow";
+            return ret_type(this->locMatrixShape().data());
+        }
+
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP> /**/ ) const
+        {
+            auto const& gradTrial = this->fecTrial()->grad( j, q );
+            const value_type du1tdx = gradTrial( 0, 0, 0 ), du1tdy = gradTrial( 0, 1, 0 );
+            const value_type du2tdx = gradTrial( 1, 0, 0 ), du2tdy = gradTrial( 1, 1, 0 );
+
+            typename super_type::matrix_shape_type E;
+            if constexpr ( expr_type::nRealDim == 2 )
+            {
+                E(0,0) = du1tdx;
+                E(0,1) = 0.5*(du1tdy+du2tdx);
+                E(1,0) = E(0,1);
+                E(1,1) = du2tdy;
+            }
+            else if constexpr ( expr_type::nRealDim == 3 )
+            {
+                const value_type du1tdz = gradTrial( 0, 2, 0 );
+                const value_type du2tdz = gradTrial( 1, 2, 0 );
+                const value_type du3tdx = gradTrial( 2, 0, 0 ), du3tdy = gradTrial( 2, 1, 0 ), du3tdz = gradTrial( 2, 2, 0 );
+                E(0,0) = du1tdx;
+                E(0,1) = 0.5*(du1tdy+du2tdx);
+                E(0,2) = 0.5*(du1tdz+du3tdx);
+                E(1,0) = E(0,1);
+                E(1,1) = du2tdy;
+                E(1,2) = 0.5*(du2tdz+du3tdy);
+                E(2,0) = E(0,2);
+                E(2,1) = E(1,2);
+                E(2,2) = du3tdz;
+            }
+
+            typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
+            if constexpr ( useDispPresForm )
+            {
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                thelocMat = 2*coefflame2*E;
+            }
+            else
+            {
+                const value_type coefflame1 = this->M_localAssemblyLameFirst[q];
+                const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
+                thelocMat = coefflame1*E.trace()*M_mId + 2*coefflame2*E;
+            }
+
+            return ret_type(thelocMat.data());
+        }
+        ret_type
+        evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES> /**/ ) const
+        {
+            // compute idt(p)*Id
+            const value_type idTrialPressure = this->fecTrial()->id( j, 0, 0, q );
+            typename super_type::matrix_shape_type & thelocMat = this->locMatrixShape();
+            thelocMat = /*-*/idTrialPressure*M_mId;
+            return ret_type(thelocMat.data());
+        }
+
+
+        template<typename... TheArgsType>
+        void updateForUse( const TheArgsType&... theInitArgs )
+            {
+                std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+                if constexpr ( !useDispPresForm )
+                    subexprUsed.insert( "Lame-first-parameter" );
+                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                    subexprUsed.insert( "pressure" );
+                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                    subexprUsed.clear();
+                this->initSubTensor(subexprUsed,theInitArgs...);
+            }
+    private :
+        typename super_type::matrix_shape_type M_mId;
+    };
+
+
     /**
      * -------------------------------------------------------------------------------------------------  *
      * -------------------------------------------------------------------------------------------------  *
@@ -755,42 +957,21 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                                                             Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( _expr,geom,fev,feu )
-        {
-            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
-            if ( !useDispPresForm )
-                subexprUsed.insert( "Lame-first-parameter" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.insert( "pressure" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.clear();
-            this->initSubTensor(subexprUsed,geom,fev,feu);
-        }
+            {
+                this->updateForUse( geom, fev, feu );
+            }
         tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& _expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( _expr,geom,fev )
-        {
-            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
-            if ( !useDispPresForm )
-                subexprUsed.insert( "Lame-first-parameter" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.insert( "pressure" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.clear();
-            this->initSubTensor(subexprUsed,geom,fev);
-        }
+            {
+                this->updateForUse( geom, fev );
+            }
         tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff( expr_type const& _expr,Geo_t const& geom )
             :
             super_type( _expr,geom )
-        {
-            std::set<std::string> subexprUsed = { "Lame-second-parameter" };
-            if ( !useDispPresForm )
-                subexprUsed.insert( "Lame-first-parameter" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.insert( "pressure" );
-            if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
-                subexprUsed.clear();
-            this->initSubTensor(subexprUsed,geom);
-        }
+            {
+                this->updateForUse( geom );
+            }
 
         void update( Geo_t const& geom ) override
         {
@@ -803,8 +984,6 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             updateImpl( geom );
         }
 
-        // using super_type::evalijq; // fix clang warning
-
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
             {
@@ -814,14 +993,25 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
     private :
         void updateImpl( Geo_t const& geom )
         {
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
 
-            updateImpl( mpl::int_<expr_type::nRealDim>() );
+            if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+            {
+                for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
+                    this->locRes(q) = super_type::matrix_shape_type::Identity()+this->locGradDisplacement(q);
+            }
+            else
+            {
+                this->updateImpl( mpl::int_<expr_type::nRealDim>() );
+            }
         }
         void updateImpl( mpl::int_<2> /**/ )
         {
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
+
                 auto const& gradDisplacementEval = this->locGradDisplacement(q);
                 const value_type du1vdx = gradDisplacementEval(0,0), du1vdy = gradDisplacementEval(0,1);
                 const value_type du2vdx = gradDisplacementEval(1,0), du2vdy = gradDisplacementEval(1,1);
@@ -833,8 +1023,6 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                 const value_type E12 = 0.5*( du1vdy + du2vdx + du1vdx*du1vdy + du2vdx*du2vdy );
                 const value_type E21 = 0.5*( du2vdx + du1vdy + du1vdy*du1vdx + du2vdy*du2vdx );
                 const value_type E22 = du2vdy + subtraceE2;
-
-                typename super_type::matrix_shape_type/*loc_tensor2_type*/ & theLocRes = this->locRes(q);
 
                 if constexpr ( useDispPresForm )
                 {
@@ -867,10 +1055,6 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                         theLocRes(1,0) = S21;
                         theLocRes(1,1) = S22;
                     }
-                    else
-                    {
-                        theLocRes = super_type::matrix_shape_type::Identity()+gradDisplacementEval;
-                    }
                 }
                 else
                 {
@@ -890,7 +1074,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                         theLocRes(1,0) = du2vdx*S11 + (1+du2vdy)*S21;
                         theLocRes(1,1) = du2vdx*S12 + (1+du2vdy)*S22;
                     }
-                    else
+                    else if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP )
                     {
                         theLocRes(0,0) = S11;
                         theLocRes(0,1) = S12;
@@ -965,7 +1149,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                         theLocRes(2,2) = du3vdx*S13 + du3vdy*S23 + (1+du3vdz)*(S33+pEval);
 #endif
                     }
-                    else
+                    else if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP )
                     {
                         // S
                         theLocRes(0,0) = S11;
@@ -1007,7 +1191,7 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                         theLocRes(2,1) = du3vdx*S12 + du3vdy*S22 + (1+du3vdz)*S32;
                         theLocRes(2,2) = du3vdx*S13 + du3vdy*S23 + (1+du3vdz)*S33;
                     }
-                    else
+                    else if constexpr ( expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP )
                     {
                         // S
                         theLocRes(0,0) = S11;
@@ -1250,6 +1434,19 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             return ret_type(thelocMat.data());
         }
 
+        template<typename... TheArgsType>
+        void updateForUse( const TheArgsType&... theInitArgs )
+            {
+                std::set<std::string> subexprUsed = { "Lame-second-parameter" };
+                if ( !useDispPresForm )
+                    subexprUsed.insert( "Lame-first-parameter" );
+                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value != ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                    subexprUsed.insert( "pressure" );
+                if constexpr ( useDispPresForm && expr_type::specific_expr_type::value == ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES )
+                    subexprUsed.clear();
+                this->initSubTensor(subexprUsed,theInitArgs...);
+            }
+
     }; // tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff
 
 
@@ -1360,7 +1557,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( !useDispPresForm )
                 M_tensorVolumicPart->updateImpl( *this );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             //updateImpl( /*mpl::int_<expr_type::nRealDim>()*/ );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
@@ -1377,7 +1575,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if ( !useDispPresForm )
                 M_tensorVolumicPart->updateImpl( *M_ctxMechPropField, this->locGradDisplacement() );
 
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
@@ -2149,7 +2348,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
         }
         void updateImpl( Geo_t const& geom )
         {
-            std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().num_elements(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
+            this->locRes().resize( this->gmc()->nPoints(), super_type::matrix_shape_type/*loc_res_type*/::Zero() );
             updateImpl( mpl::int_<expr_type::nRealDim>() );
         }
         void updateImpl( mpl::int_<2> /**/ )
@@ -2721,38 +2921,48 @@ public:
         template<typename... TheArgsType>
         void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
             {
-                if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
+                if ( expr.physicSolidData().equation() == "Elasticity" )
                 {
                     if ( expr.physicSolidData().useDisplacementPressureFormulation() )
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffLinearElasticity<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
                     else
-                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                        M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffLinearElasticity<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
                 }
-                else if ( expr.physicSolidData().materialModel() == "NeoHookean" )
+                else if ( expr.physicSolidData().equation() == "Hyper-Elasticity" )
                 {
-                    if ( expr.physicSolidData().useDisplacementPressureFormulation() )
+                    if ( expr.physicSolidData().materialModel() == "StVenantKirchhoff" )
                     {
-                        if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
-                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
-                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                        if ( expr.physicSolidData().useDisplacementPressureFormulation() )
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
                         else
-                            CHECK( false ) << "invalid";
+                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffStVenantKirchhoff<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                    }
+                    else if ( expr.physicSolidData().materialModel() == "NeoHookean" )
+                    {
+                        if ( expr.physicSolidData().useDisplacementPressureFormulation() )
+                        {
+                            if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
+                                M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                            else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
+                                M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,true>(expr,theInitArgs...) );
+                            else
+                                CHECK( false ) << "invalid";
+                        }
+                        else
+                        {
+                            if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
+                                M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                            else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
+                                M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
+                            else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
+                                M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                            else
+                                CHECK( false ) << "invalid";
+                        }
                     }
                     else
-                    {
-                        if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "default" )
-                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressible<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
-                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory" )
-                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheory<Geo_t, Basis_i_t, Basis_j_t,this_type,false>(expr,theInitArgs...) );
-                        else if ( expr.physicSolidData().compressibleNeoHookeanVariantName() == "molecular-theory-simo1985" )
-                            M_tensorbase.reset( new tensorSolidMecFirstPiolaKirchhoffNeoHookeanCompressibleMolecularTheoryAndSimo1985<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
-                        else
-                            CHECK( false ) << "invalid";
-                    }
+                        CHECK ( false ) << "invalid materialLaw : "<< expr.physicSolidData().materialModel();
                 }
-                else
-                    CHECK ( false ) << "invalid materialLaw : "<< expr.physicSolidData().materialModel();
 
             }
 

@@ -113,9 +113,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             //--------------------------------------------------------------------------------------------------//
             this->timerTool("Solve").start();
 
-            if ( physicSolidData->equation() == "Hyper-Elasticity" )
+            if ( physicSolidData->equation() == "Hyper-Elasticity" || physicSolidData->equation() == "Elasticity" )
             {
-                if (!BuildCstPart)
+                bool buildFPK = BuildNonCstPart;
+                if ( physicSolidData->equation() == "Elasticity" &&
+                     matProperties.property( "Lame-first-parameter" ).isEvaluable() && matProperties.property( "Lame-second-parameter" ).isEvaluable() ) // TODO : to improve
+                    buildFPK = BuildNonCstPart && !UseJacobianLinearTerms;
+
+                if ( buildFPK )
                 {
                     auto FSv = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,p,*physicSolidData,matProperties,se);
                     linearFormDisplacement +=
@@ -127,6 +132,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                    _geomap=this->geomap() );
                 }
             }
+#if 0
             else if ( physicSolidData->equation() == "Elasticity" )
             {
                 if (!BuildCstPart && !UseJacobianLinearTerms)
@@ -140,6 +146,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                    _geomap=this->geomap() );
                 }
             }
+#endif
             double timeElapsedBis = this->timerTool("Solve").stop();
             this->log("SolidMechanics","updateResidual",
                       "build stresstensor term in "+(boost::format("%1% s") % timeElapsedBis ).str() );
@@ -147,38 +154,30 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             //--------------------------------------------------------------------------------------------------//
             // constraint on compressibility
             //--------------------------------------------------------------------------------------------------//
-            if ( physicSolidData->useDisplacementPressureFormulation() && !BuildCstPart )
+            if ( physicSolidData->useDisplacementPressureFormulation() && BuildNonCstPart )
             {
-#if 0
-                if ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() != "StVenantKirchhoff" )
+                auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,_rowstart=rowStartInVector+blockIndexPressure );
+                if ( physicSolidData->equation() == "Elasticity" )
                 {
-                    linearFormDisplacement +=
-                        integrate( _range=range,
-                                   //_expr= trace(val(-idv(p)*trans(InvFv))*trans(grad(v))),
-                                   //_expr=inner( -idv(p)*Feel::FeelModels::solidMecIncompressibilityPressure(u,p,*this->mechanicalProperties()),grad(v) ),
-                                   _expr=inner( /*-idv(p)**/Feel::FeelModels::solidMecPressureFormulationMultiplier(u,*p,*physicSolidData),grad(v) ),
-                                   _geomap=this->geomap() );
+                    if ( BuildNonCstPart && !UseJacobianLinearTerms )
+                    {
+                        linearFormPressure +=
+                            integrate( _range=range,
+                                       _expr= id(p)*divv(u),
+                                       _geomap=this->geomap() );
+                    }
                 }
                 else
-#endif
-                    if ( physicSolidData->equation() == "Elasticity" )
                 {
-                    linearFormDisplacement +=
-                        integrate( _range= range,
-                                   _expr= inner( -idv(p)*Id ,grad(v)),
+                    linearFormPressure +=
+                        integrate( _range=range,
+                                   //_expr=val(Fav22+Fav11+Fav11*Fav22-Fav21*Fav12)*id(q),
+                                   //_expr= detFvM1*id(q),
+                                   _expr= Feel::FeelModels::solidMecPressureFormulationConstraint(u,*physicSolidData)*id(p),
                                    _geomap=this->geomap() );
                 }
 
-                auto linearFormPressure = form1( _test=M_XhPressure, _vector=R,_rowstart=rowStartInVector+blockIndexPressure );
-                linearFormPressure +=
-                    integrate( _range=range,
-                               //_expr=val(Fav22+Fav11+Fav11*Fav22-Fav21*Fav12)*id(q),
-                               //_expr= detFvM1*id(q),
-                               _expr= Feel::FeelModels::solidMecPressureFormulationConstraint(u,*physicSolidData)*id(p),
-                               _geomap=this->geomap() );
-
-
-                if ( physicSolidData->materialModel() == "StVenantKirchhoff")
+                if ( ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() == "StVenantKirchhoff" ) ||  physicSolidData->equation() == "Elasticity" )
                 {
                     auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
                     linearFormPressure +=
@@ -186,7 +185,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                                   _expr= -(cst(1.)/lameFirstExpr)*idv(p)*id(p),
                                   _geomap=this->geomap() );
                 }
-                else
+                else if ( physicSolidData->equation() == "Hyper-Elasticity" )
                 {
                     auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
                     linearFormPressure +=

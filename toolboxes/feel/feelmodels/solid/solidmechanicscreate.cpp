@@ -759,6 +759,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
         bool isLinear = true;
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
+            if ( !this->materialsProperties()->hasPhysic( physicName ) )
+                continue;
             auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
             if ( physicSolidData->equation() =="Hyper-Elasticity" )
             {

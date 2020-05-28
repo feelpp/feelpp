@@ -366,6 +366,12 @@ public :
             return this->physicToMaterials( std::set<std::string>({ physic }) );
         }
 
+    //! return true if the physic is defined in a material
+    bool hasPhysic( std::string const& physic ) const
+        {
+            return M_materialsNames.find( physic ) != M_materialsNames.end();
+        }
+
     void markers( std::string const& p, std::set<std::string> & res ) const
         {
             auto itFindMarkers = M_markers.find( p );
