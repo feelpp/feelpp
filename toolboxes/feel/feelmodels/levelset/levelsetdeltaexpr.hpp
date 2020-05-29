@@ -9,7 +9,6 @@ BOOST_PARAMETER_NAME( impl )
 BOOST_PARAMETER_NAME( imorder )
 
 namespace FeelModels {
-//namespace vf {
 
 template<typename Geo_t, typename Basis_i_t, typename Basis_j_t, typename ExprType>
 struct tensorLevelsetDeltaBase
@@ -988,7 +987,6 @@ BOOST_PARAMETER_FUNCTION(
     return Expr< lsdelta_t >( levelsetDeltaExpr );
 }
 
-//}
 }
 }
 

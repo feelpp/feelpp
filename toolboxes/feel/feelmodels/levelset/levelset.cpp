@@ -663,7 +663,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensorExpr() const
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
     auto const& N = this->N();
 
-    return Feel::vf::FeelModels::leftCauchyGreenTensorExpr( *Y, *N );
+    return leftCauchyGreenTensorExpr( *Y, *N );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -690,7 +690,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 auto
 LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1Expr() const
 {
-    return Feel::vf::FeelModels::cauchyGreenInvariant1Expr( this->leftCauchyGreenTensorExpr() );
+    return cauchyGreenInvariant1Expr( this->leftCauchyGreenTensorExpr() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

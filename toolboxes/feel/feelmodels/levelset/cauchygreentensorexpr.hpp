@@ -2,7 +2,6 @@
 #define _CAUCHY_GREEN_TENSOR_EXPR_HPP 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
 
 template<typename ElementBackwardCharacteristicsType, typename ElementNormalType, int IMOrder>
@@ -360,7 +359,6 @@ leftCauchyGreenTensorExpr( ElementBackwardCharacteristicsType const& Y, ElementN
 
 
 
-}
 }
 }
 #endif

@@ -2,7 +2,6 @@
 #define _HELFRICH_FORCE_EXPR_HPP 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
 
 enum class HelfrichInnerDivImplementation
@@ -656,7 +655,6 @@ helfrichInnerDivExpr( ElementNormalType const& N, ElementCurvatureType const& K,
 }
 
 } // namespace FeelModels
-} // namespace vf
 } // namespace Feel
 
 #endif // _HELFRICH_FORCE_EXPR_HPP
