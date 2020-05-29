@@ -3056,28 +3056,28 @@ template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPres
 inline
 auto
 solidMecFirstPiolaKirchhoffTensor( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p,
-                                       ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
-                                       SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
+                                   ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                                   SymbolsExprType const& se, double timeSteppingScaling = 1.0 )
 {
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::EVAL>, QuadOrder > smstresstensor_t;
+    typedef SolidMecStressTensorImpl<unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::EVAL>, QuadOrder > smstresstensor_t;
     if ( p && physicSolidData.useDisplacementPressureFormulation() )
-        return Expr< smstresstensor_t >( smstresstensor_t( u,*p, physicSolidData,matProperties,se,timeSteppingScaling ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( unwrap_ptr(u),*p, physicSolidData,matProperties,se,timeSteppingScaling ) );
     else
-        return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se,timeSteppingScaling ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( unwrap_ptr(u),physicSolidData,matProperties,se,timeSteppingScaling ) );
 }
 
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
 inline
 auto
 solidMecFirstPiolaKirchhoffTensorJacobianTrialDisplacement( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p,
-                                                                ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
-                                                                SymbolsExprType const& se  )
+                                                            ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties,
+                                                            SymbolsExprType const& se  )
 {
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP>, QuadOrder > smstresstensor_t;
+    typedef SolidMecStressTensorImpl<unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_DISP>, QuadOrder > smstresstensor_t;
     if ( p && physicSolidData.useDisplacementPressureFormulation() )
-        return Expr< smstresstensor_t >( smstresstensor_t( u,*p, physicSolidData,matProperties,se ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( unwrap_ptr(u),*p, physicSolidData,matProperties,se ) );
     else
-        return Expr< smstresstensor_t >( smstresstensor_t( u,physicSolidData,matProperties,se ) );
+        return Expr< smstresstensor_t >( smstresstensor_t( unwrap_ptr(u),physicSolidData,matProperties,se ) );
 }
 
 template<int QuadOrder=-1,typename ElementDisplacementType, typename ElementPressureType, typename ModelPhysicSolidType, typename MaterialPropertiesType, typename SymbolsExprType >
@@ -3085,8 +3085,8 @@ inline
 auto
 solidMecFirstPiolaKirchhoffTensorJacobianTrialPressure( ElementDisplacementType const& u, std::shared_ptr<ElementPressureType> const& p, ModelPhysicSolidType const& physicSolidData, MaterialPropertiesType const& matProperties, SymbolsExprType const& se )
 {
-    typedef SolidMecStressTensorImpl<ElementDisplacementType,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES>, QuadOrder > smstresstensor_t;
-    return Expr< smstresstensor_t >( smstresstensor_t( u,*p,physicSolidData,matProperties,se ) );
+    typedef SolidMecStressTensorImpl<unwrap_ptr_t<ElementDisplacementType>,ElementPressureType,ModelPhysicSolidType,MaterialPropertiesType,SymbolsExprType,mpl::int_<ExprApplySolidMecFirstPiolaKirchhoff::JACOBIAN_TRIAL_PRES>, QuadOrder > smstresstensor_t;
+    return Expr< smstresstensor_t >( smstresstensor_t( unwrap_ptr(u),*p,physicSolidData,matProperties,se ) );
 }
 
 
