@@ -1422,22 +1422,22 @@ solidMecPressureFormulationMultiplierJacobianTrialPressure( ElementDispType cons
 
 template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::EVAL> > >
+auto
 solidMecPressureFormulationConstraint( ElementDispType const& v,
                                        ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >( myexpr_type( v,physicSolidData ) );
+    typedef SolidMecPressureFormulationConstraint<unwrap_ptr_t<ElementDispType>,ModelPhysicSolidType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >( myexpr_type( unwrap_ptr(v),physicSolidData ) );
 }
 
 template<typename ElementDispType,typename ModelPhysicSolidType>
 inline
-Expr< SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::JACOBIAN> > >
+auto
 solidMecPressureFormulationConstraintJacobian( ElementDispType const& v,
                                                ModelPhysicSolidType const& physicSolidData )
 {
-    typedef SolidMecPressureFormulationConstraint<ElementDispType,ModelPhysicSolidType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v,physicSolidData ) );
+    typedef SolidMecPressureFormulationConstraint<unwrap_ptr_t<ElementDispType>,ModelPhysicSolidType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v),physicSolidData ) );
 }
 
 } // namespace FeelModels

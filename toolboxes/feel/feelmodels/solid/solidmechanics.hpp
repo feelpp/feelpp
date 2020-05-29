@@ -27,9 +27,8 @@
    \date 2011-07-17
  */
 
-#ifndef FEELPP_SOLIDMECHANICSBASE_HPP
-#define FEELPP_SOLIDMECHANICSBASE_HPP 1
-
+#ifndef FEELPP_TOOLBOXES_SOLIDMECHANICS_HPP
+#define FEELPP_TOOLBOXES_SOLIDMECHANICS_HPP 1
 
 #include <feel/options.hpp>
 #include <feel/feelalg/backend.hpp>
@@ -62,10 +61,10 @@ namespace Feel
 namespace FeelModels
 {
 
-template< typename ConvexType, typename BasisDisplacementType,bool UseCstMechProp=false >
+template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> >,
+                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementNeumannEulerianFrameBC,
@@ -75,7 +74,7 @@ class SolidMechanics : public ModelNumerical,
 public:
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
-    typedef SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> self_type;
+    typedef SolidMechanics<ConvexType,BasisDisplacementType> self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
 
     //___________________________________________________________________________________//
@@ -164,22 +163,6 @@ public:
     typedef Bdf<space_pressure_type> savets_pressure_type;
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
-    // functionspace for rho,coefflame1,coefflame2
-    // typedef bases<Lagrange<0, Scalar,Continuous> > basis_scalar_P0_continuous_type;
-    // typedef bases<Lagrange<0, Scalar,Discontinuous> > basis_scalar_P0_discontinuous_type;
-    // static const bool use_continous_mechanical_properties = UseCstMechProp;
-    // typedef typename mpl::if_< mpl::bool_<use_continous_mechanical_properties>,
-    //                            basis_scalar_P0_continuous_type,
-    //                            basis_scalar_P0_discontinuous_type >::type basis_scalar_P0_type;
-
-    // typedef FunctionSpace<mesh_type, basis_scalar_P0_type> space_scalar_P0_type;
-    // typedef std::shared_ptr<space_scalar_P0_type> space_scalar_P0_ptrtype;
-    // typedef typename space_scalar_P0_type::element_type element_scalar_P0_type;
-    // typedef std::shared_ptr<element_scalar_P0_type> element_scalar_P0_ptrtype;
-    // // mechanical properties desc
-    // typedef MechanicalPropertiesDescription<space_scalar_P0_type> mechanicalproperties_type;
-    // typedef std::shared_ptr<mechanicalproperties_type> mechanicalproperties_ptrtype;
-
     // materials properties
     typedef MaterialsProperties<mesh_type> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -601,16 +584,37 @@ public :
         {
             return this->modelFields( this->fieldDisplacementPtr(), this->fieldVelocityPtr(), this->fieldPressurePtr(), prefix );
         }
+
+    auto modelFields( vector_ptrtype sol, size_type startBlockSpaceIndex = 0, std::string const& prefix = "" ) const
+        {
+            auto field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
+            std::shared_ptr<element_displacement_external_storage_type> field_v;
+            if ( M_timeSteppingUseMixedFormulation )
+                field_v = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "velocity" ) );
+            std::shared_ptr<element_pressure_external_storage_type> field_p;
+            if ( this->hasDisplacementPressureFormulation() )
+                field_p = this->functionSpacePressure()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "pressure" ) );
+            return this->modelFields( field_d, field_v, field_p, prefix );
+        }
+
     template <typename DisplacementFieldType, typename VelocityFieldType,typename PressureFieldType>
     auto modelFields( DisplacementFieldType const& field_s, VelocityFieldType const& field_v, PressureFieldType const& field_p, std::string const& prefix = "" ) const
         {
-            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
+            //auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,element_displacement_ptrtype>( FieldTag::displacement(this) );
+            auto mfield_disp = modelField<FieldCtx::ID|FieldCtx::MAGNITUDE,DisplacementFieldType>( FieldTag::displacement(this) );
             mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
-            mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
+            if constexpr ( std::is_same_v<DisplacementFieldType,VelocityFieldType> )
+                mfield_disp.add( FieldTag::displacement(this), prefix,"velocity", field_v, "v", this->keyword() );
             //mfield_disp.add( FieldTag::displacement(this), prefix,"acceleration", this->fieldAccelerationPtr(), "a", this->keyword() );
-            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", this->fieldPressurePtr(), "p", this->keyword() );
+            auto mfield_pressure = modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix,"pressure", field_p, "p", this->keyword() );
 
             return Feel::FeelModels::modelFields( mfield_disp, mfield_pressure );
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            // TODO add velocity/pressure
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::displacement(this), "displacement", startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) ) );
         }
 
 
@@ -633,6 +637,34 @@ public :
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
             return symbols_expression_empty_t{};
+        }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
+
+    //___________________________________________________________________________________//
+    // model context helper
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto modelContext( ModelFieldsType const& mfields, std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelContext( mfields, this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
 
     //----------------------------------//
@@ -743,9 +775,15 @@ public :
 
     // assembly methods for nonlinear system
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
     void updateJacobian( DataUpdateJacobian & data ) const override;
+    template <typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidual( DataUpdateResidual & data ) const override;
+    template <typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 private :
     void updateLinearGeneralizedString( DataUpdateLinear & data ) const;
@@ -754,18 +792,8 @@ private :
     void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const;
     void updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
 
-    //void updateJacobianIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, sparse_matrix_ptrtype& J) const;
-    //void updateResidualIncompressibilityTerms( element_displacement_external_storage_type const& u, element_pressure_external_storage_type const& p, vector_ptrtype& R) const;
-    void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
-    void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
-
-    void updateBCNeumannResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
-    void updateBCRobinResidual( element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
-    void updateBCFollowerPressureResidual(element_displacement_external_storage_type const& u, vector_ptrtype& R, double timeSteppingScaling ) const;
-    void updateSourceTermResidual( vector_ptrtype& R, double timeSteppingScaling ) const;
-
-    void updateBCFollowerPressureJacobian(element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
-    void updateBCRobinJacobian( sparse_matrix_ptrtype& J, double timeSteppingScaling ) const;
+    // void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
+    // void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
 
 private :
 
@@ -922,10 +950,10 @@ private :
 
 }; // SolidMechanics
 
-template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp>
+template< typename ConvexType, typename BasisDisplacementType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
 void
-SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("Heat","exportResults", "start");
     this->timerTool("PostProcessing").start();
@@ -945,10 +973,10 @@ SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::exportResults( 
     this->log("Heat","exportResults", "finish");
 }
 
-template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp>
+template< typename ConvexType, typename BasisDisplacementType>
 template <typename ModelFieldsType, typename SymbolsExpr>
 void
-SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
+SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
 
@@ -985,4 +1013,7 @@ SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp>::executePostProc
 } // FeelModels
 } // Feel
 
-#endif /* FEELPP_SOLIDMECHANICSBASE_HPP */
+#include <feel/feelmodels/solid/solidmechanicsassembly.hpp>
+
+
+#endif /* FEELPP_TOOLBOXES_SOLIDMECHANICS_HPP */
