@@ -680,12 +680,14 @@ LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
 typename LEVELSETBASE_CLASS_TEMPLATE_TYPE::levelset_delta_expr_type
 LEVELSETBASE_CLASS_TEMPLATE_TYPE::diracExpr() const
 {
+    std::string deltaImpl = "generic";
+    if ( this->M_useRegularPhi )
+        deltaImpl = "renorm";
     return levelsetDelta(
             _element=this->phiElt(),
             _thickness=this->thicknessInterface(),
             _use_adaptive_thickness=this->M_useAdaptiveThicknessInterface,
-            _use_local_redist=this->M_useRegularPhi,
-            _use_distance_impl=false
+            _impl=deltaImpl
             );
 }
 
