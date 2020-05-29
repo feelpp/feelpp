@@ -81,11 +81,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- time mode : " << StateTemporal;
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Boundary conditions"
-           << this->getInfoDirichletBC()
-           << this->getInfoNeumannBC()
-           << this->getInfoNeumannEulerianFrameBC()
-           << this->getInfoRobinBC()
-           << this->getInfoFluidStructureInterfaceBC();
+           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+           << M_bcNeumannEulerianFrameMarkerManagement.getInfoNeumannEulerianFrameBC()
+           << M_bcRobinMarkerManagement.getInfoRobinBC()
+           << M_bcFSIMarkerManagement.getInfoFluidStructureInterfaceBC();
     *_ostr << "\n   Space Discretization";
     if ( this->hasGeoFile() )
         *_ostr << "\n     -- geo file name   : " << this->geoFile();

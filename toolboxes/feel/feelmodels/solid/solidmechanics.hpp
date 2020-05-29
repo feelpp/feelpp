@@ -64,12 +64,7 @@ namespace FeelModels
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >,
-                       public MarkerManagementDirichletBC,
-                       public MarkerManagementNeumannBC,
-                       public MarkerManagementNeumannEulerianFrameBC,
-                       public MarkerManagementRobinBC,
-                       public MarkerManagementFluidStructureInterfaceBC
+                       public std::enable_shared_from_this< SolidMechanics<ConvexType,BasisDisplacementType> >
 {
 public:
     typedef ModelNumerical super_type;
@@ -553,15 +548,15 @@ public :
     element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
-    // princial stresses
-    std::vector<element_stress_scal_ptrtype> const& fieldsPrincipalStresses() const { return M_fieldsPrincipalStresses; }
-    element_stress_scal_ptrtype const& fieldPrincipalStressesPtr(int k) const { CHECK( k < M_fieldsPrincipalStresses.size() ) << "invalid index"; return M_fieldsPrincipalStresses[k]; }
-    element_stress_scal_type const& fieldPrincipalStresses(int k) const { return *this->fieldPrincipalStressesPtr(k); }
-    // Von Mises and Tresca Criterions
-    element_stress_scal_ptrtype const& fieldVonMisesCriterionsPtr() const { return M_fieldVonMisesCriterions; }
-    element_stress_scal_ptrtype const& fieldTrescaCriterionsPtr() const { return M_fieldTrescaCriterions; }
-    element_stress_scal_type const& fieldVonMisesCriterions() const { return *M_fieldVonMisesCriterions; }
-    element_stress_scal_type const& fieldTrescaCriterions() const { return *M_fieldTrescaCriterions; }
+    // // princial stresses
+    // std::vector<element_stress_scal_ptrtype> const& fieldsPrincipalStresses() const { return M_fieldsPrincipalStresses; }
+    // element_stress_scal_ptrtype const& fieldPrincipalStressesPtr(int k) const { CHECK( k < M_fieldsPrincipalStresses.size() ) << "invalid index"; return M_fieldsPrincipalStresses[k]; }
+    // element_stress_scal_type const& fieldPrincipalStresses(int k) const { return *this->fieldPrincipalStressesPtr(k); }
+    // // Von Mises and Tresca Criterions
+    // element_stress_scal_ptrtype const& fieldVonMisesCriterionsPtr() const { return M_fieldVonMisesCriterions; }
+    // element_stress_scal_ptrtype const& fieldTrescaCriterionsPtr() const { return M_fieldTrescaCriterions; }
+    // element_stress_scal_type const& fieldVonMisesCriterions() const { return *M_fieldVonMisesCriterions; }
+    // element_stress_scal_type const& fieldTrescaCriterions() const { return *M_fieldTrescaCriterions; }
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
@@ -741,7 +736,7 @@ public :
     std::string couplingFSIcondition() const { return M_couplingFSIcondition; }
     void couplingFSIcondition(std::string s) { M_couplingFSIcondition=s; }
 
-    std::set<std::string> const& markerNameFSI() const { return this->markerFluidStructureInterfaceBC(); }
+    std::set<std::string> const& markerNameFSI() const { return M_bcFSIMarkerManagement.markerFluidStructureInterfaceBC(); }
 
     void updateNormalStressFromStruct();
     //void updateStressCriterions();
@@ -771,7 +766,11 @@ public :
 
     // assembly methods for linear system
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const;
 
     // assembly methods for nonlinear system
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
@@ -787,22 +786,13 @@ public :
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 private :
     void updateLinearGeneralizedString( DataUpdateLinear & data ) const;
-    void updateLinearElasticityAxiSym( DataUpdateLinear & data ) const {};
-    void updateBCNeumannLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
-    void updateBCRobinLinearPDE( sparse_matrix_ptrtype& A, vector_ptrtype& F, double timeSteppingScaling ) const;
-    void updateSourceTermLinearPDE( vector_ptrtype& F, double timeSteppingScaling ) const;
-
-    // void updateJacobianViscoElasticityTerms( element_displacement_external_storage_type const& u, sparse_matrix_ptrtype& J) const;
-    // void updateResidualViscoElasticityTerms( element_displacement_external_storage_type const& u, vector_ptrtype& R) const;
+    //void updateLinearElasticityAxiSym( DataUpdateLinear & data ) const {};
 
 private :
 
 
-    // model
-    std::string /*M_modelName,*/ M_solverName;
-
-    //model parameters
-    // mechanicalproperties_ptrtype M_mechanicalProperties;
+    //! solver
+    std::string M_solverName;
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
@@ -819,6 +809,11 @@ private :
     map_vector_field<nDim,1,2> M_bcNeumannEulerianFrameVectorial;
     map_matrix_field<nDim,nDim,2> M_bcNeumannEulerianFrameTensor2;
     map_vector_field<nDim,1,2> M_volumicForcesProperties;
+    MarkerManagementDirichletBC M_bcDirichletMarkerManagement;
+    MarkerManagementNeumannBC M_bcNeumannMarkerManagement;
+    MarkerManagementNeumannEulerianFrameBC M_bcNeumannEulerianFrameMarkerManagement;
+    MarkerManagementRobinBC M_bcRobinMarkerManagement;
+    MarkerManagementFluidStructureInterfaceBC M_bcFSIMarkerManagement;
 
     //-------------------------------------------//
     // standard model
@@ -844,9 +839,9 @@ private :
     space_stress_tensor_ptrtype M_XhStressTensor;
     element_stress_tensor_ptrtype M_fieldStressTensor;
     // princial stresses
-    std::vector<element_stress_scal_ptrtype> M_fieldsPrincipalStresses;
+    //std::vector<element_stress_scal_ptrtype> M_fieldsPrincipalStresses;
     // Von Mises and Tresca Criterions
-    element_stress_scal_ptrtype M_fieldVonMisesCriterions, M_fieldTrescaCriterions;
+    //element_stress_scal_ptrtype M_fieldVonMisesCriterions, M_fieldTrescaCriterions;
     // time discretisation
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
@@ -860,13 +855,6 @@ private :
     bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
     vector_ptrtype M_vecDiagMassMatrixLumped;
-
-    // trace mesh
-    //space_tracemesh_disp_ptrtype M_XhSubMeshDispFSI;
-    //element_tracemesh_disp_ptrtype M_fieldSubMeshDispFSI;
-
-    // post-process
-    // std::set<std::string> M_postProcessFieldExported;
 
     // exporter
     exporter_ptrtype M_exporter;
@@ -942,7 +930,6 @@ private :
     // fsi
     bool M_useFSISemiImplicitScheme;
     std::string M_couplingFSIcondition;
-    //std::shared_ptr<typename mesh_type::trace_mesh_type> M_fsiSubmesh;
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> M_fieldsUserScalar;

@@ -149,50 +149,50 @@ SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 {
-    this->clearMarkerDirichletBC();
-    this->clearMarkerNeumannBC();
-    this->clearMarkerFluidStructureInterfaceBC();
-    this->clearMarkerRobinBC();
+    M_bcDirichletMarkerManagement.clearMarkerDirichletBC();
+    M_bcNeumannMarkerManagement.clearMarkerNeumannBC();
+    M_bcFSIMarkerManagement.clearMarkerFluidStructureInterfaceBC();
+    M_bcRobinMarkerManagement.clearMarkerRobinBC();
 
     std::string dirichletbcType = "elimination";//soption(_name="dirichletbc.type",_prefix=this->prefix());
     this->M_bcDirichlet = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Dirichlet" );
     for( auto const& d : this->M_bcDirichlet )
-        this->addMarkerDirichletBC( dirichletbcType, name(d), markers(d), ComponentType::NO_COMPONENT );
+        M_bcDirichletMarkerManagement.addMarkerDirichletBC( dirichletbcType, name(d), markers(d), ComponentType::NO_COMPONENT );
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
         std::string compTag = ( comp ==ComponentType::X )? "x" : (comp == ComponentType::Y )? "y" : "z";
         this->M_bcDirichletComponents[comp] = this->modelProperties().boundaryConditions().getScalarFields( (boost::format("displacement_%1%")%compTag).str(), "Dirichlet" );
         for( auto const& d : this->M_bcDirichletComponents.find(comp)->second )
-            this->addMarkerDirichletBC( dirichletbcType, name(d), markers(d), comp );
+            M_bcDirichletMarkerManagement.addMarkerDirichletBC( dirichletbcType, name(d), markers(d), comp );
     }
 
     this->M_bcNeumannScalar = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "Neumann_scalar" );
     for( auto const& d : this->M_bcNeumannScalar )
-        this->addMarkerNeumannBC(NeumannBCShape::SCALAR,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d),markers(d));
     this->M_bcNeumannVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_vectorial" );
     for( auto const& d : this->M_bcNeumannVectorial )
-        this->addMarkerNeumannBC(NeumannBCShape::VECTORIAL,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::VECTORIAL,name(d),markers(d));
     this->M_bcNeumannTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_tensor2" );
     for( auto const& d : this->M_bcNeumannTensor2 )
-        this->addMarkerNeumannBC(NeumannBCShape::TENSOR2,name(d),markers(d));
+        M_bcNeumannMarkerManagement.addMarkerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::TENSOR2,name(d),markers(d));
 
     this->M_bcInterfaceFSI = this->modelProperties().boundaryConditions().getScalarFields( "displacement", "interface_fsi" );
     for( auto const& d : this->M_bcInterfaceFSI )
-        this->addMarkerFluidStructureInterfaceBC( markers(d) );
+        M_bcFSIMarkerManagement.addMarkerFluidStructureInterfaceBC( markers(d) );
 
     this->M_bcRobin = this->modelProperties().boundaryConditions().template getVectorFieldsList<nDim>( "displacement", "robin" );
     for( auto const& d : this->M_bcRobin )
-        this->addMarkerRobinBC( name(d),markers(d) );
+        M_bcRobinMarkerManagement.addMarkerRobinBC( name(d),markers(d) );
 
     this->M_bcNeumannEulerianFrameScalar = this->modelProperties().boundaryConditions().getScalarFields( { { "displacement", "Neumann_eulerian_scalar" },{ "displacement", "FollowerPressure" } } );
     for( auto const& d : this->M_bcNeumannEulerianFrameScalar )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::SCALAR,name(d),markers(d));
+        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::SCALAR,name(d),markers(d));
     this->M_bcNeumannEulerianFrameVectorial = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "Neumann_eulerian_vectorial" );
     for( auto const& d : this->M_bcNeumannEulerianFrameVectorial )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::VECTORIAL,name(d),markers(d));
+        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::VECTORIAL,name(d),markers(d));
     this->M_bcNeumannEulerianFrameTensor2 = this->modelProperties().boundaryConditions().template getMatrixFields<nDim>( "displacement", "Neumann_eulerian_tensor2" );
     for( auto const& d : this->M_bcNeumannEulerianFrameTensor2 )
-        this->addMarkerNeumannEulerianFrameBC(NeumannEulerianFrameBCShape::TENSOR2,name(d),markers(d));
+        M_bcNeumannEulerianFrameMarkerManagement.addMarkerNeumannEulerianFrameBC(MarkerManagementNeumannEulerianFrameBC::NeumannEulerianFrameBCShape::TENSOR2,name(d),markers(d));
 
     this->M_volumicForcesProperties = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "displacement", "VolumicForces" );
 
@@ -212,7 +212,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // strong Dirichlet bc on displacement from expression
     for( auto const& d : M_bcDirichlet )
     {
-        auto listMark = this->markerDirichletBCByNameId( "elimination",name(d) );
+        auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) );
         dispMarkers.insert( listMark.begin(), listMark.end() );
     }
     // strong Dirichlet bc on displacement component from expression
@@ -221,7 +221,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         ComponentType comp = bcDirComp.first;
         for( auto const& d : bcDirComp.second )
         {
-            auto listMark = this->markerDirichletBCByNameId( "elimination",name(d), comp );
+            auto listMark = M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d), comp );
             compDispMarkers[comp].insert( listMark.begin(), listMark.end() );
         }
     }
