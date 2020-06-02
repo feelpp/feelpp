@@ -133,7 +133,8 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                 {
                     bilinearFormDD +=
                         integrate (_range=range,
-                                   _expr= 2*lameSecondExpr*inner(epst,grad(v)),
+                                   //_expr= 2*lameSecondExpr*inner(epst,grad(v)),
+                                   _expr= inner(2.0*lameSecondExpr*epst - (2.0/3.0)*lameSecondExpr*trace(epst)*Id ,grad(v)),
                                    _geomap=this->geomap() );
 
                     auto p = M_XhPressure->element();//*M_fieldPressure;
@@ -150,12 +151,16 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
                         integrate(_range=range,
                                   _expr= id(p)*divt(u),
                                   _geomap=this->geomap() );
+
+                    auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
                     form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=A,
                            _rowstart=rowStartInMatrix+startBlockIndexPressure,
                            _colstart=colStartInMatrix+startBlockIndexPressure ) +=
                         integrate(_range=range,
-                                  _expr= -(cst(1.)/lameFirstExpr)*idt(p)*id(p),
+                                  //_expr= -(cst(1.)/lameFirstExpr)*idt(p)*id(p),
+                                  _expr= -(cst(1.)/K)*idt(p)*id(p),
                                   _geomap=this->geomap() );
+
                 }
             }
             //---------------------------------------------------------------------------------------//
@@ -623,7 +628,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
 
                 if ( !buildCstPart )
                 {
-                    if ( ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() == "StVenantKirchhoff" ) ||  physicSolidData->equation() == "Elasticity" )
+                    if ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() == "StVenantKirchhoff" )
                     {
                         auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
                         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
@@ -633,7 +638,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
                                       _expr= -(cst(1.)/lameFirstExpr)*idt(p)*id(p),
                                       _geomap=this->geomap() );
                     }
-                    else if ( physicSolidData->equation() == "Hyper-Elasticity" )
+                    else if ( physicSolidData->equation() == "Hyper-Elasticity" || physicSolidData->equation() == "Elasticity" )
                     {
                         auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
                         form2( _test=M_XhPressure, _trial=M_XhPressure, _matrix=J,
@@ -902,7 +907,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                                    _geomap=this->geomap() );
                 }
 
-                if ( ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() == "StVenantKirchhoff" ) ||  physicSolidData->equation() == "Elasticity" )
+                if ( physicSolidData->equation() == "Hyper-Elasticity" && physicSolidData->materialModel() == "StVenantKirchhoff" )
                 {
                     auto lameFirstExpr = expr( matProperties.property( "Lame-first-parameter" ).exprScalar(), se );
                     linearFormPressure +=
@@ -910,7 +915,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
                                   _expr= -(cst(1.)/lameFirstExpr)*idv(p)*id(p),
                                   _geomap=this->geomap() );
                 }
-                else if ( physicSolidData->equation() == "Hyper-Elasticity" )
+                else if ( physicSolidData->equation() == "Hyper-Elasticity" || physicSolidData->equation() == "Elasticity" )
                 {
                     auto K = expr( matProperties.property( "bulk-modulus" ).exprScalar(), se );
                     linearFormPressure +=

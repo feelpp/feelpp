@@ -846,7 +846,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
                     // p*Id+S_bis
                     const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
                     const value_type pEval = this->locIdPressure()[q](0,0);
-                    theLocRes = pEval*M_mId + (2*coefflame2*timeSteppingScaling)*E;
+                    const value_type traceE = E.trace();
+                    theLocRes = (pEval-(2.0/3.0)*coefflame2*traceE)*M_mId + (2*coefflame2*timeSteppingScaling)*E;
                 }
                 else
                 {
@@ -901,7 +902,8 @@ tensorSolidMecPressureFormulationMultiplierClassicBIS<Geo_t,Basis_i_t,Basis_j_t,
             if constexpr ( useDispPresForm )
             {
                 const value_type coefflame2 = this->M_localAssemblyLameSecond[q];
-                thelocMat = 2*coefflame2*E;
+                const value_type traceE = E.trace();
+                thelocMat = 2*coefflame2*E - (2.0/3.0)*coefflame2*traceE*M_mId;
             }
             else
             {
