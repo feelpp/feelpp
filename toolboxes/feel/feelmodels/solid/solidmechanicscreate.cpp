@@ -1141,12 +1141,22 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     std::set<std::string> fieldsAvailable = { "displacement", "von-mises-criterions", "tresca-criterions", "princial-stress" };
+    if ( !this->isStationary() )
+        fieldsAvailable.insert( "velocity" );
     if ( this->hasDisplacementPressureFormulation() )
         fieldsAvailable.insert( "pressure" );
     this->setPostProcessExportsAllFieldsAvailable( fieldsAvailable );
     this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
-    this->setPostProcessSaveAllFieldsAvailable( {"displacement" } );
+
+    std::set<std::string> saveFieldsAvailable = { "displacement" };
+    if ( !this->isStationary() )
+        saveFieldsAvailable.insert( "velocity" );
+    if ( this->hasDisplacementPressureFormulation() )
+        saveFieldsAvailable.insert( "pressure" );
+    this->setPostProcessSaveAllFieldsAvailable( saveFieldsAvailable );
+
+
     super_type::initPostProcess();
 
     if ( !this->postProcessExportsFields().empty() )
@@ -1160,7 +1170,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         if (this->doRestart())
             this->restartExporters( this->timeInitial() );
     }
-
 
     auto const& ptree = this->modelProperties().postProcess().pTree( this->keyword() );
 

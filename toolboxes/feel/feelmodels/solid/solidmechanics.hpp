@@ -942,7 +942,7 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprTy
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
-    this->log("Heat","exportResults", "start");
+    this->log("SolidMechanics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
     this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
@@ -957,7 +957,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, Mo
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
-    this->log("Heat","exportResults", "finish");
+    this->log("SolidMechanics","exportResults", "finish");
 }
 
 template< typename ConvexType, typename BasisDisplacementType>
@@ -967,19 +967,20 @@ SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( do
 {
     bool hasMeasure = false;
 
-#if 0
-    auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
+    //auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
 
-    // compute measures
-    for ( auto const& [ppName,ppFlux] : M_postProcessMeasuresNormalHeatFlux )
+    // volume variation
+    for ( auto const& ppvv : M_postProcessVolumeVariation )
     {
-        //auto const& t = this->fieldTemperature();
-        double heatFlux = integrate(_range=markedfaces(this->mesh(),ppFlux.markers() ),
-                                    _expr=this->normalHeatFluxExpr( t, ppFlux.isOutward(), symbolsExpr ) ).evaluate()(0,0);
-        this->postProcessMeasuresIO().setMeasure("Normal_Heat_Flux_"+ppName,heatFlux);
+        std::string const& vvname = ppvv.first;
+        auto const& vvmarkers = ppvv.second;
+        elements_reference_wrapper_t<mesh_type> vvrange = ( vvmarkers.size() == 1 && vvmarkers.begin()->empty() )?
+            M_rangeMeshElements : markedelements( this->mesh(),vvmarkers );
+        double volVar = this->computeVolumeVariation( vvrange );
+        this->postProcessMeasuresIO().setMeasure( vvname, volVar );
         hasMeasure = true;
     }
-#endif
+
     bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
     bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
