@@ -126,27 +126,30 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
         this->initPhysics( this->keyword(), this->modelProperties().models() );
 
-    if ( !M_mesh )
-        this->initMesh();
-
     // physical properties
     if ( !M_materialsProperties )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties->updateForUse( this->modelProperties().materials(), *this, this->worldComm() );
     }
 
+    if ( !M_mesh )
+        this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
+
+    auto mom = this->materialsProperties()->materialsOnMesh(this->mesh());
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physicsAvailableFromCurrentType() ));
+        M_rangeMeshElements = markedelements(M_mesh, mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
@@ -252,7 +255,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( {"electric-potential","electric-field","current-density","joules-losses"} );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"electric-potential","electric-field","electric-conductivity","current-density","joules-losses"} );
     super_type::initPostProcess();

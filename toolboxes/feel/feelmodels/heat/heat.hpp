@@ -66,6 +66,7 @@ class Heat : public ModelNumerical,
         typedef ConvexType convex_type;
         static const uint16_type nDim = convex_type::nDim;
         static const uint16_type nOrderGeo = convex_type::nOrder;
+        static const uint16_type nRealDim = convex_type::nRealDim;
         typedef Mesh<convex_type> mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
@@ -82,7 +83,7 @@ class Heat : public ModelNumerical,
         // velocity convection expression
         using velocity_convection_expr_type = vector_field_expression<nDim>;
         // materials properties
-        typedef MaterialsProperties<mesh_type> materialsproperties_type;
+        typedef MaterialsProperties<nRealDim> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
@@ -235,7 +236,7 @@ class Heat : public ModelNumerical,
                 std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
                 for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
                 {
-                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                     auto itFindVelConv = M_exprVelocityConvection.find( matName );
                     if ( itFindVelConv !=  M_exprVelocityConvection.end() )
                     {
@@ -248,7 +249,7 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
         //___________________________________________________________________________________//

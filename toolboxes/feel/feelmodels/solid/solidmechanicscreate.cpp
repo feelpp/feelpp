@@ -396,7 +396,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties->updateForUse( this->modelProperties().materials(), *this, this->worldComm() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
@@ -415,16 +415,17 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("SolidMechanics","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto mom = this->materialsProperties()->materialsOnMesh(this->mesh());
     //--------------------------------------------------------//
     // function space for displacement
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(this->mesh(), this->materialsProperties()->markers( this->physicsAvailableFromCurrentType() ));
+        M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhDisplacement = space_displacement_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),
                                                          _range=M_rangeMeshElements );
     }
@@ -442,12 +443,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     }
     if ( !physicUseDisplacementPressureFormulation.empty() )
     {
-        if ( this->materialsProperties()->isDefinedOnWholeMesh( physicUseDisplacementPressureFormulation ) )
+        if ( mom->isDefinedOnWholeMesh( physicUseDisplacementPressureFormulation ) )
             M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
         else
         {
             //auto matNamesWithDisplacementPressureFormulation = this->materialsProperties()->physicToMaterials( physicUseDisplacementPressureFormulation );
-            auto rangePressure =  markedelements(this->mesh(), this->materialsProperties()->markers( physicUseDisplacementPressureFormulation ) );
+            auto rangePressure = markedelements(this->mesh(), mom->markers( physicUseDisplacementPressureFormulation ) );
             M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
                                                      _range=rangePressure );
         }
@@ -719,6 +720,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     if ( this->physics().empty() )
         this->initPhysics( this->keyword(), this->modelProperties().models() );
 
+    this->initMaterialProperties();
+
     bool hasAxisymmetric1d = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
@@ -733,7 +736,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     if ( !M_mesh && !M_mesh_1dReduced )
         this->initMesh();
 
-    this->initMaterialProperties();
+    this->materialsProperties()->addMesh( this->mesh() );
 
     this->initFunctionSpaces();
 
@@ -1146,7 +1149,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
     if ( this->hasDisplacementPressureFormulation() )
         fieldsAvailable.insert( "pressure" );
     this->setPostProcessExportsAllFieldsAvailable( fieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
 
     std::set<std::string> saveFieldsAvailable = { "displacement" };
