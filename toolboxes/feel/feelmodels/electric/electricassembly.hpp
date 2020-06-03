@@ -40,7 +40,7 @@ Electric<ConvexType,BasisPotentialType>::updateLinearPDE( DataUpdateLinear & dat
     {
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
 
             auto sigma = expr( electricConductivity.expr(), symbolsExpr);
@@ -190,7 +190,7 @@ Electric<ConvexType,BasisPotentialType>::updateJacobian( DataUpdateJacobian & da
     {
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
             bool electricConductivityDependOnTrialSymbol = electricConductivity.hasSymbolDependency( trialSymbolNames,se );
             auto sigmaExpr = expr(electricConductivity.expr(),se);
@@ -276,7 +276,7 @@ Electric<ConvexType,BasisPotentialType>::updateResidual( DataUpdateResidual & da
     {
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& electricConductivity =  this->materialsProperties()->electricConductivity( matName );
 
             auto sigmaExpr = expr(electricConductivity.expr(),symbolsExpr);

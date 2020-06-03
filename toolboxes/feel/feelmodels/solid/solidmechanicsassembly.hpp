@@ -113,7 +113,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLin
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& matProperties = this->materialsProperties()->materialProperties( matName );
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
             // internal force term
             if (BuildCstPart)
@@ -556,7 +556,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateJacobian( DataUpdateJaco
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& matProperties = this->materialsProperties()->materialProperties( matName );
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
             //--------------------------------------------------------------------------------------------------//
             // first Piola-Kirchhoff tensor
@@ -855,7 +855,7 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateResidual( DataUpdateResi
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& matProperties = this->materialsProperties()->materialProperties( matName );
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
             //--------------------------------------------------------------------------------------------------//
             // first Piola-Kirchhoff tensor

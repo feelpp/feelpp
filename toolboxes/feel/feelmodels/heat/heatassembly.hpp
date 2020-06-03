@@ -54,7 +54,7 @@ Heat<ConvexType,BasisTemperatureType>::updateLinearPDE( DataUpdateLinear & data,
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
         if ( thermalConductivity.isMatrix() )
         {
@@ -324,7 +324,7 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobian( DataUpdateJacobian & data
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         bool thermalConductivityDependOnTrialSymbol = thermalConductivity.hasSymbolDependency( trialSymbolNames,se );
@@ -493,7 +493,7 @@ Heat<ConvexType,BasisTemperatureType>::updateResidual( DataUpdateResidual & data
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
         auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
 
         if ( thermalConductivity.template hasExpr<nDim,nDim>() )

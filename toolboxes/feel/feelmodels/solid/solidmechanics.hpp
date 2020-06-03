@@ -83,6 +83,7 @@ public:
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     //___________________________________________________________________________________//
@@ -159,7 +160,7 @@ public:
     typedef std::shared_ptr<savets_pressure_type> savets_pressure_ptrtype;
     //___________________________________________________________________________________//
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     //___________________________________________________________________________________//
     // trace mesh
@@ -376,7 +377,8 @@ public :
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
-    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
+
 
     bool hasDirichletBC() const
         {
@@ -459,7 +461,7 @@ public :
                 for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
                 {
                     auto const& matProperties = this->materialsProperties()->materialProperties( matName );
-                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
                     auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
                     auto vonmisesExpr = vonmises( fpk );
@@ -476,7 +478,7 @@ public :
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
         {
-            return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
+            return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(), this->physicsAvailable(),se ),
                                  this->exprPostProcessExportsToolbox( se, prefix ) );
         }
 

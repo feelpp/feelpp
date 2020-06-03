@@ -179,17 +179,19 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
     }
 
-    if ( !M_mesh )
-        this->initMesh();
-
     // physical properties
     if ( !M_materialsProperties )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties->updateForUse( this->modelProperties().materials(), *this, this->worldComm() );
     }
+
+    if ( !M_mesh )
+        this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
     M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
@@ -308,9 +310,9 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // need to not include export fields of material of subphysics
     std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physicsAvailable() ) );
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailableElectric = Feel::FeelModels::detail::set_difference( this->electricModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->electricModel()->physicsAvailable() ) );
+                                                                                                          this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->electricModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailable;
     for ( auto const& s : ppExportsAllFieldsAvailableHeat )
         ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
@@ -318,7 +320,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::initPostProcess()
         ppExportsAllFieldsAvailable.insert( prefixvm( this->electricModel()->keyword(), s) );
 
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -459,7 +461,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_heatModel->exportResults( time, symbolExpr );
     M_electricModel->exportResults( time, symbolExpr );
 
-    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->physicsAvailable(),symbolExpr ),
+    auto exprExport =  hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
                                      hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
                                                    M_electricModel->exprPostProcessExportsToolbox( symbolExpr,M_electricModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );

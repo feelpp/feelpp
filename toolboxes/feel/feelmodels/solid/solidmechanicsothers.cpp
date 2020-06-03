@@ -1432,7 +1432,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateMassMatrixLumped()
         auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& densityProp = this->materialsProperties()->density( matName );
             auto densityExpr = expr( densityProp.expr(), se );
             form2( _trial=Vh, _test=Vh,_matrix=massMatrix) =
