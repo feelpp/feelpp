@@ -81,23 +81,28 @@ template<uint16_type Dim>
 class MaterialsProperties
 {
     typedef MaterialsProperties<Dim> self_type;
+    using modelphysics_type = ModelPhysics<Dim>;
+    using modelphysics_ptrtype = std::shared_ptr<modelphysics_type>;
+    using modelphysics_weakptrtype = std::weak_ptr<modelphysics_type>;
 public :
     static const uint16_type nDim = Dim;
 
-    MaterialsProperties( std::string const& prefix, std::string const& exprRepository )
+    MaterialsProperties( modelphysics_ptrtype const& mphysics )
         :
-        M_exprRepository( exprRepository )
+        M_modelPhysics( mphysics )
         {}
 
     MaterialsProperties( MaterialsProperties const& ) = default;
 
-    void updateForUse( ModelMaterials const& mats, ModelPhysics<nDim> const& modelphysics, worldcomm_t const& worldComm,
+    void updateForUse( ModelMaterials const& mats,
                        std::set<std::string> const& onlyTheseMaterialNames = std::set<std::string>{},
                        std::set<std::string> const& onlyTheseMarkers = std::set<std::string>{} )
         {
-            //auto const& mapPhysicsToSubphysics = modelphysics.mapPhysicsToSubphysics();
-            auto const& defaultPhysics = modelphysics.physicDefault();
-            auto const& physicsAvailable = modelphysics.physicsAvailable();
+            modelphysics_ptrtype mphysics = M_modelPhysics.lock();
+            worldcomm_t const& worldComm = mphysics->worldComm();
+            std::string const& exprRepository = mphysics->repository().expr();
+            auto const& defaultPhysics = mphysics->physicDefault();
+            auto const& physicsAvailable = mphysics->physicsAvailable();
 
             std::map<std::string,std::set<std::string>> markersByMaterial;
 
@@ -127,7 +132,7 @@ public :
                 std::set<std::string> currentPhysics;
                 for ( std::string const& p : currentPhysicsReaded )
                 {
-                    auto thePhysicsShared = modelphysics.physicsShared( p );
+                    auto thePhysicsShared = mphysics->physicsShared( p );
                     currentPhysics.insert( thePhysicsShared.begin(), thePhysicsShared.end() );
                     // auto itFindPhysics = mapPhysicsToSubphysics.find( p );
                     // if ( itFindPhysics != mapPhysicsToSubphysics.end() )
@@ -153,7 +158,7 @@ public :
 
 
             std::map<std::string,std::string> propSymbolToPropNameInDescription;
-            for ( auto const& [physicName,physicData] : modelphysics.physics() )
+            for ( auto const& [physicName,physicData] : mphysics->physics() )
             {
                 for ( auto const& [propName, propDesc] : physicData->materialPropertyDescription() )
                 {
@@ -200,7 +205,7 @@ public :
                 {
                     auto rhoExpr = this->density( matName ).expr();
                     auto CpExpr = this->heatCapacity( matName ).expr();
-                    auto expr = expr_mult<2>( rhoExpr,CpExpr,"",worldComm,M_exprRepository );
+                    auto expr = expr_mult<2>( rhoExpr,CpExpr,"",worldComm,exprRepository );
                     M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
                 }
 
@@ -219,7 +224,7 @@ public :
                     std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
                     std::string lame1ExprStr = (boost::format("%1%*%2%/((1+%2%)*(1-2*%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
                     ModelExpression lame1Expr;
-                    lame1Expr.setExpr( lame1ExprStr,worldComm,M_exprRepository);
+                    lame1Expr.setExpr( lame1ExprStr,worldComm,exprRepository);
                     this->addProperty( matProperties, "Lame-first-parameter", lame1Expr, true );
                 }
                 if ( hasLameSecondParameterInPhysicDesc && hasYoungModulusInPhysicDesc && hasPoissonRatioInPhysicDesc &&
@@ -229,7 +234,7 @@ public :
                     std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
                     std::string lame2ExprStr = (boost::format("%1%/(2*(1+%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
                     ModelExpression lame2Expr;
-                    lame2Expr.setExpr( lame2ExprStr,worldComm,M_exprRepository);
+                    lame2Expr.setExpr( lame2ExprStr,worldComm,exprRepository);
                     this->addProperty( matProperties, "Lame-second-parameter", lame2Expr, true );
                 }
                 if ( hasBulkModulusInPhysicDesc && hasYoungModulusInPhysicDesc && hasPoissonRatioInPhysicDesc &&
@@ -239,7 +244,7 @@ public :
                     std::string const& PoissonRatioSymb = itFindPoissonRatioInPhysicDesc->second.symbol();
                     std::string bulkModulusExprStr = (boost::format("%1%/(3*(1-2*%2%)):%1%:%2%") %YoungModulusSymb %PoissonRatioSymb).str();
                     ModelExpression bulkModulusExpr;
-                    bulkModulusExpr.setExpr( bulkModulusExprStr,worldComm,M_exprRepository);
+                    bulkModulusExpr.setExpr( bulkModulusExprStr,worldComm,exprRepository);
                     this->addProperty( matProperties, "bulk-modulus", bulkModulusExpr, true );
                 }
 
@@ -919,7 +924,8 @@ public :
 
 
 private :
-    std::string M_exprRepository;
+    modelphysics_weakptrtype M_modelPhysics;
+
     std::map<std::string,std::set<std::string>> M_materialsNames; // physic -> matNames
 
     std::map<std::string, ModelExpressionScalar> M_rhoHeatCapacityByMaterial;

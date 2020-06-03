@@ -41,7 +41,8 @@ public :
                                   ModelBaseRepository const& modelRep = ModelBaseRepository() )
         :
         super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-        ModelPhysics<nRealDim>( "solid" )
+        ModelPhysics<nRealDim>( "solid" ),
+        ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
         {}
 private :
     //void initMesh();

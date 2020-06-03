@@ -51,7 +51,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::ThermoElectric( std::string const& prefix,
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<mesh_type::nDim>( "thermo-electric" )
+    ModelPhysics<mesh_type::nDim>( "thermo-electric" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("ThermoElectric","constructor", "start" );
 
@@ -184,8 +185,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( this->modelProperties().materials(), *this, this->worldComm() );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     if ( !M_mesh )

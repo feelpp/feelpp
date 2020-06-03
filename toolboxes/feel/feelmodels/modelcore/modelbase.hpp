@@ -137,8 +137,11 @@ public :
         :
         ModelBase( prefix, prefix, worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
+    //ModelBase() : ModelBase("") {}
+    ModelBase() = delete;
 
     ModelBase( ModelBase const& app ) = default;
+    ModelBase( ModelBase && app ) = default;
     virtual ~ModelBase();
 
     // worldcomm

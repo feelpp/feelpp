@@ -64,96 +64,97 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                             _colstart=M_heatModel->colStartInMatrix() );
 
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& rho = this->materialsProperties()->rho( matName );
-            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-
-            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-            auto rhoExpr = rho.expr();
-            auto beta = thermalExpansion.expr();
-#if 0
-            form2( _test=XhT,_trial=XhT,_matrix=J,
-                   _rowstart=M_heatModel->rowStartInMatrix(),
-                   _colstart=M_heatModel->colStartInMatrix() ) +=
-                integrate( _range=range,
-                           _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
-                           _geomap=this->geomap() );
-#endif
-            form2( _test=XhT,_trial=XhV,_matrix=J,
-                   _rowstart=M_heatModel->rowStartInMatrix(),
-                   _colstart=M_fluidModel->colStartInMatrix() ) +=
-                integrate( _range=range,
-                           _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
-                           _geomap=this->geomap() );
-
-            bfVT +=
-                integrate( _range=range,
-                           _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-
-            if ( M_heatModel->stabilizationGLS() )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& rho = this->materialsProperties()->rho( matName );
+                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
+
+                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+                auto rhoExpr = rho.expr();
+                auto beta = thermalExpansion.expr();
 #if 0
-                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
-                if ( thermalConductivity.isMatrix() )
-                    CHECK( false ) << "TODO";
-                else
-                    M_heatModel->updateJacobianStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
+                form2( _test=XhT,_trial=XhT,_matrix=J,
+                       _rowstart=M_heatModel->rowStartInMatrix(),
+                       _colstart=M_heatModel->colStartInMatrix() ) +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
+                               _geomap=this->geomap() );
+#endif
+                form2( _test=XhT,_trial=XhV,_matrix=J,
+                       _rowstart=M_heatModel->rowStartInMatrix(),
+                       _colstart=M_fluidModel->colStartInMatrix() ) +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
+                               _geomap=this->geomap() );
+
+                bfVT +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
+                               _geomap=this->geomap() );
+
+                if ( M_heatModel->stabilizationGLS() )
+                {
+#if 0
+                    auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
+                    if ( thermalConductivity.isMatrix() )
+                        CHECK( false ) << "TODO";
+                    else
+                        M_heatModel->updateJacobianStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
 #endif
 #if 0
-                auto rhocp = rhoHeatCapacityExpr;
-                auto tau = idv( M_heatModel->stabilizationGLSParameter()->fieldTauPtr() );
-                if ( true ) // order==1 or supg
-                {
-                    auto stab_test = rhocp*grad(t)*idv(u);
-                    auto stab_residual_bilinear = rhocp*gradv(t)*idt(u);
-                    form2( _test=XhT,_trial=XhV,_matrix=J,
-                           _rowstart=M_heatModel->rowStartInMatrix(),
-                           _colstart=M_fluidModel->colStartInMatrix() ) +=
-                         integrate( _range=range,
-                                    _expr=tau*stab_residual_bilinear*stab_test,
-                                    _geomap=this->geomap() );
+                    auto rhocp = rhoHeatCapacityExpr;
+                    auto tau = idv( M_heatModel->stabilizationGLSParameter()->fieldTauPtr() );
+                    if ( true ) // order==1 or supg
+                    {
+                        auto stab_test = rhocp*grad(t)*idv(u);
+                        auto stab_residual_bilinear = rhocp*gradv(t)*idt(u);
+                        form2( _test=XhT,_trial=XhV,_matrix=J,
+                               _rowstart=M_heatModel->rowStartInMatrix(),
+                               _colstart=M_fluidModel->colStartInMatrix() ) +=
+                            integrate( _range=range,
+                                       _expr=tau*stab_residual_bilinear*stab_test,
+                                       _geomap=this->geomap() );
                     
-                    auto stab_test2 = rhocp*gradv(t)*idt(u);
-                    form2( _test=XhVP,_trial=XhV,_matrix=J,
-                           _rowstart=M_fluidModel->rowStartInMatrix(),
-                           _colstart=M_fluidModel->colStartInMatrix() ) +=
-                        integrate( _range=range,
-                                   _expr=tau*stab_residual_bilinear*stab_test2,
-                                   _geomap=this->geomap() );
-                    auto stab_residual_bilinear2 = rhocp*(idt(t)*M_heatModel->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(t)*idv(u) );
-                    form2( _test=XhV,_trial=XhT,_matrix=J,
-                           _rowstart=M_fluidModel->rowStartInMatrix(),
-                           _colstart=M_heatModel->colStartInMatrix() ) +=
-                        integrate( _range=range,
-                                   _expr=tau*stab_residual_bilinear2*stab_test2,
-                                   _geomap=this->geomap() );
+                        auto stab_test2 = rhocp*gradv(t)*idt(u);
+                        form2( _test=XhVP,_trial=XhV,_matrix=J,
+                               _rowstart=M_fluidModel->rowStartInMatrix(),
+                               _colstart=M_fluidModel->colStartInMatrix() ) +=
+                            integrate( _range=range,
+                                       _expr=tau*stab_residual_bilinear*stab_test2,
+                                       _geomap=this->geomap() );
+                        auto stab_residual_bilinear2 = rhocp*(idt(t)*M_heatModel->timeStepBdfTemperature()->polyDerivCoefficient(0) + gradt(t)*idv(u) );
+                        form2( _test=XhV,_trial=XhT,_matrix=J,
+                               _rowstart=M_fluidModel->rowStartInMatrix(),
+                               _colstart=M_heatModel->colStartInMatrix() ) +=
+                            integrate( _range=range,
+                                       _expr=tau*stab_residual_bilinear2*stab_test2,
+                                       _geomap=this->geomap() );
                     
-                }
-                else
-                {
+                    }
+                    else
+                    {
 
-                }
+                    }
 #endif
-            }
+                }
 
-            if ( M_fluidModel->stabilizationGLS() )
-            {
-                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-                auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
+                if ( M_fluidModel->stabilizationGLS() )
+                {
+                    auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                    //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                    auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                    auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
 
-                auto XhP = M_fluidModel->functionSpacePressure();
-                //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
-                M_fluidModel->updateJacobianStabilisationGLS( data, *u, *p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
-            }
-
-        }
-    }
+                    auto XhP = M_fluidModel->functionSpacePressure();
+                    //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
+                    M_fluidModel->updateJacobianStabilisationGLS( data, *u, *p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
+                }
+            } // matName
+        } // physic
+    } // nonCstPart
 
     this->log("HeatFluid","updateJacobian", "finish"+sc);
 

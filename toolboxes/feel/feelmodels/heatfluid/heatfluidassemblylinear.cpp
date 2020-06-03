@@ -186,39 +186,41 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
                         _rowstart=M_fluidModel->rowStartInVector() );
 
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-
-        auto const& rho = this->materialsProperties()->rho( matName );
-        auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-        auto const& rhoExpr = rho.expr();
-        auto const& betaExpr = thermalExpansion.expr();
-        double T0 = M_BoussinesqRefTemperature;
-
-        mylfV +=
-            integrate( _range=range,
-                       _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
-                       _geomap=this->geomap() );
-
-        if ( M_fluidModel->stabilizationGLS() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-            //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-            auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-            auto exprAddedInRhs = -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;
-            if ( M_fluidModel->timeStepping() ==  "Theta" )
-            {
-                // TODO : fix if this info is not available
-                auto previousSol = data.vectorInfo( prefixvm( M_heatModel->prefix(),"time-stepping.previous-solution") );
-                auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
-                auto exprAddedInRhsOld = -(1.0-timeSteppingScaling)*rhoExpr*betaExpr*(idv(tOld)-T0)*M_gravityForce;
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs,exprAddedInRhsOld) );
-            }
-            else
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
 
+            auto const& rho = this->materialsProperties()->rho( matName );
+            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
+            auto const& rhoExpr = rho.expr();
+            auto const& betaExpr = thermalExpansion.expr();
+            double T0 = M_BoussinesqRefTemperature;
+
+            mylfV +=
+                integrate( _range=range,
+                           _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+
+            if ( M_fluidModel->stabilizationGLS() )
+            {
+                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                auto exprAddedInRhs = -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;
+                if ( M_fluidModel->timeStepping() ==  "Theta" )
+                {
+                    // TODO : fix if this info is not available
+                    auto previousSol = data.vectorInfo( prefixvm( M_heatModel->prefix(),"time-stepping.previous-solution") );
+                    auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
+                    auto exprAddedInRhsOld = -(1.0-timeSteppingScaling)*rhoExpr*betaExpr*(idv(tOld)-T0)*M_gravityForce;
+                    M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs,exprAddedInRhsOld) );
+                }
+                else
+                    M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
+
+            }
         }
     }
 
