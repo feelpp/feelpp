@@ -903,6 +903,10 @@ private :
                                     if ( idx == invalid_uint16_type_value )
                                         continue;
 
+                                    // call an optional update function
+                                    if ( std::get<3>( e ) )
+                                        std::get<3>( e )();
+
                                     auto const& theexprBase = std::get<1>( e );
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
                                     evecExpand[k] = theexpr;
@@ -918,6 +922,10 @@ private :
                                 {
                                     if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                          continue;
+
+                                    // call an optional update function
+                                    if ( std::get<3>( e ) )
+                                        std::get<3>( e )();
 
                                     auto const& theexprBase = std::get<1>( e );
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
@@ -1005,10 +1013,6 @@ private :
                                     if ( idx == invalid_v<uint16_type> )
                                         continue;
 
-                                    // call an optional update function
-                                    if ( std::get<3>( e ) )
-                                        std::get<3>( e )();
-
                                     auto const& theexprBase = std::get<1>( e );
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(evecExpand[k]);
 
@@ -1018,10 +1022,6 @@ private :
                                 {
                                     if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                         continue;
-
-                                    // call an optional update function
-                                    if ( std::get<3>( e ) )
-                                        std::get<3>( e )();
 
                                     auto const& theexprBase = std::get<1>( e );
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(evecExpand[k]);
