@@ -54,18 +54,18 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
 
 template <uint16_type Dim>
 std::shared_ptr<ModelPhysic<Dim>>
-ModelPhysic<Dim>::New( std::string const& type, std::string const& name, ModelModel const& model )
+ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model )
 {
     if ( type == "fluid" )
-        return std::make_shared<ModelPhysicFluid<Dim>>( name, model );
+        return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, name, model );
     else if ( type == "solid" )
-        return std::make_shared<ModelPhysicSolid<Dim>>( name, model );
+        return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( type, name, model );
 }
 
 template <uint16_type Dim>
-ModelPhysicFluid<Dim>::ModelPhysicFluid( std::string const& name, ModelModel const& model )
+ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
     super_type( "fluid", name, model ),
     M_equation( "Navier-Stokes" )
@@ -86,7 +86,7 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 }
 
 template <uint16_type Dim>
-ModelPhysicSolid<Dim>::ModelPhysicSolid( std::string const& name, ModelModel const& model )
+ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
     super_type( "solid", name, model ),
     M_equation( "Hyper-Elasticity" ),
@@ -139,9 +139,9 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
     M_physicDefault = name;
     auto const& theGlobalModel = models.model( name );
-    M_physics.emplace( name, ModelPhysic<Dim>::New( type, name, theGlobalModel ) );
+    M_physics.emplace( name, ModelPhysic<Dim>::New( *this, type, name, theGlobalModel ) );
     for ( auto const& [variantName,variantModel] : theGlobalModel.variants() )
-        M_physics.emplace( variantName, ModelPhysic<Dim>::New( type, variantName, variantModel ) );
+        M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, type, variantName, variantModel ) );
 
     // list of subphysics from description
     std::map<std::string, std::set<std::string>> mapSubPhysicsTypeToDefaultNames;
@@ -173,9 +173,9 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
         for ( std::string const& subName : subPhysicDefaultNames )
         {
             auto const& theSubModel = useModelNameInJson && models.hasModel( subName )? models.model( subName ) : ModelModel{};
-            M_physics.emplace( subName, ModelPhysic<Dim>::New( subPhysicType, subName, theSubModel ) );
+            M_physics.emplace( subName, ModelPhysic<Dim>::New( *this, subPhysicType, subName, theSubModel ) );
             for ( auto const& [variantName,variantModel] : theSubModel.variants() )
-                M_physics.emplace( variantName, ModelPhysic<Dim>::New( subPhysicType, variantName, variantModel ) );
+                M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, subPhysicType, variantName, variantModel ) );
         }
     }
 

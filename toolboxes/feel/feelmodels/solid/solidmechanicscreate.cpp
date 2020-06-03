@@ -25,7 +25,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::SolidMechanics( std::string const& prefix,
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<nDim>( "solid" )
+    ModelPhysics<nDim>( "solid" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("SolidMechanics","constructor", "start" );
 
@@ -395,8 +396,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( this->modelProperties().materials(), *this, this->worldComm() );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");

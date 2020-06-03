@@ -12,13 +12,15 @@ namespace FeelModels
 template <uint16_type Dim>
 ModelGenericPDE<Dim>::ModelGenericPDE( /*std::string const& physic*/ )
     :
-    super_type( "GenericPDE" )
+    super_type( "GenericPDE" ),
+    ModelBase("")
 {}
 
 template <uint16_type Dim>
 ModelGenericPDE<Dim>::ModelGenericPDE( std::string const& name, pt::ptree const& p )
     :
-    super_type( "GenericPDE" )
+    super_type( "GenericPDE" ),
+    ModelBase("")
 {
     this->setupGenericPDE( name, p );
 }
@@ -78,7 +80,8 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
 template <uint16_type Dim>
 ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
     :
-    super_type( "GenericPDEs" )
+    super_type( "GenericPDEs" ),
+    ModelBase("")
 {}
 
 template <uint16_type Dim>

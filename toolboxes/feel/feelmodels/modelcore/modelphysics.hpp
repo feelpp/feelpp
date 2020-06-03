@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <feel/feelmodels/modelmodels.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
 {
@@ -67,6 +68,9 @@ class MaterialPropertyDescription : public std::tuple<std::string,std::vector<st
 };
 
 template <uint16_type Dim>
+class ModelPhysics;
+
+template <uint16_type Dim>
 class ModelPhysic
 {
 public :
@@ -79,7 +83,7 @@ public :
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
-    static std::shared_ptr<ModelPhysic<Dim>> New( std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
 
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
@@ -127,7 +131,7 @@ class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
-    ModelPhysicFluid( std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
 
@@ -142,7 +146,7 @@ class ModelPhysicSolid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
-    ModelPhysicSolid( std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicSolid( ModelPhysicSolid const& ) = default;
     ModelPhysicSolid( ModelPhysicSolid && ) = default;
 
@@ -161,7 +165,7 @@ private :
 };
 
 template <uint16_type Dim>
-class ModelPhysics
+class ModelPhysics : virtual public ModelBase
 {
 public :
     using material_property_description_type = MaterialPropertyDescription;
@@ -172,7 +176,8 @@ public :
     using subphysic_description_type = std::map<std::string,std::string>;
 
     //ModelPhysics() = default;
-    explicit ModelPhysics( std::string const& type ) : M_physicType( type ) {}
+    explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
+    ModelPhysics( std::string const& type, ModelBase const& mbase ) : ModelBase(mbase), M_physicType( type ) {}
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
 

@@ -42,7 +42,7 @@ namespace Feel
 namespace FeelModels
 {
 
-class ModelAlgebraic : public ModelBase
+class ModelAlgebraic : virtual public ModelBase
 {
 public :
     typedef ModelBase super_type;
