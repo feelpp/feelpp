@@ -12,24 +12,55 @@ class Filter:
         self.stateDim = stateDim
         self.obsDim = obsDim
 
-        self.stateEstimate = zeros(stateDim)
-        self.stateForecast = zeros(stateDim)
-        self.obsEstimate = zeros(obsDim)
-        self.obsForecast = zeros(obsDim,1+2*stateDim)
+        self.__stateEstimate = zeros(stateDim)
+        self.__stateForecast = zeros(stateDim)
+        self.__obsEstimate = zeros(obsDim)
+        self.__obsForecast = zeros(obsDim,1+2*stateDim)
         
-        self.stateCov = zeros([stateDim,stateDim])
-        self.obsCov = zeros([obsDim,obsDim])
-        self.crossCov = zeros([stateDim,obsDim])
-        self.sigmaHk = defect*np.eye(obsDim)
-        self.gain = zeros([stateDim,obsDim])
+        self.__stateCov = zeros([stateDim,stateDim])
+        self.__obsCov = zeros([obsDim,obsDim])
+        self.__crossCov = zeros([stateDim,obsDim])
+        self.__sigmaHk = defect*np.eye(obsDim)
+        self.__gain = zeros([stateDim,obsDim])
         
-        self.sigmaScheme = defect*np.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
-        self.sigmaPoints = zeros([stateDim,2*stateDim+1])
-        self.sigmaSigns = np.diag( np.concatenate( ( np.zeros(1), np.ones(stateDim), -np.ones(stateDim) ) ) )
+        self.__sigmaScheme = defect*np.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
+        self.__sigmaPoints = zeros([stateDim,2*stateDim+1])
+        self.__sigmaSigns = np.diag( np.concatenate( ( np.zeros(1), np.ones(stateDim), -np.ones(stateDim) ) ) )
         
-        self.weights = np.ones(2*stateDim+1)*1/6
-        self.weights[0] = 1-stateDim/3
+        self.__weights = np.ones(2*stateDim+1)*1/6
+        self.__weights[0] = 1-stateDim/3
+        
+    def setSigmaHk(self, M): # M is a numpy obsDim*obsDim matrix
+        self.__sigmaHk = M
 
+    def setSigmaPoints(self):
+        self.__sigmaScheme = self.__sigmaSigns @ sqrtm( 3*self.__stateCov )
+        self.__sigmaPoints = self.__selfEstimate * np.ones(self.stateDim) + self.__sigmaScheme        
+
+    def getSigmaHk(self):
+        return self.__sigmaHk
+        
+    def getSigmaPoints(self):
+        return self.__sigmaPoints
+
+    def getStateEstimate(self):
+        return self.__stateEstimate
+
+    def getStateForecast(self):
+        return self.__stateForecast
+
+    def getObsEstimate(self):
+        return self.__obsEstimate
+
+    def getObsForecast(self):
+        return self.__obsForecast
+
+    def getGain(self):
+        return self.__gain
+
+    def getWeights(self):
+        return self.__weights
+        
     def transformSet(self,pointSet): # pointSet is a numpy matrix representing points as columns ; to be parallelized
         for i in range(1, pointSet.shape[2]):
             pointSet[:,i] = self.transform(pointSet[:,i])
@@ -40,28 +71,21 @@ class Filter:
             pointSet[:,i] = self.observe(pointSet[:,i])
         return pointSet
         
-    def setSigmaHk(self, M): # M is a numpy obsDim*obsDim matrix
-        self.sigmaHk = M
-
-    def setSigmaPoints(self):
-        self.sigmaScheme = self.sigmaSigns @ sqrtm( 3*self.stateCov )
-        self.sigmaPoints = self.stateEstimate * np.ones(self.stateDim) + self.sigmaScheme
-        
     def step(self, stateEstimate, measurement):
         self.setSigmaPoints()
-        self.sigmaPoints = self.transformSet(self.sigmaPoints)
-        self.obsForecast = self.observeSet(self.sigmaPoints)
+        self.__sigmaPoints = self.transformSet(self.__sigmaPoints)
+        self.__obsForecast = self.observeSet(self.__sigmaPoints)
         
-        self.stateForecast = self.sigmaPoints @ transpose(self.weights)
+        self.__stateForecast = self.__sigmaPoints @ transpose(self.__weights)
 #        self.XF = self.stateMean
-        self.stateCov = (self.weights*(self.sigmaPoints-self.stateForecast)) @ transpose(self.sigmaPoints-self.stateForecast)
-        self.obsEstimate = self.obsForecast @ transpose(self.weights)
-        self.obsCov = (self.weights*(self.obsForecast-self.obsEstimate)) @ transpose(self.obsForecast-self.obsEstimate) + self.sigmaHk
-        self.crossCov = (self.weights*(self.sigmaPoints-self.stateEstimate)) @ transpose(self.obsForecast-self.obsEstimate)
+        self.__stateCov = (self.__weights*(self.__sigmaPoints-self.__stateForecast)) @ transpose(self.__sigmaPoints-self.__stateForecast)
+        self.__obsEstimate = self.__obsForecast @ transpose(self.__weights)
+        self.__obsCov = (self.__weights*(self.__obsForecast-self.__obsEstimate)) @ transpose(self.__obsForecast-self.__obsEstimate) + self.__sigmaHk
+        self.__crossCov = (self.__weights*(self.__sigmaPoints-self.__selfEstimate)) @ transpose(self.__obsForecast-self.__obsEstimate)
 
-        self.gain = self.crossCov * inverse(self.obsCov)
+        self.__gain = self.__crossCov * inverse(self.__obsCov)
 
-        self.stateEstimate += self.gain @ ( self.obsCurrent - self.obsEstimate )
+        self.__selfEstimate += self.__gain @ ( self.obsCurrent - self.__obsEstimate )
         
     def filter( self, measurement, maxiter = 1000, verbose = False, mode = "dynamic"):
         if mode == "dynamic":
@@ -71,9 +95,9 @@ class Filter:
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
                 if verbose:
-                    print("    sigma-points : ",self.sigmaPoints[0])
+                    print("    sigma-points : ",self.__sigmaPoints[0])
                     print("    uncertainty matrix : ",self.P)
-                    print("    Kalman gain : ",self.gain)
+                    print("    Kalman gain : ",self.__gain)
                     print("    last state estimate : ",self.stateMean)
                     print("    associated predicted measure : ",self.obsMean," ; real measure : ",self.signal[i])
                     print("    relative measure error : ",np.abs(self.obsMean-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
@@ -91,9 +115,9 @@ class Filter:
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
                 if verbose:
-                    print("    sigma-points : ",self.sigmaPoints[0])
+                    print("    sigma-points : ",self.__sigmaPoints[0])
                     print("    uncertainty matrix : ",self.P)
-                    print("    Kalman gain : ",self.gain)
+                    print("    Kalman gain : ",self.__gain)
                     print("    last state estimate : ",self.stateMean)
                     print("    associated predicted measure : ",self.obsMean," ; real measure : ",self.signal)
                     print("    relative measure error : ",np.abs(self.obsMean-self.signal)/self.signal," ; tolerance : ",self.tol)
