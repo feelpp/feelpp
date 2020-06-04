@@ -203,7 +203,8 @@ macro( genLibSolidMechanics )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsothers_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanics1dreduced_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatejacobian_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdateresidual_inst.cpp
       )
@@ -211,7 +212,8 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicscreate_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsothers_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear_inst.cpp
-      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanics1dreduced_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )

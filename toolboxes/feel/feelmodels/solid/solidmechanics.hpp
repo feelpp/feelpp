@@ -54,7 +54,7 @@
 
 #include <feel/feelmodels/modelvf/solidmecfirstpiolakirchhoff.hpp>
 
-#include <feel/feelmodels/solid/solidmechanicsaxisymmetric1d.hpp>
+#include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
 
 namespace Feel
 {
@@ -237,37 +237,9 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
 
-    using solid_axisymmetric1d_type = SolidMechanicsAxisymmetric1d<Simplex<1,1/*nOrderGeo*/,nDim>,basis_u_type>;
-    using solid_axisymmetric1d_ptrtype = std::shared_ptr<solid_axisymmetric1d_type>;
+    using solid_1dreduced_type = SolidMechanics1dReduced<Simplex<1,nOrderGeo,nRealDim>,basis_u_type>;
+    using solid_1dreduced_ptrtype = std::shared_ptr<solid_1dreduced_type>;
 
-    // mesh
-    typedef Simplex<1,1/*nOrderGeo*/,nDim> convex_1dreduced_type;
-    typedef Mesh<convex_1dreduced_type> mesh_1dreduced_type;
-    typedef std::shared_ptr<mesh_1dreduced_type> mesh_1dreduced_ptrtype;
-    //___________________________________________________________________________________//
-    // basis
-    //typedef bases<Lagrange<nOrder, Scalar,Continuous,PointSetFekete> > basis_1dreduced_type;
-    typedef bases<Lagrange<nOrder, Vectorial,Continuous,PointSetFekete> > basis_vect_1dreduced_type;
-    //___________________________________________________________________________________//
-    // function space
-    typedef FunctionSpace<mesh_1dreduced_type, basis_vect_1dreduced_type> space_vect_1dreduced_type;
-    typedef std::shared_ptr<space_vect_1dreduced_type> space_vect_1dreduced_ptrtype;
-    typedef typename space_vect_1dreduced_type::element_type element_vect_1dreduced_type;
-    typedef std::shared_ptr<element_vect_1dreduced_type> element_vect_1dreduced_ptrtype;
-
-    typedef typename space_vect_1dreduced_type::component_functionspace_type space_1dreduced_type;
-    typedef typename space_vect_1dreduced_type::component_functionspace_ptrtype space_1dreduced_ptrtype;
-    typedef typename space_1dreduced_type::element_type element_1dreduced_type;
-    typedef std::shared_ptr<element_1dreduced_type> element_1dreduced_ptrtype;
-    //___________________________________________________________________________________//
-    // time step newmark
-    typedef Newmark<space_1dreduced_type>  newmark_1dreduced_type;
-    typedef std::shared_ptr<newmark_1dreduced_type> newmark_1dreduced_ptrtype;
-    //___________________________________________________________________________________//
-    // exporter
-    typedef Exporter<mesh_1dreduced_type,mesh_1dreduced_type::nOrder> exporter_1dreduced_type;
-    typedef std::shared_ptr<exporter_1dreduced_type> exporter_1dreduced_ptrtype;
-    //___________________________________________________________________________________//
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -276,12 +248,9 @@ public:
     //___________________________________________________________________________________//
 
     typedef faces_reference_wrapper_t<mesh_type> range_face_type;
-    typedef OperatorInterpolation<space_vect_1dreduced_type, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
+    typedef OperatorInterpolation<typename solid_1dreduced_type::space_displacement_type/* space_vect_1dreduced_type*/, space_displacement_type, range_face_type> op_interpolation1dTo2d_disp_type;
     typedef std::shared_ptr<op_interpolation1dTo2d_disp_type> op_interpolation1dTo2d_disp_ptrtype;
 
-    typedef elements_reference_wrapper_t<mesh_1dreduced_type> range_elt1d_reduced_type;
-    typedef OperatorInterpolation<space_stress_scal_type, space_1dreduced_type ,range_elt1d_reduced_type> op_interpolation2dTo1d_normalstress_type;
-    typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 
     //___________________________________________________________________________________//
 
@@ -315,21 +284,14 @@ public:
 
 private :
 
-    void loadConfigMeshFile(std::string const& geofilename) { CHECK( false ) << "not allow"; }
-    void loadConfigMeshFile1dReduced(std::string const& geofilename) { CHECK( false ) << "not allow"; }
     void loadParameterFromOptionsVm();
-
+    void initMaterialProperties();
     void initMesh();
     void initFunctionSpaces();
-    void initMaterialProperties();
-
     void initBoundaryConditions();
 
-
-    void initMesh1dReduced();
-    void initFunctionSpaces1dReduced();
     void createExporters();
-    void createExporters1dReduced();
+
 
     void createAdditionalFunctionSpacesNormalStress();
     //    void createAdditionalFunctionSpacesStressTensor();
@@ -345,11 +307,11 @@ public :
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
 
-    bool hasSolidEquationAxisymmetric1d() const { return M_solidAxisymmetric1d.use_count() > 0; }
-    bool hasSolidEquationStandard() const { return !this->hasSolidEquationAxisymmetric1d(); } // TOOD
+    bool hasSolidEquation1dReduced() const { return M_solid1dReduced.use_count() > 0; }
+    bool hasSolidEquationStandard() const { return !this->hasSolidEquation1dReduced(); } // TOOD
 
     bool isStandardModel() const { return this->hasSolidEquationStandard(); } // TODO DEPRECATED
-    bool is1dReducedModel() const { return this->hasSolidEquationAxisymmetric1d(); }
+    bool is1dReducedModel() const { return this->hasSolidEquation1dReduced(); }
 
     bool hasDisplacementPressureFormulation() const
         {
@@ -390,33 +352,31 @@ public :
 
     std::string const& timeStepping() const { return M_timeStepping; }
 
+#if 0
     std::shared_ptr<TSBase> timeStepBase()
     {
-        if ( M_timeStepping == "Newmark" )
+        if ( this->hasSolidEquationStandard() )
         {
-            if (this->hasSolidEquationStandard())
+            if ( M_timeStepping == "Newmark" )
                 return this->timeStepNewmark();
-            else// if (this->is1dReducedModel())
-                return this->timeStepNewmark1dReduced();
+            else
+                return this->timeStepBdfDisplacement();
         }
-        else
-        {
-            return this->timeStepBdfDisplacement();
-        }
+        else// if (this->hasSolidEquation1dReduced())
+            return M_solid1dReduced->timeStepBase();
     }
+#endif
     std::shared_ptr<TSBase> timeStepBase() const
     {
-        if ( M_timeStepping == "Newmark" )
+        if ( this->hasSolidEquationStandard() )
         {
-            if (this->hasSolidEquationStandard())
+            if ( M_timeStepping == "Newmark" )
                 return this->timeStepNewmark();
-            else// if (this->is1dReducedModel())
-                return this->timeStepNewmark1dReduced();
+            else
+                return this->timeStepBdfDisplacement();
         }
-        else
-        {
-            return this->timeStepBdfDisplacement();
-        }
+        else// if (this->hasSolidEquation1dReduced())
+            return M_solid1dReduced->timeStepBase();
     }
     void initTimeStep();
     void startTimeStep();
@@ -550,15 +510,6 @@ public :
     element_stress_tensor_ptrtype const& fieldStressTensorPtr() const { return M_fieldStressTensor; }
     element_stress_tensor_type const& fieldStressTensor() const { return *M_fieldStressTensor; }
 
-    // // princial stresses
-    // std::vector<element_stress_scal_ptrtype> const& fieldsPrincipalStresses() const { return M_fieldsPrincipalStresses; }
-    // element_stress_scal_ptrtype const& fieldPrincipalStressesPtr(int k) const { CHECK( k < M_fieldsPrincipalStresses.size() ) << "invalid index"; return M_fieldsPrincipalStresses[k]; }
-    // element_stress_scal_type const& fieldPrincipalStresses(int k) const { return *this->fieldPrincipalStressesPtr(k); }
-    // // Von Mises and Tresca Criterions
-    // element_stress_scal_ptrtype const& fieldVonMisesCriterionsPtr() const { return M_fieldVonMisesCriterions; }
-    // element_stress_scal_ptrtype const& fieldTrescaCriterionsPtr() const { return M_fieldTrescaCriterions; }
-    // element_stress_scal_type const& fieldVonMisesCriterions() const { return *M_fieldVonMisesCriterions; }
-    // element_stress_scal_type const& fieldTrescaCriterions() const { return *M_fieldTrescaCriterions; }
 
     // fields defined in json
     std::map<std::string,element_displacement_scalar_ptrtype> const& fieldsUserScalar() const { return M_fieldsUserScalar; }
@@ -669,7 +620,6 @@ public :
     backend_ptrtype const& backend() const { return M_backend; }
 
     BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
-    graph_ptrtype buildMatrixGraph() const override;
     int nBlockMatrixGraph() const;
     BlocksBaseVector<double> blockVectorSolution() { return M_blockVectorSolution; }
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
@@ -684,41 +634,10 @@ public :
     sparse_matrix_ptrtype const& massMatrixLumped() const { return M_massMatrixLumped; }
     vector_ptrtype const& vecDiagMassMatrixLumped() const { return M_vecDiagMassMatrixLumped; }
 
-    //-----------------------------------------------------------------------------------//
-    // 1d reduced model
-    //-----------------------------------------------------------------------------------//
-
-    void setMesh1dReduce( mesh_1dreduced_ptrtype const& mesh ) { M_mesh_1dReduced = mesh; }
-
-    //mesh_1dreduced_ptrtype mesh1dReduced() { return M_mesh_1dReduced; }
-    mesh_1dreduced_ptrtype const& mesh1dReduced() const { return M_mesh_1dReduced; }
-    space_1dreduced_ptrtype functionSpace1dReduced() { return M_Xh_1dReduced; }
-    space_1dreduced_ptrtype const& functionSpace1dReduced() const { return M_Xh_1dReduced; }
-
-    element_1dreduced_type & fieldDisplacementScal1dReduced() { return *M_disp_1dReduced; }
-    element_1dreduced_type const & fieldDisplacementScal1dReduced() const { return *M_disp_1dReduced; }
-    element_1dreduced_ptrtype fieldDisplacementScal1dReducedPtr() const { return M_disp_1dReduced; }
-    element_vect_1dreduced_type & fieldDisplacementVect1dReduced() { return *M_disp_vect_1dReduced; }
-    element_vect_1dreduced_type const & fieldDisplacementVect1dReduced() const { return *M_disp_vect_1dReduced; }
-    element_vect_1dreduced_ptrtype const & fieldDisplacementVect1dReducedPtr() const { return M_disp_vect_1dReduced; }
-
-    element_1dreduced_type & fieldVelocityScal1dReduced() { return *M_velocity_1dReduced; }
-    element_1dreduced_type const& fieldVelocityScal1dReduced() const { return *M_velocity_1dReduced; }
-    element_vect_1dreduced_type & fieldVelocityVect1dReduced() { return *M_velocity_vect_1dReduced; }
-    element_vect_1dreduced_type const& fieldVelocityVect1dReduced() const { return *M_velocity_vect_1dReduced; }
-    element_vect_1dreduced_ptrtype const& fieldVelocityVect1dReducedPtr() const { return M_velocity_vect_1dReduced; }
-
-    newmark_1dreduced_ptrtype & timeStepNewmark1dReduced() { return M_newmark_displ_1dReduced; }
-    newmark_1dreduced_ptrtype const& timeStepNewmark1dReduced() const { return M_newmark_displ_1dReduced; }
-
-    backend_ptrtype const& backend1dReduced() const { return M_backend_1dReduced; }
-    model_algebraic_factory_ptrtype algebraicFactory1dReduced() const { return M_algebraicFactory_1dReduced; }
-    BlocksBaseGraphCSR buildBlockMatrixGraph1dReduced() const;
-
-    double thickness1dReduced() const { return M_thickness_1dReduced; }
-    double radius1dReduced() const { return M_radius_1dReduced; }
 
     //-----------------------------------------------------------------------------------//
+
+    solid_1dreduced_ptrtype solid1dReduced() const { return M_solid1dReduced; }
 
     void TransfertDisp1dTo2d(std::string __rangename);
     void TransfertStress2dTo1d(std::string __rangename);
@@ -745,14 +664,14 @@ public :
 
     void updatePreStress() { *U_displ_struct_prestress=*M_fieldDisplacement; }
 
-
+#if 0 // TODO
     //usefull for 1d reduced model
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
 
     element_vect_1dreduced_ptrtype
     extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const;
-
+#endif
     //-----------------------------------------------------------------------------------//
     // post processing computation
     //-----------------------------------------------------------------------------------//
@@ -786,9 +705,6 @@ public :
     template <typename ModelContextType>
     void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
-private :
-    void updateLinearGeneralizedString( DataUpdateLinear & data ) const;
-    //void updateLinearElasticityAxiSym( DataUpdateLinear & data ) const {};
 
 private :
 
@@ -840,10 +756,6 @@ private :
     // stress tensor space
     space_stress_tensor_ptrtype M_XhStressTensor;
     element_stress_tensor_ptrtype M_fieldStressTensor;
-    // princial stresses
-    //std::vector<element_stress_scal_ptrtype> M_fieldsPrincipalStresses;
-    // Von Mises and Tresca Criterions
-    //element_stress_scal_ptrtype M_fieldVonMisesCriterions, M_fieldTrescaCriterions;
     // time discretisation
     newmark_displacement_ptrtype M_timeStepNewmark;
     savets_pressure_ptrtype M_savetsPressure;
@@ -852,7 +764,6 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
-    std::map<std::string,std::set<size_type> > M_dofsWithValueImposed;
 
     bool M_useMassMatrixLumped;
     sparse_matrix_ptrtype M_massMatrixLumped;
@@ -884,32 +795,7 @@ private :
     //-------------------------------------------//
     // 1d_reduced model
     //-------------------------------------------//
-    solid_axisymmetric1d_ptrtype M_solidAxisymmetric1d;
-
-    // mesh
-    mesh_1dreduced_ptrtype M_mesh_1dReduced;
-    // function space
-    space_1dreduced_ptrtype M_Xh_1dReduced;
-    //element disp,vel,acc
-    element_1dreduced_ptrtype M_disp_1dReduced;
-    element_1dreduced_ptrtype M_velocity_1dReduced;
-    element_1dreduced_ptrtype M_acceleration_1dReduced;
-    // vectorial 1d_reduced space
-    space_vect_1dreduced_ptrtype M_Xh_vect_1dReduced;
-    element_vect_1dreduced_ptrtype M_disp_vect_1dReduced;
-    element_vect_1dreduced_ptrtype M_velocity_vect_1dReduced;
-    // time discretisation
-    newmark_1dreduced_ptrtype M_newmark_displ_1dReduced;
-    // backend
-    backend_ptrtype M_backend_1dReduced;
-    // algebraic solver ( assembly+solver )
-    model_algebraic_factory_ptrtype M_algebraicFactory_1dReduced;
-    BlocksBaseVector<double> M_blockVectorSolution_1dReduced;
-    // exporter
-    exporter_1dreduced_ptrtype M_exporter_1dReduced;
-
-    // axi-sym properties
-    double M_thickness_1dReduced, M_radius_1dReduced;
+    solid_1dreduced_ptrtype M_solid1dReduced;
 
     //-------------------------------------------//
     // others

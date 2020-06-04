@@ -55,9 +55,9 @@ public :
     typedef Aitken<space_disp_type> aitken_type;
     typedef std::shared_ptr<aitken_type> aitken_ptrtype;
 
-    typedef typename solid_type::space_1dreduced_type space_disp_1dreduced_type;
-    typedef typename solid_type::element_1dreduced_type element_disp_1dreduced_type;
-    typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_component_type space_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_type element_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_ptrtype element_disp_1dreduced_ptrtype;
     typedef Aitken<space_disp_1dreduced_type> aitken_1dreduced_type;
     typedef std::shared_ptr<aitken_1dreduced_type> aitken_1dreduced_ptrtype;
 
@@ -117,9 +117,9 @@ public :
     typedef typename solid_type::element_displacement_type element_disp_type;
     typedef typename solid_type::element_displacement_ptrtype element_disp_ptrtype;
 
-    typedef typename solid_type::space_1dreduced_type space_disp_1dreduced_type;
-    typedef typename solid_type::element_1dreduced_type element_disp_1dreduced_type;
-    typedef typename solid_type::element_1dreduced_ptrtype element_disp_1dreduced_ptrtype;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_component_type space_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_type element_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_ptrtype element_disp_1dreduced_ptrtype;
 
     FixPointConvergenceFSI( solid_ptrtype solid );
     FixPointConvergenceFSI( self_type const & M ) = default;

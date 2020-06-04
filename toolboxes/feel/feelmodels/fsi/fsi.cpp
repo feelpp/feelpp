@@ -40,6 +40,7 @@ template< class FluidType, class SolidType >
 FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& worldComm, std::string const& rootRepository )
     :
     super_type( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
+    ModelBase( prefix, worldComm, "", self_type::expandStringFromSpec( rootRepository ) ),
     M_meshSize( doption(_name="hsize",_prefix=this->prefix()) ),
     M_tagFileNameMeshGenerated( soption(_name="mesh-save.tag",_prefix=this->prefix()) ),
     M_fsiCouplingType( soption(_name="coupling-type",_prefix=this->prefix()) ),
@@ -195,7 +196,7 @@ namespace detail
 {
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, mpl::bool_<false> /**/ )
 {
     auto submeshStruct = createSubmesh( _mesh=FM->meshALE()->referenceMesh(), _range=markedfaces( FM->meshALE()->referenceMesh(), FM->markersFSI() ) );
@@ -234,23 +235,23 @@ createMeshStruct1dFromFluidMesh2d( typename FluidType::self_ptrtype const& FM, m
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<2> /**/ )
 {
-  static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::mesh_1dreduced_type::nOrder;
+    static const bool hasSameOrderGeo = FluidType::mesh_type::nOrder == SolidType::solid_1dreduced_type::mesh_type::nOrder;
   return createMeshStruct1dFromFluidMesh2d<FluidType,SolidType>(FM, mpl::bool_<hasSameOrderGeo>() );
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM, mpl::int_<3> /**/ )
 {
     CHECK( false ) << "not possible";
-    return typename SolidType::mesh_1dreduced_ptrtype();
+    return typename SolidType::solid_1dreduced_type::mesh_ptrtype();
 }
 
 template <typename FluidType,typename SolidType>
-typename SolidType::mesh_1dreduced_ptrtype
+typename SolidType::solid_1dreduced_type::mesh_ptrtype
 createMeshStruct1dFromFluidMesh( typename FluidType::self_ptrtype const& FM )
 {
   return createMeshStruct1dFromFluidMesh<FluidType,SolidType>( FM, mpl::int_<SolidType::nDim>() );
@@ -306,9 +307,9 @@ FSI<FluidType,SolidType>::init()
 
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
-                M_solidModel->setMesh1dReduce(submeshStruct);
+                M_solidModel->solid1dReduced()->setMesh(submeshStruct);
             else
-                M_solidModel->setMesh1dReduce(submeshStruct);
+                M_solidModel->solid1dReduced()->setMesh(submeshStruct);
 
         }
         else
@@ -375,7 +376,7 @@ FSI<FluidType,SolidType>::init()
     else if ( M_solidModel->is1dReducedModel() )
     {
         // normal stress as source term
-        M_spaceNormalStressFromFluid_solid1dReduced = space_solid1dreduced_normalstressfromfluid_vect_type::New(_mesh=M_solidModel->mesh1dReduced() );
+        M_spaceNormalStressFromFluid_solid1dReduced = space_solid1dreduced_normalstressfromfluid_vect_type::New(_mesh=M_solidModel->solid1dReduced()->mesh() );
         M_fieldNormalStressFromFluidScalar_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_scal_type( M_spaceNormalStressFromFluid_solid1dReduced->compSpace() ) );
         M_fieldNormalStressFromFluidVectorial_solid1dReduced.reset( new element_solid1dreduced_normalstressfromfluid_vect_type( M_spaceNormalStressFromFluid_solid1dReduced ) );
     }
@@ -469,8 +470,8 @@ FSI<FluidType,SolidType>::init()
     }
     else if ( M_solidModel->is1dReducedModel() )
     {
-        M_solidModel->algebraicFactory1dReduced()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid1dReduced,
-                                                                                         std::ref( *this ), std::placeholders::_1 ) );
+        M_solidModel->algebraicFactory()->addFunctionLinearAssembly( std::bind( &self_type::updateLinearPDE_Solid1dReduced,
+                                                                                std::ref( *this ), std::placeholders::_1 ) );
     }
     this->log("FSI","init","finish");
 }
