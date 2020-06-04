@@ -24,8 +24,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (this->hasSolidEquationStandard()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
+#if 0
     else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
-
+#endif
     std::string ResartMode;
     if (this->doRestart()) ResartMode = "Yes";
     else ResartMode = "No";
@@ -55,12 +56,14 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     }
     else
     {
+#if 0
         if ( M_exporter_1dReduced )
         {
             hovisuMode = "OFF";
             myexporterType = M_exporter_1dReduced->type();
             myexporterFreq = M_exporter_1dReduced->freq();
         }
+#endif
     }
 
     std::string doExport_str;
@@ -106,8 +109,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
         {
             if (this->hasSolidEquationStandard())
                 *_ostr << " ( gamma="<< this->timeStepNewmark()->gamma() <<", beta="<< this->timeStepNewmark()->beta() << " )";
+#if 0
             else// if (this->is1dReducedModel())
                 *_ostr << " ( gamma="<< this->timeStepNewmark1dReduced()->gamma() <<", beta="<< this->timeStepNewmark1dReduced()->beta() << " )";
+#endif
         }
         else if ( M_timeStepping == "BDF" )
         {
@@ -206,9 +211,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         if ( M_timeSteppingUseMixedFormulation )
             ++nBlock;
     }
-    if ( this->hasSolidEquationAxisymmetric1d() )
+    if ( this->hasSolidEquation1dReduced() )
     {
-        ++nBlock;
+        nBlock += M_solid1dReduced->blockVectorSolution().size();
     }
     return nBlock;
 }
@@ -222,32 +227,41 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
     int indexBlock=0;
-    myblockGraph(indexBlock,indexBlock) =stencil(_test=this->functionSpace(),_trial=this->functionSpace(),
-                                                 //_pattern_block=this->blockPattern(),
-                                                 _diag_is_nonzero=(nBlock==1),
-                                                 _close=(nBlock==1) )->graph();
-    ++indexBlock;
 
-    if ( this->hasDisplacementPressureFormulation() )
+    if ( this->hasSolidEquationStandard() )
     {
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhPressure,_trial=M_XhDisplacement,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhPressure,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhPressure,_trial=M_XhPressure,
-                                                      _diag_is_nonzero=false,_close=false)->graph();
+        myblockGraph(indexBlock,indexBlock) =stencil(_test=this->functionSpace(),_trial=this->functionSpace(),
+                                                     //_pattern_block=this->blockPattern(),
+                                                     _diag_is_nonzero=(nBlock==1),
+                                                     _close=(nBlock==1) )->graph();
         ++indexBlock;
+
+        if ( this->hasDisplacementPressureFormulation() )
+        {
+            myblockGraph(indexBlock,0) = stencil(_test=M_XhPressure,_trial=M_XhDisplacement,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhPressure,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhPressure,_trial=M_XhPressure,
+                                                          _diag_is_nonzero=false,_close=false)->graph();
+            ++indexBlock;
+        }
+
+        if ( M_timeSteppingUseMixedFormulation )
+        {
+            myblockGraph(indexBlock,0) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                                 _diag_is_nonzero=false,_close=false)->graph();
+            myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
+                                                          _diag_is_nonzero=false,_close=false)->graph();
+            ++indexBlock;
+        }
     }
 
-    if ( M_timeSteppingUseMixedFormulation )
+    if ( this->hasSolidEquation1dReduced() )
     {
-        myblockGraph(indexBlock,0) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
-                                             _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(indexBlock,indexBlock) = stencil(_test=M_XhDisplacement,_trial=M_XhDisplacement,
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-        ++indexBlock;
+        CHECK( false ) << "TODO";
     }
 
     myblockGraph.close();
@@ -257,43 +271,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-BlocksBaseGraphCSR
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph1dReduced() const
-{
-    this->log("SolidMechanics","buildBlockMatrixGraph1dReduced", "start" );
-    int nBlock = this->nBlockMatrixGraph();
-
-    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
-    int indexBlock=0;
-    myblockGraph(indexBlock,indexBlock) =stencil(_test=this->functionSpace1dReduced(),_trial=this->functionSpace1dReduced(),
-                                                 _diag_is_nonzero=(nBlock==1),
-                                                 _close=(nBlock==1) )->graph();
-    ++indexBlock;
-
-    myblockGraph.close();
-
-    this->log("SolidMechanics","buildBlockMatrixGraph1dReduced", "finish" );
-    return myblockGraph;
-}
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::graph_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
-{
-    BlocksBaseGraphCSR blockGraph;
-    if ( this->hasSolidEquationStandard() )
-        blockGraph = this->buildBlockMatrixGraph();
-    else if (this->hasSolidEquationAxisymmetric1d())
-        blockGraph = buildBlockMatrixGraph1dReduced();
-
-    if (  blockGraph.nRow() == 0 || blockGraph.nCol() == 0 )
-        return graph_ptrtype();
-    else if ( blockGraph.nRow() == 1 && blockGraph.nCol() == 1 )
-        return blockGraph(0,0);
-    else
-        return graph_ptrtype( new graph_type( blockGraph ) );
-}
 //---------------------------------------------------------------------------------------------------//
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -806,14 +783,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         if ( this->hasDisplacementPressureFormulation() && !this->doRestart() )
             M_savetsPressure->start( *M_fieldPressure );
     }
-    else // if (this->is1dReducedModel())
-    {
-        // start time step
-        if ( !this->doRestart() )
-            M_newmark_displ_1dReduced->start(*M_disp_1dReduced);
-        // up current time
-        this->updateTime( M_newmark_displ_1dReduced->time() );
-    }
+
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->startTimeStep();
 
     this->updateParameterValues();
 
@@ -851,16 +823,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         if ( this->hasDisplacementPressureFormulation() )
             M_savetsPressure->next(*M_fieldPressure);
     }
-    else// if (this->is1dReducedModel())
-    {
-        if ( M_timeStepping == "Newmark" )
-        {
-            // next time step
-            M_newmark_displ_1dReduced->next( *M_disp_1dReduced );
-            // up current time
-            this->updateTime( M_newmark_displ_1dReduced->time() );
-        }
-    }
+
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->updateTimeStep();
 
     this->updateParameterValues();
 
@@ -893,9 +858,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             M_algebraicFactory->evaluateResidual(  M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, infos, false );
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
         }
-    }
-    else // if ( this->is1dReducedModel() )
-    {
     }
 }
 
@@ -932,20 +894,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::predictorDispl()
             *M_fieldVelocity = M_timeStepBdfVelocity->poly();
         }
     }
-    else
-    {
-        //this->fieldDisplacementScal1dReduced().add(M_newmark_displ_1dReduced->timeStep(),M_newmark_displ_1dReduced->currentVelocity() );
-        double dt = M_newmark_displ_1dReduced->timeStep();
-        if (M_newmark_displ_1dReduced->iteration() == 1)
-        {
-            this->fieldDisplacementScal1dReduced().add( dt, M_newmark_displ_1dReduced->previousVelocity(0) );
-        }
-        else
-        {
-            this->fieldDisplacementScal1dReduced().add( (3./2.)*dt, M_newmark_displ_1dReduced->previousVelocity(0) );
-            this->fieldDisplacementScal1dReduced().add( (-1./2.)*dt, M_newmark_displ_1dReduced->previousVelocity(1) );
-        }
-    }
+
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->predictorDispl();
 
     this->log("SolidMechanics","predictorDispl", "finish" );
 }
@@ -1031,9 +982,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocity()
     {
         M_timeStepNewmark->updateFromDisp(*M_fieldDisplacement);
     }
-    else// if (this->is1dReducedModel())
+
+    if ( this->hasSolidEquation1dReduced() )
     {
-        M_newmark_displ_1dReduced->updateFromDisp(*M_disp_1dReduced);
+        M_solid1dReduced->updateVelocity();
     }
 
     this->log("SolidMechanics","updateVelocityAndAcceleration", "finish" );
@@ -1364,56 +1316,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVolumeVariation( elements_reference_w
 
 //---------------------------------------------------------------------------------------------------//
 
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceDispFrom1dDisp()
-{
-    M_disp_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
-                               _expr=idv(M_disp_1dReduced)*oneY() );
-}
-
-//---------------------------------------------------------------------------------------------------//
-#if 0
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceScalStressDispFromVectStress()
-{
-    M_stress_1dReduced->on( _range=elements(M_mesh_1dReduced),
-                            _expr=-inner(idv(M_stress_vect_1dReduced),oneY()) );
-}
-#endif
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInterfaceVelocityFrom1dVelocity()
-{
-    M_velocity_vect_1dReduced->on( _range=elements(M_mesh_1dReduced),
-                                   _expr=idv(M_newmark_displ_1dReduced->currentVelocity())*oneY() );
-}
-
-//---------------------------------------------------------------------------------------------------//
-
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::element_vect_1dreduced_ptrtype
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::extendVelocity1dReducedVectorial( element_1dreduced_type const& vel1d ) const
-{
-    auto res = M_Xh_vect_1dReduced->elementPtr( vf::idv(vel1d)*vf::oneY() );
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------//
-#if 0
-SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateSubMeshDispFSIFromPrevious()
-{
-    auto subfsimesh = M_fieldSubMeshDispFSI->mesh();
-    M_fieldSubMeshDispFSI->on(_range=elements(subfsimesh),
-                              _expr=idv(this->timeStepNewmark()->previousUnknown()) );
-    M_meshMoverTrace.apply( subfsimesh,*M_fieldSubMeshDispFSI );
-}
-#endif
 
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

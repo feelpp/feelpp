@@ -22,3 +22,21 @@
 #define SOLIDMECHANICS_CLASS_INSTANTIATION \
     template class SOLIDMECHANICS_CLASS_TYPE ;  \
     /**/
+
+
+
+
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisDisplacementType> \
+        /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE \
+    SolidMechanics1dReduced<ConvexType,BasisDisplacementType> \
+        /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TYPE \
+    SolidMechanics1dReduced< Simplex<1,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
+        Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_INSTANTIATION \
+    template class SOLIDMECHANICS_1DREDUCED_CLASS_TYPE ;  \
+    /**/

@@ -18,9 +18,9 @@ template <typename ModelContextType>
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    if ( this->hasSolidEquationAxisymmetric1d() )
+    if ( this->hasSolidEquation1dReduced() )
     {
-        this->updateLinearGeneralizedString( data );
+        M_solid1dReduced->updateLinearPDE( data, mctx );
         return;
     }
 
@@ -416,22 +416,9 @@ SolidMechanics<ConvexType,BasisDisplacementType>::updateLinearPDEDofElimination(
             }
         }
     }
-    else if ( this->hasSolidEquationAxisymmetric1d() )
-    {
-        if ( this->M_bcDirichlet.empty() ) return;
 
-        auto Xh = this->functionSpace1dReduced();
-        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                   _rowstart=this->rowStartInMatrix(),
-                                   _colstart=this->colStartInMatrix() );
-        auto const& u = this->fieldDisplacementScal1dReduced();
-        //WARNING : fixed at zero
-        for( auto const& d : this->M_bcDirichlet )
-            bilinearForm +=
-                on( _range=markedfaces(Xh->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
-                    _element=u, _rhs=F, _expr=cst(0.),
-                    _prefix=this->prefix() );
-    }
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->updateLinearPDEDofElimination( data, mctx );
 }
 
 
