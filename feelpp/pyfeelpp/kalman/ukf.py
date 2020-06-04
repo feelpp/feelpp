@@ -6,107 +6,97 @@ from base import *
 
 class Filter:
 
-# CLASS INSTANCE SETTING IS MANDATORY : INITIALIZATION WITH STATE VECTOR DIMENSION
+    def __init__(self, dynamics, observe, defect, stateDim, obsDim):
+        self.observe = observation
+        self.transform = dynamics
+        self.stateDim = stateDim
+        self.obsDim = obsDim
 
-    def set(self, dim, obs, w0, dt, dynamics, observe, defect, initialguess, tol = 0.01):
-        self.dim = dim
-        self.obs = obs
-        self.Time = 0
-        self.dt = dt
-        self.tol = tol
+        self.stateEstimate = zeros(stateDim)
+        self.stateForecast = zeros(stateDim)
+        self.obsEstimate = zeros(obsDim)
+        self.obsForecast = zeros(obsDim,1+2*stateDim)
         
-        self.Mx = initialguess               # mean value of x : state estimation
-        self.Covx = zeros([dim,dim])
-        self.My = ones(obs)                # mean value of y : signal estimation
-        self.Covy = zeros([obs,obs])
-        self.XCov = zeros([dim,obs])       # x y covariance
-        self.XF = zeros(dim)               # current forecast
-
-        self.Kalman = zeros([dim,obs])
-        self.P = defect*np.eye(dim)
-
-        self.SigPts = zeros([dim,2*dim+1])
-        self.PreMeas = zeros([obs,2*dim+1])
+        self.stateCov = zeros([stateDim,stateDim])
+        self.obsCov = zeros([obsDim,obsDim])
+        self.crossCov = zeros([stateDim,obsDim])
+        self.sigmaHk = defect*np.eye(obsDim)
+        self.gain = zeros([stateDim,obsDim])
         
-        self.weights = ones(2*dim+1)*(1-w0)/(2*dim)
-        self.weights[0] = w0
-        self.covydefect = defect
+        self.sigmaScheme = defect*np.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
+        self.sigmaPoints = zeros([stateDim,2*stateDim+1])
+        self.sigmaSigns = np.diag( np.concatenate( ( np.zeros(1), np.ones(stateDim), -np.ones(stateDim) ) ) )
         
-        self.dynamics = dynamics
-        self.observe = observe
+        self.weights = np.ones(2*stateDim+1)*1/6
+        self.weights[0] = 1-stateDim/3
 
-    def readsignal(self, signal):
-        self.signal = signal
-        self.X = zeros([self.dim,max(signal.shape)-1]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
-        self.forecast = zeros([self.dim,max(signal.shape)]) # KEEPS TRACK OF THE FORECAST
-    
-    def step(self, mode):
-        # COMPUTE SIGMA-POINTS
-        self.P = sqrtm(self.P*self.dim/(1-self.weights[0]))
-        self.SigPts[:,0] = self.Mx
-        for i in range(1,self.dim+1):
-            self.SigPts[:,i] = self.Mx + self.P[:,i-1]
-        for i in range(self.dim+1,2*self.dim+1):
-            self.SigPts[:,i] = self.Mx - self.P[:,i-self.dim-1]
+    def transformSet(self,pointSet): # pointSet is a numpy matrix representing points as columns ; to be parallelized
+        for i in range(1, pointSet.shape[2]):
+            pointSet[:,i] = self.transform(pointSet[:,i])
+        return pointSet
 
-            # TIME UPDATE
-        for i in range(0,2*self.dim+1):
-            self.SigPts[:,i] = self.dynamics(self.SigPts[:,i],self.Time,self.dt)
-            self.PreMeas[:,i] = self.observe(self.SigPts[:,i])
-
-        self.Time += 1
-
-        self.Mx = self.SigPts @ transpose(self.weights)
-        self.XF = self.Mx
-        self.Covx = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.SigPts-self.Mx)
-        self.My = self.PreMeas @ transpose(self.weights)
-        self.Covy = (self.weights*(self.PreMeas-self.My)) @ transpose(self.PreMeas-self.My) + self.covydefect*np.eye(self.obs)
-        self.XCov = (self.weights*(self.SigPts-self.Mx)) @ transpose(self.PreMeas-self.My)
-
-        # ANALYSIS STEP
-        self.Kalman = self.XCov * inverse(self.Covy)
+    def observeSet(self,pointSet):
+        for i in range(1, pointSet.shape[2]):
+            pointSet[:,i] = self.observe(pointSet[:,i])
+        return pointSet
         
-        if mode == "dynamic":
-            self.Mx += self.Kalman @ (self.signal[self.Time]-self.My)
-        elif mode == "static":
-            self.Mx += self.Kalman @ (self.signal-self.My)
-            
-        self.P = self.Covx - self.Kalman @ np.transpose(self.XCov)
+    def setSigmaHk(self, M): # M is a numpy obsDim*obsDim matrix
+        self.sigmaHk = M
+
+    def setSigmaPoints(self):
+        self.sigmaScheme = self.sigmaSigns @ sqrtm( 3*self.stateCov )
+        self.sigmaPoints = self.stateEstimate * np.ones(self.stateDim) + self.sigmaScheme
+        
+    def step(self, stateEstimate, measurement):
+        self.setSigmaPoints()
+        self.sigmaPoints = self.transformSet(self.sigmaPoints)
+        self.obsForecast = self.observeSet(self.sigmaPoints)
+        
+        self.stateForecast = self.sigmaPoints @ transpose(self.weights)
+#        self.XF = self.stateMean
+        self.stateCov = (self.weights*(self.sigmaPoints-self.stateForecast)) @ transpose(self.sigmaPoints-self.stateForecast)
+        self.obsEstimate = self.obsForecast @ transpose(self.weights)
+        self.obsCov = (self.weights*(self.obsForecast-self.obsEstimate)) @ transpose(self.obsForecast-self.obsEstimate) + self.sigmaHk
+        self.crossCov = (self.weights*(self.sigmaPoints-self.stateEstimate)) @ transpose(self.obsForecast-self.obsEstimate)
+
+        self.gain = self.crossCov * inverse(self.obsCov)
+
+        self.stateEstimate += self.gain @ ( self.obsCurrent - self.obsEstimate )
         
     def filter( self, measurement, maxiter = 1000, verbose = False, mode = "dynamic"):
         if mode == "dynamic":
             self.readsignal(self, measurement)
             for i in range(max(self.signal.shape)-1):
-                self.X[:,i] = np.transpose(self.Mx)
+                self.X[:,i] = np.transpose(self.stateMean)
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
                 if verbose:
-                    print("    sigma-points : ",self.SigPts[0])
+                    print("    sigma-points : ",self.sigmaPoints[0])
                     print("    uncertainty matrix : ",self.P)
-                    print("    Kalman gain : ",self.Kalman)
-                    print("    last state estimate : ",self.Mx)
-                    print("    associated predicted measure : ",self.My," ; real measure : ",self.signal[i])
-                    print("    relative measure error : ",np.abs(self.My-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
-#                    if np.abs(self.My-self.signal[i])/self.signal[i] < self.tol or i > maxiter:
-#                        return self.Mx
+                    print("    Kalman gain : ",self.gain)
+                    print("    last state estimate : ",self.stateMean)
+                    print("    associated predicted measure : ",self.obsMean," ; real measure : ",self.signal[i])
+                    print("    relative measure error : ",np.abs(self.obsMean-self.signal[i])/self.signal[i]," ; tolerance : ",self.tol)
+#                    if np.abs(self.obsMean-self.signal[i])/self.signal[i] < self.tol or i > maxiter:
+#                        return self.stateMean
                     
         elif mode == "static":
             i = 0   
             self.signal = measurement
-            self.X = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
-            self.forecast = zeros([self.dim,maxiter]) # KEEPS TRACK OF THE FORECAST
+            self.X = zeros([self.stateDim,maxiter]) # KEEPS TRACK OF THE STATES BEST ESTIMATE
+            self.forecast = zeros([self.stateDim,maxiter]) # KEEPS TRACK OF THE FORECAST
             
-            while np.abs(self.My-self.signal)/self.signal > self.tol and i < maxiter:
-                self.X[:,i] = np.transpose(self.Mx)
+            while np.abs(self.obsMean-self.signal)/self.signal > self.tol and i < maxiter:
+                self.X[:,i] = np.transpose(self.stateMean)
                 self.forecast[:,i] = np.transpose(self.XF)
                 self.step(self, mode)
                 if verbose:
-                    print("    sigma-points : ",self.SigPts[0])
+                    print("    sigma-points : ",self.sigmaPoints[0])
                     print("    uncertainty matrix : ",self.P)
-                    print("    Kalman gain : ",self.Kalman)
-                    print("    last state estimate : ",self.Mx)
-                    print("    associated predicted measure : ",self.My," ; real measure : ",self.signal)
-                    print("    relative measure error : ",np.abs(self.My-self.signal)/self.signal," ; tolerance : ",self.tol)
+                    print("    Kalman gain : ",self.gain)
+                    print("    last state estimate : ",self.stateMean)
+                    print("    associated predicted measure : ",self.obsMean," ; real measure : ",self.signal)
+                    print("    relative measure error : ",np.abs(self.obsMean-self.signal)/self.signal," ; tolerance : ",self.tol)
                 i += 1
                     
-            return self.Mx
+            return self.stateMean
