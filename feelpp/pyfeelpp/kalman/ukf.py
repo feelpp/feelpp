@@ -1,120 +1,121 @@
-import numpy as np
-from numpy import mean, sum, dot, linalg, zeros, ones, transpose
+import numpy
+import scipy.linalg
 from numpy.linalg import inv, cholesky
-from scipy.linalg import sqrtm
 from base import *
 
 class Filter:
 
+
+
     def __init__( self, dynamics, observe, defect, stateDim, obsDim ):
-        self.observe = observation
+        self.observe = observe
         self.transform = dynamics
         
         self.stateDim = stateDim
         self.obsDim = obsDim
 
-        self.__stateEstimateList = []
-        self.__obsEstimateList = []
+        self._stateEstimateList = []
+        self._obsEstimateList = []
+                
+        self._stateEstimate = numpy.zeros(stateDim)
+        self._stateForecast = numpy.zeros(stateDim)
+        self._obsEstimate = numpy.zeros(obsDim)
+
+        self._obsForecast = numpy.zeros((obsDim,1+2*stateDim))
+        self._stateCov = numpy.eye(stateDim)
+        self._obsCov = numpy.eye(obsDim)
+        self._crossCov = numpy.ones((stateDim,obsDim))
+        self._sigmaHk = defect*numpy.eye(obsDim)
+        self._gain = numpy.ones((stateDim,obsDim))
         
-        self.__stateEstimate = zeros(stateDim)
-        self.__stateForecast = zeros(stateDim)
-        self.__obsEstimate = zeros(obsDim)
-        self.__obsForecast = zeros(obsDim,1+2*stateDim)
+        self._sigmaScheme = defect*numpy.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
+        self._sigmaPoints = numpy.zeros((stateDim,2*stateDim+1))
+        self._sigmaSigns = numpy.concatenate((numpy.zeros((stateDim,1)),numpy.eye(stateDim),-numpy.eye(stateDim)), axis=1) #numpy.diag( numpy.concatenate( ( numpy.zeros(1), numpy.ones(stateDim), -numpy.ones(stateDim) ) ) )
         
-        self.__stateCov = zeros([stateDim,stateDim])
-        self.__obsCov = zeros([obsDim,obsDim])
-        self.__crossCov = zeros([stateDim,obsDim])
-        self.__sigmaHk = defect*np.eye(obsDim)
-        self.__gain = zeros([stateDim,obsDim])
-        
-        self.__sigmaScheme = defect*np.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
-        self.__sigmaPoints = zeros([stateDim,2*stateDim+1])
-        self.__sigmaSigns = np.diag( np.concatenate( ( np.zeros(1), np.ones(stateDim), -np.ones(stateDim) ) ) )
-        
-        self.__weights = np.ones(2*stateDim+1)*1/6
-        self.__weights[0] = 1-stateDim/3
+        self._weights = numpy.ones(2*stateDim+1)*1/6
+        self._weights[0] = 1-stateDim/3
         
     def setSigmaHk( self, M ): # M is a numpy obsDim*obsDim matrix
-        self.__sigmaHk = M
+        self._sigmaHk = M
 
     def setSigmaPoints( self ):
-        self.__sigmaScheme = self.__sigmaSigns @ sqrtm( 3*self.__stateCov )
-        self.__sigmaPoints = self.__stateEstimate * np.ones((1,self.stateDim)) + self.__sigmaScheme        
+        self._sigmaScheme = numpy.transpose( scipy.linalg.sqrtm( 3*self._stateCov ) ) @ self._sigmaSigns  #self._sigmaSigns @ scipy.linalg.sqrtm( 3*self._stateCov )
+        self._sigmaPoints = self._stateEstimate * numpy.ones((1,self.stateDim)) + self._sigmaScheme        
 
-    def __setStateEstimate( self, value ):
-        self.__stateEstimate = value
+    def _setStateEstimate( self, value ):
+        self._stateEstimate = value
         
     def getSigmaHk( self ):
-        return self.__sigmaHk
+        return self._sigmaHk
         
     def getSigmaPoints( self ):
-        return self.__sigmaPoints
+        return self._sigmaPoints
 
     def getStateEstimate( self ):
-        return self.__stateEstimate
+        return self._stateEstimate
 
     def getStateForecast( self ):
-        return self.__stateForecast
+        return self._stateForecast
 
     def getObsEstimate( self ): # this is the weighted mean of H(A(sigma-points))
-        return self.__obsEstimate
+        return self._obsEstimate
 
     def getObsForecast( self ): # this is the set of H(A(sigma-points))
-        return self.__obsForecast
+        return self._obsForecast
 
     def getGain( self ):
-        return self.__gain
+        return self._gain
 
     def getWeights( self ):
-        return self.__weights
+        return self._weights
 
     def getStateEstimateList( self ):
-        return self.__stateEstimateList
+        return self._stateEstimateList
 
     def getObsEstimateList( self ):
-        return self.__obsEstimateList
+        return self._obsEstimateList
 
     def getNiter( self ):
         return len(self.getStateEstimateList())
         
     def transformSet( self, pointSet ): # pointSet is a numpy matrix representing points as columns ; to be parallelized
-        for i in range(1, pointSet.shape[2]):
+        for i in range(pointSet.shape[1]):
             pointSet[:,i] = self.transform(pointSet[:,i])
         return pointSet
 
     def observeSet( self, pointSet ): # pointSet is a numpy matrix representing points as columns ; to be parallelized
-        for i in range(1, pointSet.shape[2]):
+        for i in range(pointSet.shape[1]):
             pointSet[:,i] = self.observe( pointSet[:,i] )
         return pointSet
 
     def saveStep( self ):
-        self.__stateEstimateList.append( self.getStateEstimate() )
-        self.__obsEstimateList.append( self.getObsEstimate() )
+        self._stateEstimateList.append( self.getStateEstimate() )
+        self._obsEstimateList.append( self.getObsEstimate() )
 
     def step( self, measurement ):
         
         self.setSigmaPoints()
-        self.__sigmaPoints = self.transformSet(self.__sigmaPoints)
-        self.__obsForecast = self.observeSet(self.__sigmaPoints)
+        self._sigmaPoints = self.transformSet(self._sigmaPoints)
+        self._obsForecast = self.observeSet(self._sigmaPoints)
         
-        self.__stateForecast = self.__sigmaPoints @ transpose(self.__weights)
-        self.__stateCov = (self.__weights*(self.__sigmaPoints-self.__stateForecast)) @ transpose(self.__sigmaPoints-self.__stateForecast)
-        self.__obsEstimate = self.__obsForecast @ transpose(self.__weights)
-        self.__obsCov = (self.__weights*(self.__obsForecast-self.__obsEstimate)) @ transpose(self.__obsForecast-self.__obsEstimate) + self.__sigmaHk
-        self.__crossCov = (self.__weights*(self.__sigmaPoints-self.__selfEstimate)) @ transpose(self.__obsForecast-self.__obsEstimate)
+        self._stateForecast = self._sigmaPoints @ numpy.transpose(self._weights)
+        self._stateCov = (self._weights*(self._sigmaPoints-self._stateForecast)) @ numpy.transpose(self._sigmaPoints-self._stateForecast)
+        self._obsEstimate = self._obsForecast @ numpy.transpose(self._weights)
+        self._obsCov = (self._weights*(self._obsForecast-self._obsEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate) + self._sigmaHk
+        self._crossCov = (self._weights*(self._sigmaPoints-self._stateEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate)
 
-        self.__gain = self.__crossCov * inverse(self.__obsCov)
+        self._gain = self._crossCov * inverse(self._obsCov)
 
-        self.__selfEstimate += self.__gain @ ( measurement - self.__obsEstimate )
+        self._stateEstimate += self._gain @ ( measurement - self._obsEstimate )
 
         self.saveStep()
         
     def filter( self, signal, initialGuess = "default", verbose = False ): # signal is a list of numpy arrays
         
         if initialGuess == "default":
-            self.__setStateEstimate( np.zeros((self.stateDim,1)) )
+            self._setStateEstimate( numpy.zeros((self.stateDim,1)) )
         else:
-            self.__setStateEstimate( initialGuess )
+            self._setStateEstimate( initialGuess )
             
         N = len(signal)
         for k in range(N):
@@ -126,4 +127,4 @@ class Filter:
                 print("    Kalman gain : ",self.getGain() )
                 print("    last state estimate : ",self.getStateEstimate() )
                 print("    associated predicted measure : ", self.getObsEstimate(), " ; real measure : ", signal[:,i] )
-                print("    predicted/obsereved measure gap : ",np.abs( self.getObsEstimate() - signal[:,i] ) )
+                print("    predicted/obsereved measure gap : ",numpy.abs( self.getObsEstimate() - signal[:,i] ) )
