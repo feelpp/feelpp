@@ -108,7 +108,7 @@ int main( int argc, char** argv)
     else
         crb->offline();
     // crb->loadDBFromId( soption("online.dbid"), crb::load::all );
-    // model->initOutputsPoints();
+    model->initOutputsPoints();
 
     int N = crb->dimension();
     int timeSteps = 1;
@@ -236,8 +236,8 @@ int main( int argc, char** argv)
         {
             Feel::cout << "solving for mu = " << mu.toString() << std::endl;
             VTFE = model->solve(mu);
-            // auto evV = evaluateFromContext( _context=ctxFeV, _expr=idv(VFE));
-            // auto evT = evaluateFromContext( _context=ctxFeT, _expr=idv(TFE));
+            auto evV = evaluateFromContext( _context=ctxFeV, _expr=idv(VFE));
+            auto evT = evaluateFromContext( _context=ctxFeT, _expr=idv(TFE));
             if( ioption("crb.output-index") != 0 )
                 outFE = model->output(ioption("crb.output-index"), mu, VTFE);
             auto normV = normL2( rangeU, idv(VFE) );
@@ -251,18 +251,18 @@ int main( int argc, char** argv)
                 errs[1][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
                 errsRel[0][n][i] = errs[0][n][i]/normV;
                 errsRel[1][n][i] = errs[1][n][i]/normT;
-                // auto evRbV = model->computeOutputsPointsElectro(uN);
-                // auto evRbT = model->computeOutputsPointsThermo(uN);
-                // for( int j = 0; j < evRbV.size(); ++j )
-                // {
-                //     errs[j+2][n][i] = std::abs(evV(j)-evRbV(j));
-                //     errsRel[j+2][n][i] = errs[j+2][n][i]/std::abs(evV(j));
-                // }
-                // for( int j = 0; j < evRbT.size(); ++j )
-                // {
-                //     errs[j+2+evRbV.size()][n][i] = std::abs(evT(j)-evRbT(j));
-                //     errsRel[j+2+evRbV.size()][n][i] = errs[j+2+evRbV.size()][n][i]/std::abs(evT(j));
-                // }
+                auto evRbV = model->computeOutputsPointsElectro(uN);
+                auto evRbT = model->computeOutputsPointsThermo(uN);
+                for( int j = 0; j < evRbV.size(); ++j )
+                {
+                    errs[j+2][n][i] = std::abs(evV(j)-evRbV(j));
+                    errsRel[j+2][n][i] = errs[j+2][n][i]/std::abs(evV(j));
+                }
+                for( int j = 0; j < evRbT.size(); ++j )
+                {
+                    errs[j+2+evRbV.size()][n][i] = std::abs(evT(j)-evRbT(j));
+                    errsRel[j+2+evRbV.size()][n][i] = errs[j+2+evRbV.size()][n][i]/std::abs(evT(j));
+                }
                 if( ioption("crb.output-index") != 0 )
                 {
                     outRB = outputs[0];

@@ -224,6 +224,9 @@ ThermoElectricNL::computeBetaQm( vectorN_type const& urb, parameter_type const& 
 
 void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const& betaGrad, std::vector<vectorN_type> const& betaK, std::vector<vectorN_type> const& betaSigma )
 {
+    // Feel::cout << "betaGrad:\n" << betaGrad << std::endl;
+    // Feel::cout << "betaK:\n" << betaK << std::endl;
+    // Feel::cout << "betaSigma:\n" << betaSigma << std::endl;
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -248,8 +251,6 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-            // else
-            //     e.setParameterValues( { param.first, param.second.value() } );
         M_betaAqm[i][0] = e.evaluate()(0,0);
         ++i;
     }
@@ -280,8 +281,6 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
         for( auto const& param : M_modelProps->parameters() )
             if( e.expression().hasSymbol(param.first) )
                 e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-            // else
-            //     e.setParameterValues( { param.first, param.second.value() } );
         M_betaFqm[0][i][0] = e.evaluate()(0,0);
         ++i;
     }

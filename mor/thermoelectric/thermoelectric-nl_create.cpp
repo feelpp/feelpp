@@ -212,7 +212,6 @@ void ThermoElectricNL::resize()
 ThermoElectricNL::functionspace_type::mesh_support_vector_type
 ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 {
-    Feel::cout << "init model" << std::endl;
     auto elecDomain = markedelements(mesh, M_materials.markersWithPhysic("electric"));
     auto therDomain = markedelements(mesh, M_materials.markersWithPhysic("thermic"));
     auto suppElec = std::make_shared<MeshSupport<mesh_type>>(mesh,elecDomain);
@@ -222,6 +221,7 @@ ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 
 void ThermoElectricNL::initModel()
 {
+    Feel::cout << "init model" << std::endl;
     this->addModelFile("property-file", M_propertyPath);
     M_modelProps = std::make_shared<prop_type>(M_propertyPath);
 
@@ -394,8 +394,8 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
 {
     Feel::cout << "setup specificity model" << std::endl;
     auto const& ptreeEim = ptree.get_child( "eim" );
-    this->scalarContinuousEim().clear();
-    this->scalarDiscontinuousEim().clear();
+    this->clearScalarContinuousEim();
+    this->clearScalarDiscontinuousEim();
     auto T0 = cst(293.0);
     auto L = cst_ref(M_mu.parameterNamed("L"));
     int i = 0;
@@ -462,6 +462,9 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
     M_eimGradSize = eim_grad->mMax();
     Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
 
+    Feel::cout << "eim size = " << this->scalarContinuousEim().size() << std::endl;
+
+
     this->resize();
 
     auto outputs = M_modelProps->outputs().outputsOfType("point");
@@ -507,6 +510,7 @@ void ThermoElectricNL::setupSpecificityModel( boost::property_tree::ptree const&
 
 void ThermoElectricNL::initOutputsPoints()
 {
+    Feel::cout << "init output points" << std::endl;
     auto outputs = M_modelProps->outputs().outputsOfType("point");
     M_ctxElectro = this->rBFunctionSpace()->template rbFunctionSpace<0>()->context();
     M_ctxThermo = this->rBFunctionSpace()->template rbFunctionSpace<1>()->context();

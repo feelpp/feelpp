@@ -714,6 +714,16 @@ public :
         return M_funs_d;
     }
 
+    void clearScalarContinuousEim ()
+    {
+        M_funs.clear();
+    }
+
+    void clearScalarDiscontinuousEim ()
+    {
+        M_funs_d.clear();
+    }
+
     void addDeim( deim_ptrtype const& deim )
     {
         M_deims.push_back( deim );
