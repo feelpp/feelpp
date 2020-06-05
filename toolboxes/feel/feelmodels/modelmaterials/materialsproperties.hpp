@@ -36,7 +36,7 @@ template<class MeshType>
 class MaterialProperties : public std::map<std::string, MaterialProperty>
 {
 public :
-    MaterialProperties( std::string const& name ) : M_materialName( name ) {}
+    explicit MaterialProperties( std::string const& name ) : M_materialName( name ) {}
     MaterialProperties( MaterialProperties const& ) = default;
     MaterialProperties( MaterialProperties && ) = default;
 
@@ -65,7 +65,6 @@ public :
             for ( auto & [propName,matProp] : *this )
                 matProp.setParameterValues( mp );
         }
-
 private :
     std::string M_materialName;
 };
@@ -262,6 +261,25 @@ public :
                     auto expr = expr_mult<2>( rhoExpr,CpExpr,"",mesh->worldComm(),M_exprRepository );
                     M_rhoHeatCapacityByMaterial[matName].setExpr( expr );
                 }
+
+
+                // rename symbols in current material : <propName> -> materials_<matName>_<propName>
+                std::string prefix_symbol = "materials_";
+                std::map<std::string,std::string> old2newSymbols;
+                for ( auto const& [propName,matProp] : matProperties )
+                {
+                    auto itFindPropDesc = M_materialPropertyDescription.find( propName );
+                    if ( itFindPropDesc == M_materialPropertyDescription.end() )
+                        continue;
+
+                    std::string const& symbolProp = std::get<0>( itFindPropDesc->second );
+                    std::set<std::string> allSymbNames;
+                    matProp.updateSymbolNames( symbolProp, allSymbNames );
+                    for ( std::string const& _symbName : allSymbNames )
+                        old2newSymbols[_symbName] = (boost::format("%1%%2%_%3%")%prefix_symbol %matName %_symbName).str();
+                }
+                for ( auto & [propName,matProp] : matProperties )
+                    matProp.renameSymbols( old2newSymbols );
             }
 
             M_exprSelectorByMeshElementMapping = std::make_shared<ExprSelectorByMeshElementMapping<typename mesh_type::index_type>>();

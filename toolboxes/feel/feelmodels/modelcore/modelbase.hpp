@@ -53,7 +53,7 @@ namespace FeelModels
 struct ModelBaseCommandLineOptions
 {
     ModelBaseCommandLineOptions() = default;
-    ModelBaseCommandLineOptions( po::options_description const& _options );
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
     ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
 
