@@ -362,15 +362,19 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSymb
         }
         else if ( funcData.isVectorial2() )
         {
-            if ( nDim != 2 ) continue;
-            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial2() );
+            if constexpr ( nDim == 2 )
+            {
+                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+                M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial2() );
+            }
         }
         else if ( funcData.isVectorial3() )
         {
-            if ( nDim != 3 ) continue;
-            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial3() );
+            if constexpr ( nDim == 3 )
+            {
+                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+                M_fieldsUserVectorial[funcName]->on(_range=this->rangeMeshElements(),_expr=funcData.expressionVectorial3() );
+            }
         }
     }
 }

@@ -619,29 +619,28 @@
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>, mpl::bool_<true>  ) const noexcept \
             {                                                           \
-                return M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
+                if constexpr ( l_type::shape::is_scalar && !r_type::shape::is_scalar ) \
+                     return M_left.evalijq(i, j, 0, 0, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
+                else if constexpr ( !l_type::shape::is_scalar && r_type::shape::is_scalar ) \
+                    return M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, 0, 0, q); \
+                else                                                    \
+                    return M_left.evalijq(i, j, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evalijq(i,j, c1, c2, q); \
             }                                                           \
-                              \
+                                                                        \
                 value_type                                              \
                 evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
             {                                                           \
-                return evalijq( i, j, c1, c2, q, mpl::bool_<is_zero::value>() ); \
+                if constexpr ( is_zero::value )                         \
+                                 return value_type( 0 );                \
+                else                                                    \
+                {                                                       \
+                    value_type res( value_type( 0 ) );                  \
+                    for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
+                        res += M_left.evalijq(i, j, c1, ii, q ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q ); \
+                    return res;                                         \
+                }                                                       \
             }                                                           \
-                              \
-                value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<true>  ) const noexcept \
-            {                                                           \
-                return value_type( 0 );                                 \
-            }                                                           \
-                              \
-                value_type                                              \
-                evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::bool_<false>  ) const noexcept \
-            {                                                           \
-                value_type res( value_type( 0 ) );                      \
-                for(uint16_type ii = 0; ii < l_type::shape::N; ++ii ) \
-                    res += M_left.evalijq(i, j, c1, ii, q ) VF_OP_SYMBOL( O ) M_right.evalijq(i, j, ii, c2, q ); \
-                return res;                                             \
-            }                                                           \
+                                                                        \
             template<int PatternContext> \
                 value_type                                              \
                 evalijq__( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<PatternContext>, mpl::int_<0>  ) const noexcept \
@@ -680,12 +679,16 @@
                 value_type                                              \
                     evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0>  ) const noexcept \
             {                                                           \
-                if ( is_zero::value )                                   \
+                if constexpr ( is_zero::value )                         \
                     return value_type( 0 );                             \
-                else if ( !is_zero::update_and_eval_left && is_zero::update_and_eval_right ) \
+                else if constexpr ( !is_zero::update_and_eval_left && is_zero::update_and_eval_right ) \
                     return M_right.evaliq(i, c1, c2, q);               \
-                else if ( is_zero::update_and_eval_left && !is_zero::update_and_eval_right ) \
+                else if constexpr ( is_zero::update_and_eval_left && !is_zero::update_and_eval_right ) \
                     return M_left.evaliq(i, c1, c2, q);                \
+                else if constexpr ( l_type::shape::is_scalar && !r_type::shape::is_scalar ) \
+                    return  M_left.evaliq(i, 0, 0, q) VF_OP_SYMBOL( O ) M_right.evaliq(i, c1, c2, q); \
+                else if constexpr ( !l_type::shape::is_scalar && r_type::shape::is_scalar ) \
+                    return  M_left.evaliq(i, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evaliq(i, 0, 0, q); \
                 else                                                    \
                     return  M_left.evaliq(i, c1, c2, q) VF_OP_SYMBOL( O ) M_right.evaliq(i, c1, c2, q); \
             }                                                           \
@@ -693,7 +696,7 @@
                 value_type                                              \
                 evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1>  ) const noexcept \
             {                                                           \
-                if ( is_zero::value ) \
+                if constexpr ( is_zero::value )                         \
                     return value_type( 0 );                             \
                 else                                                    \
                     {                                                   \
@@ -712,7 +715,12 @@
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<0> ) const noexcept \
             {                                                           \
-                return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
+                if constexpr ( l_type::shape::is_scalar && !r_type::shape::is_scalar ) \
+                    return M_left.evalq( 0, 0, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
+                else if constexpr ( !l_type::shape::is_scalar && r_type::shape::is_scalar ) \
+                    return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( 0, 0, q ); \
+                else                                                    \
+                    return M_left.evalq( c1, c2, q ) VF_OP_SYMBOL( O ) M_right.evalq( c1, c2, q ); \
             }                                                           \
             value_type                                                  \
                 evalq( uint16_type c1, uint16_type c2, uint16_type q, mpl::int_<1> ) const noexcept \

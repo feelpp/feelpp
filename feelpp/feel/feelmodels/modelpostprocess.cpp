@@ -101,7 +101,7 @@ ModelPostprocessExports::setup( pt::ptree const& p )
                     }
                 }
 
-                if ( auto ptexpr = item.second.get_child_optional("expr") )
+                if ( item.second.get_child_optional("expr") )
                 {
                     ModelExpression modelexpr;
                     ModelMarkers markers;

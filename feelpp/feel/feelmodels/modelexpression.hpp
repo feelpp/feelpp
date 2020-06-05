@@ -51,7 +51,7 @@ public :
     using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >;
 
     ModelExpression() = default;
-    ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
+    explicit ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
     ModelExpression( ModelExpression const& ) = default;
     ModelExpression( ModelExpression && ) = default;
     ModelExpression& operator=( ModelExpression const& ) = default;
@@ -258,6 +258,19 @@ public :
                         });
     }
     void updateSymbolNames( std::string const& symbName, std::set<std::string> & outputSymbNames ) const { this->updateSymbolNames( std::set<std::string>({ symbName }), outputSymbNames ); }
+
+    //! rename symbols in symbolics expr with mapping \old2new
+    void renameSymbols( std::map<std::string,std::string> const& old2new )
+    {
+        hana::for_each( expr_shapes, [this,&old2new]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                this->expr<ni,nj>().expression().renameSymbols( old2new );
+                        });
+    }
+
 
     template<typename ExprT>
     constexpr auto
