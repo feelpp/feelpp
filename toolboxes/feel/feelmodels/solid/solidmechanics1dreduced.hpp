@@ -71,6 +71,11 @@ public :
     typedef std::shared_ptr<op_interpolation2dTo1d_normalstress_type> op_interpolation2dTo1d_normalstress_ptrtype;
 #endif
 
+    struct FieldTag
+    {
+        static auto displacement( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+
     SolidMechanics1dReduced( std::string const& prefix,
                              std::string const& keyword,// = "cfpde",
                              worldcomm_ptr_t const& worldComm,// = Environment::worldCommPtr(),
@@ -88,10 +93,9 @@ public :
     mesh_ptrtype const& mesh() const { return M_mesh; }
     void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
-
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
-
+    BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
 
     space_displacement_component_ptrtype const& functionSpace1dReduced() const { return M_spaceDisp; }
 
@@ -123,6 +127,9 @@ public :
     void updateTimeStep();
     std::shared_ptr<TSBase> timeStepBase() const { return M_timeStepNewmark; }
 
+    void updateParameterValues();
+    void setParameterValues( std::map<std::string,double> const& paramValues );
+
 
     void predictorDispl();
     void updateVelocity();
@@ -130,6 +137,43 @@ public :
     void updateInterfaceDispFrom1dDisp();
     void updateInterfaceVelocityFrom1dVelocity();
     element_displacement_ptrtype extendVelocity1dReducedVectorial( element_displacement_component_type const& vel1d ) const;
+
+
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            return this->modelFields( this->fieldDisplacementScal1dReducedPtr(), prefix );
+        }
+
+    template <typename DisplacementFieldType>
+    auto modelFields( DisplacementFieldType const& field_s, std::string const& prefix = "" ) const
+        {
+            auto mfield_disp = modelField<FieldCtx::ID,DisplacementFieldType>( FieldTag::displacement(this) );
+            mfield_disp.add( FieldTag::displacement(this), prefix,"displacement", field_s, "s", this->keyword() );
+            return Feel::FeelModels::modelFields( mfield_disp );
+        }
+
+
+    template <typename SymbExprType>
+    auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
+        {
+            //return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(), this->physicsAvailable(),se ),
+            //                     this->exprPostProcessExportsToolbox( se, prefix ) );
+            return this->materialsProperties()->exprPostProcessExports( this->mesh(), this->physicsAvailable(),se );
+        }
+
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
+
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& se )
+        {
+            this->exportResults( time, this->modelFields(), se, this->exprPostProcessExports( se ) );
+        }
+
 
     // assembly methods for linear system
     //void updateLinearPDE( DataUpdateLinear & data ) const override;
@@ -170,7 +214,13 @@ private :
     element_displacement_ptrtype M_fieldDisp_vect;
     element_displacement_ptrtype M_fieldVelocity_vect;
     // time discretisation
+    std::string M_timeStepping;
     newmark_ptrtype M_timeStepNewmark;
+
+    // boundary conditions
+    map_scalar_field<2> M_bcDirichlet;
+    map_scalar_field<2> M_volumicForcesProperties;
+
     // backend
     //backend_ptrtype M_backend;
     // algebraic solver ( assembly+solver )
@@ -184,50 +234,56 @@ private :
 
 };
 
+
+template< typename ConvexType, typename BasisDisplacementType>
+template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>
+void
+SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
+{
+    this->log("SolidMechanics1dReduced","exportResults", "start");
+    this->timerTool("PostProcessing").start();
+
+    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+
+    this->timerTool("PostProcessing").stop("exportResults");
+    if ( this->scalabilitySave() )
+    {
+        if ( !this->isStationary() )
+            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
+        this->timerTool("PostProcessing").save();
+    }
+    this->log("SolidMechanics1dReduced","exportResults", "finish");
+}
+
+
+
 template< typename ConvexType, typename BasisDisplacementType>
 template <typename ModelContextType>
 void
 SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-#if 0 // (SOLIDMECHANICS_DIM==2)  TODO VINCENT
-    this->log( "SolidMechanics","updateLinearGeneralizedString","start");
+    this->log( "SolidMechanics1dReduced","updateLinearPDE","start");
 
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool _buildCstPart = data.buildCstPart();
-
-
     bool BuildNonCstPart = !_buildCstPart;
     bool BuildCstPart = _buildCstPart;
 
     //auto mesh = M_mesh_1dReduced;
-    auto M_rangeMeshElements1dReduced = elements(M_mesh_1dReduced);
-    auto Xh1 = M_Xh_1dReduced;
-    auto u = Xh1->element(), v = Xh1->element();
+    auto Xh1 = M_spaceDisp;
+    //auto u = Xh1->element(), v = Xh1->element();
+    auto const& u = *M_fieldDisp;
+    auto const& v = u;
 
-    double epp=this->thickness1dReduced();//0.1;
+    auto const& se = mctx.symbolsExpr();
+
+    double epp = this->thickness1dReduced();//0.1;
     double k=2.5;
     double G=1e5;
     double gammav=0.01;
-
-    double E=this->mechanicalProperties()->cstYoungModulus();//M_youngmodulus;
-    double mu=this->mechanicalProperties()->cstCoeffPoisson();//M_coeffpoisson;
-    double R0=this->radius1dReduced();//0.5;
-    double rho=this->mechanicalProperties()->cstRho();
-    bool robinOutletCoef = 1./math::sqrt(k*G/rho);
+    double R0 = this->radius1dReduced();//0.5;
     //---------------------------------------------------------------------------------------//
-
-    //double rho_s=0.8;
-    //double alpha_f=M_genAlpha_alpha_f;//1./(1.+rho_s);
-    //double alpha_m=M_genAlpha_alpha_m;//(2.-rho_s)/(1.+rho_s);
-    //double alpha_vel = M_genAlpha_alpha_f;//0.5*(3-rho_s)/(1+rho_s);
-
-    //double gamma=0.5+alpha_m-alpha_f;
-    //double beta=0.25*(1+alpha_m-alpha_f)*(1+alpha_m-alpha_f);
-
-    auto deltaT =  M_newmark_displ_1dReduced->timeStep();
-    auto const& buzz1 = M_newmark_displ_1dReduced->previousUnknown();
-
     //---------------------------------------------------------------------------------------//
 
     auto rowStartInMatrix = this->rowStartInMatrix();
@@ -236,73 +292,96 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDE( Data
     auto bilinearForm1dreduced = form2( _test=Xh1,_trial=Xh1,_matrix=A,
                                         _rowstart=rowStartInMatrix,
                                         _colstart=colStartInMatrix );
-    auto linearForm1dreduced = form1( _test=Xh1, _vector=F,
+    auto linearFormDisplacement = form1( _test=Xh1, _vector=F,
                                       _rowstart=rowStartInVector );
 
     //---------------------------------------------------------------------------------------//
-    // acceleration term
-    if (!this->isStationary())
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if (BuildCstPart)
+        auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nRealDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            bilinearForm1dreduced +=
-                integrate( _range=M_rangeMeshElements1dReduced,
-                           _expr=this->timeStepNewmark1dReduced()->polySecondDerivCoefficient()*rho*epp*idt(u)*id(v) );
+            auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+
+            auto const& densityProp = this->materialsProperties()->density( matName );
+            auto densityExpr = expr( densityProp.expr(), se );
+
+            auto E = expr( matProperties.property( "Young-modulus" ).exprScalar(), se );
+            auto mu = expr( matProperties.property( "Poisson-ratio" ).exprScalar(), se );
+
+            // acceleration term
+            if (!this->isStationary())
+            {
+                if (BuildCstPart)
+                {
+                    bilinearForm1dreduced +=
+                        integrate( _range=range,
+                                   _expr=this->timeStepNewmark()->polySecondDerivCoefficient()*densityExpr*epp*idt(u)*id(v) );
+                }
+
+                if (BuildNonCstPart)
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   _expr=densityExpr*epp*idv(this->timeStepNewmark()->polyDeriv() )*id(v) );
+                }
+
+                // viscoealstic term
+                if (BuildCstPart)
+                {
+                    bilinearForm1dreduced +=
+                        integrate( _range=range,
+                                   _expr=this->timeStepNewmark()->polyFirstDerivCoefficient()*gammav*dxt(u)*dx(v) );
+                }
+                if (BuildNonCstPart)
+                {
+                    linearFormDisplacement +=
+                        integrate( _range=range,
+                                   _expr=gammav*dxv(this->timeStepNewmark()->polyFirstDeriv())*dx(v) );
+                }
+            }
+            //---------------------------------------------------------------------------------------//
+            // reaction term
+            if (BuildCstPart)
+            {
+                bilinearForm1dreduced +=
+                    integrate( _range=range,
+                               _expr=(E*epp/((1-mu*mu)*R0*R0))*idt(u)*id(v) );
+            }
+            //---------------------------------------------------------------------------------------//
+            // diffusion term
+            if (BuildCstPart)
+            {
+                bilinearForm1dreduced +=
+                    integrate( _range=range,
+                               _expr=k*G*epp*dxt(u)*dx(v) );
+            }
+
+            //---------------------------------------------------------------------------------------//
+            // source term
+            if (BuildNonCstPart)
+            {
+                // linearFormDisplacement +=
+                //     integrate( _range=M_rangeMeshElements1dReduced,
+                //                _expr=idv(*M_stress_1dReduced)*id(v) );
+                for( auto const& d : M_volumicForcesProperties )
+                {
+                    //std::cout << "apply
+                    auto rangeBodyForceUsed = markers(d).empty()? /*M_rangeMeshElements*/elements(this->mesh()) : markedelements(this->mesh(),markers(d));
+                    linearFormDisplacement +=
+                        integrate( _range=rangeBodyForceUsed,
+                                   _expr= expression(d,se)*id(v),
+                                   _geomap=this->geomap() );
+                }
+            }
         }
-
-        if (BuildNonCstPart)
-        {
-            linearForm1dreduced +=
-                integrate( _range=M_rangeMeshElements1dReduced,
-                           _expr=rho*epp*idv(M_newmark_displ_1dReduced->polyDeriv() )*id(v) );
-        }
     }
-    //---------------------------------------------------------------------------------------//
-    // reaction term
-    if (BuildCstPart)
-    {
-        bilinearForm1dreduced +=
-            integrate( _range=M_rangeMeshElements1dReduced,
-                       _expr=(E*epp/((1-mu*mu)*R0*R0))*idt(u)*id(v) );
-    }
-    //---------------------------------------------------------------------------------------//
-    // diffusion term
-    if (BuildCstPart)
-    {
-        bilinearForm1dreduced +=
-            integrate( _range=M_rangeMeshElements1dReduced,
-                       _expr=k*G*epp*dxt(u)*dx(v) );
-    }
-
-    //---------------------------------------------------------------------------------------//
-    // viscoealstic term
-    if (BuildCstPart)
-    {
-        bilinearForm1dreduced +=
-            integrate( _range=M_rangeMeshElements1dReduced,
-                       _expr=this->timeStepNewmark1dReduced()->polyFirstDerivCoefficient()*gammav*dxt(u)*dx(v) );
-    }
-    if (BuildNonCstPart)
-    {
-        linearForm1dreduced +=
-            integrate( _range=M_rangeMeshElements1dReduced,
-                       _expr=gammav*dxv(this->timeStepNewmark1dReduced()->polyFirstDeriv())*dx(v) );
-    }
-    //---------------------------------------------------------------------------------------//
-    // source term
-#if 0
-    if (BuildNonCstPart)
-    {
-        linearForm1dreduced +=
-            integrate( _range=M_rangeMeshElements1dReduced,
-                       _expr=idv(*M_stress_1dReduced)*id(v) );
-    }
-#endif
-
     //---------------------------------------------------------------------------------------//
 
-    this->log( "SolidMechanics","updateLinearGeneralizedString","finish");
-#endif
+    //this->log( "SolidMechanics","updateLinearGeneralizedString","finish");
+
+    this->log( "SolidMechanics1dReduced","updateLinearPDE","finish");
 
 }
 
@@ -311,6 +390,10 @@ template <typename ModelContextType>
 void
 SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
+    sparse_matrix_ptrtype& A = data.matrix();
+    vector_ptrtype& F = data.rhs();
+    auto const& se = mctx.symbolsExpr();
+
 #if 0
         if ( this->M_bcDirichlet.empty() ) return;
 
@@ -325,9 +408,20 @@ SolidMechanics1dReduced<ConvexType,BasisDisplacementType>::updateLinearPDEDofEli
                 on( _range=markedfaces(Xh->mesh(),M_bcDirichletMarkerManagement.markerDirichletBCByNameId( "elimination",name(d) ) ),
                     _element=u, _rhs=F, _expr=cst(0.),
                     _prefix=this->prefix() );
-    }
-
 #endif
+
+        auto Xh = M_spaceDisp;
+        auto const& u = *M_fieldDisp;
+        auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=this->colStartInMatrix() );
+
+        for( auto const& d : M_bcDirichlet )
+            bilinearForm +=
+                on( _range=markedfaces(this->mesh(),markers(d)),
+                    _element=u, _rhs=F, _expr=expression(d,se),
+                    _prefix=this->prefix() );
+
 }
 
 

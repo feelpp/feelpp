@@ -296,7 +296,9 @@ private :
     void createAdditionalFunctionSpacesNormalStress();
     //    void createAdditionalFunctionSpacesStressTensor();
 
+
 public :
+    void createsSolid1dReduced();
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"SolidMechanicsMesh.path"); }
 
@@ -398,7 +400,11 @@ public :
     template <typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr )
         {
-            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+            if ( this->hasSolidEquationStandard() )
+                this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+
+            if ( this->hasSolidEquation1dReduced() )
+                M_solid1dReduced->exportResults( time, symbolsExpr );
         }
 
     template <typename ModelFieldsType,typename SymbolsExpr>
@@ -408,27 +414,30 @@ public :
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
-            auto const& u = this->fieldDisplacement();
-            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
+            using _expr_firstPiolaKirchhof_type = std::decay_t<decltype(Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(this->fieldDisplacement(),M_fieldPressure,*std::shared_ptr<ModelPhysicSolid<nDim>>{}, this->materialsProperties()->materialProperties(""),se))>;
             using _expr_vonmises_type = std::decay_t<decltype( vonmises(_expr_firstPiolaKirchhof_type{}) )>;
             using _expr_princial_stress_type = std::decay_t<decltype( eig(_expr_firstPiolaKirchhof_type{}) )>;
             std::map<std::string,std::vector<std::tuple< _expr_vonmises_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVonMisses;
             std::map<std::string,std::vector<std::tuple< _expr_princial_stress_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprPrincipalStress;
-
-            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            if ( this->hasSolidEquationStandard() )
             {
-                auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
-                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                auto const& u = this->fieldDisplacement();
+
+                for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
                 {
-                    auto const& matProperties = this->materialsProperties()->materialProperties( matName );
-                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+                    auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nDim>>(physicData);
+                    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                    {
+                        auto const& matProperties = this->materialsProperties()->materialProperties( matName );
+                        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
 
-                    auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
-                    auto vonmisesExpr = vonmises( fpk );
-                    mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
+                        auto fpk = Feel::FeelModels::solidMecFirstPiolaKirchhoffTensor(u,M_fieldPressure,*physicSolidData,matProperties,se);
+                        auto vonmisesExpr = vonmises( fpk );
+                        mapExprVonMisses[prefixvm(prefix,"von-mises-criterions")].push_back( std::make_tuple( vonmisesExpr, range, "element" ) );
 
-                    auto principalStressExpr = eig( fpk );
-                    mapExprPrincipalStress[prefixvm(prefix,"princial-stress")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
+                        auto principalStressExpr = eig( fpk );
+                        mapExprPrincipalStress[prefixvm(prefix,"princial-stress")].push_back( std::make_tuple( principalStressExpr, range, "element" ) );
+                    }
                 }
             }
 
@@ -535,13 +544,17 @@ public :
 
     auto modelFields( vector_ptrtype sol, size_type startBlockSpaceIndex = 0, std::string const& prefix = "" ) const
         {
-            auto field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
+            std::shared_ptr<element_displacement_external_storage_type> field_d;
             std::shared_ptr<element_displacement_external_storage_type> field_v;
-            if ( M_timeSteppingUseMixedFormulation )
-                field_v = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "velocity" ) );
             std::shared_ptr<element_pressure_external_storage_type> field_p;
-            if ( this->hasDisplacementPressureFormulation() )
-                field_p = this->functionSpacePressure()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "pressure" ) );
+            if ( this->hasSolidEquationStandard() )
+            {
+                field_d = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "displacement" ) );
+                if ( M_timeSteppingUseMixedFormulation )
+                    field_v = this->functionSpaceDisplacement()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "velocity" ) );
+                if ( this->hasDisplacementPressureFormulation() )
+                    field_p = this->functionSpacePressure()->elementPtr( *sol, startBlockSpaceIndex + this->startSubBlockSpaceIndex( "pressure" ) );
+            }
             return this->modelFields( field_d, field_v, field_p, prefix );
         }
 
@@ -830,6 +843,9 @@ template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprTy
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
+    if ( !this->hasSolidEquationStandard() )
+        return;
+
     this->log("SolidMechanics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
@@ -853,6 +869,8 @@ template <typename ModelFieldsType, typename SymbolsExpr>
 void
 SolidMechanics<ConvexType,BasisDisplacementType>::executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
 {
+    if ( !this->hasSolidEquationStandard() )
+        return;
     bool hasMeasure = false;
 
     //auto const& u = mfields.field( FieldTag::displacement(this), "displacement" );
