@@ -35,6 +35,28 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
         this->setupGenericPDEs( this->keyword(), this->modelProperties().models().model( this->keyword() ).ptree() );
 
+    for ( auto & eq : this->pdes() )
+    {
+        auto const& eqInfos = std::get<0>( eq );
+        std::string const& eqName = eqInfos.equationName();
+        std::string const& eqBasisTag = eqInfos.unknownBasis();
+        std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
+        hana::for_each( tuple_type_unknown_basis, [this,&eqInfos,&eqName,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
+                        {
+                            if ( this->unknowBasisTag( e ) == eqBasisTag )
+                            {
+                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                newCoefficientFormPDE.reset( new coefficient_form_pde_type( eqInfos, prefixvm( this->prefix(),eqName ), eqName/*this->keyword()*/,
+                                                                                            this->worldCommPtr(), this->subPrefix(), this->repository() ) );
+                            }
+                        });
+
+        std::get<1>( eq ) = newCoefficientFormPDE;
+        M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
+    }
+    this->updateForUseGenericPDEs();
+
+
     this->initMaterialProperties();
 
     if ( !this->M_mesh )
@@ -42,33 +64,30 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     CHECK( this->hasModelProperties() ) << "no model properties";
 
-    for ( auto const& eq : this->pdes() )
+    for ( auto & cfpdeBase : M_coefficientFormPDEs )
     {
-        std::string const eqBasisTag = eq.unknownBasis();
-        std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
-        hana::for_each( tuple_type_unknown_basis, [this,&eq,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
+        hana::for_each( tuple_type_unknown_basis, [this,&cfpdeBase]( auto const& e )
                         {
-                            if ( this->unknowBasisTag( e ) == eqBasisTag )
-                            {
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, prefixvm( this->prefix(),eq.physicDefault())/*this->prefix()*/, eq.physicDefault()/*this->keyword()*/,
-                                                                                                                                  this->worldCommPtr(), this->subPrefix(), this->repository() ) );
-                                _newCoefficientFormPDE->setManageParameterValues( false );
-                                if ( !_newCoefficientFormPDE->hasModelProperties() )
-                                {
-                                    _newCoefficientFormPDE->setModelProperties( this->modelPropertiesPtr() );
-                                    _newCoefficientFormPDE->setManageParameterValuesOfModelProperties( false );
-                                }
-                                _newCoefficientFormPDE->setMaterialsProperties( M_materialsProperties );
-                                _newCoefficientFormPDE->setMesh( this->mesh() );
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                return;
 
-                                // TODO check if the same space has already built
-                                _newCoefficientFormPDE->init( false );
-                                newCoefficientFormPDE = _newCoefficientFormPDE;
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+                            cfpde->setManageParameterValues( false );
+                            if ( !cfpde->hasModelProperties() )
+                            {
+                                cfpde->setModelProperties( this->modelPropertiesPtr() );
+                                cfpde->setManageParameterValuesOfModelProperties( false );
                             }
+                            cfpde->setMaterialsProperties( M_materialsProperties );
+                            cfpde->setMesh( this->mesh() );
+
+                            // TODO check if the same space has already built
+                            cfpde->init( false );
                         });
-        M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
     }
+
 
     // post-process
     this->initPostProcess();

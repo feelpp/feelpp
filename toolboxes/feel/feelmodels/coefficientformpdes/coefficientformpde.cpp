@@ -12,14 +12,14 @@ namespace FeelModels
 {
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep ),
+    super_type( infosPDE, prefix, keyword, worldComm, subPrefix, modelRep ),
     ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) )
 {}
 

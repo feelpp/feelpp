@@ -58,13 +58,13 @@ public:
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
-    CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+    CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
                         std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
-
+#if 0
     CoefficientFormPDE( std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
@@ -73,7 +73,7 @@ public:
         :
         CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
-
+#endif
     //! return current shared_ptr of type CoefficientFormPDEBase
     std::shared_ptr<super_type> shared_from_this_cfpdebase() override { return std::dynamic_pointer_cast<super_type>( this->shared_from_this() ); }
 
