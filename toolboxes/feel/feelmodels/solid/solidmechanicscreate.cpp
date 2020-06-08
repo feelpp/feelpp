@@ -389,9 +389,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
         U_displ_struct_prestress.reset(new element_vectorial_type( M_XhDisplacement, "structure displacement prestress" ));
     //--------------------------------------------------------//
 
-    // backend : use worldComm of Xh
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_XhDisplacement->worldCommPtr() );
-
     this->timerTool("Constructor").stop("createSpaces");
     this->log("SolidMechanics","initFunctionSpaces", "finish" );
 
@@ -576,6 +573,13 @@ NullSpace<double> extendNullSpace( NullSpace<double> const& ns,
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createsSolid1dReduced()
+{
+    M_solid1dReduced.reset( new solid_1dreduced_type( this->prefix(), this->keyword()+"_1d", this->worldCommPtr(), "" , this->repository() ) );
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 {
     if ( this->isUpdatedForUse() ) return;
@@ -601,6 +605,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     this->initMaterialProperties();
 
+    // backend : use worldComm of Xh
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+
+
     bool hasSolid1dReduced = false;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
@@ -610,32 +618,57 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
     }
     if ( hasSolid1dReduced )
     {
-        M_solid1dReduced.reset( new solid_1dreduced_type( this->prefix(), this->keyword(), this->worldCommPtr(), "" , this->repository() ) );
+        if ( !M_solid1dReduced )
+            this->createsSolid1dReduced();
         M_solid1dReduced->setPhysics( this->physicsFromCurrentType(), this->physicDefault() );
         M_solid1dReduced->setMaterialsProperties( this->materialsProperties() );
+
+        M_solid1dReduced->setManageParameterValues( false );
+        //if ( !M_solid1dReduced->modelPropertiesPtr() )   // TODO : not build modelPropertiesPtr
+        {
+            M_solid1dReduced->setModelProperties( this->modelPropertiesPtr() );
+            M_solid1dReduced->setManageParameterValuesOfModelProperties( false );
+        }
+
         M_solid1dReduced->init();
     }
 
+    if ( this->hasSolidEquationStandard() )
+    {
+        if ( !M_mesh )
+            this->initMesh();
 
-    if ( !M_mesh )
-        this->initMesh();
+        this->materialsProperties()->addMesh( this->mesh() );
 
-    this->materialsProperties()->addMesh( this->mesh() );
+        this->initFunctionSpaces();
 
-    this->initFunctionSpaces();
+        this->initBoundaryConditions();
 
-    this->initBoundaryConditions();
+        // start or restart time step scheme
+        if ( !this->isStationary() )
+            this->initTimeStep();
 
-    // start or restart time step scheme
-    if ( !this->isStationary() )
-        this->initTimeStep();
-
-    // update parameters values
-    this->modelProperties().parameters().updateParameterValues();
-    // init function defined in json
-    this->initUserFunctions();
-    // init post-processinig (exporter, measure at point, ...)
-    this->initPostProcess();
+        // update parameters values
+        this->modelProperties().parameters().updateParameterValues();
+        // init function defined in json
+        this->initUserFunctions();
+        // init post-processinig (exporter, measure at point, ...)
+        this->initPostProcess();
+    }
+    else
+    {
+        // update missing info
+        if ( !this->isStationary() )
+        {
+            if ( this->hasSolidEquation1dReduced() )
+            {
+                // up initial time
+                this->setTimeInitial( M_solid1dReduced->timeInitial() );
+                // up current time
+                this->updateTime( M_solid1dReduced->currentTime() );
+            }
+        }
+    }
 
     // update constant parameters
     this->updateParameterValues();

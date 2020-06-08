@@ -957,9 +957,10 @@ FSI<FluidType,SolidType>::transfertRobinNeumannGeneralizedS2F_BdfNewmark( int it
         double gamma = timeStepNewmark1dReduced->gamma();
         double beta = timeStepNewmark1dReduced->beta();
 
-        double rhoValue = 0; // M_solidModel->mechanicalProperties()->cstRho()
-        CHECK( false ) << "TODO : rho";
-        double scaleTimeDisc = rhoValue*M_solidModel->solid1dReduced()->thickness1dReduced();
+        //double rhoValue = 1.1;//0; // M_solidModel->mechanicalProperties()->cstRho()
+        //CHECK( false ) << "TODO : rho";
+        //double scaleTimeDisc = rhoValue*M_solidModel->solid1dReduced()->thickness1dReduced();
+        double scaleTimeDisc = 1;
         // time derivative acceleration in solid (newmark)
         fieldExtrapolated2->add( -1, timeStepNewmark1dReduced->currentAcceleration());
         // time derivative acceleration in fluid (newamrk)

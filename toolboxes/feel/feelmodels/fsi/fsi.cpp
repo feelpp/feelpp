@@ -305,6 +305,7 @@ FSI<FluidType,SolidType>::init()
             //if ( M_fluidModel->doRestart() )
             //M_fluidModel->meshALE()->revertMovingMesh();
 
+            M_solidModel->createsSolid1dReduced();
             // TODO ( save 1d mesh and reload )
             if ( M_fluidModel->doRestart() )
                 M_solidModel->solid1dReduced()->setMesh(submeshStruct);
@@ -537,6 +538,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
             useAlgebraicInnerProductWithLumping = true;
         }
+#if 0
         else if ( true )
         {
             // compute algebraic counterpart of the operator B (my work V2 but not enought accurate)
@@ -622,10 +624,37 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
             M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
             sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
         }
-
+#endif
     }
     else if ( this->solidModel()->is1dReducedModel() )
     {
+#if 1 // NEW
+
+        auto VhSolid1dVelocityVect = this->solidModel()->solid1dReduced()->fieldVelocityVect1dReduced().functionSpace();
+        auto qqqq = VhSolid1dVelocityVect->element();
+        auto se = this->solidModel()->symbolsExpr();
+        for ( auto const& [physicName,physicData] :  this->solidModel()->solid1dReduced()->physicsFromCurrentType() )
+        {
+            //auto physicSolidData = std::static_pointer_cast<ModelPhysicSolid<nRealDim>>(physicData);
+            for ( std::string const& matName : this->solidModel()->solid1dReduced()->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->solidModel()->solid1dReduced()->materialsProperties()->rangeMeshElementsByMaterial( this->solidModel()->solid1dReduced()->mesh(),matName );
+                auto const& densityProp = this->solidModel()->solid1dReduced()->materialsProperties()->density( matName );
+                auto densityExpr = expr( densityProp.expr(), se );
+                double thickness = this->solidModel()->solid1dReduced()->thickness1dReduced();
+                qqqq.on(_range=range,_expr=thickness*densityExpr*one());
+            }
+        }
+
+        auto rrrr = M_XhMeshVelocityInterface->element();
+        M_opVelocity1dToNdconf->apply( qqqq, rrrr );
+
+        auto VhFluid = this->fluidModel()->functionSpaceVelocity();//meshVelocity2().functionSpace();
+        M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
+        M_coulingRNG_operatorDiagonalOnFluid->on( _range=M_rangeFSI_fluid,_expr=idv(rrrr));
+        sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", M_dofsMultiProcessVelocitySpaceOnFSI_fluid );
+
+#else
         auto VhFluid = this->fluidModel()->functionSpaceVelocity();//meshVelocity2().functionSpace();
         M_coulingRNG_operatorDiagonalOnFluid = VhFluid->elementPtr();
         std::set<size_type> dofsIdOnFSIFluid;
@@ -638,6 +667,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
         }
         M_coulingRNG_operatorDiagonalOnFluid->on(_range=M_rangeFSI_fluid,_expr=one());
         sync( *M_coulingRNG_operatorDiagonalOnFluid, "=", dofsIdOnFSIFluid );
+#endif
     }
 
 

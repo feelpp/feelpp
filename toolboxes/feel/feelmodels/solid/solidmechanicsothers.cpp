@@ -21,6 +21,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 {
     this->log("SolidMechanics","getInfo", "start" );
 
+    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
+    return _ostr;
+
+
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
     if (this->hasSolidEquationStandard()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
@@ -70,8 +74,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     for ( std::string const& fieldName : this->postProcessExportsFields() )
         doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
 
-    std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-
+    
     *_ostr << "\n||==============================================||"
            << "\n||----------Info : SolidMechanics---------------||"
            << "\n||==============================================||"
@@ -83,21 +86,24 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- has displacement-pressure formulation : " << std::boolalpha << this->hasDisplacementPressureFormulation()
            << "\n     -- time mode : " << StateTemporal;
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
-    *_ostr << "\n   Boundary conditions"
-           << M_bcDirichletMarkerManagement.getInfoDirichletBC()
-           << M_bcNeumannMarkerManagement.getInfoNeumannBC()
-           << M_bcNeumannEulerianFrameMarkerManagement.getInfoNeumannEulerianFrameBC()
-           << M_bcRobinMarkerManagement.getInfoRobinBC()
-           << M_bcFSIMarkerManagement.getInfoFluidStructureInterfaceBC();
-    *_ostr << "\n   Space Discretization";
-    if ( this->hasGeoFile() )
-        *_ostr << "\n     -- geo file name   : " << this->geoFile();
-    *_ostr << "\n     -- mesh file name   : " << this->meshFile()
-           << "\n     -- nb elt in mesh : " << nElt
-           << "\n     -- nb dof (displacement) : " << nDof
-           << "\n     -- polynomial order : " << nOrder;
-    if ( this->hasDisplacementPressureFormulation() )
-        *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
+    if ( this->hasSolidEquationStandard() )
+    {
+        *_ostr << "\n   Boundary conditions"
+               << M_bcDirichletMarkerManagement.getInfoDirichletBC()
+               << M_bcNeumannMarkerManagement.getInfoNeumannBC()
+               << M_bcNeumannEulerianFrameMarkerManagement.getInfoNeumannEulerianFrameBC()
+               << M_bcRobinMarkerManagement.getInfoRobinBC()
+               << M_bcFSIMarkerManagement.getInfoFluidStructureInterfaceBC();
+        *_ostr << "\n   Space Discretization";
+        if ( this->hasGeoFile() )
+            *_ostr << "\n     -- geo file name   : " << this->geoFile();
+        *_ostr << "\n     -- mesh file name   : " << this->meshFile()
+               << "\n     -- nb elt in mesh : " << nElt
+               << "\n     -- nb dof (displacement) : " << nDof
+               << "\n     -- polynomial order : " << nOrder;
+        if ( this->hasDisplacementPressureFormulation() )
+            *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
+    }
     if ( !this->isStationary() )
     {
         *_ostr << "\n   Time Discretization"
@@ -261,7 +267,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     if ( this->hasSolidEquation1dReduced() )
     {
-        CHECK( false ) << "TODO";
+        int startIndexBlock1dReduced = indexBlock;
+        auto blockMat1dReduced = M_solid1dReduced->buildBlockMatrixGraph();
+        for (int tk1=0;tk1<blockMat1dReduced.nRow() ;++tk1 )
+            for (int tk2=0;tk2<blockMat1dReduced.nCol() ;++tk2 )
+                myblockGraph(startIndexBlock1dReduced+tk1,startIndexBlock1dReduced+tk2) = blockMat1dReduced(tk1,tk2);
     }
 
     myblockGraph.close();
@@ -279,7 +289,10 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
+    if ( this->hasSolidEquationStandard() )
+        this->exportResults( time, mfields, se, this->exprPostProcessExports( se ) );
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->exportResults( time, se );
 
     // this->log("SolidMechanics","exportResults",(boost::format("start at time %1%")%time).str() );
     // this->timerTool("PostProcessing").start();
@@ -765,8 +778,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
             // start time step
             if ( !this->doRestart() )
                 M_timeStepNewmark->start(*M_fieldDisplacement);
-            // up current time
-            this->updateTime( M_timeStepNewmark->time() );
         }
         else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
         {
@@ -776,8 +787,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
                 M_timeStepBdfDisplacement->start( *M_fieldDisplacement );
                 M_timeStepBdfVelocity->start( *M_fieldVelocity );
             }
-            // up current time
-            this->updateTime( M_timeStepBdfDisplacement->time() );
         }
         // start save pressure
         if ( this->hasDisplacementPressureFormulation() && !this->doRestart() )
@@ -786,6 +795,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->startTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
 
     this->updateParameterValues();
 
@@ -810,14 +822,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         {
             // next time step
             M_timeStepNewmark->next( *M_fieldDisplacement );
-            // up current time
-            this->updateTime( M_timeStepNewmark->time() );
         }
         else if ( M_timeStepping == "BDF" || M_timeStepping == "Theta" )
         {
             M_timeStepBdfDisplacement->next( *M_fieldDisplacement );
             M_timeStepBdfVelocity->next( *M_fieldVelocity );
-            this->updateTime( M_timeStepBdfDisplacement->time() );
         }
 
         if ( this->hasDisplacementPressureFormulation() )
@@ -826,6 +835,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 
     if ( this->hasSolidEquation1dReduced() )
         M_solid1dReduced->updateTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
 
     this->updateParameterValues();
 
@@ -938,6 +950,9 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     this->M_bcNeumannEulerianFrameTensor2.setParameterValues( paramValues );
     this->M_bcRobin.setParameterValues( paramValues );
     this->M_volumicForcesProperties.setParameterValues( paramValues );
+
+    if ( this->hasSolidEquation1dReduced() )
+        M_solid1dReduced->setParameterValues( paramValues );
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
