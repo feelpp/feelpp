@@ -911,7 +911,7 @@ public :
         {
             auto itFindMatMesh = M_materialsOnMesh.find( mesh );
             if ( itFindMatMesh == M_materialsOnMesh.end() )
-                std::shared_ptr<MaterialsOnMesh<MeshType>>{};
+                return std::shared_ptr<MaterialsOnMesh<MeshType>>{};
             return std::dynamic_pointer_cast<MaterialsOnMesh<MeshType>>( itFindMatMesh->second );
         }
     template <typename MeshType>

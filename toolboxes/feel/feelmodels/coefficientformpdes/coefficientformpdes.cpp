@@ -18,7 +18,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               std::string const& subPrefix,
                                                               ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     M_solverName = soption(_prefix=this->prefix(),_name="solver");
 }
@@ -34,12 +35,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
         this->setupGenericPDEs( this->keyword(), this->modelProperties().models().model( this->keyword() ).ptree() );
 
+    this->initMaterialProperties();
+
     if ( !this->M_mesh )
         this->initMesh();
 
     CHECK( this->hasModelProperties() ) << "no model properties";
-
-    this->initMaterialProperties();
 
     for ( auto const& eq : this->pdes() )
     {
@@ -129,8 +130,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
@@ -148,13 +149,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
     for (auto const& cfpde : M_coefficientFormPDEs )
     {
         std::set<std::string> ppExportsAllFieldsAvailableInCFPDE = Feel::FeelModels::detail::set_difference( cfpde->postProcessExportsAllFieldsAvailable(),
-                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->physicsAvailable() ) );
+                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->mesh(), cfpde->physicsAvailable() ) );
         for ( auto const& s : ppExportsAllFieldsAvailableInCFPDE )
             ppExportsAllFieldsAvailable.insert( prefixvm( cfpde->keyword(), s) );
     }
 
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -302,7 +303,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ) );
+    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ) );
 }
 
 

@@ -19,7 +19,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type:
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) )
 {}
 
 
@@ -30,10 +31,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDE","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initMaterialProperties();
+
     if ( !this->M_mesh )
         this->initMesh();
 
-    this->initMaterialProperties();
+    this->materialsProperties()->addMesh( this->mesh() );
 
     this->initFunctionSpaces();
 
@@ -91,15 +94,16 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physic() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        this->M_rangeMeshElements = markedelements(this->mesh(), this->materialsProperties()->markers( this->physic() ));
+        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
     }
 
