@@ -11,7 +11,7 @@ namespace FeelModels
 {
 
 template< typename ConvexType>
-CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& genericPDE,
+CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( typename super2_type::infos_type const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
@@ -19,7 +19,7 @@ CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& g
                                                             ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) ),
-    super2_type( genericPDE )
+    super2_type( infosPDE )
 {
     this->log("CoefficientFormPDE","constructor", "start" );
 

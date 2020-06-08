@@ -18,16 +18,32 @@ class ModelGenericPDE : public ModelPhysics<Dim>
     using material_property_shape_dim_type = typename super_type::material_property_shape_dim_type;
     inline static const uint16_type nDim = Dim;
 public :
-    ModelGenericPDE();
-    ModelGenericPDE( std::string const& name, pt::ptree const& p );
+    using self_type = ModelGenericPDE<Dim>;
+    struct Infos
+    {
+        Infos() = default;
+        Infos( std::string const& name, pt::ptree const& p );
+        Infos( Infos const& ) = default;
+        Infos( Infos && ) = default;
+        std::string const& equationName() const { return M_equationName; }
+        std::string const& unknownName() const { return M_unknownName; }
+        std::string const& unknownSymbol() const { return M_unknownSymbol; }
+        std::string const& unknownBasis() const { return M_unknownBasis; }
+    private :
+        std::string M_equationName, M_unknownName, M_unknownSymbol, M_unknownBasis;
+    };
+    using infos_type = self_type::Infos;
+
+    //ModelGenericPDE();
+    ModelGenericPDE( infos_type const& infos );
     ModelGenericPDE( ModelGenericPDE const& ) = default;
     ModelGenericPDE( ModelGenericPDE && ) = default;
 
     std::string const& physic() const { return this->physicDefault(); }
 
-    std::string const& unknownName() const { return M_unknownName; }
-    std::string const& unknownSymbol() const { return M_unknownSymbol; }
-    std::string const& unknownBasis() const { return M_unknownBasis; }
+    std::string const& unknownName() const { return M_infos.unknownName(); }
+    std::string const& unknownSymbol() const { return M_infos.unknownSymbol(); }
+    std::string const& unknownBasis() const { return M_infos.unknownBasis(); }
 
     std::string convectionCoefficientName() const { return prefixvm( this->physic(), "beta", "_" ); }
     std::string diffusionCoefficientName() const { return prefixvm( this->physic(), "c", "_" ); }
@@ -37,11 +53,10 @@ public :
     std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
 
 protected :
-    void setupGenericPDE( std::string const& name, pt::ptree const& p );
+    void setupGenericPDE();
 
 private :
-    std::string M_unknownName, M_unknownSymbol, M_unknownBasis;
-
+    infos_type M_infos;
 };
 
 template <uint16_type Dim>
@@ -55,11 +70,14 @@ public :
     ModelGenericPDEs( ModelGenericPDEs const& ) = default;
     ModelGenericPDEs( ModelGenericPDEs && ) = default;
 
-    std::vector<ModelGenericPDE<nDim>> const& pdes() const { return M_pdes; }
+    auto const& pdes() const { return M_pdes; }
+    auto & pdes() { return M_pdes; }
+
+    void updateForUseGenericPDEs();
 protected :
     void setupGenericPDEs( std::string const& name, pt::ptree const& p );
 private :
-    std::vector<ModelGenericPDE<nDim>> M_pdes;
+    std::vector<std::tuple<typename ModelGenericPDE<nDim>::infos_type,std::shared_ptr<ModelGenericPDE<nDim>>>> M_pdes;
 };
 
 } // namespace FeelModels
