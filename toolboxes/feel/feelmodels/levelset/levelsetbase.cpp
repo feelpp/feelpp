@@ -88,7 +88,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("LevelSetBase","createMesh","start");
     this->timerTool("Constructor").start();
-    
+
     createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
     CHECK( M_mesh ) << "mesh generation failed";
     //M_isUpdatedForUse = false;
@@ -501,7 +501,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createRedistanciation()
         {
             if( !M_redistanciationHJ )
                 this->createRedistanciationHJ();
-            
+
             double thickness_heaviside;
             if( Environment::vm( _name="thickness-heaviside", _prefix=prefixvm(this->prefix(), "redist-hj")).defaulted() )
             {
@@ -765,8 +765,21 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     CHECK( LevelSetDistanceMethodIdMap.count( redistmethod ) ) << redistmethod << " is not in the list of possible redistanciation methods\n";
     M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
-    M_redistFreq = ioption( _name="levelset.redist-every" );
-    
+    std::string autoRedistMechanism = soption( _name="auto-redist-mechanism", _prefix=this->prefix() );
+    CHECK( LevelSetAutomaticRedistantiationMechanismIdMap.count( autoRedistMechanism ) ) << autoRedistMechanism << " is not in the list of possible automatic redistanciation mechanisms\n";
+    M_autoRedistMechanism = LevelSetAutomaticRedistantiationMechanismIdMap.at( autoRedistMechanism );
+
+    CHECK( LevelSetAutomaticRedistantiationMechanismInfoMap.count( M_autoRedistMechanism ) ) << "No mechanism description matching.\n";
+    M_autoRedistMechanismInfo = LevelSetAutomaticRedistantiationMechanismInfoMap.at( M_autoRedistMechanism );
+
+    setRedistFreq( ioption( _name="redist-every", _prefix=this->prefix() ) );
+    setMinModgradphiThreshold( doption( _name="redist-triggering-minmodgradphi", _prefix=this->prefix() ) );
+    setMaxModgradphiThreshold( doption( _name="redist-triggering-maxmodgradphi", _prefix=this->prefix() ) );
+
+    int errorquadorder = ioption( _name="error-quad-order", _prefix=this->prefix() );
+    CHECK( errorquadorder > 0 ) << "Invalid error quadrature order (" << errorquadorder << "), it should be a strictly positive integer";
+    setErrorQuadOrder( errorquadorder );
+
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
     CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
@@ -1802,7 +1815,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::redistanciate( element_levelset_type const& ph
         }
         break;
     }
-    
+
     return *phiRedist;
 }
 
@@ -1936,7 +1949,29 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
 
            << "\n   Redistanciation Parameters"
            << "\n     -- redistanciation method          : " << redistMethod
-           << "\n     -- redistanciation frequency          : " << M_redistFreq;
+           << "\n     -- triggering mechanism            : " << M_autoRedistMechanismInfo;
+    switch( M_autoRedistMechanism )
+    {
+    case LevelSetAutomaticRedistantiationMechanism::None:
+    {
+        //*_ostr << "\n     -- triggering mechanism            : " << "None (will never redistantiate)"; // TODO WARNING ?
+    }
+    break;
+    case LevelSetAutomaticRedistantiationMechanism::Periodic:
+    {
+        //*_ostr << "\n     -- triggering mechanism            : " << "Periodic" // TODO ?
+        *_ostr << "\n     -- redistanciation frequency       : " << getRedistFreq(); // TODO Warning if (freq <= 0)
+    }
+    break;
+    case LevelSetAutomaticRedistantiationMechanism::ModGradPhiBoundsEnforcing:
+    {
+        //*_ostr << "\n     -- triggering mechanism            : " << "|gradphi| bounds enforcing" // TODO ?
+        *_ostr << "\n     -- lower |gradphi| threshold       : " << getMinModgradphiThreshold() // TODO
+               << "\n     -- higher |gradphi| threshold      : " << getMaxModgradphiThreshold(); // TODO
+    }
+    break;
+    }
+    *_ostr << "\n     -- error quadrature order          : " << getErrorQuadOrder();
 
     if( M_projectorSMScalar || M_projectorSMVectorial )
     *_ostr << "\n   Smoothers Parameters";

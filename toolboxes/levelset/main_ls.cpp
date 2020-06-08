@@ -44,16 +44,13 @@ runLevelsetApplication()
     if( !LS->doRestart() )
         LS->exportResults(0.);
 
-    bool enableMinandmaxmodgradphiBasedRedistantiation = boption( _name="enable-minandmaxmodgradphi-triggered-redistanciation" );
-    int redistantiationTriggeringMechanism = enableMinandmaxmodgradphiBasedRedistantiation ? 2 : 1;
+    int redist_every = LS->getRedistFreq();
     // Values for min and max modgraphi threshold (exceeding them triggers a redistantiation)
-    double minModgradphiThreshold = doption( _name="redist-triggering-minmodgradphi");
-    double maxModgradphiThreshold = doption( _name="redist-triggering-maxmodgradphi");
+    double minModgradphiThreshold = LS->getMinModgradphiThreshold();
+    double maxModgradphiThreshold = LS->getMaxModgradphiThreshold();
     // measured values
-    double min_modGradPhi = 0;
-    double max_modGradPhi = 0;
-
-    Feel::cout << "modGradphi limit values : min = " << minModgradphiThreshold << ", max = " << maxModgradphiThreshold << std::endl;
+    double min_modGradPhi = 1.0;
+    double max_modGradPhi = 1.0;
 
     if ( LS->modGradPhi() )
     {
@@ -106,7 +103,6 @@ runLevelsetApplication()
     }
     else
     {
-        int redist_every = ioption( _name="levelset.redist-every" );
         int lastIter = 0;
         int numberOfRedist = 0;
 
@@ -130,9 +126,12 @@ runLevelsetApplication()
 
             tic();
 
-            switch( redistantiationTriggeringMechanism )
+            switch( LS->getAutoRedistMechanism() )
             {
-            case 1 :
+            case FeelModels::LevelSetAutomaticRedistantiationMechanism::None:
+                // No redistantiation
+                break;
+            case FeelModels::LevelSetAutomaticRedistantiationMechanism::Periodic:
                 if( redist_every > 0 && iter%redist_every == 0 )
                 {
                     Feel::cout << "Redistantiating...";
@@ -141,7 +140,7 @@ runLevelsetApplication()
                     Feel::cout << "done\n";
                 }
                 break;
-            case 2 :
+            case FeelModels::LevelSetAutomaticRedistantiationMechanism::ModGradPhiBoundsEnforcing:
                 if( min_modGradPhi < minModgradphiThreshold || max_modGradPhi > maxModgradphiThreshold )
                 {
                     Feel::cout << "Redistantiating triggered... " << std::endl;
@@ -270,12 +269,7 @@ int main( int argc, char** argv )
     levelsetoptions.add( toolboxes_options( "levelset" ) );
     levelsetoptions.add_options()
         ("fe-approximation", Feel::po::value<std::string>()->default_value( "P1" ), "fe-approximation : P2, P1" )
-        ("levelset.redist-every", Feel::po::value<int>()->default_value( -1 ), "redistantiate levelset every n iterations" )
         ("export-dist-to-boundary", Feel::po::value<bool>()->default_value( false ), "compute and export the distance to the boundary" )
-        ("levelset.quad.order", Feel::po::value<int>()->default_value( 1 ), "Quadrature order used for integrals computed in errors measures")
-        ("enable-minandmaxmodgradphi-triggered-redistanciation", Feel::po::value<bool>()->default_value( false ), "Enable automatic redistantiation when either min(|gradphi|) < redist-triggering-minmodgradphi or max(|gradphi|) > redist-triggering-maxmodgradphi. /!\\ Enabling this option disables periodic reditantiation." )
-        ("redist-triggering-minmodgradphi", Feel::po::value<double>()->default_value( 0.001 ), "Redistantiation on the whole domain is triggered whenever min(modgradphi) drops below this threshold.")
-        ("redist-triggering-maxmodgradphi", Feel::po::value<double>()->default_value( 1.5 ), "Redistantiation on the whole domain is triggered whenever max(modgradphi) grows above this threshold.")
         ;
 
     Environment env(

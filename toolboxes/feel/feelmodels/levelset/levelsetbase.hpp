@@ -61,6 +61,8 @@ namespace FeelModels {
  */
 enum class LevelSetDistanceMethod { NONE, FASTMARCHING, HAMILTONJACOBI, RENORMALISATION };
 
+enum class LevelSetAutomaticRedistantiationMechanism { None, Periodic, ModGradPhiBoundsEnforcing };
+
 enum class LevelSetMeasuresExported
 {
     Volume, Perimeter, Position_COM, Velocity_COM
@@ -180,7 +182,7 @@ public:
     // Projectors
     typedef Projector<space_levelset_type, space_levelset_type> projector_levelset_type;
     typedef std::shared_ptr<projector_levelset_type> projector_levelset_ptrtype;
-    
+
     typedef Projector<space_vectorial_type, space_vectorial_type> projector_levelset_vectorial_type;
     typedef std::shared_ptr<projector_levelset_vectorial_type> projector_levelset_vectorial_ptrtype;
 
@@ -525,6 +527,17 @@ public:
 
     bool hasRedistanciated() const { return M_hasRedistanciated; }
 
+    LevelSetAutomaticRedistantiationMechanism const getAutoRedistMechanism() { return M_autoRedistMechanism; }
+    int getRedistFreq() const { return M_redistFreq; }
+    int getErrorQuadOrder() const { return M_errorQuadOrder; }
+    double getMinModgradphiThreshold() const { return M_minModgradphiThreshold; }
+    double const getMaxModgradphiThreshold() const { return M_maxModgradphiThreshold; }
+
+    void setRedistFreq(int freq) { M_redistFreq = freq; }
+    void setErrorQuadOrder(int order) { M_errorQuadOrder = order; }
+    void setMinModgradphiThreshold(double minThreshold) { M_minModgradphiThreshold = minThreshold; }
+    void setMaxModgradphiThreshold(double maxThreshold) { M_maxModgradphiThreshold = maxThreshold; }
+
     //--------------------------------------------------------------------//
     // Initial value
     void setInitialValue(element_levelset_ptrtype const& phiv, bool doRedistanciate);
@@ -819,7 +832,16 @@ private:
 
     LevelSetDistanceMethod M_redistanciationMethod;
 
+    LevelSetAutomaticRedistantiationMechanism M_autoRedistMechanism;
+    static const std::map<std::string, LevelSetAutomaticRedistantiationMechanism> LevelSetAutomaticRedistantiationMechanismIdMap;
+
+    std::string M_autoRedistMechanismInfo;
+    static const std::map<LevelSetAutomaticRedistantiationMechanism, std::string> LevelSetAutomaticRedistantiationMechanismInfoMap;
+
     int M_redistFreq;
+    unsigned int M_errorQuadOrder;
+    double M_minModgradphiThreshold;
+    double M_maxModgradphiThreshold;
 
     bool M_redistInitialValue;
 
@@ -862,6 +884,22 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetDistanceMethodIdMap = {
     {"fm", LevelSetDistanceMethod::FASTMARCHING},
     {"hj", LevelSetDistanceMethod::HAMILTONJACOBI},
     {"renormalisation", LevelSetDistanceMethod::RENORMALISATION}
+};
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const std::map<std::string, LevelSetAutomaticRedistantiationMechanism> 
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetAutomaticRedistantiationMechanismIdMap = {
+    {"none", LevelSetAutomaticRedistantiationMechanism::None},
+    {"periodic", LevelSetAutomaticRedistantiationMechanism::Periodic},
+    {"modgradphi-bounds-enforcing", LevelSetAutomaticRedistantiationMechanism::ModGradPhiBoundsEnforcing}
+};
+
+LEVELSETBASE_CLASS_TEMPLATE_DECLARATIONS
+const std::map<LevelSetAutomaticRedistantiationMechanism, std::string> 
+LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetAutomaticRedistantiationMechanismInfoMap = {
+    {LevelSetAutomaticRedistantiationMechanism::None, "None (will never redistantiate)"},
+    {LevelSetAutomaticRedistantiationMechanism::Periodic, "Periodic"},
+    {LevelSetAutomaticRedistantiationMechanism::ModGradPhiBoundsEnforcing, "|gradphi| bounds enforcing"}
 };
 
 //----------------------------------------------------------------------------//

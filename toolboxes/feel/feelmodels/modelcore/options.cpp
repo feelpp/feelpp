@@ -513,8 +513,12 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"thickness-interface-rectangular-function").c_str(), Feel::po::value<double>(), "thickness of the interface rectangular function")
         (prefixvm(prefix,"distance-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset distance computation method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
         (prefixvm(prefix,"redist-method").c_str(), Feel::po::value<std::string>()->default_value( "fm" ), "levelset redistanciation method (none, fm: fast-marching, hj: hamilton-jacobi, renormalisation)")
+        (prefixvm(prefix,"auto-redist-mechanism").c_str(), Feel::po::value<std::string>()->default_value( "periodic" ), "Automatic redistantiation mechanism: \n none: disable automatic redistatiation \n periodic: redistantiate every N iterations (see levelset.redist-every option to set the frequency \n modgradphi-bounds-enforcing: redistantiate when either min(|gradphi|) < redist-triggering-minmodgradphi or max(|gradphi|) > redist-triggering-maxmodgradphi." )
+        (prefixvm(prefix,"redist-every").c_str(), Feel::po::value<int>()->default_value( -1 ), "redistantiate levelset every n iterations" )
+        (prefixvm(prefix,"redist-triggering-minmodgradphi").c_str(), Feel::po::value<double>()->default_value( 0.001 ), "Redistantiation on the whole domain is triggered whenever min(modgradphi) drops below this threshold.")
+        (prefixvm(prefix,"redist-triggering-maxmodgradphi").c_str(), Feel::po::value<double>()->default_value( 1.5 ), "Redistantiation on the whole domain is triggered whenever max(modgradphi) grows above this threshold.")
         (prefixvm(prefix,"use-order1-after-redist").c_str(), Feel::po::value<bool>()->default_value( false ), "Use order 1 time-stepper after redistanciation.")
-
+        (prefixvm(prefix,"error-quad-order").c_str(), Feel::po::value<int>()->default_value( 1 ), "Quadrature order used for integrals computed in errors measures")
         (prefixvm(prefix,"redist-initial-value").c_str(), Feel::po::value<bool>()->default_value( false ), "redistanciate levelset after setting initial value")
 
         (prefixvm(prefix,"gradphi-method").c_str(), Feel::po::value<std::string>()->default_value( "nodal-projection" ), "method to compute gradphi (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
