@@ -765,6 +765,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::loadParametersFromOptionsVm()
     CHECK( LevelSetDistanceMethodIdMap.count( redistmethod ) ) << redistmethod << " is not in the list of possible redistanciation methods\n";
     M_redistanciationMethod = LevelSetDistanceMethodIdMap.at( redistmethod );
 
+    M_redistFreq = ioption( _name="levelset.redist-every" );
+    
     std::string distancemethod = soption( _name="distance-method", _prefix=this->prefix() );
     CHECK( LevelSetDistanceMethodIdMap.count( distancemethod ) ) << distancemethod << " is not in the list of possible redistanciation methods\n";
     M_distanceMethod = LevelSetDistanceMethodIdMap.at( distancemethod );
@@ -1933,7 +1935,8 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- curvature projection                : " << curvatureMethod
 
            << "\n   Redistanciation Parameters"
-           << "\n     -- redistanciation method          : " << redistMethod;
+           << "\n     -- redistanciation method          : " << redistMethod
+           << "\n     -- redistanciation frequency          : " << M_redistFreq;
 
     if( M_projectorSMScalar || M_projectorSMVectorial )
     *_ostr << "\n   Smoothers Parameters";

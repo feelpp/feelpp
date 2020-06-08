@@ -819,6 +819,8 @@ private:
 
     LevelSetDistanceMethod M_redistanciationMethod;
 
+    int M_redistFreq;
+
     bool M_redistInitialValue;
 
     bool M_hasRedistanciated;
