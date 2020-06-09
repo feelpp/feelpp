@@ -4,7 +4,8 @@
     "ShortName":"Solid",
     "Models":
     {
-        "equations":"Hyper-Elasticity"
+        "equations":"Hyper-Elasticity",
+        "material-model":"StVenantKirchhoff"
     },
     "Parameters":
     {
@@ -67,7 +68,7 @@
                 {
                     "markers":"free-wall",
                     "type":"max",
-                    "expr":"solid_D_magnitude:solid_D_magnitude"
+                    "expr":"solid_s_magnitude:solid_s_magnitude"
                 }
             }
         }
