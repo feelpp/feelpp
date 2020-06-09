@@ -20,7 +20,7 @@ feelpp_add_test( spacefunc )
 
 feelpp_add_test( hdiv CFG test_hdiv.cfg NO_MPI_TEST)
 feelpp_add_test( hdiv_oneelt CFG test_hdiv_oneelt.cfg NO_MPI_TEST )
-feelpp_add_test( hdiv3D CFG test_hdiv3D.cfg)
+# feelpp_add_test( hdiv3D CFG test_hdiv3D.cfg)
 feelpp_add_test( hdiv3D_oneelt CFG test_hdiv3D_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_oneelt CFG test_hcurl_oneelt.cfg NO_MPI_TEST )
 feelpp_add_test( hcurl_assembly CFG test_hcurl_assembly.cfg GEO two_elements_mesh.geo eight_elements_mesh.msh NO_MPI_TEST)
