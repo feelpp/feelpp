@@ -45,8 +45,6 @@
 
 #include <feel/feelmodels/levelset/parameter_map.hpp>
 
-#include <boost/bimap.hpp>
-
 #if defined (MESH_ADAPTATION_LS)
  #include <levelsetmesh/meshadaptation.hpp>
 // #warning MESH_ADAPTATION_LS is defined in levelset. Need to be defined identically in the application
@@ -307,22 +305,31 @@ public:
     void setPhi( element_levelset_ptrtype const& phi, bool reinit = true ) { this->setPhi( *phi, reinit ); }
     //element_levelset_ptrtype const& phinl() const { return M_phinl; }
     element_levelset_PN_ptrtype const& phiPN() const;
-    element_vectorial_ptrtype const& gradPhi( bool up = true ) const;
-    element_levelset_ptrtype const& modGradPhi( bool up = true ) const;
-    element_levelset_ptrtype const& distance( bool up = true ) const;
+    element_vectorial_ptrtype const& gradPhi( bool update ) const;
+    element_vectorial_ptrtype const& gradPhi() const { return this->gradPhi( M_doUpdateGradPhi ); }
+    element_levelset_ptrtype const& modGradPhi( bool update ) const;
+    element_levelset_ptrtype const& modGradPhi() const { return this->modGradPhi( M_doUpdateModGradPhi ); }
+    element_levelset_ptrtype const& distance( bool update ) const;
+    element_levelset_ptrtype const& distance() const { return this->distance( M_doUpdateDistance ); }
 
-    element_levelset_ptrtype const& heaviside( bool up = true ) const;
+    element_levelset_ptrtype const& heaviside( bool update ) const;
+    element_levelset_ptrtype const& heaviside() const { return this->heaviside( M_doUpdateHeaviside ); }
     element_levelset_ptrtype const& H() const { return this->heaviside(); }
     levelset_delta_expr_type diracExpr() const;
-    element_levelset_ptrtype const& dirac( bool up = true ) const;
+    element_levelset_ptrtype const& dirac( bool update ) const;
+    element_levelset_ptrtype const& dirac() const { return this->dirac( M_doUpdateDirac ); }
     element_levelset_ptrtype const& D() const { return this->dirac(); }
 
-    element_vectorial_ptrtype const& normal( bool up = true ) const;
+    element_vectorial_ptrtype const& normal( bool update ) const;
+    element_vectorial_ptrtype const& normal() const { return this->normal( M_doUpdateNormal ); }
     element_vectorial_ptrtype const& N() const { return this->normal(); }
-    element_levelset_ptrtype const& curvature( bool up = true ) const;
+    element_levelset_ptrtype const& curvature( bool update ) const;
+    element_levelset_ptrtype const& curvature() const { return this->curvature( M_doUpdateCurvature ); }
     element_levelset_ptrtype const& K() const { return this->curvature(); }
-    element_vectorial_ptrtype const& distanceNormal( bool up = true) const;
-    element_levelset_ptrtype const& distanceCurvature( bool up = true ) const;
+    element_vectorial_ptrtype const& distanceNormal( bool update ) const;
+    element_vectorial_ptrtype const& distanceNormal() const { return this->distanceNormal( M_doUpdateDistanceNormal ); }
+    element_levelset_ptrtype const& distanceCurvature( bool update ) const;
+    element_levelset_ptrtype const& distanceCurvature() const { return this->distanceCurvature( M_doUpdateDistanceCurvature ); }
 
     virtual void updateInterfaceQuantities();
 
@@ -368,9 +375,9 @@ public:
     //___________________________________________________________________________________//
 
     auto modelFields( std::string const& prefix = "" ) const
-        {
-            return this->modelFields( this->phiPtr(), prefix );
-        }
+    {
+        return this->modelFields( this->phiPtr(), prefix );
+    }
 #if 0
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
@@ -380,38 +387,41 @@ public:
 #endif
     template <typename PhiFieldType>
     auto modelFields( PhiFieldType const& field_phi, std::string const& prefix = "" ) const
-        {
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", field_phi, "phi", this->keyword() ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind( &self_type::updateDirac, this, std::placeholders::_1, std::ref(M_doUpdateDirac) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind( &self_type::updateHeaviside, this, std::placeholders::_1, std::ref(M_doUpdateHeaviside) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind( &self_type::updateNormal, this, std::placeholders::_1, std::ref(M_doUpdateNormal) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind( &self_type::updateCurvature, this, std::placeholders::_1, std::ref(M_doUpdateCurvature) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind( &self_type::updateGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateGradPhi) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind( &self_type::updateModGradPhi, this, std::placeholders::_1, std::ref(M_doUpdateModGradPhi) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind( &self_type::updateDistance, this, std::placeholders::_1, std::ref(M_doUpdateDistance) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind( &self_type::updateDistanceNormal, this, std::placeholders::_1, std::ref(M_doUpdateDistanceNormal ) ) ),
-                                                  modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind( &self_type::updateDistanceCurvature, this, std::placeholders::_1, std::ref(M_doUpdateDistanceCurvature) ) )
-                                                  );
-        }
-        //___________________________________________________________________________________//
-        // symbols expressions
-        //___________________________________________________________________________________//
+    {
+        typedef element_levelset_ptrtype const& (self_type::*scalar_fc_type)() const;
+        typedef element_vectorial_ptrtype const& (self_type::*vec_fc_type)() const;
+        return Feel::FeelModels::modelFields( 
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::levelset_scalar(this), prefix, "phi", field_phi, "phi", this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "dirac", this->dirac(false), "dirac", this->keyword(), std::bind<scalar_fc_type>( &self_type::dirac, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "heaviside", this->heaviside(false), "heaviside", this->keyword(), std::bind<scalar_fc_type>( &self_type::heaviside, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "normal", this->normal(false), "normal", this->keyword(), std::bind<vec_fc_type>( &self_type::normal, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "curvature", this->curvature(false), "curvature", this->keyword(), std::bind<scalar_fc_type>( &self_type::curvature, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "gradphi", this->gradPhi(false), "gradphi", this->keyword(), std::bind<vec_fc_type>( &self_type::gradPhi, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "modgradphi", this->modGradPhi(false), "modgradphi", this->keyword(), std::bind<scalar_fc_type>( &self_type::modGradPhi, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance", this->distance(false), "distance", this->keyword(), std::bind<scalar_fc_type>( &self_type::distance, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_vectorial(this), prefix, "distance-normal", this->distanceNormal(false), "distance-normal", this->keyword(), std::bind<vec_fc_type>( &self_type::distanceNormal, this ) ),
+                modelField<FieldCtx::ID>( FieldTag::levelset_scalar(this), prefix, "distance-curvature", this->distanceCurvature(false), "distance-curvature", this->keyword(), std::bind<scalar_fc_type>( &self_type::distanceCurvature, this ) )
+                );
+    }
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
 
-        template <typename ModelFieldsType>
-        auto symbolsExpr( ModelFieldsType const& mfields ) const
-        {
-            //auto seToolbox = this->symbolsExprToolbox( mfields );
-            auto seParam = this->symbolsExprParameter();
-            //auto seMat = this->materialsProperties()->symbolsExpr();
-            auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam/*, seMat*/, seFields );
-        }
-        auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+    {
+        //auto seToolbox = this->symbolsExprToolbox( mfields );
+        auto seParam = this->symbolsExprParameter();
+        //auto seMat = this->materialsProperties()->symbolsExpr();
+        auto seFields = mfields.symbolsExpr();
+        return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam/*, seMat*/, seFields );
+    }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
-        // template <typename ModelFieldsType>
-        // auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
-        //     {
-        //     }
+    // template <typename ModelFieldsType>
+    // auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+    //     {
+    //     }
 #if 0
     //--------------------------------------------------------------------//
     // Symbols expressions
@@ -636,19 +646,19 @@ protected:
     void initPostProcessExportsAndMeasures();
     //--------------------------------------------------------------------//
     // Levelset data update functions
-    void updateGradPhi( element_vectorial_ptrtype & field, bool & doUpdateGradPhi ) const;
-    void updateModGradPhi( element_levelset_ptrtype & field, bool & doUpdateModGradPhi ) const;
-    void updateDirac( element_levelset_ptrtype & field, bool & doUpdateDirac ) const;
-    void updateHeaviside( element_levelset_ptrtype& field, bool & doUpdateHeaviside ) const;
+    void updateGradPhi() const;
+    void updateModGradPhi() const;
+    void updateDirac() const;
+    void updateHeaviside() const;
 
-    void updateNormal( element_vectorial_ptrtype & field, bool & doUpdateNormal ) const;
-    void updateCurvature( element_levelset_ptrtype & field, bool & doUpdateCurvature ) const;
+    void updateNormal() const;
+    void updateCurvature() const;
 
     void updatePhiPN();
 
-    void updateDistance( element_levelset_ptrtype & field, bool & doUpdateDistance ) const;
-    void updateDistanceNormal( element_vectorial_ptrtype & field, bool & doUpdateDistanceNormal ) const;
-    void updateDistanceCurvature( element_levelset_ptrtype & field, bool & doUpdateDistanceCurvature ) const;
+    void updateDistance() const;
+    void updateDistanceNormal() const;
+    void updateDistanceCurvature() const;
 
     void updateMarkerDirac();
     void markerHeavisideImpl( element_markers_ptrtype const& marker, bool invert, double cut );
