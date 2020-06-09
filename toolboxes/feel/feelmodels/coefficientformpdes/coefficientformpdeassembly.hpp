@@ -445,6 +445,44 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                            _geomap=this->geomap() );
                     }
                 }
+                if ( coeffDiffusionDependOnUnknown && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&coeff_c_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+
+                            auto coeff_c_diff_expr = diffSymbolicExpr( coeff_c_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                            if ( !coeff_c_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            if constexpr ( unknown_is_vectorial )
+                            {
+                                form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                       _pattern=size_type(Pattern::COUPLED),
+                                       _rowstart=this->rowStartInMatrix(),
+                                       _colstart=trialBlockIndex ) +=
+                                    integrate( _range=range,
+                                               _expr= timeSteppingScaling*inner(coeff_c_diff_expr*gradv(u),grad(v)),
+                                               _geomap=this->geomap() );
+                            }
+                            else
+                            {
+                                form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                       _pattern=size_type(Pattern::COUPLED),
+                                       _rowstart=this->rowStartInMatrix(),
+                                       _colstart=trialBlockIndex ) +=
+                                    integrate( _range=range,
+                                               _expr= timeSteppingScaling*grad(v)*(coeff_c_diff_expr*trans(gradv(u))),
+                                               _geomap=this->geomap() );
+                            }
+                        }
+                    });
+                }
             }
             else
             {
@@ -489,6 +527,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
             auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
+            bool coeffReactionDependOnUnknown = coeff_a.hasSymbolDependency( trialSymbolNames, se );
             auto coeff_a_expr = expr( coeff_a.expr(), se );
             bool build_ReactionTerm = coeff_a_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( build_ReactionTerm )
@@ -497,6 +536,31 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     integrate( _range=range,
                                _expr= timeSteppingScaling*coeff_a_expr*inner(idt(u), id(v)),
                                _geomap=this->geomap() );
+            }
+            if ( coeffReactionDependOnUnknown && buildNonCstPart )
+            {
+                hana::for_each( tse.map(), [this,&coeff_a_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                    for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto coeff_a_diff_expr = diffSymbolicExpr( coeff_a_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !coeff_a_diff_expr.expression().hasExpr() )
+                            continue;
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=range,
+                                       _expr= timeSteppingScaling*coeff_a_diff_expr*inner(idv(u), id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                });
             }
         }
 
