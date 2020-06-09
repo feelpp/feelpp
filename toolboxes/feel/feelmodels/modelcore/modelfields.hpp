@@ -57,7 +57,7 @@ struct ModelField1
     using self_type = ModelField1<ModelFieldTagType,FieldType>;
     using tag_type = ModelFieldTagType;
     using field_type = FieldType;
-    using update_function_type = std::function<void(field_type &)>;
+    using update_function_type = std::function<field_type const&()>;
 
     ModelField1( tag_type const& thetag, std::string const& prefix, std::string const& name, field_type const& u, std::string const& symbol, std::string const& prefix_symbol, update_function_type const& updateFunction )
         :
@@ -80,20 +80,20 @@ struct ModelField1
     std::string const& symbol() const { return M_symbol; }
     std::string const& prefixSymbol() const { return M_prefixSymbol; }
     SymbolExprUpdateFunction updateFunctionSymbolExpr() const
-        {
-            if ( M_updateFunction )
-                return std::bind( &self_type::applyUpdateFunction, this );
-            else
-                return SymbolExprUpdateFunction{};
-        }
+    {
+        if ( M_updateFunction )
+            return std::bind( &self_type::applyUpdateFunction, this );
+        else
+            return SymbolExprUpdateFunction{};
+    }
 
     std::string nameWithPrefix() const { return prefixvm( M_prefix,M_name ); }
 
     void applyUpdateFunction() const
-        {
-            if ( M_updateFunction )
-                M_updateFunction(const_cast<field_type&>(M_field));
-        }
+    {
+        if ( M_updateFunction )
+            const_cast<self_type*>(this)->M_field = M_updateFunction();
+    }
 private :
     tag_type M_tag;
     std::string M_prefix;
