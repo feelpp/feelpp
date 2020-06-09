@@ -39,6 +39,7 @@ Winslow<MeshType,Order>::Winslow( mesh_ptrtype mesh, std::string const& prefix,
                                   ModelBaseRepository const& modelRep )
     :
     super_type( prefix, mesh->worldCommPtr(),"", modelRep ),
+    ModelBase( prefix, mesh->worldCommPtr(),"", modelRep ),
     M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(mesh),
@@ -53,6 +54,7 @@ Winslow<MeshType,Order>::Winslow( space_ptrtype const& space, std::string const&
                                   ModelBaseRepository const& modelRep )
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
+    ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
     M_backend( backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() ) ),
     M_solverType( soption(_prefix=this->prefix(),_name="solver") ),
     M_mesh(space->mesh()),

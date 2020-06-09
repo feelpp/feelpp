@@ -50,7 +50,7 @@ runApplicationSolid()
 
                 SM->fieldDisplacement().load(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") %cptCurrent ).str(),
                                              _type=saveType );
-                if ( SM->useDisplacementPressureFormulation() )
+                if ( SM->hasDisplacementPressureFormulation() )
                     SM->fieldPressure().load(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") %cptCurrent ).str(),
                                              _type=saveType );
 
@@ -84,7 +84,7 @@ runApplicationSolid()
 
                 SM->fieldDisplacement().save(_path=SM->rootRepository()+"/"+(boost::format("uSol.field-%1%") % cptCurrent ).str(),
                                              _type=saveType );
-                if ( SM->useDisplacementPressureFormulation() )
+                if ( SM->hasDisplacementPressureFormulation() )
                     SM->fieldPressure().save(_path=SM->rootRepository()+"/"+(boost::format("pSol.field-%1%") % cptCurrent ).str(),
                                              _type=saveType );
 
@@ -102,7 +102,7 @@ runApplicationSolid()
             std::string saveType = soption(_name="save-solution.file-format");
             SM->fieldDisplacement().save(_path=(fs::path( SM->rootRepository() )/fs::path( "solution.displacement" )).string(),
                                          _type=saveType );
-            if ( SM->useDisplacementPressureFormulation() )
+            if ( SM->hasDisplacementPressureFormulation() )
                 SM->fieldPressure().save(_path=(fs::path( SM->rootRepository() )/fs::path( "solution.pressure" )).string(),
                                          _type=saveType );
         }

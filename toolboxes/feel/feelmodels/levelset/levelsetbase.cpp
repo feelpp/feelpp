@@ -29,6 +29,7 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::LevelSetBase(
         ModelBaseRepository const& modelRep ) 
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_doUpdateDirac(true),
     M_doUpdateHeaviside(true),
     M_doUpdateInterfaceElements(true),

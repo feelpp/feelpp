@@ -54,7 +54,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         {
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                 auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
                 auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
                 if ( M_modelUseJouleEffect )
@@ -115,7 +115,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
         {
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                 auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
                 auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
                 myLinearForm +=

@@ -58,7 +58,7 @@ public :
     typedef typename fluid_type::trace_mesh_type trace_mesh_fluid_type;
     typedef typename solid_type::mesh_type mesh_solid_type;
     typedef typename solid_type::trace_mesh_type trace_mesh_solid_type;
-    typedef typename solid_type::mesh_1dreduced_type mesh_solid_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::mesh_type mesh_solid_1dreduced_type;
 
 
     // mesh velocity on FSI boundary
@@ -141,8 +141,8 @@ public :
     
     //-----------------------------------------------------------------------------------//
     // space and element displacement with interaction 2d/1d (disp is scalar)
-    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_disp_1dreduced_type;
-    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_type/*space_vect_1dreduced_type*/ space_struct_vect_disp_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_type/*element_vect_1dreduced_type*/ element_struct_vect_disp_1dreduced_type;
 
     //operator interpolation for this displacement
     typedef OperatorInterpolation<space_struct_vect_disp_1dreduced_type, space_fluid_disp_type,
@@ -154,8 +154,8 @@ public :
 
     //-----------------------------------------------------------------------------------//
     // space and element velocity with interaction 2d/1d (velocity is scalar)
-    typedef typename solid_type::space_vect_1dreduced_type space_struct_vect_velocity_1dreduced_type;
-    typedef typename solid_type::element_vect_1dreduced_type element_struct_vect_velocity_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::space_displacement_type/*space_vect_1dreduced_type*/ space_struct_vect_velocity_1dreduced_type;
+    typedef typename solid_type::solid_1dreduced_type::element_displacement_component_type/*element_vect_1dreduced_type*/ element_struct_vect_velocity_1dreduced_type;
 
     //operator interpolation for this velocity
     typedef OperatorInterpolation<space_struct_vect_velocity_1dreduced_type, space_fluid_meshvelocityonboundary_type/*space_fluid_velocity_type*/,

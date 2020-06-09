@@ -46,7 +46,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             if ( M_modelUseJouleEffect )
             {
@@ -108,15 +108,17 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
                                    _rowstart=M_heatModel->rowStartInVector() );
 
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradv(v))*id(t),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

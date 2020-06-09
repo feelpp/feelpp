@@ -35,6 +35,7 @@ ADVDIFFREAC_CLASS_TEMPLATE_TYPE::AdvDiffReac(
         ModelBaseRepository const& modelRep )
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase(  prefix, keyword, worldComm, subPrefix, modelRep ),
     M_isUpdatedForUse(false),
     M_diffusionReactionModel( new diffusionreaction_model_type( prefix ) ),
     M_doProjectFieldAdvectionVelocity( false ),

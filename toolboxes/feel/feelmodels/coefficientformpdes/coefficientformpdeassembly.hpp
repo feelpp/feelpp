@@ -50,7 +50,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
@@ -402,7 +402,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
@@ -629,7 +629,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )

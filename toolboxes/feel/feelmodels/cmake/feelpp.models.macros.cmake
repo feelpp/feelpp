@@ -180,7 +180,7 @@ endmacro(genLibElectric)
 
 macro( genLibSolidMechanics )
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;DISP_ORDER;GEO_ORDER;DENSITY_COEFFLAME_TYPE"
+    "DIM;DISP_ORDER;GEO_ORDER"
     ""
     ${ARGN}
     )
@@ -193,23 +193,7 @@ macro( genLibSolidMechanics )
   set(SOLIDMECHANICS_ORDERGEO ${FEELMODELS_APP_GEO_ORDER})
   set(SOLIDMECHANICS_ORDER_DISPLACEMENT ${FEELMODELS_APP_DISP_ORDER})
 
-  if (FEELMODELS_APP_DENSITY_COEFFLAME_TYPE)
-    if ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0c" )
-      set(FEELMODELS_DENSITY_COEFFLAME_TAG DCLP0c)
-      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 1)
-    elseif ("${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE}" STREQUAL "P0d" )
-      unset(FEELMODELS_DENSITY_COEFFLAME_TAG) # default tag P0d
-      set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
-    else()
-      message(FATAL_ERROR "DENSITY_COEFFLAME_TYPE : ${FEELMODELS_APP_DENSITY_COEFFLAME_TYPE} is not valid! It must be P0c or P0d")
-    endif()
-  else()
-    # default value
-    unset(FEELMODELS_DENSITY_COEFFLAME_TAG) # default tag P0d
-    set(SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME 0)
-  endif()
-
-  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO}${FEELMODELS_DENSITY_COEFFLAME_TAG})
+  set(SOLIDMECHANICS_LIB_VARIANTS ${SOLIDMECHANICS_DIM}dP${SOLIDMECHANICS_ORDER_DISPLACEMENT}G${SOLIDMECHANICS_ORDERGEO})
   set(SOLIDMECHANICS_LIB_NAME feelpp_toolbox_solid_lib_${SOLIDMECHANICS_LIB_VARIANTS})
 
   if ( NOT TARGET ${SOLIDMECHANICS_LIB_NAME} )
@@ -219,7 +203,8 @@ macro( genLibSolidMechanics )
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicscreate_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsothers_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear_inst.cpp
-      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanics1dreduced_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdatejacobian_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/solid/solidmechanicsupdateresidual_inst.cpp
       )
@@ -227,7 +212,8 @@ macro( genLibSolidMechanics )
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicscreate_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsothers_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear_inst.cpp
-      ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      #${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatelinear1dreduced_inst.cpp
+      ${SOLIDMECHANICS_LIB_DIR}/solidmechanics1dreduced_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdatejacobian_inst.cpp
       ${SOLIDMECHANICS_LIB_DIR}/solidmechanicsupdateresidual_inst.cpp
       )
@@ -366,7 +352,7 @@ endmacro( genLibFluidMechanics )
 
 macro(genLibFSI)
   PARSE_ARGUMENTS(FEELMODELS_APP
-    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC;SOLID_DENSITY_COEFFLAME_TYPE"
+    "DIM;BC_MARKERS;FLUID_U_ORDER;FLUID_P_ORDER;FLUID_P_CONTINUITY;FLUID_GEO_ORDER;FLUID_GEO_DESC;FLUID_BC_DESC;FLUID_DENSITY_VISCOSITY_CONTINUITY;FLUID_DENSITY_VISCOSITY_ORDER;SOLID_DISP_ORDER;SOLID_GEO_ORDER;SOLID_BC_DESC;SOLID_GEO_DESC"
     ""
     ${ARGN}
     )
@@ -391,7 +377,6 @@ macro(genLibFSI)
     DIM ${FEELMODELS_APP_DIM}
     DISP_ORDER ${FEELMODELS_APP_SOLID_DISP_ORDER}
     GEO_ORDER ${FEELMODELS_APP_SOLID_GEO_ORDER}
-    DENSITY_COEFFLAME_TYPE ${FEELMODELS_APP_SOLID_DENSITY_COEFFLAME_TYPE}
     )
 
   set(FSI_LIB_VARIANTS ${FLUIDMECHANICS_LIB_VARIANTS}_${SOLIDMECHANICS_LIB_VARIANTS})

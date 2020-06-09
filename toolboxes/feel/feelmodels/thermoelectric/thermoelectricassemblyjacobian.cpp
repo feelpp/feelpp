@@ -60,7 +60,7 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
         {
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                 auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
 
                 bool electricConductivityDependOnTrialSymbol = electricConductivity.hasSymbolDependency( trialSymbolNames,se );

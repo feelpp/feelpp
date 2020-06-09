@@ -23,6 +23,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::MultiFluid(
         ModelBaseRepository const& modelRep )
 : 
     super_type( prefix, wc, subPrefix, modelRep ),
+    ModelBase( prefix, wc, subPrefix, modelRep ),
     M_prefix( prefix ),
     M_useLagrangeP1iso( false ),
     M_doUpdateGlobalLevelset( true ),

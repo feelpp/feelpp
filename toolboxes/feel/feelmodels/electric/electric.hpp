@@ -61,6 +61,7 @@ public:
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
@@ -75,7 +76,7 @@ public:
     typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
@@ -183,7 +184,7 @@ public :
 
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                 if ( this->materialsProperties()->hasElectricConductivity( matName ) )
                 {
                     auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
@@ -201,7 +202,7 @@ public :
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
 
@@ -367,6 +368,7 @@ private :
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
+
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;
