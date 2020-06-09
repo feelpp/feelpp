@@ -22,8 +22,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     this->log("SolidMechanics","getInfo", "start" );
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
-    return _ostr;
-
 
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
@@ -37,6 +35,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string hovisuMode,myexporterType;
     int myexporterFreq=1;
+    std::string doExport_str;
     if ( this->hasSolidEquationStandard() )
     {
         if ( M_isHOVisu && M_exporter_ho )
@@ -57,6 +56,8 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
             myexporterType = M_exporter->type();
             myexporterFreq = M_exporter->freq();
         }
+        for ( std::string const& fieldName : this->postProcessExportsFields() )
+            doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
     }
     else
     {
@@ -70,11 +71,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 #endif
     }
 
-    std::string doExport_str;
-    for ( std::string const& fieldName : this->postProcessExportsFields() )
-        doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
-
-    
     *_ostr << "\n||==============================================||"
            << "\n||----------Info : SolidMechanics---------------||"
            << "\n||==============================================||"
