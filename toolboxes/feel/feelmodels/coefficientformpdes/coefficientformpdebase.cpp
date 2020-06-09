@@ -11,7 +11,7 @@ namespace FeelModels
 {
 
 template< typename ConvexType>
-CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& genericPDE,
+CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( typename super2_type::infos_type const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
@@ -19,7 +19,7 @@ CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& g
                                                             ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) ),
-    super2_type( genericPDE )
+    super2_type( infosPDE )
 {
     this->log("CoefficientFormPDE","constructor", "start" );
 
@@ -80,8 +80,8 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this_cfpdebase() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
@@ -96,7 +96,7 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( { this->unknownName() } );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( { this->unknownName() } );
     super_type::initPostProcess();

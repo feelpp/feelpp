@@ -59,7 +59,7 @@ public:
     static const uint16_type nDim = mesh_type::nDim;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter

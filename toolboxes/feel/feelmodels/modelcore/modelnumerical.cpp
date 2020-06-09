@@ -42,6 +42,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
                                 ModelBaseCommandLineOptions const& modelCmdLineOpt )
         :
         super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
+        ModelBase( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),

@@ -10,29 +10,22 @@ namespace FeelModels
 {
 
 template <uint16_type Dim>
-ModelGenericPDE<Dim>::ModelGenericPDE( /*std::string const& physic*/ )
+ModelGenericPDE<Dim>::ModelGenericPDE( infos_type const& infos )
     :
-    super_type( "GenericPDE" )
-{}
-
-template <uint16_type Dim>
-ModelGenericPDE<Dim>::ModelGenericPDE( std::string const& name, pt::ptree const& p )
-    :
-    super_type( "GenericPDE" )
+    super_type( "GenericPDE" ),
+    ModelBase(""),
+    M_infos( infos )
 {
-    this->setupGenericPDE( name, p );
+    this->setupGenericPDE();
 }
 
 template <uint16_type Dim>
-void
-ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const& eqPTree )
+ModelGenericPDE<Dim>::Infos::Infos( std::string const& name, pt::ptree const& eqPTree )
 {
-    this->M_physicDefault = name;
+    M_equationName = name;
 
     if ( auto nameEqOpt =  eqPTree.template get_optional<std::string>( "name" ) )
-        this->M_physicDefault = *nameEqOpt;
-
-    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault() );
+        M_equationName = *nameEqOpt;
 
     if ( auto unknownPTree = eqPTree.get_child_optional("unknown") )
     {
@@ -57,6 +50,23 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
         unknownShape = "vectorial";
     else
         CHECK( false ) << "invalid unknown.basis : " << M_unknownBasis;
+}
+
+template <uint16_type Dim>
+void
+ModelGenericPDE<Dim>::setupGenericPDE()
+{
+    this->M_physicDefault = M_infos.equationName();
+
+    auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(),  this->physicDefault() );
+
+    std::string unknownShape;
+    if ( this->unknownBasis() == "Pch1" ||  this->unknownBasis() == "Pch2" )
+        unknownShape = "scalar";
+    else if ( this->unknownBasis() == "Pchv1" ||  this->unknownBasis() == "Pchv2" )
+        unknownShape = "vectorial";
+    else
+        CHECK( false ) << "invalid unknown.basis : " << this->unknownBasis();
 
     material_property_shape_dim_type scalarShape = std::make_pair(1,1);
     material_property_shape_dim_type vectorialShape = std::make_pair(nDim,1);
@@ -78,7 +88,8 @@ ModelGenericPDE<Dim>::setupGenericPDE( std::string const& name, pt::ptree const&
 template <uint16_type Dim>
 ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
     :
-    super_type( "GenericPDEs" )
+    super_type( "GenericPDEs" ),
+    ModelBase("")
 {}
 
 template <uint16_type Dim>
@@ -98,22 +109,29 @@ ModelGenericPDEs<Dim>::setupGenericPDEs( std::string const& name, pt::ptree cons
             for ( auto const& itemEq : *equationsOpt )
             {
                 CHECK( itemEq.first.empty() ) << "should be an array, not a subtree";
-
                 std::string nameEqDefault = (boost::format("equation%1%")%M_pdes.size()).str();
-                ModelGenericPDE<nDim> mgpde( nameEqDefault, itemEq.second );
-                M_pdes.push_back( std::move( mgpde ) );
+                typename ModelGenericPDE<nDim>::infos_type infos( nameEqDefault, itemEq.second );
+                M_pdes.push_back( std::make_tuple( std::move( infos ), std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
             }
         }
     }
 
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name );
-    for ( auto const& pde : M_pdes )
+    this->M_physics.emplace( name, mphysic );
+}
+
+template <uint16_type Dim>
+void
+ModelGenericPDEs<Dim>::updateForUseGenericPDEs()
+{
+    auto & mphysic = this->M_physics[this->physicDefault()];
+    for ( auto const& [infos,pde] : M_pdes )
     {
-        this->M_physics.insert( pde.physics().begin(), pde.physics().end() );
-        for ( auto const& subPhysic : pde.physics() ) // normally only one
+        CHECK( pde ) <<"pde not defined";
+        this->M_physics.insert( pde->physics().begin(), pde->physics().end() );
+        for ( auto const& subPhysic : pde->physics() ) // normally only one
             mphysic->addSubphysic( subPhysic.second );
     }
-    this->M_physics.emplace( name, mphysic );
 }
 
 template class ModelGenericPDE<2>;

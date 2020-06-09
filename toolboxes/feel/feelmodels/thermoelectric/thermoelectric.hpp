@@ -62,7 +62,7 @@ public:
     typedef mesh_heat_type mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter

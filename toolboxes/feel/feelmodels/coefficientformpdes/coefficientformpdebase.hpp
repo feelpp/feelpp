@@ -33,11 +33,12 @@ public :
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // stabilization
@@ -53,13 +54,13 @@ public :
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 public :
-    CoefficientFormPDEBase( super2_type const& genericPDE,
+    CoefficientFormPDEBase( typename super2_type::infos_type const& infosPDE,
                             std::string const& prefix,
                             std::string const& keyword,
                             worldcomm_ptr_t const& worldComm,
                             std::string const& subPrefix,
                             ModelBaseRepository const& modelRep );
-
+#if 0
     CoefficientFormPDEBase( std::string const& prefix,
                             std::string const& keyword,
                             worldcomm_ptr_t const& worldComm,
@@ -68,8 +69,14 @@ public :
         :
         CoefficientFormPDEBase( super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
-
+#endif
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
+
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    virtual std::shared_ptr<CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() = 0;
+
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    virtual std::shared_ptr<const CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() const = 0;
 
     //___________________________________________________________________________________//
     // mesh

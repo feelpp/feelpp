@@ -47,9 +47,9 @@ public:
     typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
-    // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
-    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
+    // // materials properties
+    // typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    // typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
@@ -58,13 +58,13 @@ public:
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
-    CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+    CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
                         std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
-
+#if 0
     CoefficientFormPDE( std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
@@ -73,6 +73,12 @@ public:
         :
         CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
+#endif
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    std::shared_ptr<super_type> shared_from_this_cfpdebase() override { return std::dynamic_pointer_cast<super_type>( this->shared_from_this() ); }
+
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
 
@@ -129,7 +135,7 @@ public:
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
         {
-            return this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se );
+            return this->materialsProperties()->exprPostProcessExports( this->mesh(), this->physicsAvailable(), se );
         }
 
     //___________________________________________________________________________________//
