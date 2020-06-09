@@ -283,9 +283,9 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"coeffpoisson").c_str(), Feel::po::value<double>()->default_value( 0.3 ), "poisson coefficient")
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()/*->default_value("Elasticity")*/, "struct model")
         (prefixvm(prefix,"material_law").c_str(), Feel::po::value< std::string >()->default_value("StVenantKirchhoff"), "StVenantKirchhoff, NeoHookean")
-        (prefixvm(prefix,"mechanicalproperties.compressible.volumic-law").c_str(), Feel::po::value< std::string >()->default_value("classic"), "classic, simo1985")
-        (prefixvm(prefix,"mechanicalproperties.compressible.neohookean.variant").c_str(),
-         Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
+        //(prefixvm(prefix,"mechanicalproperties.compressible.volumic-law").c_str(), Feel::po::value< std::string >()->default_value("classic"), "classic, simo1985")
+        //(prefixvm(prefix,"mechanicalproperties.compressible.neohookean.variant").c_str(),
+        //Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
         (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "struct solver")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, BDF, Theta")

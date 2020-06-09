@@ -90,11 +90,13 @@ ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std:
     :
     super_type( "solid", name, model ),
     M_equation( "Hyper-Elasticity" ),
-    M_materialModel( "StVenantKirchhoff" ),
-    M_formulation( "displacement" ),
+    M_materialModel( soption(_prefix=mphysics.prefix(), _name="material_law",_vm=mphysics.clovm() ) ),
+    M_formulation( soption(_prefix=mphysics.prefix(), _name="formulation",_vm=mphysics.clovm() ) ),
     M_decouplingEnergyVolumicLaw( "classic" ),
     M_compressibleNeoHookeanVariantName( "default" )
 {
+    if ( mphysics.clovm().count(prefixvm(mphysics.prefix(),"model").c_str()) )
+        this->setEquation( soption(_name="model",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) );
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
         this->setEquation( *eq );
