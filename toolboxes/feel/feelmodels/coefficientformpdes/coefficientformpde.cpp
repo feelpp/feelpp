@@ -313,6 +313,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
                << "\n     -- time step    : " << this->timeStepBase()->timeStep()
                << "\n     -- type : " << this->timeStepping();
+        if ( this->timeStepping() == "BDF" )
+            *_ostr << " ( order=" << this->timeStepBdfUnknown()->timeOrder() << " )";
     }
     if ( this->algebraicFactory() )
         *_ostr << this->algebraicFactory()->getInfo()->str();
