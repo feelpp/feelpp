@@ -149,6 +149,7 @@ public :
 
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
     std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"mesh.path"); }
 
