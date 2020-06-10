@@ -143,6 +143,7 @@ class ModelNumerical : public ModelAlgebraic
                 double dt = this->timeStep();
 
                 auto thebdf = bdf( _space=space,
+                                   _vm=this->clovm(),
                                    _name=name+suffixName,
                                    _prefix=this->prefix(),
                                    _order=bdfOrder,

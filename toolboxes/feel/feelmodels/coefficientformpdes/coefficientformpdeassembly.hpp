@@ -29,8 +29,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "Theta" )
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( this->timeStepping() == "Theta" )
+            timeSteppingScaling = this->M_timeStepThetaValue;
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
@@ -381,8 +381,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "Theta" )
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( this->timeStepping() == "Theta" )
+            timeSteppingScaling = this->M_timeStepThetaValue;
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
@@ -670,12 +670,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     if ( !this->isStationary() )
     {
         timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm( this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
-        if ( M_timeStepping == "Theta" )
+        if ( this->timeStepping() == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
-                timeSteppingScaling = 1. - M_timeStepThetaValue;
+                timeSteppingScaling = 1. - this->M_timeStepThetaValue;
             else
-                timeSteppingScaling = M_timeStepThetaValue;
+                timeSteppingScaling = this->M_timeStepThetaValue;
         }
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }

@@ -98,12 +98,11 @@ public:
 
     //___________________________________________________________________________________//
     // time step scheme
-    std::string const& timeStepping() const { return M_timeStepping; }
     bdf_unknown_ptrtype const& timeStepBdfUnknown() const { return M_bdfUnknown; }
     //std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
     std::shared_ptr<TSBase> timeStepBase() const override { return this->timeStepBdfUnknown(); }
-    void startTimeStep();
-    void updateTimeStep();
+    void startTimeStep() override;
+    void updateTimeStep() override;
     //___________________________________________________________________________________//
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -230,10 +229,7 @@ private :
     element_unknown_ptrtype M_fieldUnknown;
 
     // time discretisation
-    std::string M_timeStepping;
     bdf_unknown_ptrtype M_bdfUnknown;
-    double M_timeStepThetaValue;
-    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // boundary conditions
     using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;

@@ -159,6 +159,12 @@ public :
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
     //___________________________________________________________________________________//
+    // time stepping
+    std::shared_ptr<TSBase> timeStepBase() const;
+    void startTimeStep();
+    void updateTimeStep();
+
+    //___________________________________________________________________________________//
     // post-process
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
