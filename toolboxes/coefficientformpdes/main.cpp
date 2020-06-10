@@ -25,7 +25,6 @@ runApplicationCoefficientFormPDEs()
     }
     else
     {
-#if 0
         if ( !cfpdes->doRestart() )
             cfpdes->exportResults(cfpdes->timeInitial());
 
@@ -41,7 +40,6 @@ runApplicationCoefficientFormPDEs()
             cfpdes->solve();
             cfpdes->exportResults();
         }
-#endif
     }
 
     return !cfpdes->checkResults();
