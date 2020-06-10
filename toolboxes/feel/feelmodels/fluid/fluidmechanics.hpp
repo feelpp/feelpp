@@ -1585,8 +1585,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     auto fields = this->modelFields();
     if ( nOrderGeo == 1 )
     {
-        this->executePostProcessExports( M_exporter, time, fields/*, symbolsExpr*/ );
-        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields/*, symbolsExpr*/ );
+        this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
+        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
     }
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );
