@@ -19,7 +19,7 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     for ( std::string const& submodel : model.submodels() )
         M_subphysics[submodel];
 
-    if ( type == "GenericPDE" )
+    if ( type == "GenericPDE" || type == "GenericPDEs" )
         return;
 
     if ( M_type == "thermo-electric" )

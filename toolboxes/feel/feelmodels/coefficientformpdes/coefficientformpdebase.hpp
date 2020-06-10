@@ -99,6 +99,9 @@ public :
     //___________________________________________________________________________________//
     // time discretisation
     virtual std::shared_ptr<TSBase> timeStepBase() const = 0;
+    virtual void startTimeStep() = 0;
+    virtual void updateTimeStep() = 0;
+    std::string const& timeStepping() const { return M_timeStepping; }
     //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return M_backend; }
@@ -126,6 +129,11 @@ protected :
 
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
+
+    // time discretisation
+    std::string M_timeStepping;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // stabilization
     bool M_applyStabilization;

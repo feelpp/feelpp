@@ -88,6 +88,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                         });
     }
 
+    if ( !this->isStationary() )
+    {
+        CHECK( !M_coefficientFormPDEs.empty() ) << "no equation";
+        // up initial time
+        this->setTimeInitial( M_coefficientFormPDEs.front()->timeInitial() );
+        // up current time
+        this->updateTime( M_coefficientFormPDEs.front()->currentTime() );
+    }
+
 
     // post-process
     this->initPostProcess();
@@ -314,6 +323,40 @@ void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
 {
     // TODO
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+std::shared_ptr<TSBase>
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::timeStepBase() const
+{
+    CHECK( !M_coefficientFormPDEs.empty() ) << "no equation";
+    return M_coefficientFormPDEs.front()->timeStepBase();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    for (auto & cfpde : M_coefficientFormPDEs )
+        cfpde->startTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
+
+    this->updateParameterValues();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    for (auto & cfpde : M_coefficientFormPDEs )
+        cfpde->updateTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
+
+    this->updateParameterValues();
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS

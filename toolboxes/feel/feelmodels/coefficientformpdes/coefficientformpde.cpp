@@ -199,7 +199,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
 
     int bdfOrder = 1;
-    if ( M_timeStepping == "BDF" )
+    if ( this->timeStepping() == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order",_vm=this->clovm());
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
 
@@ -306,6 +306,14 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- symbol of unknown : " << this->unknownSymbol()
            << "\n     -- basis : " << this->unknownBasis()
            << "\n     -- number of dof : " << this->spaceUnknown()->nDof() << " (" << this->spaceUnknown()->nLocalDof() << ")";
+    if ( !this->isStationary() )
+    {
+        *_ostr << "\n   Time Discretization"
+               << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+               << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+               << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+               << "\n     -- type : " << this->timeStepping();
+    }
     if ( this->algebraicFactory() )
         *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
@@ -349,7 +357,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTimeStepCurrentResidual();
 #endif
     bool rebuildCstAssembly = false;
-    if ( M_timeStepping == "BDF" )
+    if ( this->timeStepping() == "BDF" )
     {
         int previousTimeOrder = this->timeStepBdfUnknown()->timeOrder();
         M_bdfUnknown->next( this->fieldUnknown() );
@@ -358,7 +366,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateTime( this->timeStepBdfUnknown()->time() );
     }
 #if 0
-    else if ( M_timeStepping == "Theta" )
+    else if ( this->timeStepping() == "Theta" )
     {
         M_bdfUnknown->next( this->fieldUnknown() );
         this->updateTime( this->timeStepBdfUnknown()->time() );
