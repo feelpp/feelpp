@@ -1,32 +1,16 @@
-def run():
-    import numpy as np
-    from numpy import sum, mean, sqrt
-    import matplotlib.pyplot as plt
-    from UKF import Filter
+import ukf
+import numpy as np
 
-    def f(X,time,dt):
-        Y = X + np.random.normal(0,dt)
-        return Y
+def f(x):
+    return x + np.random.normal(0,0.1)
     
-    def h(X):                                          
-        Y = X #+ np.random.normal(0,dt)
-        return Y
-
-    dt = 1e-01
-    Time = dt*np.arange(0,63.8)
-    Signal = np.sin(Time) # + np.random.normal(0,0.1,3600) + 2
+def h(x):
+    return x
     
-    F = Filter
-    F.set(F,1,1,0.5,dt,f,h)
-    F.readsignal(F,Signal)
-    F.filter(F)
+F = ukf.Filter(f, h, 1000, 1, 1)
+signal = list(np.sin( np.linspace(0, 4*np.pi, 100) ))
+F.filter(signal) 
+stateEstimates = np.asmatrix(np.transpose(F.getStateEstimateList()))
+signal = np.matrix(signal)
 
-    print("L2 relative error :",np.linalg.norm(Signal-F.forecast)/np.linalg.norm(F.forecast))
-
-    plt.plot(Time,F.forecast[0,:],label="Predicted trajectory")
-    plt.plot(Time,Signal,label="Signal")
-    leg = plt.legend(loc='upper right')
-    leg.get_frame().set_alpha(0.5)
-    plt.show()
-
-run()
+print(np.linalg.norm(stateEstimates - signal))

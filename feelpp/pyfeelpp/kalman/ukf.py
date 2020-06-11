@@ -5,8 +5,6 @@ from base import *
 
 class Filter:
 
-
-
     def __init__( self, dynamics, observe, defect, stateDim, obsDim ):
         self.observe = observe
         self.transform = dynamics
@@ -30,7 +28,7 @@ class Filter:
         
         self._sigmaScheme = defect*numpy.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
         self._sigmaPoints = numpy.zeros((stateDim,2*stateDim+1))
-        self._sigmaSigns = numpy.concatenate((numpy.zeros((stateDim,1)),numpy.eye(stateDim),-numpy.eye(stateDim)), axis=1) #numpy.diag( numpy.concatenate( ( numpy.zeros(1), numpy.ones(stateDim), -numpy.ones(stateDim) ) ) )
+        self._sigmaSigns = numpy.concatenate((numpy.zeros((stateDim,1)),numpy.eye(stateDim),-numpy.eye(stateDim)), axis=1)
         
         self._weights = numpy.ones(2*stateDim+1)*1/6
         self._weights[0] = 1-stateDim/3
@@ -39,14 +37,14 @@ class Filter:
         self._sigmaHk = M
 
     def setSigmaPoints( self ):
-        self._sigmaScheme = numpy.transpose( scipy.linalg.sqrtm( 3*self._stateCov ) ) @ self._sigmaSigns  #self._sigmaSigns @ scipy.linalg.sqrtm( 3*self._stateCov )
-        self._sigmaPoints = self._stateEstimate * numpy.ones((1,self.stateDim)) + self._sigmaScheme        
+        self._sigmaScheme = numpy.transpose( scipy.linalg.sqrtm( 3*self._stateCov ) ) @ self._sigmaSigns
+        self._sigmaPoints = self._stateEstimate * numpy.ones((1,self.stateDim)) + self._sigmaScheme   
 
     def _setStateEstimate( self, value ):
         self._stateEstimate = value
         
     def getSigmaHk( self ):
-        return self._sigmaHk
+        return list(numpy.transpose(self._sigmaHk))
         
     def getSigmaPoints( self ):
         return self._sigmaPoints
@@ -89,8 +87,8 @@ class Filter:
         return pointSet
 
     def saveStep( self ):
-        self._stateEstimateList.append( self.getStateEstimate() )
-        self._obsEstimateList.append( self.getObsEstimate() )
+        self._stateEstimateList.append( self.getStateEstimate()[0].copy() )
+        self._obsEstimateList.append( self.getObsEstimate()[0].copy() )
 
     def step( self, measurement ):
         
@@ -117,14 +115,15 @@ class Filter:
         else:
             self._setStateEstimate( initialGuess )
             
-        N = len(signal)
+        N = len(signal) # number of entries, whichever is their dimension
         for k in range(N):
-            self.step( signal[:,k] )
+            self.step( signal[k] )
             
             if verbose:
+                print("================ step : ",k)
                 print("    sigma-points : ",self.getSigmaPoints() )
                 print("    uncertainty matrix : ",self.getSigmaHk() )
                 print("    Kalman gain : ",self.getGain() )
-                print("    last state estimate : ",self.getStateEstimate() )
-                print("    associated predicted measure : ", self.getObsEstimate(), " ; real measure : ", signal[:,i] )
-                print("    predicted/obsereved measure gap : ",numpy.abs( self.getObsEstimate() - signal[:,i] ) )
+                print("    last state estimate : ",self.getStateEstimate()[0] )
+                print("    associated predicted measure : ", self.getObsEstimate()[0], " ; real measure : ", signal[k] )
+                print("    predicted/obsereved measure gap : ",numpy.abs( self.getObsEstimate()[0] - signal[k] ) )
