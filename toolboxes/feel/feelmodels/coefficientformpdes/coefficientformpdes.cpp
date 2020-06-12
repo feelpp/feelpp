@@ -19,9 +19,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep/*, ModelBaseCommandLineOptions( coefficientformpdes_options( prefix ) )*/ )
 {
-    M_solverName = soption(_prefix=this->prefix(),_name="solver");
+    M_solverName = soption(_prefix=this->prefix(),_name="solver",_vm=this->clovm());
 }
 
 
@@ -32,8 +32,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDEs","init", "start" );
     this->timerTool("Constructor").start();
 
+    CHECK( this->hasModelProperties() ) << "no model properties";
+
     if ( this->physics().empty() )
-        this->setupGenericPDEs( this->keyword(), this->modelProperties().models().model( this->keyword() ).ptree() );
+        this->initGenericPDEs( this->keyword() );
+
+    // add equations from modelProperties
+    if ( this->hasModelProperties() )
+        this->setupGenericPDEs( this->modelProperties().models().model( this->keyword() ).ptree() );
+    CHECK( !this->pdes().empty() ) << "no equation";
 
     for ( auto & eq : this->pdes() )
     {
@@ -56,13 +63,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     this->updateForUseGenericPDEs();
 
-
     this->initMaterialProperties();
 
     if ( !this->M_mesh )
         this->initMesh();
-
-    CHECK( this->hasModelProperties() ) << "no model properties";
 
     for ( auto & cfpdeBase : M_coefficientFormPDEs )
     {
@@ -105,7 +109,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->updateParameterValues();
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
 
     int nBlock = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
@@ -139,7 +143,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("CoefficientFormPDEs","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
+    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
@@ -156,8 +161,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }

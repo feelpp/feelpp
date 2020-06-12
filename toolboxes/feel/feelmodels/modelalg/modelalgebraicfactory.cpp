@@ -36,28 +36,28 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix )
+ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix, po::variables_map const& vm )
     :
     M_useSolverPtAP( false ),
-    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type")] ),
-    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal") ),
+    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type",_vm=vm)] ),
+    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm) ),
     M_hasBuildLinearJacobian(false),
     M_hasBuildResidualCst(false),
     M_hasBuildLinearSystemCst(false),
-    M_usePseudoTransientContinuation( boption(_prefix=prefix,_name="pseudo-transient-continuation") ),
-    M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=prefix,_name="pseudo-transient-continuation.evolution") ),
-    M_pseudoTransientContinuationDelta0( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta0") ),
-    M_pseudoTransientContinuationDeltaMax( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta-max") ),
-    M_pseudoTransientContinuationSerVariant( soption(_prefix=prefix,_name="pseudo-transient-continuation.ser-variant") ),
-    M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high") ),
-    M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low") ),
-    M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high") ),
-    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low") )
+    M_usePseudoTransientContinuation( boption(_prefix=prefix,_name="pseudo-transient-continuation",_vm=vm) ),
+    M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=prefix,_name="pseudo-transient-continuation.evolution",_vm=vm) ),
+    M_pseudoTransientContinuationDelta0( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta0",_vm=vm) ),
+    M_pseudoTransientContinuationDeltaMax( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta-max",_vm=vm) ),
+    M_pseudoTransientContinuationSerVariant( soption(_prefix=prefix,_name="pseudo-transient-continuation.ser-variant",_vm=vm) ),
+    M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high",_vm=vm) ),
+    M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low",_vm=vm) ),
+    M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high",_vm=vm) ),
+    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low",_vm=vm) )
 {}
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend )
     :
-    ModelAlgebraicFactory( model->prefix() )
+    ModelAlgebraicFactory( model->prefix(), model->clovm() )
 {
     model->log( model->prefix()+".MethodNum","constructor1", "start" );
     this->init( model,backend );
