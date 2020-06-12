@@ -47,9 +47,6 @@ public:
     typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
-    // // materials properties
-    // typedef MaterialsProperties<mesh_type> materialsproperties_type;
-    // typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
@@ -79,8 +76,6 @@ public:
 
     //! return current shared_ptr of type CoefficientFormPDEBase
     std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
-
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
 
     //___________________________________________________________________________________//
     // mesh, space, element unknown

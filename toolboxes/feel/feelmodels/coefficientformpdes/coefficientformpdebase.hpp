@@ -70,7 +70,6 @@ public :
         CoefficientFormPDEBase( super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
 #endif
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
 
     //! return current shared_ptr of type CoefficientFormPDEBase
     virtual std::shared_ptr<CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() = 0;

@@ -17,13 +17,15 @@ class CoefficientFormPDEs : public ModelNumerical,
                             public ModelGenericPDEs<ConvexType::nDim>,
                             public std::enable_shared_from_this< CoefficientFormPDEs<ConvexType,BasisUnknownType...> >
 {
-    using coefficient_form_pde_base_type = CoefficientFormPDEBase<ConvexType>;
 public :
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
     using self_ptrtype = std::shared_ptr<self_type>;
+
+    using coefficient_form_pde_base_type = CoefficientFormPDEBase<ConvexType>;
+    using coefficient_form_pde_base_ptrtype = std::shared_ptr<coefficient_form_pde_base_type>;
 
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
@@ -45,7 +47,6 @@ public :
 
 
     static constexpr auto tuple_type_unknown_basis = hana::to_tuple(hana::tuple_t<BasisUnknownType...>);
-private :
 
     struct traits
     {
@@ -147,11 +148,45 @@ public :
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( pt::ptree & p ) override;
 
+    //! return all subtoolboxes related to each equation
+    std::vector<std::shared_ptr<coefficient_form_pde_base_type>> const& coefficientFormPDEs() const { return M_coefficientFormPDEs; }
 
+    //! return toolbox related to an equation from the name of the equation (empty ptr if not found)
+    coefficient_form_pde_base_ptrtype coefficientFormPDE( std::string const& nameEq ) const
+        {
+            for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                if ( cfpdeBase->equationName() == nameEq )
+                    return cfpdeBase;
+            return std::shared_ptr<coefficient_form_pde_base_type>{};
+        }
+
+    //! return toolbox related to an equation from the base object and the fe basis (empty ptr if not found)
+    template <typename TheBasisType>
+    auto coefficientFormPDE( coefficient_form_pde_base_ptrtype const& cfpdeBase, TheBasisType const& e ) const
+        {
+            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            return std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+        }
+
+    //! return toolbox related to an equation from the name of the equation and the fe basis (empty ptr if not found)
+    template <typename TheBasisType>
+    auto coefficientFormPDE( std::string const& nameEq, TheBasisType const& e ) const
+        {
+            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+            auto cfpdeBase = this->coefficientFormPDE( nameEq );
+            if ( !cfpdeBase )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            return std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+        }
+
+    //___________________________________________________________________________________//
+    // mesh
     mesh_ptrtype const& mesh() const { return M_mesh; }
     void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
-
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"mesh.path"); }
 
     //___________________________________________________________________________________//
     // physical parameters

@@ -94,9 +94,8 @@ ModelGenericPDEs<Dim>::ModelGenericPDEs( /*std::string const& physic*/ )
 
 template <uint16_type Dim>
 void
-ModelGenericPDEs<Dim>::setupGenericPDEs( std::string const& name, pt::ptree const& modelPTree )
+ModelGenericPDEs<Dim>::setupGenericPDEs( pt::ptree const& modelPTree )
 {
-    this->M_physicDefault = name;
     if ( auto equationsOpt = modelPTree.get_child_optional("equations") )
     {
         if ( equationsOpt->empty() )
@@ -115,9 +114,22 @@ ModelGenericPDEs<Dim>::setupGenericPDEs( std::string const& name, pt::ptree cons
             }
         }
     }
+}
 
+template <uint16_type Dim>
+void
+ModelGenericPDEs<Dim>::initGenericPDEs( std::string const& name )
+{
+    this->M_physicDefault = name;
     auto mphysic = std::make_shared<ModelPhysic<Dim>>( this->physicType(), name );
     this->M_physics.emplace( name, mphysic );
+}
+
+template <uint16_type Dim>
+void
+ModelGenericPDEs<Dim>::addGenericPDE( typename ModelGenericPDE<nDim>::infos_type const& infos )
+{
+    M_pdes.push_back( std::make_tuple( infos, std::shared_ptr<ModelGenericPDE<nDim>>{} ) );
 }
 
 template <uint16_type Dim>
