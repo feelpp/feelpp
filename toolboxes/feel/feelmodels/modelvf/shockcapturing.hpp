@@ -105,7 +105,7 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
 
                 value_type norm_zh = zh.norm();
 
-                if ( norm_zh < 1e-10 )
+                if ( norm_zh < 1e-14 )
                 {
                     M_localMatrixIsZero[q] = true;
                     continue;
@@ -133,8 +133,9 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
 
                 //value_type tau_sc = M_tensorTauParameter.evalq(0,0,q)*std::max( 0., norm_convection/norm_zh - zeta);
                 value_type tau_sc = 0;
-                if ( (norm_convection/norm_zh - zeta) > 0 )
-                    tau_sc = M_tensorTauParameter.evalq(0,0,q)*std::max( 0., norm_convection/norm_zh - zeta);
+                value_type tauScaling = norm_convection/norm_zh - zeta;
+                if ( tauScaling > 0 )
+                    tau_sc = M_tensorTauParameter.evalq(0,0,q)*tauScaling;
                 else
                 {
                     M_localMatrixIsZero[q] = true;
@@ -183,7 +184,7 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
 
                 value_type norm_zh = zh.norm();
 
-                if ( norm_zh < 1e-10 )
+                if ( norm_zh < 1e-14 )
                 {
                     M_localMatrixInGeoContext[q].setZero();
                     continue;
@@ -208,9 +209,15 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
                     if ( residualValue > 1e-10 )
                         zeta = std::max( 1., beta_dot_gradv_u/residualValue );
                 }
-                value_type tau_sc = M_tensorTauParameter.evalq(0,0,q)*std::max( 0., norm_convection/norm_zh - zeta);
 
-                M_localMatrixInGeoContext[q] = tau_sc*residualValue*zh;
+                value_type tauScaling = norm_convection/norm_zh - zeta;
+                if ( tauScaling > 0 )
+                {
+                    value_type tau_sc = M_tensorTauParameter.evalq(0,0,q)*tauScaling;
+                    M_localMatrixInGeoContext[q] = tau_sc*residualValue*zh;
+                }
+                else
+                    M_localMatrixInGeoContext[q].setZero();
             }
 
         }
@@ -254,7 +261,6 @@ struct tensorShockCapturingGaleaoCarmo : public tensorBase<Geo_t,Basis_i_t,Basis
 
                 res += tau_sc_prime*M_localAssemblyJacobianTermWithoutTausc[q](c1,c2);
             }
-
              return res;
         }
 

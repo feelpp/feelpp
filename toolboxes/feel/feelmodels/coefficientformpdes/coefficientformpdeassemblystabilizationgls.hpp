@@ -210,6 +210,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     bool hasConvectionTerm = this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() );
     bool hasDiffusionTerm = this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() );
     bool hasReactionTerm = this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() );
+    bool hasSourceTerm = this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() );
 
     int coeffNatureStabilization = ( this->stabilizationType() == "supg" )? 0 : (this->stabilizationType() == "gls")? 1 : -1;
 
@@ -243,15 +244,18 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     auto tauExprScalarDiffusion = Feel::FeelModels::stabilizationGLSParameterExpr<expr_coeff_convection_type,expr_coeff_diffusion_scalar_type,expr_coeff_reaction_type>( *this->stabilizationGLSParameter() );
     auto tauExprMatrixDiffusion = Feel::FeelModels::stabilizationGLSParameterExpr<expr_coeff_convection_type,expr_coeff_diffusion_matrix_type,expr_coeff_reaction_type>( *this->stabilizationGLSParameter() );
 
-
-    using expr_convection_residual_eval_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
-    using expr_reaction_residual_eval_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
-    using expr_diffusion_scalar_residual_eval_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplacianv(u) )>;
-    using expr_diffusion_matrix_residual_eval_lhs_type = typename mpl::if_c<unknown_is_scalar,
+    // residual (evaluation)
+    using expr_convection_residual_eval_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
+    using expr_reaction_residual_eval_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
+    using expr_diffusion_scalar_residual_eval_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplacianv(u) )>;
+    using expr_diffusion_matrix_residual_eval_type = typename mpl::if_c<unknown_is_scalar,
                                                                             std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hessv(u)) )>,
                                                                             std::decay_t<decltype( cst(0.) )> >::type;
-    using expr_first_time_derivative_residual_eval_lhs_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*M_bdfUnknown->polyDerivCoefficient(0)*idv(u) )>;
-    auto residual_eval_lhs = exprOptionalConcat<expr_convection_residual_eval_lhs_type,expr_reaction_residual_eval_lhs_type,expr_diffusion_scalar_residual_eval_lhs_type,expr_diffusion_matrix_residual_eval_lhs_type,expr_first_time_derivative_residual_eval_lhs_type>();
+    using expr_first_time_derivative_residual_eval_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) )>;
+    using expr_source_residual_eval_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_source_type{} )>;
+    auto residual_eval = exprOptionalConcat<expr_convection_residual_eval_type,expr_reaction_residual_eval_type,
+                                            expr_diffusion_scalar_residual_eval_type,expr_diffusion_matrix_residual_eval_type,
+                                            expr_first_time_derivative_residual_eval_type,expr_source_residual_eval_type>();
     bool useShockCapturing = this->M_stabilizationGLS_applyShockCapturing && hasConvectionTerm;
 
     // convection
@@ -261,7 +265,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
         auto const& coeff_beta_expr = expr( coeff_beta.template expr<nDim,1>(), se );
         residual_lhs.expression().add( timeSteppingScaling*(gradt(u)*coeff_beta_expr) );
         if ( useShockCapturing )
-            residual_eval_lhs.expression().add( timeSteppingScaling*(gradv(u)*coeff_beta_expr) );
+            residual_eval.expression().add( timeSteppingScaling*(gradv(u)*coeff_beta_expr) );
         stab_test.expression().add( grad(u)*coeff_beta_expr );
         tauExprScalarDiffusion.expression().setConvection( coeff_beta_expr );
         tauExprMatrixDiffusion.expression().setConvection( coeff_beta_expr );
@@ -274,7 +278,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
         auto const& coeff_a_expr = expr( coeff_a.expr(), se );
         residual_lhs.expression().add( timeSteppingScaling*coeff_a_expr*idt(u) );
         if ( useShockCapturing )
-            residual_eval_lhs.expression().add( timeSteppingScaling*coeff_a_expr*idv(u) );
+            residual_eval.expression().add( timeSteppingScaling*coeff_a_expr*idv(u) );
         if ( coeffNatureStabilization != 0 )
             stab_test.expression().add( coeffNatureStabilization*coeff_a_expr*id(u) );
         tauExprScalarDiffusion.expression().setReaction( coeff_a_expr );
@@ -294,7 +298,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
                 {
                     residual_lhs.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hesst(u)) );
                     if ( useShockCapturing )
-                        residual_eval_lhs.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hessv(u)) );
+                        residual_eval.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hessv(u)) );
                     if ( coeffNatureStabilization != 0 )
                         stab_test.expression().add( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
                 }
@@ -310,7 +314,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
             {
                 residual_lhs.expression().add( -timeSteppingScaling*coeff_c_expr*laplaciant(u) );
                 if ( useShockCapturing )
-                    residual_eval_lhs.expression().add( -timeSteppingScaling*coeff_c_expr*laplacianv(u) );
+                    residual_eval.expression().add( -timeSteppingScaling*coeff_c_expr*laplacianv(u) );
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
             }
@@ -325,9 +329,19 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
         auto coeff_d_expr = expr( coeff_d.expr(), se );
         residual_lhs.expression().add( coeff_d_expr*M_bdfUnknown->polyDerivCoefficient(0)*idt(u) );
         if ( useShockCapturing )
-            residual_eval_lhs.expression().add( coeff_d_expr*M_bdfUnknown->polyDerivCoefficient(0)*idv(u) );
+            residual_eval.expression().add( coeff_d_expr*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) );
     }
 
+
+    // source
+    if ( hasSourceTerm )
+    {
+        auto const& coeff_f = this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() );
+        auto coeff_f_expr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                           [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
+                                           [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
+        residual_eval.expression().add( -timeSteppingScaling*coeff_f_expr );
+    }
 
     auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
 
@@ -358,13 +372,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
         if constexpr ( unknown_is_scalar )
         {
             // auto tau_sc_FieldPtr = this->stabilizationGLSParameter()->fieldTauPtr()->functionSpace()->elementPtr();
-            // tau_sc_FieldPtr->on(_range=range,_expr=shockCapturingParameterExpr(residual_eval_lhs,tau,coeff_beta_expr,u));
+            // tau_sc_FieldPtr->on(_range=range,_expr=shockCapturingParameterExpr(residual_eval,tau,coeff_beta_expr,u));
             // auto tau_sc = idv(tau_sc_FieldPtr);
-
-            auto sc = shockCapturingJacobianExpr(residual_eval_lhs,residual_lhs,tau,coeff_beta_expr,u);
+            uint16_type quadUsed = ioption(_name="stabilization.gls.shock-capturing.quad",_prefix=this->prefix(),_vm=this->clovm());
+            auto sc = shockCapturingJacobianExpr(residual_eval,residual_lhs,tau,coeff_beta_expr,u);
             bilinearForm +=
                 integrate( _range=range,
                            _expr=inner(sc, trans(grad(v))),
+                           _quad= (quadUsed>=0)? quadUsed : quad_order_from_expression,
                            _geomap=this->geomap() );
         }
 
@@ -538,11 +553,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
             // auto tau_sc_FieldPtr = this->stabilizationGLSParameter()->fieldTauPtr()->functionSpace()->elementPtr();
             // tau_sc_FieldPtr->on(_range=range,_expr=shockCapturingParameterExpr(residual_full,tau,coeff_beta_expr,u));
             // auto tau_sc = idv(tau_sc_FieldPtr);
-
+            uint16_type quadUsed = ioption(_name="stabilization.gls.shock-capturing.quad",_prefix=this->prefix(),_vm=this->clovm());
             auto sc = shockCapturingExpr(residual_full,tau,coeff_beta_expr,u);
             linearForm +=
                 integrate( _range=range,
                            _expr=inner(sc, trans(grad(v))),
+                           _quad= (quadUsed>=0)? quadUsed : quad_order_from_expression,
                            _geomap=this->geomap() );
         }
 
