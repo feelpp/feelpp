@@ -81,7 +81,8 @@ Backend<T,SizeT>::Backend( worldcomm_ptr_t const& worldComm )
 #endif
     M_constant_null_space( false ),
     M_showKSPMonitor( false ),
-    M_showKSPConvergedReason( false )
+    M_showKSPConvergedReason( false ),
+    M_verbose( false )
 {
     if ( this->worldComm().globalSize() > 1 )
         M_pc = "gasm";
@@ -122,7 +123,8 @@ Backend<T,SizeT>::Backend( po::variables_map const& vm, std::string const& prefi
     M_pcFactorMatSolverPackage( soption(_name="pc-factor-mat-solver-package-type",_prefix=prefix,_vm=vm) ),
     M_constant_null_space( boption(_name="constant-null-space",_prefix=prefix,_vm=vm) ),
     M_showKSPMonitor( vm.count(prefixvm( prefix,"ksp-monitor" )) ),
-    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) )
+    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason" )) ),
+    M_verbose( boption(_name="backend.verbose",_prefix=prefix,_vm=vm) )
 {
 }
 template <typename T, typename SizeT>

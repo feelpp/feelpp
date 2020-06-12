@@ -277,7 +277,7 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
+        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix());
         ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
