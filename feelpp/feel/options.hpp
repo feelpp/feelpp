@@ -139,6 +139,16 @@ po::options_description ams_options( std::string const& prefix = "" );
 po::options_description stabilization_options( std::string const& prefix="" );
 
 po::options_description sc_options( std::string const& prefix="" );
+
+/**
+ * create new parameters with a prefix
+ */
+po::options_description parameters_options( std::string const& prefix="" );
+/**
+ * create new functions with a prefix
+ */
+po::options_description functions_options( std::string const& prefix="" );
+
 /**
  * command line for data interpolator
  */
