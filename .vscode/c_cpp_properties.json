@@ -1,16 +1,24 @@
 {
+    "env": {
+        "myDefaultIncludePath": ["${workspaceFolder}/feelpp/contrib/eigen",
+                                 "${workspaceFolder}/feelpp/contrib/eigen/unsupported",
+                                 "${workspaceFolder}/feelpp/contrib/tabulate",
+                                 "${workspaceFolder}/feelpp/contrib/glog/src",
+                                 "${workspaceFolder}/feelpp/contrib/gflags/src",
+                                 "${workspaceFolder}/feelpp", 
+                                 "${workspaceFolder}/toolboxes",
+                                 "${workspaceFolder}/mor"]
+    },
     "configurations": [
         {
             "name": "Linux",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
+            "includePath": ["/usr/lib/x86_64-linux-gnu/openmpi/include",
+                            "${myDefaultIncludePath}"],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/clang++-10",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "clang-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
             "configurationProvider": "vector-of-bool.cmake-tools"
         }
     ],
