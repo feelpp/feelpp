@@ -26,6 +26,37 @@
 
 namespace Feel {
 
+/**
+ * Basic laplacian implementation with Dirichlet condition
+ */
+template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
+auto
+cgLaplacianDirichlet( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
+{
+    auto [k,f,g] = data;
+    // tag::v[]
+    auto u = Vh->element();
+    auto v = Vh->element( g, "g" );
+    // end::v[]
+
+    // tag::forms[]
+    auto l = form1( _test = Vh );
+    l = integrate( _range = elements( support( Vh ) ),
+                   _expr = f * id( v ) );
+
+    auto a = form2( _trial = Vh, _test = Vh );
+    a = integrate( _range = elements( support( Vh ) ),
+                   _expr = inner( k*gradt( u ), grad( v ) ) );
+    a += on( _range = boundaryfaces( support( Vh ) ), _rhs = l, _element = u, _expr = g );
+    // end::forms[]
+
+    // tag::solve[]
+    //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
+    a.solve( _rhs = l, _solution = u );
+    // end::solve[]
+    return u;
+}
+
 template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
 auto
 cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
@@ -52,7 +83,7 @@ cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     auto a = form2( _trial = Vh, _test = Vh );
     tic();
     a = integrate( _range = elements( support( Vh ) ),
-                   _expr = k * inner( gradt( u ), grad( v ) ) );
+                   _expr = inner( k * gradt( u ), grad( v ) ) );
     toc( "a.gradgrad" );
     tic();
     a += integrate( _range = markedfaces( support( Vh ), "Robin" ), _expr = r_1 * idt( u ) * id( v ), _quad = 4 );
