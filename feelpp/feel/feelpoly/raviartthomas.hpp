@@ -283,6 +283,7 @@ public:
         VLOG(1) << " o- nbPtsPerFace   = " << ( int )nbPtsPerFace << "\n";
         VLOG(1) << " o- nbPtsPerVolume = " << ( int )nbPtsPerVolume << "\n";
         VLOG(1) << " o- nLocalDof      = " << nLocalDof << "\n";
+        google::FlushLogFiles(google::GLOG_INFO);
 #endif
 
         // loop on each entity forming the convex of topological
@@ -336,21 +337,23 @@ public:
             }
         }
 
-        //VLOG(1) << "[RT Dual] done 2" << std::endl;
-        if ( nOrder-1 > 0 )
+        VLOG(1) << "[RT Dual] done 2" << std::endl;
+        if constexpr ( nOrder-1 > 0 )
         {
             // we need more equations : add interior moment
             // indeed the space is orthogonal to Pk-1
             uint16_type dim_Pkp1 = convex_type::polyDims( nOrder );
             uint16_type dim_Pk = convex_type::polyDims( nOrder-1 );
             uint16_type dim_Pm1 = convex_type::polyDims( nOrder-2 );
-
+            VLOG(1) << "dims PkP1:" << dim_Pkp1;
+            VLOG(1) << "dims Pk:" << dim_Pk;
+            VLOG(1) << "dims Pkm1:"  << dim_Pm1;
             Pkp1_v_type Pkp1;
 
             vectorial_polynomialset_type Pkm1 ( Pkp1.polynomialsUpToDimension( dim_Pm1 ) );
 
-            //VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
-            //VLOG(1) << "Primal = " << primal.coeff() << "\n";
+            VLOG(1) << "Pkm1 = " << Pkm1.coeff() << "\n";
+            VLOG(1) << "Primal = " << primal.coeff() << "\n";
             if ( nDim == 2 )
                 CHECK( Pkm1.polynomialDimension() == nbPtsPerFace )
                     << "Invalid number of interior moments in 2D "
@@ -358,14 +361,29 @@ public:
                     << " nbPtsPerFace = " << nbPtsPerFace;
             for ( int i = 0; i < Pkm1.polynomialDimension(); ++i )
             {
+#if 0
                 typedef functional::IntegralMoment<primal_space_type, vectorial_polynomialset_type> fim_type;
                 //typedef functional::IntegralMoment<Pkp1_v_type, vectorial_polynomialset_type> fim_type;
-                //VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
+                VLOG(1) << "P(" << i << ")=" << Pkm1.polynomial( i ).coeff() << "\n";
                 fset.push_back( fim_type( primal, Pkm1.polynomial( i ) ) );
+#else
+                
+#endif
             }
+            typedef PointSetType<convex_type, (nOrder>=2)?(nOrder-2):0, value_type> pointset_type;
+            pointset_type pset;
+
+            //functional::ComponentsPointsEvaluation<primal_space_type> cpe( primal, pset.points() );
+            VLOG(1) << "pts=" << pset.points() << "\n";
+            for( int d = 0; d < nDim; ++d )
+                for( int p = 0; p < pset.nPoints(); ++p )
+                {
+                    functional::ComponentPointEvaluation<primal_space_type> cpe( primal, d, pset.point(p) );
+                    fset.push_back( cpe );
+                }
         }
 
-        //VLOG(1) << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
+        VLOG(1) << "[RT Dual] done 3, n fset = " << fset.size() << std::endl;
         M_fset.setFunctionalSet( fset );
         //        VLOG(1) << "[RT DUAL matrix] mat = " << M_fset.rep() << "\n";
         //VLOG(1) << "[RT Dual] done 4\n";

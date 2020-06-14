@@ -411,7 +411,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 if constexpr ( is_hdiv_conforming )
                 {
                     auto v = (*M_gradphi)[i][q].contract(B,dims1);
-                    M_grad[i][q] =  K.contract(v,dims2)/thegmc->J(q);
+                    M_grad[i][q].reshape( tensorGradShapeAfterContract ) =  K.contract(v,dims2)/thegmc->J(q);
                 }
                 else if constexpr ( is_hcurl_conforming )
                 {

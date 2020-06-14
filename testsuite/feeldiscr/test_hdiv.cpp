@@ -39,10 +39,17 @@
 //#define BOOST_TEST_NO_MAIN
 #include <boost/mpl/pair.hpp>
 #include <feel/feelcore/testsuite.hpp>
-
-#include <feel/feel.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feeldiscr/functionspace.hpp>
 #include <feel/feelpoly/raviartthomas.hpp>
-
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feeldiscr/dh.hpp>
+#include <feel/feeldiscr/projector.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feelfilters/exporter.hpp>
+#include <feel/feelvf/vf.hpp>
+#include <feel/feelvf/print.hpp>
 namespace Feel
 {
 
@@ -64,7 +71,7 @@ makeOptions()
     ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
     ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
     ;
-    return testhdivoptions.add( Feel::feel_options() );
+    return testhdivoptions.add( Feel::functions_options("2D") ).add( Feel::functions_options("3D") ).add( Feel::feel_options() );
 }
 
 inline
@@ -113,7 +120,8 @@ public:
     typedef bases<RaviartThomas<Order> > basis_type;
     typedef bases<Lagrange<Order+1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
     typedef bases<Lagrange<Order+1,Scalar> > lagrange_basis_s_type; //P1 scalar space
-    typedef bases< RaviartThomas<Order>, Lagrange<Order,Scalar,Discontinuous> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    //typedef bases< RaviartThomas<Order>, Lagrange<Order+1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
+    typedef bases< RaviartThomas<Order>, Lagrange<Order,Scalar,Discontinuous> > prod_basis_type;
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;
@@ -171,16 +179,17 @@ template<int Dim, int Order>
 void
 TestHDiv<Dim,Order>::exampleProblem1()
 {
+    std::string D = (boost::format("%1%D") % Dim).str();
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     //auto K = ones<2,2>(); // Hydraulic conductivity tensor
     //auto K = mat<2,2>(cst(2.),cst(1.),cst(1.),cst(2.));
     //auto Lambda = ones<2,2>(); // Hydraulic resistivity tensor
-    auto K = expr<Dim,Dim>( soption("functions.k") );
+    auto K = expr<Dim,Dim>( soption("functions.k",_prefix=D) );
     auto Lambda = inv(K); //(1.0/3.0)*mat<2,2>(cst(2.),cst(-1.),cst(-1.),cst(2.)); // Lambda = inv(K)
-    auto f = expr<Dim,1>( soption("functions.f") );
-    auto g = expr( soption("functions.g") );
-    auto pbdy = expr( soption("functions.p") );
+    auto f = expr<Dim,1>( soption("functions.f",_prefix=D) );
+    auto g = expr( soption("functions.g",_prefix=D) );
+    auto pbdy = expr( soption("functions.p",_prefix=D) );
     auto epsilon = 1e-7;
 
     // ****** Primal formulation - with Lagrange ******
@@ -223,18 +232,18 @@ TestHDiv<Dim,Order>::exampleProblem1()
     auto F_rt = M_backend->newVector( Yh );
     auto darcyRT_rhs = form1( _test=Yh, _vector=F_rt );
     // fq
-    darcyRT_rhs += integrate( _range=elements(mesh), _expr=-1.*g*id(q_rt) );
+    darcyRT_rhs += integrate( _range=elements(mesh), _expr=-g*id(q_rt) );
     darcyRT_rhs += integrate( _range=elements(mesh), _expr=trans(f)*id(v_rt) );
-    darcyRT_rhs += integrate( _range=boundaryfaces(mesh), _expr = -1.*pbdy*trans(id(v_rt))*N() );
+    darcyRT_rhs += integrate( _range=boundaryfaces(mesh), _expr = -pbdy*trans(id(v_rt))*N());
     auto M_rt = M_backend->newMatrix( Yh, Yh );
     auto darcyRT = form2( _test=Yh, _trial=Yh, _matrix=M_rt);
     // Lambda u v
-    darcyRT += integrate( _range=elements(mesh), _expr = trans(idt(u_rt))*id(v_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = trans(Lambda*idt(u_rt))*id(v_rt) );
     
     // p div(v)
-    darcyRT += integrate( _range=elements(mesh), _expr = -1.*idt(p_rt)*div(v_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = -idt(p_rt)*div(v_rt) );
     // div(u) q
-    darcyRT += integrate( _range=elements(mesh), _expr = -1.*divt(u_rt)*id(q_rt) );
+    darcyRT += integrate( _range=elements(mesh), _expr = -divt(u_rt)*id(q_rt) );
 
     // Solve problem
     backend(_rebuild=true)->solve( _matrix=M_rt, _solution=U_rt, _rhs=F_rt );
@@ -251,8 +260,8 @@ TestHDiv<Dim,Order>::exampleProblem1()
             std::cout << "||p(primal) - p(dual-mixed)|| = " << l2err_p << std::endl;
         }
 
-    BOOST_CHECK_SMALL(l2err_u, 1.0 );
-    BOOST_CHECK_SMALL(l2err_p, 1.0 );
+    BOOST_CHECK_SMALL(l2err_u, 1e-10 );
+    BOOST_CHECK_SMALL(l2err_p, 1e-10 );
 
     // ****** Export results ******
     std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
@@ -271,13 +280,14 @@ template<int Dim, int Order>
 void
 TestHDiv<Dim,Order>::testProjector()
 {
+    std::string D = (boost::format("%1%D") % Dim).str();
     mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
 
     auto RTh = Dh<Order>( mesh );
     lagrange_space_v_ptrtype Yh_v = lagrange_space_v_type::New( mesh ); //lagrange vectorial space
     lagrange_space_s_ptrtype Yh_s = lagrange_space_s_type::New( mesh ); //lagrange scalar space
 
-    auto E = expr<Dim,1>( soption("functions.e" ) );
+    auto E = expr<Dim,1>( soption("functions.e",_prefix=D ) );
     auto fE = div(E);
     auto gE = grad(E);
 
@@ -305,16 +315,16 @@ TestHDiv<Dim,Order>::testProjector()
 
     BOOST_TEST_MESSAGE("L2 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_lag, error_pL2_lag ) ), 1e-12 );
     BOOST_TEST_MESSAGE("H1 projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pH1_lag, error_pH1_lag ) ), 1e-12 );
     BOOST_TEST_MESSAGE("HDIV projection [Lagrange]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pHDIV_lag, error_pHDIV_lag ) ), 1e-12 );
     BOOST_TEST_MESSAGE("L2 projection [RT]: error[div(E)-f]");
     std::cout << "error L2: " << math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ) << "\n";
-    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-13 );
+    BOOST_CHECK_SMALL( math::sqrt( l2_lagS->energy( error_pL2_rt, error_pL2_rt ) ), 1e-12 );
 
     std::string proj_name = "projection";
     std::string exporterName = ( boost::format( "%1%-%2%-%3%" )
@@ -336,13 +346,14 @@ FEELPP_ENVIRONMENT_WITH_OPTIONS( Feel::makeAbout(), Feel::makeOptions() )
 
 BOOST_AUTO_TEST_SUITE( HDIV )
 
-typedef boost::mpl::vector<boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0>>, 
-                           boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<1>>
+typedef boost::mpl::vector<//boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<0>>,
+                           boost::mpl::pair<boost::mpl::int_<2>,boost::mpl::int_<1>>,
                            //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<0>>, 
-                           //boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<1>>
+                           boost::mpl::pair<boost::mpl::int_<3>,boost::mpl::int_<1>>
                         > types;
 using namespace Feel;
-
+#if 0
+#if 0
 BOOST_AUTO_TEST_CASE_TEMPLATE( test_hdiv_proj, T, types )
 {
     Feel::TestHDiv<T::first::value,T::second::value> t;
@@ -351,6 +362,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_hdiv_proj, T, types )
                                          % T::first::value % T::second::value  );
     t.testProjector();
 }
+#endif
 BOOST_AUTO_TEST_CASE_TEMPLATE(test_hdiv_darcy,T,types)
 {
     Feel::TestHDiv<T::first::value,T::second::value> t;
@@ -360,4 +372,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(test_hdiv_darcy,T,types)
                                                       % t.hSize()  );
     t.exampleProblem1();
 }
+#else
+BOOST_AUTO_TEST_CASE(test_rt)
+{
+    //RaviartThomas<0>::apply<2>::type rt20; 
+    //RaviartThomas<1>::apply<2>::type rt21; 
+    RaviartThomas<1>::apply<3>::type rt31; 
+}
+#endif
 BOOST_AUTO_TEST_SUITE_END()
