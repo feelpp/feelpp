@@ -44,6 +44,7 @@ if ( NOT TARGET quickstart )
 endif()
 
 add_subdirectory( python )
+add_subdirectory( laplacian )
 
 #
 # ADR
