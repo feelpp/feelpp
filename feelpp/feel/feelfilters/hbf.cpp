@@ -71,6 +71,7 @@ readHBFHeaderAndSizes( std::ifstream& in )
 
     int32_t version = 0;
     in.read( (char*)&version, sizeof( int32_t ) );
+    LOG(INFO) << "version: " << version;
     int32_t rows=0, cols=0;
     in.read( (char*)&rows, sizeof( int32_t ) );
     in.read( (char*)&cols, sizeof( int32_t ) );
@@ -94,7 +95,7 @@ readHBF( std::string const& s )
     in.read( (char*)x.data(), x.size()*sizeof(T) );
     if (x.rows() <= 6 && x.cols() <= 6)
         LOG(INFO) << x << std::endl;
-    LOG(INFO) << "rows: " << x.transpose().rows() 
+    LOG(INFO) << "[readhbf] rows: " << x.transpose().rows() 
                 << ", cols: " << x.transpose().cols()
                 << ", data type: " << data_type << std::endl;
     return x.transpose();
@@ -136,18 +137,19 @@ writeHBF( std::string const& s, holo3_image<T> const& x )
         out.write( header.c_str(), header.size() );
         out.write( "\0", sizeof(char) );
         
-        LOG(INFO) << "writeHBF: write header " << header << "\n";
+        LOG(INFO) << "[writeHBF] write header " << header << "\n";
 
         int32_t version = 100;
         out.write( (char*)&version, sizeof(int32_t) );
         int32_t rows=x.rows(), cols=x.cols();
         out.write( (char*)&rows, sizeof(int32_t) );
         out.write( (char*)&cols, sizeof(int32_t) );
-        LOG(INFO) << "writeHBF: rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+        LOG(INFO) << "[writeHBF] rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
+        holo3_image<T> y ( cols, rows );
+        y = x.transpose();
+        out.write( (char*)y.data(),x.size()*sizeof(T) );
 
-        out.write( (char*)x.data(),x.size()*sizeof(T) );
-
-        LOG(INFO) << "[≈writeHBF]: array written to disk" << std::endl;
+        LOG(INFO) << "[writeHBF]: array written to disk" << std::endl;
 
         if(x.rows() <= 6 && x.cols() <= 6)
             LOG(INFO) << x << std::endl;
