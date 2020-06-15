@@ -108,6 +108,86 @@ cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     return boption( "no-solve" )?std::nullopt:std::optional{u};
 }
 
+template<typename SpaceType, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
+auto
+cgLaplacianModel( std::shared_ptr<SpaceType> const& Vh, ModelProperties const& props )
+{
+    tic();
+    // tag::v[]
+    auto u = Vh->element();
+    auto v = Vh->element();
+    // end::v[]
+    toc( "Vh elements" );
+    // end::mesh_space[]
+
+    // tag::forms[]
+    tic();
+    auto l = form1( _test = Vh );
+
+    for ( auto const& [ bcid, bc ] : props.boundaryConditions2().flatten() )
+    {
+        if ( bcid.type() == "Load" )
+        {
+            l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
+                                _expr = expr(bc.expression()) * id( v ) );
+        }
+        if ( bcid.type() == "Neumann" )
+        {
+            l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
+                            _expr = expr(bc.expression()) * id( v ) );
+        }
+        if ( bcid.type() == "Robin" )
+        {
+            l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
+                            _expr = expr(bc.expression2()) * id( v ) );
+        }
+    }
+    toc( "l" );
+
+    tic();
+    auto a = form2( _trial = Vh, _test = Vh );
+    tic();
+    for ( auto const& [ name, mat ] : props.materials() )
+    {
+        if ( mat.hasPropertyExprScalar( "k" ) )
+        {
+            auto k = mat.propertyExprScalar( "k" );
+            a = integrate( _range = markedelements( support( Vh ), mat.meshMarkers() ),
+                           _expr = inner( k * gradt( u ), grad( v ) ) );
+        }
+        else
+            throw std::logic_error( std::string("missing diffusion coefficient k in material ") + name );
+    }
+    toc( "a.gradgrad" );
+    for ( auto const& [ bcid, bc ] : props.boundaryConditions2().flatten() )
+    {
+        if ( bcid.type() == "Robin" )
+        {
+            a += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
+                            _expr = expr(bc.expression1()) * idt(v) * id( v ) );
+        }
+    }
+    // do Dirichlet conditions last
+    for ( auto const& [ bcid, bc ] : props.boundaryConditions2().flatten() )
+    {
+        if ( bcid.type() == "Dirichlet" )
+            a += on( _range = markedfaces( support( Vh ), bc.markers() ), _rhs = l, _element = u, _expr = expr(bc.expression())  );
+    }
+    toc( "a" );
+    // end::forms[]
+
+    // tag::solve[]
+    tic();
+    //! solve the linear system, find u s.t. a(u,v)=l(v) for all v
+    a.solve( _rhs = l, _solution = u );
+    toc( "a.solve" );
+
+    auto to_export = Vh->elementsMap();
+    to_export["u"] = u;
+
+    // end::solve[]
+    return to_export;
+}
 
 
 }
