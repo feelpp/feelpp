@@ -99,6 +99,20 @@ private:
     ModelExpression M_modelExpr2;
 };
 
+struct FEELPP_EXPORT ModelBoundaryId : public std::tuple<std::string,std::string,std::string>
+{
+  using parent = std::tuple<std::string,std::string,std::string>;
+  ModelBoundaryId( parent const& t ) : parent( t ) {}
+  std::string const& type() const { return std::get<0>( *this ); }
+  // 
+  std::string const& field() const { return std::get<1>( *this ); }
+  // the name of the bc, can be also the name of the marker
+  std::string const& name() const { return std::get<2>( *this ); }
+
+};
+/**
+ * a map of boundary conditions
+ */
 class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::map<std::string,ModelBoundaryCondition> > >, public CommObject
 {
   public:
@@ -106,6 +120,23 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
+    // flatten the boundary condition map so that we can easily iterate in a one level loop
+    std::map<ModelBoundaryId,ModelBoundaryCondition> flatten() const
+    {
+      std::map<ModelBoundaryId,ModelBoundaryCondition> f_;
+      for( auto const& [bctype, bc1 ] : *this )
+      { 
+        for( auto const& [bcfield, bc2 ] : bc1 )
+        { 
+          for( auto const& [bcname, bc ] : bc2 )
+          { 
+            f_[ModelBoundaryId{std::tuple{bctype,bcfield,bcname}}]=bc;
+          }
+        }
+        return f_;
+      }
+
+    }
 private:
     void setup();
 
