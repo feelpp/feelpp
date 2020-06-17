@@ -28,10 +28,13 @@ namespace Feel {
 
 ModelModel::ModelModel( pt::ptree const& p )
     :
-    M_ptree( p )
+    M_ptree( p ),
+    M_enabled( true )
 {
     if ( auto eq = M_ptree.get_optional<std::string>("equations") )
         M_equations = *eq;
+    if ( auto eq = M_ptree.get_optional<bool>("enabled") )
+        M_enabled = *eq;
 }
 
 ModelModels::ModelModels()

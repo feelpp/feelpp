@@ -40,9 +40,11 @@ class FEELPP_EXPORT ModelModel
     ModelModel( ModelModel && ) = default;
     pt::ptree const& ptree() const { return M_ptree; }
     std::string const& equations() const { return M_equations; }
+    bool enabled() const { return M_enabled; }
   private:
     pt::ptree M_ptree;
     std::string M_equations;
+    bool M_enabled;
 };
 
 class FEELPP_EXPORT ModelModels : public std::map<std::string,ModelModel>
