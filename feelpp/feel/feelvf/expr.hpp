@@ -415,6 +415,22 @@ struct has_symbolic_parameter_values_type <T, std::void_t<decltype(std::declval<
 template <typename T>
 constexpr bool has_symbolic_parameter_values_v = has_symbolic_parameter_values_type<T>::value;
 
+template <typename T, typename TheSymbolExprType, typename = void>
+struct has_symbol_dependency_type : std::false_type {};
+template <typename T,typename TheSymbolExprType>
+struct has_symbol_dependency_type <T,TheSymbolExprType,std::void_t<decltype(std::declval<T>().hasSymbolDependency( "", TheSymbolExprType{} ) ) >>
+    : std::true_type {};
+template <typename T,typename TheSymbolExprType>
+constexpr bool has_symbol_dependency_v = has_symbol_dependency_type<T,TheSymbolExprType>::value;
+
+template <typename T, typename TheSymbolExprType, typename = void>
+struct has_dependent_symbols_type : std::false_type {};
+template <typename T,typename TheSymbolExprType>
+struct has_dependent_symbols_type <T,TheSymbolExprType,std::void_t<decltype(std::declval<T>().dependentSymbols( "", std::declval< std::map<std::string,std::set<std::string>> &>(), TheSymbolExprType{} ) ) >>
+    : std::true_type {};
+template <typename T,typename TheSymbolExprType>
+constexpr bool has_dependent_symbols_v = has_dependent_symbols_type<T,TheSymbolExprType>::value;
+
 #if 0
 template <typename T, int diffOrder, typename TheSymbolExprType, typename = void>
 struct has_symbolic_diff_type : std::false_type {};
@@ -633,22 +649,25 @@ public:
             return Feel::vf::expr( M_expr.applySymbolsExpr( se ) );
         }
 
+    //! return true if the symbol \symb is used in the current expression
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
-            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
+            if constexpr ( has_symbol_dependency_v<expression_type,TheSymbolExprType> )
                 return M_expr.hasSymbolDependency( symb, se );
             else
                 return false;
         }
 
+    //! update the list of symbol used in the current expression that have a dependency with symbol \symb
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
-            if constexpr ( has_symbolic_parameter_values_v<expression_type> )
-                    return M_expr.dependentSymbols( symb, res, se );
+            if constexpr ( has_dependent_symbols_v<expression_type,TheSymbolExprType> )
+                 M_expr.dependentSymbols( symb, res, se );
         }
 
+    //! symbolic differiantiation
     template <int diffOrder,typename TheSymbolExprType = symbols_expression_empty_t>
     auto diff( std::string const& diffSymbol,
                WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr = "",

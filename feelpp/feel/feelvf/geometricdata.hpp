@@ -228,6 +228,21 @@ const size_type mctx = vm::MEASURE;
             return *this;                                               \
         }                                                               \
                                                                         \
+        template <typename TheSymbolExprType>                           \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+        {                                                               \
+            if constexpr ( std::is_same_v<this_type,GDP> )              \
+                             return symb == "x" || symb == "y"  || symb == "z"; \
+            else if constexpr ( std::is_same_v<this_type,GDPx> )        \
+                                  return symb == "x";                   \
+            else if constexpr ( std::is_same_v<this_type,GDPy> )        \
+                                  return symb == "y";                   \
+            else if constexpr ( std::is_same_v<this_type,GDPz> )        \
+                                  return symb == "z";                   \
+            else                                                        \
+                return false;                                           \
+        }                                                               \
+                                                                        \
         template <int diffOrder, typename TheSymbolExprType>            \
             auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
                        TheSymbolExprType const& se ) const              \
