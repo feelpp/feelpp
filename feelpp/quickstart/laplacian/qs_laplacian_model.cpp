@@ -63,15 +63,6 @@ int cg_laplacian_model()
     else
         Vh = Pch<Order>( mesh );
 
-    std::map<std::string,std::string> inputs{{"dim",std::to_string(dimension(mesh))},
-                                            {"k",soption("k")},{"r_1",soption("r_1")},{"u",""},{"un",soption("un")},{"f",soption("f")},{"g",soption("g")},{"r_2",soption("r_2")}};
-    // if we do not check the results with a manufactured solution,
-    // the right hand side is given by functions.f otherwise it is computed by the python script
-    auto thechecker = checker( _name= "L1/H1 convergence", 
-                               _solution_key="p",
-                               _gradient_key="grad_p",
-                               _inputs=inputs
-                               );
     // cgLaplacian may not solve the problem, hence u is std::optional
     ModelProperties props( Environment::expand(soption("json_filename")) );
     auto to_export = cgLaplacianModel( Vh, props );
@@ -86,7 +77,7 @@ int cg_laplacian_model()
     toc( "Exporter" );
     // end::export[]
 
-    return true; //check( thechecker, u );
+    return true; 
 }
 }
 int main( int argc, char** argv )
