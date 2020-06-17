@@ -119,7 +119,7 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
         if ( !directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( directoryLibExpr );
         M_bc.setPTree( *bc );
-#if 0 // TODO
+#if 1 // TODO
         M_bc2.setPTree( *bc );
 #endif
     }
