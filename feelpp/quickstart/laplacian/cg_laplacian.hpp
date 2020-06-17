@@ -126,20 +126,21 @@ cgLaplacianModel( std::shared_ptr<SpaceType> const& Vh, ModelProperties const& p
 
     for ( auto const& [ bcid, bc ] : props.boundaryConditions2().flatten() )
     {
+        
         if ( bcid.type() == "Load" )
         {
-            l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
+            l += integrate( _range = markedelements( support( Vh ), bc.markers() ), 
                                 _expr = expr(bc.expression()) * id( v ) );
         }
         if ( bcid.type() == "Neumann" )
         {
             l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
-                            _expr = expr(bc.expression()) * id( v ) );
+                            _expr = -expr(bc.expression()) * id( v ) );
         }
         if ( bcid.type() == "Robin" )
         {
             l += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
-                            _expr = expr(bc.expression2()) * id( v ) );
+                            _expr = -expr(bc.expression2()) * id( v ) );
         }
     }
     toc( "l" );
@@ -151,6 +152,7 @@ cgLaplacianModel( std::shared_ptr<SpaceType> const& Vh, ModelProperties const& p
     {
         if ( mat.hasPropertyExprScalar( "k" ) )
         {
+            Feel::cout << " - Material " << name << std::endl;
             auto k = mat.propertyExprScalar( "k" );
             a = integrate( _range = markedelements( support( Vh ), mat.meshMarkers() ),
                            _expr = inner( k * gradt( u ), grad( v ) ) );
@@ -163,6 +165,7 @@ cgLaplacianModel( std::shared_ptr<SpaceType> const& Vh, ModelProperties const& p
     {
         if ( bcid.type() == "Robin" )
         {
+            Feel::cout << " - Boundary Condition " << bcid << std::endl;
             a += integrate( _range = markedfaces( support( Vh ), bc.markers() ), 
                             _expr = expr(bc.expression1()) * idt(v) * id( v ) );
         }
