@@ -650,6 +650,7 @@ public:
         }
 
     //! return true if the symbol \symb is used in the current expression
+    //! note: \se is generally not given, it's an internal use linked to depencies of expr
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
@@ -659,7 +660,22 @@ public:
                 return false;
         }
 
+    //! return true if the expr depends on x,y,z
+    //! note: \se is generally not given, it's an internal use linked to depencies of expr
+    template <int Dim, typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependencyOnCoordinatesInSpace( TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            std::vector<std::string> coords( { "x","y","z" } );
+            coords.resize(Dim);
+            for ( std::string const& c : coords )
+                if ( this->hasSymbolDependency( c, se ) )
+                    return true;
+            return false;
+        }
+
+
     //! update the list of symbol used in the current expression that have a dependency with symbol \symb
+    //! note: \se is generally not given, it's an internal use linked to depencies of expr
     template <typename TheSymbolExprType = symbols_expression_empty_t>
     void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
         {
@@ -668,6 +684,7 @@ public:
         }
 
     //! symbolic differiantiation
+    //! note: \se is generally not given, it's an internal use linked to depencies of expr
     template <int diffOrder,typename TheSymbolExprType = symbols_expression_empty_t>
     auto diff( std::string const& diffSymbol,
                WorldComm const& world = Environment::worldComm(), std::string const& dirLibExpr = "",
