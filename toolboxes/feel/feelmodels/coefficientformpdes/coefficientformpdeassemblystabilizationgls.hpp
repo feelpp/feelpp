@@ -59,11 +59,17 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradt(u)*expr_coeff_convection_type{}) )>;
     using expr_reaction_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idt(u) )>;
     using expr_diffusion_scalar_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplaciant(u) )>;
+    using expr_diffusion_part2_scalar_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
+                                                                             std::decay_t<decltype( -timeSteppingScaling*inner( grad<nDim>(expr_coeff_diffusion_scalar_type{}), gradt(u) ) )>,
+                                                                             std::decay_t<decltype( -timeSteppingScaling*gradt(u)*trans(grad<nDim>(expr_coeff_diffusion_scalar_type{})) )> >::type;
     using expr_diffusion_matrix_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
                                                                        std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hesst(u)) )>,
                                                                        std::decay_t<decltype( cst(0.) )> >::type;
     using expr_first_time_derivative_residual_lhs_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*M_bdfUnknown->polyDerivCoefficient(0)*idt(u) )>;
-    auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,expr_diffusion_scalar_residual_lhs_type,expr_diffusion_matrix_residual_lhs_type,expr_first_time_derivative_residual_lhs_type>();
+    auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,
+                                           expr_diffusion_scalar_residual_lhs_type,expr_diffusion_part2_scalar_residual_lhs_type,
+                                           expr_diffusion_matrix_residual_lhs_type,
+                                           expr_first_time_derivative_residual_lhs_type>();
     // residual rhs
     using expr_first_time_derivative_residual_rhs_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*idv(M_bdfUnknown->polyDeriv()) )>;
     using expr_source_residual_rhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_source_type{} )>;
@@ -103,7 +109,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
         tauExprMatrixDiffusion.expression().setReaction( coeff_a_expr );
     }
 
-    // diffusion ( TODO : this part is not always correct if diffusion term k depend on x,y,z (i.e. div( k /nabla v ) != k laplacian v) )
+    // diffusion
     if ( hasDiffusionTerm )
     {
         auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
@@ -118,6 +124,10 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
                     if ( coeffNatureStabilization != 0 )
                         stab_test.expression().add( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
                 }
+                if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+                {
+                    CHECK( false ) << "not implemented"; // diffusion term depend on x,y,z : div( k /nabla v ) != k laplacian v)
+                }
                 tauExprMatrixDiffusion.expression().setDiffusion( coeff_c_expr );
             }
             else
@@ -131,6 +141,13 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDEStabilizationGLS
                 residual_lhs.expression().add( -timeSteppingScaling*coeff_c_expr*laplaciant(u) );
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
+            }
+            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            {
+                if constexpr( unknown_is_scalar )
+                    residual_lhs.expression().add( -timeSteppingScaling*inner( grad<nDim>(coeff_c_expr), gradt(u) ) );
+                else
+                    residual_lhs.expression().add( -timeSteppingScaling*gradt(u)*trans(grad<nDim>(coeff_c_expr)) );
             }
             tauExprScalarDiffusion.expression().setDiffusion( coeff_c_expr );
         }
@@ -227,11 +244,17 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradt(u)*expr_coeff_convection_type{}) )>;
     using expr_reaction_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idt(u) )>;
     using expr_diffusion_scalar_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplaciant(u) )>;
+    using expr_diffusion_part2_scalar_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
+                                                                             std::decay_t<decltype( -timeSteppingScaling*inner( grad<nDim>(expr_coeff_diffusion_scalar_type{}), gradt(u) ) )>,
+                                                                             std::decay_t<decltype( -timeSteppingScaling*gradt(u)*trans(grad<nDim>(expr_coeff_diffusion_scalar_type{})) )> >::type;
     using expr_diffusion_matrix_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
                                                                        std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hesst(u)) )>,
                                                                        std::decay_t<decltype( cst(0.) )> >::type;
     using expr_first_time_derivative_residual_lhs_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*M_bdfUnknown->polyDerivCoefficient(0)*idt(u) )>;
-    auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,expr_diffusion_scalar_residual_lhs_type,expr_diffusion_matrix_residual_lhs_type,expr_first_time_derivative_residual_lhs_type>();
+    auto residual_lhs = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,
+                                           expr_diffusion_scalar_residual_lhs_type,expr_diffusion_part2_scalar_residual_lhs_type,
+                                           expr_diffusion_matrix_residual_lhs_type,
+                                           expr_first_time_derivative_residual_lhs_type>();
 
     using expr_convection_test_type = std::decay_t<decltype( grad(u)*expr_coeff_convection_type{} )>;
     using expr_reaction_test_type = std::decay_t<decltype( coeffNatureStabilization*expr_coeff_reaction_type{}*id(u) )>;
@@ -248,13 +271,17 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
     using expr_convection_residual_eval_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
     using expr_reaction_residual_eval_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
     using expr_diffusion_scalar_residual_eval_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplacianv(u) )>;
+    using expr_diffusion_part2_scalar_residual_eval_type = typename mpl::if_c<unknown_is_scalar,
+                                                                              std::decay_t<decltype( -timeSteppingScaling*inner( grad<nDim>(expr_coeff_diffusion_scalar_type{}), gradv(u) ) )>,
+                                                                              std::decay_t<decltype( -timeSteppingScaling*gradv(u)*trans(grad<nDim>(expr_coeff_diffusion_scalar_type{})) )> >::type;
     using expr_diffusion_matrix_residual_eval_type = typename mpl::if_c<unknown_is_scalar,
                                                                             std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hessv(u)) )>,
                                                                             std::decay_t<decltype( cst(0.) )> >::type;
     using expr_first_time_derivative_residual_eval_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) )>;
     using expr_source_residual_eval_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_source_type{} )>;
     auto residual_eval = exprOptionalConcat<expr_convection_residual_eval_type,expr_reaction_residual_eval_type,
-                                            expr_diffusion_scalar_residual_eval_type,expr_diffusion_matrix_residual_eval_type,
+                                            expr_diffusion_scalar_residual_eval_type,expr_diffusion_part2_scalar_residual_eval_type,
+                                            expr_diffusion_matrix_residual_eval_type,
                                             expr_first_time_derivative_residual_eval_type,expr_source_residual_eval_type>();
     bool useShockCapturing = this->M_stabilizationGLS_applyShockCapturing && hasConvectionTerm;
 
@@ -285,7 +312,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
         tauExprMatrixDiffusion.expression().setReaction( coeff_a_expr );
     }
 
-    // diffusion ( TODO : this part is not always correct if diffusion term k depend on x,y,z (i.e. div( k /nabla v ) != k laplacian v) )
+    // diffusion
     if ( hasDiffusionTerm )
     {
         auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
@@ -302,6 +329,10 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
                     if ( coeffNatureStabilization != 0 )
                         stab_test.expression().add( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
                 }
+                if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+                {
+                    CHECK( false ) << "not implemented"; // diffusion term depend on x,y,z : div( k /nabla v ) != k laplacian v)
+                }
                 tauExprMatrixDiffusion.expression().setDiffusion( coeff_c_expr );
             }
             else
@@ -317,6 +348,21 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobianStabilizationGLS(
                     residual_eval.expression().add( -timeSteppingScaling*coeff_c_expr*laplacianv(u) );
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
+            }
+            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            {
+                if constexpr( unknown_is_scalar )
+                {
+                    residual_lhs.expression().add( -timeSteppingScaling*inner( grad<nDim>(coeff_c_expr), gradt(u) ) );
+                    if ( useShockCapturing )
+                        residual_eval.expression().add( -timeSteppingScaling*inner( grad<nDim>(coeff_c_expr), gradv(u) ) );
+                }
+                else
+                {
+                    residual_lhs.expression().add( -timeSteppingScaling*gradt(u)*trans(grad<nDim>(coeff_c_expr)) );
+                    if ( useShockCapturing )
+                        residual_eval.expression().add( -timeSteppingScaling*gradv(u)*trans(grad<nDim>(coeff_c_expr)) );
+                }
             }
             tauExprScalarDiffusion.expression().setDiffusion( coeff_c_expr );
         }
@@ -428,15 +474,21 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
         std::decay_t<decltype( expr( this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).template expr<nDim,1>(), se ) )> >::type;
 
 
-    using expr_convection_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
-    using expr_reaction_residual_lhs_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
-    using expr_diffusion_scalar_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplacianv(u) )>;
-    using expr_diffusion_matrix_residual_lhs_type = typename mpl::if_c<unknown_is_scalar,
-                                                                       std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hessv(u)) )>,
-                                                                       std::decay_t<decltype( cst(0.) )> >::type;
+    using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*(gradv(u)*expr_coeff_convection_type{}) )>;
+    using expr_reaction_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_coeff_reaction_type{}*idv(u) )>;
+    using expr_diffusion_scalar_residual_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_diffusion_scalar_type{}*laplacianv(u) )>;
+    using expr_diffusion_part2_scalar_residual_type = typename mpl::if_c<unknown_is_scalar,
+                                                                         std::decay_t<decltype( -timeSteppingScaling*inner( grad<nDim>(expr_coeff_diffusion_scalar_type{}), gradv(u) ) )>,
+                                                                         std::decay_t<decltype( -timeSteppingScaling*gradv(u)*trans(grad<nDim>(expr_coeff_diffusion_scalar_type{})) )> >::type;
+    using expr_diffusion_matrix_residual_type = typename mpl::if_c<unknown_is_scalar,
+                                                                   std::decay_t<decltype( -timeSteppingScaling*inner(expr_coeff_diffusion_matrix_type{},hessv(u)) )>,
+                                                                   std::decay_t<decltype( cst(0.) )> >::type;
     using expr_first_time_derivative_residual_type = std::decay_t<decltype( expr_coeff_first_time_derivative_type{}*(M_bdfUnknown->polyDerivCoefficient(0)*idv(u) - idv(M_bdfUnknown->polyDeriv()) ) )>;
-    using expr_source_residual_lhs_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_source_type{} )>;
-    auto residual_full = exprOptionalConcat<expr_convection_residual_lhs_type,expr_reaction_residual_lhs_type,expr_diffusion_scalar_residual_lhs_type,expr_diffusion_matrix_residual_lhs_type,expr_first_time_derivative_residual_type,expr_source_residual_lhs_type>();
+    using expr_source_residual_type = std::decay_t<decltype( -timeSteppingScaling*expr_coeff_source_type{} )>;
+    auto residual_full = exprOptionalConcat<expr_convection_residual_type,expr_reaction_residual_type,
+                                            expr_diffusion_scalar_residual_type,expr_diffusion_part2_scalar_residual_type,
+                                            expr_diffusion_matrix_residual_type,
+                                            expr_first_time_derivative_residual_type,expr_source_residual_type>();
 
     using expr_convection_test_type = std::decay_t<decltype( grad(u)*expr_coeff_convection_type{} )>;
     using expr_reaction_test_type = std::decay_t<decltype( coeffNatureStabilization*expr_coeff_reaction_type{}*id(u) )>;
@@ -472,7 +524,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
         tauExprMatrixDiffusion.expression().setReaction( coeff_a_expr );
     }
 
-    // diffusion ( TODO : this part is not always correct if diffusion term k depend on x,y,z (i.e. div( k /nabla v ) != k laplacian v) )
+    // diffusion
     if ( hasDiffusionTerm )
     {
         auto const& coeff_c = this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() );
@@ -486,6 +538,10 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
                     residual_full.expression().add( -timeSteppingScaling*inner(coeff_c_expr,hessv(u)) );
                     if ( coeffNatureStabilization != 0 )
                         stab_test.expression().add( -coeffNatureStabilization*inner(coeff_c_expr,hess(u)) );
+                }
+                if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+                {
+                    CHECK( false ) << "not implemented"; // diffusion term depend on x,y,z : div( k /nabla v ) != k laplacian v)
                 }
                 tauExprMatrixDiffusion.expression().setDiffusion( coeff_c_expr );
             }
@@ -501,6 +557,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidualStabilizationGLS(
                 if ( coeffNatureStabilization != 0 )
                     stab_test.expression().add( -coeffNatureStabilization*coeff_c_expr*laplacian(u) );
             }
+            if ( coeff_c_expr.template hasSymbolDependencyOnCoordinatesInSpace<nDim>() )
+            {
+                if constexpr( unknown_is_scalar )
+                    residual_full.expression().add( -timeSteppingScaling*inner( grad<nDim>(coeff_c_expr), gradv(u) ) );
+                else
+                    residual_full.expression().add( -timeSteppingScaling*gradv(u)*trans(grad<nDim>(coeff_c_expr)) );
+            }
+
             tauExprScalarDiffusion.expression().setDiffusion( coeff_c_expr );
         }
     }
