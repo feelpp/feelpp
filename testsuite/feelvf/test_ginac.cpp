@@ -381,7 +381,7 @@ void runTest1()
                         // grad vectorial
                         auto exprVectorialFeelGrad = mat<2,2>( 2*a*Px()*cos(M_PI*Py()), -M_PI*a*Px()*Px()*sin(M_PI*Py()),
                                                                4*b*Px()*Py()*exp(Px()*Px())*sin(Px()) + 2*b*Py()*exp(Px()*Px())*cos(Px()), 2*b*sin(Px())*exp(Px()*Px()) );
-                        auto exprVectorialGinacGrad = grad/*<2>*/( exprVectorialGinac );
+                        auto exprVectorialGinacGrad = grad<2>( exprVectorialGinac );
                         auto uVectorialFeelGrad = XhTensor2->element( exprVectorialFeelGrad );
                         auto uVectorialGinacGrad = XhTensor2->element( exprVectorialGinacGrad );
                         checkEqualElements( testTag+" grad", uVectorialFeelGrad, uVectorialGinacGrad );
