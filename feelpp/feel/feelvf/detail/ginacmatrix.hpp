@@ -454,31 +454,9 @@ public:
     {
         auto newse = Feel::vf::symbolsExpr( this->symbolsExpression(), se );
 
-        std::map<std::string,std::set<std::string>> symbolToApplyDiff;
-        this->dependentSymbolsImpl( diffVariable, symbolToApplyDiff, newse );
-
-        auto tupleDiffSymbolsExpr = hana::transform( this->symbolsExpression().tuple(), [this,&diffVariable,&symbolToApplyDiff,&newse,&world,&dirLibExpr](auto const& evec)
-                                                     {
-                                                         int nSubExpr = evec.size();
-                                                         using _expr_type = std::decay_t<decltype( std::get<1>( evec.front() ) )>;
-                                                         using _expr_diff_type =  std::decay_t<decltype(  std::get<1>( evec.front() ).template diff<diffOrder>( diffVariable,world,dirLibExpr,newse ) )>;
-                                                         symbol_expression_t<_expr_diff_type> seDiffExpr;
-                                                         for (int l=0;l<nSubExpr;++l)
-                                                         {
-                                                             auto const& e = evec[l];
-                                                             std::string const& currentSymbName = std::get<0>( e );
-
-                                                             auto itFindSymb = symbolToApplyDiff.find( currentSymbName );
-                                                             if ( itFindSymb == symbolToApplyDiff.end() ) // not depend on diffVariable
-                                                                 continue;
-                                                             auto const& theexpr = std::get<1>( e );
-
-                                                             auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
-                                                             std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
-                                                             seDiffExpr.add( currentDiffSymbName, currentDiffExpr, std::get<2>( e ) );
-                                                         }
-                                                         return seDiffExpr;
-                                                     });
+        std::map<std::string, std::map<std::string,std::set<std::string>>> mapSymbolToApplyDiff; // diffVariable -> ( symbol to apply diff, (set of suffix) )
+        this->dependentSymbolsImpl( diffVariable, mapSymbolToApplyDiff[diffVariable], newse );
+        auto diff_se = this->diffSymbolsExprImpl<diffOrder>( mapSymbolToApplyDiff, world, dirLibExpr, newse );
 
 
         std::vector<GiNaC::symbol> resSymbol = this->symbols();
@@ -496,7 +474,7 @@ public:
             }
         }
 
-        for ( auto const& [currentSymbName,currentSymbSuffixes] : symbolToApplyDiff )
+        for ( auto const& [currentSymbName,currentSymbSuffixes] : mapSymbolToApplyDiff[diffVariable] )
         {
             std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
             for ( std::string const& currentSymbSuffix : currentSymbSuffixes )
@@ -518,7 +496,7 @@ public:
             }
         }
 
-        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), SymbolsExpr( std::move( tupleDiffSymbolsExpr ) ) );
+        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
         using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
         using _expr_type = GinacMatrix<M,N,Order,symbols_expression_with_diff_type>;
         GiNaC::matrix resmat(M,N,res);
@@ -527,6 +505,77 @@ public:
 #else
         std::string exprDesc = (boost::format("diff(%1%)_%2%_o%3%")% this->exprDesc() %diffVariable %diffOrder ).str();
 #endif
+        _expr_type resExpr( resmat, resSymbol, exprDesc, ""/*filename*/, world, dirLibExpr, seWithDiff );
+
+        std::map<std::string,double> pv;
+        this->updateParameterValues( pv );
+        resExpr.setParameterValues( pv );
+
+        return resExpr;
+    }
+
+    template <int Dim>
+    auto grad( std::vector<std::string> const& diffVariables, WorldComm const& world, std::string const& dirLibExpr ) const
+    {
+        CHECK( N == 1 ) << "not implmented";
+        CHECK( Dim == diffVariables.size() ) << "incompatible Dim with diffVariables : " << Dim << " vs " << diffVariables.size();
+
+        auto const& newse = this->symbolsExpression();
+        static const int diffOrder = 1;
+
+        std::map<std::string, std::map<std::string,std::set<std::string>>> mapSymbolToApplyDiff; // diffVariable -> ( symbol to apply diff, (set of suffix) )
+        for ( std::string const& diffVariable : diffVariables )
+            this->dependentSymbolsImpl( diffVariable, mapSymbolToApplyDiff[diffVariable], newse );
+        auto diff_se = this->diffSymbolsExprImpl<diffOrder>( mapSymbolToApplyDiff, world, dirLibExpr, newse );
+
+
+        std::vector<GiNaC::symbol> resSymbol = this->symbols();
+        std::vector<GiNaC::ex> res(M*N*Dim);
+        for ( int d=0;d<Dim;++d )
+        {
+            std::string const& diffVariable = diffVariables[d];
+            if ( super::hasSymbol( diffVariable ) )
+            {
+                GiNaC::symbol diffSymb = Feel::symbols( std::vector<std::string>( { diffVariable } ), this->symbols() )[0];
+                if constexpr ( M*N==1 )
+                    res[d] += this->expression().diff( diffSymb, diffOrder );
+                else
+                {
+                    for( int i = 0; i < M*N; ++i )
+                        res[i*Dim+d] += this->expression().op(i).diff( diffSymb, diffOrder );
+                }
+            }
+
+            for ( auto const& [currentSymbName,currentSymbSuffixes] : mapSymbolToApplyDiff[diffVariable] )
+            {
+                std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
+                for ( std::string const& currentSymbSuffix : currentSymbSuffixes )
+                {
+                    std::string currentSymbNameWithSuffix = currentSymbName + currentSymbSuffix;
+                    auto itSym = std::find_if( this->symbols().begin(), this->symbols().end(),
+                                               [&currentSymbNameWithSuffix]( GiNaC::symbol const& s ) { return s.get_name() == currentSymbNameWithSuffix; } );
+                    if ( itSym == this->symbols().end() )
+                        continue;
+                    GiNaC::symbol const& currentSymb = *itSym;
+                    resSymbol.push_back( GiNaC::symbol(currentDiffSymbName+currentSymbSuffix) );
+                    if constexpr ( M*N==1 )
+                                     res[d] += resSymbol.back()*this->expression().diff( currentSymb, diffOrder );
+                    else
+                    {
+                        for( int i = 0; i < M*N; ++i )
+                            res[i*Dim+d] += resSymbol.back()*this->expression().op(i).diff( currentSymb, diffOrder );
+                    }
+                }
+            }
+        }
+
+        auto seWithDiff = Feel::vf::symbolsExpr( this->symbolsExpression(), diff_se );
+        using symbols_expression_with_diff_type = std::decay_t<decltype( seWithDiff )>;
+        using _expr_type = GinacMatrix<M,Dim,Order,symbols_expression_with_diff_type>;
+        GiNaC::matrix resmat(M,Dim,res);
+        std::string exprDesc = (boost::format("grad(%1%)")% this->exprDesc() ).str();
+        for ( std::string const& diffVariable : diffVariables )
+            exprDesc += "_" + diffVariable;
         _expr_type resExpr( resmat, resSymbol, exprDesc, ""/*filename*/, world, dirLibExpr, seWithDiff );
 
         std::map<std::string,double> pv;
@@ -1161,28 +1210,40 @@ private :
                             }
                         });
     }
-    // template <typename TheSymbolExprType>
-    // void dependentSymbolsImpl( std::string const& symb, std::set<std::string> & res, TheSymbolExprType const& se ) const
-    // {
-    //     hana::for_each( se.tuple(), [this,&symb,&res,&se]( auto const& evec )
-    //                     {
-    //                         int nSubExpr = evec.size();
-    //                         for (int l=0;l<nSubExpr;++l)
-    //                         {
-    //                             auto const& e = evec[l];
-    //                             std::string const& currentSymbName = std::get<0>( e );
-    //                             if ( !super::hasSymbol( currentSymbName ) )
-    //                                 continue;
 
-    //                             auto const& currentExpr = std::get<1>( e );
-    //                             if ( !currentExpr.hasSymbolDependency( symb, se ) )
-    //                                 continue;
 
-    //                             if ( res.insert( std::get<0>( e ) ).second )
-    //                                 currentExpr.dependentSymbols( symb, res, se );
-    //                         }
-    //                     });
-    // }
+    template <int diffOrder,typename TheSymbolExprType>
+        auto diffSymbolsExprImpl( std::map< std::string,std::map<std::string, std::set<std::string>>> const& mapSymbolToApplyDiff,
+                                  WorldComm const& world, std::string const& dirLibExpr,
+                                  TheSymbolExprType const& newse ) const
+    {
+        auto tupleDiffSymbolsExpr = hana::transform( this->symbolsExpression().tuple(), [this,&mapSymbolToApplyDiff,&newse,&world,&dirLibExpr](auto const& evec)
+                                                     {
+                                                         int nSubExpr = evec.size();
+                                                         using _expr_type = std::decay_t<decltype( std::get<1>( evec.front() ) )>;
+                                                         using _expr_diff_type =  std::decay_t<decltype(  std::get<1>( evec.front() ).template diff<diffOrder>( "",world,dirLibExpr,newse ) )>;
+                                                         symbol_expression_t<_expr_diff_type> seDiffExpr;
+                                                         for (int l=0;l<nSubExpr;++l)
+                                                         {
+                                                             auto const& e = evec[l];
+                                                             std::string const& currentSymbName = std::get<0>( e );
+                                                             auto const& theexpr = std::get<1>( e );
+
+                                                             for ( auto const& [diffVariable,symbolToApplyDiff] : mapSymbolToApplyDiff )
+                                                             {
+                                                                 auto itFindSymb = symbolToApplyDiff.find( currentSymbName );
+                                                                 if ( itFindSymb == symbolToApplyDiff.end() ) // not depend on diffVariable
+                                                                     continue;
+
+                                                                 auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
+                                                                 std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
+                                                                 seDiffExpr.add( currentDiffSymbName, currentDiffExpr, std::get<2>( e ) );
+                                                             }
+                                                         }
+                                                         return seDiffExpr;
+                                                     });
+        return SymbolsExpr( std::move( tupleDiffSymbolsExpr ) );
+    }
 
 private:
     mutable expression_type  M_fun;
