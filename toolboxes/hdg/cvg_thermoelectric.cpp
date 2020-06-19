@@ -162,7 +162,7 @@ runApplicationThermoElectric()
                                    _quad=quadError, _quad1=quadError );
             errC[2*i+1] = normH1( _range=Ch->template rangeElements<0>(),
                                   _expr=idv(C_h)-idv(C_ex),
-                                  _grad_expr=gradv(C_h)-grad(cExpr),
+                                  _grad_expr=gradv(C_h)-grad<mesh_type::nRealDim>(cExpr),
                                   _quad=quadError, _quad1=quadError );
             errRelC[2*i+1] = errC[2*i+1]/normC[2*i+1];
             if( e->doExport() )
