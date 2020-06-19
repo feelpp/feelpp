@@ -366,7 +366,7 @@ public:
                                 if ( exprIndex[k].empty() )
                                     continue;
                                 auto & e = evec[l];
-                                auto & theexprBase = std::get<1>( e );
+                                auto & theexprBase = e.expr();
                                 auto & theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))>&>(evecExpand[l]);
                                 theexprBase.setParameterValues( mp );
                                 theexpr.setParameterValues( mp );
@@ -392,7 +392,7 @@ public:
                                 if ( exprIndex[k].empty() )
                                     continue;
                                 auto const& e = evec[l];
-                                auto const& theexprBase = std::get<1>( e );
+                                auto const& theexprBase = e.expr();
                                 auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( this->symbolsExpression() ))>const&>(evecExpand[l]);
                                 theexpr.updateParameterValues( pv );
                             }
@@ -632,17 +632,17 @@ public:
                             for ( auto const& e : evec )
                             {
                                 std::vector<std::tuple<uint16_type,uint16_type,uint16_type> > tmp;
-                                if ( std::get<2>( e ).empty() ) // no suffix comp
+                                if ( e.componentSuffix().empty() ) // no suffix comp
                                 {
-                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    uint16_type idx = this->index( e.symbol() );
                                     if ( idx != invalid_v<uint16_type> )
                                         tmp.push_back( std::make_tuple( idx, 0, 0 ) );
                                 }
                                 else
                                 {
-                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    for ( auto const& [_suffix,compArray] : e.componentSuffix() )
                                     {
-                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        uint16_type idx = this->index( e.symbol() + _suffix );
                                         if ( idx != invalid_v<uint16_type> )
                                         {
                                             uint16_type c1 = compArray[0];
@@ -772,7 +772,7 @@ public:
                                 if ( M_t_expr_index[k].empty() )
                                     continue;
                                 auto const& e = evec[l];
-                                auto const& theexprBase = std::get<1>( e );
+                                auto const& theexprBase = e.expr();
                                 using subtensor_type = typename TransformExprToTensor<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr.symbolsExpression() ))>>::type;
                                 auto & subTensor = std::any_cast<subtensor_type&>(evecTensorExpr[l]);
                                 for ( auto const& [idx,c1,c2] : M_t_expr_index[k] )
@@ -858,7 +858,7 @@ public:
                                 continue;
 
                             auto const& e = evec[l];
-                            auto const& theexprBase = std::get<1>( e );
+                            auto const& theexprBase = e.expr();
                             auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr.symbolsExpression() ))> const&>(evecExpand[l]);
                             evecTensorExpr[l] = typename TransformExprToTensor<std::decay_t<decltype(theexpr)>>::type( theexpr,theInitArgs... );
                         }
@@ -880,7 +880,7 @@ public:
                             if ( M_t_expr_index[k].empty() )
                                 continue;
                             auto const& e = evec[l];
-                            auto const& theexprBase = std::get<1>( e );
+                            auto const& theexprBase = e.expr();
                             using subtensor_type = typename TransformExprToTensor<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr.symbolsExpression() ))>>::type;
                             auto & subTensor = std::any_cast<subtensor_type&>(evecTensorExpr[l]);
                             subTensor.update( geom,theUpdateArgs... );
@@ -946,17 +946,17 @@ private :
                             for (int k=0;k<nSubExpr;++k)
                             {
                                 auto const& e = evec[k];
-                                if ( std::get<2>( e ).empty() )
+                                if ( e.componentSuffix().empty() )
                                 {
-                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    uint16_type idx = this->index( e.symbol() );
                                     if ( idx == invalid_uint16_type_value )
                                         continue;
 
                                     // call an optional update function
-                                    if ( std::get<3>( e ) )
-                                        std::get<3>( e )();
+                                    if ( e.updateFunction() )
+                                        e.updateFunction()();
 
-                                    auto const& theexprBase = std::get<1>( e );
+                                    auto const& theexprBase = e.expr();
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
                                     evecExpand[k] = theexpr;
 
@@ -973,18 +973,18 @@ private :
                                          continue;
 
                                     // call an optional update function
-                                    if ( std::get<3>( e ) )
-                                        std::get<3>( e )();
+                                    if ( e.updateFunction() )
+                                        e.updateFunction()();
 
-                                    auto const& theexprBase = std::get<1>( e );
+                                    auto const& theexprBase = e.expr();
                                     auto theexpr = theexprBase.applySymbolsExpr( M_expr );
                                     evecExpand[k] = theexpr;
 
                                     M_context = M_context | Feel::vf::dynamicContext( theexpr );
 
-                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    for ( auto const& [_suffix,compArray] : e.componentSuffix() )
                                     {
-                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        uint16_type idx = this->index( e.symbol() + _suffix );
                                         if ( idx != invalid_v<uint16_type> )
                                         {
                                             if ( theexpr.isPolynomial() )
@@ -1056,13 +1056,13 @@ private :
                             {
                                 auto const& e = evec[k];
 
-                                if ( std::get<2>( e ).empty() )
+                                if ( e.componentSuffix().empty() )
                                 {
-                                    uint16_type idx = this->index( std::get<0>( e ) );
+                                    uint16_type idx = this->index( e.symbol() );
                                     if ( idx == invalid_v<uint16_type> )
                                         continue;
 
-                                    auto const& theexprBase = std::get<1>( e );
+                                    auto const& theexprBase = e.expr();
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(evecExpand[k]);
 
                                     x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
@@ -1072,13 +1072,12 @@ private :
                                     if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                         continue;
 
-                                    auto const& theexprBase = std::get<1>( e );
+                                    auto const& theexprBase = e.expr();
                                     auto const& theexpr = std::any_cast<std::decay_t<decltype(theexprBase.applySymbolsExpr( M_expr ))> const&>(evecExpand[k]);
 
-                                    //auto const& theexpr = std::get<1>( e );
-                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    for ( auto const& [_suffix,compArray] : e.componentSuffix() )
                                     {
-                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
+                                        uint16_type idx = this->index( e.symbol() + _suffix );
                                         if ( idx != invalid_v<uint16_type> )
                                         {
                                             uint16_type c1 = compArray[0];
@@ -1090,35 +1089,6 @@ private :
                             }
                         });
 
-#if 0
-        hana::for_each( M_expr.tupleExpr, [&]( auto const& evec )
-                        {
-                            for ( auto const& e : evec )
-                            {
-                                auto const& theexpr = std::get<1>( e );
-                                if ( std::get<2>( e ).empty() )
-                                {
-                                    uint16_type idx = this->index( std::get<0>( e ) );
-                                    if ( idx == invalid_v<uint16_type> )
-                                        continue;
-                                    x[idx] = theexpr.evaluate( parallel, worldcomm )(0,0);
-                                }
-                                else
-                                {
-                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
-                                    {
-                                        uint16_type idx = this->index( std::get<0>( e ) + _suffix );
-                                        if ( idx != invalid_v<uint16_type> )
-                                        {
-                                            uint16_type c1 = compArray[0];
-                                            uint16_type c2 = compArray[1];
-                                            x[idx] = theexpr.evaluate( parallel, worldcomm )(c1,c2);
-                                        }
-                                    }
-                                }
-                            }
-                        });
-#endif
         evaluate_type res = evaluate_type::Zero();
         (*M_cfun)(&ni,x.data(),&no,res.data());
         return res;
@@ -1128,14 +1098,14 @@ private :
     bool hasAtLeastOneSymbolDependency( AnElementOfSymbolExprType const& e ) const
     {
         bool res = false;
-        if ( std::get<2>( e ).empty() )
+        if ( e.componentSuffix().empty() )
         {
-            res = this->index( std::get<0>( e ) ) != invalid_v<uint16_type>;
+            res = this->index( e.symbol() ) != invalid_v<uint16_type>;
         }
         else
         {
-            for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
-                if ( this->index( std::get<0>( e ) + _suffix ) != invalid_v<uint16_type> )
+            for ( auto const& [_suffix,compArray] : e.componentSuffix() )
+                if ( this->index( e.symbol() + _suffix ) != invalid_v<uint16_type> )
                 {
                     res = true;
                     break;
@@ -1160,13 +1130,13 @@ private :
                             for (int l=0;l<nSubExpr;++l)
                             {
                                 auto const& e = evec[l];
-                                std::string const& currentSymbName = std::get<0>( e );
+                                std::string const& currentSymbName = e.symbol();
                                 // if ( !super::hasSymbol( currentSymbName ) )
                                 //     continue;
                                 if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                     continue;
 
-                                auto const& currentExpr = std::get<1>( e );
+                                auto const& currentExpr = e.expr();
                                 res = currentExpr.hasSymbolDependency( symb, se );
                                 if ( res )
                                     break;
@@ -1184,7 +1154,7 @@ private :
                             for (int l=0;l<nSubExpr;++l)
                             {
                                 auto const& e = evec[l];
-                                std::string const& currentSymbName = std::get<0>( e );
+                                std::string const& currentSymbName = e.symbol();
                                 if ( res.find( currentSymbName ) != res.end() )
                                     continue;
 
@@ -1193,19 +1163,18 @@ private :
                                 if ( !this->hasAtLeastOneSymbolDependency( e ) )
                                     continue;
 
-                                auto const& currentExpr = std::get<1>( e );
+                                auto const& currentExpr = e.expr();
                                 if ( !currentExpr.hasSymbolDependency( symb, se ) )
                                     continue;
 
-                                if ( std::get<2>( e ).empty() )
+                                if ( e.componentSuffix().empty() )
                                     res[currentSymbName].insert( "" );
                                 else
                                 {
-                                    for ( auto const& [_suffix,compArray] : std::get<2>( e ) )
+                                    for ( auto const& [_suffix,compArray] : e.componentSuffix() )
                                         res[currentSymbName].insert( _suffix );
                                 }
 
-                                //if ( res.insert( std::get<0>( e ) ).second )
                                 currentExpr.dependentSymbols( symb, res, se );
                             }
                         });
@@ -1220,14 +1189,14 @@ private :
         auto tupleDiffSymbolsExpr = hana::transform( this->symbolsExpression().tuple(), [this,&mapSymbolToApplyDiff,&newse,&world,&dirLibExpr](auto const& evec)
                                                      {
                                                          int nSubExpr = evec.size();
-                                                         using _expr_type = std::decay_t<decltype( std::get<1>( evec.front() ) )>;
-                                                         using _expr_diff_type =  std::decay_t<decltype(  std::get<1>( evec.front() ).template diff<diffOrder>( "",world,dirLibExpr,newse ) )>;
+                                                         using _expr_type = std::decay_t<decltype( evec.front().expr() )>;
+                                                         using _expr_diff_type =  std::decay_t<decltype( evec.front().expr().template diff<diffOrder>( "",world,dirLibExpr,newse ) )>;
                                                          symbol_expression_t<_expr_diff_type> seDiffExpr;
                                                          for (int l=0;l<nSubExpr;++l)
                                                          {
                                                              auto const& e = evec[l];
-                                                             std::string const& currentSymbName = std::get<0>( e );
-                                                             auto const& theexpr = std::get<1>( e );
+                                                             std::string const& currentSymbName = e.symbol();
+                                                             auto const& theexpr = e.expr();
 
                                                              for ( auto const& [diffVariable,symbolToApplyDiff] : mapSymbolToApplyDiff )
                                                              {
@@ -1237,7 +1206,7 @@ private :
 
                                                                  auto currentDiffExpr = theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,newse );
                                                                  std::string currentDiffSymbName = (boost::format( "diff_%1%_%2%_%3%" )%currentSymbName %diffVariable %diffOrder ).str();
-                                                                 seDiffExpr.add( currentDiffSymbName, currentDiffExpr, std::get<2>( e ) );
+                                                                 seDiffExpr.add( currentDiffSymbName, currentDiffExpr, e.componentSuffix() );
                                                              }
                                                          }
                                                          return seDiffExpr;
