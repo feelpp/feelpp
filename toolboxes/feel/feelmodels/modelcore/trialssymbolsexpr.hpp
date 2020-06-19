@@ -4,6 +4,8 @@
 #ifndef FEELPP_TOOLBOXES_MODELCORE_TRIALSSYMBOLSEXPR_H
 #define FEELPP_TOOLBOXES_MODELCORE_TRIALSSYMBOLSEXPR_H 1
 
+#include <feel/feelcore/tuple_utils.hpp>
+
 namespace Feel
 {
 namespace FeelModels
