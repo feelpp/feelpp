@@ -94,6 +94,7 @@ public :
     bool applyStabilization() const { return M_applyStabilization; }
     std::string const& stabilizationType() const { return M_stabilizationType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    bool stabilizationGLS_applyShockCapturing() const { return M_stabilizationGLS_applyShockCapturing; }
 
     //___________________________________________________________________________________//
     // time discretisation
@@ -114,6 +115,8 @@ public :
 
     virtual void setParameterValues( std::map<std::string,double> const& paramValues ) = 0;
 
+    template <typename SymbolsExprType>
+    bool hasSymbolDependencyInCoefficients( std::set<std::string> const& symbs, SymbolsExprType const& se ) const;
 
 protected :
     void loadParameterFromOptionsVm();
@@ -148,6 +151,35 @@ protected :
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
 };
+
+
+template< typename ConvexType>
+template <typename SymbolsExprType>
+bool
+CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
+{
+    bool hasDependency = false;
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
+    {
+        if ( ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) )
+             )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    return hasDependency;
+}
+
 
 
 } // namespace Feel
