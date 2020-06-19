@@ -129,6 +129,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         indexBlock += nBlockPDE;
     }
 
+    if ( M_solverName == "automatic" )
+        this->updateAutomaticSolverSelection();
+
     // algebraic solver
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
@@ -265,27 +268,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                     auto tse = this->trialSymbolsExpr( mfields, cfpde2->trialSelectorModelFields() );
                                                     auto trialSymbolNames = tse.names();
 
-                                                    bool coeffDependOnUnknown = false;
-                                                    for ( std::string const& matName : cfpde->materialsProperties()->physicToMaterials( cfpde->physicDefault() ) )
-                                                    {
-                                                        if ( ( cfpde->materialsProperties()->hasProperty( matName, cfpde->convectionCoefficientName() ) &&
-                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->convectionCoefficientName() ).hasSymbolDependency( trialSymbolNames, se ) ) ||
-                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->diffusionCoefficientName() ) &&
-                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->diffusionCoefficientName() ).hasSymbolDependency( trialSymbolNames, se ) ) ||
-                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->reactionCoefficientName() ) &&
-                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->reactionCoefficientName() ).hasSymbolDependency( trialSymbolNames, se ) ) ||
-                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->sourceCoefficientName() ) &&
-                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->sourceCoefficientName() ).hasSymbolDependency( trialSymbolNames, se ) ) ||
-                                                             ( cfpde->materialsProperties()->hasProperty( matName, cfpde->firstTimeDerivativeCoefficientName() ) &&
-                                                               cfpde->materialsProperties()->materialProperty( matName, cfpde->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( trialSymbolNames, se ) )
-                                                             )
-                                                        {
-                                                            coeffDependOnUnknown = true;
-                                                            break;
-                                                        }
-                                                    }
-
-                                                    if ( coeffDependOnUnknown )
+                                                    if ( cfpde->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) )
                                                     {
                                                         int colId = this->startSubBlockSpaceIndex( cfpde2->physicDefault() );
                                                         myblockGraph(rowId,colId) = stencil(_test=cfpde->spaceUnknown(),
@@ -300,6 +283,31 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     this->log("CoefficientFormPDEs","buildBlockMatrixGraph", "finish" );
     return myblockGraph;
 
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateAutomaticSolverSelection()
+{
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+    auto trialSymbolNames = tse.names();
+    int nEq = M_coefficientFormPDEs.size();
+    bool isLinear = true;
+    for ( int k=0;k<nEq;++k )
+    {
+        auto const& cfpdeBase = M_coefficientFormPDEs[k];
+        if ( cfpdeBase->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) ||
+             ( cfpdeBase->applyStabilization() && cfpdeBase->stabilizationGLS_applyShockCapturing() )
+             )
+        {
+            isLinear = false;
+            break;
+        }
+    }
+
+    M_solverName = ( isLinear )? "Linear" : "Newton";
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -419,17 +427,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     for (auto & cfpdeBase : M_coefficientFormPDEs )
         cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) );
 
-    // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-    //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
-    // else
-    if ( M_solverName == "automatic" ) // TODO define automatic solver from pde/option
-    {
-        M_algebraicFactory->solve( "Linear", M_blockVectorSolution.vectorMonolithic() );
-        // M_blockVectorSolution.localize();
-        // M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
-    }
-    else
-        M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
+    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
 

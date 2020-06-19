@@ -400,6 +400,8 @@ private :
     void initMaterialProperties();
     void initPostProcess() override;
 
+    void updateAutomaticSolverSelection();
+
     template <typename FilterBasisUnknownType>
     void updateLinearPDE_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
     template <typename FilterBasisUnknownType>
