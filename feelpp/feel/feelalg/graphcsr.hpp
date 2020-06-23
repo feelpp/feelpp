@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <boost/tuple/tuple.hpp>
 //#include <boost/mpi/communicator.hpp>

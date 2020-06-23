@@ -37,20 +37,21 @@ namespace FeelModels {
 ModelAlgebraic::ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                                 worldcomm_ptr_t const& _worldComm,
                                 std::string const& subPrefix,
-                                ModelBaseRepository const& modelRep )
+                                ModelBaseRepository const& modelRep,
+                                ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
-    super_type( _theprefix,keyword,_worldComm,subPrefix,modelRep ),
-    M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix()) ),
-    M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix()) ),
-    M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix()) ),
-    M_useLinearJacobianInResidual( boption(_name="residual-uselinearjac",_prefix=this->prefix()) ),
-    M_rebuildLinearPartInJacobian( boption(_name="jacobian-linear-update",_prefix=this->prefix()) ),
+    super_type( _theprefix,keyword,_worldComm,subPrefix,modelRep, modelCmdLineOpt ),
+    M_verboseSolverTimer( boption(_name="verbose_solvertimer",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_verboseSolverTimerAllProc( boption(_name="verbose_solvertimer_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_rebuildCstPartInLinearSystem( boption(_name="linearsystem-cst-update",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_useLinearJacobianInResidual( boption(_name="residual-uselinearjac",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_rebuildLinearPartInJacobian( boption(_name="jacobian-linear-update",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_rebuildCstPartInResidual(true), // not an option (just opitmisation with semi-implicit)
-    M_useCstMatrix( boption(_name="use-cst-matrix",_prefix=this->prefix()) ),
-    M_useCstVector( boption(_name="use-cst-vector",_prefix=this->prefix()) ),
+    M_useCstMatrix( boption(_name="use-cst-matrix",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_useCstVector( boption(_name="use-cst-vector",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_needToRebuildCstPart( false ),
-    M_errorIfSolverNotConverged( boption(_name="error-if-solver-not-converged",_prefix=this->prefix()) ),
-    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix()) ),
+    M_errorIfSolverNotConverged( boption(_name="error-if-solver-not-converged",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_printGraph( boption(_name="graph-print-python",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_startBlockSpaceIndexMatrixRow(0),
     M_startBlockSpaceIndexMatrixCol(0),
     M_startBlockSpaceIndexVector(0)
@@ -58,8 +59,8 @@ ModelAlgebraic::ModelAlgebraic( std::string _theprefix, std::string const& keywo
 
     //-----------------------------------------------------------------------//
     //-----------------------------------------------------------------------//
-    if (Environment::vm().count(prefixvm(this->prefix(),"graph-print-python-filename")))
-        M_printGraphFileName = Environment::vm()[prefixvm(this->prefix(),"graph-print-python-filename")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"graph-print-python-filename")))
+        M_printGraphFileName = soption(_name="graph-print-python-filename",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_printGraphFileName = this->prefix()+".graphPython.py";
 

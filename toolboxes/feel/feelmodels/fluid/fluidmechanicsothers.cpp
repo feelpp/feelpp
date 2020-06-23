@@ -103,7 +103,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Prefix : " << this->prefix()
            << "\n   Root Repository : " << this->rootRepository()
            << "\n   Physical Model"
-           << "\n     -- pde name  : " << M_modelName
+        //<< "\n     -- pde name  : " << M_modelName
         //<< "\n     -- stress tensor law  : " << this->materialProperties()->dynamicViscosityLaw()
            << "\n     -- time mode : " << StateTemporal
            << "\n     -- ale mode  : " << ALEmode
@@ -226,7 +226,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
@@ -258,6 +258,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::modelName() const
 {
     return M_modelName;
 }
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -295,10 +296,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
 {
+#if 0
     if( this->modelName() == "Stokes" )
         return true;
     else
         return this->isStationary();
+#else
+
+// TODO : should be detected in loop assembly (only works with one physic)
+bool isStokes = true;
+for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+ {
+      auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+      if ( physicFluidData->equation() != "Stokes" )
+      {
+          isStokes = false;
+          break;
+      }
+}
+if ( isStokes )
+    return true;
+ else
+     return this->isStationary();
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -781,7 +801,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
     M_bodySetBC.updateForUse( *this );
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
-
+#if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
@@ -812,6 +832,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->setSolverName( saveSolverName );
         this->setStationary( saveIsStationary );
     }
+#endif
 #if 0 // TODO
     if ( this->startBySolveNewtonian() && this->materialProperties()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
@@ -989,81 +1010,86 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
         std::dynamic_pointer_cast<op_pcd_type>( this->operatorPCD() );
 
     auto u = this->functionSpaceVelocity()->element( vecSol, this->rowStartInVector() );
-    auto p = this->functionSpacePressure()->element( vecSol, this->rowStartInVector()+1 );
+    //auto p = this->functionSpacePressure()->element( vecSol, this->rowStartInVector()+1 );
 
     myOpPCD->updateStart();
 
-    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& therange = rangeData.second;
-        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-        auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-        //auto rhoExpr = this->materialProperties()->density( matName ).expr();
-        auto const& fieldRho = this->materialProperties()->fieldRho();
-        auto rhoExpr = idv( fieldRho );
-        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
-            if (this->isMoveDomain() )
+            std::string const& matName = rangeData.first;
+            auto const& therange = rangeData.second;
+            auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
+            //auto rhoExpr = this->materialProperties()->density( matName ).expr();
+            auto const& fieldRho = this->materialProperties()->fieldRho();
+            auto rhoExpr = idv( fieldRho );
+            if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
+                }
             }
-            else
+            else if ( ( physicFluidData->equation() == "Navier-Stokes" && this->solverName() == "Oseen" ) /*|| this->modelName() == "Oseen"*/ )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
-            }
-        }
-        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
-        {
-            auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
-            if (this->isMoveDomain() )
-            {
+                auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
+                }
             }
-            else
+            else if ( physicFluidData->equation() == "Navier-Stokes" )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
-            }
-        }
-        else if ( this->modelName() == "Navier-Stokes" )
-        {
-            if (this->isMoveDomain() )
-            {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
+                }
             }
-            else
-            {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
-            }
-        }
 
-        if ( !this->isStationaryModel() )
-        {
-            myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
-        }
-        if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
-        {
-            //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
-            //Warning : it's a copy past, should be improve : TODO!
-            double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
-            auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
-            auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
-            auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
-            norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+            if ( !this->isStationaryModel() )
+            {
+                myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
+            }
+            if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
+            {
+                //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
+                //Warning : it's a copy past, should be improve : TODO!
+                double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+                auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+                auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+                auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+                norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
 
-            myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+                myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+            }
         }
-    }
+    } // foreach physic
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {

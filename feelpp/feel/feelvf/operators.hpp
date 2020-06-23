@@ -222,6 +222,19 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                  BOOST_PP_IDENTITY( sw ),                       \
                  BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) ) )()  \
   /**/
+
+
+# /* Generates code for all binary operators and integral type pairs. */
+# define VF_ARRAY_OPERATOR_DECLARATION(_, OT) \
+      VF_ARRAY_OPERATOR_CODE_DECLARATION OT   \
+   /**/
+
+#define VF_ARRAY_OPERATOR_CODE_DECLARATION(O,T)                                     \
+    template <class Element                                             \
+    BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ), BOOST_PP_COMMA, BOOST_PP_EMPTY )() \
+              BOOST_PP_IF( VF_OP_TYPE_IS_GENERIC( T ), BOOST_PP_IDENTITY( VF_OP_TYPE_TYPE( T ) sw ), BOOST_PP_EMPTY )() > \
+    class VF_OPERATOR_NAME( O ) VF_OP_SPECIALIZATION_IF_NOT_GENERIC( Element, T ); \
+    /**/
 #
 #
 # /* Generates code for all binary operators and integral type pairs. */
@@ -380,6 +393,42 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 self_type applySymbolsExpr( SymbolsExprType const& se ) const \
             {                                                           \
                 return *this;                                           \
+            }                                                           \
+                                                                        \
+            template <typename TheSymbolExprType>                       \
+            bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const \
+            {                                                           \
+                if constexpr ( isP0Continuous<fe_type>::result || functionspace_type::nDim == 0 ) \
+                                 return false;                          \
+                else if constexpr ( functionspace_type::nDim == 1 )     \
+                                      return symb == "x";               \
+                else if constexpr ( functionspace_type::nDim == 2 )     \
+                                      return symb == "x" || symb == "y"; \
+                else                                                    \
+                    return symb == "x" || symb == "y" || symb == "z";   \
+            }                                                           \
+                                                                        \
+            template <int diffOrder, typename TheSymbolExprType>        \
+                auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr, \
+                           TheSymbolExprType const& se ) const          \
+            {                                                           \
+                if constexpr ( std::is_same_v< this_type, OpId<element_type, VF_OP_TYPE_OBJECT(T)> > ) \
+                    {                                                   \
+                        CHECK( diffVariable == "x" || diffVariable == "y" || diffVariable == "z" ) << "cannot diff with symbol " << diffVariable; \
+                        std::map<std::string,int> compNameToIndex = { {"x",0},{"y",1},{"z",2} }; \
+                        if constexpr ( fe_type::nComponents == 1 )      \
+                            return Feel::vf::expr( OpGrad<element_type, VF_OP_TYPE_OBJECT(T)>( this->e(), this->useInterpWithConfLoc() ) )(0,compNameToIndex[diffVariable]); \
+                        else                                            \
+                        {                                               \
+                            CHECK( false ) << "TODO";                   \
+                            return *this;                               \
+                        }                                               \
+                    }                                                   \
+                else                                                    \
+                {                                                       \
+                    CHECK( false ) << "TODO";                           \
+                    return *this;                                       \
+                }                                                       \
             }                                                           \
                                                                         \
             template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
@@ -914,11 +963,8 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
 //
 // Generate the code
 //
-BOOST_PP_LIST_FOR_EACH_PRODUCT(
-
-
-    VF_ARRAY_OPERATOR, 2, (
-        VF_OPERATORS, VF_OPERATORS_TYPE ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR_DECLARATION, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
+BOOST_PP_LIST_FOR_EACH_PRODUCT( VF_ARRAY_OPERATOR, 2, ( VF_OPERATORS, VF_OPERATORS_TYPE ) )
 /// \endcond
 
 // try to add operators to Python library

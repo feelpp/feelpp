@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
@@ -42,9 +43,10 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                              _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature ,
                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
             auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
             if ( M_modelUseJouleEffect )
             {
@@ -66,7 +68,6 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLin
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, M_heatModel->startBlockSpaceIndexVector(), M_electricModel->startBlockSpaceIndexVector() );
-    auto const& symbolsExpr = mctx.symbolsExpr();
     M_heatModel->updateLinearPDEDofElimination( data, mctx );
     M_electricModel->updateLinearPDEDofElimination( data, mctx );
 }
@@ -106,15 +107,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data )
         auto myLinearForm = form1( _test=XhT,_vector=F,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= sigmaExpr*inner(gradv(v))*id(t),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

@@ -82,7 +82,7 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
 
-        ModelAlgebraicFactory( std::string const& prefix );
+        ModelAlgebraicFactory( std::string const& prefix, po::variables_map const& vm = Environment::vm() );
         ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend );
 
         ModelAlgebraicFactory(model_ptrtype const& model,

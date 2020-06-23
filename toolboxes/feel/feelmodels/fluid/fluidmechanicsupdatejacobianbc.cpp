@@ -244,6 +244,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
         }
     }
     //--------------------------------------------------------------------------------------------------//
+
     // slip bc
     if (BuildCstPart && !this->markerSlipBC().empty() )
     {

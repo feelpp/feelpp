@@ -61,6 +61,7 @@ public:
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nRealDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
     typedef mesh_type mesh_electric_type;
@@ -75,7 +76,7 @@ public:
     typedef typename space_electricpotential_type::element_external_storage_type element_electricpotential_external_storage_type;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
@@ -181,9 +182,9 @@ public :
             typedef std::decay_t<decltype(_expr_scalar_type{}*inner(gradv(v)))> expr_joules_losses_type;
             std::map<std::string,std::vector<std::tuple< expr_joules_losses_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprJoulesLosses;
 
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
-                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                 if ( this->materialsProperties()->hasElectricConductivity( matName ) )
                 {
                     auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
@@ -201,7 +202,7 @@ public :
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
 
@@ -222,6 +223,11 @@ public :
     auto modelFields( PotentialFieldType const& field_p, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, "electric-potential", field_p, "P", this->keyword() ) );
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::potential(this), "electric-potential", startBlockSpaceIndex ) );
         }
 
     //___________________________________________________________________________________//
@@ -247,14 +253,21 @@ public :
             // generate symbol electric_matName_current_density
             typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
             std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
-            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            symbol_expression_t<_expr_currentdensity_type> se_currentdensity;
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             {
                 std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
                 auto _currentDensityExpr = this->currentDensityExpr( v, matName );
-                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1,true ) ) );
+                se_currentdensity.add( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1 ) );
             }
 
-            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
+            return Feel::vf::symbolsExpr( se_currentdensity );
+        }
+
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
         }
 
     //___________________________________________________________________________________//
@@ -274,9 +287,10 @@ public :
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
         }
-
 
     //___________________________________________________________________________________//
     // apply assembly and solver
@@ -354,6 +368,7 @@ private :
 
     // physical parameter
     materialsproperties_ptrtype M_materialsProperties;
+
     // boundary conditions
     map_scalar_field<2> M_bcDirichlet;
     map_scalar_field<2> M_bcNeumann;

@@ -2,38 +2,35 @@
 #include "levelsetbaseconfig.h"
 #include <feel/feelmodels/levelset/levelsetbase.cpp>
 
-// Scalar advection required for ReinitializerHJ
-#ifndef ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS
-#define ADVDIFFREAC_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename FunctionSpaceType, typename FunctionSpaceAdvectionVelocityType, typename BasisDiffusionCoeffType, typename BasisReactionCoeffType> \
-        /**/
-#endif
-#ifndef ADVDIFFREAC_CLASS_TEMPLATE_TYPE
-#define ADVDIFFREAC_CLASS_TEMPLATE_TYPE \
-    AdvDiffReac<FunctionSpaceType, FunctionSpaceAdvectionVelocityType, BasisDiffusionCoeffType, BasisReactionCoeffType> \
-        /**/
-#endif
-//#include <feel/feelmodels/advection/advection.cpp>
+#define LEVELSETSPACEMANAGER_CLASS_TYPE \
+    LevelSetSpaceManager< \
+        LEVELSETBASE_CONVEX_TYPE, \
+        LEVELSETBASE_BASIS_TYPE, \
+        LEVELSETBASE_PERIODICITY_TYPE, \
+        LEVELSETBASE_BASISPN_TYPE \
+        >                    \
+    /**/
 
 namespace Feel {
+
+// Redistanciation FM
+extern template class LevelSetRedistanciationFM< 
+    typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
+    >;
+
+// Redistanciation HJ
+extern template class LevelSetRedistanciationHJ< 
+    typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
+    >;
+extern template class FeelModels::AdvDiffReac<
+    typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type
+    >;
+
 namespace FeelModels {
 
-LEVELSETBASE_CLASS_INSTANTIATION
+extern template class LEVELSETSPACEMANAGER_CLASS_TYPE;
 
-// Scalar iso advection (for reinitializerHJ)
-//template class AdvDiffReac<
-    //typename LevelSetSpaceManager<
-        //Simplex<LEVELSETBASE_DIM,LEVELSETBASE_ORDERGEO,LEVELSETBASE_DIM>,
-        //Lagrange<LEVELSETBASE_ORDERPOLY, Scalar, Continuous, LEVELSETBASE_INTERPOLATION_POINTS>,
-        //LEVELSETBASE_PERIODICITY,
-        //Lagrange<LEVELSETBASE_PN_ORDERPOLY, Scalar, Continuous, LEVELSETBASE_INTERPOLATION_POINTS>
-            //>::space_scalar_type,
-    //FunctionSpace<
-        //Mesh<Simplex<LEVELSETBASE_DIM,LEVELSETBASE_ORDERGEO,LEVELSETBASE_DIM>>,
-        //bases<Lagrange<LEVELSETBASE_ORDERPOLY, Vectorial, Continuous, LEVELSETBASE_INTERPOLATION_POINTS>>,
-        //Periodicity<LEVELSETBASE_PERIODICITY>
-            //>
-    //>;
+LEVELSETBASE_CLASS_INSTANTIATION
 
 }
 }

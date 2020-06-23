@@ -103,15 +103,10 @@ public:
                   worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() )
         :
         super( vm, prefix, worldComm ),
-        M_solver_petsc( vm, worldComm )
+        M_solver_petsc( prefix, worldComm, vm )
         //M_nl_solver_petsc( prefix,worldComm )
     {
         this->M_backend = BackendType::BACKEND_PETSC;
-
-        std::string _prefix = prefix;
-
-        if ( !_prefix.empty() )
-            _prefix += "-";
     }
     ~BackendPetsc();
     void clear();

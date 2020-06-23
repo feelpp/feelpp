@@ -46,7 +46,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
                                           ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<mesh_type::nDim>( "aerothermal" )
+    ModelPhysics<mesh_type::nDim>( "heat-fluid" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("HeatFluid","constructor", "start" );
 
@@ -162,24 +163,35 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("HeatFluid","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( !M_mesh )
-        this->initMesh();
+    M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
+                                                    this->subPrefix(), this->repository() );
+    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
+                                                      this->subPrefix(), this->repository() );
+
+    if ( this->physics().empty() )
+    {
+        typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
+        subPhyicsDesc[M_heatModel->physicType()] = M_heatModel->keyword();
+        subPhyicsDesc[M_fluidModel->physicType()] = M_fluidModel->keyword();
+        this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
+    }
 
     // physical properties
     if ( !M_materialsProperties )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
+    if ( !M_mesh )
+        this->initMesh();
 
-    M_heatModel = std::make_shared<heat_model_type>(prefixvm(this->prefix(),"heat"), "heat", this->worldCommPtr(),
-                                                    this->subPrefix(), this->repository() );
-    M_fluidModel = std::make_shared<fluid_model_type>(prefixvm(this->prefix(),"fluid"), "fluid", this->worldCommPtr(),
-                                                       this->subPrefix(), this->repository() );
+    this->materialsProperties()->addMesh( this->mesh() );
 
+    // init heat toolbox
+    M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
     M_heatModel->setManageParameterValues( false );
     if ( !M_heatModel->modelPropertiesPtr() )
     {
@@ -188,12 +200,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
-    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_x,%1%_U_y}:%1%_U_x:%1%_U_y":"{%1%_U_x,%1%_U_y,%1%_U_z}:%1%_U_x:%1%_U_y:%1%_U_z"  )%M_fluidModel->keyword() ).str();
+    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_0,%1%_U_1}:%1%_U_0:%1%_U_1":"{%1%_U_0,%1%_U_1,%1%_U_2}:%1%_U_0:%1%_U_1:%1%_U_2" )%M_fluidModel->keyword() ).str();
     auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
-    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
+    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
         M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
     M_heatModel->init( false );
 
+    // init fluid toolbox
+    M_fluidModel->setPhysics( this->physics( M_fluidModel->physicType() ), M_fluidModel->keyword() );
     M_fluidModel->setManageParameterValues( false );
     if ( !M_fluidModel->modelPropertiesPtr() )
     {
@@ -326,16 +340,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // need to not include export fields of material of subphysics
     std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physics() ) );
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailablefluid = Feel::FeelModels::detail::set_difference( this->fluidModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->fluidModel()->physics() ) );
+                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->fluidModel()->physicsAvailable() ) );
    std::set<std::string> ppExportsAllFieldsAvailable;
    for ( auto const& s : ppExportsAllFieldsAvailableHeat )
        ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
    for ( auto const& s : ppExportsAllFieldsAvailablefluid )
        ppExportsAllFieldsAvailable.insert( prefixvm( this->fluidModel()->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -472,7 +486,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_fluidModel->exportResults( time, symbolExpr );
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physics(),symbolExpr ),
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
                                     hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
@@ -617,209 +631,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::postSolveLinear( vector_ptrtype rhs, vector_ptrty
 }
 
 
-HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
-{
-#if 0
-    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("HeatFluid","updateLinearPDE", "start"+sc);
-
-    M_heatModel->updateLinearPDE( data );
-    M_fluidModel->updateLinearPDE( data );
-
-    if ( buildNonCstPart )
-    {
-        auto XhVP = M_fluidModel->spaceVelocityPressure();
-        auto const& U = M_fluidModel->fieldVelocityPressure();
-        auto u = U.template element<0>();
-        auto XhT = M_heatModel->spaceTemperature();
-        auto const& t = M_heatModel->fieldTemperature();
-
-        auto mylfVP = form1( _test=XhVP, _vector=F,
-                             _rowstart=M_fluidModel->rowStartInVector()+0 );
-
-        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=A,
-                             _rowstart=M_heatModel->rowStartInMatrix(),
-                             _colstart=M_heatModel->colStartInMatrix() );
-        auto mybfVPT = form2( _test=XhVP,_trial=XhT,_matrix=A,
-                             _rowstart=M_fluidModel->rowStartInMatrix(),
-                             _colstart=M_heatModel->colStartInMatrix() );
-
-        auto UConvection = M_fluidModel->timeStepBDF()->poly();
-        auto uConvection = UConvection.template element<0>();
-
-        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-        {
-            std::string const& matName = rangeData.first;
-            auto const& range = rangeData.second;
-            auto const& rhoHeatCapacity = M_heatModel->thermalProperties()->rhoHeatCapacity( matName );
-
-            if ( rhoHeatCapacity.isConstant() )
-            {
-                double rhoHeatCapacityValue = rhoHeatCapacity.value();
-                mybfTT +=
-                    integrate( _range=range,
-                               _expr= rhoHeatCapacityValue*(gradt(t)*idv(uConvection))*id(t),
-                               _geomap=this->geomap() );
-            }
-            else
-            {
-                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-                mybfTT +=
-                    integrate( _range=range,
-                               _expr= rhoHeatCapacityExpr*(gradt(t)*idv(uConvection))*id(t),
-                               _geomap=this->geomap() );
-            }
-            auto const& rho = M_heatModel->thermalProperties()->rho( matName );
-            auto const& thermalExpansion = M_heatModel->thermalProperties()->thermalExpansion( matName );
-            CHECK( rhoHeatCapacity.isConstant() && thermalExpansion.isConstant() ) << "TODO";
-            double rhoValue = rho.value();
-            double beta = thermalExpansion.value();
-            double T0 = M_BoussinesqRefTemperature;
-            mybfVPT +=
-                integrate( _range=range,
-                           _expr= rhoValue*(beta*idt(t))*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-            mylfVP +=
-                integrate( _range=range,
-                           _expr= rhoValue*(beta*T0)*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
-
-            if ( M_heatModel->stabilizationGLS() )
-            {
-                auto const& thermalConductivity = M_heatModel->thermalProperties()->thermalConductivity( matName );
-                if ( thermalConductivity.isMatrix() )
-                    CHECK( false ) << "TODO";
-                else if ( thermalConductivity.isConstant() )
-                    M_heatModel->updateLinearPDEStabilizationGLS( cst(rhoHeatCapacity.value()),cst(thermalConductivity.value()),idv(uConvection),range,data );
-                else
-                    CHECK( false ) << "TODO";
-            }
-            if ( M_fluidModel->stabilizationGLS() )
-            {
-                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-                auto expraddedInGLSResidualLF = rhoValue*beta*T0*M_gravityForce;
-                auto exprAddedInGLSResidualBF = rhoValue*beta*idt(t)*M_gravityForce;
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(expraddedInGLSResidualLF),hana::make_tuple(std::make_pair(mybfVPT, exprAddedInGLSResidualBF)) );
-            }
-
-        }
-
-    }
-
-    this->log("HeatFluid","updateLinearPDE", "finish");
-#else
-    CHECK( false ) << "not allow here";
-#endif
-}
-
-
-
-
-HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
-{
-    M_heatModel->updateLinearPDEDofElimination( data );
-    M_fluidModel->updateLinearPDEDofElimination( data );
-}
-
-
-
-
-
-
-
-
-
-
-HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) const
-{
-    //const vector_ptrtype& vecCurrentSolution = data.currentSolution();
-    auto mctx = this->modelContext( /*vecCurrentSolution, startBlockIndexTemperature, startBlockIndexElectricPotential*/ );
-    M_heatModel->updateLinearPDE( data,mctx );
-}
-
-
-
-
-
-HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
-void
-HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data ) const
-{
-    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
-    sparse_matrix_ptrtype& A = data.matrix();
-    vector_ptrtype& F = data.rhs();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-    if ( buildCstPart )
-        return;
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("HeatFluid","updateLinearFluidSolver", "start"+sc);
-
-    double timeSteppingScaling = 1.;
-    if ( !M_fluidModel->isStationaryModel() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(M_fluidModel->prefix(),"time-stepping.scaling") );
-
-
-    auto XhV = M_fluidModel->functionSpaceVelocity();
-    auto const& u = M_fluidModel->fieldVelocity();
-    auto XhT = M_heatModel->spaceTemperature();
-    auto const& t = M_heatModel->fieldTemperature();
-
-    auto mylfV = form1( _test=XhV, _vector=F,
-                        _rowstart=M_fluidModel->rowStartInVector() );
-
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
-    {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-
-        auto const& rho = this->materialsProperties()->rho( matName );
-        auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-        auto const& rhoExpr = rho.expr();
-        auto const& betaExpr = thermalExpansion.expr();
-        double T0 = M_BoussinesqRefTemperature;
-
-        mylfV +=
-            integrate( _range=range,
-                       _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
-                       _geomap=this->geomap() );
-
-        if ( M_fluidModel->stabilizationGLS() )
-        {
-            auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-            //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-            auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-            auto exprAddedInRhs = -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;
-            if ( M_fluidModel->timeStepping() ==  "Theta" )
-            {
-                // TODO : fix if this info is not available
-                auto previousSol = data.vectorInfo( prefixvm( M_heatModel->prefix(),"time-stepping.previous-solution") );
-                auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
-                auto exprAddedInRhsOld = -(1.0-timeSteppingScaling)*rhoExpr*betaExpr*(idv(tOld)-T0)*M_gravityForce;
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs,exprAddedInRhsOld) );
-            }
-            else
-                M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
-
-        }
-    }
-
-    this->log("HeatFluid","updateLinearFluidSolver", "finish"+sc);
-}
 
 
 } // end namespace FeelModels

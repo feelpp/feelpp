@@ -92,47 +92,53 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     boost::mpi::timer timerAssemble;
 
     //--------------------------------------------------------------------------------------------------//
-    // convection terms
-    if ( this->modelName() == "Navier-Stokes" )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        if ( BuildNonCstPart )
-        {
-            if (this->doStabConvectionEnergy())
-            {
-                // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
-                // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
-                // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
 
-                auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
-                bilinearFormVV_PatternCoupled +=
-                    //bilinearForm_PatternDefault +=
-                    integrate ( _range=M_rangeMeshElements,
-                                _expr=timeSteppingScaling*convecTerm,
-                                _geomap=this->geomap() );
-            }
-            else
-            {
-#if 0
-                auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
-#else
-                auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
-#endif
-                bilinearFormVV_PatternCoupled +=
-                    //bilinearForm_PatternDefault +=
-                    integrate ( _range=M_rangeMeshElements,
-                                _expr=timeSteppingScaling*convecTerm,
-                                _geomap=this->geomap() );
-            }
-        }
-        if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
+        // convection terms
+        if ( physicFluidData->equation() == "Navier-Stokes" )
         {
-            auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
-            bilinearFormVV_PatternCoupled +=
-                integrate ( _range=M_rangeMeshElements,
-                            _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
-                            _geomap=this->geomap() );
+            if ( BuildNonCstPart )
+            {
+                if (this->doStabConvectionEnergy())
+                {
+                    // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
+                    // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
+                    // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
+
+                    auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
+                    bilinearFormVV_PatternCoupled +=
+                        //bilinearForm_PatternDefault +=
+                        integrate ( _range=M_rangeMeshElements,
+                                    _expr=timeSteppingScaling*convecTerm,
+                                    _geomap=this->geomap() );
+                }
+                else
+                {
+#if 0
+                    auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
+#else
+                    auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
+#endif
+                    bilinearFormVV_PatternCoupled +=
+                        //bilinearForm_PatternDefault +=
+                        integrate ( _range=M_rangeMeshElements,
+                                    _expr=timeSteppingScaling*convecTerm,
+                                    _geomap=this->geomap() );
+                }
+            }
+            if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
+            {
+                auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+                bilinearFormVV_PatternCoupled +=
+                    integrate ( _range=M_rangeMeshElements,
+                                _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
+                                _geomap=this->geomap() );
+            }
         }
-    }
+    } // foreach physic
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
     if (this->isMoveDomain() && BuildCstPart )

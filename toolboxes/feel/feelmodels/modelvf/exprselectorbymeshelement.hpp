@@ -173,6 +173,50 @@ public :
             return ExprSelectorByMeshElement<IndexType, std::decay_t<decltype(newTupleTensorExprs)> >( M_mapping,newTupleTensorExprs );
         }
 
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            bool res = false;
+            hana::for_each( M_exprs, [&res,&symb,&se]( auto const& e )
+                            {
+                                if ( res )
+                                    return;
+                                for ( auto const& [name,expr] : e )
+                                {
+                                    res = expr.hasSymbolDependency(symb,se);
+                                    if ( res )
+                                        break;
+                                }
+                            });
+            return res;
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            hana::for_each( M_exprs, [&symb,&res,&se]( auto const& e )
+                            {
+                                for ( auto const& [name,expr] : e )
+                                    expr.dependentSymbols(symb,res,se);
+                            });
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        auto newTupleTensorExprs = hana::transform( this->tupleExpressions(), [&diffVariable,&world,&dirLibExpr,&se](auto const& t)
+                                                    {
+                                                        using new_expr_type = std::decay_t<decltype( std::get<1>( t.front() ).template diff<diffOrder>( diffVariable,world,dirLibExpr,se ) )>;
+                                                        std::vector<std::pair<std::string,new_expr_type>> res;
+                                                        for ( auto const&  [name,theexpr] : t )
+                                                            res.push_back( std::make_pair(name, theexpr.template diff<diffOrder>( diffVariable,world,dirLibExpr,se ) ) );
+                                                        return res;
+                                                    } );
+        return ExprSelectorByMeshElement<IndexType, std::decay_t<decltype(newTupleTensorExprs)> >( M_mapping,newTupleTensorExprs );
+    }
+
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
     {

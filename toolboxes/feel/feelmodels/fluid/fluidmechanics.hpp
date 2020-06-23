@@ -198,7 +198,7 @@ public:
     // viscosity model desc
     typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type; // TO REMOVE
     typedef std::shared_ptr<material_properties_type> material_properties_ptrtype; // TO REMOVE
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
 
@@ -278,21 +278,26 @@ public:
 
     //___________________________________________________________________________________//
 
-    class Body : public ModelPhysics<nDim>
+    class Body //: public ModelPhysics<nDim>,
+    //  public std::enable_shared_from_this<Body>
     {
     public :
         using moment_of_inertia_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                                                        eigen_matrix_type<nDim, nDim>,
                                                        eigen_matrix_type<1, 1> >::type;
 
-        Body()
+        Body() = default;
+            // :
+            // ModelPhysics<nDim>( "body" )
+            // {}
+        Body( std::shared_ptr<ModelPhysics<nRealDim>> const& mphysics )
             :
-            ModelPhysics<nDim>( "body" )
+            M_modelPhysics( mphysics )
             {}
         Body( Body const& ) = default;
         Body( Body && ) = default;
 
-        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh, std::string const& exprRepository );
+        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
 
         void updateForUse();
 
@@ -326,6 +331,8 @@ public:
 
 
     private :
+        std::shared_ptr<ModelPhysics<nRealDim>> M_modelPhysics;
+        mesh_ptrtype M_mesh;
         materialsproperties_ptrtype M_materialsProperties;
         eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
         double M_mass;
@@ -400,12 +407,12 @@ public:
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
-        Body const& body() const { return M_body; }
-        auto massExpr() const { return M_body.massExpr(); }
-        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); }
+        Body const& body() const { return *M_body; }
+        auto massExpr() const { return M_body->massExpr(); }
+        auto momentOfInertiaExpr() const { return M_body->momentOfInertiaExpr(); }
         auto massCenterExpr() const
             {
-                return M_body.massCenterExpr();
+                return M_body->massCenterExpr();
             }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
@@ -480,7 +487,7 @@ public:
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
 
-        Body M_body;
+        std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
 
         space_trace_velocity_ptrtype M_XhElasticVelocity;
@@ -859,9 +866,10 @@ public :
     bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
     void setApplyMovingMeshBeforeSolve( bool b ) { M_applyMovingMeshBeforeSolve = b; }
     bool isMoveDomain() const { return M_isMoveDomain; }
-
+#if 0
     std::string const& modelName() const;
     void setModelName( std::string const& type );
+#endif
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
@@ -981,6 +989,13 @@ public :
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
                                                   mfields_body, mfields_ale
                                                   );
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::velocity(this), "velocity", startBlockSpaceIndex + this->startSubBlockSpaceIndex("velocity") ),
+                                                          selectorModelField( FieldTag::pressure(this), "pressure", startBlockSpaceIndex + this->startSubBlockSpaceIndex("pressure") )
+                                                          );
         }
 
     //___________________________________________________________________________________//
@@ -1436,7 +1451,7 @@ private :
     std::shared_ptr<typename space_pressure_type::element_type>/*element_fluid_pressure_ptrtype*/ M_velocityDiv;
     bool M_velocityDivIsEqualToZero;
     //----------------------------------------------------
-    std::string M_modelName;
+    //std::string M_modelName;
     std::string M_solverName;
 
     double M_dirichletBCnitscheGamma;
@@ -1570,8 +1585,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     auto fields = this->modelFields();
     if ( nOrderGeo == 1 )
     {
-        this->executePostProcessExports( M_exporter, time, fields/*, symbolsExpr*/ );
-        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields/*, symbolsExpr*/ );
+        this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
+        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
     }
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );

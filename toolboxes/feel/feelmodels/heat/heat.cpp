@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/heat/heat.hpp>
 
@@ -18,7 +19,8 @@ HEAT_CLASS_TEMPLATE_TYPE::Heat( std::string const& prefix,
                                 ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<nDim>( "heat" )
+    ModelPhysics<nDim>( "heat" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("Heat","constructor", "start" );
 
@@ -81,15 +83,15 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     if ( Environment::vm().count(prefixvm(this->prefix(),"velocity-convection").c_str()) )
     {
         auto theExpr = expr<nDim,1>( soption(_prefix=this->prefix(),_name="velocity-convection"),
                                      "",this->worldComm(),this->repository().expr() );
-        for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physic() ) )
+        for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
             this->setVelocityConvectionExpr( matName,theExpr );
     }
 
@@ -104,15 +106,16 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("Heat","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(M_mesh);
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, this->materialsProperties()->markers( this->physic() ));
+        M_rangeMeshElements = markedelements(M_mesh, mom->markers( this->physicsAvailableFromCurrentType() ));
         M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
@@ -149,10 +152,15 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("Heat","init", "start" );
     this->timerTool("Constructor").start();
 
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
+
+    this->initMaterialProperties();
+
     if ( !M_mesh )
         this->initMesh();
 
-    this->initMaterialProperties();
+    this->materialsProperties()->addMesh( this->mesh() );
 
     this->initFunctionSpaces();
 
@@ -276,7 +284,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initPostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( {"temperature","velocity-convection"} );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( {"temperature" } );
     super_type::initPostProcess();

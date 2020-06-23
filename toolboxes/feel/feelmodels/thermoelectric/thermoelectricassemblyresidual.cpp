@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
@@ -49,17 +50,20 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto mylfV = form1( _test=XhV, _vector=R,
                             _rowstart=this->rowStartInVector()+startBlockIndexElectricPotential );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            if ( M_modelUseJouleEffect )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                mylfT +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*inner(gradv(v))*id( t ),
-                               _geomap=this->geomap() );
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                if ( M_modelUseJouleEffect )
+                {
+                    mylfT +=
+                        integrate( _range=range,
+                                   _expr= -sigmaExpr*inner(gradv(v))*id( t ),
+                                   _geomap=this->geomap() );
+                }
             }
         }
     }
@@ -107,15 +111,18 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & da
         auto myLinearForm = form1( _test=XhT,_vector=R,
                                    _rowstart=M_heatModel->rowStartInVector() );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= -sigmaExpr*inner(gradv(v))*id(t),
-                           _geomap=this->geomap() );
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
+                auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
+                myLinearForm +=
+                    integrate( _range=range,
+                               _expr= -sigmaExpr*inner(gradv(v))*id(t),
+                               _geomap=this->geomap() );
+            }
         }
     }
 

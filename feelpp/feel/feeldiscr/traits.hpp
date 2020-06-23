@@ -59,6 +59,22 @@ using mesh_t = decay_type<MeshType>;
 template<typename MeshType>
 constexpr bool is_mesh_v = is_mesh<MeshType>::value;
 
+//!
+//! @return the topogical dimension of the mesh \p m
+//!
+template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+inline constexpr int topodim( std::shared_ptr<MeshType> const& m )
+{
+    return MeshType::nDim;
+}
+//!
+//! @return the real dimension in which the mesh is defined
+//!
+template <typename MeshType, typename = std::enable_if_t<is_mesh_v<MeshType>>>
+inline constexpr int realdim( std::shared_ptr<MeshType> const& m )
+{
+    return MeshType::nRealDim;
+}
 
 /**
  * if \p T has base class \p ScalarBase then @return the member constant value equal
@@ -115,6 +131,13 @@ template<typename T>
 constexpr bool is_tensor2symm_field_v = is_tensor2symm_field<T>::value;
 
 /**
+ * helper variable template, 
+ * @return true of field is a matrix field field, false otherwise
+ */
+template<typename T>
+constexpr bool is_matrix_field_v  = is_tensor2_field_v<T> || is_tensor2symm_field_v<T>;
+
+/**
  * if \p T has base class \p FunctionSpaceBase (hense if it is a function space)
  * then provides the member constant value equal to true, false otherwise
  */
@@ -165,12 +188,12 @@ using functionspace_element_type = typename mpl::if_<is_functionspace_element<de
 /**
  * get the element type of a functionspace
  */
-template<typename SpaceT>
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
 using element_t = typename SpaceT::element_type;
 /**
  * get the element shared ptr type of a functionspace
  */
-template<typename SpaceT>
+template<typename SpaceT, typename = std::enable_if_t<is_functionspace_v<SpaceT>>>
 using element_ptr_t = typename SpaceT::element_ptr_type;
 
 /**

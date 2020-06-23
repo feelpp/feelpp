@@ -65,7 +65,7 @@
                     "field":"temperature",
                     "type":["L2-error","H1-error","SemiH1-error"],
                     "solution":"exact_solution:exact_solution",
-                    "grad_solution":"{grad_exact_solution_x,grad_exact_solution_y}:grad_exact_solution_x:grad_exact_solution_y"
+                    "grad_solution":"{grad_exact_solution_0,grad_exact_solution_1}:grad_exact_solution_0:grad_exact_solution_1"
                 }
             }
         }

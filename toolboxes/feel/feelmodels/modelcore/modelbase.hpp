@@ -50,6 +50,24 @@ BOOST_PARAMETER_NAME( repository )
 namespace FeelModels
 {
 
+struct ModelBaseCommandLineOptions
+{
+    ModelBaseCommandLineOptions() = default;
+    explicit ModelBaseCommandLineOptions( po::options_description const& _options );
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions const& ) = default;
+    ModelBaseCommandLineOptions( ModelBaseCommandLineOptions && ) = default;
+
+    po::variables_map const& vm() const
+        {
+            if ( M_vm.has_value() )
+                return *M_vm;
+            else
+                return Environment::vm();
+        }
+private :
+    std::optional<po::variables_map> M_vm;
+};
+
 struct ModelBaseRepository
 {
     ModelBaseRepository( std::string const& rootDirWithoutNumProc = "", bool use_npSubDir = true, std::string const& exprRepository = "" );
@@ -109,16 +127,21 @@ public :
     ModelBase( std::string const& prefix, std::string const& keyword,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() );
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
     ModelBase( std::string const& prefix,
                worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                std::string const& subPrefix = "",
-               ModelBaseRepository const& modelRep = ModelBaseRepository() )
+               ModelBaseRepository const& modelRep = ModelBaseRepository(),
+               ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
         :
-        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep )
+        ModelBase( prefix, prefix, worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
+    //ModelBase() : ModelBase("") {}
+    ModelBase() = delete;
 
     ModelBase( ModelBase const& app ) = default;
+    ModelBase( ModelBase && app ) = default;
     virtual ~ModelBase();
 
     // worldcomm
@@ -133,6 +156,8 @@ public :
     worldscomm_ptr_t const& localNonCompositeWorldsComm() const;
     void setLocalNonCompositeWorldsComm( worldscomm_ptr_t & _worldsComm);
     virtual void createWorldsComm();
+    //! return variables map from command line options
+    po::variables_map const& clovm() const { return M_modelCommandLineOptions.vm(); }
     // prefix
     std::string const& prefix() const;
     std::string const& subPrefix() const;
@@ -183,6 +208,8 @@ private :
     std::string M_keyword;
     // directory
     ModelBaseRepository M_modelRepository;
+    // command line options
+    ModelBaseCommandLineOptions M_modelCommandLineOptions;
     // verbose
     bool M_verbose,M_verboseAllProc;
     // filename for save info

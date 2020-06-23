@@ -2467,24 +2467,6 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
 }
 
 
-//!
-//! @return the topogical dimension of the mesh \p m
-//!
-template <typename MeshType>
-constexpr int topodim( std::shared_ptr<MeshType> m,
-                       std::enable_if_t<is_mesh_v<MeshType>>* = nullptr )
-{
-    return MeshType::nDim;
-}
-//!
-//! @return the real dimension in which the mesh is defined
-//!
-template <typename MeshType>
-constexpr int realdim( std::shared_ptr<MeshType> m,
-                       std::enable_if<is_mesh_v<MeshType>>* = nullptr )
-{
-    return MeshType::nRealDim;
-}
 
 } // namespace Feel
 

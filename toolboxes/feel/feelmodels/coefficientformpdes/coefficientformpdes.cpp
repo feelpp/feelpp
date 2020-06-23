@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 
@@ -17,8 +18,11 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::CoefficientFormPDEs( std::string const&
                                                               std::string const& subPrefix,
                                                               ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep )
-{}
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep/*, ModelBaseCommandLineOptions( coefficientformpdes_options( prefix ) )*/ )
+{
+    M_solverName = soption(_prefix=this->prefix(),_name="solver",_vm=this->clovm());
+}
 
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -28,33 +32,75 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDEs","init", "start" );
     this->timerTool("Constructor").start();
 
-    if ( this->physic().empty() )
-        this->setupGenericPDEs( this->keyword(), this->modelProperties().models().model( this->keyword() ).ptree() );
+    CHECK( this->hasModelProperties() ) << "no model properties";
 
-    if ( !this->M_mesh )
-        this->initMesh();
+    if ( this->physics().empty() )
+        this->initGenericPDEs( this->keyword() );
 
-    this->initMaterialProperties();
+    // add equations from modelProperties
+    if ( this->hasModelProperties() )
+        this->setupGenericPDEs( this->modelProperties().models().model( this->keyword() ).ptree() );
+    CHECK( !this->pdes().empty() ) << "no equation";
 
-    for ( auto const& eq : this->pdes() )
+    for ( auto & eq : this->pdes() )
     {
-        std::string const eqBasisTag = eq.unknownBasis();
+        auto const& eqInfos = std::get<0>( eq );
+        std::string const& eqName = eqInfos.equationName();
+        std::string const& eqBasisTag = eqInfos.unknownBasis();
         std::shared_ptr<coefficient_form_pde_base_type> newCoefficientFormPDE;
-        hana::for_each( tuple_type_unknown_basis, [this,&eq,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
+        hana::for_each( tuple_type_unknown_basis, [this,&eqInfos,&eqName,&eqBasisTag,&newCoefficientFormPDE]( auto const& e )
                         {
                             if ( this->unknowBasisTag( e ) == eqBasisTag )
                             {
                                 using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                std::shared_ptr<coefficient_form_pde_type> _newCoefficientFormPDE( new coefficient_form_pde_type( eq, this->prefix(), eq.physic()/*this->keyword()*/, this->worldCommPtr(), this->subPrefix(), this->repository() ) );
-                                _newCoefficientFormPDE->setManageParameterValues( false );
-                                _newCoefficientFormPDE->setMesh( this->mesh() );
-                                // TODO check if the same space has already built
-                                _newCoefficientFormPDE->init( false );
-                                newCoefficientFormPDE = _newCoefficientFormPDE;
+                                newCoefficientFormPDE.reset( new coefficient_form_pde_type( eqInfos, prefixvm( this->prefix(),eqName ), eqName/*this->keyword()*/,
+                                                                                            this->worldCommPtr(), this->subPrefix(), this->repository() ) );
                             }
                         });
+
+        std::get<1>( eq ) = newCoefficientFormPDE;
         M_coefficientFormPDEs.push_back( newCoefficientFormPDE );
     }
+    this->updateForUseGenericPDEs();
+
+    this->initMaterialProperties();
+
+    if ( !this->M_mesh )
+        this->initMesh();
+
+    for ( auto & cfpdeBase : M_coefficientFormPDEs )
+    {
+        hana::for_each( tuple_type_unknown_basis, [this,&cfpdeBase]( auto const& e )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                return;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+                            cfpde->setManageParameterValues( false );
+                            if ( !cfpde->hasModelProperties() )
+                            {
+                                cfpde->setModelProperties( this->modelPropertiesPtr() );
+                                cfpde->setManageParameterValuesOfModelProperties( false );
+                            }
+                            cfpde->setMaterialsProperties( M_materialsProperties );
+                            cfpde->setMesh( this->mesh() );
+
+                            // TODO check if the same space has already built
+                            cfpde->init( false );
+                        });
+    }
+
+    if ( !this->isStationary() )
+    {
+        CHECK( !M_coefficientFormPDEs.empty() ) << "no equation";
+        // up initial time
+        this->setTimeInitial( M_coefficientFormPDEs.front()->timeInitial() );
+        // up current time
+        this->updateTime( M_coefficientFormPDEs.front()->currentTime() );
+    }
+
 
     // post-process
     this->initPostProcess();
@@ -63,7 +109,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->updateParameterValues();
 
     // backend
-    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
+    M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
 
     int nBlock = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
@@ -72,7 +118,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     int indexBlock = 0, startBlockSpace = 0;
     for ( auto const& cfpdeBase : M_coefficientFormPDEs )
     {
-        this->setStartSubBlockSpaceIndex( cfpdeBase->physic(), startBlockSpace );
+        this->setStartSubBlockSpaceIndex( cfpdeBase->physicDefault(), startBlockSpace );
         auto const& blockVectorSolutionPDE = cfpdeBase->blockVectorSolution();
         int nBlockPDE = blockVectorSolutionPDE.size();
         for ( int k=0;k<nBlockPDE ;++k )
@@ -82,6 +128,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         }
         indexBlock += nBlockPDE;
     }
+
+    if ( M_solverName == "automatic" )
+        this->updateAutomaticSolverSelection();
 
     // algebraic solver
     if ( buildModelAlgebraicFactory )
@@ -97,7 +146,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("CoefficientFormPDEs","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
+    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
@@ -114,10 +164,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().materials().setParameterValues( paramValues );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
@@ -135,13 +185,13 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initPostProcess()
     for (auto const& cfpde : M_coefficientFormPDEs )
     {
         std::set<std::string> ppExportsAllFieldsAvailableInCFPDE = Feel::FeelModels::detail::set_difference( cfpde->postProcessExportsAllFieldsAvailable(),
-                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->physics() ) );
+                                                                                                             this->materialsProperties()->postProcessExportsAllFieldsAvailable( cfpde->mesh(), cfpde->physicsAvailable() ) );
         for ( auto const& s : ppExportsAllFieldsAvailableInCFPDE )
             ppExportsAllFieldsAvailable.insert( prefixvm( cfpde->keyword(), s) );
     }
 
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -179,27 +229,85 @@ BlocksBaseGraphCSR
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 {
     this->log("CoefficientFormPDEs","buildBlockMatrixGraph", "start" );
-    int nBlock = M_coefficientFormPDEs.size();
-    BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
-    for (int k=0;k<nBlock;++k )
+    int nEq = M_coefficientFormPDEs.size();
+    BlocksBaseGraphCSR myblockGraph(nEq,nEq);
+
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    for ( int k=0;k<nEq;++k )
     {
         auto const& cfpdeBase = M_coefficientFormPDEs[k];
-        hana::for_each( tuple_type_unknown_basis, [this,&myblockGraph,&k,&cfpdeBase]( auto const& e )
+        hana::for_each( tuple_type_unknown_basis, [this,&nEq,&myblockGraph,&k,&cfpdeBase,&mfields,&se]( auto const& e )
                         {
-                            if ( this->unknowBasisTag( e ) == cfpdeBase->unknownBasis() )
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                return;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+                            int rowId = this->startSubBlockSpaceIndex( cfpde->physicDefault() );
+                            myblockGraph(rowId,rowId) = stencil(_test=cfpde->spaceUnknown(),
+                                                                _trial=cfpde->spaceUnknown() )->graph();
+
+                            // maybe coupling with other equation in the row
+                            for ( int k2=0;k2<nEq;++k2 )
                             {
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
-                                if ( !cfpde ) CHECK( false ) << "ai";
-                                myblockGraph(k,k) = stencil(_test=cfpde->spaceUnknown(),
-                                                            _trial=cfpde->spaceUnknown() )->graph();
+                                if ( k == k2 )
+                                    continue;
+                                auto const& cfpdeBase2 = M_coefficientFormPDEs[k2];
+                                hana::for_each( tuple_type_unknown_basis, [this,&myblockGraph,&rowId,&cfpde,&cfpdeBase2,&mfields,&se]( auto const& e2 )
+                                                {
+                                                    if ( this->unknowBasisTag( e2 ) != cfpdeBase2->unknownBasis() )
+                                                        return;
+
+                                                    using coefficient_form_pde_2_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e2)>;
+                                                    auto cfpde2 = std::dynamic_pointer_cast<coefficient_form_pde_2_type>( cfpdeBase2 );
+                                                    if ( !cfpde2 ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+                                                    auto tse = this->trialSymbolsExpr( mfields, cfpde2->trialSelectorModelFields() );
+                                                    auto trialSymbolNames = tse.names();
+
+                                                    if ( cfpde->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) )
+                                                    {
+                                                        int colId = this->startSubBlockSpaceIndex( cfpde2->physicDefault() );
+                                                        myblockGraph(rowId,colId) = stencil(_test=cfpde->spaceUnknown(),
+                                                                                     _trial=cfpde2->spaceUnknown() )->graph();
+                                                    }
+                                                });
                             }
+
                         });
     }
     myblockGraph.close();
     this->log("CoefficientFormPDEs","buildBlockMatrixGraph", "finish" );
     return myblockGraph;
 
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateAutomaticSolverSelection()
+{
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( 0/*rowStartInVector*/ ) );
+    auto trialSymbolNames = tse.names();
+    int nEq = M_coefficientFormPDEs.size();
+    bool isLinear = true;
+    for ( int k=0;k<nEq;++k )
+    {
+        auto const& cfpdeBase = M_coefficientFormPDEs[k];
+        if ( cfpdeBase->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) ||
+             ( cfpdeBase->applyStabilization() && cfpdeBase->stabilizationGLS_applyShockCapturing() )
+             )
+        {
+            isLinear = false;
+            break;
+        }
+    }
+
+    M_solverName = ( isLinear )? "Linear" : "Newton";
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -231,12 +339,46 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p 
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+std::shared_ptr<TSBase>
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::timeStepBase() const
+{
+    CHECK( !M_coefficientFormPDEs.empty() ) << "no equation";
+    return M_coefficientFormPDEs.front()->timeStepBase();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::startTimeStep()
+{
+    for (auto & cfpde : M_coefficientFormPDEs )
+        cfpde->startTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
+
+    this->updateParameterValues();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStep()
+{
+    for (auto & cfpde : M_coefficientFormPDEs )
+        cfpde->updateTimeStep();
+
+    // up current time
+    this->updateTime( this->timeStepBase()->time() );
+
+    this->updateParameterValues();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
     auto mfields = this->modelFields();
     auto se = this->symbolsExpr( mfields );
-    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->physics(),se ) );
+    this->exportResults( time, mfields, se, this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ) );
 }
 
 
@@ -283,12 +425,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::solve()
     M_blockVectorSolution.updateVectorFromSubVectors();
 
     for (auto & cfpdeBase : M_coefficientFormPDEs )
-        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physic() ) );
+        cfpdeBase->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) );
 
-    // if ( this->materialsProperties()->hasThermalConductivityDependingOnSymbol( "heat_T" ) )
-    //     M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
-    // else
-    M_algebraicFactory->solve( "LinearSystem", M_blockVectorSolution.vectorMonolithic() );
+    M_algebraicFactory->solve( M_solverName, M_blockVectorSolution.vectorMonolithic() );
 
     M_blockVectorSolution.localize();
 
@@ -316,6 +455,94 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::checkResults() const
     return checkValue;
 }
 
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
+{
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDE_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
+{
+    auto mctx = this->modelContext();
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateLinearPDEDofElimination_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const
+{
+    vector_ptrtype& U = data.initialGuess();
+    auto mctx = this->modelContext( U, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateNewtonInitialGuess_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateJacobian_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateJacobianDofElimination( DataUpdateJacobian & data ) const
+{
+    for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateJacobianDofElimination( data );
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
+{
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    using the_model_context_type = std::decay_t<decltype(mctx)>;
+    auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
+    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
+                    {
+                        using the_basis_type = typename std::decay_t<decltype(e)>::type;
+                        this->updateResidual_spec<FilterBasisUnknown<the_basis_type>>( data, mctxAsAny );
+                    });
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateResidualDofElimination( DataUpdateResidual & data ) const
+{
+    for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+        cfpdeBase->updateResidualDofElimination( data );
+}
 
 } // namespace Feel
 } // namespace FeelModels

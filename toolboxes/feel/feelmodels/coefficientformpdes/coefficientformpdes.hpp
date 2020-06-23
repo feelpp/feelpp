@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #ifndef FEELPP_TOOLBOXES_COEFFICIENTFORMPDES_HPP
 #define FEELPP_TOOLBOXES_COEFFICIENTFORMPDES_HPP 1
@@ -16,12 +17,15 @@ class CoefficientFormPDEs : public ModelNumerical,
                             public ModelGenericPDEs<ConvexType::nDim>,
                             public std::enable_shared_from_this< CoefficientFormPDEs<ConvexType,BasisUnknownType...> >
 {
-    using coefficient_form_pde_base_type = CoefficientFormPDEBase<ConvexType>;
 public :
     typedef ModelNumerical super_type;
     using size_type = typename super_type::size_type;
 
     using self_type = CoefficientFormPDEs<ConvexType,BasisUnknownType...>;
+    using self_ptrtype = std::shared_ptr<self_type>;
+
+    using coefficient_form_pde_base_type = CoefficientFormPDEBase<ConvexType>;
+    using coefficient_form_pde_base_ptrtype = std::shared_ptr<coefficient_form_pde_base_type>;
 
     using mesh_type = typename coefficient_form_pde_base_type::mesh_type;
     using mesh_ptrtype = typename coefficient_form_pde_base_type::mesh_ptrtype;
@@ -30,7 +34,7 @@ public :
     static const uint16_type nOrderGeo = coefficient_form_pde_base_type::nOrderGeo;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<mesh_type::nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // exporter
@@ -43,7 +47,6 @@ public :
 
 
     static constexpr auto tuple_type_unknown_basis = hana::to_tuple(hana::tuple_t<BasisUnknownType...>);
-private :
 
     struct traits
     {
@@ -71,6 +74,17 @@ private :
                     return dummycfpde->modelFields( std::string("") );
                 }
 
+            struct View
+            {
+                template <typename T>
+                constexpr auto operator()(T const& t) const
+                    {
+                        using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(t)>;
+                        std::shared_ptr<coefficient_form_pde_type> dummycfpde;
+                        return dummycfpde->modelFields( vector_ptrtype{}, size_type(0), std::string("") );
+                    }
+            };
+
             template <typename... TheType>
             static constexpr auto
             toModelFields(  hana::tuple<TheType...> const& t )
@@ -78,10 +92,43 @@ private :
                     return model_fields_t<TheType...>{};
                 }
         };
-    public :
-        using model_fields_type =  std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
 
+        struct TransformTrialSelectorModelFields
+        {
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(t)>;
+                    std::shared_ptr<coefficient_form_pde_type> dummycfpde;
+                    return dummycfpde->trialSelectorModelFields( 0 );
+                }
+
+            template <typename... TheType>
+            static constexpr auto
+            toTrialSelectorModelFields( hana::tuple<TheType...> const& t )
+                {
+                    return selector_model_fields_t<TheType...>{};
+                }
+
+        };
+    public :
+        using model_fields_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
+
+        using model_fields_view_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, typename TransformModelFields::View{} ) ) )>;
+
+        using trial_selector_model_fields_type = std::decay_t<decltype( TransformTrialSelectorModelFields::toTrialSelectorModelFields( hana::transform( tuple_type_unknown_basis, TransformTrialSelectorModelFields{} ) ) )>;
     };
+
+    struct FilterBasisUnknownAll {
+        template<typename T>
+        struct apply { static constexpr bool value = true; };
+    };
+    template<typename TheBasisType>
+    struct FilterBasisUnknown {
+        template<typename T>
+        struct apply { static constexpr bool value = std::is_same_v<T,TheBasisType>; };
+    };
+
 public :
 
     using variant_unknown_basis_type = std::decay_t<decltype(traits::variant_from_tuple(tuple_type_unknown_basis))>;
@@ -101,16 +148,57 @@ public :
     std::shared_ptr<std::ostringstream> getInfo() const override;
     void updateInformationObject( pt::ptree & p ) override;
 
+    //! return all subtoolboxes related to each equation
+    std::vector<std::shared_ptr<coefficient_form_pde_base_type>> const& coefficientFormPDEs() const { return M_coefficientFormPDEs; }
 
+    //! return toolbox related to an equation from the name of the equation (empty ptr if not found)
+    coefficient_form_pde_base_ptrtype coefficientFormPDE( std::string const& nameEq ) const
+        {
+            for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                if ( cfpdeBase->equationName() == nameEq )
+                    return cfpdeBase;
+            return std::shared_ptr<coefficient_form_pde_base_type>{};
+        }
+
+    //! return toolbox related to an equation from the base object and the fe basis (empty ptr if not found)
+    template <typename TheBasisType>
+    auto coefficientFormPDE( coefficient_form_pde_base_ptrtype const& cfpdeBase, TheBasisType const& e ) const
+        {
+            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            return std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+        }
+
+    //! return toolbox related to an equation from the name of the equation and the fe basis (empty ptr if not found)
+    template <typename TheBasisType>
+    auto coefficientFormPDE( std::string const& nameEq, TheBasisType const& e ) const
+        {
+            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+            auto cfpdeBase = this->coefficientFormPDE( nameEq );
+            if ( !cfpdeBase )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                return std::shared_ptr<coefficient_form_pde_type>{};
+            return std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+        }
+
+    //___________________________________________________________________________________//
+    // mesh
     mesh_ptrtype const& mesh() const { return M_mesh; }
-
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"mesh.path"); }
+    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
     //___________________________________________________________________________________//
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
+    //___________________________________________________________________________________//
+    // time stepping
+    std::shared_ptr<TSBase> timeStepBase() const;
+    void startTimeStep();
+    void updateTimeStep();
 
     //___________________________________________________________________________________//
     // post-process
@@ -147,12 +235,63 @@ private :
                             });
         }
 
+    template <typename ResType>
+    void modelFieldsImpl( vector_ptrtype sol, size_type rowStartInVector, std::string const& prefix, ResType && res ) const
+        {
+            hana::for_each( tuple_type_unknown_basis, [this,&sol,&rowStartInVector,&prefix,&res]( auto const& e )
+                            {
+                                for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                                    res = Feel::FeelModels::modelFields( res, cfpde->modelFields( sol,
+                                                                                                  rowStartInVector + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ),
+                                                                                                  prefixvm( prefix, cfpde->keyword() ) ) );
+                                }
+                            });
+        }
+
+    template <typename ResType>
+    void trialSelectorModelFieldsImpl( size_type startBlockSpaceIndex, ResType && res ) const
+        {
+            hana::for_each( tuple_type_unknown_basis, [this,&startBlockSpaceIndex,&res]( auto const& e )
+                            {
+                                for (auto const& cfpdeBase : M_coefficientFormPDEs )
+                                {
+                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                        continue;
+
+                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                                    res = Feel::FeelModels::selectorModelFields( res, cfpde->trialSelectorModelFields( startBlockSpaceIndex + this->startSubBlockSpaceIndex( cfpdeBase->physicDefault() ) ) );
+                                }
+                            });
+        }
+
 public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
             typename traits::model_fields_type res;
             this->modelFieldsImpl( prefix, std::move(res) );
+            return res;
+        }
+
+    auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            typename traits::model_fields_view_type res;
+            this->modelFieldsImpl( sol, rowStartInVector, prefix, std::move(res) );
+            return res;
+        }
+
+    auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+        {
+            typename traits::trial_selector_model_fields_type res;
+            this->trialSelectorModelFieldsImpl( startBlockSpaceIndex, std::move(res) );
             return res;
         }
 
@@ -172,6 +311,11 @@ public :
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
+    template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+    auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+        {
+            return mfields.trialSymbolsExpr( tsmf );
+        }
     //___________________________________________________________________________________//
     // model context helper
     //___________________________________________________________________________________//
@@ -184,15 +328,25 @@ public :
     auto modelContext( std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 #if 0
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+            auto se = this->symbolsExpr( mfields );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 #endif
+   auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            auto se = this->symbolsExpr( mfields );
+            auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+        }
+
     //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return  M_backend; }
@@ -211,17 +365,53 @@ public :
     void solve();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
-    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const;
     template <typename ModelContextType>
-    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const;
+
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const;
+
+    void updateJacobian( DataUpdateJacobian & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const;
+    void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
+
+    void updateResidual( DataUpdateResidual & data ) const override;
+    template <typename FilterBasisUnknownType,typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    template <typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const;
+    void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
 private :
     void initMesh();
     void initMaterialProperties();
     void initPostProcess() override;
 
+    void updateAutomaticSolverSelection();
+
+    template <typename FilterBasisUnknownType>
+    void updateLinearPDE_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateLinearPDEDofElimination_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateNewtonInitialGuess_spec( DataNewtonInitialGuess & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateJacobian_spec( DataUpdateJacobian & data, std::any const& mctxAsAny ) const;
+    template <typename FilterBasisUnknownType>
+    void updateResidual_spec( DataUpdateResidual & data, std::any const& mctxAsAny ) const;
 private :
 
     static const std::vector<std::string> S_unknownBasisTags;
@@ -230,6 +420,8 @@ private :
 
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
+
+    std::string M_solverName;
 
     // post-process
     export_ptrtype M_exporter;

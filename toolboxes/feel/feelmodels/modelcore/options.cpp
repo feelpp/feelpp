@@ -60,7 +60,7 @@ Feel::po::options_description modelalgebraic_options(std::string const& prefix)
         (prefixvm(prefix,"residual-uselinearjac").c_str(), Feel::po::value< bool >()->default_value( true ), "update linear part of the residual with linear jacobian")
         (prefixvm(prefix,"use-cst-matrix").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-matrix")
         (prefixvm(prefix,"use-cst-vector").c_str(), Feel::po::value< bool >()->default_value( true ), "use-cst-vector")
-        (prefixvm(prefix,"error-if-solver-not-converged").c_str(), Feel::po::value< bool >()->default_value( false ), "error-if-solver-not-converged")
+        (prefixvm(prefix,"error-if-solver-not-converged").c_str(), Feel::po::value< bool >()->default_value( true ), "error-if-solver-not-converged")
         (prefixvm(prefix,"clear-preconditioner-after-use").c_str(), Feel::po::value< bool >()->default_value( false ), "clear-preconditioner-after-use")
         (prefixvm(prefix,"graph-print-python").c_str(), Feel::po::value<bool>()->default_value( false ), "print graph in python script")
         (prefixvm(prefix,"graph-print-python-filename").c_str(), Feel::po::value< std::string >(), "filename python graph")
@@ -101,12 +101,11 @@ Feel::po::options_description modelnumerical_options(std::string const& prefix)
         .add( ptree_options( prefix ) );
 }
 
-
 Feel::po::options_description
-coefficientformpdes_options(std::string const& prefix)
+coefficientformpde_options(std::string const& prefix)
 {
-    Feel::po::options_description cfpdesOptions("coefficient-form-pdes options");
-    cfpdesOptions.add_options()
+    Feel::po::options_description cfpdeOptions("coefficient-form-pde options");
+    cfpdeOptions.add_options()
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
 
@@ -115,6 +114,31 @@ coefficientformpdes_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization.gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
         (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
+        (prefixvm(prefix,"stabilization.gls.shock-capturing.quad").c_str(), Feel::po::value<int>()->default_value( -1 ), "apply shock capturing in gls stabilization method")
+        ;
+
+    return cfpdeOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
+}
+
+Feel::po::options_description
+coefficientformpdes_options(std::string const& prefix)
+{
+    Feel::po::options_description cfpdesOptions("coefficient-form-pdes options");
+    cfpdesOptions.add_options()
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "numeric solver : automatic, Newton, Picard")
+
+        (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
+        (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
+
+        (prefixvm(prefix,"stabilization").c_str(), Feel::po::value<bool>()->default_value( false ), "apply stabilization method")
+        (prefixvm(prefix,"stabilization.type").c_str(), Feel::po::value<std::string>()->default_value( "gls" ), "supg,gls,unusual-gls")
+        (prefixvm(prefix,"stabilization.gls.parameter.method").c_str(), Feel::po::value<std::string>()->default_value( "eigenvalue" ), "method used for compute tau : eigenvalue, doubly-asymptotic-approximation")
+        (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
+        (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
+
+        (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
         ;
     return cfpdesOptions.add( modelnumerical_options( prefix ) ).add( bdf_options( prefix ) ).add( ts_options( prefix ) );
 }
@@ -260,11 +284,11 @@ solidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"coeffpoisson").c_str(), Feel::po::value<double>()->default_value( 0.3 ), "poisson coefficient")
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >()/*->default_value("Elasticity")*/, "struct model")
         (prefixvm(prefix,"material_law").c_str(), Feel::po::value< std::string >()->default_value("StVenantKirchhoff"), "StVenantKirchhoff, NeoHookean")
-        (prefixvm(prefix,"mechanicalproperties.compressible.volumic-law").c_str(), Feel::po::value< std::string >()->default_value("classic"), "classic, simo1985")
-        (prefixvm(prefix,"mechanicalproperties.compressible.neohookean.variant").c_str(),
-         Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
+        //(prefixvm(prefix,"mechanicalproperties.compressible.volumic-law").c_str(), Feel::po::value< std::string >()->default_value("classic"), "classic, simo1985")
+        //(prefixvm(prefix,"mechanicalproperties.compressible.neohookean.variant").c_str(),
+        //Feel::po::value< std::string >()->default_value("default"), "default, molecular-theory, molecular-theory-simo1985")
         (prefixvm(prefix,"formulation").c_str(), Feel::po::value<std::string>()->default_value( "displacement" ), "displacement,displacement-pressure")
-        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "struct solver")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "struct solver")
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("Newmark"), "time integration schema : Newmark, BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")
 
@@ -498,6 +522,7 @@ levelset_options(std::string const& prefix)
         (prefixvm(prefix,"modgradphi-method").c_str(), Feel::po::value<std::string>()->default_value( "nodal-projection" ), "method to compute gradphi (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
         (prefixvm(prefix,"curvature-method").c_str(), Feel::po::value<std::string>()->default_value( "smooth-projection" ), "method to compute curvature (nodal-projection, l2-projection, smooth-projection, pn-nodal-projection)")
         (prefixvm(prefix,"curvature-diffusion.time-step").c_str(), Feel::po::value<double>()->default_value( 0.01 ), "time step used for the heat equations in diffusion-order1 and diffusion-order2 curvature methods")
+        (prefixvm(prefix,"curvature-diffusion.time-discretisation").c_str(), Feel::po::value<std::string>()->default_value( "crank-nicolson" ), "time discretisation scheme used for the heat equations in diffusion-order1 and diffusion-order2 curvature methods")
 
         (prefixvm(prefix,"projector-sm-scalar.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for projector-sm-scalar")
         (prefixvm(prefix,"projector-sm-vectorial.smooth-coeff").c_str(), Feel::po::value<double>()->default_value(0.1), "smoothing coefficient for projector-sm-vectorial")
