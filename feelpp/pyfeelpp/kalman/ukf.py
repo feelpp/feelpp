@@ -31,23 +31,23 @@ class Filter:
         self._sigmaSigns = numpy.concatenate((numpy.zeros((stateDim,1)),numpy.eye(stateDim),-numpy.eye(stateDim)), axis=1)
         
         self._weights = numpy.ones((1,2*stateDim+1))#*1/stateDim
-#        self._weights[0] = 1-(stateDim-1)/stateDim # a negative weight causes issues with sqrt matrix
-        self._weights3 = self._weights.copy()
-        self._weights3.shape = (1,1,2*stateDim+1)
+        self._weights[0] = 1-(stateDim-1)/stateDim # a negative weight causes issues with sqrt matrix
+        self._weights3 = self._weights.copy().reshape(1,1,2*stateDim+1)
+        self._weights3[0,0,0] = 3
         
     def setSigmaHk( self, M ): # M is a numpy obsDim*obsDim matrix
         self._sigmaHk = M
 
     def setSigmaPoints( self ):
-        self._sigmaScheme = scipy.linalg.sqrtm( 3*self._stateCov ).T @ self._sigmaSigns # numpy.transpose( numpy.linalg.cholesky( 3*self._stateCov ) ) @ self._sigmaSigns
-#        print( self._stateCov )
+        self._sigmaScheme = scipy.linalg.sqrtm( 3*self._stateCov ).T @ self._sigmaSigns
+        # numpy.transpose( numpy.linalg.cholesky( 3*self._stateCov ) ) @ self._sigmaSigns
         self._sigmaPoints = self._stateEstimate + self._sigmaScheme
 
     def _setStateEstimate( self, value ):
         self._stateEstimate = value
         
     def getSigmaHk( self ):
-        return list(numpy.transpose(self._sigmaHk))
+        return list(self._sigmaHk.T)
         
     def getSigmaPoints( self ):
         return self._sigmaPoints
@@ -79,20 +79,18 @@ class Filter:
     def getNiter( self ):
         return len(self.getStateEstimateList())
         
-    def transformSet( self, stateSet ): # pointSet is a numpy matrix representing points as columns ; to be parallelized
-        for i in range(stateSet.shape[1]):
-            stateSet[:,i] = self.transform(stateSet[:,i])
-        return stateSet
+    def transformSet( self, stateSet ): # stateSet is a numpy matrix representing points as columns ; to be parallelized
+        self._sigmaPoints = numpy.apply_along_axis( self.transform, axis = 0, arr = stateSet )
 
-    def observeSet( self, stateSet ): # pointSet is a numpy matrix representing points as columns ; to be parallelized
-        obsSet = np.zeros((self.obsDim,stateSet.shape[1]))
-        for i in range(stateSet.shape[1]):
-            obsSet[:,i] = self.observe( stateSet[:,i] )
-        return obsSet
+    def observeSet( self, stateSet ): # stateSet is a numpy matrix representing points as columns ; to be parallelized
+        self._obsForecast = numpy.apply_along_axis( self.observe, axis = 0, arr = stateSet )
 
     def _sigmaCov( self, x ):
         return numpy.outer( x, x )
-    
+
+    def _sigmaCrossCov( self, x, cut ):
+        return numpy.outer( x[:cut], x[cut:] )
+        
     def saveStep( self ):
         self._stateEstimateList.append( self.getStateEstimate().copy() )
         self._obsEstimateList.append( self.getObsEstimate().copy() )
@@ -100,24 +98,27 @@ class Filter:
     def step( self, measurement ):
         
         self.setSigmaPoints()
-        self._sigmaPoints = self.transformSet(self._sigmaPoints)
-        self._obsForecast = self.observeSet(self._sigmaPoints)
+        self.transformSet(self._sigmaPoints)
+        self.observeSet(self._sigmaPoints)
         
-        self._stateForecast = self._sigmaPoints @ numpy.transpose(self._weights)
+        self._stateForecast = self._sigmaPoints @ self._weights.T
         self._stateCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCov, axis = 0, arr = self._sigmaPoints - self._stateForecast ) ).T )
 
-        self._obsEstimate = self._obsForecast @ numpy.transpose(self._weights)
+        self._obsEstimate = self._obsForecast @ self._weights.T
         self._obsCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCov, axis = 0, arr = self._obsForecast - self._obsEstimate ) ).T ) + self._sigmaHk
         # (self._weights*(self._obsForecast-self._obsEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate) + self._sigmaHk
-        self._crossCov = (self._weights*(self._sigmaPoints-self._stateEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate)
+
+        self._crossCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCrossCov, axis = 0, arr = numpy.concatenate( (self._sigmaPoints - self._stateEstimate, self._obsForecast - self._obsEstimate), axis = 0 ), cut = self.stateDim ) ).T ).T
+        # (self._weights*(self._sigmaPoints-self._stateEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate)
 
         self._gain = self._crossCov @ numpy.linalg.inv(self._obsCov)
-        print('===================================')
-        print( self._stateEstimate.dtype, self._gain.dtype, measurement.dtype, self._obsEstimate.dtype )
+        print('==================================')
+        print( self._obsCov.dtype, self._crossCov.dtype, self._gain.dtype )
+        print('==================================')
         self._stateEstimate += self._gain @ ( numpy.matrix(measurement).T - self._obsEstimate )
 
         self.saveStep()
-        
+
     def filter( self, signal, initialGuess = "default", verbose = False ): # signal is a list of numpy arrays
         
         if initialGuess == "default":
