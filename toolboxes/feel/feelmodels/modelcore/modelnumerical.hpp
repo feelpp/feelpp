@@ -87,12 +87,14 @@ class ModelNumerical : public ModelAlgebraic
         ModelNumerical( std::string const& _theprefix, std::string const& keyword,
                         worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                         std::string const& subPrefix="",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                        ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                        ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
         ModelNumerical( std::string const& _theprefix, worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                         std::string const& subPrefix="",
-                        ModelBaseRepository const& modelRep = ModelBaseRepository() )
+                        ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                        ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
             :
-            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+            ModelNumerical( _theprefix, _theprefix, _worldComm, subPrefix, modelRep, modelCmdLineOpt )
             {}
 
         ModelNumerical( ModelNumerical const& app ) = default;
@@ -141,6 +143,7 @@ class ModelNumerical : public ModelAlgebraic
                 double dt = this->timeStep();
 
                 auto thebdf = bdf( _space=space,
+                                   _vm=this->clovm(),
                                    _name=name+suffixName,
                                    _prefix=this->prefix(),
                                    _order=bdfOrder,
@@ -439,7 +442,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
     if ( !exporter->doExport() ) return false;
 
     bool hasFieldToExport = false;
-    hana::for_each( tupleFields.tupleModelField, [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
+    hana::for_each( tupleFields.tuple(), [this,&exporter,&fieldsNamesToExport,&time,&hasFieldToExport]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
@@ -449,6 +452,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                     if ( fieldsNamesToExport.find( fieldName ) == fieldsNamesToExport.end() )
                                         continue;
 
+                                    mfield.applyUpdateFunction();
                                     auto const& thefield = unwrap_ptr( mfield.field() );
                                     if constexpr ( decay_type<ExporterType>::mesh_type::nDim == decay_type<decltype(thefield)>::mesh_type::nDim )
                                                  {
@@ -573,22 +577,22 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
 {
     bool hasMeasure = false;
     std::set<std::string> const& quantitiesToMeasure = this->modelProperties().postProcess().measuresQuantities( this->keyword() ).quantities();
-    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& e )
+    Feel::for_each( tupleQuantities, [this,&hasMeasure,&quantitiesToMeasure]( auto const& mquantity )
             {
-                if constexpr( is_iterable_v<decltype(e)> )
+                if constexpr( is_iterable_v<decltype(mquantity)> )
                 {
-                    for( auto const& [quantityName,quantityValue] : e )
+                    for( auto const& quantity : mquantity )
                     {
+                        std::string quantityName = quantity.nameWithPrefix();
                         if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                         {
-                            if constexpr( is_iterable_v<decltype(quantityValue)> )
+                            if constexpr( is_iterable_v<decltype(quantity.value())> )
                             {
-                                std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
-                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                                this->postProcessMeasuresIO().setMeasureComp( quantityName, quantity.value() );
                             }
                             else
                             {
-                                this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
+                                this->postProcessMeasuresIO().setMeasure( quantityName, quantity.value() );
                             }
                             hasMeasure = true;
                         }
@@ -596,18 +600,16 @@ ModelNumerical::updatePostProcessMeasuresQuantities( TupleQuantitiesType const& 
                 }
                 else
                 {
-                    std::string const& quantityName = e.first;
-                    auto const& quantityValue = e.second;
+                    std::string quantityName = mquantity.nameWithPrefix();
                     if( quantitiesToMeasure.find( quantityName ) != quantitiesToMeasure.end() )
                     {
-                        if constexpr( is_iterable_v<decltype(quantityValue)> )
+                        if constexpr( is_iterable_v<decltype(mquantity.value())> )
                         {
-                            std::vector<double> quantityVec( quantityValue.begin(), quantityValue.end() );
-                            this->postProcessMeasuresIO().setMeasureComp( quantityName, quantityVec );
+                            this->postProcessMeasuresIO().setMeasureComp( quantityName, mquantity.value() );
                         }
                         else
                         {
-                            this->postProcessMeasuresIO().setMeasure( quantityName, quantityValue );
+                            this->postProcessMeasuresIO().setMeasure( quantityName, mquantity.value() );
                         }
                         hasMeasure = true;
                     }
@@ -689,7 +691,7 @@ void
 ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNamesToSave, std::string const& format, uint32_type index, ModelFieldsType const& fieldTuple )
 {
     std::string formatUsed = (format.empty())? "default" : format;
-    hana::for_each( fieldTuple.tupleModelField, [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
+    hana::for_each( fieldTuple.tuple(), [this,&fieldsNamesToSave,&formatUsed,&index]( auto const& e )
                     {
                         if constexpr ( is_iterable_v<decltype(e)> )
                             {
@@ -698,6 +700,8 @@ ModelNumerical::executePostProcessSave( std::set<std::string> const& fieldsNames
                                     std::string fieldName = mfield.nameWithPrefix();
                                     if ( fieldsNamesToSave.find( fieldName ) == fieldsNamesToSave.end() )
                                         continue;
+
+                                    mfield.applyUpdateFunction();
 
                                     std::string fieldNameSaved = fieldName;
                                     if ( index != invalid_uint32_type_value )

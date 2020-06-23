@@ -66,6 +66,7 @@ class Heat : public ModelNumerical,
         typedef ConvexType convex_type;
         static const uint16_type nDim = convex_type::nDim;
         static const uint16_type nOrderGeo = convex_type::nOrder;
+        static const uint16_type nRealDim = convex_type::nRealDim;
         typedef Mesh<convex_type> mesh_type;
         typedef std::shared_ptr<mesh_type> mesh_ptrtype;
         // basis
@@ -82,7 +83,7 @@ class Heat : public ModelNumerical,
         // velocity convection expression
         using velocity_convection_expr_type = vector_field_expression<nDim>;
         // materials properties
-        typedef MaterialsProperties<mesh_type> materialsproperties_type;
+        typedef MaterialsProperties<nRealDim> materialsproperties_type;
         typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
         // time scheme
         typedef Bdf<space_temperature_type>  bdf_temperature_type;
@@ -141,12 +142,6 @@ class Heat : public ModelNumerical,
         element_temperature_type const& fieldTemperature() const { return *M_fieldTemperature; }
 
         bool hasVelocityConvectionExpr( std::string const& matName ) const { return M_exprVelocityConvection.find( matName ) != M_exprVelocityConvection.end(); }
-        velocity_convection_expr_type const& velocityConvectionExpr( std::string const& matName ) const
-            {
-                auto itFindVel = M_exprVelocityConvection.find( matName );
-                CHECK( itFindVel != M_exprVelocityConvection.end() ) << "no velocity convection with material " << matName << std::endl;
-                return itFindVel->second;
-            }
         void setVelocityConvectionExpr( std::string const& matName, velocity_convection_expr_type const& thexpr ) { M_exprVelocityConvection.emplace( matName, thexpr ); }
         // stabilization
         bool stabilizationGLS() const { return M_stabilizationGLS; }
@@ -233,9 +228,9 @@ class Heat : public ModelNumerical,
             {
                 typedef decltype(expr(velocity_convection_expr_type{},se)) _expr_velocity_convection_type;
                 std::map<std::string,std::vector<std::tuple< _expr_velocity_convection_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVelocityConvection;
-                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
                 {
-                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                     auto itFindVelConv = M_exprVelocityConvection.find( matName );
                     if ( itFindVelConv !=  M_exprVelocityConvection.end() )
                     {
@@ -248,7 +243,7 @@ class Heat : public ModelNumerical,
         template <typename SymbExprType>
         auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
             {
-                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->physics(),se ),
+                return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
                                      this->exprPostProcessExportsToolbox( se, prefix ) );
             }
         //___________________________________________________________________________________//
@@ -268,6 +263,11 @@ class Heat : public ModelNumerical,
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
                 return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::temperature(this), prefix, "temperature", field_t, "T", this->keyword() ) );
+            }
+
+        auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
+            {
+                return Feel::FeelModels::selectorModelFields( selectorModelField( FieldTag::temperature(this), "temperature", startBlockSpaceIndex ) );
             }
 
         //___________________________________________________________________________________//
@@ -291,12 +291,31 @@ class Heat : public ModelNumerical,
                 auto const& t = mfields.field( FieldTag::temperature(this), "temperature" );
                 // generate symbol heat_nflux
                 typedef decltype( this->normalHeatFluxExpr(t) ) _expr_nflux_type;
-                std::vector<std::tuple<std::string,_expr_nflux_type,SymbolExprComponentSuffix>> normalHeatFluxSymbs;
+                symbol_expression_t<_expr_nflux_type> se_nflux;
                 std::string symbolNormalHeatFluxStr = prefixvm( this->keyword(), "nflux", "_");
                 auto _normalHeatFluxExpr = this->normalHeatFluxExpr( t );
-                normalHeatFluxSymbs.push_back( std::make_tuple( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1,true ) ) );
+                se_nflux.add( symbolNormalHeatFluxStr, _normalHeatFluxExpr, SymbolExprComponentSuffix( 1,1 ) );
 
-                return Feel::vf::symbolsExpr( symbolExpr( normalHeatFluxSymbs ) );
+                // velocity convection : on each material
+                symbol_expression_t<velocity_convection_expr_type> se_vconv_bymat;
+                for ( auto const& [matName,uExpr] : M_exprVelocityConvection )
+                {
+                    std::string symbolstr_vconv_bymat = (boost::format("%1%_%2%_vconv")%this->keyword() %matName).str();
+                    se_vconv_bymat.add( symbolstr_vconv_bymat, uExpr, SymbolExprComponentSuffix( nDim,1 ) );
+                }
+                // velocity convection : for all materials
+                typedef decltype( this->velocityConvectionExpr() ) _expr_vconv_type;
+                symbol_expression_t<_expr_vconv_type> se_vconv;
+                std::string symbolstr_vconv = prefixvm( this->keyword(), "vconv", "_");
+                se_vconv.add( symbolstr_vconv, this->velocityConvectionExpr(), SymbolExprComponentSuffix( nDim,1 ) );
+
+                return Feel::vf::symbolsExpr( se_nflux,se_vconv,se_vconv_bymat );
+            }
+
+        template <typename ModelFieldsType, typename TrialSelectorModelFieldsType>
+        auto trialSymbolsExpr( ModelFieldsType const& mfields, TrialSelectorModelFieldsType const& tsmf ) const
+            {
+                return mfields.trialSymbolsExpr( tsmf );
             }
 
         //___________________________________________________________________________________//
@@ -316,7 +335,9 @@ class Heat : public ModelNumerical,
         auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
             {
                 auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-                return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+                auto se = this->symbolsExpr( mfields );
+                auto tse =  this->trialSymbolsExpr( mfields, this->trialSelectorModelFields( rowStartInVector ) );
+                return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
             }
 
         //___________________________________________________________________________________//
@@ -333,6 +354,32 @@ class Heat : public ModelNumerical,
                 else
                     return signFlux*inner(kappa*trans(gradv(t)),N());
             }
+
+        velocity_convection_expr_type const& velocityConvectionExpr( std::string const& matName ) const
+            {
+                auto itFindVel = M_exprVelocityConvection.find( matName );
+                CHECK( itFindVel != M_exprVelocityConvection.end() ) << "no velocity convection with material " << matName << std::endl;
+                return itFindVel->second;
+            }
+
+        template <typename SymbolsExprType>
+        auto velocityConvectionExpr( std::string const& matName, SymbolsExprType const& se ) const
+            {
+                return expr( this->velocityConvectionExpr( matName ), se );
+            }
+
+        template <typename SymbolsExprType = symbols_expression_empty_t>
+        auto velocityConvectionExpr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+            {
+                std::vector<std::pair<std::string,velocity_convection_expr_type>> theExprs;
+                for ( auto const& [matName,uExpr] : M_exprVelocityConvection )
+                    theExprs.push_back( std::make_pair( matName, uExpr ) );
+
+                if constexpr ( std::is_same_v<SymbolsExprType,symbols_expression_empty_t> )
+                    return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs );
+                else
+                    return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs ).applySymbolsExpr( se );
+            };
 
         //___________________________________________________________________________________//
         // apply assembly and solver

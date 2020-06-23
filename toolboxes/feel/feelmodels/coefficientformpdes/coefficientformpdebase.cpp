@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdebase.hpp>
 
@@ -10,15 +11,15 @@ namespace FeelModels
 {
 
 template< typename ConvexType>
-CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( super2_type const& genericPDE,
+CoefficientFormPDEBase<ConvexType>::CoefficientFormPDEBase( typename super2_type::infos_type const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    super2_type( genericPDE )
+    super_type( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) ),
+    super2_type( infosPDE )
 {
     this->log("CoefficientFormPDE","constructor", "start" );
 
@@ -43,14 +44,13 @@ template< typename ConvexType>
 void
 CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
 {
-    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix());;
-    M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix());
+    M_applyStabilization = boption(_name="stabilization",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix(),_vm=this->clovm());
+    M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix(),_vm=this->clovm());
 
-#if 0
     // time stepping
-    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix());
-    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix());
-#endif
+    M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
+    M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());
 }
 
 template< typename ConvexType>
@@ -60,7 +60,8 @@ CoefficientFormPDEBase<ConvexType>::initMesh()
     this->log("CoefficientFormPDE","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
+    std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
+    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
     CHECK( M_mesh ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
@@ -79,8 +80,8 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this_cfpdebase() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
     double tElpased = this->timerTool("Constructor").stop("initMaterialProperties");
@@ -95,7 +96,7 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
     this->timerTool("Constructor").start();
 
     this->setPostProcessExportsAllFieldsAvailable( { this->unknownName() } );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physics() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessSaveAllFieldsAvailable( { this->unknownName() } );
     super_type::initPostProcess();

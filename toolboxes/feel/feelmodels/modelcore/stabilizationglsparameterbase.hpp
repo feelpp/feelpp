@@ -21,12 +21,12 @@ public :
     using element_tau_t = typename space_tau_t::element_type;
     using element_tau_ptr_t = typename space_tau_t::element_ptrtype;
 
-    StabilizationGLSParameterBase( mesh_ptr_t const& mesh, std::string const& prefix )
+    StabilizationGLSParameterBase( mesh_ptr_t const& mesh, std::string const& prefix, po::variables_map const& vm )
         :
         M_mesh( mesh ),
-        M_method( soption(_name="method",_prefix=prefix ) ),
-        M_hSizeMethod( soption(_name="hsize.method",_prefix=prefix ) ),
-        M_penalLambdaK( doption( _name="eigenvalue.penal-lambdaK",_prefix=prefix ) )
+        M_method( soption(_name="method",_prefix=prefix,_vm=vm ) ),
+        M_hSizeMethod( soption(_name="hsize.method",_prefix=prefix,_vm=vm ) ),
+        M_penalLambdaK( doption( _name="eigenvalue.penal-lambdaK",_prefix=prefix,_vm=vm ) )
         {
             CHECK( M_method == "eigenvalue" || M_method == "doubly-asymptotic-approximation" )  << "invalid method";
         }

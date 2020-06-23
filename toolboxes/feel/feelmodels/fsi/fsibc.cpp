@@ -888,11 +888,11 @@ FSI<FluidType,SolidType>::updateLinearPDE_Solid1dReduced( DataUpdateLinear & dat
     if ( buildNonCstPart )
     {
         auto mesh = M_solidModel->mesh();
-        auto Xh = M_solidModel->functionSpace1dReduced();
-        auto const& v = M_solidModel->fieldDisplacementScal1dReduced();
+        auto Xh = M_solidModel->solid1dReduced()->functionSpace1dReduced();
+        auto const& v = M_solidModel->solid1dReduced()->fieldDisplacementScal1dReduced();
         auto linearForm = form1( _test=Xh, _vector=F,
                                  _rowstart=M_solidModel->rowStartInVector() );
-        auto rangeMeshElements1dReduced = elements(M_solidModel->mesh1dReduced());
+        auto rangeMeshElements1dReduced = elements(M_solidModel->solid1dReduced()->mesh());
 
         linearForm +=
             integrate( _range=rangeMeshElements1dReduced,

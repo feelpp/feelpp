@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/heatfluid/heatfluid.hpp>
 
@@ -82,73 +83,75 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                             _rowstart=M_fluidModel->rowStartInVector()+0 );
 
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-            auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
 #if 0
-            if ( doAssemblyHeat )
-            {
-                mylfT +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
-                               _geomap=this->geomap() );
-            }
+                if ( doAssemblyHeat )
+                {
+                    mylfT +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
+                                   _geomap=this->geomap() );
+                }
 #endif
-            auto const& rho = this->materialsProperties()->rho( matName );
-            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-            auto rhoExpr = rho.expr();
-            auto beta = thermalExpansion.expr();
-            double T0 = M_BoussinesqRefTemperature;
-            if ( doAssemblyFluid )
-            {
-                mylfV +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
-                               _geomap=this->geomap() );
-            }
+                auto const& rho = this->materialsProperties()->rho( matName );
+                auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
+                auto rhoExpr = rho.expr();
+                auto beta = thermalExpansion.expr();
+                double T0 = M_BoussinesqRefTemperature;
+                if ( doAssemblyFluid )
+                {
+                    mylfV +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*inner(M_gravityForce,id(u)),
+                                   _geomap=this->geomap() );
+                }
 
 #if 0 // TODO VINCENT
-            if ( M_heatModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
-            {
-                auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
-                CHECK ( !thermalConductivity.isMatrix() ) << "TODO";
-
-                if ( M_heatModel->timeStepping() == "Theta" )
+                if ( M_heatModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                 {
-                    auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
-                    auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
-                    auto uOld = XhV->element( previousSol, M_fluidModel->rowStartInVector() );
-                    auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoHeatCapacityExpr*gradv(tOld)*idv(uOld);
-                    M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data, exprAddedInRhsOld );
+                    auto const& thermalConductivity = this->materialsProperties()->thermalConductivity( matName );
+                    CHECK ( !thermalConductivity.isMatrix() ) << "TODO";
+
+                    if ( M_heatModel->timeStepping() == "Theta" )
+                    {
+                        auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
+                        auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
+                        auto uOld = XhV->element( previousSol, M_fluidModel->rowStartInVector() );
+                        auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoHeatCapacityExpr*gradv(tOld)*idv(uOld);
+                        M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data, exprAddedInRhsOld );
+                    }
+                    else
+                        M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
                 }
-                else
-                    M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
-            }
 #endif
 
-            if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
-            {
-                auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-                auto expraddedInGLSResidual = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;
-                auto XhP = M_fluidModel->functionSpacePressure();
-                //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
-                if ( M_fluidModel->timeStepping() ==  "Theta" )
+                if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                 {
-                    auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
-                    auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
-                    auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoExpr*(beta*(idv(tOld)-T0))*M_gravityForce;
-                    M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual, exprAddedInRhsOld );
+                    auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
+                    //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
+                    auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                    auto expraddedInGLSResidual = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;
+                    auto XhP = M_fluidModel->functionSpacePressure();
+                    //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
+                    if ( M_fluidModel->timeStepping() ==  "Theta" )
+                    {
+                        auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
+                        auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
+                        auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoExpr*(beta*(idv(tOld)-T0))*M_gravityForce;
+                        M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual, exprAddedInRhsOld );
+                    }
+                    else
+                        M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual );
                 }
-                else
-                    M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual );
-            }
-        }
-
-    }
+            } //matName
+        } // physic
+    } // nonCstPart
 
     this->log("HeatFluid","updateResidual", "finish"+sc);
 }
@@ -209,21 +212,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidualFluidSolver( DataUpdateResidual & d
     auto mylfV = form1( _test=XhV, _vector=R,
                         _rowstart=M_fluidModel->rowStartInVector() );
 
-    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-        auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
+            auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
 
-        auto const& rho = this->materialsProperties()->rho( matName );
-        auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-        auto const& rhoExpr = rho.expr();
-        auto const& betaExpr = thermalExpansion.expr();
-        double T0 = M_BoussinesqRefTemperature;
+            auto const& rho = this->materialsProperties()->rho( matName );
+            auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
+            auto const& rhoExpr = rho.expr();
+            auto const& betaExpr = thermalExpansion.expr();
+            double T0 = M_BoussinesqRefTemperature;
 
-        mylfV +=
-            integrate( _range=range,
-                       _expr= timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
-                       _geomap=this->geomap() );
+            mylfV +=
+                integrate( _range=range,
+                           _expr= timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
+                           _geomap=this->geomap() );
+        }
     }
     this->log("HeatFluid","updateResidualFluidSolver", "finish" );
 }

@@ -26,6 +26,7 @@
 
 #include <Eigen/Core>
 #include <feel/feelvf/expr.hpp>
+#include <feel/feelcore/context.hpp>
 
 namespace Feel
 {
@@ -54,8 +55,8 @@ class Product : public ExprDynamicBase
     static const bool is_terminal = false;
     static const int product_type = Type;
 
-    static const int IsSame = Props & InnerProperties::IS_SAME;
-    static const int ApplySqrt = Props & InnerProperties::SQRT;
+    static const bool IsSame = has_value_v<Props,InnerProperties::IS_SAME>;//  Props & InnerProperties::IS_SAME;
+    static const bool ApplySqrt =  has_value_v<Props,InnerProperties::SQRT>; //Props & InnerProperties::SQRT;
 
     template <typename Func>
     struct HasTestFunction
@@ -198,6 +199,17 @@ class Product : public ExprDynamicBase
                 return evaluate_type::Constant( res );
         }
 
+        void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_left_expr.setParameterValues( mp );
+            M_right_expr.setParameterValues( mp );
+        }
+        void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            M_left_expr.updateParameterValues( pv );
+            if constexpr( !IsSame )
+                M_right_expr.updateParameterValues( pv );
+        }
 
         template <typename SymbolsExprType>
         auto applySymbolsExpr( SymbolsExprType const& se ) const
@@ -218,6 +230,54 @@ class Product : public ExprDynamicBase
             }
         }
 
+        template <typename TheSymbolExprType>
+        bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            if constexpr( IsSame )
+                return M_left_expr.hasSymbolDependency( symb, se );
+            else
+                return M_left_expr.hasSymbolDependency( symb, se ) || M_right_expr.hasSymbolDependency( symb, se );
+        }
+
+        template <typename TheSymbolExprType>
+        void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_left_expr.dependentSymbols( symb,res,se );
+            if constexpr( !IsSame )
+                 M_right_expr.dependentSymbols( symb,res,se );
+        }
+
+        template <int diffOrder, typename TheSymbolExprType>
+        auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+                   TheSymbolExprType const& se ) const
+        {
+            auto ldiffExpr = M_left_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using expr_diff_left_type = std::decay_t<decltype(ldiffExpr)>;
+            if constexpr( IsSame )
+                {
+                    using new_expr_nosqrt_type = Product<expr_diff_left_type,left_expression_type, Type, 0>;
+                    auto resExprNoSqrt = 2.0*expr(new_expr_nosqrt_type( ldiffExpr,M_left_expr ));
+                    if constexpr ( ApplySqrt )
+                        return resExprNoSqrt/(2.0*expr(*this));
+                    else
+                        return resExprNoSqrt;
+                }
+            else
+            {
+                auto rdiffExpr = M_right_expr.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+                using expr_diff_right_type = std::decay_t<decltype(rdiffExpr)>;
+
+                using new_expr1_nosqrt_type = Product<expr_diff_left_type,right_expression_type, Type, 0>;
+                auto resExpr1 = expr(new_expr1_nosqrt_type( ldiffExpr,M_right_expr ));
+                using new_expr2_nosqrt_type = Product<left_expression_type,expr_diff_right_type, Type, 0>;
+                auto resExpr2 = expr(new_expr2_nosqrt_type( M_left_expr,rdiffExpr ));
+
+                if constexpr ( ApplySqrt )
+                    return (resExpr1 + resExpr2)/(2.0*expr(*this));
+                else
+                    return resExpr1 + resExpr2;
+            }
+        }
 
     //@}
 

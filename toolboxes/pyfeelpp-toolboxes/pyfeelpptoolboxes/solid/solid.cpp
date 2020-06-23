@@ -68,8 +68,6 @@ void defSM(py::module &m)
         .def("init",&sm_t::init, "initialize the solid mechanics toolbox",py::arg("buildModelAlgebraicFactory")= true)
         .def("is1dReducedModel",&sm_t::is1dReducedModel, "returns true if 1D reduced model, false otherwise")
         .def("isStandardModel",&sm_t::isStandardModel, "returns true if standard model, false otherwise")
-        .def("useDisplacementPressureFormulation",&sm_t::useDisplacementPressureFormulation, "returns true if displacement pressure formulation is used, false otherwise")
-        .def("setUseDisplacementPressureFormulation",&sm_t::setUseDisplacementPressureFormulation, "set the displacement pressure formulation to true or false")
         
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (sm_t::*)() const>(&sm_t::timeStepBase), "get time stepping base")

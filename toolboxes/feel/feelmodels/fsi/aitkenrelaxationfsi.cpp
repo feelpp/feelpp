@@ -68,15 +68,15 @@ AitkenRelaxationFSI<SolidType>::AitkenRelaxationFSI( solid_ptrtype solid,
     }
     else if ( M_solid->is1dReducedModel() )
     {
-        M_oldSol1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
-        M_residual1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
-        M_aitken1dReduced = aitkenPtr(_space=M_solid->fieldDisplacementScal1dReduced().functionSpace(),
+        M_oldSol1dReduced.reset( new element_disp_1dreduced_type( M_solid->solid1dReduced()->fieldDisplacementScal1dReduced().functionSpace() ) );
+        M_residual1dReduced.reset( new element_disp_1dreduced_type( M_solid->solid1dReduced()->fieldDisplacementScal1dReduced().functionSpace() ) );
+        M_aitken1dReduced = aitkenPtr(_space=M_solid->solid1dReduced()->fieldDisplacementScal1dReduced().functionSpace(),
                                       _initial_theta=initialTheta,
                                       _type=aitkenType,
                                       _tolerance=tolPtFixe,
                                       _min_theta=minTheta);
         M_aitken1dReduced->initialize( _residual=*M_residual1dReduced,
-                                       _currentElt=M_solid->fieldDisplacementScal1dReduced() );
+                                       _currentElt=M_solid->solid1dReduced()->fieldDisplacementScal1dReduced() );
     }
 }
 
@@ -95,7 +95,7 @@ AitkenRelaxationFSI<SolidType>::saveOldSolution()
     else if ( M_solid->is1dReducedModel() )
     {
         M_oldSol1dReduced->on(_range=elements(M_oldSol1dReduced->mesh()),
-                              _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced()) );
+                              _expr=vf::idv(M_solid->solid1dReduced()->fieldDisplacementScal1dReduced()) );
     }
 }
 
@@ -158,12 +158,12 @@ AitkenRelaxationFSI<SolidType>::applyRelaxation()
     else if ( M_solid->is1dReducedModel() )
     {
         M_residual1dReduced->on(_range=elements(M_residual1dReduced->mesh()),
-                                _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
+                                _expr=vf::idv(M_solid->solid1dReduced()->fieldDisplacementScal1dReduced() ));
         *M_residual1dReduced -= *M_oldSol1dReduced;
 
-        M_aitken1dReduced->apply2(_newElt=M_solid->fieldDisplacementScal1dReduced(),
+        M_aitken1dReduced->apply2(_newElt=M_solid->solid1dReduced()->fieldDisplacementScal1dReduced(),
                                   _residual=*M_residual1dReduced,
-                                  _currentElt=M_solid->fieldDisplacementScal1dReduced() );
+                                  _currentElt=M_solid->solid1dReduced()->fieldDisplacementScal1dReduced() );
     }
 }
 
@@ -235,8 +235,8 @@ FixPointConvergenceFSI<SolidType>::FixPointConvergenceFSI( solid_ptrtype solid )
     }
     else if ( M_solid->is1dReducedModel() )
     {
-        M_oldSol1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
-        M_residual1dReduced.reset( new element_disp_1dreduced_type( M_solid->fieldDisplacementScal1dReduced().functionSpace() ) );
+        M_oldSol1dReduced.reset( new element_disp_1dreduced_type( M_solid->solid1dReduced()->fieldDisplacementScal1dReduced().functionSpace() ) );
+        M_residual1dReduced.reset( new element_disp_1dreduced_type( M_solid->solid1dReduced()->fieldDisplacementScal1dReduced().functionSpace() ) );
     }
 }
 
@@ -253,7 +253,7 @@ FixPointConvergenceFSI<SolidType>::saveOldSolution()
     else if ( M_solid->is1dReducedModel() )
     {
         M_oldSol1dReduced->on(_range=elements(M_oldSol1dReduced->mesh()),
-                              _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced()) );
+                              _expr=vf::idv(M_solid->solid1dReduced()->fieldDisplacementScal1dReduced()) );
     }
 }
 
@@ -277,7 +277,7 @@ FixPointConvergenceFSI<SolidType>::computeConvergence()
     else if ( M_solid->is1dReducedModel() )
     {
         M_residual1dReduced->on(_range=elements(M_residual1dReduced->mesh()),
-                                _expr=vf::idv(M_solid->fieldDisplacementScal1dReduced() ));
+                                _expr=vf::idv(M_solid->solid1dReduced()->fieldDisplacementScal1dReduced() ));
         *M_residual1dReduced -= *M_oldSol1dReduced;
         double oldEltL2Norm = M_oldSol1dReduced->l2Norm();
         if ( oldEltL2Norm > 1e-13 )

@@ -94,6 +94,55 @@ levelsetInterfaceElements( ElementType const& phi )
             );
 }
 
+template< typename ElementType >
+auto
+levelsetDiracElementsGeneric( ElementType const& phi, double eps )
+{
+    typedef ElementType element_type;
+    typedef typename element_type::functionspace_type functionspace_type;
+    typedef typename element_type::mesh_type mesh_type;
+
+    typedef typename MeshTraits<mesh_type>::element_reference_wrapper_const_iterator element_reference_wrapper_const_iterator;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_type elements_reference_wrapper_type;
+    typedef typename MeshTraits<mesh_type>::elements_reference_wrapper_ptrtype elements_reference_wrapper_ptrtype;
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    auto const& mesh = phi.mesh();
+    const rank_type pid = mesh->worldCommElements().localRank();
+    const uint16_type ndofv = functionspace_type::fe_type::nDof;
+
+    // Find interface elements
+    auto it = mesh->beginOrderedElement();
+    auto en = mesh->endOrderedElement();
+
+    elements_reference_wrapper_ptrtype diracElts( new elements_reference_wrapper_type );
+
+    for ( ; it!=en ; it++ )
+    {
+        auto const& elt = boost::unwrap_ref( *it );
+        if ( elt.processId() != pid )
+            continue;
+        bool mark_elt = false;
+        for ( int j = 0; j < ndofv; j++ )
+        {
+            if ( std::abs( phi.localToGlobal(elt.id(), j, 0) ) <= eps )
+            {
+                mark_elt = true;
+                break;
+            }
+        }
+        if( mark_elt )
+            diracElts->push_back( boost::cref(elt) );
+    }
+
+    return boost::make_tuple( 
+            mpl::size_t<MESH_ELEMENTS>(),
+            diracElts->begin(),
+            diracElts->end(),
+            diracElts
+            );
+}
+
 }
 
 #endif // _LEVELSET_FILTERS_HPP

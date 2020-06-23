@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+ */
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 
@@ -10,7 +11,8 @@ runApplicationCoefficientFormPDEs()
 
     typedef FeelModels::CoefficientFormPDEs< Simplex<nDim,nOrderGeo>,
                                              Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<2,Scalar,Continuous,PointSetFekete> > model_type;
+                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
+                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> > model_type;
 
     std::shared_ptr<model_type> cfpdes( new model_type("cfpdes") );
     cfpdes->init();
@@ -23,7 +25,6 @@ runApplicationCoefficientFormPDEs()
     }
     else
     {
-#if 0
         if ( !cfpdes->doRestart() )
             cfpdes->exportResults(cfpdes->timeInitial());
 
@@ -39,7 +40,6 @@ runApplicationCoefficientFormPDEs()
             cfpdes->solve();
             cfpdes->exportResults();
         }
-#endif
     }
 
     return !cfpdes->checkResults();
@@ -63,7 +63,7 @@ main(int argc, char**argv )
 
     int dimension = ioption(_name="case.dimension");
     //std::string discretization = soption(_name="case.discretization");
-    auto dimt = hana::make_tuple(hana::int_c<2>/*,hana::int_c<3>*/);
+    auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
     //auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
     int status = 0;
     hana::for_each( dimt/*hana::cartesian_product(hana::make_tuple(dimt,discretizationt))*/, [&dimension,&status]( auto const& d )

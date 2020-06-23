@@ -362,5 +362,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE( test_2, T, dim_types )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_3 )
+{
+    auto mesh = unitSquare();
+    auto Xh = FunctionSpace<Mesh<Simplex<2> >, bases<Lagrange<1>,Lagrange<1> > >::New(mesh);
+    auto V = Xh->element();
+    auto e = exporter(mesh);
+    e->add("V",V);
+    e->save();
+}
 
 BOOST_AUTO_TEST_SUITE_END()

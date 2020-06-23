@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #include <feel/feelmodels/thermoelectric/thermoelectric.hpp>
 
@@ -34,69 +35,69 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     size_type startBlockIndexElectricPotential = M_electricModel->startBlockSpaceIndexVector()+0;
 
     auto mctx = this->modelContext( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential ); // TODO CHECK if we need rowStartInVector here
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
     auto const& v = mctx.field( electric_model_type::FieldTag::potential(this->electricModel().get()), "electric-potential" );
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+    auto const& tse = mctx.trialSymbolsExpr();
+    auto trialSymbolNames = tse.names();
 
     auto mesh = this->mesh();
 
     auto XhV = M_electricModel->spaceElectricPotential();
-    //auto const v = XhV->element(XVec, this->rowStartInVector()+startBlockIndexElectricPotential );
     auto XhT = M_heatModel->spaceTemperature();
-    //auto const& t = M_heatModel->fieldTemperature();
-    //auto const t = XhT->element(XVec, this->rowStartInVector()+startBlockIndexTemperature );
-    //auto symbolsExpr = this->symbolsExpr(t,v);
-
-    // auto mfield = this->modelFields( XVec, this->rowStartInVector()+startBlockIndexTemperature, this->rowStartInVector()+startBlockIndexElectricPotential );
-    // auto symbolsExpr = this->symbolsExpr( mfield );
 
     M_heatModel->updateJacobian( data,mctx );
     M_electricModel->updateJacobian( data,mctx );
 
     if ( !buildCstPart )
     {
-        auto mybfTT = form2( _test=XhT,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
         auto mybfTV = form2( _test=XhT,_trial=XhV,_matrix=J,
                              _pattern=size_type(Pattern::COUPLED),
                              _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
                              _colstart=this->colStartInMatrix()+startBlockIndexElectricPotential );
-        auto mybfVT = form2( _test=XhV,_trial=XhT,_matrix=J,
-                             _pattern=size_type(Pattern::COUPLED),
-                             _rowstart=this->rowStartInMatrix()+startBlockIndexElectricPotential,
-                             _colstart=this->colStartInMatrix()+startBlockIndexTemperature );
 
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
-            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
-            auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
-            std::string symbolStr = "heat_T";
-            auto sigmaExpr = expr( electricConductivity.expr(), symbolsExpr );
-            if ( M_modelUseJouleEffect )
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
-                mybfTV +=
-                    integrate( _range=range,
-                               _expr= -sigmaExpr*2*inner(gradt(v),gradv(v))*id( t ),
-                               _geomap=this->geomap() );
-            }
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                auto const& electricConductivity = this->materialsProperties()->electricConductivity( matName );
 
-            if ( sigmaExpr.expression().hasSymbol( symbolStr ) )
-            {
-                auto sigmaDiffExpr = diff( sigmaExpr,symbolStr,1,"",this->worldComm(),this->repository().expr());
+                bool electricConductivityDependOnTrialSymbol = electricConductivity.hasSymbolDependency( trialSymbolNames,se );
+                auto sigmaExpr = expr( electricConductivity.expr(), se );
                 if ( M_modelUseJouleEffect )
                 {
-                    mybfTT +=
+                    mybfTV +=
                         integrate( _range=range,
-                                   _expr= -sigmaDiffExpr*idt(t)*inner(gradv(v)/*,gradv(v)*/)*id( t ),
+                                   _expr= -sigmaExpr*2*inner(gradt(v),gradv(v))*id( t ),
                                    _geomap=this->geomap() );
                 }
 
-                mybfVT +=
-                    integrate( _range=range,
-                               _expr= sigmaDiffExpr*idt(t)*inner(gradv(v),grad(v)),
-                               _geomap=this->geomap() );
+                if ( electricConductivityDependOnTrialSymbol && M_modelUseJouleEffect )
+                {
+                    hana::for_each( tse.map(), [this,&sigmaExpr,&t,&v,&J,&range,&XhT,&XhV,&startBlockIndexTemperature]( auto const& e )
+                        {
+                            // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                            for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                            {
+                                auto trialXh = trialSpacePair.first;
+                                auto trialBlockIndex = trialSpacePair.second;
+
+                                auto sigmaDiffExpr = diffSymbolicExpr( sigmaExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                                if ( !sigmaDiffExpr.expression().hasExpr() )
+                                    continue;
+
+                                form2( _test=XhT,_trial=trialXh,_matrix=J,
+                                       _pattern=size_type(Pattern::COUPLED),
+                                       _rowstart=this->rowStartInMatrix()+startBlockIndexTemperature,
+                                       _colstart=trialBlockIndex ) +=
+                                    integrate( _range=range,
+                                               _expr= -sigmaDiffExpr*inner(gradv(v)/*,gradv(v)*/)*id( t ),
+                                               _geomap=this->geomap() );
+                            }
+                        });
+                }
             }
         }
     }

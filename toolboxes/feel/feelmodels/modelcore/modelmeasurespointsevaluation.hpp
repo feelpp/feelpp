@@ -113,15 +113,13 @@ public :
 
             hana::for_each( M_contextFields,
                             [this,&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple.tupleModelField,
+                                hana::for_each( fieldTuple.tuple(),
                                                 [this,&x,&res](auto const& y) {
                                                     if constexpr ( is_iterable_v<decltype(y)> )
                                                     {
                                                         for ( auto const& mfield : y )
                                                         {
-                                                            std::string fieldName = mfield.nameWithPrefix();
-                                                            auto const& fieldFunc = mfield.field();
-                                                            this->evalFieldImpl( x,fieldName,fieldFunc,res );
+                                                            this->evalFieldImpl( x, mfield, res );
                                                         }
                                                     }
                                                     else
@@ -134,11 +132,15 @@ public :
         }
 
 private :
-    template <typename ContextDataType,typename FieldType>
+    template <typename ContextDataType,typename MFieldType>
     void
-    evalFieldImpl( ContextDataType const& x, std::string const& fieldName, FieldType const& fieldFunc, std::map<std::string,double> & res )
+    evalFieldImpl( ContextDataType const& x, MFieldType const& mfield, std::map<std::string,double> & res )
         {
-            if constexpr ( is_shared_ptr<FieldType>::value )
+            std::string fieldName = mfield.nameWithPrefix();
+            auto const& fieldFunc = mfield.field();
+
+            using FieldType = std::decay_t<decltype(fieldFunc)>;
+            if constexpr ( is_shared_ptr< FieldType >::value )
                 {
                     if ( !fieldFunc )
                         return;
@@ -151,6 +153,7 @@ private :
                     auto itFindField = std::get<1>( x ).find( fieldName );
                     if ( itFindField != std::get<1>( x ).end() && !itFindField->second.empty() )
                     {
+                        mfield.applyUpdateFunction();
                         auto expr = idv( fieldFunc );
                         auto evalAtNodes = evaluateFromContext( _context=*fectx,
                                                                 _expr=expr );

@@ -112,47 +112,72 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
                 typedef Key key_type;
                 typedef Val value_type;
                 typedef std::pair< key_type, value_type > data_type;
+                // We also add a (boolean) tag to track deleted entries
+                typedef std::pair< data_type, bool > container_data_type;
+                typedef std::unique_ptr< container_data_type > container_data_ptrtype;
+                typedef std::vector< container_data_ptrtype > container_type;
+
+                template< typename C >
+                class CmpAdaptor
+                {
+                public:
+                    CmpAdaptor( C c ) : M_c( c ) {}
+                    constexpr bool operator()( 
+                            container_data_ptrtype const& lhs, 
+                            container_data_ptrtype const& rhs ) 
+                    {
+                        return M_c( lhs->first, rhs->first );
+                    }
+                private:
+                    C M_c;
+                };
+                typedef CmpAdaptor<Cmp> cmp_type;
 
             public:
-                HeapMap( Cmp cmp = Cmp() ) : M_cmp( cmp ) {}
-
-                auto size() const { return M_data.size(); }
+                HeapMap( Cmp cmp = Cmp() ) : 
+                    M_data(), M_validEntriesPtr(),
+                    M_cmp( cmp ), M_size( 0 ) 
+            {}
 
                 void insert( data_type const& data ) 
                 {
-                    M_data.push_back( data );
+                    M_data.emplace_back( new container_data_type( data, true ) );
+                    M_validEntriesPtr[data.first] = M_data.back().get();
                     std::push_heap( M_data.begin(), M_data.end(), M_cmp );
+                    ++M_size;
                 }
                 template< typename InputIt >
                 void insert( InputIt first, InputIt last )
                 {
-                    M_data.insert( M_data.end(), first, last );
+                    for( auto it = first; it != last; ++it )
+                    {
+                        M_data.emplace_back( new container_data_type( *it, true ) );
+                        M_validEntriesPtr[it->first] = M_data.back().get();
+                    }
                     std::make_heap( M_data.begin(), M_data.end(), M_cmp );
+                    M_size += std::distance( first, last );
                 }
 
                 void insert_or_assign( data_type const& data )
                 {
-                    auto dataIt = std::find_if( std::begin( M_data ), std::end( M_data ),
-                            [&data]( data_type const& d ) { return d.first == data.first; }
-                            );
-                    if( dataIt == std::end( M_data ) )
+                    auto dataIt = M_validEntriesPtr.find( data.first );
+                    if( dataIt == M_validEntriesPtr.end() )
                     {
                         this->insert( data );
                     }
                     else
                     {
-                        dataIt->second = data.second;
-                        std::make_heap( M_data.begin(), M_data.end(), M_cmp );
+                        dataIt->second->second = false;
+                        --M_size;
+                        this->insert( data );
                     }
                 }
 
                 template< typename Predicate >
                 bool insert_or_assign_if( data_type const& data, Predicate p )
                 {
-                    auto dataIt = std::find_if( std::begin( M_data ), std::end( M_data ),
-                            [&data]( data_type const& d ) { return d.first == data.first; }
-                            );
-                    if( dataIt == std::end( M_data ) )
+                    auto dataIt = M_validEntriesPtr.find( data.first );
+                    if( dataIt == M_validEntriesPtr.end() )
                     {
                         this->insert( data );
                         return true;
@@ -161,8 +186,9 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
                     {
                         if( p(*dataIt) )
                         {
-                            dataIt->second = data.second;
-                            std::make_heap( M_data.begin(), M_data.end(), M_cmp );
+                            dataIt->second->second = false;
+                            --M_size;
+                            this->insert( data );
                             return true;
                         }
                         else
@@ -172,28 +198,50 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
 
                 data_type front() const 
                 {
-                    return M_data.front();
+                    if( M_data.front()->second ) // Entry is valid
+                    {
+                        return M_data.front()->first;
+                    }
+                    else // Entry was deleted, remove it
+                    {
+                        std::pop_heap( M_data.begin(), M_data.end(), M_cmp );
+                        M_data.pop_back();
+                        return this->front();
+                    }
                 }
                 data_type pop_front()
                 {
-                    data_type front = M_data.front();
+                    container_data_type const f = *M_data.front();
                     std::pop_heap( M_data.begin(), M_data.end(), M_cmp );
                     M_data.pop_back();
-                    return front;
+                    if( f.second ) // Entry is valid
+                    {
+                        M_validEntriesPtr.erase( f.first.first );
+                        --M_size;
+                        return f.first;
+                    }
+                    else // Entry was deleted, return next
+                        return this->pop_front();
                 }
 
                 void clear()
                 {
                     M_data.clear();
+                    M_validEntriesPtr.clear();
+                    M_size = 0;
                 }
 
-                bool empty() const { return M_data.empty(); }
+                auto size() const { return M_size; }
+                bool empty() const { return M_size == 0; }
 
-                Cmp const& comp() const { return M_cmp; }
+                cmp_type const& comp() const { return M_cmp; }
 
             private:
-                std::vector< data_type > M_data;
-                Cmp M_cmp;
+                container_type M_data;
+                cmp_type M_cmp;
+                std::unordered_map< key_type, container_data_type * > M_validEntriesPtr;
+                // Track size accounting only valid entries
+                size_type M_size;
         };
 
         typedef std::pair< size_type, value_type > pair_dof_value_type;
@@ -240,6 +288,7 @@ class FastMarching: private LocalEikonalSolver< FunctionSpaceType >
         functionspace_ptrtype M_space;
 
         std::map< size_type, std::set< rank_type > > M_dofSharedOnCluster;
+        std::map< size_type, size_type > M_mapSharedDofGlobalClusterToGlobalProcess;
 
         std::vector< FastMarchingDofStatus > M_dofStatus;
         heap_type M_positiveCloseDofHeap;

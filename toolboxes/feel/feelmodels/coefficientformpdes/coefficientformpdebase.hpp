@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 */
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4 
+ */
 
 #ifndef FEELPP_TOOLBOXES_COEFFICIENTFORMPDEBASE_HPP
 #define FEELPP_TOOLBOXES_COEFFICIENTFORMPDEBASE_HPP 1
@@ -32,11 +33,12 @@ public :
     typedef ConvexType convex_type;
     static const uint16_type nDim = convex_type::nDim;
     static const uint16_type nOrderGeo = convex_type::nOrder;
+    static const uint16_type nRealDim = convex_type::nDim;
     typedef Mesh<convex_type> mesh_type;
     typedef std::shared_ptr<mesh_type> mesh_ptrtype;
 
     // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
     // stabilization
@@ -52,13 +54,13 @@ public :
     typedef std::shared_ptr< model_algebraic_factory_type > model_algebraic_factory_ptrtype;
 
 public :
-    CoefficientFormPDEBase( super2_type const& genericPDE,
+    CoefficientFormPDEBase( typename super2_type::infos_type const& infosPDE,
                             std::string const& prefix,
                             std::string const& keyword,
                             worldcomm_ptr_t const& worldComm,
                             std::string const& subPrefix,
                             ModelBaseRepository const& modelRep );
-
+#if 0
     CoefficientFormPDEBase( std::string const& prefix,
                             std::string const& keyword,
                             worldcomm_ptr_t const& worldComm,
@@ -67,8 +69,13 @@ public :
         :
         CoefficientFormPDEBase( super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
+#endif
 
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    virtual std::shared_ptr<CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() = 0;
+
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    virtual std::shared_ptr<const CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() const = 0;
 
     //___________________________________________________________________________________//
     // mesh
@@ -87,10 +94,14 @@ public :
     bool applyStabilization() const { return M_applyStabilization; }
     std::string const& stabilizationType() const { return M_stabilizationType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
+    bool stabilizationGLS_applyShockCapturing() const { return M_stabilizationGLS_applyShockCapturing; }
 
     //___________________________________________________________________________________//
     // time discretisation
     virtual std::shared_ptr<TSBase> timeStepBase() const = 0;
+    virtual void startTimeStep() = 0;
+    virtual void updateTimeStep() = 0;
+    std::string const& timeStepping() const { return M_timeStepping; }
     //___________________________________________________________________________________//
     // algebraic data and solver
     backend_ptrtype const& backend() const { return M_backend; }
@@ -104,6 +115,8 @@ public :
 
     virtual void setParameterValues( std::map<std::string,double> const& paramValues ) = 0;
 
+    template <typename SymbolsExprType>
+    bool hasSymbolDependencyInCoefficients( std::set<std::string> const& symbs, SymbolsExprType const& se ) const;
 
 protected :
     void loadParameterFromOptionsVm();
@@ -119,10 +132,16 @@ protected :
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
 
+    // time discretisation
+    std::string M_timeStepping;
+    double M_timeStepThetaValue;
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+
     // stabilization
     bool M_applyStabilization;
     std::string M_stabilizationType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
+    bool M_stabilizationGLS_applyShockCapturing;
 
     // post-process
     export_ptrtype M_exporter;
@@ -132,6 +151,35 @@ protected :
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
 };
+
+
+template< typename ConvexType>
+template <typename SymbolsExprType>
+bool
+CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
+{
+    bool hasDependency = false;
+    for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
+    {
+        if ( ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->convectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->diffusionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->diffusionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) )
+             )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    return hasDependency;
+}
+
 
 
 } // namespace Feel

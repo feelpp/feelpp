@@ -51,7 +51,7 @@ public :
     using evaluate_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic >;
 
     ModelExpression() = default;
-    ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
+    explicit ModelExpression( value_type val ) { this->setExprScalar( Feel::vf::expr( val ) ); }
     ModelExpression( ModelExpression const& ) = default;
     ModelExpression( ModelExpression && ) = default;
     ModelExpression& operator=( ModelExpression const& ) = default;
@@ -219,7 +219,7 @@ public :
                                                  }
                                     else
                                     {
-                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                        for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
                                         {
                                             uint16_type c1 = compArray[0];
                                             uint16_type c2 = compArray[1];
@@ -248,7 +248,7 @@ public :
                                 }
                                 else
                                 {
-                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj, true ) )
+                                    for ( auto const& [_suffix,compArray] : SymbolExprComponentSuffix(ni,nj ) )
                                     {
                                         for ( std::string const& s : symbNames )
                                             outputSymbNames.insert( s + _suffix );
@@ -258,6 +258,19 @@ public :
                         });
     }
     void updateSymbolNames( std::string const& symbName, std::set<std::string> & outputSymbNames ) const { this->updateSymbolNames( std::set<std::string>({ symbName }), outputSymbNames ); }
+
+    //! rename symbols in symbolics expr with mapping \old2new
+    void renameSymbols( std::map<std::string,std::string> const& old2new )
+    {
+        hana::for_each( expr_shapes, [this,&old2new]( auto const& e_ij )
+                        {
+                            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+                            if ( this->hasExpr<ni,nj>() )
+                                this->expr<ni,nj>().expression().renameSymbols( old2new );
+                        });
+    }
+
 
     template<typename ExprT>
     constexpr auto
@@ -279,23 +292,39 @@ public :
         return res;
     }
 
-    bool hasSymbolDependency( std::string const& symbolStr ) const
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::set<std::string> const& symbolsStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
     {
         if ( this->isConstant() )
             return false;
 
         bool res = false;
-        hana::for_each( expr_shapes, [this,&symbolStr,&res]( auto const& e_ij )
+        hana::for_each( expr_shapes, [this,&symbolsStr,&se,&res]( auto const& e_ij )
                         {
                             if ( res )
                                 return;
                             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
                             if ( this->hasExpr<ni,nj>() )
-                                if ( this->expr<ni,nj>().expression().hasSymbol( symbolStr ) )
-                                    res = true;
+                            {
+                                for ( std::string const& symbolStr : symbolsStr )
+                                {
+                                    if ( this->expr<ni,nj>().hasSymbolDependency( symbolStr, se ) )
+                                    {
+                                        res = true;
+                                        break;
+                                    }
+                                }
+                            }
                         });
         return res;
+    }
+
+    template <typename TheSymbolExprType = symbols_expression_empty_t>
+    bool hasSymbolDependency( std::string const& symbolStr, TheSymbolExprType const& se = symbols_expression_empty_t{} ) const
+    {
+        return this->hasSymbolDependency( std::set<std::string>( { symbolStr } ), se );
     }
 
 private :

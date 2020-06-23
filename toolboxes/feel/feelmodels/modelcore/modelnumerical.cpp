@@ -38,9 +38,11 @@ namespace FeelModels
 
 ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const& keyword,
                                 worldcomm_ptr_t const& _worldComm, std::string const& subPrefix,
-                                ModelBaseRepository const& modelRep )
+                                ModelBaseRepository const& modelRep,
+                                ModelBaseCommandLineOptions const& modelCmdLineOpt )
         :
-        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep ),
+        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
+        ModelBase( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
@@ -48,7 +50,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_timeInitial( doption(_name="ts.time-initial") ),
         M_timeFinal( doption(_name="ts.time-final") ),
         M_timeStep( doption(_name="ts.time-step") ),
-        M_timeOrder( ioption(_prefix=_theprefix, _name="ts.order") ),
+        M_timeOrder( ioption(_prefix=_theprefix, _name="ts.order",_vm=this->clovm()) ),
         M_tsSaveInFile( boption(_name="ts.save") ),
         M_tsSaveFreq( ioption(_name="ts.save.freq") ),
         M_timeCurrent(M_timeInitial),
@@ -58,16 +60,16 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         M_postProcessSaveRepository( fs::path(this->rootRepository())/prefixvm(this->prefix(), prefixvm(this->subPrefix(),"save")) ),
         M_postProcessMeasuresIO( this->rootRepository()+"/"+prefixvm(this->prefix(), prefixvm(this->subPrefix(),"measures.csv")),this->worldCommPtr() ),
         //M_PsLogger( new PsLogger(prefixvm(this->prefix(),"PsLogger"),this->worldComm() ) )
-        M_useChecker( boption(_prefix=this->prefix(),_name="checker") )
+        M_useChecker( boption(_prefix=this->prefix(),_name="checker",_vm=this->clovm()) )
     {
         //-----------------------------------------------------------------------//
         // move in stationary mode if we have this relation
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
         //-----------------------------------------------------------------------//
-        if ( Environment::vm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
+        if ( this->clovm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
         {
-            std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename") );
+            std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename",_vm=this->clovm()) );
             RemoteData rdTool( meshfile, this->worldCommPtr() );
             if ( rdTool.canDownload() )
             {
@@ -87,12 +89,12 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
                 M_meshFile = meshfile;
         }
         //-----------------------------------------------------------------------//
-        if (soption(_prefix=this->prefix(),_name="geomap")=="opt")
+        if (soption(_prefix=this->prefix(),_name="geomap",_vm=this->clovm())=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
         else
             M_geomap=GeomapStrategyType::GEOMAP_HO;
         //-----------------------------------------------------------------------//
-        std::string modelPropFilename = Environment::expand( soption( _name=prefixvm(this->prefix(),"filename")) );
+        std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
         if ( !modelPropFilename.empty() )
             M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldCommPtr(), this->prefix() );
     }
@@ -118,7 +120,7 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
     {
         M_timeCurrent=t;
         if ( M_modelProps )
-            M_modelProps->parameters()["t"] = ModelParameter("current_time",M_timeCurrent);
+            this->addParameterInModelProperties( "t", M_timeCurrent );
     }
 
 

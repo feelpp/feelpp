@@ -23,7 +23,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, s
                                                     ModelBaseRepository const& modelRep )
     :
     super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
-    ModelPhysics<nDim>( "heat" ),
+    ModelBase( prefix,keyword,worldComm,subPrefix, modelRep ),
+    ModelPhysics<nDim>( "fluid" ),
     M_materialProperties( new material_properties_type( prefix ) ),
     M_applyMovingMeshBeforeSolve( true )
 {
@@ -118,9 +119,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
+#if 0
     if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
         this->setModelName( soption(_name="model",_prefix=this->prefix()) );
-
+#endif
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
@@ -918,22 +920,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("FluidMechanics","init", "start" );
     this->timerTool("Constructor").start();
 
-    boost::timer thetimer;
+    if ( this->physics().empty() )
+        this->initPhysics( this->keyword(), this->modelProperties().models() );
 
     if ( !M_mesh )
         this->initMesh();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-
+#if 0
     if ( M_modelName.empty() )
     {
         std::string theFluidModel = this->modelProperties().models().model( this->keyword() ).equations();
         this->setModelName( theFluidModel );
     }
+#endif
     if ( M_solverName.empty() )
     {
-        if ( M_modelName == "Stokes" || M_modelName == "StokesTransient" )
+        bool isLinear = true;
+        for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        {
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+            if ( physicFluidData->equation() == "Navier-Stokes" )
+            {
+                isLinear = false;
+                break;
+            }
+        }
+        if ( isLinear )
             M_solverName="LinearSystem";
         else
             M_solverName="Newton";
@@ -945,8 +959,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 #endif
     // functionSpaces and elements
@@ -1546,15 +1560,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
         }
         else if ( funcData.isVectorial2() )
         {
-            if ( nDim != 2 ) continue;
-            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
+            if constexpr( nDim == 2 )
+            {
+                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial2() );
+            }
+            else CHECK( false ) << "TODO";
         }
         else if ( funcData.isVectorial3() )
         {
-            if ( nDim != 3 ) continue;
-            CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
-            M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
+            if constexpr( nDim == 3 )
+            {
+                CHECK( this->hasFieldUserVectorial( funcName ) ) << "user function " << funcName << "not registered";
+                M_fieldsUserVectorial[funcName]->on(_range=M_rangeMeshElements,_expr=funcData.expressionVectorial3() );
+            }
+            else CHECK( false ) << "TODO";
         }
     }
 }
@@ -1908,8 +1928,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh, std::string const& exprRepository )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh )
 {
+    M_mesh = mesh;
     std::set<std::string> matNames;
     if ( auto ptMatNames = p.get_child_optional("names") )
     {
@@ -1929,8 +1950,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::setup( pt::ptree const& p, ModelMateri
     if ( auto ptmarkers = p.get_child_optional("markers") )
         onlyMarkers.setPTree(*ptmarkers/*, indexes*/);
 
-    M_materialsProperties.reset( new materialsproperties_type( "",exprRepository/*this->prefix(), this->repository().expr()*/ ) );
-    M_materialsProperties->updateForUse( mesh, mats, *this, matNames, onlyMarkers );
+    M_materialsProperties.reset( new materialsproperties_type( M_modelPhysics ) );
+    M_materialsProperties->updateForUse( mats, matNames, onlyMarkers );
+    M_materialsProperties->addMesh( M_mesh );
 
     this->updateForUse();
 
@@ -1942,9 +1964,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
 {
     CHECK( M_materialsProperties ) << "no materialsProperties defined";
 
+    auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
     M_mass = 0;
     M_massCenter = eigen_vector_type<nRealDim>::Zero();
-    for ( auto const& rangeData : M_materialsProperties->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
@@ -1957,7 +1980,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
     M_massCenter /= M_mass;
 
     M_momentOfInertia = moment_of_inertia_type::Zero();
-    for ( auto const& rangeData : M_materialsProperties->rangeMeshElementsByMaterial() )
+    for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
     {
         std::string const& matName = rangeData.first;
         auto const& range = rangeData.second;
@@ -1989,31 +2012,39 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::setup( std::string co
 
     if ( auto ptmaterials = pt.get_child_optional("materials") )
     {
-        M_body.setup( *ptmaterials, fluidToolbox.modelProperties().materials(), fluidToolbox.mesh(), fluidToolbox.repository().expr() );
+        auto bodyPhysics = std::make_shared<ModelPhysics<nRealDim>>( "body", fluidToolbox );
+        if ( bodyPhysics->physics().empty() )
+            bodyPhysics->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+        //if ( M_body->physics().empty() )
+        //M_body->initPhysics( "body", ModelModels{}/*fluidToolbox.modelProperties().models()*/ );
+        M_body.reset( new Body( bodyPhysics ) );
+        M_body->setup( *ptmaterials, fluidToolbox.modelProperties().materials(), fluidToolbox.mesh() );
     }
     else
     {
+        M_body.reset( new Body );
+
         ModelExpression massExpr, momentOfInertiaExpr, initialMassCenterExpr;
         massExpr.setExpr( "mass", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if ( massExpr.template hasExpr<1,1>() )
-            M_body.setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
+            M_body->setMass( massExpr.template expr<1,1>().evaluate()(0,0) );
         momentOfInertiaExpr.setExpr( "moment-of-inertia", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if constexpr ( nDim == 2 )
         {
             if ( momentOfInertiaExpr.template hasExpr<1,1>() )
-                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
+                M_body->setMomentOfInertia( momentOfInertiaExpr.template expr<1,1>().evaluate()(0,0) );
         }
         else
         {
             if ( momentOfInertiaExpr.template hasExpr<nDim,nDim>() )
-                M_body.setMomentOfInertia( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
+                M_body->setMomentOfInertia( momentOfInertiaExpr.template expr<nDim,nDim>().evaluate() );
         }
         initialMassCenterExpr.setExpr( "mass-center", pt, fluidToolbox.worldComm(), fluidToolbox.repository().expr() /*,indexes*/ );
         if ( initialMassCenterExpr.template hasExpr<nRealDim,1>() )
         {
             auto initMassCenter = initialMassCenterExpr.template expr<nRealDim,1>();
             M_massCenterRef = initMassCenter.evaluate();
-            M_body.setMassCenter( M_massCenterRef );
+            M_body->setMassCenter( M_massCenterRef );
         }
     }
 
@@ -2081,19 +2112,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
 
     if (fluidToolbox.isMoveDomain())
     {
-        if ( M_body.hasMaterialsProperties() )
+        if ( M_body->hasMaterialsProperties() )
         {
-            M_body.updateForUse();
+            M_body->updateForUse();
         }
         else
         {
             auto disp = mean(_range=M_rangeMarkedFacesOnFluid,_expr=idv(fluidToolbox.meshALE()->displacement()) );
             //M_massCenter = M_massCenterRef + disp;
-            M_body.setMassCenter( M_massCenterRef + disp );
+            M_body->setMassCenter( M_massCenterRef + disp );
         }
 
         //if ( fluidToolbox.worldComm().isMasterRank() )
-        //    std::cout << "M_massCenter=\n " << M_body.massCenter() << std::endl;
+        //    std::cout << "M_massCenter=\n " << M_body->massCenter() << std::endl;
     }
 
     auto XhV = fluidToolbox.functionSpaceVelocity();

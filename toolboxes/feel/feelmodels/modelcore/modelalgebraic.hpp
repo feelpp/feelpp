@@ -42,7 +42,7 @@ namespace Feel
 namespace FeelModels
 {
 
-class ModelAlgebraic : public ModelBase
+class ModelAlgebraic : virtual public ModelBase
 {
 public :
     typedef ModelBase super_type;
@@ -305,13 +305,15 @@ public :
     ModelAlgebraic( std::string _theprefix, std::string const& keyword,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() );
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() );
     ModelAlgebraic( std::string _theprefix,
                     worldcomm_ptr_t const& _worldComm=Environment::worldCommPtr(),
                     std::string const& subPrefix="",
-                    ModelBaseRepository const& modelRep = ModelBaseRepository() )
+                    ModelBaseRepository const& modelRep = ModelBaseRepository(),
+                    ModelBaseCommandLineOptions const& modelCmdLineOpt = ModelBaseCommandLineOptions() )
         :
-        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep )
+        ModelAlgebraic( _theprefix, _theprefix, _worldComm, subPrefix, modelRep, modelCmdLineOpt )
         {}
 
     ModelAlgebraic( ModelAlgebraic const& app ) = default;

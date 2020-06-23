@@ -122,6 +122,53 @@ public:
             return res;
         }
 
+    void setParameterValues( std::map<std::string,value_type> const& mp )
+        {
+            M_expr_1.setParameterValues( mp );
+            M_expr_2.setParameterValues( mp );
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+             M_expr_1.updateParameterValues( pv );
+             M_expr_2.updateParameterValues( pv );
+        }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            auto newLeftExpr = this->left().applySymbolsExpr( se );
+            auto newRightExpr = this->right().applySymbolsExpr( se );
+            using new_expr_left_type = std::decay_t<decltype(newLeftExpr)>;
+            using new_expr_right_type = std::decay_t<decltype(newRightExpr)>;
+            return Pow<new_expr_left_type,new_expr_right_type>( newLeftExpr,newRightExpr );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr_1.hasSymbolDependency( symb, se ) ||  M_expr_2.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            M_expr_1.dependentSymbols( symb,res,se );
+            M_expr_2.dependentSymbols( symb,res,se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            // NOTE : this expression assumes that the exponent does not depend on the symbol to be derived
+            auto diffExpr1 = M_expr_1.template diff<diffOrder>( diffVariable, world, dirLibExpr, se );
+            using expr1_diff_type = std::decay_t<decltype(diffExpr1)>;
+            auto newExponant = M_expr_2 - cst(1); // 1.0;
+            using new_expr2_type = std::decay_t<decltype(newExponant)>;
+            using new_pow_type = Pow<expression_1_type, new_expr2_type>;
+            return diffExpr1*M_expr_2*expr(new_pow_type( M_expr_1, newExponant));
+        }
+
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
     struct tensor
     {
@@ -283,22 +330,31 @@ protected:
 
 template<typename ExprT1,  typename ExprT2>
 inline
-Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
-      mpl::identity<Cst<ExprT1> >,
-      mpl::identity<ExprT1> >::type::type,
-      typename mpl::if_<boost::is_arithmetic<ExprT2>,
-      mpl::identity<Cst<ExprT2> >,
-      mpl::identity<ExprT2> >::type::type> >
+// Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
+//       mpl::identity<Cst<ExprT1> >,
+//       mpl::identity<ExprT1> >::type::type,
+//       typename mpl::if_<boost::is_arithmetic<ExprT2>,
+//       mpl::identity<Cst<ExprT2> >,
+//       mpl::identity<ExprT2> >::type::type> >
+auto
       pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 {
     typedef typename mpl::if_<boost::is_arithmetic<ExprT1>,
-            mpl::identity<Cst<ExprT1> >,
-            mpl::identity<ExprT1> >::type::type t1;
+                              mpl::identity<Expr<Cst<ExprT1>> >,
+                              mpl::identity<ExprT1> >::type::type t1;
     typedef typename mpl::if_<boost::is_arithmetic<ExprT2>,
-            mpl::identity<Cst<ExprT2> >,
-            mpl::identity<ExprT2> >::type::type t2;
+                              mpl::identity<Expr<Cst<ExprT2> > >,
+                              mpl::identity<ExprT2> >::type::type t2;
     typedef Pow<t1, t2> expr_t;
-    return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
+    if constexpr ( boost::is_arithmetic<ExprT1>::value && boost::is_arithmetic<ExprT2>::value )
+                     return expr( expr_t( cst(__e1), cst(__e2) ) );
+    else if constexpr ( boost::is_arithmetic<ExprT1>::value )
+                          return expr( expr_t( cst(__e1), __e2 ) );
+    else if constexpr ( boost::is_arithmetic<ExprT2>::value )
+                          return expr( expr_t(  __e1, cst(__e2) ) );
+    else
+        return expr( expr_t(  __e1, __e2) );
+        //return Expr< expr_t >(  expr_t( t1( __e1 ), t2( __e2 ) ) );
 }
 
 
