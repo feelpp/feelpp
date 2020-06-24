@@ -331,20 +331,18 @@ public :
             auto se = this->symbolsExpr( mfields );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
-#if 0
-    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
-        {
-            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
-            auto se = this->symbolsExpr( mfields );
-            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
-        }
-#endif
    auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
             auto se = this->symbolsExpr( mfields );
             auto tse =  this->trialSymbolsExpr( mfields, trialSelectorModelFields( rowStartInVector ) );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ), std::move( tse ) );
+        }
+   auto modelContextNoTrialSymbolsExpr( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            auto se = this->symbolsExpr( mfields );
+            return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }
 
     //___________________________________________________________________________________//
@@ -402,6 +400,8 @@ private :
 
     void updateAutomaticSolverSelection();
 
+    void updateTimeStepCurrentResidual();
+
     template <typename FilterBasisUnknownType>
     void updateLinearPDE_spec( DataUpdateLinear & data, std::any const& mctxAsAny ) const;
     template <typename FilterBasisUnknownType>
@@ -430,6 +430,10 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+
+    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+
+    std::map<std::string,double> M_currentParameterValues;
 
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> M_coefficientFormPDEs;
 

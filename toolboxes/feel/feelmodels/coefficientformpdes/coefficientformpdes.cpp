@@ -222,6 +222,36 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
     M_blockVectorSolution.buildVector( this->backend() );
 
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
+
+    bool hasTimeSteppingTheta = false;
+    for (auto & cfpde : M_coefficientFormPDEs )
+    {
+        if ( cfpde->timeStepping() == "Theta" )
+        {
+            hasTimeSteppingTheta = true;
+            break;
+        }
+    }
+
+    if ( hasTimeSteppingTheta )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+
+        bool hasStabilizationGLS = false;
+        for (auto const& cfpde : M_coefficientFormPDEs )
+        {
+            if ( cfpde->applyStabilization() )
+            {
+                hasStabilizationGLS = true;
+                break;
+            }
+        }
+        if ( hasStabilizationGLS )
+            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+    }
+
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -350,6 +380,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
     for (auto & cfpde : M_coefficientFormPDEs )
         cfpde->startTimeStep();
 
@@ -363,6 +396,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStep()
 {
+    // some time stepping require to compute residual without time derivative
+    this->updateTimeStepCurrentResidual();
+
     for (auto & cfpde : M_coefficientFormPDEs )
         cfpde->updateTimeStep();
 
@@ -370,6 +406,53 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateTime( this->timeStepBase()->time() );
 
     this->updateParameterValues();
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+void
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
+{
+    if ( this->isStationary() )
+        return;
+    if ( !M_algebraicFactory )
+        return;
+
+    bool hasTimeSteppingTheta = false;
+    for (auto const& cfpde : M_coefficientFormPDEs )
+    {
+        if ( cfpde->timeStepping() == "Theta" )
+        {
+            hasTimeSteppingTheta = true;
+            break;
+        }
+    }
+
+    if ( hasTimeSteppingTheta )
+    {
+        M_timeStepThetaSchemePreviousContrib->zero();
+        M_blockVectorSolution.updateVectorFromSubVectors();
+        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+        dataResidual.addInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+        M_algebraicFactory->evaluateResidual( dataResidual );
+        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+
+        bool hasStabilizationGLS = false;
+        for (auto const& cfpde : M_coefficientFormPDEs )
+        {
+            if ( cfpde->applyStabilization() )
+            {
+                hasStabilizationGLS = true;
+                break;
+            }
+        }
+        if ( hasStabilizationGLS )
+        {
+            auto & dataInfos = M_algebraicFactory->dataInfos();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
+        }
+    }
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
@@ -400,6 +483,9 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
 {
+    for ( auto const& [param,val] : paramValues )
+        M_currentParameterValues[param] = val;
+
     if ( this->manageParameterValuesOfModelProperties() )
     {
         //std::cout << "JJJ paramValues : " << paramValues << std::endl;
@@ -459,7 +545,14 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) const
 {
-    auto mctx = this->modelContext();
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
     using the_model_context_type = std::decay_t<decltype(mctx)>;
     auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
@@ -473,7 +566,8 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateLinearPDEDofElimination( DataUpdateLinear & data ) const
 {
-    auto mctx = this->modelContext();
+    const vector_ptrtype& XVec = data.currentSolution();
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
     using the_model_context_type = std::decay_t<decltype(mctx)>;
     auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )
@@ -527,6 +621,12 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & da
 {
     const vector_ptrtype& XVec = data.currentSolution();
     auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
     using the_model_context_type = std::decay_t<decltype(mctx)>;
     auto mctxAsAny = std::make_any<const the_model_context_type*>(&mctx);
     hana::for_each( tuple_type_unknown_basis, [this,&data,&mctxAsAny]( auto const& e )

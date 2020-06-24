@@ -647,7 +647,7 @@ public :
         }
 
     std::map<std::string,double>
-    toParameterValues( std::string const& prefix_symbol ) const
+    toParameterValues( std::string const& prefix_symbol = "materials_" ) const
         {
             std::map<std::string,double> pv;
             int nMat = this->numberOfMaterials();

@@ -13,7 +13,7 @@ template <>
 void
 COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDE_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
 {
-    using the_model_context_type = std::decay_t<decltype(this->modelContext())>;
+    using the_model_context_type = std::decay_t<decltype(this->modelContext( vector_ptrtype{} ))>;
     try
     {
         auto const& mctx = *std::any_cast<const the_model_context_type*>(mctxAsAny);
@@ -30,7 +30,7 @@ template <>
 void
 COEFFICIENTFORMPDES_CLASS_TYPE::updateLinearPDEDofElimination_spec<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION > >( DataUpdateLinear & data, std::any const& mctxAsAny ) const
 {
-    using the_model_context_type = std::decay_t<decltype(this->modelContext())>;
+    using the_model_context_type = std::decay_t<decltype(this->modelContext( vector_ptrtype{} ))>;
     auto const& mctx = *std::any_cast<const the_model_context_type*>(mctxAsAny);
     this->updateLinearPDEDofElimination<typename COEFFICIENTFORMPDES_CLASS_TYPE::template FilterBasisUnknown< COEFFICIENTFORMPDES_UNKNOWN_BASIS_SPECIALISATION> >( data, mctx );
 }
