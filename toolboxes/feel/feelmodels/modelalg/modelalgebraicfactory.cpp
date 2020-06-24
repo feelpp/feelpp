@@ -197,6 +197,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_solverPtAP_matPtAP->clear();
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
+            M_solverPtAP_matPtAP->setIndexSplit( M_J->indexSplit() );
+
+
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
             M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
 
