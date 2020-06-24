@@ -196,6 +196,8 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("CoefficientFormPDE","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    CHECK( this->timeStepping() == "BDF" || this->timeStepping() == "Theta" ) << "invalid time-stepping";
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
 
     int bdfOrder = 1;
@@ -331,10 +333,7 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("CoefficientFormPDE","startTimeStep", "start");
-#if 0
-    // some time stepping require to compute residual without time derivative
-    this->updateTimeStepCurrentResidual();
-#endif
+
     // start time step
     if (!this->doRestart())
         M_bdfUnknown->start( M_bdfUnknown->unknowns() );
@@ -354,10 +353,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->log("CoefficientFormPDE","updateTimeStep", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
-#if 0
-    // some time stepping require to compute residual without time derivative
-    this->updateTimeStepCurrentResidual();
-#endif
+
     bool rebuildCstAssembly = false;
     if ( this->timeStepping() == "BDF" )
     {
@@ -367,13 +363,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
         rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
         this->updateTime( this->timeStepBdfUnknown()->time() );
     }
-#if 0
     else if ( this->timeStepping() == "Theta" )
     {
         M_bdfUnknown->next( this->fieldUnknown() );
         this->updateTime( this->timeStepBdfUnknown()->time() );
     }
-#endif
+
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 

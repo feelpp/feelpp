@@ -38,7 +38,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
 
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
-    auto const& u = this->fieldUnknown();
+    auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
     auto const& v = this->fieldUnknown();
 
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -597,7 +597,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                                    [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                                    [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
 
-                hana::for_each( tse.map(), [this,&coeff_f_expr,&v,&J,&range,&Xh]( auto const& e )
+                hana::for_each( tse.map(), [this,&coeff_f_expr,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                 {
                     // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                     for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
@@ -614,7 +614,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=trialBlockIndex ) +=
                             integrate( _range=range,
-                                       _expr= -inner(coeff_f_diff_expr,id(v)),
+                                       _expr= -timeSteppingScaling*inner(coeff_f_diff_expr,id(v)),
                                        _geomap=this->geomap() );
                     }
                 });
@@ -665,11 +665,18 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("CoefficientFormPDE","updateResidual", "start"+sc);
 
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+    if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+    {
+        if ( this->isStationary() )
+            return;
+        if ( this->timeStepping() != "Theta" )
+            return;
+    }
+
     double timeSteppingScaling = 1.;
-    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationary() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm( this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
         if ( this->timeStepping() == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
@@ -810,7 +817,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
             {
                 linearForm +=
                     integrate( _range=range,
-                               _expr= -inner(coeff_f_expr,id(v)),
+                               _expr= -timeSteppingScaling*inner(coeff_f_expr,id(v)),
                                _geomap=this->geomap() );
             }
         }

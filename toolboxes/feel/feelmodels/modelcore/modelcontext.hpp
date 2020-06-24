@@ -49,10 +49,28 @@ struct ModelContext
 
     trial_symbol_expr_type const& trialSymbolsExpr() const { return M_trialSymbolsExpr; }
 
+    void setAdditionalContext( std::string const& key, ModelContext<ModelFieldsType,SymbolsExprType> && mctx )
+        {
+            auto itFindKey = M_mctxAdditional.find( key );
+            if ( itFindKey != M_mctxAdditional.end() )
+                M_mctxAdditional.erase( itFindKey );
+            M_mctxAdditional.emplace( key, std::forward<ModelContext<ModelFieldsType,SymbolsExprType>>( mctx ) );
+        }
+    bool hasAdditionalContext( std::string const& key ) const { return M_mctxAdditional.find( key ) != M_mctxAdditional.end(); }
+
+    ModelContext<ModelFieldsType,SymbolsExprType> const& additionalContext( std::string const& key ) const
+        {
+            auto itFindKey = M_mctxAdditional.find( key );
+            CHECK( itFindKey != M_mctxAdditional.end() ) << "no additionalContext";
+            return itFindKey->second;
+        }
 private :
     model_fields_type M_modelFields;
     symbol_expr_type M_symbolsExpr;
     trial_symbol_expr_type M_trialSymbolsExpr;
+
+    std::map<std::string,ModelContext<ModelFieldsType,SymbolsExprType>> M_mctxAdditional;
+
 };
 
 

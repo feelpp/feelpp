@@ -176,6 +176,22 @@ public :
             CHECK( applyAdd ) << "cannot add the expression, the type is not register";
         }
 
+    void setParameterValues( std::map<std::string,double> const& mp )
+        {
+            hana::for_each( M_exprs, [&mp]( auto & e )
+                            {
+                                for ( auto & e2 : e )
+                                    e2.setParameterValues( mp );
+                            });
+        }
+    void updateParameterValues( std::map<std::string,double> & pv ) const
+        {
+            hana::for_each( M_exprs, [&pv]( auto & e )
+                            {
+                                for ( auto const& e2 : e )
+                                    e2.updateParameterValues( pv );
+                            });
+        }
 #if 0
     template <typename SymbolsExprType>
     auto applySymbolsExpr( SymbolsExprType const& se ) const
