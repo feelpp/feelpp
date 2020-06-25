@@ -77,6 +77,9 @@ public:
     //! return current shared_ptr of type CoefficientFormPDEBase
     std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
 
+    //! return true is the unknown is scalar
+    bool unknownIsScalar() const override { return unknown_is_scalar; }
+
     //___________________________________________________________________________________//
     // mesh, space, element unknown
     space_unknown_ptrtype const& spaceUnknown() const { return M_Xh; }

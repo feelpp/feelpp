@@ -77,6 +77,9 @@ public :
     //! return current shared_ptr of type CoefficientFormPDEBase
     virtual std::shared_ptr<const CoefficientFormPDEBase<ConvexType>> shared_from_this_cfpdebase() const = 0;
 
+    //! return true is the unknown is scalar
+    virtual bool unknownIsScalar() const = 0;
+
     //___________________________________________________________________________________//
     // mesh
     mesh_ptrtype const& mesh() const { return M_mesh; }
@@ -170,7 +173,15 @@ CoefficientFormPDEBase<ConvexType>::hasSymbolDependencyInCoefficients( std::set<
              ( this->materialsProperties()->hasProperty( matName, this->sourceCoefficientName() ) &&
                this->materialsProperties()->materialProperty( matName, this->sourceCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
              ( this->materialsProperties()->hasProperty( matName, this->firstTimeDerivativeCoefficientName() ) &&
-               this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) )
+               this->materialsProperties()->materialProperty( matName, this->firstTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->materialsProperties()->hasProperty( matName, this->secondTimeDerivativeCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->secondTimeDerivativeCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+
+             ( this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() ).hasSymbolDependency( symbs, se ) ) ||
+             ( this->unknownIsScalar() && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) &&
+               this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() ).hasSymbolDependency( symbs, se ) )
+
              )
         {
             hasDependency = true;
