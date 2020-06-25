@@ -58,7 +58,8 @@ public :
     std::string firstTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "d", "_" ); }
     std::string secondTimeDerivativeCoefficientName() const { return prefixvm( this->physic(), "m", "_" ); }
     std::string sourceCoefficientName() const { return prefixvm( this->physic(), "f", "_" ); }
-
+    std::string conservativeFluxConvectionCoefficientName() const { return prefixvm( this->physic(), "alpha", "_" ); }
+    std::string conservativeFluxSourceCoefficientName() const { return prefixvm( this->physic(), "gamma", "_" ); }
 protected :
     void setupGenericPDE();
 
