@@ -891,7 +891,7 @@ BOOST_PARAMETER_FUNCTION(
 
     int indexmin = 0;
     int indexmax = 0;
-    double mine = 1e-30;
+    double mine = 1e+30;
     double maxe = 1e-30;
 
     if ( e.data().size() )
