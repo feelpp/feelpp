@@ -1641,12 +1641,12 @@ public:
     //!
     //!  \sa renumber()
     //!
-    FEELPP_NO_EXPORT void renumber( mpl::bool_<false> ) {}
+    void renumber( mpl::bool_<false> ) {}
 
     //!
     //!  \sa renumber()
     //!
-    FEELPP_NO_EXPORT void renumber( mpl::bool_<true> );
+    void renumber( mpl::bool_<true> );
 
     /**
      * modify edges on boundary in 3D
