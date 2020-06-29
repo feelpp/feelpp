@@ -73,10 +73,15 @@ makeOptions()
 {
     po::options_description testhcurloptions( "test h_curl options" );
     testhcurloptions.add_options()
-    ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
-    ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
-    ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
-    ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        ( "hsize", po::value<double>()->default_value( 0.1 ), "mesh size" )
+        ( "xmin", po::value<double>()->default_value( -1 ), "xmin of the reference element" )
+        ( "ymin", po::value<double>()->default_value( -1 ), "ymin of the reference element" )
+        ( "zmin", po::value<double>()->default_value( -1 ), "zmin of the reference element" )
+        ( "tol", po::value<double>()->default_value( 2.5e-1 ), "tolerance for the solution" )
+        ( "u_exact_2d", po::value<std::string>()->default_value("{1-y^2,1-x^2}:x:y"), "exact solution" )
+        ( "f_exact_2d", po::value<std::string>()->default_value("{3-y^2,3-x^2}:x:y"), "exact rhs" )
+        ( "u_exact_3d", po::value<std::string>()->default_value("{(1-y^2)*(1-z^2),(1-x^2)*(1-z^2),(1-x^2)*(1-y^2)}:x:y:z"), "exact solution" )
+        ( "f_exact_3d", po::value<std::string>()->default_value("{y^2*z^2-3*y^2-3*z^2+5,x^2*z^2-3*x^2-3*z^2+5,x^2*y^2-3*x^2-3*y^2+5}:x:y:z"), "exact rhs" )
     ;
     return testhcurloptions.add( Feel::feel_options() );
 }
@@ -99,6 +104,7 @@ makeAbout()
 
 using namespace Feel;
 
+template<int Dim>
 class TestHCurl
     :
 public Application
@@ -114,9 +120,17 @@ public:
     typedef Backend<value_type> backend_type;
     //! linear algebra backend factory shared_ptr<> type
     typedef typename std::shared_ptr<backend_type> backend_ptrtype ;
+    //! sparse matrix type associated with backend
+    typedef typename backend_type::sparse_matrix_type sparse_matrix_type;
+    //! sparse matrix type associated with backend (shared_ptr<> type)
+    typedef typename backend_type::sparse_matrix_ptrtype sparse_matrix_ptrtype;
+    //! vector type associated with backend
+    typedef typename backend_type::vector_type vector_type;
+    //! vector type associated with backend (shared_ptr<> type)
+    typedef typename backend_type::vector_ptrtype vector_ptrtype;
 
     //! geometry entities type composing the mesh, here Simplex in Dimension Dim of Order G_order
-    typedef Simplex<2,1> convex_type;
+    typedef Simplex<Dim,1> convex_type;
     //! mesh type
     typedef Mesh<convex_type> mesh_type;
     //! mesh shared_ptr<> type
@@ -151,14 +165,21 @@ public:
         :
         super(),
         M_backend( backend_type::build( soption( _name="backend" ) ) ),
-        meshSize( doption("gmsh.hsize") )
+        meshSize( doption("gmsh.hsize") ),
+        M_penaldir(1e5)
     {
-        std::cout << "[TestHCurl]\n";
-        std::cout << "hsize = " << meshSize << std::endl;
+        Feel::cout << "[TestHCurl]\n";
+        Feel::cout << "hsize = " << meshSize << std::endl;
 
         this->changeRepository( boost::format( "%1%/h_%2%/" )
                                 % this->about().appName()
                                 % doption("gmsh.hsize") );
+
+        mesh = loadMesh(_mesh = new mesh_type);
+        M_Xh = space_type::New(mesh);
+
+        M_a = M_backend->newMatrix(_test=M_Xh,_trial=M_Xh);
+        M_f = M_backend->newVector(_test=M_Xh);
     }
 
     /**
@@ -170,65 +191,76 @@ public:
     void exampleProblem1();
 
 private:
+    mesh_ptrtype mesh;
+    space_ptrtype M_Xh;
+
     //! linear algebra backend
     backend_ptrtype M_backend;
+    vector_ptrtype M_f;
+    sparse_matrix_ptrtype M_a;
 
     //! mesh characteristic size
     double meshSize;
 
+    double M_penaldir;
+
 }; //TestHCurl
 
 // Resolve problem curl(curl(u)) + u = f with cross_prod(u,n) = 0 on boundary
+template<int Dim>
 void
-TestHCurl::exampleProblem1()
+TestHCurl<Dim>::exampleProblem1()
 {
-    mesh_ptrtype mesh = loadMesh(_mesh = new mesh_type);
-    auto penaldir = 50;
-
-    // Xh : space build with Nedelec elements
+    // M_Xh : space build with Nedelec elements
     auto Vh = Pchv<1>( mesh );
-    auto Xh = Ned1h<0>( mesh );
-    auto u = Xh->element();
-    auto phi = Xh->element();
+    auto u = M_Xh->element();
+    auto phi = M_Xh->element();
 
     //auto u_exact = expr<2,1>( "{1-y*y,1-x*x}:x:y" );
-    auto u_exact = vec( 1-Py()*Py(), 1-Px()*Px() );
-    auto v = Vh->element( u_exact );
+    auto v = Vh->element();
 
-    //f = curl(curl( u_exact ))+u_exact;
-    //auto f = ( 3-Py()*Py() )*unitX() + ( 3-Px()*Px() )*unitY(); //f = curl(curl(u_exact)) + u_exact
-    auto f = vec( 3-Py()*Py(), 3-Px()*Px() ); //f = curl(curl(u_exact)) + u_exact
-
+    auto a = form2( _test=M_Xh, _trial=M_Xh, _matrix=M_a );
+    auto l = form1( _test=M_Xh, _vector=M_f );
     //variationnal formulation : curl(curl(u)) + u = f
-    auto l = form1( _test=Xh );
-    l = integrate( _range=elements(mesh), _expr=trans(f)*id(phi) );
-    //Dirichlet bc on weak form
-    l += integrate(boundaryfaces(mesh), - curlx(phi)*cross(idv(v),N())
-        + penaldir*trans( cross(idv(v),N()) )*cross(id(phi),N())/hFace() );
 
-    auto a = form2( _test=Xh, _trial=Xh );
-    a = integrate(elements(mesh), curlxt(u)*curlx(phi) + trans(idt(u))*id(phi) );
+    std::string u_opt = "u_exact_"+std::to_string(Dim)+"d";
+    std::string f_opt = "f_exact_"+std::to_string(Dim)+"d";
+    auto u_exact = expr<Dim,1>( soption(u_opt) );
+    auto f = expr<Dim,1>( soption(f_opt) );
+
+    l = integrate( _range=elements(mesh), _expr=inner(f,id(phi)) );
+    //Dirichlet bc on weak form
+    l += integrate(boundaryfaces(mesh), - inner(curl(phi),cross(u_exact,N()))
+                   + M_penaldir*trans( cross(u_exact,N()) )*cross(id(phi),N())/hFace() );
+
+    a = integrate(elements(mesh), inner(curlt(u),curl(phi)) + inner(idt(u),id(phi)) );
     //a += on( _range=boundaryfaces( mesh ),_element=u, _rhs=l, _expr=cst(0.) );
 
     //Dirichlet bc on weak form
-    a += integrate(boundaryfaces(mesh), -curlxt(u)*cross(id(phi),N())
-        - curlx(phi)*cross(idt(u),N())
-        + penaldir*trans( cross(idt(u),N()) )*cross(id(phi),N())/hFace() );
+    a += integrate(boundaryfaces(mesh), -inner(curlt(u),cross(id(phi),N()))
+                   - inner(curl(phi),cross(idt(u),N()))
+        + M_penaldir*trans( cross(idt(u),N()) )*cross(id(phi),N())/hFace() );
 
     a.solve( _solution=u, _rhs=l, _rebuild=true);
 
     // L2 projection of solution u
-    auto u_L2proj = Xh->element();
-    auto phi_L2proj = Xh->element();
+    auto u_L2proj = M_Xh->element();
+    auto phi_L2proj = M_Xh->element();
 
-    auto a_L2proj = form2( _test=Xh, _trial=Xh );
+    auto a_L2proj = form2( _test=M_Xh, _trial=M_Xh );
     a_L2proj = integrate( _range=elements(mesh), _expr = trans(idt(u_L2proj))*id(phi_L2proj) );
-    auto f_L2proj = form1( _test=Xh );
+    auto f_L2proj = form1( _test=M_Xh );
     f_L2proj = integrate( _range=elements(mesh), _expr = trans(idv(u))*id(phi_L2proj) );
     a_L2proj.solve( _solution=u_L2proj, _rhs=f_L2proj, _rebuild=true);
 
+    double errorU = normL2(_range=elements(mesh), _expr= idv(u)-u_exact);
+    auto errorProj = normL2(_range=elements(mesh), _expr=idv(u)-idv(u_L2proj) );
+
+    BOOST_CHECK_SMALL( errorProj, 1e-13 );
+    BOOST_CHECK_SMALL( errorU, doption("tol") );
+
 #if 0
-    auto l2proj = opProjection( _domainSpace=Xh, _imageSpace=Xh, _type=L2 );
+    auto l2proj = opProjection( _domainSpace=M_Xh, _imageSpace=M_Xh, _type=L2 );
     auto error_hcurl = l2proj->project( _expr=trans( u_exact - idv(u) ) );
 #endif
 
@@ -345,10 +377,18 @@ BOOST_AUTO_TEST_CASE( test_hcurl_projection )
 }
 #endif
 
-BOOST_AUTO_TEST_CASE( test_hcurl_example_1 )
+BOOST_AUTO_TEST_CASE( test_hcurl_example_2d )
 {
     BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
-    Feel::TestHCurl t;
+    Feel::TestHCurl<2> t;
+    t.exampleProblem1();
+    BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
+}
+
+BOOST_AUTO_TEST_CASE( test_hcurl_example_3d )
+{
+    BOOST_TEST_MESSAGE( "test_hcurl on example 1" );
+    Feel::TestHCurl<3> t;
     t.exampleProblem1();
     BOOST_TEST_MESSAGE( "test_hcurl_N0 on example 1 done" );
 }

@@ -32,7 +32,7 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
-
+#include <pybind11/embed.h>
 #include <boost/program_options.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/tokenizer.hpp>
@@ -47,10 +47,10 @@ extern "C"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/local_time_adjustor.hpp>
 #include <boost/date_time/c_local_time_adjustor.hpp>
-
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <feel/feelcore/mongocxx.hpp>
 
 #include <gflags/gflags.h>
 
@@ -136,6 +136,8 @@ bool IsGoogleLoggingInitialized();
 namespace Feel
 {
 namespace pt =  boost::property_tree;
+namespace py = pybind11;
+using namespace py::literals;
 //namespace detail
 //{
 FEELPP_NO_EXPORT
@@ -463,9 +465,41 @@ Environment::Environment( int argc, char** argv,
     CHECK( M_env->initialized()) << "MPI environment failed to initialize properly.";
     S_argc = argc;
     S_argv = argv;
+
     S_worldcomm = worldcomm_type::New();
     CHECK( S_worldcomm ) << "Feel++ Environment: creating worldcomm failed!";
     S_worldcommSeq.reset( new WorldComm( S_worldcomm->subWorldCommSeq() ) );
+
+    // define root dir (example $HOME/feel or $FEELPP_REPOSITORY)
+    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
+    {
+        char * senv = ::getenv( var.first.c_str() );
+        if ( senv != NULL && senv[0] != '\0' )
+        {
+            fs::path p{ senv };
+            if ( !var.second.empty() )
+                p /= var.second;
+            if ( S_worldcomm->isMasterRank() )
+            {
+                if ( !fs::exists( p ) )
+                {
+                    try {
+                        fs::create_directories( p );
+                    }
+                    catch (...) {}
+                }
+            }
+            S_worldcomm->barrier();
+
+            if ( !fs::exists( p ) )
+                continue;
+            else if ( !fs::is_directory( p ) )
+                continue;
+            S_rootdir = p;
+            break;
+        }
+    }
+
 
     cout.attachWorldComm( S_worldcomm );
     cerr.attachWorldComm( S_worldcomm );
@@ -507,6 +541,7 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
+    py::initialize_interpreter();
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -755,6 +790,7 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
+    py::finalize_interpreter();
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
@@ -1344,6 +1380,22 @@ Environment::parseAndStoreOptions( po::command_line_parser parser, bool extra_pa
 }
 
 
+std::string
+Environment::findFileRemotely( std::string const& fname, std::string const& subdir )
+{
+    RemoteData rdTool( fname, worldCommPtr());
+    if ( rdTool.canDownload() )
+    {
+        auto downloadedFolder = rdTool.download( (fs::path(rootRepository())/fs::path("downloads")/fs::path(Environment::about().appName())/fs::path(subdir)).string() );
+        for( auto dl : downloadedFolder )
+            std::cout << dl << std::endl;
+
+        //CHECK( downloadedFolder.size() == 1 ) << "download only one folder";
+        return downloadedFolder[0];
+    }
+    return fname;
+}
+
 
 void
 Environment::doOptions( int argc, char** argv,
@@ -1536,23 +1588,10 @@ Environment::finalized()
 }
 
 
-std::string
+std::string const&
 Environment::rootRepository()
 {
-    for( auto const& var: std::map<std::string,std::string>{ { "FEELPP_REPOSITORY", ""} , {"FEELPP_WORKDIR",""}, {"WORK","feel"}, {"WORKDIR","feel"}, {"HOME","feel"} } )
-    {
-        char * senv = ::getenv( var.first.c_str() );
-        if ( senv != NULL && senv[0] != '\0' )
-        {
-            fs::path p{ senv };
-            if ( !var.second.empty() )
-                p /= var.second;
-            if ( !fs::is_directory( p ) )
-                continue;
-            return p.string();
-        }
-    }
-    return std::string();
+    return S_rootdir.string();
 }
 std::string
 Environment::findFile( std::string const& filename, std::vector<std::string> paths )
@@ -2502,6 +2541,7 @@ std::vector<fs::path> Environment::S_paths = { fs::current_path(),
                                                Environment::systemConfigRepository().get<0>(),
                                                Environment::systemGeoRepository().get<0>()
                                              };
+fs::path Environment::S_rootdir = fs::current_path();
 fs::path Environment::S_appdir = fs::current_path();
 fs::path Environment::S_appdirWithoutNumProc;
 fs::path Environment::S_scratchdir;

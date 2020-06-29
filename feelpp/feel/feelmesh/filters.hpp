@@ -41,6 +41,8 @@
 #endif
 
 #include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/rank.hpp>
+#include <feel/feelcore/enums.hpp>
 #include <feel/feelmesh/meshbase.hpp>
 #include <feel/feelmesh/traits.hpp>
 #include <feel/feelmesh/iterator.hpp>
@@ -49,6 +51,12 @@
 
 namespace Feel
 {
+template <typename T> struct is_filter: std::false_type {};
+
+template <typename... T> struct is_filter<boost::tuple<T...>>: std::true_type {};
+template <typename... T>
+constexpr bool is_filter_v = is_filter<T...>::value;
+
 /**
  * a RangeType can be one or more filter/range objects of the same type, we
  * extract the underlying type by first casting everything to a list and then
@@ -395,7 +403,7 @@ markedelementsByType( MeshType const& mesh, uint16_type markerType,
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh )
 {
@@ -408,13 +416,13 @@ markedelements( MeshType const& mesh )
  * \return a pair of iterators to iterate over elements of the
  * mesh with marker \p flag
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 1, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 markedelements_t<MeshType>
 markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -426,13 +434,13 @@ markedelements( MeshType const& mesh, std::initializer_list<boost::any> const& m
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker2 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 2, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked2elements_t<MeshType>
 marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -444,13 +452,13 @@ marked2elements( MeshType const& mesh, std::initializer_list<boost::any> const& 
  * \return a pair of iterators to iterate over elements of the
  * mesh with \c Marker3 string
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, boost::any const& markersFlag )
 {
     return markedelementsByType( mesh, 3, markersFlag );
 }
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 marked3elements_t<MeshType>
 marked3elements( MeshType const& mesh, std::initializer_list<boost::any> const& markersFlag )
 {
@@ -514,7 +522,7 @@ idedelements( MeshType const& mesh, flag_type flag )
  *
  * @return a pair of face iterators (begin,end)
  */
-template<typename MeshType>
+template<typename MeshType, std::enable_if_t<std::is_base_of_v<MeshBase<>,unwrap_ptr_t<MeshType>>,int> = 0>
 faces_pid_t<MeshType>
 faces( MeshType const& mesh )
 {
@@ -950,12 +958,12 @@ internalpoints( MeshType const& mesh )
  */
 template<typename MT, typename Iterator>
 size_type
-nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false )
+nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -979,7 +987,7 @@ nelements( boost::tuple<MT,Iterator,Iterator> const& its, bool global = false )
  */
 template<typename MT, typename Iterator>
 size_type
-nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool global = false )
+nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = 0;
     std::for_each( its.begin(), its.end(),
@@ -989,7 +997,7 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool globa
                    } );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -1014,12 +1022,12 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator> > const& its, bool globa
  */
 template<typename MT, typename Iterator,typename Container>
 size_type
-nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global = false )
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = std::distance( boost::get<1>( its ), boost::get<2>( its ) );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
@@ -1044,7 +1052,7 @@ nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, bool global 
  */
 template<typename MT, typename Iterator,typename Container>
 size_type
-nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, bool global = false )
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, bool global = false, worldcomm_t const& worldComm = Environment::worldComm() )
 {
     size_type d = 0;
     std::for_each( its.begin(), its.end(),
@@ -1054,13 +1062,26 @@ nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container> > const& its, 
                    } );
     size_type gd = d;
     if ( global )
-        mpi::all_reduce(Environment::worldComm().globalComm(),
+        mpi::all_reduce(worldComm,
                         d,
                         gd,
                         std::plus<size_type>());
     return gd;
 }
 
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( boost::tuple<MT,Iterator,Iterator,Container> const& its, Zone const& z,  worldcomm_t const& worldComm = Environment::worldComm()  )
+{
+    return nelements( its, ( z == Zone::GLOBAL ), worldComm );
+}
+
+template<typename MT, typename Iterator, typename Container>
+size_type
+nelements( std::list<boost::tuple<MT,Iterator,Iterator,Container>> const& its, Zone const& z,  worldcomm_t const& worldComm = Environment::worldComm()  )
+{
+    return nelements( its, ( z == Zone::GLOBAL ), worldComm );
+}
 
 
 template<typename ElementType>

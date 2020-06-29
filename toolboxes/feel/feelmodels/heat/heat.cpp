@@ -174,7 +174,7 @@ HEAT_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename HEAT_CLASS_TEMPLATE_TYPE::size_type
 HEAT_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     size_type res = this->spaceTemperature()->nLocalDofWithGhost();
@@ -304,6 +304,10 @@ HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
             icTemperatureFields = { this->fieldTemperaturePtr() };
         else
             icTemperatureFields = M_bdfTemperature->unknowns();
+
+        auto paramValues = this->modelProperties().parameters().toParameterValues();
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
+
         this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
 
         if ( !this->isStationary() )

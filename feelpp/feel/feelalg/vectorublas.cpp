@@ -563,14 +563,14 @@ VectorUblas<T,Storage>::resize( size_type s, bool preserve )
 }
 
 template <typename T, typename Storage>
-size_type
+typename VectorUblas<T,Storage>::size_type
 VectorUblas<T,Storage>::start( ) const
 {
     return detail::start( M_vec );
 }
 
 template <typename T, typename Storage>
-size_type
+typename VectorUblas<T,Storage>::size_type
 VectorUblas<T,Storage>::startNonContiguousGhosts( ) const
 {
     return detail::start( M_vecNonContiguousGhosts );
@@ -1179,7 +1179,7 @@ VectorUblas<T,Storage>::saveHDF5( std::string const& filename, std::string table
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
     const int dimsComp1 = (useTransposedStorage)? 0 : 1;
-    DataMap const& dm = this->map();
+    DataMap<> const& dm = this->map();
     std::vector<uint> sizeValues(1, dm.nLocalDofWithoutGhost() );
     hsize_t dims[2];
     dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;
@@ -1244,61 +1244,56 @@ VectorUblas<T,Storage>::loadHDF5( std::string const& filename, std::string table
     bool useTransposedStorage = true;
     const int dimsComp0 = (useTransposedStorage)? 1 : 0;
     const int dimsComp1 = (useTransposedStorage)? 0 : 1;
-    DataMap const& dm = this->map();
-    std::vector<uint> sizeValues(1, dm.nLocalDofWithoutGhost() );
-    hsize_t dims[2];
-    dims[dimsComp0] = this->comm().localSize();dims[dimsComp1] = 1;
-    hsize_t dims2[2];
+    DataMap<> const& dm = this->map();
+    if ( dm.nDof() == 0 )
+        return;
 
-    dims2[dimsComp0] = sizeValues.size();dims2[dimsComp1] = 1;
-    hsize_t offset[2];
-    offset[dimsComp0] = this->comm().localRank(); offset[dimsComp1] = 0;
-
-    hsize_t dimsElt[2];
-    dimsElt[dimsComp0] = dm.nDof();
-    dimsElt[dimsComp1] = 1;
-
-    hsize_t dimsElt2[2];
-    dimsElt2[dimsComp0] = dm.nLocalDofWithoutGhost();
-    dimsElt2[dimsComp1] = 1;
-    hsize_t offsetElt[2];
-    size_type offsetCount = 0;
-    for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
-        offsetCount += dm.nLocalDofWithoutGhost( p );
-
-    offsetElt[dimsComp0] = offsetCount;
-    offsetElt[dimsComp1] = 0;
-
-    std::vector<double> dataStorage( dm.nLocalDofWithoutGhost() );
-
-    HDF5 hdf5;
-
-    hdf5.openFile( filename, this->comm().localComm(), true );
-
-    if ( false )
+    // create maybe a mpi sub comm if some process has no dof
+    std::vector<rank_type> rankInGroup;
+    for (rank_type p=0 ; p < this->comm().localSize() ; ++p )
+        if ( dm.nLocalDofWithoutGhost( p ) > 0 )
+            rankInGroup.push_back( p );
+    std::shared_ptr<boost::mpi::communicator> subComm;
+    if ( rankInGroup.size() != this->comm().size() )
     {
-        std::vector<uint> sizeValuesReload( 1 );
-        hdf5.openTable( "size",dims );
-        hdf5.read( "size", H5T_NATIVE_UINT, dims2, offset, sizeValuesReload.data() );
-        hdf5.closeTable( "size" );
-        CHECK( sizeValuesReload[0] == dm.nLocalDofWithoutGhost() ) << "error : must be equal "  << sizeValuesReload[0] << " " << dm.nLocalDofWithoutGhost();
+        boost::mpi::group mpiGroup = this->comm().group().include( rankInGroup.begin(), rankInGroup.end() );
+        subComm = std::make_shared<boost::mpi::communicator>( this->comm(), mpiGroup );
     }
 
-    hdf5.openTable( tableName, dimsElt );
     if ( dm.nLocalDofWithoutGhost() > 0 )
-        hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
-    else
     {
-        double uselessValue=0;
-        hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, &uselessValue );
-    }
-    hdf5.closeTable( tableName );
+        hsize_t dimsElt2[2];
+        dimsElt2[dimsComp0] = dm.nLocalDofWithoutGhost();
+        dimsElt2[dimsComp1] = 1;
+        hsize_t offsetElt[2];
+        size_type offsetCount = 0;
+        for (rank_type p=0 ; p < this->comm().localRank() ; ++p )
+            offsetCount += dm.nLocalDofWithoutGhost( p );
 
-    for ( size_type k=0;k<dataStorage.size();++k )
-        this->set( k, dataStorage[k] );
+        offsetElt[dimsComp0] = offsetCount;
+        offsetElt[dimsComp1] = 0;
+
+        std::vector<double> dataStorage( dm.nLocalDofWithoutGhost() );
+
+        HDF5 hdf5;
+        hdf5.openFile( filename, (subComm)? *subComm : this->comm().comm(), true );
+
+        hsize_t dimsGlob[2];
+        hdf5.openTable( tableName, dimsGlob );
+        CHECK( dimsGlob[dimsComp0] == dm.nDof() ) << "invalid table dimension";
+        CHECK( dimsGlob[dimsComp1] == 1 ) << "invalid table dimension";
+
+        hdf5.read( tableName, H5T_NATIVE_DOUBLE, dimsElt2, offsetElt, dataStorage.data()/*&(M_vec[0])*/ );
+
+        hdf5.closeTable( tableName );
+
+        hdf5.closeFile();
+
+        for ( size_type k=0;k<dataStorage.size();++k )
+            this->set( k, dataStorage[k] );
+    }
     sync( *this );
 
-    hdf5.closeFile();
 }
 
 #endif

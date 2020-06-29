@@ -45,14 +45,14 @@ if exact:
     # stress
     I=eye(dim);
     print("I=",I);
-    stress=Array((lam2 * tensorcontraction(strain,(0,1)) * I + 2. * lam1 *strain).tolist());
+    stress=lam2 * tensorcontraction(strain,(0,1)) * I + 2. * lam1 *strain;
     print("stress=",stress);
     
     # surfacic forces
     stressn=n(stress,1,ns);
     
     # force density
-    f = -div(stress,s);
+    f = div(stress,s);
 else:
     stressn=sympify(locals()['stressn']);
     f=sympify(locals()['f']);

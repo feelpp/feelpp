@@ -26,50 +26,16 @@
    \date 2013-09-17
 */
 
-#define BOOST_TEST_MODULE test_rbspace
+#define BOOST_TEST_MODULE test_rbspacevector
 #include <feel/feelcore/testsuite.hpp>
 
-#include <fstream>
-
-#include <feel/feel.hpp>
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/Dense>
-
+#include <feel/feelfilters/unithypercube.hpp>
+#include <feel/feeldiscr/pchv.hpp>
+#include <feel/feelvf/vf.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 
 /** use Feel namespace */
 using namespace Feel;
-
-
-inline
-po::options_description
-makeOptions()
-{
-    po::options_description testrbspacevector( "RBSpace test options" );
-    testrbspacevector.add_options()
-        ( "shape", Feel::po::value<std::string>()->default_value( "simplex" ), "shape of the domain (either simplex or hypercube)" )
-        ;
-    return testrbspacevector.add( Feel::feel_options() );
-}
-
-
-inline
-AboutData
-makeAbout()
-{
-    AboutData about( "test_rbspacevector" ,
-                     "test_rbspacevector" ,
-                     "0.2",
-                     "nD(n=1,2,3) test context of functionspace ( vector field )",
-                     Feel::AboutData::License_GPL,
-                     "Copyright (c) 2013 Feel++ Consortium" );
-
-    about.addAuthor( "Stephane Veys", "developer", "stephane.veys@imag.fr", "" );
-    return about;
-
-}
-
 
 
 template<int Dim, int Order>
@@ -109,8 +75,8 @@ public :
         Xh = Pchv<Order>( mesh );
 
         auto RbSpace = RbSpacePchv<Order>( Xh );
-        auto basis_x = vf::project( Xh , elements(mesh), vec( Px() , Px()*Px() ) );
-        auto basis_y = vf::project( Xh , elements(mesh), vec( Py() , Py()*Px() ) );
+        auto basis_x = vf::project( _space=Xh , _range=elements(mesh), _expr=vec( Px() , Px()*Px() ) );
+        auto basis_y = vf::project( _space=Xh , _range=elements(mesh), _expr=vec( Py() , Py()*Px() ) );
         RbSpace->addPrimalBasisElement( basis_x );
         RbSpace->addPrimalBasisElement( basis_y );
 
@@ -273,12 +239,10 @@ private :
 
 };
 
-/**
- * main code
- */
 
-FEELPP_ENVIRONMENT_WITH_OPTIONS( makeAbout(), makeOptions() )
-BOOST_AUTO_TEST_SUITE( rbspace )
+FEELPP_ENVIRONMENT_NO_OPTIONS
+
+BOOST_AUTO_TEST_SUITE( rbspacevector )
 
 BOOST_AUTO_TEST_CASE( test_1 )
 {

@@ -29,7 +29,6 @@
 #include <boost/unordered_map.hpp>
 #include <boost/version.hpp>
 
-#include <boost/foreach.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
@@ -96,6 +95,7 @@
 #include <vtkTriangle.h>
 #include <vtkUnstructuredGrid.h>
 #endif
+
 
 namespace Feel
 {
@@ -2454,30 +2454,11 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
 }
 
 
-//!
-//! @return the topogical dimension of the mesh \p m
-//!
-template <typename MeshType>
-constexpr int topodim( std::shared_ptr<MeshType> m,
-                       std::enable_if_t<is_mesh_v<MeshType>>* = nullptr )
-{
-    return MeshType::nDim;
-}
-//!
-//! @return the real dimension in which the mesh is defined
-//!
-template <typename MeshType>
-constexpr int realdim( std::shared_ptr<MeshType> m,
-                       std::enable_if<is_mesh_v<MeshType>>* = nullptr )
-{
-    return MeshType::nRealDim;
-}
 
 } // namespace Feel
 
 //#if !defined(FEELPP_INSTANTIATION_MODE)
 #include <feel/feeldiscr/meshimpl.hpp>
-
 //#endif
 
 #endif /* FEELPP_MESH_HPP */

@@ -385,7 +385,7 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
-size_type
+typename MULTIFLUID_CLASS_TEMPLATE_TYPE::size_type
 MULTIFLUID_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
     auto res = this->fluidModel()->nLocalDof();
@@ -1532,15 +1532,15 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
             );
 
     auto rho = vf::project( 
-            this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            elements(this->mesh()),
-            idv(M_fluidMaterialProperties->fieldRho())*globalH
+        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        _range=elements(this->mesh()),
+        _expr=idv(M_fluidMaterialProperties->fieldRho())*globalH
             );
 
     auto mu = vf::project( 
-            this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-            elements(this->mesh()),
-            idv(M_fluidMaterialProperties->fieldMu())*globalH
+        _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+        _range=elements(this->mesh()),
+        _expr=idv(M_fluidMaterialProperties->fieldMu())*globalH
             );
 
     for( auto const& ls: M_levelsets )
@@ -1550,14 +1550,14 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::updateFluidDensityViscosity()
                 cst( this->globalLevelsetThicknessInterface() )
                 );
         rho += vf::project( 
-                this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-                elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
+            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldRho())*(1. - Hi)
                 );
         mu += vf::project( 
-                this->fluidModel()->materialProperties()->dynamicViscositySpace(),
-                elements(this->mesh()),
-                idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
+            _space=this->fluidModel()->materialProperties()->dynamicViscositySpace(),
+            _range=elements(this->mesh()),
+            _expr=idv(M_levelsetsMaterialProperties[ls.first]->fieldMu())*(1. - Hi)
                 );
     }
 

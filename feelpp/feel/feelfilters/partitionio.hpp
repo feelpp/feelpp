@@ -273,12 +273,7 @@ inline PartitionIO<MeshType>::PartitionIO (const std::string& fileName,
     M_h5_filename (),
     M_transposeInFile (transposeInFile)
 {
-    fs::path filenamefs = fs::path( fileName );
-    std::string h5filename = filenamefs.stem().string() + ".h5";
-    if ( filenamefs.is_relative() )
-        M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
-    else
-        M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
+    this->setup( fileName, transposeInFile );
 }
 
 template<typename MeshType>
@@ -286,8 +281,13 @@ inline void PartitionIO<MeshType>::setup (const std::string& fileName,
                                           const bool transposeInFile)
 {
     M_filename = fileName;
-    M_h5_filename;
     M_transposeInFile = transposeInFile;
+    fs::path filenamefs = fs::path( fileName );
+    std::string h5filename = filenamefs.stem().string() + ".h5";
+    if ( filenamefs.is_relative() )
+        M_h5_filename = (fs::current_path()/fs::path(h5filename)).string();
+    else
+        M_h5_filename = (filenamefs.parent_path() / fs::path( h5filename )).string();
 }
 
 template<typename MeshType>
@@ -1075,6 +1075,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
         return;
     //rank_type partId = M_meshPartIn->worldComm().localRank();
     rank_type processId = M_meshPartIn->worldComm().localRank();
+    bool isSeq = M_meshPartIn->worldComm().localSize() == 1;
 
     //int nVal = 2 + element_type::numPoints;// id+marker+ points
     int nVal = 1 + element_type::numPoints;// marker+ points
@@ -1132,12 +1133,19 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
             size_type currentBufferIndex = 0;
             for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
             {
+                // in sequential, no ghost required
+                if ( isSeq && j >= nActiveElement )
+                {
+                    currentBufferIndex += nVal;
+                    continue;
+                }
+
                 //size_type id = M_uintBuffer[currentBufferIndex++];
                 int marker   = M_uintBuffer[currentBufferIndex++];
                 //e.setId( id );
                 e.setProcessIdInPartition( processId/*partId*/ );
                 e.setMarker( marker );
-                e.setProcessId( processId/*partId*/ );// update correctlty for ghost in preparUpdateForUse()
+                e.setProcessId( processId/*partId*/ );// update correctlty for ghost cell in read_ghost
 
                 for ( uint16_type k = 0; k < element_type::numPoints; ++k)
                 {
@@ -1145,6 +1153,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
                     DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
                     e.setPoint( k, M_meshPartIn->point( ptId ) );
                 }
+
                 auto [eit,inserted] = M_meshPartIn->addElement( e, true/*false*/ );
                 auto const& [eid,eltInserted] = *eit;
 
@@ -1497,7 +1506,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
             nbRequest+=2;
     }
     if ( nbRequest ==0 ) return;
-    mpi::request * reqs = new mpi::request[nbRequest];
+    std::vector<mpi::request> reqs(nbRequest);
     int cptRequest=0;
 
     // first send
@@ -1505,8 +1514,7 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     auto const enDataToSend = dataToSend.end();
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
-        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-        ++cptRequest;
+        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToSend->first , 0, itDataToSend->second );
     }
     // first recv
     std::map< rank_type, std::vector< std::vector<size_type> > > dataToRecv;
@@ -1515,12 +1523,13 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         // if we send a msg at proc else we recv a msg from proc
         if ( dataToSend.find(proc) != dataToSend.end() )
         {
-            reqs[cptRequest] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
-            ++cptRequest;
+            reqs[cptRequest++] = theWorldComm.localComm().irecv( proc , 0, dataToRecv[proc] );
         }
     }
+
+    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(std::begin(reqs), std::end(reqs));
 
     // build map which allow to identify element from point ids (only for elt which touch the interprocess part)
     std::map<std::set<size_type>,size_type> mapPointIdsToEltId;
@@ -1565,8 +1574,8 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     auto const enDataToReSend = dataToReSend.end();
     for ( ; itDataToReSend!=enDataToReSend ; ++itDataToReSend )
     {
-        reqs[cptRequest] = theWorldComm.localComm().isend( itDataToReSend->first , 0, itDataToReSend->second );
-        ++cptRequest;
+        //reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first , 221/*0*/, itDataToReSend->second );
+        reqs[cptRequest++] = theWorldComm.localComm().isend( itDataToReSend->first, 1, &(itDataToReSend->second[0]), itDataToReSend->second.size() );
     }
     // recv the initial request
     std::map<rank_type, std::vector<size_type> > finalDataToRecv;
@@ -1574,13 +1583,15 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
     for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
     {
         const rank_type pid = itDataToSend->first;
-        reqs[cptRequest] = theWorldComm.localComm().irecv( pid, 0, finalDataToRecv[pid] );
-        ++cptRequest;
+        //reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 221/*0*/, finalDataToRecv[pid] );
+        int nRecvData = itDataToSend->second.size();
+        finalDataToRecv[pid].resize( nRecvData );
+        reqs[cptRequest++] = theWorldComm.localComm().irecv( pid, 1, &(finalDataToRecv[pid][0]), nRecvData );
     }
+
+    CHECK( cptRequest == nbRequest ) << "invalid number of mpi requests : " <<  cptRequest << " vs " << nbRequest;
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
-    // delete reqs because finish comm
-    delete [] reqs;
+    mpi::wait_all(std::begin(reqs), std::end(reqs));
 
     // update ghost element with element id in active partition
     auto itFinalDataToRecv = finalDataToRecv.begin();
@@ -1596,7 +1607,10 @@ void PartitionIO<MeshType>::prepareUpdateForUseStep2()
         }
     }
 
-
+    // theWorldComm.barrier();
+    // if ( theWorldComm.isMasterRank() )
+    //     std::cout << "HOLA" << std::endl;
+    // theWorldComm.barrier();
 }
 
 

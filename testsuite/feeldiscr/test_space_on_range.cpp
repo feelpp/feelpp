@@ -31,6 +31,8 @@
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelmesh/concatenate.hpp>
+#include <feel/feelfilters/unitcube.hpp>
+#include <feel/feeldiscr/pdhv.hpp>
 
 
 FEELPP_ENVIRONMENT_NO_OPTIONS
@@ -287,5 +289,71 @@ BOOST_AUTO_TEST_CASE( test_integrate_boundaryfaces )
     BOOST_CHECK_SMALL( std::abs(int1PS-int1b),1e-12 );
     BOOST_CHECK_SMALL( std::abs(int2PS-int1b),1e-12 );
 }
+
+BOOST_AUTO_TEST_CASE( test_integrate_different_related_mesh )
+{
+    using namespace Feel;
+    auto mesh = unitCube();
+    auto Vh = Pdhv<1>(mesh,elements(mesh, Px() < cst(0.5) ), true );
+    //auto Vh = Pdhv<1>(mesh);
+    auto submesh = createSubmesh(_mesh=mesh, _range=faces(support(Vh)),_update=0);
+    //auto submesh = createSubmesh(_mesh=mesh, _range=boundaryfaces(support(Vh)));
+    auto Xh = Pdh<1>(submesh,true);
+
+    auto u = Vh->element();
+    auto v = Xh->element();
+    v.setConstant(2.);
+    u.setConstant(3.);
+
+    auto rangeIntegrateBoundary = intersect(boundaryfaces(support(Vh)),boundaryfaces(mesh)); // there is a problem
+    auto a = form2(_test=Xh, _trial=Vh);
+    //a = integrate(_range=boundaryfaces(mesh), _expr=idt(v)*normal(u));
+    //a = integrate(_range=boundaryfaces(mesh), _expr=id(v)*inner(idt(u),N()));
+    a = integrate(_range=rangeIntegrateBoundary, _expr=id(v)*inner(idt(u),one()));
+    a.matrixPtr()->close();
+    double theMatEnergyA = a(v,u);
+    BOOST_TEST_MESSAGE( "theMatEnergyA=" << theMatEnergyA );
+    auto submeshBoundarySupport = createSubmesh(_mesh=mesh, _range=rangeIntegrateBoundary/*,_update=0*/);
+    double evalIntegrateA = integrate(_range=elements(submeshBoundarySupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( "evalIntegrateA=" << evalIntegrateA );
+
+    BOOST_CHECK_CLOSE( theMatEnergyA, evalIntegrateA, 1e-9 );
+
+
+    auto b = form2(_test=Xh, _trial=Vh);
+    b = integrate(_range=internalfaces(support(Vh)/*mesh*/), _expr=id(v)*inner(idt(u),one()));
+    b.matrixPtr()->close();
+    double theMatEnergyB = b(v,u);
+    BOOST_TEST_MESSAGE( "theMatEnergyB=" << theMatEnergyB );
+
+    auto submeshInternalSupport = createSubmesh(_mesh=mesh, _range=internalfaces(support(Vh)),_update=0);
+    double evalIntegrateB = integrate(_range=elements(submeshInternalSupport),_expr=cst(2.)*inner(3*one(),one())).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( "evalIntegrateB=" << evalIntegrateB );
+
+    BOOST_CHECK_CLOSE( theMatEnergyB, 2*evalIntegrateB, 1e-9 );
+
+
+
+    // TODO :  need to work on boundaryfaces(support(Vh)) : the support information is lost with range
+    auto c = form1(_test=Xh);
+    //c = integrate( _range=faces(support(Vh)), _expr=id(v) );
+    //c = integrate( _range=boundaryfaces(support(Vh)), _expr=id(v) );
+    c = integrate( _range=internalfaces(support(Vh)), _expr=id(v) );
+    c.vectorPtr()->close();
+    double evalIntLF = inner_product( *c.vectorPtr(),v);
+    //double evalIntLF_check = integrate(_range=faces(support(Vh)),_expr=leftfacev(cst(2.))).evaluate()(0,0); // integrate only on one side
+    // double evalIntLF_check = integrate(_range=boundaryfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0)
+    //     +  2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
+
+    //auto submeshBoundarySupport2 = createSubmesh( _mesh=mesh, _range=internalfaces(support(Vh)), _update=0 );
+    //double evalIntLF_check = integrate(_range=elements(submeshBoundarySupport2)/*boundaryfaces(support(Vh))*/,_expr=cst(2.)).evaluate()(0,0);
+    //+  2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);a
+    double evalIntLF_check = 2*integrate(_range=internalfaces(support(Vh)),_expr=cst(2.)).evaluate()(0,0);
+    //double evalIntLF_check = 2*integrate(_range=elements(submeshBoundarySupport2),_expr=cst(2.)).evaluate()(0,0);
+    BOOST_TEST_MESSAGE( "evalIntLF= " << evalIntLF );
+    BOOST_CHECK_CLOSE( evalIntLF, evalIntLF_check, 1e-12 );
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

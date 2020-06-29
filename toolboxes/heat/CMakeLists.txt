@@ -4,7 +4,10 @@ feelpp_add_application( heat SRCS main_ht.cpp
   # feelpp_toolbox_heat_lib_2dP1G1
   feelpp_toolbox_heat_lib
   INSTALL TESTS
+  PROJECT toolbox
+  MAN heat
   )
 
-feelpp_add_testcase(thermo2d CATEGORY Heat )
-feelpp_add_testcase(Building CATEGORY Heat )
+foreach( _testcase IN ITEMS "thermo2d" "Building" )
+  feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_heat CATEGORY toolboxes/heat)
+endforeach()

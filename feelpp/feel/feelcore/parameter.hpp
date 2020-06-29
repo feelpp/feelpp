@@ -57,6 +57,7 @@ BOOST_PARAMETER_NAME( vm )  // Note: no semicolon
 BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( about )
     BOOST_PARAMETER_NAME( prefix )
+    BOOST_PARAMETER_NAME( prefix_overload )
     BOOST_PARAMETER_NAME( sub )
     BOOST_PARAMETER_NAME( opt )
     BOOST_PARAMETER_NAME( path )
@@ -316,8 +317,14 @@ BOOST_PARAMETER_NAME( options )
     BOOST_PARAMETER_NAME( only_on_boundary_faces )
     BOOST_PARAMETER_NAME( view )
 
-
-
+    //BOOST_PARAMETER_NAME( solution )
+    BOOST_PARAMETER_NAME( solution_key )
+    BOOST_PARAMETER_NAME( gradient )
+    BOOST_PARAMETER_NAME( gradient_key )
+    BOOST_PARAMETER_NAME( inputs )
+    BOOST_PARAMETER_NAME( script )
+    BOOST_PARAMETER_NAME( use_script )
+    BOOST_PARAMETER_NAME( compute_pde_coefficients )
 } // Feel
 
 

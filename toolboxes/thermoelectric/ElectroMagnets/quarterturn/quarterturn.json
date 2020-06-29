@@ -1,13 +1,19 @@
-// -*- mode: javascript -*-
 {
     "Name":"quarterturn",
     "ShortName":"quarterturn",
     "Parameters":
     {
-        "sigma0":53e3,
-        "T0":290,
+        "sigma0":58e3,
+        "T0":293,
         "alpha":3.6e-3,
-        "Lorentz":2.47e-8
+        "Lorentz":2.47e-8,
+        "k0":0.380,
+        "angle":"Pi/2",
+        "dif":0.05,
+        "re":2,
+        "ri":1,
+        "h":0.08,
+        "Tw":293
     },
     "Materials":
     {
@@ -22,15 +28,11 @@
         {
             "Robin":
             {
-                "Rint":
+                "cooling":
                 {
-                    "expr1":"0.085", // h
-                    "expr2":"293" // T_c
-                },
-                "Rext":
-                {
-                    "expr1":"0.085", // h
-                    "expr2":"293" // T_c
+                    "markers":["Rint","Rext"],
+                    "expr1":"h:h", // h
+                    "expr2":"Tw:Tw" // T_c
                 }
             }
         },
@@ -38,13 +40,13 @@
         {
             "Dirichlet":
             {
-                "V0":
+                "V1":
                 {
                     "expr":"0" // V_in
                 },
-                "V1":
+                "V0":
                 {
-                    "expr":"0.04" // V_out
+                    "expr":"dif:dif" // V_out
                 }
             }
         }
@@ -56,75 +58,35 @@
         {
             "Exports":
             {
-                "fields":["heat.temperature","electric.electric-potential","electric.current-density","electric.electric-field","heat.pid"]
+                "fields":"all"
             }
         },
         "heat":
         {
+            "Save":
+            {
+                "Fields":
+                {
+                    "names":"temperature"
+                }
+            },
             "Measures":
             {
                 "Statistics":
                 {
-                    "FluxV0":
-                    {
-                        "type":"integrate",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
-                        "markers":"V0"
-                    },
-                    "FluxV1":
-                    {
-                        "type":"integrate",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
-                        "markers":"V1"
-                    },
                     "temp":
                     {
                         "type":["max","mean","min"],
                         "field":"temperature"
                     }
                 },
-                "Points":
+                "Norm":
                 {
-                    "closeToV0":
+                    "errorT":
                     {
-                        "coord":"{0.1,1.5,2.5}",
-                        "fields":"temperature"
-                    },
-                    "closeToV1":
-                    {
-                        "coord":"{1.5,0.1,2.5}",
-                        "fields":"temperature"
-                    },
-                    "middle":
-                    {
-                        "coord":"{1,1,2.5}",
-                        "fields":"temperature"
-                    }
-                }
-            },
-            "Checkers":
-            {
-                "Measures":
-                {
-                    "Statistics_FluxV0_integrate":
-                    {
-                        "value":3.2424412042251499e-01,
-                        "tolerance":1e-1
-                    },
-                    "Statistics_FluxV1_integrate":
-                    {
-                        "value":2.9981897008036867e-01,
-                        "tolerance":1e-1
-                    },
-                    "Points_closeToV0_temperature":
-                    {
-                        "value":3.9070670041153238e+02,
-                        "tolerance":1e-3
-                    },
-                    "Points_closeToV1_temperature":
-                    {
-                        "value":3.9068771950814232e+02,
-                        "tolerance":1e-3
+                        "type":"L2-error",
+                        "field":"temperature",
+                        "solution":"(-(2*58e3*0.05^2)/(Pi^2*0.38))*log(sqrt(x*x+y*y))^2 + (-(-(2*58e3*0.05^2)/(Pi^2*0.38))*((2*0.38*2*log(1)-0.08*2*1*log(1)^2)+(2*0.38*1*log(2)+0.08*2*1*log(2)^2))/(0.38*(1+2)+0.08*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*0.08*2*1)*(((2*0.38*2*log(1)-0.08*2*1*log(1)^2)-(2*0.38*1*log(2)+0.08*2*1*log(2)^2))*(-(2*58e3*0.05^2)/(Pi^2*0.38)) + (0.38*(2-1) - 0.08*2*1*log(2*1))*(-(-(2*58e3*0.05^2)/(Pi^2*0.38))*((2*0.38*2*log(1)-0.08*2*1*log(1)^2)+(2*0.38*1*log(2)+0.08*2*1*log(2)^2))/(0.38*(1+2)+0.08*2*1*log(2/1))))+293):x:y:z"//"(-(2*sigma0*dif^2)/(Pi^2*k0))*log(sqrt(x*x+y*y))^2 + (-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1)))*log(sqrt(x*x+y*y)) + (1/(2*h*2*1)*(((2*k0*2*log(1)-h*2*1*log(1)^2)-(2*k0*1*log(2)+h*2*1*log(2)^2))*(-(2*sigma0*dif^2)/(Pi^2*k0)) + (k0*(2-1) - h*2*1*log(2*1))*(-(-(2*sigma0*dif^2)/(Pi^2*k0))*((2*k0*2*log(1)-h*2*1*log(1)^2)+(2*k0*1*log(2)+h*2*1*log(2)^2))/(k0*(1+2)+h*2*1*log(2/1))))+Tw):x:y:z:sigma0:k0:h:Tw:dif"
                     }
                 }
             }
@@ -154,48 +116,19 @@
                         "markers":"omega"
                     }
                 },
-                "Points":
+                "Norm":
                 {
-                    "closeToV0":
+                    "errorV":
                     {
-                        "coord":"{0.1,1.5,2.5}",
-                        "fields":"electric-potential"
+                        "type":"L2-error",
+                        "field":"electric-potential",
+                        "solution":"dif/angle*atan2(y,x):x:y:z:dif:angle"
                     },
-                    "closeToV1":
+                    "errorE":
                     {
-                        "coord":"{1.5,0.1,2.5}",
-                        "fields":"electric-potential"
-                    },
-                    "middle":
-                    {
-                        "coord":"{1,1,2.5}",
-                        "fields":["electric-potential","electric-field" ]
-                    }
-                }
-            },
-            "Checkers":
-            {
-                "Measures":
-                {
-                    "Statistics_Intensity0_integrate":
-                    {
-                        "value":4.5856639122569022e+03,
-                        "tolerance":1e-1
-                    },
-                    "Statistics_Intensity1_integrate":
-                    {
-                        "value":-4.5883146155551685e+03,
-                        "tolerance":1e-1
-                    },
-                    "Points_closeToV0_electric-potential":
-                    {
-                        "value":1.6994365505515906e-03,
-                        "tolerance":1e-3
-                    },
-                    "Points_closeToV1_electric-potential":
-                    {
-                        "value":3.8304153994278681e-02,
-                        "tolerance":1e-3
+                        "type":"L2-error",
+                        "field":"electric-field",
+                        "solution":"{dif/angle*y/(x*x+y*y),-dif/angle*x/(x*x+y*y),0}:x:y:z:dif:angle"
                     }
                 }
             }

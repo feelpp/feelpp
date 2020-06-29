@@ -379,12 +379,11 @@ public:
             //this->step( 0 )->setMesh( mesh );
         }
 
-    /**
-     * export a scalar quantity \p u with name \p name
-     * \param name name of the scalar quantity
-     * \param u scalar quantity to be exported
-     * \param cst true if the scalar is constant over time, false otherwise
-     */
+
+    //! export a scalar quantity \p u with name \p name
+    //! \param name name of the scalar quantity
+    //! \param u scalar quantity to be exported
+    //! \param cst true if the scalar is constant over time, false otherwise
     template<typename T>
     void
     add( std::string const& name, T const& u, bool cst = false,
@@ -393,9 +392,11 @@ public:
             this->step( 0 )->add( name, u, cst );
         }
 
-    /**
-     * export field \p u with name \p name
-     */
+    //! export field \p u with name \p name. If both nodal and element representations are present
+    //! in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param u the field (element of function space)
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename F>
     void
     add( std::string const& name, F const& u, typename step_type::variant_representation_arg_type reps = "",
@@ -404,6 +405,11 @@ public:
             this->step( 0 )->add( name, u, reps );
         }
 
+    //! export expression \p expr with name \p name. If both nodal and element representations are present
+    //! in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
     template<typename ExprT>
     void
     add( std::string const& name, ExprT const& expr, typename step_type::variant_representation_arg_type reps = "",
@@ -412,14 +418,21 @@ public:
         this->step( 0 )->add( name, expr, reps );
     }
 
-    template<typename ExprT>
+    //! export expression \p expr with name \p name which is defined on \p rangeElt. If both nodal and element
+    //! representations are present in \p reps, the suffixes _n and _e are added to the name.
+    //! \param name name of field exported
+    //! \param expr a Feel++ expression (scalar, vectorial of dim 2 or 3,  square matrix 2*2 or 3*3 )
+    //! \param rangeElt collection of mesh element
+    //! \param reps representation of the field exported. It can be a string (nodal or element) or set of string
+    template<typename ExprT, typename EltWrapperT = elements_reference_wrapper_t<mesh_type>>
     void
-    add( std::string const& name, ExprT const& expr, elements_reference_wrapper_t<mesh_type> const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
-         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> >* = nullptr )
+    add( std::string const& name, ExprT const& expr, EltWrapperT const& rangeElt, typename step_type::variant_representation_arg_type reps = "",
+         typename std::enable_if_t<std::is_base_of_v<ExprBase,ExprT> && is_filter_v<EltWrapperT> >* = nullptr )
     {
         this->step( 0 )->add( name, expr, rangeElt, reps );
     }
 
+    //! export the mesh partitioning
     void
     addRegions()
         {
@@ -438,8 +451,7 @@ public:
     {
         CHECK( s >= 0 && s < M_ts_set.size() ) << "invalid timeset index " << s;
         timeset_ptrtype __ts = M_ts_set[s];
-        bool stepIsIgnored = (( __ts->numberOfSteps() % this->freq()  ) > 0);
-        return __ts->step( time, stepIsIgnored );
+        return __ts->step( time, this->freq() );
     }
 
     //@}
@@ -483,14 +495,12 @@ public:
             timeset_ptrtype __ts = *__ts_it;
             auto steps = __ts->stepsToWriteOnDisk();
             stepsToWriteOnDisk.push_back( std::make_pair( __ts, steps ) );
-            if ( !steps.empty() || __ts->hasMesh() )
+            if ( !steps.empty() || (__ts->numberOfSteps() == 0 && __ts->hasMesh() ) )
                 hasStepToWrite = true;
         }
 
-        if ( !hasStepToWrite )
-            return;
-
-        this->save( stepsToWriteOnDisk );
+        if ( hasStepToWrite )
+            this->save( stepsToWriteOnDisk );
 
         for ( auto & [__ts, steps ] : stepsToWriteOnDisk )
         {
@@ -499,7 +509,8 @@ public:
                 step->setState( STEP_ON_DISK );
                 step->cleanup();
             }
-            std::string filename = this->path()+"/"+prefix()+".timeset";
+            // save metadata file (sould be done even the if step is not write on the disk
+            std::string filename = (fs::path(this->path()) / (prefix()+".timeset")).string();
             __ts->save( filename, this->worldComm() );
         }
     }

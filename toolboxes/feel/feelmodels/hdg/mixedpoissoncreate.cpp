@@ -12,17 +12,23 @@ namespace FeelModels
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
+                                                MixedPoissonPhysics const& physic,
                                                 worldcomm_ptr_t const& worldComm,
                                                 std::string const& subPrefix,
                                                 ModelBaseRepository const& modelRep )
-    : super_type( prefix, worldComm, subPrefix, modelRep ),
+    : super_type( prefix, MixedPoissonPhysicsMap[physic]["keyword"], worldComm, subPrefix, modelRep ),
+      M_physic(physic),
+      M_potentialKey(MixedPoissonPhysicsMap[physic]["potentialK"]),
+      M_fluxKey(MixedPoissonPhysicsMap[physic]["fluxK"]),
       M_tauOrder(ioption( prefixvm(this->prefix(), "tau_order") )),
       M_tauCst(doption( prefixvm(this->prefix(), "tau_constant") )),
       M_hFace(ioption( prefixvm(this->prefix(), "hface") )),
       M_conductivityKey(soption( prefixvm(this->prefix(), "conductivity_json")) ),
       M_nlConductivityKey(soption( prefixvm(this->prefix(),"conductivityNL_json")) ),
       M_useSC(boption( prefixvm(this->prefix(), "use-sc")) ),
-      M_useUserIBC(false)
+      M_useUserIBC(false),
+      M_quadError(ioption(prefixvm(this->prefix(), "error-quadrature")) ),
+      M_setZeroByInit(boption(prefixvm(this->prefix(), "set-zero-by-init")) )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".MixedPoisson","constructor", "start",
                                                this->worldComm(),this->verboseAllProc());
@@ -51,10 +57,11 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::MixedPoisson( std::string const& prefix,
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 typename MixedPoisson<Dim,Order, G_Order, E_Order>::self_ptrtype
 MixedPoisson<Dim,Order,G_Order, E_Order>::New( std::string const& prefix,
+                                               MixedPoissonPhysics const& physic,
                                                worldcomm_ptr_t const& worldComm, std::string const& subPrefix,
                                                ModelBaseRepository const& modelRep )
 {
-    return std::make_shared<self_type> ( prefix,worldComm,subPrefix,modelRep );
+    return std::make_shared<self_type> ( prefix,physic,worldComm,subPrefix,modelRep );
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -104,9 +111,18 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
 {
+    this->modelProperties().parameters().updateParameterValues();
+    M_paramValues = this->modelProperties().parameters().toParameterValues();
+    for( auto const& [k,v] : M_paramValues )
+    {
+        Feel::cout << " - parameter " << k << " : " << v << std::endl;
+    }
+    this->modelProperties().materials().setParameterValues( M_paramValues );
+    //this->modelProperties().boundaryConditions().setParameterValues( paramValues );
+    this->modelProperties().postProcess().setParameterValues( M_paramValues );
 
     // initialize marker lists for each boundary condition type
-    auto itField = modelProperties().boundaryConditions().find( "potential");
+    auto itField = modelProperties().boundaryConditions().find( M_potentialKey);
     if ( itField != modelProperties().boundaryConditions().end() )
     {
         auto mapField = (*itField).second;
@@ -174,7 +190,7 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initModel()
     if ( !M_useUserIBC )
     {
         M_IBCList.clear();
-        itField = modelProperties().boundaryConditions().find( "flux");
+        itField = modelProperties().boundaryConditions().find( M_fluxKey);
         if ( itField != modelProperties().boundaryConditions().end() )
         {
             auto mapField = (*itField).second;
@@ -226,8 +242,36 @@ MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
 void
 MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 {
+    std::set<std::string> markers;
+    for( auto const& m : this->modelProperties().materials() )
+    {
+        auto const& mat = m.second;
+        if( mat.hasPhysics() )
+        {
+            switch(M_physic)
+            {
+            case MixedPoissonPhysics::None:
+                break;
+            case MixedPoissonPhysics::Electric:
+                if( !mat.hasPhysics( { "electric","thermo-electric"} ) )
+                    continue;
+                break;
+            case MixedPoissonPhysics::Heat:
+                if( !mat.hasPhysics( { "heat","thermo-electric"} ) )
+                    continue;
+                break;
+            }
+        }
+        for ( std::string const& matmarker : mat.meshMarkers() )
+            markers.insert( matmarker );
+    }
+    M_rangeMeshElements = markedelements(M_mesh, markers);
+    M_Vh = Pdhv<Order>( M_mesh, markedelements(M_mesh, markers) );
+    M_Wh = Pdh<Order>( M_mesh, markedelements(M_mesh, markers) );
+    M_Whp = Pdh<Order+1>( M_mesh, markedelements(M_mesh, markers) );
+
     // Mh only on the faces whitout integral condition
-    auto complement_integral_bdy = complement(faces(M_mesh),[this]( auto const& ewrap ) {
+    auto complement_integral_bdy = complement(faces(support(M_Wh)),[this]( auto const& ewrap ) {
                                                                 auto const& e = unwrap_ref( ewrap );
                                                                 for( auto exAtMarker : this->M_IBCList)
                                                                 {
@@ -239,8 +283,6 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
     auto face_mesh = createSubmesh( _mesh=M_mesh, _range=complement_integral_bdy, _update=0 );
 
 
-    M_Vh = Pdhv<Order>( M_mesh, true);
-    M_Wh = Pdh<Order>( M_mesh, true );
     M_Mh = Pdh<Order>( face_mesh, true );
     // M_Ch = Pch<0>( M_mesh, true );
     M_M0h = Pdh<0>( face_mesh );
@@ -266,23 +308,31 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initSpaces()
 
     M_up = M_Vh->element( "u" );
     M_pp = M_Wh->element( "p" );
+    M_ppp = M_Whp->element( "pp" );
 
     for( int i = 0; i < M_integralCondition; i++ )
         M_mup.push_back(M_Ch->element("mup"));
 
-    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
-
-#if 0
-    M_A_cst = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_A = M_backend->newBlockMatrix(_block=csrGraphBlocks(*M_ps));
-    M_F = M_backend->newBlockVector(_block=blockVector(*M_ps), _copy_values=false);
-#else
     tic();
-    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend ); //M_backend->newBlockMatrix(_block=csrGraphBlocks(ps));
-    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);//M_backend->newBlockVector(_block=blockVector(ps), _copy_values=false);
+    this->initMatricesAndVector();
     toc("matrixCondensed", FLAGS_v > 0);
+}
+
+MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
+void
+MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initMatricesAndVector()
+{
+    solve::strategy s = M_useSC ? solve::strategy::static_condensation : solve::strategy::monolithic;
+    solve::strategy spp = solve::strategy::local;
+    auto pps = product( M_Whp );
+
+    M_A_cst = makeSharedMatrixCondensed<value_type>(s, csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
+#ifndef USE_SAME_MAT
+    M_A = makeSharedMatrixCondensed<value_type>(s,  csrGraphBlocks(*M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), *M_backend );
 #endif
+    M_F = makeSharedVectorCondensed<value_type>(s, blockVector(*M_ps), *M_backend, false);
+    M_App = makeSharedMatrixCondensed<value_type>(spp,  csrGraphBlocks(pps, (spp>=solve::strategy::static_condensation)?Pattern::ZERO:Pattern::COUPLED), backend(), true );
+    M_Fpp = makeSharedVectorCondensed<value_type>(solve::strategy::local, blockVector(pps), backend(), false);
 }
 
 MIXEDPOISSON_CLASS_TEMPLATE_DECLARATIONS
@@ -294,6 +344,17 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::initExporter( mesh_ptrtype meshVisu )
                             _name="Export",
                             _geo=geoExportType,
                             _path=this->exporterPath() );
+
+    // point measures
+    auto fieldNamesWithSpacePotential = std::make_pair( std::set<std::string>({this->potentialKey()}), this->potentialSpace() );
+    auto fieldNamesWithSpaceFlux = std::make_pair( std::set<std::string>({this->fluxKey()}), this->fluxSpace() );
+    auto fieldNamesWithSpaces = boost::hana::make_tuple( fieldNamesWithSpacePotential, fieldNamesWithSpaceFlux );
+    M_measurePointsEvaluation = std::make_shared<measure_points_evaluation_type>( fieldNamesWithSpaces );
+    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
+    {
+       M_measurePointsEvaluation->init( evalPoints );
+    }
+
 }
 
 } // namespace FeelModels

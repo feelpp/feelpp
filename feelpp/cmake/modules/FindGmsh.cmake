@@ -24,7 +24,7 @@
 include (FindPackageHandleStandardArgs)
 
 function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_include_h)
-
+  message(STATUS "gmsh_inc: ${_gmsh_include_h}")
   if ( EXISTS ${_gmsh_include_h}/GmshVersion.h ) # version < 4
     set( _gmsh_version_h ${_gmsh_include_h}/GmshVersion.h )     
 	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_.*_VERSION.*")
@@ -37,11 +37,18 @@ function(_gmsh_get_version _out_major _out_minor _out_patch _gmsh_include_h)
   elseif( EXISTS ${_gmsh_include_h}/gmsh.h ) # version >=4
     set( _gmsh_version_h ${_gmsh_include_h}/gmsh.h )     
 	file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_API_VERSION_.*")
-	if (NOT _gmsh_vinfo)
-		message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
-	endif()
-    string(REGEX REPLACE "^.*GMSH_API_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
-	string(REGEX REPLACE "^.*GMSH_API_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+    message(STATUS "vinfo: ${_gmsh_vinfo}")
+	if (NOT _gmsh_vinfo) # for Gmsh 4.1
+      file(STRINGS ${_gmsh_version_h} _gmsh_vinfo REGEX "^#define[\t ]+GMSH_API_VERSION.*")
+      string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	  string(REGEX REPLACE "^.*GMSH_API_VERSION[ \t]+\"([0-9]+)\\.([0-9]+)\"$" "\\2" ${_out_minor} "${_gmsh_vinfo}")
+      if (NOT _gmsh_vinfo)
+	    message(FATAL_ERROR "include file ${_gmsh_version_h} does not exist")
+	  endif()
+    else()
+      string(REGEX REPLACE "^.*GMSH_API_VERSION_MAJOR[ \t]+([0-9]+).*" "\\1" ${_out_major} "${_gmsh_vinfo}")
+	  string(REGEX REPLACE "^.*GMSH_API_VERSION_MINOR[ \t]+([0-9]+).*" "\\1" ${_out_minor} "${_gmsh_vinfo}")
+    endif()
     set( ${_out_patch} 0)
   endif()
 	if (NOT ${_out_major} MATCHES "[0-9]+")
@@ -82,16 +89,26 @@ option(FEELPP_ENABLE_GMSH_LIBRARY "Enables Gmsh library in Feel++" ON )
 if ( FEELPP_ENABLE_GMSH_LIBRARY )
   INCLUDE(CheckIncludeFileCXX)
 
-  FIND_PATH(GMSH_INCLUDE_PATH
-    gmsh.h Gmsh.h Context.h GModel.h
-    HINTS
-    ${GMSH_DIR}
-    $ENV{GMSH_DIR}
-   # ${CMAKE_BINARY_DIR}/contrib/gmsh
-    PATH_SUFFIXES
-    include include/gmsh
-    DOC "Directory where GMSH header files are stored" )
-
+  if ( NOT APPLE )
+    FIND_PATH(GMSH_INCLUDE_PATH
+      gmsh.h Gmsh.h Context.h GModel.h
+      HINTS
+      ${GMSH_DIR}
+      $ENV{GMSH_DIR}
+      PATH_SUFFIXES
+      include include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  else()
+    FIND_PATH(GMSH_INCLUDE_PATH
+      gmsh.h Gmsh.h 
+      HINTS
+      ${GMSH_DIR}
+      $ENV{GMSH_DIR}
+      PATH_SUFFIXES
+      include include/gmsh
+      DOC "Directory where GMSH header files are stored" )
+  endif()
+  message(STATUS "[gmsh] header ${GMSH_INCLUDE_PATH}")
 
   # first pass :search form GMSH_DIR cmake or env variable
   FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
@@ -102,11 +119,13 @@ if ( FEELPP_ENABLE_GMSH_LIBRARY )
     NO_DEFAULT_PATH
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
-
+  
   # second pass : search in system
   FIND_LIBRARY(GMSH_LIBRARY NAMES gmsh Gmsh gmsh-2.5.1 gmsh1
     PATH_SUFFIXES
     lib lib/x86_64-linux-gnu/ )
+
+  message(STATUS "[gmsh] library ${GMSH_LIBRARY}")
   
   if ( GMSH_LIBRARY )
     if (GMSH_INCLUDE_PATH )

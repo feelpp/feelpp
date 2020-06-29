@@ -29,38 +29,6 @@
 
 namespace Feel {
 
-namespace detail {
-
-template<typename C>
-Feel::remove_shared_ptr_type<C> const&
-unwrap_ptr( C const& c, mpl::bool_<true> )
-{
-    return *c;
-}
-
-template<typename C>
-Feel::remove_shared_ptr_type<C> const&
-unwrap_ptr( C const& c, mpl::bool_<false> )
-{
-    return c;
-}
-
-template<typename C>
-Feel::remove_shared_ptr_type<C> &
-unwrap_ptr( C & c, mpl::bool_<true> )
-{
-    return *c;
-}
-
-template<typename C>
-Feel::remove_shared_ptr_type<C> &
-unwrap_ptr( C & c, mpl::bool_<false> )
-{
-    return c;
-}
-
-} // detail
-
 template<typename T>
 using unwrap_ptr_t = remove_shared_ptr_type<T>;
 
@@ -68,21 +36,27 @@ using unwrap_ptr_t = remove_shared_ptr_type<T>;
  * @return the c++ objet pointed by c++ pointer or shared_ptr or same object otherwise
  */
 template<typename C>
-Feel::remove_shared_ptr_type<C> const&
+unwrap_ptr_t<C> const&
 unwrap_ptr( C const& c )
 {
-    return Feel::detail::unwrap_ptr( c, is_ptr_or_shared_ptr<C>() );
+    if constexpr ( is_ptr_or_shared_ptr<C>() )
+        return *c;
+    else
+        return c;
 }
 
 template<typename C>
-Feel::remove_shared_ptr_type<C> &
+unwrap_ptr_t<C> &
 unwrap_ptr( C & c )
 {
-    return Feel::detail::unwrap_ptr( c, is_ptr_or_shared_ptr<C>() );
+    if constexpr ( is_ptr_or_shared_ptr<C>() )
+        return *c;
+    else
+        return c;
 }
 
 template<typename C>
-Feel::remove_shared_ptr_type<C> &
+unwrap_ptr_t<C> &
 unwrap_ptr( C * c )
 {
     return *c;

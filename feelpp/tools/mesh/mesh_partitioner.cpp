@@ -54,6 +54,9 @@ int main( int argc, char** argv )
         ( "ifile", po::value<std::string>(), "input mesh filename" )
         ( "odir", po::value<std::string>(), "output directory [optional]" )
         ( "ofile", po::value<std::string>(), "output mesh filename [optional]" )
+        ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
+        ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
+        ( "remesh.h", po::value<std::string>()->default_value( "hmax" ), "remesh h size" )
 		;
 
     Environment env( _argc=argc, _argv=argv,

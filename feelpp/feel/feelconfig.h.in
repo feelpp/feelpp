@@ -87,9 +87,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine FEELPP_HAS_MEMORY_H
 
-/* Define to 1 if you have mkl support. */
-#cmakedefine FEELPP_HAS_MKL
-
 /* Define to 1 if you have mongocxx support. */
 /*#cmakedefine FEELPP_HAS_MONGOCXX*/
 
@@ -244,7 +241,9 @@
 #cmakedefine PACKAGE_VERSION
 
 /* Define to 1 if you have the ANSI C header files. */
+#if !defined( STDC_HEADERS )
 #cmakedefine STDC_HEADERS
+#endif
 
 /* Define to `unsigned' if <sys/types.h> does not define. */
 #cmakedefine size_t

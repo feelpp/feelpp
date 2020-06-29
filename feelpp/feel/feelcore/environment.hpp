@@ -33,9 +33,11 @@
 #include <memory>
 
 #include <boost/noncopyable.hpp>
-#include <boost/signals2.hpp>
+#include <boost/signals2/signal.hpp>
+
 #include <boost/format.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ptree_fwd.hpp>
+
 #include <feel/feelcore/feel.hpp>
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
@@ -61,10 +63,10 @@
 #include <feel/feelcore/parameter.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/worldscomm.hpp>
+
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/about.hpp>
 #include <feel/feelcore/termcolor.hpp>
-#include <feel/feelcore/functors.hpp>
 #include <feel/options.hpp>
 
 #if defined ( FEELPP_HAS_PETSC_H )
@@ -75,7 +77,6 @@
 #include <hwloc.h>
 #endif
 
-#include <feel/feelcore/mongocxx.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -247,7 +248,7 @@ public:
         Environment( args[_argc],
                      args[_argv],
 #if BOOST_VERSION >= 105500
-                     args[_threading|mpi::threading::multiple],
+                     args[_threading|mpi::threading::funneled],
 #endif
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
@@ -574,7 +575,7 @@ public:
         }
 
     //! \return the root repository (default: \c $HOME/feel)
-    static std::string rootRepository();
+    static std::string const& rootRepository();
 
     /**
      * Find a file. The lookup is as follows:
@@ -673,6 +674,30 @@ public:
         auto it = vm.find( os.str() );
         CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
         return it->second;
+    }
+
+    BOOST_PARAMETER_MEMBER_FUNCTION(
+        ( std::pair<std::string,po::variable_value> ), static option, tag,
+        ( required
+          ( name,( std::string ) ) )
+        ( optional
+          ( sub,( std::string ),std::string() )
+          ( prefix,( std::string ),std::string() )
+          ( vm, ( po::variables_map const& ), Environment::vm() )
+          ) )
+    {
+        std::ostringstream os;
+
+        if ( !prefix.empty() )
+            os << prefix << ".";
+
+        if ( !sub.empty() )
+            os << sub << "-";
+
+        os << name;
+        auto it = vm.find( os.str() );
+        CHECK( it != vm.end() ) << "Invalid option " << os.str() << "\n";
+        return *it;
     }
 
     /**
@@ -797,6 +822,13 @@ public:
      */
     static std::string expand( std::string const& expr );
 
+    /**
+     * try find remotely the file \p fname 
+     * \param fname filename 
+     * \param subdir ubdirectory to store the file that may be downloaded
+     * @return the filename
+     */ 
+    static std::string findFileRemotely( std::string const& fname, std::string const& subdir = "" ); 
     //@}
 
 private:
@@ -846,6 +878,7 @@ private:
 
     static std::vector<fs::path> S_paths;
 
+    static fs::path S_rootdir;
     static fs::path S_appdir;
     static fs::path S_appdirWithoutNumProc;
     static fs::path S_scratchdir;
@@ -899,6 +932,19 @@ BOOST_PARAMETER_FUNCTION(
     ) )
 {
     return Environment::vm( _name=name,_sub=sub,_prefix=prefix, _vm=vm );
+}
+
+BOOST_PARAMETER_FUNCTION(
+    ( int ), countoption, tag,
+    ( required
+      ( name,( std::string ) ) )
+    ( optional
+      ( sub,( std::string ),"" )
+      ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
+      ) )
+{
+    return vm.count(Environment::option( _name=name,_sub=sub,_prefix=prefix, _vm=vm ).first);
 }
 
 BOOST_PARAMETER_FUNCTION(
@@ -1097,5 +1143,4 @@ BOOST_PARAMETER_FUNCTION(
 } // Feel
 
 #include <feel/feelcore/feelio.hpp>
-
 #endif /* FEELPP_ENVIRONMENT_HPP */

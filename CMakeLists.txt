@@ -45,6 +45,17 @@ if ( ${CMAKE_VERSION} VERSION_GREATER 3.1 AND ${CMAKE_VERSION} VERSION_LESS 3.6 
     message(STATUS "[feelpp] use old policy CMP0053" )
     cmake_policy(SET CMP0053 OLD)
 endif()
+
+if ( ${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.13.0 )
+  message(STATUS "[feelpp] use new policy CMP0079" )
+  cmake_policy(SET CMP0079 NEW)
+endif()
+
+if (POLICY CMP0045)
+# error on non-existent target in get_target_property
+cmake_policy(SET CMP0045 NEW)
+endif()
+
 #
 # Bug in cmake that delete destroy library path if LIBRARY_PATH is not empty
 # Ugly hack that disable the environement variable
@@ -143,19 +154,13 @@ endif()
 #   list(REMOVE_ITEM FEELPP_LIBRARIES /usr/lib/libstdc++.dylib)
 # endif()
 
-include(ProcessorCount)
-ProcessorCount(NProcs)
-IF(NOT CMAKE_NPROCS)
-  ##if(N GREATER 1)
-  math (EXPR NProcs2 "${NProcs}/2")
-  if(NProcs2 EQUAL 0)
-    set(NProcs2 1)
-  endif()
-  if(NProcs2 GREATER 6)
-    set(NProcs2 6)
-  endif()
-else()
-  set(NProcs2 "${CMAKE_NPROCS}")
+cmake_host_system_information(RESULT NProcs QUERY NUMBER_OF_PHYSICAL_CORES)
+math (EXPR NProcs2 "${NProcs}/2")
+if(NProcs2 EQUAL 0)
+  set(NProcs2 1)
+endif()
+if(NProcs2 GREATER 6)
+  set(NProcs2 6)
 endif()
 message(STATUS "[feelpp] using ${NProcs2} cores out of ${NProcs} cores" )
 

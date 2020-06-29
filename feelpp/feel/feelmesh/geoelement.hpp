@@ -28,7 +28,6 @@
 #ifndef _GEOELEMENT_HH_
 #define _GEOELEMENT_HH_
 
-#include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include <feel/feelcore/feel.hpp>
@@ -36,7 +35,7 @@
 #include <feel/feelmesh/marker.hpp>
 #include <feel/feelmesh/geond.hpp>
 
-#include <feel/feelalg/lu.hpp>
+//#include <feel/feelalg/lu.hpp>
 
 namespace Feel
 {
@@ -1763,9 +1762,41 @@ private:
   GeoElement3D
   --------------------------------------------------------------------------*/
 
+
+template <uint16_type Dim, typename SubFace, typename T, typename IndexT>
+struct is_geoelement<GeoElement0D<Dim,SubFace,T,IndexT>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool PointTypeIsSubFaceOf,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement1D<Dim,GEOSHAPE,SubFace,T,IndexT,PointTypeIsSubFaceOf,UseMeasuresStorage>>: std::true_type {};
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename SubFace,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement2D<Dim,GEOSHAPE,SubFace,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+template<uint16_type Dim,
+         typename GEOSHAPE,
+         typename T,
+         typename IndexT,
+         bool UseMeasuresStorage >
+struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: std::true_type {};
+
+
+
+/**
+ * \return true if the element \p e has a face with \p flag, false otherwise
+ */
 template<typename EltType>
 bool
-hasFaceWithMarker( EltType const& e, boost::any const& flag )
+hasFaceWithMarker( EltType const& e, boost::any const& flag,
+                   std::enable_if_t<(dimension_v<EltType> > 0) && is_geoelement_v<EltType>>* = nullptr )
 {
     flag_type theflag = e.mesh()->markerId( flag );
     // for( auto const& f : e.faces() )

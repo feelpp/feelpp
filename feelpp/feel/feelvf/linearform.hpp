@@ -113,7 +113,7 @@ public:
     typedef typename space_type::gm1_ptrtype gm1_ptrtype;
 
     typedef typename space_type::fe_type fe_type;
-
+    using size_type = typename mesh_type::size_type;
     template<typename TheSpaceType, bool UseMortar = false>
     struct finite_element
     {
@@ -324,6 +324,16 @@ public:
                  ExprT const& expr,
                  IM const& im,
                  IM2 const& im2,
+                 mpl::int_<2> );
+
+        template<typename IM2, typename IMTest>
+        Context( form_type& __form,
+                 map_test_geometric_mapping_context_type const& _gmcTest,
+                 map_geometric_mapping_expr_context_type const& _gmcExpr,
+                 ExprT const& expr,
+                 IM const& im,
+                 IM2 const& im2,
+                 IMTest const& imTest,
                  mpl::int_<2> );
 
         size_type trialElementId( size_type trial_eid ) const { return invalid_v<size_type>; }
@@ -862,7 +872,7 @@ public:
      */
     void scale( value_type s ) { M_F->scale( s ); }
 
-    LinearForm& operator+=( LinearForm& f )
+    LinearForm& operator+=( LinearForm const& f )
         {
             if ( this == &f )
             {
@@ -968,7 +978,7 @@ LinearForm<SpaceType, VectorType, ElemContType>::LinearForm( std::string name,
                  << Block( __i, 0, __i*M_X->nDofPerComponent(), 0 )  << "\n";
     }
 
-    datamap_ptrtype dm = M_F->mapPtr(); // M_X->dof();
+    auto dm = M_F->mapPtr(); // M_X->dof();
     this->setDofIdToContainerId( dm->dofIdToContainerId( M_row_startInVector ) );
     if (  init )
         M_F->zero();
@@ -1131,6 +1141,17 @@ LinearForm<SpaceType, VectorType, ElemContType>::operator+=( Expr<ExprT> const& 
 {
     this->assign( __expr, false, mpl::bool_<( space_type::nSpaces > 1 )>() );
     return *this;
+}
+
+template<typename SpaceType, typename VectorType,  typename ElemContType>
+LinearForm<SpaceType, VectorType, ElemContType>
+operator+(LinearForm<SpaceType, VectorType, ElemContType> const& a,
+          LinearForm<SpaceType, VectorType, ElemContType> const& b )
+{
+    LinearForm<SpaceType, VectorType, ElemContType> c{a};
+    c += b;
+
+    return c;
 }
 
 

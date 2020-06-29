@@ -18,17 +18,21 @@ makeAbout()
     return about;
 }
 
-template<int nDim, int OrderT>
+template<int nDim, int OrderT, int OrderV, int OrderG>
 void
 runApplicationThermoElectric()
 {
     using namespace Feel;
 
-    using thermoelectric_type = ThermoElectricHDG<nDim, OrderT, OrderT>;
+    using thermoelectric_type = ThermoElectricHDG<nDim, OrderT, OrderV, OrderG>;
     using thermoelectric_ptrtype = std::shared_ptr<thermoelectric_type>;
 
     auto te = std::make_shared<thermoelectric_type>();
-    te->run();
+    te->init();
+    tic();
+    te->solve();
+    toc("solve picard");
+    te->exportResults();
 }
 
 int main(int argc, char *argv[])
@@ -53,25 +57,57 @@ int main(int argc, char *argv[])
     std::string discretization = soption(_name="case.discretization");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
+    auto discretizationg = hana::make_tuple(hana::int_c<1>,hana::int_c<2>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ),
-                                             hana::make_tuple("P3", hana::int_c<3> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("T3", hana::int_c<3> ),
+                                             hana::make_tuple("T2", hana::int_c<2> ),
+                                             hana::make_tuple("T1", hana::int_c<1> ) );
+    auto discretizationv = hana::make_tuple( hana::make_tuple("V3", hana::int_c<3> ),
+                                             hana::make_tuple("V2", hana::int_c<2> ),
+                                             hana::make_tuple("V1", hana::int_c<1> ) );
 #elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ),
-                                             hana::make_tuple("P2", hana::int_c<2> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("T2", hana::int_c<2> ),
+                                             hana::make_tuple("T1", hana::int_c<1> ) );
+    auto discretizationv = hana::make_tuple( hana::make_tuple("V2", hana::int_c<2> ),
+                                             hana::make_tuple("V1", hana::int_c<1> ) );
 #else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("T1", hana::int_c<1> ) );
+    auto discretizationv = hana::make_tuple( hana::make_tuple("V1", hana::int_c<1> ) );
 #endif
 
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)), [&discretization,&dimension]( auto const& d )
-                    {
-                        constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                        std::string const& _discretization = hana::at_c<0>( hana::at_c<1>(d) );
-                        constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
-                        if ( dimension == _dim && discretization == _discretization )
-                            runApplicationThermoElectric<_dim,_torder>();
-                    } );
+    bool hasRun = false;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationg,discretizationt,discretizationv)),
+                    [&discretization,&dimension,&hasRun]( auto const& d )
+                        {
+                            constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
+                            constexpr int _gorder = std::decay_t<decltype(hana::at_c<1>(d))>::value;
+                            std::string const& _discretizationt = hana::at_c<0>( hana::at_c<2>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<2>(d) ))>::value;
+                            std::string const& _discretizationv = hana::at_c<0>( hana::at_c<3>(d) );
+                            constexpr int _vorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<3>(d) ))>::value;
+                            if ( dimension == _dim && discretization == _discretizationt+_discretizationv+"G"+std::to_string(_gorder) )
+                            {
+                                hasRun = true;
+                                runApplicationThermoElectric<_dim,_torder,_vorder,_gorder>();
+                            }
+                        } );
+    if( !hasRun )
+    {
+        Feel::cout << tc::red << "Wrong dimension (" << dimension << ") or discretization (" << discretization
+                   << ") Possible combination:" << tc::reset << std::endl;
+        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationg,discretizationt,discretizationv)),
+                        []( auto const& d )
+                            {
+                                Feel::cout << "\t(" << std::decay_t<decltype(hana::at_c<0>(d))>::value << ","
+                                           << hana::at_c<0>( hana::at_c<2>(d) ) << hana::at_c<0>( hana::at_c<3>(d) )
+                                           << "G" << std::decay_t<decltype(hana::at_c<1>(d))>::value <<  ")" << std::endl;
+                            }
+                        );
+    }
+
+    std::ofstream os ( "timers.md" );
+    Environment::saveTimersMD(os);
+    os.close();
 
     return 0;
 }
