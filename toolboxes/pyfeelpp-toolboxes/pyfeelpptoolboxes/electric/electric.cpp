@@ -38,8 +38,6 @@ void defSM(py::module &m)
                            Lagrange<OrderPotential, Scalar,Continuous,PointSetFekete> >;
     using element_electricpotential_t = typename toolbox_t::element_electricpotential_type;
     using element_electricpotential_ptr_t = typename toolbox_t::element_electricpotential_ptrtype;
-    using element_electricfield_t = typename toolbox_t::element_electricfield_type;
-    using element_electricfield_ptr_t = typename toolbox_t::element_electricfield_ptrtype;
 
     std::string pyclass_name = std::string("Electric_") + std::to_string(nDim) + std::string("DP") + std::to_string(OrderPotential);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
@@ -61,11 +59,6 @@ void defSM(py::module &m)
         .def( "spaceElectricPotential", &toolbox_t::spaceElectricPotential, "get the potential function space")
         .def( "fieldElectricPotential", static_cast<element_electricpotential_t const& (toolbox_t::*)() const>(&toolbox_t::fieldElectricPotential), "returns the electric potential field" )
         .def( "fieldElectricPotentialPtr", static_cast<element_electricpotential_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldElectricPotentialPtr), "returns the electric potential field shared_ptr" )
-        .def( "spaceElectricField", &toolbox_t::spaceElectricField, "get the field function space")
-        .def( "fieldElectricField", static_cast<element_electricfield_t const& (toolbox_t::*)() const>(&toolbox_t::fieldElectricField), "returns the electric field" )
-        .def( "fieldElectricFieldPtr", static_cast<element_electricfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldElectricFieldPtr), "returns the electric field shared_ptr" )
-        .def( "fieldCurrentDensity", static_cast<element_electricfield_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensity), "returns the current density" )
-        .def( "fieldCurrentDensityPtr", static_cast<element_electricfield_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldCurrentDensityPtr), "returns the current density shared_ptr" )
         
         // solve
         .def("solve",&toolbox_t::solve, "solve the electric mechanics problem, set boolean to true to update velocity and acceleration")

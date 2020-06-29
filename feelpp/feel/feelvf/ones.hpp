@@ -26,8 +26,8 @@
    \author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
    \date 2007-04-11
  */
-#ifndef __Ones_H
-#define __Ones_H 1
+#ifndef FEELPP_VF_ONES_H
+#define FEELPP_VF_ONES_H 1
 
 //#include <blitz/array.h>
 #include <boost/multi_array.hpp>
@@ -152,6 +152,20 @@ public:
     {
         return M_values;
     }
+
+    template <typename SymbolsExprType>
+    this_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            return vf::detail::Ones<M, N>( Eigen::Matrix<value_type,M,N>::Zero() );
+        }
+
 
     //@}
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
@@ -349,4 +363,4 @@ constant( double value )
 
 } // vf
 } // Feel
-#endif /* __Ones_H */
+#endif /* FEELPP_VF_ONES_H */

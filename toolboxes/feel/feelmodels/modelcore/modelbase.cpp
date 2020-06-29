@@ -42,12 +42,32 @@ void removeTrailingSlash( std::string & s )
 }
 }
 
-ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc )
+ModelBaseCommandLineOptions::ModelBaseCommandLineOptions( po::options_description const& _options )
+{
+    M_vm.emplace();
+    auto mycmdparser = Environment::commandLineParser();
+    po::parsed_options parsed = mycmdparser.options( _options ).
+        style(po::command_line_style::allow_long | po::command_line_style::long_allow_adjacent | po::command_line_style::long_allow_next).
+        allow_unregistered().run();
+    po::store(parsed,*M_vm);
+    for ( auto & configFile : Environment::configFiles() )
+    {
+        std::istringstream & iss = std::get<1>( configFile );
+        po::store(po::parse_config_file(iss, _options,true), *M_vm);
+    }
+    po::notify(*M_vm);
+}
+
+
+ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumProc, bool use_npSubDir, std::string const& exprRepository )
 {
     if ( rootDirWithoutNumProc.empty() )
     {
         M_rootRepositoryWithoutNumProc = Environment::appRepositoryWithoutNumProc();
-        M_rootRepositoryWithNumProc = Environment::appRepository();
+        if ( use_npSubDir )
+            M_rootRepositoryWithNumProc = Environment::appRepository();
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = Environment::exprRepository();
     }
     else
@@ -55,9 +75,22 @@ ModelBaseRepository::ModelBaseRepository( std::string const& rootDirWithoutNumPr
         M_rootRepositoryWithoutNumProc = Environment::expand( rootDirWithoutNumProc );
         if ( fs::path( M_rootRepositoryWithoutNumProc ).is_relative() )
             M_rootRepositoryWithoutNumProc = (fs::path(Environment::rootRepository())/fs::path(M_rootRepositoryWithoutNumProc)).string();
-        std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
-        M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+
+        if ( use_npSubDir )
+        {
+            std::string npSubDir = (boost::format( "np_%1%" ) % Environment::worldComm().localSize() ).str();
+            M_rootRepositoryWithNumProc = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( npSubDir ) ).string();
+        }
+        else
+            M_rootRepositoryWithNumProc = M_rootRepositoryWithoutNumProc;
         M_exprRepository = ( fs::path(M_rootRepositoryWithoutNumProc) / fs::path( "exprs" ) ).string();
+    }
+
+    if ( !exprRepository.empty() )
+    {
+        M_exprRepository = Environment::expand( exprRepository );
+        if ( fs::path( M_exprRepository ).is_relative() )
+            M_exprRepository = (fs::path(M_rootRepositoryWithoutNumProc)/fs::path( M_exprRepository )).string();
     }
 
     ToolboxesDetail::removeTrailingSlash( M_rootRepositoryWithoutNumProc );
@@ -251,37 +284,39 @@ ModelBaseUpload::print() const
 ModelBase::ModelBase( std::string const& prefix, std::string const& keyword,
                       worldcomm_ptr_t const& worldComm,
                       std::string const& subPrefix,
-                      ModelBaseRepository const& modelRep )
+                      ModelBaseRepository const& modelRep,
+                      ModelBaseCommandLineOptions const& modelCmdLineOpt )
     :
     super_type( "Toolboxes", prefix ),
     M_worldComm(worldComm),
     M_worldsComm( {worldComm} ),
     M_localNonCompositeWorldsComm( { worldComm } ),
+    M_modelCommandLineOptions( modelCmdLineOpt ),
     M_prefix( prefix ),
     M_subPrefix( subPrefix ),
     M_keyword( keyword ),
     M_modelRepository( modelRep ),
-    M_verbose( boption(_name="verbose",_prefix=this->prefix()) ),
-    M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix()) ),
+    M_verbose( boption(_name="verbose",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_verboseAllProc( boption(_name="verbose_allproc",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_filenameSaveInfo( prefixvm(this->prefix(),prefixvm(this->subPrefix(),"toolbox-info.txt")) ),
-    M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix()) ),
-    M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix()) ),
-    M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix()) ),
-    M_timersSaveFileMin( boption(_name="timers.save-min",_prefix=this->prefix()) ),
-    M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix()) ),
-    M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix()) ),
-    M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix()) ),
-    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix()) ),
+    M_timersActivated( boption(_name="timers.activated",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMasterRank( boption(_name="timers.save-master-rank",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMax( boption(_name="timers.save-max",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMin( boption(_name="timers.save-min",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileMean( boption(_name="timers.save-mean",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_timersSaveFileAll( boption(_name="timers.save-all",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_scalabilitySave( boption(_name="scalability-save",_prefix=this->prefix(),_vm=this->clovm()) ),
+    M_scalabilityReinitSaveFile( boption(_name="scalability-reinit-savefile",_prefix=this->prefix(),_vm=this->clovm()) ),
     M_isUpdatedForUse( false ),
-    M_upload( soption(_name="upload",_prefix=this->prefix()), this->repository().rootWithoutNumProc(), M_worldComm )
+    M_upload( soption(_name="upload",_prefix=this->prefix(),_vm=this->clovm()), this->repository().rootWithoutNumProc(), M_worldComm )
 {
-    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-path")))
-        M_scalabilityPath = Environment::vm()[prefixvm(this->prefix(),"scalability-path")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"scalability-path")))
+        M_scalabilityPath = soption(_name="scalability-path",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_scalabilityPath = this->repository().rootWithoutNumProc();
 
-    if (Environment::vm().count(prefixvm(this->prefix(),"scalability-filename")))
-        M_scalabilityFilename = Environment::vm()[prefixvm(this->prefix(),"scalability-filename")].as< std::string >();
+    if (this->clovm().count(prefixvm(this->prefix(),"scalability-filename")))
+        M_scalabilityFilename = soption(_name="scalability-filename",_prefix=this->prefix(),_vm=this->clovm());
     else
         M_scalabilityFilename = this->prefix()+".scalibility";
 

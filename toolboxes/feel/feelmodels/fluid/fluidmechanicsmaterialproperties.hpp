@@ -558,7 +558,7 @@ public :
         {
             std::string const& matName = m.first;
             auto const& mat = m.second;
-            if ( mat.hasPhysics() && !mat.hasPhysics( { "fluid","aerothermal" } ) )
+            if ( mat.hasPhysics() && !mat.hasPhysics( { "fluid","aerothermal","heat-fluid" } ) )
                 continue;
             for ( std::string const& matmarker : mat.meshMarkers() )
             {
@@ -625,6 +625,13 @@ public :
             else M_densityByMaterial[matName].setExpr( expr("0") );
         }
     }
+
+
+    template <typename SymbolsExpr>
+    void updateFields( SymbolsExpr const& symbolsExpr )
+        {
+            // TODO
+        }
 
 private :
     std::string M_prefix;

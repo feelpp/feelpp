@@ -907,6 +907,10 @@ MIXEDPOISSON_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype mesh,
     this->log("MixedPoisson","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
+    auto mfields = this->modelFields();
+    auto se = this->symbolsExpr( mfields );
+    this->executePostProcessMeasures(time, mfields, se );
+
     if ( M_exporter->exporterGeometry() != EXPORTER_GEOMETRY_STATIC && mesh  )
     {
         LOG(INFO) << "exporting on visualisation mesh at time " << time;

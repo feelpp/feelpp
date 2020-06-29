@@ -42,9 +42,15 @@ Feel::po::options_description maxwell_options(std::string const& prefix);
 Feel::po::options_description thermoElectric_options(std::string const& prefix);
 Feel::po::options_description heatFluid_options(std::string const& prefix);
 Feel::po::options_description advection_options(std::string const& prefix);
+Feel::po::options_description redistanciation_fm_options(std::string const& prefix, bool addProjectorsOpts = true );
+Feel::po::options_description redistanciation_hj_options(std::string const& prefix );
 Feel::po::options_description levelset_options(std::string const& prefix);
+Feel::po::options_description coefficientformpde_options(std::string const& prefix);
+Feel::po::options_description coefficientformpdes_options(std::string const& prefix);
 
-Feel::po::options_description toolboxes_options(std::string const& type);
 
+Feel::po::options_description toolboxes_options(std::string const& type, std::string const& prefix);
+inline
+Feel::po::options_description toolboxes_options(std::string const& type) { return toolboxes_options( type,type ); }
 }
 #endif /* FEELMODELS_OPTIONS_HPP */

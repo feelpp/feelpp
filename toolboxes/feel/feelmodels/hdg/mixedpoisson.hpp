@@ -154,6 +154,11 @@ public:
     typedef MeasurePointsEvaluation<Wh_t,Vh_t> measure_points_evaluation_type;
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
+    struct FieldTag
+    {
+        static auto potential( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+        static auto flux( self_type const* t ) { return ModelFieldTag<self_type,1>( t ); }
+    };
     //private:
 protected:
     mesh_ptrtype M_mesh;
@@ -320,64 +325,73 @@ public:
     void solvePostProcess();
     virtual void postProcess( bool isNL = false );
 
-    auto allFields() const
-        {
-            return hana::make_tuple( std::make_pair( this->potentialKey(), this->potentialField() ),
-                                     std::make_pair( this->fluxKey(), this->fluxField() )
-                                     );
-        }
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
 
-    auto symbolsExpr() const { return this->symbolsExpr( this->potentialField() ); }
-    template<typename PotentialFieldType>
-    auto symbolsExpr( PotentialFieldType const& p ) const
+    auto modelFields( std::string const& prefix = "" ) const
         {
-            auto seField = this->symbolsExprField();
-            auto seFit = this->symbolsExprFit( seField );
-            auto seMat = this->symbolsExprMaterial( Feel::vf::symbolsExpr( seField, seFit ) );
-            return Feel::vf::symbolsExpr( seField, seFit, seMat );
+            return Feel::FeelModels::modelFields(
+                modelField<FieldCtx::ID|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL>( FieldTag::potential(this), prefix, MixedPoissonPhysicsMap[M_physic]["potentialK"], this->potentialField(), MixedPoissonPhysicsMap[M_physic]["potentialSymbol"], this->keyword() ),
+                modelField<FieldCtx::ID>( FieldTag::flux(this), prefix, MixedPoissonPhysicsMap[M_physic]["fluxK"], this->fluxField(), MixedPoissonPhysicsMap[M_physic]["fluxSymbol"], this->keyword() )
+                                                 );
+            // return this->modelFields( /*this->potentialField(), */prefix );
         }
-    constexpr auto symbolsExprField() const { return this->symbolsExprField( boost::hana::int_<Dim>() ); }
-    constexpr auto symbolsExprField( hana::int_<2> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],idv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dx"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dxv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dy"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dyv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dn"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dnv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"],idv(this->fluxField()) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"x",idv(this->fluxField())(0) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"y",idv(this->fluxField())(1) )
-                                          );
-        }
-    constexpr auto symbolsExprField( hana::int_<3> /**/ ) const
-        {
-            return Feel::vf::symbolsExpr( symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],idv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dx"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dxv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dy"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dyv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dz"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dzv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_dn"+MixedPoissonPhysicsMap[M_physic]["potentialSymbol"],dnv(this->potentialField()) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"],idv(this->fluxField()) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"x",idv(this->fluxField())(0) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"y",idv(this->fluxField())(1) ),
-                                          symbolExpr(this->keyword()+"_"+MixedPoissonPhysicsMap[M_physic]["fluxSymbol"]+"z",idv(this->fluxField())(2) )
-                                          );
-        }
-    template<typename SymbExprType>
-    auto symbolsExprFit( SymbExprType const& se ) const { return super_type::symbolsExprFit(se); }
-    template<typename SymbExprType>
-    auto symbolsExprMaterial( SymbExprType const& se ) const
-        {
-            typedef decltype(expr(scalar_field_expression<2>{},se)) _expr_scalar_type;
-            std::vector<std::pair<std::string,_expr_scalar_type>> matPropSymbsScalar;
-            return Feel::vf::symbolsExpr( symbolExpr( matPropSymbsScalar ) );
-        }
+    // auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
+    //     {
+    //         auto field_p = this->spaceElectricPotential()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "potential-electric" ) );
+    //         return this->modelFields( field_p, prefix );
+    //     }
+    // template <typename PotentialFieldType>
+    // auto modelFields( /*PotentialFieldType const& field_p, */std::string const& prefix = "" ) const
+    //     {
+    //     }
 
-    template <typename TupleFieldsType,typename SymbolsExpr>
-    void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+    //___________________________________________________________________________________//
+    // symbols expressions
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            // auto seToolbox = this->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            // auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr(); // generate symbols electric_P, electric_grad_P(_x,_y,_z), electric_dn_P
+            //Feel::cout << seFields.names() << std::endl;
+            //std::cout << "Info field potential = " << mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] ).functionSpace()->nDof() << std::endl;
+            //std::cout << "Info field flux = " << mfields.field( FieldTag::flux(this), MixedPoissonPhysicsMap[M_physic]["fluxK"] ).functionSpace()->nDof() << std::endl;
+            return Feel::vf::symbolsExpr( /*seToolbox,*/ seParam, /*seMat,*/ seFields );
+        }
+#if 0 // NOT USE this one because field not use shared ptr : (object modelfields is temporary here and the fields are stored inside)
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+#endif
+#if 0
+    template <typename ModelFieldsType>
+    auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
+        {
+            auto const& v = mfields.field( FieldTag::potential(this), MixedPoissonPhysicsMap[M_physic]["potentialK"] );
+
+            // generate symbol electric_matName_current_density
+            typedef decltype( this->currentDensityExpr(v,"") ) _expr_currentdensity_type;
+            std::vector<std::tuple<std::string,_expr_currentdensity_type,SymbolExprComponentSuffix>> currentDensitySymbs;
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physic() ) )
+            {
+                std::string symbolcurrentDensityStr = prefixvm( this->keyword(), (boost::format("%1%_current_density") %matName).str(), "_");
+                auto _currentDensityExpr = this->currentDensityExpr( v, matName );
+                currentDensitySymbs.push_back( std::make_tuple( symbolcurrentDensityStr, _currentDensityExpr, SymbolExprComponentSuffix( nDim,1 ) ) );
+            }
+
+            return Feel::vf::symbolsExpr( symbolExpr( currentDensitySymbs ) );
+        }
+#endif
+    template <typename ModelFieldsType, typename SymbolsExpr>
+    void executePostProcessMeasures( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr )
         {
             bool hasMeasure = false;
-            bool hasMeasureNorm = this->executePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
-            bool hasMeasureStatistics = this->executePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, tupleFields, symbolsExpr );
-            bool hasMeasurePoint = this->executePostProcessMeasuresPoint( M_measurePointsEvaluation, tupleFields );
+            bool hasMeasureNorm = this->updatePostProcessMeasuresNorm( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+            bool hasMeasureStatistics = this->updatePostProcessMeasuresStatistics( this->mesh(), M_rangeMeshElements, symbolsExpr, mfields );
+            bool hasMeasurePoint = this->updatePostProcessMeasuresPoint( M_measurePointsEvaluation, mfields );
             if ( hasMeasureNorm || hasMeasureStatistics || hasMeasurePoint )
                 hasMeasure = true;
 

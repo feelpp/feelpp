@@ -955,13 +955,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
     double opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<double>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<double>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -980,13 +981,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
     bool opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<bool>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<bool>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1005,13 +1007,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
     int opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<int>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<int>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1031,13 +1034,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
     std::string opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::string>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<std::string>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1056,13 +1060,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
 	std::vector<std::string> opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<std::string>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<std::vector<std::string>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1081,13 +1086,14 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
 	std::vector<double> opt;
 
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<std::vector<double>>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<std::vector<double>>();
     }
 
     catch ( boost::bad_any_cast const& bac )
@@ -1125,11 +1131,12 @@ BOOST_PARAMETER_FUNCTION(
     ( optional
       ( sub,( std::string ),"" )
       ( prefix,( std::string ),"" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
     ) )
 {
     try
     {
-        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix ).template as<typename Feel::detail::option<Args>::type>();
+        opt = Environment::vm( _name=name,_sub=sub,_prefix=prefix,_vm=vm ).template as<typename Feel::detail::option<Args>::type>();
     }
 
     catch ( boost::bad_any_cast const& bac )

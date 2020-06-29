@@ -110,7 +110,7 @@ public:
     /**
      *  Constructor. Initializes Petsc data structures
      */
-    SolverNonLinearPetsc( std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    SolverNonLinearPetsc( std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
     SolverNonLinearPetsc( SolverNonLinearPetsc const & );
 
     /**
@@ -256,9 +256,9 @@ private:
 
 template <typename T>
 inline
-SolverNonLinearPetsc<T>::SolverNonLinearPetsc( std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinearPetsc<T>::SolverNonLinearPetsc( std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 :
-    super( prefix,worldComm ),
+    super( prefix,worldComm,vm ),
     M_mapRow(new datamap_type(worldComm)),
     M_mapCol(new datamap_type(worldComm))
 {}

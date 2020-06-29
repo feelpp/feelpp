@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_CORE_MEASURE_NORM_EVALUATION_HPP
 #define FEELPP_TOOLBOXES_CORE_MEASURE_NORM_EVALUATION_HPP 1
@@ -7,6 +8,7 @@
 #include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/normsemih1.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
+#include <feel/feelcore/tuple_utils.hpp>
 
 namespace Feel
 {
@@ -128,26 +130,55 @@ measureNormEvaluationField( RangeType const& range, FieldType const& field, std:
 }
 
 
-template<typename RangeType, typename SymbolsExpr, typename FieldTupleType >
+template<typename RangeType, typename SymbolsExpr, typename... FieldTupleType >
 void
 measureNormEvaluation( RangeType const& range,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
-                       SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
+                       SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     typedef typename RangeTraits<RangeType>::element_type element_type;
     static const uint16_type nRealDim = element_type::nRealDim;
 
     if ( ppNorm.hasField() )
     {
-        hana::for_each( fieldTuple, [&]( auto const& e )
+        ( Feel::for_each( fieldTuple.tuple(), [&]( auto const& e )
                         {
-                            if ( ppNorm.field() == e.first )
+                            if constexpr ( is_iterable_v<decltype(e)> )
+                                {
+                                    for ( auto const& mfield : e )
+                                    {
+                                        std::string fieldName = mfield.nameWithPrefix();
+                                        auto const& fieldFunc = mfield.field();
+                                        if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                            {
+                                                if ( !fieldFunc )
+                                                    continue;
+                                            }
+                                        if ( ppNorm.field() == fieldName )
+                                        {
+                                            mfield.applyUpdateFunction();
+                                            for ( std::string const& normType : ppNorm.types() )
+                                                measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+                                        }
+                                    }
+                                }
+                            else
                             {
-                                auto const& fieldFunc = e.second;
-                                for ( std::string const& normType : ppNorm.types() )
-                                    measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+#if 0
+                                if ( ppNorm.field() == e.first )
+                                {
+                                    auto const& fieldFunc = e.second;
+                                    if constexpr ( is_shared_ptr<decltype(fieldFunc)>::value )
+                                        {
+                                            if ( !fieldFunc )
+                                                return;
+                                        }
+                                    for ( std::string const& normType : ppNorm.types() )
+                                        measureNormEvaluationField( range, unwrap_ptr(fieldFunc), normType, ppNorm, symbolsExpr, res );
+                                }
+#endif
                             }
-                        });
+                        }), ... );
     }
     else if ( ppNorm.hasExpr() )
     {
@@ -196,22 +227,22 @@ measureNormEvaluation( RangeType const& range,
 }
 
 
-template<typename MeshType, typename RangeType, typename SymbolsExpr, typename FieldTupleType>
+template<typename MeshType, typename RangeType, typename SymbolsExpr, typename... FieldTupleType>
 void
 measureNormEvaluation( std::shared_ptr<MeshType> const& mesh, RangeType const& defaultRange,
                        ModelPostprocessNorm const& ppNorm,  std::map<std::string,double> & res,
-                       SymbolsExpr const& symbolsExpr, FieldTupleType const& fieldTuple )
+                       SymbolsExpr const& symbolsExpr, FieldTupleType const& ... fieldTuple )
 {
     auto meshMarkers = ppNorm.markers();
     if ( meshMarkers.empty() )
-        measureNormEvaluation( defaultRange,ppNorm,res,symbolsExpr,fieldTuple );
+        measureNormEvaluation( defaultRange,ppNorm,res,symbolsExpr,fieldTuple... );
     else
     {
         std::string firstMarker = *meshMarkers.begin();
         if ( mesh->hasElementMarker( firstMarker ) )
-            measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple );
+            measureNormEvaluation(  markedelements( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple... );
         else if ( mesh->hasFaceMarker( firstMarker ) )
-            measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple );
+            measureNormEvaluation(  markedfaces( mesh,ppNorm.markers() ),ppNorm,res,symbolsExpr,fieldTuple... );
         else if ( mesh->hasEdgeMarker( firstMarker ) || mesh->hasPointMarker( firstMarker ) )
             CHECK( false ) << "not implemented for edges/points";
         else if ( !mesh->hasMarker( firstMarker ) )

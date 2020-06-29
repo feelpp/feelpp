@@ -49,13 +49,14 @@ BOOST_PARAMETER_FUNCTION(
       ( filename,       *( boost::is_convertible<mpl::_,std::string> ) ) )
     ( optional
       ( prefix,(std::string), "" )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
       ( desc, *( boost::is_convertible<mpl::_,std::string> ), std::string() )
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
-      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list") ) )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
+      ( geo_parameters,    *( boost::icl::is_map<mpl::_> ), Gmsh::gpstr2map( soption(_prefix=prefix,_name="gmsh.geo-variables-list",_vm=vm) ) )
       ( dim,              *( boost::is_integral<mpl::_> ), 3 )
       ( order,              *( boost::is_integral<mpl::_> ), 1 )
       ( files_path, *( boost::is_convertible<mpl::_,std::string> ), Environment::localGeoRepository() )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
       ( worldcomm,       (worldcomm_ptr_t), Environment::worldCommPtr() ) )
     )
 

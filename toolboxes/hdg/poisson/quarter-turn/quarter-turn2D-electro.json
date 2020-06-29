@@ -81,6 +81,41 @@
         "Exports":
         {
             "fields":["potential","flux"]
+        },
+        "Measures":
+        {
+            "Points":
+            {
+                "%1_1%":
+                {
+                    "coord":"%1_2%",
+                    "fields":"potential",
+                    "index1": [ ["V0", "{0,1.5}"],
+                                ["V1", "{1.5,0}"]
+                              ]
+                }
+            },
+            "Statistics":
+            {
+                "Intentsity0":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"top"
+                },
+                "Intentsity1":
+                {
+                    "type":"integrate",
+                    "field":"flux",
+                    "markers":"bottom"
+                },
+                "Power":
+                {
+                    "type":"integrate",
+                    "expr":"poisson_P:poisson_P",
+                    "markers":"omega"
+                }
+            }
         }
     }
 }
