@@ -36,7 +36,7 @@
 # include <qd/qd.h>
 #endif
 /// \cond detail
-
+# include <complex>
 # include <boost/preprocessor/comparison/less.hpp>
 # include <boost/preprocessor/comparison/equal.hpp>
 # include <boost/preprocessor/logical/and.hpp>
@@ -484,7 +484,7 @@
             if constexpr( is_op_mul )                                   \
                             return ldiff*M_right + M_left*rdiff;        \
             else if constexpr( is_op_div )                              \
-                                 return (ldiff*M_right - M_left*rdiff)/pow(M_right,2.0); \
+                                 return (ldiff*M_right - M_left*rdiff)/(M_right*M_right); \
             else if constexpr( is_op_add || is_op_sub )                 \
                                  return ldiff VF_OP_SYMBOL( O ) rdiff;  \
             else { CHECK(false ) << "TODO or not possible";return *this; } \
