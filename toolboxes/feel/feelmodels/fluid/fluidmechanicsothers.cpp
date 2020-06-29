@@ -977,16 +977,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matri
     if ( !this->algebraicFactory() )
         return; // TODO : should be use with multiphysics toolboxes as heat-fluid
 
-    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->hasAuxiliarySparseMatrix( "pmm" );
     if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
         return;
     sparse_matrix_ptrtype pmmMat;
     if ( hasAlreadyBuiltPMM )
-        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+        pmmMat = this->algebraicFactory()->auxiliarySparseMatrix( "pmm" );
     else
     {
         pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
-        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+        this->algebraicFactory()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
     }
     CHECK( pmmMat ) << "pmmMat is not initialized";
 

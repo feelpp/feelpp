@@ -188,6 +188,15 @@ namespace FeelModels
         void
         attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace );
 
+        //! attach a sparse matrix to the precondtioner
+        void attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat );
+        //! return true if a sparse matrix has been attached
+        bool hasAuxiliarySparseMatrix( std::string const& key ) const;
+        //! return  a sparse matrix attached
+        sparse_matrix_ptrtype const& auxiliarySparseMatrix( std::string const& key ) const;
+
+        //! attach operator PCD to the precondtioner
+        void attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//

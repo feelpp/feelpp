@@ -252,6 +252,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( this->backend() ) << "backend not init\n";
         std::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->backend(),nullSpace) );
         this->backend()->attachNullSpace( mynullspace );
+        if ( M_solverPtAP_backend )
+            M_solverPtAP_backend->attachNullSpace( mynullspace );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( NullSpace<value_type> const& nearNullSpace )
@@ -259,6 +261,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( this->backend() ) << "backend not init\n";
         std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         this->backend()->attachNearNullSpace( myNearNullSpace );
+        if ( M_solverPtAP_backend )
+            M_solverPtAP_backend->attachNearNullSpace( myNearNullSpace );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace, std::string const& prefix )
@@ -267,12 +271,44 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( M_PrecondManage ) << "preconditioner not init\n";
         std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         M_PrecondManage->attachNearNullSpace( k, myNearNullSpace, prefix );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachNearNullSpace( k, myNearNullSpace, prefix );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
     {
         this->attachNearNullSpace( k, nearNullSpace, this->preconditionerTool()->name() );
     }
+
+
+    void
+    ModelAlgebraicFactory::attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_PrecondManage->attachAuxiliarySparseMatrix( key, mat );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachAuxiliarySparseMatrix( key, mat );
+    }
+
+    bool
+    ModelAlgebraicFactory::hasAuxiliarySparseMatrix( std::string const& key ) const
+    {
+        return M_PrecondManage->hasAuxiliarySparseMatrix( key );
+    }
+
+    sparse_matrix_ptrtype const&
+    ModelAlgebraicFactory::auxiliarySparseMatrix( std::string const& key ) const
+    {
+        return M_PrecondManage->auxiliarySparseMatrix( key );
+    }
+
+    void
+    ModelAlgebraicFactory::attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD )
+    {
+        M_PrecondManage->attachOperatorPCD( key, opPCD );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachOperatorPCD( key, opPCD );
+    }
+
 
     void
     ModelAlgebraicFactory::addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key )
