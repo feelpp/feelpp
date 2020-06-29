@@ -1088,42 +1088,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
     M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
-    if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
-    {
-        std::string nearNullSpacePrefix = this->prefix();
-        if ( Environment::vm().count(prefixvm(this->prefix(),"use-velocity-near-null-space.prefix").c_str()) )
-            nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
-
-        NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
-        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
-    }
-
-    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
-    if ( attachMassMatrix )
-    {
-        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
-        //auto themassMatrixGraph = stencil( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity() );
-        auto const& u = this->fieldVelocity();
-        massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
-
-        massbf.matrixPtr()->close();
-        if ( this->algebraicFactory() )
-            this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
-    }
-
-    if ( this->hasOperatorPCD() )
-        this->algebraicFactory()->preconditionerTool()->attachOperatorPCD("pcd", this->operatorPCD());
-
-    if ( M_timeStepping == "Theta" )
-    {
-        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
-        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
-        if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
-    }
-
-
     if ( !M_bodySetBC.empty() )
     {
         int nBlock = this->nBlockMatrixGraph();
@@ -1164,6 +1128,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
         if ( M_bodySetBC.hasElasticVelocity() )
             M_algebraicFactory->initExplictPartOfSolution();
+    }
+
+    if ( boption(_name="use-velocity-near-null-space",_prefix=this->prefix() ) )
+    {
+        std::string nearNullSpacePrefix = this->prefix();
+        if ( Environment::vm().count(prefixvm(this->prefix(),"use-velocity-near-null-space.prefix").c_str()) )
+            nearNullSpacePrefix = soption( _name="use-velocity-near-null-space.prefix", _prefix=this->prefix() );
+
+        NullSpace<double> userNullSpace = detail::getNullSpace(this->functionSpaceVelocity(), mpl::int_<nDim>() ) ;
+        M_algebraicFactory->attachNearNullSpace( 0,userNullSpace, nearNullSpacePrefix ); // for block velocity in fieldsplit
+    }
+
+    bool attachMassMatrix = boption(_prefix=this->prefix(),_name="preconditioner.attach-mass-matrix");
+    if ( attachMassMatrix )
+    {
+        auto massbf = form2( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity());
+        //auto themassMatrixGraph = stencil( _trial=this->functionSpaceVelocity(), _test=this->functionSpaceVelocity() );
+        auto const& u = this->fieldVelocity();
+        massbf += integrate( _range=M_rangeMeshElements, _expr=inner( idt(u),id(u) ) );
+
+        massbf.matrixPtr()->close();
+        if ( this->algebraicFactory() )
+            this->algebraicFactory()->attachAuxiliarySparseMatrix( "mass-matrix", massbf.matrixPtr() );
+    }
+
+    if ( this->hasOperatorPCD() )
+        this->algebraicFactory()->attachOperatorPCD("pcd", this->operatorPCD());
+
+    if ( M_timeStepping == "Theta" )
+    {
+        M_timeStepThetaSchemePreviousContrib = this->backend()->newVector(M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+        M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
+        M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
+        if ( M_stabilizationGLS )
+            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
     }
 
 
