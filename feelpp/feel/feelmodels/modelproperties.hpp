@@ -51,6 +51,10 @@ public:
                      std::string const& directoryLibExpr = "",
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
+    ModelProperties( pt::ptree const& pt,
+                     std::string const& directoryLibExpr = "",
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
+                     std::string const& prefix="" );
     virtual ~ModelProperties();
 
     pt::ptree const& pTree() const { return M_p; }
@@ -111,11 +115,15 @@ public:
      * @param[in] filename The file to save the current tree
      **/
     void write(std::string const &filename);
+  private :
+
+    void setup();
 
 private:
+    std::string M_prefix, M_directoryLibExpr;
     pt::ptree M_p;
 
-    std::string M_name, M_shortname, M_description, M_prefix, M_unit;
+    std::string M_name, M_shortname, M_description, M_unit;
     ModelModels M_models;
     ModelParameters M_params;
     ModelMaterials M_mat;

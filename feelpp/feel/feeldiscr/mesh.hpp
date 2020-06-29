@@ -1106,7 +1106,13 @@ public:
     //!
     //!  Create a P1 mesh from the HO mesh
     //!
-    P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) const;
+    P1_mesh_ptrtype createP1mesh( size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) const
+    {
+        return this->createP1mesh( elements(this->shared_from_this()), ctxExtraction, ctxMeshUpdate );
+    }
+
+    template <typename RangeType>
+        P1_mesh_ptrtype createP1mesh( RangeType const& range, size_type ctxExtraction = EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT, size_type ctxMeshUpdate = MESH_UPDATE_EDGES | MESH_UPDATE_FACES ) const;
 
 #if defined( FEELPP_HAS_VTK )
     //!
@@ -1970,9 +1976,15 @@ void Mesh<Shape, T, Tag, IndexT>::createSubmesh( self_type& new_mesh,
 }
 
 template <typename Shape, typename T, int Tag, typename IndexT>
+template <typename RangeType>
 typename Mesh<Shape, T, Tag, IndexT>::P1_mesh_ptrtype
-Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ctxMeshUpdate ) const
+Mesh<Shape, T, Tag, IndexT>::createP1mesh( RangeType const& range, size_type ctxExtraction, size_type ctxMeshUpdate ) const
 {
+    if constexpr (false /*nOrder == 1*/ )
+         return Feel::createSubmesh( _mesh=this->shared_from_this(), _range=elements(this->shared_from_this()), _context=ctxExtraction, _update=ctxMeshUpdate );
+    else
+    {
+    
     std::shared_ptr<SubMeshData<>> smd;
     Context c( ctxExtraction );
     bool keepMeshRelation = c.test( EXTRACTION_KEEP_MESH_RELATION );
@@ -2312,6 +2324,7 @@ Mesh<Shape, T, Tag, IndexT>::createP1mesh( size_type ctxExtraction, size_type ct
         new_mesh->setSubMeshData( smd );
 
     return new_mesh;
+    }
 }
 
 #if defined( FEELPP_HAS_VTK )

@@ -1,10 +1,12 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_CORE_MEASURE_POINTS_EVALUATION_HPP
 #define FEELPP_TOOLBOXES_CORE_MEASURE_POINTS_EVALUATION_HPP 1
 
 #include <feel/feelmodels/modelpostprocess.hpp>
 #include <feel/feelmodels/modelcore/traits.hpp>
+#include <feel/feelcore/tuple_utils.hpp>
 
 namespace Feel
 {
@@ -110,49 +112,78 @@ public :
             }
 
             hana::for_each( M_contextFields,
-                            [&fieldTuple,&res](auto const& x) {
-                                hana::for_each( fieldTuple,
-                                                [&x,&res](auto const& y) {
-                                                    auto const& fectx = std::get<0>( x );
-
-                                                    if constexpr( std::is_same_v< typename Feel::decay_type<decltype(y.second)>::functionspace_type::Context, std::decay_t<decltype(*fectx)> > )
+                            [this,&fieldTuple,&res](auto const& x) {
+                                hana::for_each( fieldTuple.tuple(),
+                                                [this,&x,&res](auto const& y) {
+                                                    if constexpr ( is_iterable_v<decltype(y)> )
+                                                    {
+                                                        for ( auto const& mfield : y )
                                                         {
-                                                            std::string const& field = y.first;
-                                                            auto itFindField = std::get<1>( x ).find( field );
-                                                            if ( itFindField != std::get<1>( x ).end() && !itFindField->second.empty() )
-                                                            {
-                                                                auto expr = idv( y.second );
-                                                                auto evalAtNodes = evaluateFromContext( _context=*fectx,
-                                                                                                        _expr=expr );
-
-                                                                typedef typename ExprTraitsFromContext<std::decay_t<decltype(*fectx)>,std::decay_t<decltype(expr)>>::shape shape_type;
-
-                                                                for ( int nodeId=0;nodeId<fectx->nPoints();++nodeId )
-                                                                {
-                                                                    auto itFindNodeIdInCtx = itFindField->second.find( nodeId );
-                                                                    if ( itFindNodeIdInCtx != itFindField->second.end() )
-                                                                    {
-                                                                        std::string ptPosName = itFindNodeIdInCtx->second;
-                                                                        std::string pointNameOutputBase = (boost::format("Points_%1%_%2%")%ptPosName %field).str();
-                                                                        for ( int i=0;i<shape_type::M ;++i )
-                                                                            for ( int j=0;j<shape_type::N ;++j )
-                                                                            {
-                                                                                double val = evalAtNodes( nodeId*shape_type::M*shape_type::N+i+j*shape_type::M );
-                                                                                std::string pointNameOutput = pointNameOutputBase;
-                                                                                if ( shape_type::M > 1 && shape_type::N > 1 )
-                                                                                    pointNameOutput = (boost::format("%1%_%2%_%3%")%pointNameOutputBase %i %j).str();
-                                                                                else if ( shape_type::M > 1 )
-                                                                                    pointNameOutput = (boost::format("%1%_%2%")%pointNameOutputBase %i).str();
-                                                                                else if ( shape_type::N > 1 )
-                                                                                    pointNameOutput = (boost::format("%1%_%2%")%pointNameOutputBase %j).str();
-                                                                                res[pointNameOutput] = val;
-                                                                            }
-                                                                    }
-                                                                } //
-                                                            }
+                                                            this->evalFieldImpl( x, mfield, res );
                                                         }
+                                                    }
+                                                    else
+                                                    {
+                                                        //this->evalFieldImpl( x,y.first,y.second,res );
+                                                    }
                                                 }); // for_each fieldTuple
                             }); // for_each M_contextFields
+
+        }
+
+private :
+    template <typename ContextDataType,typename MFieldType>
+    void
+    evalFieldImpl( ContextDataType const& x, MFieldType const& mfield, std::map<std::string,double> & res )
+        {
+            std::string fieldName = mfield.nameWithPrefix();
+            auto const& fieldFunc = mfield.field();
+
+            using FieldType = std::decay_t<decltype(fieldFunc)>;
+            if constexpr ( is_shared_ptr< FieldType >::value )
+                {
+                    if ( !fieldFunc )
+                        return;
+                }
+
+            auto const& fectx = std::get<0>( x );
+
+            if constexpr( std::is_same_v< typename Feel::decay_type<FieldType>::functionspace_type::Context, std::decay_t<decltype(*fectx)> > )
+                {
+                    auto itFindField = std::get<1>( x ).find( fieldName );
+                    if ( itFindField != std::get<1>( x ).end() && !itFindField->second.empty() )
+                    {
+                        mfield.applyUpdateFunction();
+                        auto expr = idv( fieldFunc );
+                        auto evalAtNodes = evaluateFromContext( _context=*fectx,
+                                                                _expr=expr );
+
+                        typedef typename ExprTraitsFromContext<std::decay_t<decltype(*fectx)>,std::decay_t<decltype(expr)>>::shape shape_type;
+
+                        for ( int nodeId=0;nodeId<fectx->nPoints();++nodeId )
+                        {
+                            auto itFindNodeIdInCtx = itFindField->second.find( nodeId );
+                            if ( itFindNodeIdInCtx != itFindField->second.end() )
+                            {
+                                std::string ptPosName = itFindNodeIdInCtx->second;
+                                std::string pointNameOutputBase = (boost::format("Points_%1%_%2%")%ptPosName %fieldName).str();
+                                for ( int i=0;i<shape_type::M ;++i )
+                                    for ( int j=0;j<shape_type::N ;++j )
+                                    {
+                                        double val = evalAtNodes( nodeId*shape_type::M*shape_type::N+i+j*shape_type::M );
+                                        std::string pointNameOutput = pointNameOutputBase;
+                                        if ( shape_type::M > 1 && shape_type::N > 1 )
+                                            pointNameOutput = (boost::format("%1%_%2%_%3%")%pointNameOutputBase %i %j).str();
+                                        else if ( shape_type::M > 1 )
+                                            pointNameOutput = (boost::format("%1%_%2%")%pointNameOutputBase %i).str();
+                                        else if ( shape_type::N > 1 )
+                                            pointNameOutput = (boost::format("%1%_%2%")%pointNameOutputBase %j).str();
+                                        res[pointNameOutput] = val;
+                                    }
+                            }
+                        } //
+                    }
+                }
 
         }
 

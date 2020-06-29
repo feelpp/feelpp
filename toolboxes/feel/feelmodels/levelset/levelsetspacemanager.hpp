@@ -77,7 +77,7 @@ public:
     //typedef std::shared_ptr<element_scalar_type> element_scalar_ptrtype;
 
     typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_type>::type basis_vectorial_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>, Periodicity<periodicity_type> > space_vectorial_type;
+    typedef FunctionSpace<mesh_type, bases<basis_vectorial_type>/*, Periodicity<periodicity_type>*/ > space_vectorial_type;
     typedef std::shared_ptr<space_vectorial_type> space_vectorial_ptrtype;
     typedef typename space_vectorial_type::element_type element_vectorial_type;
     typedef std::shared_ptr<element_vectorial_type> element_vectorial_ptrtype;
@@ -105,17 +105,21 @@ public:
 
     //--------------------------------------------------------------------//
     // High-order visu spaces
-    typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
-    typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
+    typedef Mesh< Simplex< nDim, 1, nDim > > mesh_hovisu_type;
+    typedef std::shared_ptr<mesh_hovisu_type> mesh_hovisu_ptrtype;
+    typedef Lagrange<1, Vectorial, Continuous, PointSetFekete> basis_vectorial_hovisu_type;
+    typedef FunctionSpace<mesh_hovisu_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
+    typedef std::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
+    typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
+    typedef std::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
+
+    //typedef Lagrange<1, Scalar, Continuous, PointSetFekete> basis_scalar_hovisu_type;
+    //typedef FunctionSpace< mesh_type, bases<basis_scalar_hovisu_type> > space_scalar_hovisu_type;
+    typedef typename space_vectorial_hovisu_type::component_functionspace_type space_scalar_hovisu_type;
     typedef std::shared_ptr<space_scalar_hovisu_type> space_scalar_hovisu_ptrtype;
     typedef typename space_scalar_hovisu_type::element_type element_scalar_hovisu_type;
     typedef std::shared_ptr<element_scalar_hovisu_type> element_scalar_hovisu_ptrtype;
 
-    typedef typename detail::ChangeBasisPolySet<Vectorial, basis_scalar_hovisu_type>::type basis_vectorial_hovisu_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vectorial_hovisu_type> > space_vectorial_hovisu_type;
-    typedef std::shared_ptr<space_vectorial_hovisu_type> space_vectorial_hovisu_ptrtype;
-    typedef typename space_vectorial_hovisu_type::element_type element_vectorial_hovisu_type;
-    typedef std::shared_ptr<element_vectorial_hovisu_type> element_vectorial_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
     // Lagrange P1isoPn operators
@@ -124,7 +128,7 @@ public:
 
     //--------------------------------------------------------------------//
     // Lagrange P1hovisu operators
-    typedef OperatorLagrangeP1<space_scalar_hovisu_type> op_lagrangeP1_hovisu_type;
+    typedef OperatorLagrangeP1<space_scalar_type> op_lagrangeP1_hovisu_type;
     typedef std::shared_ptr<op_lagrangeP1_hovisu_type> op_lagrangeP1_hovisu_ptrtype;
 
     //--------------------------------------------------------------------//
@@ -209,7 +213,7 @@ public:
 
     mesh_ptrtype const& mesh() const { return M_mesh; }
     mesh_ptrtype const& meshIsoPN() const { return M_meshIsoPN; }
-    mesh_ptrtype const& meshHovisu() const { return M_meshHovisu; }
+    mesh_hovisu_ptrtype const& meshHovisu() const { return M_meshHovisu; }
 
     range_elements_type const& rangeMeshElements() { return M_rangeMeshElements; }
     range_elements_type const& rangeMeshPNElements() { return M_rangeMeshElements; }
@@ -245,7 +249,7 @@ private:
     // Meshes
     mesh_ptrtype M_mesh;
     mesh_ptrtype M_meshIsoPN;
-    mesh_ptrtype M_meshHovisu;
+    mesh_hovisu_ptrtype M_meshHovisu;
 
     // Ranges
     range_elements_type M_rangeMeshElements;
@@ -289,247 +293,6 @@ private:
     op_interpolation_scalar_to_hovisu_ptrtype M_opInterpolationScalarToHovisu;
     op_interpolation_vectorial_to_hovisu_ptrtype M_opInterpolationVectorialToHovisu;
 };
-
-#define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisType, typename PeriodicityType, typename BasisPnType > \
-        /**/
-#define LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE \
-    LevelSetSpaceManager<ConvexType, BasisType, PeriodicityType, BasisPnType> \
-        /**/
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::LevelSetSpaceManager( 
-        mesh_ptrtype const& mesh,
-        std::string const& prefix,
-        std::string const& rootRepository
-        ) :
-    M_prefix( prefix ),
-    M_rootRepository( rootRepository ),
-    M_mesh( mesh ),
-    M_worldsComm( worldscomm_ptrtype(1,mesh->worldCommPtr()) ),
-    M_buildExtendedDofTable( false ),
-    M_functionSpaceCreated( false )
-{
-    M_rangeMeshElements = elements( M_mesh );
-}
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::setPeriodicity( periodicity_type const& p ) 
-{
-    if( M_functionSpaceCreated )
-        Feel::cout << "WARNING !! Setting periodicity after spaces creation ! Need to re-build them !" << std::endl;
-    M_periodicity = p;
-}
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceDefault()
-{
-    if( !M_spaceVectorial )
-    {
-        M_spaceVectorial = space_vectorial_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
-                );
-    }
-    if( !M_spaceScalar )
-    {
-        if( M_buildExtendedDofTable )
-        {
-            std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-            M_spaceScalar = space_scalar_type::New( 
-                    _mesh=this->mesh(), 
-                    _worldscomm=this->worldsComm(),
-                    _extended_doftable=extendedDT,
-                    _periodicity=this->periodicity()
-                    );
-        }
-        else
-        {
-            M_spaceScalar = M_spaceVectorial->compSpace();
-        }
-    }
-    if( !M_spaceMarkers )
-    {
-        M_spaceMarkers = space_markers_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity(),
-                _extended_doftable=std::vector<bool>(1, true)
-                );
-    }
-
-    M_functionSpaceCreated = true;
-}
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceIsoPN()
-{
-    if( !M_spaceScalarPN )
-    {
-        M_spaceScalarPN = space_scalar_PN_type::New( 
-                _mesh=this->mesh(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
-                );
-    }
-    if( !M_spaceVectorialPN )
-    {
-        M_spaceVectorialPN = space_vectorial_PN_type::New( 
-                _mesh=this->mesh(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
-                );
-    }
-    if( !M_meshIsoPN )
-    {
-        M_opLagrangeP1isoPN = lagrangeP1(
-                _space=this->M_spaceScalarPN
-                );
-        M_meshIsoPN = M_opLagrangeP1isoPN->mesh();
-        M_rangeMeshIsoPNElements = elements( M_meshIsoPN );
-    }
-    if( !M_spaceVectorialIsoPN )
-    {
-        M_spaceVectorialIsoPN = space_vectorial_type::New( 
-                _mesh=this->meshIsoPN(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
-                );
-    }
-    if( !M_spaceScalarIsoPN )
-    {
-        if( M_buildExtendedDofTable )
-        {
-            std::vector<bool> extendedDT( 1, M_buildExtendedDofTable );
-            M_spaceScalarIsoPN = space_scalar_type::New(
-                    _mesh=this->meshIsoPN(),
-                    _worldscomm=this->worldsComm(),
-                    _extended_doftable=extendedDT,
-                    _periodicity=this->periodicity()
-                    );
-        }
-        else
-        {
-            M_spaceScalarIsoPN = M_spaceVectorialIsoPN->compSpace();
-        }
-    }
-    if( !M_spaceMarkersIsoPN )
-    {
-        M_spaceMarkersIsoPN = space_markers_type::New( 
-                _mesh=this->meshIsoPN(),
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity(),
-                _extended_doftable=std::vector<bool>(1, true)
-                );
-    }
-
-    if( !M_opInterpolationScalarFromPN )
-    {
-        M_opInterpolationScalarFromPN = opInterpolation(
-                _domainSpace = M_spaceScalarPN,
-                _imageSpace = M_spaceScalarIsoPN,
-                _type = InterpolationNonConforme(false)
-                );
-    }
-    if( !M_opInterpolationScalarToPN )
-    {
-        M_opInterpolationScalarToPN = opInterpolation(
-                _domainSpace = M_spaceScalarIsoPN,
-                _imageSpace = M_spaceScalarPN,
-                _type = InterpolationNonConforme(false)
-                );
-    }
-    if( !M_opInterpolationVectorialFromPN )
-    {
-        M_opInterpolationVectorialFromPN = opInterpolation(
-                _domainSpace = M_spaceVectorialPN,
-                _imageSpace = M_spaceVectorialIsoPN,
-                _type = InterpolationNonConforme(false)
-                );
-    }
-    if( !M_opInterpolationVectorialToPN )
-    {
-        M_opInterpolationVectorialToPN = opInterpolation(
-                _domainSpace = M_spaceVectorialIsoPN,
-                _imageSpace = M_spaceVectorialPN,
-                _type = InterpolationNonConforme(false)
-                );
-    }
-
-    M_functionSpaceCreated = true;
-}
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceHovisu()
-{
-    CHECK( M_spaceScalar ) << "M_spaceScalar must be built to build Hovisu function spaces\n";
-    CHECK( M_spaceVectorial ) << "M_spaceVectorial must be built to build Hovisu function spaces\n";
-
-    if( !M_meshHovisu )
-    {
-        M_opLagrangeP1Hovisu = lagrangeP1(
-                _space=this->M_spaceScalar,
-                _path=this->M_rootRepository,
-                _prefix=prefixvm( this->M_prefix, "hovisu" ),
-                _rebuild=!this->doRestart(),
-                _parallel=false
-                );
-        M_meshHovisu = M_opLagrangeP1Hovisu->mesh();
-        M_rangeMeshHovisuElements = elements( M_meshHovisu );
-    }
-    if( !M_spaceVectorialHovisu )
-    {
-        M_spaceVectorialHovisu = space_vectorial_type::New( 
-                _mesh=this->meshHovisu(),
-                _worldscomm=this->worldsComm()
-                );
-    }
-    if( !M_spaceScalarHovisu )
-    {
-        M_spaceScalarHovisu = M_spaceVectorialHovisu->compSpace();
-    }
-
-    if( !M_opInterpolationScalarToHovisu )
-    {
-        M_opInterpolationScalarToHovisu = opInterpolation(
-                _domainSpace = M_spaceScalar,
-                _imageSpace = M_spaceScalarHovisu,
-                _type = InterpolationNonConforme(false, true, false, 15)
-                );
-    }
-    if( !M_opInterpolationVectorialToHovisu )
-    {
-        M_opInterpolationVectorialToHovisu = opInterpolation(
-                _domainSpace = M_spaceVectorial,
-                _imageSpace = M_spaceVectorialHovisu,
-                _type = InterpolationNonConforme(false, true, false, 15)
-                );
-    }
-
-    M_functionSpaceCreated = true;
-}
-
-
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_DECLARATIONS
-void
-LEVELSETSPACEMANAGER_CLASS_TEMPLATE_TYPE::createFunctionSpaceTensor2Symm()
-{
-    if( !M_spaceTensor2Symm )
-    {
-        M_spaceTensor2Symm = space_tensor2symm_type::New( 
-                _mesh=this->mesh(), 
-                _worldscomm=this->worldsComm(),
-                _periodicity=this->periodicity()
-                );
-    }
-
-    M_functionSpaceCreated = true;
-}
 
 } // namespace FeelModels
 } // namespace Feel

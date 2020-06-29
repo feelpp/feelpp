@@ -23,7 +23,7 @@ const bool surfacetension_interfaceforcesmodel =
 
 const bool helfrich_interfaceforcesmodel = 
     MULTIFLUID_CLASS_INSTANTIATION::interfaceforces_factory_type::instance().registerProduct( 
-            "helfrich", 
+            "helfrich-force", 
             &detail::createInterfaceForcesModel<HelfrichForceModel, typename MULTIFLUID_CLASS_INSTANTIATION::levelset_model_type, typename MULTIFLUID_CLASS_INSTANTIATION::fluid_model_type> );
 
 const bool inextensibility_interfaceforcesmodel = 

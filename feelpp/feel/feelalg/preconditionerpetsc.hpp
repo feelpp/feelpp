@@ -398,11 +398,11 @@ public :
 class ConfigurePC : public ConfigurePCBase
 {
 public :
-    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
-                 std::string const& sub = "", std::string const& prefix = "" );
-    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
-                 std::string const& sub, std::string const& prefix,
-                 std::vector<std::string> const& prefixOverwrite );
+    // ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+    //              std::string const& sub = "", std::string const& prefix = "" );
+    // ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+    //              std::string const& sub, std::string const& prefix,
+    //              std::vector<std::string> const& prefixOverwrite );
     ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
                  std::string const& sub, std::string const& prefix,
                  std::vector<std::string> const& prefixOverwrite,
@@ -413,6 +413,14 @@ public :
                  std::vector<std::string> const& prefixOverwrite,
                  po::variables_map const& vm/* = Environment::vm()*/ );
 
+    ConfigurePC( PC& pc, PreconditionerPetsc<double> * precFeel, worldcomm_ptr_t const& worldComm,
+                 std::string const& sub, std::string const& prefix,
+                 std::vector<std::string> const& prefixOverwrite,
+                 po::options_description const& _options );
+
+
+    bool view() const { return M_view; }
+
     void setFactorShiftType( std::string s )
     {
         CHECK( s == "none" || s == "nonzero" || s == "positive_definite" || s == "inblocks" ) << "invalid shift type : " << s;
@@ -421,7 +429,7 @@ public :
 
     void run( PC& pc );
 private :
-    bool M_useConfigDefaultPetsc;
+    bool M_useConfigDefaultPetsc, M_view;
     std::string M_factorShiftType;
 };
 

@@ -279,7 +279,7 @@ TestHDiv<Dim,Order>::testProjector()
 
     auto E = expr<Dim,1>( soption("functions.e" ) );
     auto fE = div(E);
-    auto gE = grad(E);
+    auto gE = grad<Dim>(E);
 
     // L2 projection (Lagrange)
     auto l2_lagV = opProjection( _domainSpace=Yh_v, _imageSpace=Yh_v, _type=L2 ); //l2 vectorial proj
