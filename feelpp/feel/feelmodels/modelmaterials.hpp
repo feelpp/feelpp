@@ -432,6 +432,29 @@ public:
     void setParameterValues( std::map<std::string,double> const& mp );
 
     void saveMD(std::ostream &os);
+
+    /**
+     * get the list of symbols associated to expressions
+     */
+    auto symbolsExpr( std::string const& matname ) const
+    {
+        auto extract = [this,&matname](auto const& e_ij) {
+            constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+            constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+            using _expr_type = std::decay_t< decltype( ModelExpression{}.expr<ni,nj>() ) >;
+            symbol_expression_t<_expr_type> seParamValue;
+            for( auto const& [symbName,mparam] : this->at( matname ).properties() )
+            {
+                if ( !mparam.hasExpr<ni,nj>() )
+                    continue;
+                auto const& theexpr = mparam.expr<ni,nj>();
+                seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
+            }
+            return seParamValue;
+        };
+        auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, extract );
+        return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ) );
+    }
 private:
     void setup();
 private:
@@ -439,6 +462,8 @@ private:
     std::string M_directoryLibExpr;
 
 };
+
+
 
 FEELPP_EXPORT inline ModelMaterial
 material( ModelMaterials::value_type const& m )
