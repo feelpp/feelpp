@@ -429,10 +429,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                     {
                         R->add( basisToContainerGpTranslationalVelocityVector[d],
                                 -massBody*translationalVelocityPolyDeriv(d) );
-#if 0
-                        R->add( basisToContainerGpTranslationalVelocityVector[d],
-                                -massTilde*_gravity[d] );
-#endif
+
+                        if ( bpbc.gravityForceEnabled() )
+                        {
+                            R->add( basisToContainerGpTranslationalVelocityVector[d],
+                                    -bpbc.gravityForceWithMass()(d) );
+                        }
                     }
                 }
                 if ( hasActiveDofAngularVelocity )

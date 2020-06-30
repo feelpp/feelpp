@@ -101,13 +101,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Root Repository : " << this->rootRepository()
-           << "\n   Physical Model"
-        //<< "\n     -- pde name  : " << M_modelName
-        //<< "\n     -- stress tensor law  : " << this->materialProperties()->dynamicViscosityLaw()
-           << "\n     -- time mode : " << StateTemporal
-           << "\n     -- ale mode  : " << ALEmode
-           << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
+           << "\n   Root Repository : " << this->rootRepository();
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        *_ostr << "\n   Physical Model [" << physicName << "]"
+               << "\n     -- equation : " << physicFluidData->equation()
+               << "\n     -- time mode : " << StateTemporal
+               << "\n     -- ale mode  : " << ALEmode
+               << "\n     -- gravity force enabled  : " << physicFluidData->gravityForceEnabled();
+        if ( physicFluidData->gravityForceEnabled() )
+             *_ostr << "\n     -- gravity force expr  : " << str( physicFluidData->gravityForceExpr().expression() );
+    }
     *_ostr << this->materialProperties()->getInfo()->str();
     // *_ostr << "\n   Physical Parameters"
     //        << "\n     -- rho : " << this->materialProperties()->cstRho()

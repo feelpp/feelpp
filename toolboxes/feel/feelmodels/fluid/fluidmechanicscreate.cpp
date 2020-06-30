@@ -189,16 +189,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     }
 
     //--------------------------------------------------------------//
-    // gravity
-    std::string gravityStr;
-    if ( Environment::vm().count(prefixvm(this->prefix(),"gravity-force").c_str()) )
-        gravityStr = soption(_name="gravity-force",_prefix=this->prefix());
-    else if (nDim == 2 )
-        gravityStr = "{0,-9.80665}";
-    else if (nDim == 3 )
-        gravityStr = "{0,0,-9.80665}";
-    M_gravityForce = expr<nDim,1,2>( gravityStr,"",this->worldComm(),this->repository().expr() );
-    M_useGravityForce = boption(_name="use-gravity-force",_prefix=this->prefix());
 
     // prec
     M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
@@ -1996,8 +1986,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::Body::updateForUse()
             M_momentOfInertia += integrate(_range=range,_expr=densityExpr*( inner(rvec)*eye<nDim,nDim>() - rvec*trans(rvec) ) ).evaluate();
         }
     }
-
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::BodyBoundaryCondition()
+    :
+    M_gravityForceEnabled( false )
+{}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -2098,6 +2093,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
         M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
         M_fieldElasticVelocity = M_XhElasticVelocity->elementPtr();
     }
+
+
+    // maybe enable gravity (TODO : select only physic with gravity)
+    for ( auto const& [physicName,physicData] : fluidToolbox.physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        if ( physicFluidData->gravityForceEnabled() )
+        {
+            M_gravityForceEnabled = true;
+            break;
+        }
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2172,6 +2179,30 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
             fluidToolbox.meshALE()->revertMovingMesh( false );
     }
 #endif
+
+
+    if ( M_gravityForceEnabled )
+    {
+        // TODO !!!
+        CHECK( fluidToolbox.materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
+        std::string matName = fluidToolbox.materialProperties()->rangeMeshElementsByMaterial().begin()->first;
+        double rho = fluidToolbox.materialProperties()->cstDensity( matName );
+        //auto const& rho = fluidToolbox.materialProperties()->fieldRho();
+
+        double massBody = massExpr().evaluate()(0,0);
+        double massOfFluid = M_body->evaluateMassFromDensity( cst( rho ) );
+        // if ( Environment::isMasterRank() )
+        //     std::cout << "massOfFluid = " << massOfFluid << std::endl;
+
+        for ( auto const& [physicName,physicData] : fluidToolbox.physicsFromCurrentType() )
+        {
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+            if ( physicFluidData->gravityForceEnabled() )
+            {
+                M_gravityForceWithMass = (massBody-massOfFluid)*physicFluidData->gravityForceExpr().evaluate();
+            }
+        }
+    }
 
 }
 
