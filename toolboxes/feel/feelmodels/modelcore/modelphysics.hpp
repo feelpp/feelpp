@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <feel/feelmodels/modelmodels.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
@@ -137,8 +138,13 @@ public :
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
+
+    bool gravityForceEnabled() const { return M_gravityForceEnabled; }
+    auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
 private :
     std::string M_equation;
+    bool M_gravityForceEnabled;
+    ModelExpression M_gravityForceExpr;
 };
 
 template <uint16_type Dim>

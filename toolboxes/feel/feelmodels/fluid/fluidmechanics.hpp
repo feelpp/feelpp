@@ -290,9 +290,10 @@ public:
             // :
             // ModelPhysics<nDim>( "body" )
             // {}
-        Body( std::shared_ptr<ModelPhysics<nRealDim>> const& mphysics )
+        explicit Body( std::shared_ptr<ModelPhysics<nRealDim>> const& mphysics )
             :
-            M_modelPhysics( mphysics )
+            M_modelPhysics( mphysics ),
+            M_mass( 0 )
             {}
         Body( Body const& ) = default;
         Body( Body && ) = default;
@@ -330,6 +331,20 @@ public:
             }
 
 
+        template <typename ExprType>
+        double evaluateMassFromDensity( Expr<ExprType> const& densityExpr ) const
+            {
+                CHECK( M_materialsProperties ) << "no materialsProperties defined";
+                auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
+                double mass = 0;
+                for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
+                {
+                    auto const& range = rangeData.second;
+                    mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
+                }
+                return mass;
+            }
+
     private :
         std::shared_ptr<ModelPhysics<nRealDim>> M_modelPhysics;
         mesh_ptrtype M_mesh;
@@ -358,7 +373,7 @@ public:
             static auto angular_velocity( BodyBoundaryCondition const* t ) { return ModelFieldTag<BodyBoundaryCondition,1>( t ); }
         };
 
-        BodyBoundaryCondition() = default;
+        BodyBoundaryCondition();
         BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
         BodyBoundaryCondition( BodyBoundaryCondition && ) = default;
 
@@ -464,6 +479,12 @@ public:
         void updateElasticVelocityFromExpr( self_type const& fluidToolbox );
 
         //---------------------------------------------------------------------------//
+        // gravity
+        bool gravityForceEnabled() const { return M_gravityForceEnabled; }
+        //double massOfFluid() const { return M_massOfFluid; }
+        eigen_vector_type<nRealDim> const& gravityForceWithMass() const { return M_gravityForceWithMass; }
+
+        //---------------------------------------------------------------------------//
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
@@ -493,6 +514,10 @@ public:
         space_trace_velocity_ptrtype M_XhElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
+
+        bool M_gravityForceEnabled;
+        //double M_massOfFluid;
+        eigen_vector_type<nRealDim> M_gravityForceWithMass;
     };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
@@ -1503,9 +1528,6 @@ private :
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
-    //----------------------------------------------------
-    vector_field_expression<nDim,1,2> M_gravityForce;
-    bool M_useGravityForce;
     //----------------------------------------------------
     // post-process field exported
     std::set<std::string> M_postProcessFieldExported;

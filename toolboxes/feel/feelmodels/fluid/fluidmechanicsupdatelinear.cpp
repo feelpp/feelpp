@@ -165,7 +165,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
                                _expr= -div(v)*idt(p),
                                _geomap=this->geomap() );
             }
-        }
+
+            //! gravity force
+            if ( physicFluidData->gravityForceEnabled() )
+            {
+                auto const& gravityForce = physicFluidData->gravityForceExpr();
+                bool assembleGravityTerm = gravityForce.expression().isNumericExpression()? BuildCstPart : BuildNonCstPart;
+                if ( assembleGravityTerm )
+                {
+                    auto const& gravityForceExpr = gravityForce; // TODO apply symbols expr
+                    myLinearFormV +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*idv(rho)*inner(gravityForceExpr,id(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+        } // foreach material
+
         // incompressibility term
         if ( BuildCstPart )
         {
@@ -285,13 +302,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
         myLinearFormV +=
             integrate( _range=M_rangeMeshElements,
                        _expr= timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
-                       _geomap=this->geomap() );
-    }
-    if ( M_useGravityForce && BuildCstPart )
-    {
-        myLinearFormV +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(v)),
                        _geomap=this->geomap() );
     }
 

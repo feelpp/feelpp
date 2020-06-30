@@ -68,13 +68,38 @@ template <uint16_type Dim>
 ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
     super_type( "fluid", name, model ),
-    M_equation( "Navier-Stokes" )
+    M_equation( "Navier-Stokes" ),
+    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
 {
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
         this->setEquation( *eq );
     if ( auto eq = pt.template get_optional<std::string>("equation") )
         this->setEquation( *eq );
+
+
+    // setup gravity force
+    if ( auto hasGravity = pt.template get_optional<bool>("gravity") )
+    {
+        M_gravityForceEnabled = *hasGravity;
+    }
+    else if ( auto ptreeGravity = pt.get_child_optional("gravity") )
+    {
+        if ( auto hasGravity = ptreeGravity->template get_optional<bool>("enable") )
+            M_gravityForceEnabled = *hasGravity;
+        M_gravityForceExpr.setExpr( "expr",*ptreeGravity,mphysics.worldComm(),mphysics.repository().expr() );
+    }
+    if ( M_gravityForceEnabled && !M_gravityForceExpr.template hasExpr<Dim,1>() )
+    {
+        std::string gravityStr;
+        if ( mphysics.clovm().count(prefixvm(mphysics.prefix(),"gravity-force").c_str()) )
+            gravityStr = soption(_name="gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm());
+        else if (Dim == 2 )
+            gravityStr = "{0,-9.80665}";
+        else if (Dim == 3 )
+            gravityStr = "{0,0,-9.80665}";
+        M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
+    }
 }
 
 template <uint16_type Dim>
@@ -141,7 +166,8 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
     M_physicDefault = name;
     auto const& theGlobalModel = models.model( name );
-    M_physics.emplace( name, ModelPhysic<Dim>::New( *this, type, name, theGlobalModel ) );
+    if ( std::find_if( theGlobalModel.variants().begin(), theGlobalModel.variants().end(), [&name]( auto const& varMod ) { return name == varMod.first; } ) == theGlobalModel.variants().end() )
+        M_physics.emplace( name, ModelPhysic<Dim>::New( *this, type, name, theGlobalModel ) );
     for ( auto const& [variantName,variantModel] : theGlobalModel.variants() )
         M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, type, variantName, variantModel ) );
 
@@ -175,7 +201,8 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
         for ( std::string const& subName : subPhysicDefaultNames )
         {
             auto const& theSubModel = useModelNameInJson && models.hasModel( subName )? models.model( subName ) : ModelModel{};
-            M_physics.emplace( subName, ModelPhysic<Dim>::New( *this, subPhysicType, subName, theSubModel ) );
+            if ( std::find_if( theSubModel.variants().begin(), theSubModel.variants().end(), [&subName]( auto const& varMod ) { return subName == varMod.first; } ) == theSubModel.variants().end() )
+                M_physics.emplace( subName, ModelPhysic<Dim>::New( *this, subPhysicType, subName, theSubModel ) );
             for ( auto const& [variantName,variantModel] : theSubModel.variants() )
                 M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, subPhysicType, variantName, variantModel ) );
         }
