@@ -1,0 +1,73 @@
+// -*- mode: javascript -*-
+{
+    "Name": "body under gravity",
+    "ShortName":"bug",
+    "Models":
+    {
+        "fluid":
+        {
+            "equations":"Navier-Stokes",
+            "gravity":1
+            // "gravity":
+            // {
+            //     "enable":1,
+            //     "expr":"{0,1}"
+            // }
+        }
+    },
+    "Materials":
+    {
+        "Fluid":{
+            "markers":"Omega_fluid",
+            "physics":"fluid",
+            "rho":"1.0e3",
+            "mu":"1.0"
+        },
+        "MySolid":{
+            "markers":"Omega_body",
+            "physics":"body",
+            "rho":"7.0e3"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "wall":
+                {
+                    "markers":["wall_bottom","wall_left","wall_right"],
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "fluid":
+        {
+            "outlet":
+            {
+                "wall_top":
+                {
+                    "expr":"0" 
+                }
+            },
+            "body":
+            {
+                "p1_mark":
+                 {
+                     "markers":"wall_body",
+                     "materials":"MySolid"
+                     // ,"translational-velocity":"{0.5,-1}"
+                     // ,"angular-velocity":"0"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid","displacement"]
+        }
+    }
+}
