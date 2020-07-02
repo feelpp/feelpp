@@ -1561,6 +1561,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype cons
 
 //---------------------------------------------------------------------------------------------------------//
 
+namespace FluidToolbox_detail
+{
+
+template <typename MeshType,typename RangeType>
+faces_reference_wrapper_t<MeshType>
+removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+     if ( !ms->isPartialSupport() )
+        return r;
+    for ( auto const& faceWrap : r )
+    {
+        auto const& theface = unwrap_ref( faceWrap );
+        if ( theface.isConnectedTo0() && theface.isConnectedTo1() )
+        {
+            if ( theface.element0().isGhostCell() && !ms->hasElement(theface.element1().id() ) )
+            {
+                //std::cout << "removeBadFace case 0 : " << theface.processId() << " ; " << theface.id() << std::endl;
+                continue;
+            }
+            if ( theface.element1().isGhostCell() && !ms->hasElement(theface.element0().id() ) )
+            {
+                // std::cout << "removeBadFace case 1 : " << theface.processId() << " ; " << theface.id()
+                //           << " other p="<< theface.element1().processId()<< " ;" <<  theface.idInOthersPartitions( theface.element1().processId() ) << std::endl;
+                continue;
+            }
+
+        }
+        myelts->push_back( boost::cref( theface ) );
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+}
+
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1569,6 +1607,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
+    auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
+    std::set<size_type> dofToSync;
     if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
@@ -1593,16 +1633,28 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
+        //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
+        // temporary fix of interpolation with meshale space
+        auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
         else if ( bpbc.hasElasticVelocityFromExpr() )
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), bpbc.rangeMarkedFacesOnFluid() );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
         else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, bpbc.rangeMarkedFacesOnFluid() );
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
 #if 0
         (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
 #endif
+
+        if ( velocityMeshSupport->isPartialSupport() )
+        {
+            auto _thedof = M_meshDisplacementOnInterface->functionSpace()->dofs(rangeMFOF,ComponentType::NO_COMPONENT,true);
+            dofToSync.insert(_thedof.begin(),_thedof.end());
+        }
     }
+
+    if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
+        sync( *M_meshDisplacementOnInterface, "=", dofToSync );
 
 
     //-------------------------------------------------------------------//
