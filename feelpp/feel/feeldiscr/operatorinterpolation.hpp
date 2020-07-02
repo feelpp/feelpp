@@ -1256,12 +1256,12 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     auto const& imagedof = this->dualImageSpace()->dof();
 
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
-    // init container used in send/recv
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
-    {
-        dataToSend[p].clear();
-        dataToRecv[p].clear();
-    }
+    // // init container used in send/recv
+    // for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    // {
+    //     dataToSend[p].clear();
+    //     dataToRecv[p].clear();
+    // }
 
     std::vector<std::set<uint16_type> > dof_done( this->dualImageSpace()->nLocalDof(), std::set<uint16_type>() );
     std::set<size_type> activeDofSharedPresentInRange;
@@ -1314,16 +1314,31 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
 
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    // get size of data to transfer (first phase)
+    std::map<rank_type,size_type> sizeRecv;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // send/recv first phase
+    cptRequest=0;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
 
 
     std::map< size_type, std::set<rank_type> > dataToTreat;
@@ -1335,12 +1350,6 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
     }
 
     std::map< rank_type, std::vector< size_type > > dataToReSend, dataToReRecv;
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
-    {
-        dataToReSend[p].clear();
-        dataToReRecv[p].clear();
-    }
-
     for ( auto const& dofAsked : dataToTreat )
     {
         size_type thedofGC = dofAsked.first;
@@ -1357,17 +1366,30 @@ OperatorInterpolation<DomainSpaceType, ImageSpaceType,IteratorRange,InterpType>:
 
     }
 
+    // get size of data to transfer (second phase)
     cptRequest=0;
-    for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
     {
-        CHECK( dataToReSend.find(p) != dataToReSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().isend( p , 0, dataToReSend.find(p)->second );
-        ++cptRequest;
-        reqs[cptRequest] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( p , 0, dataToReRecv[p] );
-        ++cptRequest;
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, (size_type)dataToReSend[neighborRank].size() );
+        reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // send/recv second phase
+    cptRequest=0;
+    for ( rank_type neighborRank : this->dualImageSpace()->dof()->neighborSubdomains() )
+    {
+        int nSendData = dataToReSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().isend( neighborRank , 0, &(dataToReSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToReRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->dualImageSpace()->worldCommPtr()->localComm().irecv( neighborRank , 0, &(dataToReRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
     delete [] reqs;
 
     for ( rank_type p : this->dualImageSpace()->dof()->neighborSubdomains() )

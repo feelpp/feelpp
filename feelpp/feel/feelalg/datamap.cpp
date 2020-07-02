@@ -483,8 +483,6 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
 
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
-    for ( rank_type p : this->neighborSubdomains() )
-        dataToSend[p].clear();
 
     // up data used in mpi comm : send ghost dofs to correponding active dofs
     for ( auto const& id : indexSet )
@@ -501,16 +499,32 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
     // prepare mpi com
     int nbRequest=2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    // apply isend/irecv
+    std::map<rank_type,size_type> sizeRecv;
     int cptRequest=0;
-    for ( rank_type p : this->neighborSubdomains() )
+
+    // get size of data to transfer
+    for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // apply isend/irecv
+    cptRequest=0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
 
     // clear data
     for ( rank_type p : this->neighborSubdomains() )
@@ -534,18 +548,33 @@ DataMap<SizeT>::updateIndexSetWithParallelMissingDof( std::set<size_type> & inde
                 dataToSend[pNeighborId].push_back( dataRfromproc );
         }
     }
+
+    // get size of data to transfer
+    cptRequest=0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
+
     // apply isend/irecv
     cptRequest=0;
     for ( rank_type p : this->neighborSubdomains() )
         dataToRecv[p].clear();
-    for ( rank_type p : this->neighborSubdomains() )
+    for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
     delete [] reqs;
 
     // insert ghost dofs from active dofs request
@@ -575,8 +604,6 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
 
     // init data used in mpi comm
     std::map< rank_type, std::vector< size_type > > dataToSend, dataToRecv;
-    for ( rank_type p : this->neighborSubdomains() )
-        dataToSend[p].clear();
 
     // up data used in mpi comm
     for ( size_type gpdof : dofGlobalProcessPresent )
@@ -598,16 +625,32 @@ DataMap<SizeT>::activeDofClusterUsedByProc( std::set<size_type> const& dofGlobal
     // prepare mpi com
     int nbRequest = 2*this->neighborSubdomains().size();
     mpi::request * reqs = new mpi::request[nbRequest];
-    // apply isend/irecv
+    std::map<rank_type,size_type> sizeRecv;
     int cptRequest=0;
-    for ( rank_type p : this->neighborSubdomains() )
+
+    // get size of data to transfer
+    for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        CHECK( dataToSend.find(p) != dataToSend.end() ) << " no data to send to proc " << p << "\n";
-        reqs[cptRequest++] = this->worldComm().localComm().isend( p , 0, dataToSend.find(p)->second );
-        reqs[cptRequest++] = this->worldComm().localComm().irecv( p , 0, dataToRecv[p] );
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // apply isend/irecv
+    cptRequest=0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
     delete [] reqs;
 
     // update ghost dof index connected to this dof and present in indexSet given
