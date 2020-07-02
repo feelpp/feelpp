@@ -2192,7 +2192,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
         double massBody = massExpr().evaluate()(0,0);
         double massOfFluid = M_body->evaluateMassFromDensity( cst( rho ) );
         // if ( Environment::isMasterRank() )
+        // {
+        //     std::cout << "massBody = " << massBody << std::endl;
         //     std::cout << "massOfFluid = " << massOfFluid << std::endl;
+        // }
 
         for ( auto const& [physicName,physicData] : fluidToolbox.physicsFromCurrentType() )
         {

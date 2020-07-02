@@ -776,6 +776,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
         //this->materialsProperties()->setParameterValues( paramValues );
     }
 
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
     M_bcDirichlet.setParameterValues( paramValues );
     for ( auto & bcDirComp : M_bcDirichletComponents )
         bcDirComp.second.setParameterValues( paramValues );
