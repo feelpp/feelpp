@@ -11,7 +11,7 @@
             // "gravity":
             // {
             //     "enable":1,
-            //     "expr":"{0,1}"
+            //     "expr":"{0,-9.80665*cos((t/0.2)*pi/2)}:t"
             // }
         }
     },
@@ -27,6 +27,7 @@
             "markers":"Omega_body",
             "physics":"body",
             "rho":"7.0e3"
+            //"rho":"2.0e3+1e3*sin((t/0.1)*pi/2):t"
         }
     },
     "BoundaryConditions":
