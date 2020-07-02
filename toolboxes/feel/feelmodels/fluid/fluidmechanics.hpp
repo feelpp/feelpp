@@ -75,7 +75,8 @@ class FluidMechanics : public ModelNumerical,
                        public MarkerManagementPressureBC
 {
 public:
-    typedef ModelNumerical super_type;
+    using super_type = ModelNumerical;
+    using super2_type = ModelPhysics<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
     typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
@@ -345,6 +346,12 @@ public:
                 return mass;
             }
 
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                if ( M_materialsProperties )
+                    M_materialsProperties->setParameterValues( mp );
+            }
+
     private :
         std::shared_ptr<ModelPhysics<nRealDim>> M_modelPhysics;
         mesh_ptrtype M_mesh;
@@ -492,6 +499,8 @@ public:
                 M_angularVelocityExpr.setParameterValues( mp );
                 for ( auto & [bcName,eve] : M_elasticVelocityExprBC )
                     std::get<0>( eve ).setParameterValues( mp );
+                if ( M_body )
+                    M_body->setParameterValues( mp );
             }
 
     private :
