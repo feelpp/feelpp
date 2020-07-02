@@ -2079,7 +2079,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
 {
     auto rangeBodyBoundary = markedfaces(fluidToolbox.mesh(), std::set<std::string>(M_markers) );
     M_rangeMarkedFacesOnFluid = rangeBodyBoundary;
-    M_mesh = createSubmesh(_mesh=fluidToolbox.mesh(),_range=rangeBodyBoundary,_view=true );
+    M_mesh = createSubmesh(_mesh=/*fluidToolbox.mesh()*/fluidToolbox.functionSpaceVelocity()->template meshSupport<0>(),_range=rangeBodyBoundary,_view=true );
     M_XhTranslationalVelocity = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
     if constexpr ( nDim == 2 )
                      M_XhAngularVelocity = space_trace_angular_velocity_type::New( _mesh=M_mesh );
