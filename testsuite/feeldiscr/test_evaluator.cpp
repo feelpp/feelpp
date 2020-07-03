@@ -82,8 +82,14 @@ void f( int nparts )
     auto e4 = minmax( _range=Feel::detail::elements( mesh, 0 ), _pset=_Q<5>(), _expr=cst(1.) );
     BOOST_CHECK_CLOSE( e4.min(), 1., 1e-6 );
     BOOST_CHECK_CLOSE( e4.max(), 1., 1e-6 );
-    BOOST_TEST_MESSAGE( "minimum in partition 0 reached at " << e3.argmin() );
-    BOOST_TEST_MESSAGE( "maximum in partition 0 reached at " << e3.argmax() );
+    BOOST_TEST_MESSAGE( "minimum in partition 0 reached at " << e4.argmin() );
+    BOOST_TEST_MESSAGE( "maximum in partition 0 reached at " << e4.argmax() );
+
+    auto e5 = minmax( _range=Feel::detail::elements( mesh, 0 ), _pset=_Q<5>(), _expr=cst(-1.) );
+    BOOST_CHECK_CLOSE( e5.min(), -1., 1e-6 );
+    BOOST_CHECK_CLOSE( e5.max(), -1., 1e-6 );
+    BOOST_TEST_MESSAGE( "minimum in partition 0 reached at " << e5.argmin() );
+    BOOST_TEST_MESSAGE( "maximum in partition 0 reached at " << e5.argmax() );
 
 }
 FEELPP_ENVIRONMENT_NO_OPTIONS
