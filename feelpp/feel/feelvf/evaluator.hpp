@@ -891,8 +891,8 @@ BOOST_PARAMETER_FUNCTION(
 
     int indexmin = 0;
     int indexmax = 0;
-    double mine = 1e+30;
-    double maxe = 1e-30;
+    double mine = std::numeric_limits<double>::max();
+    double maxe = std::numeric_limits<double>::lowest();
 
     if ( e.data().size() )
     {
