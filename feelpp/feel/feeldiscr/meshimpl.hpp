@@ -2430,15 +2430,33 @@ void Mesh<Shape, T, Tag, IndexT>::updateEntitiesCoDimensionGhostCellByUsingNonBl
     int nbRequest = 2 * neighborSubdomains;
     mpi::request* reqs = new mpi::request[nbRequest];
     int cptRequest = 0;
-    // first send/recv
+
+    // get size of data to transfer
+    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type neighborRank : this->neighborSubdomains() )
     {
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, dataToSend[neighborRank] );
-        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, dataToRecv[neighborRank] );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 0, sizeRecv[neighborRank] );
+    }
+    // wait all requests
+    mpi::wait_all( reqs, reqs + cptRequest );
+
+    // first send/recv
+    cptRequest = 0;
+    for ( rank_type neighborRank : this->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().isend( neighborRank, 2, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = MeshBase<IndexT>::worldComm().localComm().irecv( neighborRank, 2, &(dataToRecv[neighborRank][0]), nRecvData );
     }
     //------------------------------------------------------------------------------------------------//
     // wait all requests
-    mpi::wait_all( reqs, reqs + nbRequest );
+    mpi::wait_all( reqs, reqs + cptRequest );
     //------------------------------------------------------------------------------------------------//
     // build the container to ReSend
     std::map<rank_type, std::vector<boost::tuple<resultghost_point_type, resultghost_edge_type, resultghost_face_type>>> dataToReSend;
