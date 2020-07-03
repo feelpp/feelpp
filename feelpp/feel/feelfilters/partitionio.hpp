@@ -1075,6 +1075,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
         return;
     //rank_type partId = M_meshPartIn->worldComm().localRank();
     rank_type processId = M_meshPartIn->worldComm().localRank();
+    bool isSeq = M_meshPartIn->worldComm().localSize() == 1;
 
     //int nVal = 2 + element_type::numPoints;// id+marker+ points
     int nVal = 1 + element_type::numPoints;// marker+ points
@@ -1132,12 +1133,19 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
             size_type currentBufferIndex = 0;
             for (size_type j = 0; j < M_numLocalElements[partId]; ++j)
             {
+                // in sequential, no ghost required
+                if ( isSeq && j >= nActiveElement )
+                {
+                    currentBufferIndex += nVal;
+                    continue;
+                }
+
                 //size_type id = M_uintBuffer[currentBufferIndex++];
                 int marker   = M_uintBuffer[currentBufferIndex++];
                 //e.setId( id );
                 e.setProcessIdInPartition( processId/*partId*/ );
                 e.setMarker( marker );
-                e.setProcessId( processId/*partId*/ );// update correctlty for ghost in preparUpdateForUse()
+                e.setProcessId( processId/*partId*/ );// update correctlty for ghost cell in read_ghost
 
                 for ( uint16_type k = 0; k < element_type::numPoints; ++k)
                 {
@@ -1145,6 +1153,7 @@ void PartitionIO<MeshType>::readElements( std::vector<rank_type> const& partIds,
                     DCHECK( M_meshPartIn->hasPoint( ptId ) ) << "point id " << ptId << " not present in mesh";
                     e.setPoint( k, M_meshPartIn->point( ptId ) );
                 }
+
                 auto [eit,inserted] = M_meshPartIn->addElement( e, true/*false*/ );
                 auto const& [eid,eltInserted] = *eit;
 
