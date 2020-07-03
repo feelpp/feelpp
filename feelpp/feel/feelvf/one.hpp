@@ -29,16 +29,27 @@
 #ifndef FEELPP_VF_ONE_HPP
 #define FEELPP_VF_ONE_HPP 1
 
+#include <feel/feeldiscr/enums.hpp>
+
 namespace Feel
 {
 namespace vf
 {
+
+/**
+ * CType = -3 : dynamic case, the one compoent(s) is given in argument
+ * CType = -2 : (0 0 0)
+ * CType = -1 : (1 1 1)
+ * CType =  0 : (1 0 0)
+ * CType =  1 : (0 1 0)
+ * CType =  2 : (0 0 1)
+ */
 template<int CType>
 class One
 {
 public:
     static const size_type context = 0;
-    static const bool is_terminal = false;
+    static const bool is_terminal = true;
 
     template<typename Func>
     struct HasTestFunction
@@ -63,8 +74,18 @@ public:
 
     typedef double value_type;
 
-    One() {}
-    One( One const& /*__vff*/ ) {}
+    One() = default;
+    One( One const& /*__vff*/ ) = default;
+    One( ComponentType c )
+        :
+        M_oneComponentsDynamic( { c } )
+        {}
+    One( std::set<ComponentType> const& c)
+        :
+        M_oneComponentsDynamic( c )
+        {}
+
+    std::set<ComponentType> const& oneComponentsDynamic() const { return M_oneComponentsDynamic; }
 
     template<typename... TheExpr>
     struct Lambda
@@ -80,6 +101,19 @@ public:
 
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return true; }
+
+    template <typename SymbolsExprType>
+    this_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        return One<-2>();
+    }
 
 
     template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t>
@@ -98,42 +132,49 @@ public:
         typedef typename expression_type::value_type value_type;
 
         static const uint16_type nComponents = gmc_type::nDim;
-        static const int16_type vector_comp = ( CType==-1 )?1:CType;
+        //static const int16_type vector_comp = ( CType==-1 )?1:CType;
 
-        typedef typename mpl::if_<mpl::equal_to<mpl::int_<CType>,mpl::int_<-1> >,
-                mpl::identity<ublas::scalar_vector<scalar_type> >,
-                mpl::identity<ublas::unit_vector<scalar_type> > >::type::type vector_type;
+        using vector_type = Eigen::Matrix<value_type,nComponents,1>;
 
         struct is_zero
         {
             static const bool value = false;
         };
 
-        tensor( expression_type const& /*expr*/,
-                Geo_t const& /*geom*/,
+        tensor( expression_type const& expr,
+                Geo_t const& geom,
                 Basis_i_t const& /*fev*/,
                 Basis_j_t const& /*feu*/ )
             :
-            M_one( nComponents, vector_comp )
-        {
-            //std::cout << "one = " << M_one << "\n";
-        }
-        tensor( expression_type const& /*expr*/,
-                Geo_t const& /*geom*/,
+            tensor( expr, geom )
+            {}
+
+        tensor( expression_type const& expr,
+                Geo_t const& geom,
                 Basis_i_t const& /*fev*/ )
             :
-            M_one( nComponents, vector_comp )
-        {
-        }
-        tensor( expression_type const& /*expr*/,
+            tensor( expr, geom )
+            {}
+        tensor( expression_type const& expr,
                 Geo_t const& /*geom*/ )
             :
-            M_one( nComponents, vector_comp )
-        {
-            //                 std::cout << "one = " << M_one << "\n"
-            //                           << "M=" << shape::M << "\n"
-            //                           << "N=" << shape::N << "\n";
-        }
+            M_one( vector_type::Zero() )
+            {
+                if constexpr ( CType == -1 )
+                    M_one = vector_type::Ones();
+                else if constexpr ( CType >= 0 )
+                    M_one(CType) = 1;
+                else if constexpr ( CType == -3 )
+                {
+                    auto const& theDynComp = expr.oneComponentsDynamic();
+                    if ( nComponents > 0 && theDynComp.find( ComponentType::X ) != theDynComp.end() )
+                        M_one( 0 ) = 1;
+                    if ( nComponents > 1 && theDynComp.find( ComponentType::Y ) != theDynComp.end() )
+                        M_one( 1 ) = 1;
+                    if ( nComponents > 2 && theDynComp.find( ComponentType::Z ) != theDynComp.end() )
+                        M_one( 2 ) = 1;
+                }
+            }
         template<typename IM>
         void init( IM const& /*im*/ )
         {
@@ -156,35 +197,51 @@ public:
         }
 
         FEELPP_STRONG_INLINE value_type
-        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
-            //return M_one[c1];
+            return this->evalq( c1, c2, q );
         }
         template<int PatternContext>
         FEELPP_STRONG_INLINE value_type
-        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/,
+        evalijq( uint16_type /*i*/, uint16_type /*j*/, uint16_type c1, uint16_type c2, uint16_type q,
                  mpl::int_<PatternContext> ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
-            //return M_one[c1];
+            return this->evalq( c1, c2, q );
         }
 
         FEELPP_STRONG_INLINE value_type
-        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
+        evaliq( uint16_type /*i*/, uint16_type c1, uint16_type c2, uint16_type q ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
-            //return M_one[c1];
+            return this->evalq( c1, c2, q );
         }
         FEELPP_STRONG_INLINE value_type
         evalq( uint16_type c1, uint16_type /*c2*/, uint16_type /*q*/ ) const
         {
-            return ( gmc_type::nDim>=c1 )&&( ( c1==(uint16_type)CType ) || ( CType==-1 ) );
-            //return M_one[c1];
+            if ( c1 >= gmc_type::nDim )
+                return value_type(0);
+            else
+                return M_one( c1 );
         }
+        FEELPP_STRONG_INLINE Eigen::Map<const vector_type>
+        evalijq( uint16_type i, uint16_type j, uint16_type /*q*/ ) const
+        {
+            return Eigen::Map<const vector_type>(M_one.data());
+        }
+        FEELPP_STRONG_INLINE Eigen::Map<const vector_type>
+        evaliq( uint16_type i, uint16_type /*q*/ ) const
+        {
+            return Eigen::Map<const vector_type>(M_one.data());
+        }
+        FEELPP_STRONG_INLINE Eigen::Map<const vector_type>
+        evalq( uint16_type /*q*/ ) const
+        {
+            return Eigen::Map<const vector_type>(M_one.data());
+        }
+    private:
         vector_type M_one;
     };
-
+private :
+    std::set<ComponentType> M_oneComponentsDynamic;
 };
 
 inline
@@ -214,6 +271,7 @@ oneZ()
 {
     return Expr< One<2> >(  One<2>() );
 }
+
 inline
 Expr<One<0> >
 unitX()
@@ -233,6 +291,32 @@ Expr<One<2> >
 unitZ()
 {
     return Expr< One<2> >(  One<2>() );
+}
+
+inline
+Expr<One<-2> >
+vector_zero()
+{
+    return Expr< One<-2> >(  One<-2>() );
+}
+
+inline
+Expr<One<-3> >
+one( ComponentType c)
+{
+    return Expr< One<-3> >(  One<-3>( c ) );
+}
+inline
+Expr<One<-3> >
+one( std::set<ComponentType> const& c)
+{
+    return Expr< One<-3> >(  One<-3>( c ) );
+}
+inline
+Expr<One<-3> >
+one( std::initializer_list<ComponentType> const& c)
+{
+    return Expr< One<-3> >(  One<-3>( std::set<ComponentType>( c ) ) );
 }
 
 } // vf

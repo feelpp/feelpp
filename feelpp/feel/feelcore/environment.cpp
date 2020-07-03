@@ -2451,7 +2451,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-
+    boost::replace_all( res, "$np", std::to_string(Environment::numberOfProcessors()) );
 
     typedef std::vector< std::string > split_vector_type;
 

@@ -14,8 +14,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & data ) const
 {
-    using namespace Feel::vf;
-
     this->log("FluidMechanics","updateLinearPDEWeakBC", "start" );
 
     boost::timer thetimer;
@@ -38,23 +36,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
 
     auto mesh = this->mesh();
-    auto Xh = this->functionSpace();
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
 
-    auto const& U = this->fieldVelocityPressure();
-    auto u = U.template element<0>();
-    auto v = U.template element<0>();
-    auto p = U.template element<1>();
-    auto q = U.template element<1>();
+    auto const& u = this->fieldVelocity();
+    auto const& v = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
+    auto const& q = this->fieldPressure();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
     auto rowStartInVector = this->rowStartInVector();
-    auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
-                                              _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=rowStartInMatrix,
-                                              _colstart=colStartInMatrix );
-    auto myLinearForm = form1( _test=this->functionSpace(), _vector=F,
-                               _rowstart=this->rowStartInVector() );
+    auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+0,
+                                 _colstart=colStartInMatrix+0 );
+    auto bilinearFormVP = form2( _test=XhV,_trial=XhP,_matrix=A,
+                                 _pattern=size_type(Pattern::COUPLED),
+                                 _rowstart=rowStartInMatrix+0,
+                                 _colstart=colStartInMatrix+1 );
+    auto myLinearFormV = form1( _test=XhV, _vector=F,
+                                _rowstart=this->rowStartInVector()+0 );
 
     //Deformations tensor (trial)
     auto deft = sym(gradt(u));
@@ -63,8 +65,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     // dynamic viscosity
     auto const& mu = this->materialProperties()->fieldMu();
     auto const& rho = this->materialProperties()->fieldRho();
-    // Strain tensor (trial)
-    auto Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -73,15 +73,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
-        auto Beta = M_bdf_fluid->poly();
-        auto beta = vf::project( _space=Beta.template element<0>().functionSpace(),
-                                 _range=boundaryfaces(Beta.template element<0>().mesh()),
-                                 _expr=idv(rho)*idv(Beta.template element<0>()) );
+        auto const& betaExtrapolate = M_bdfVelocity->poly();
+        auto beta = vf::project( _space=XhV,
+                                 _range=boundaryfaces(mesh),
+                                 _expr=idv(rho)*idv(betaExtrapolate) );
         //auto beta = Beta.element<0>();
         auto Cn = gammaN*max(abs(trans(idv(beta))*N()),idv(mu)/vf::h());
         auto Ctau = gammaTau*idv(mu)/vf::h() + max( -trans(idv(beta))*N(),cst(0.) );
 
-        bilinearForm_PatternCoupled +=
+        bilinearFormVV +=
             integrate( _range= markedfaces(mesh,this->markerSlipBC()),
                        _expr= timeSteppingScaling*val(Cn)*(trans(idt(u))*N())*(trans(id(v))*N())+
                        timeSteppingScaling*val(Ctau)*trans(idt(u))*id(v),
@@ -101,13 +101,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         auto lambdaBC = this->XhDirichletLM()->element();
         if (BuildCstPart)
         {
-            form2( _test=Xh,_trial=this->XhDirichletLM(),_matrix=A,_pattern=size_type(Pattern::COUPLED),
+            form2( _test=XhV,_trial=this->XhDirichletLM(),_matrix=A,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix,
                    _colstart=colStartInMatrix+startBlockIndexDirichletLM ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
                            _expr= inner( idt(lambdaBC),id(u) ) );
 
-            form2( _test=this->XhDirichletLM(),_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+            form2( _test=this->XhDirichletLM(),_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                    _rowstart=rowStartInMatrix+startBlockIndexDirichletLM,
                    _colstart=colStartInMatrix ) +=
                 integrate( _range=elements(this->meshDirichletLM()),
@@ -120,7 +120,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                 form1( _test=this->XhDirichletLM(),_vector=F,
                        _rowstart=this->rowStartInVector()+startBlockIndexDirichletLM ) +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "lm",name(d) ) ),
-                               //_range=markedelements(this->meshDirichletLM(),PhysicalName),
                                _expr= inner( expression(d,this->symbolsExpr()),id(lambdaBC) ),
                                _geomap=this->geomap() );
             }
@@ -133,17 +132,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     {
         if ( BuildCstPart)
         {
-            bilinearForm_PatternCoupled +=
+            auto viscousStressTensor = 2*idv(mu)*deft;
+            bilinearFormVV +=
                 integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
-                           _expr= -timeSteppingScaling*trans(Sigmat*N())*id(v)
-                           /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*trans(idt(u))*id(v)/hFace(),
+                           _expr= -timeSteppingScaling*inner(viscousStressTensor*N(),id(v) )
+                           /**/   + timeSteppingScaling*this->dirichletBCnitscheGamma()*inner(idt(u),id(v))/hFace(),
+                           _geomap=this->geomap() );
+            bilinearFormVP +=
+                integrate( _range=markedfaces(mesh,this->markerDirichletBCnitsche() ),
+                           _expr= timeSteppingScaling*inner( idt(p)*N(), id(v) ),
                            _geomap=this->geomap() );
         }
         if ( BuildNonCstPart)
         {
             for( auto const& d : this->M_bcDirichlet )
             {
-                myLinearForm +=
+                myLinearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerDirichletBCByNameId( "nitsche",name(d) ) ),
                                _expr= timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
@@ -156,17 +160,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     if ( build_BoundaryNeumannTerm )
     {
         for( auto const& d : this->M_bcNeumannScalar )
-            myLinearForm +=
+            myLinearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::SCALAR,name(d)) ),
                            _expr= timeSteppingScaling*expression(d,this->symbolsExpr())*inner( N(),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannVectorial )
-            myLinearForm +=
+            myLinearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::VECTORIAL,name(d)) ),
                            _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr()),id(v) ),
                            _geomap=this->geomap() );
         for( auto const& d : this->M_bcNeumannTensor2 )
-            myLinearForm +=
+            myLinearFormV +=
                 integrate( _range=markedfaces(this->mesh(),this->markerNeumannBC(NeumannBCShape::TENSOR2,name(d)) ),
                            _expr= timeSteppingScaling*inner( expression(d,this->symbolsExpr())*N(),id(v) ),
                            _geomap=this->geomap() );
@@ -182,14 +186,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         {
             if ( nDim == 2 )
             {
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,0)*idt(M_fieldLagrangeMultiplierPressureBC1),
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -199,14 +203,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
             else if ( nDim == 3 )
             {
                 auto alpha = 1./sqrt(1-Nz()*Nz());
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM1 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
                                _expr=-timeSteppingScaling*trans(cross(id(u),N()))(0,2)*idt(M_fieldLagrangeMultiplierPressureBC1)*alpha,
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM1,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -216,7 +220,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                 CHECK( this->hasStartSubBlockSpaceIndex("pressurelm2") ) << " start dof index for pressurelm2 is not present\n";
                 size_type startBlockIndexPressureLM2 = this->startSubBlockSpaceIndex("pressurelm2");
 
-                form2( _test=Xh,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix,
                        _colstart=colStartInMatrix+startBlockIndexPressureLM2 ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -224,7 +228,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                +timeSteppingScaling*trans(cross(id(u),N()))(0,1)*alpha*idt(M_fieldLagrangeMultiplierPressureBC2)*Nx(),
                                _geomap=this->geomap() );
 
-                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=Xh,_matrix=A,_pattern=size_type(Pattern::COUPLED),
+                form2( _test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,_matrix=A,_pattern=size_type(Pattern::COUPLED),
                        _rowstart=rowStartInMatrix+startBlockIndexPressureLM2,
                        _colstart=colStartInMatrix ) +=
                     integrate( _range=markedfaces( this->mesh(),this->markerPressureBC() ),
@@ -237,7 +241,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         {
             for( auto const& d : this->M_bcPressure )
             {
-                myLinearForm +=
+                myLinearFormV +=
                     integrate( _range=markedfaces(this->mesh(),this->markerPressureBC(name(d)) ),
                                _expr= -timeSteppingScaling*expression(d,this->symbolsExpr())*trans(N())*id(v),
                                _geomap=this->geomap() );
@@ -255,7 +259,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         {
             if (BuildNonCstPart)
             {
-                auto const Beta = M_bdf_fluid->poly();
+                auto const& beta = M_bdfVelocity->poly();
 
                 for (int k=0;k<this->nFluidOutlet();++k)
                 {
@@ -277,7 +281,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     double kappaBF = (Rp*xiBF+ Rd*Deltat)/xiBF;
 
                     auto outletQ = integrate(_range=markedfaces(mesh,markerOutlet),
-                                             _expr=trans(idv(Beta.template element<0>()))*N() ).evaluate()(0,0);
+                                             _expr=trans(idv(beta))*N() ).evaluate()(0,0);
 
                     double pressureDistalOld  = 0;
                     for ( uint8_type i = 0; i < this->timeStepBDF()->timeOrder(); ++i )
@@ -286,8 +290,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                     M_fluidOutletWindkesselPressureDistal[k] = alphaBF*pressureDistalOld + gammaBF*outletQ;
                     M_fluidOutletWindkesselPressureProximal[k] = kappaBF*outletQ + alphaBF*pressureDistalOld;
 
-                    form1( _test=Xh, _vector=F,
-                           _rowstart=rowStartInVector ) +=
+                    myLinearFormV +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr= -timeSteppingScaling*M_fluidOutletWindkesselPressureProximal[k]*trans(N())*id(v),
                                    _geomap=this->geomap() );
@@ -351,7 +354,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                 Cd*this->timeStepBDF()->polyDerivCoefficient(0)+1./Rd );
                     }
 
-                    form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=A,
+                    form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
                            _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                            _colstart=colStartInMatrix ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
@@ -374,14 +377,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                         A->add( gpPressureProximalRow/*rowStartInMatrixWindkessel+1*/, gpPressureDistalCol/*colStartInMatrixWindkessel*/  , -1.);
                     }
 
-                    form2( _test=M_fluidOutletWindkesselSpace,_trial=Xh,_matrix=A,
+                    form2( _test=M_fluidOutletWindkesselSpace,_trial=XhV,_matrix=A,
                            _rowstart=blockStartWindkesselRow/*rowStartInMatrixWindkessel*/,
                            _colstart=colStartInMatrix )+=
                         integrate( _range=markedfaces(mesh,markerOutlet),
                                    _expr=-Rp*(trans(idt(u))*N())*id(presProximal) );
                     //--------------------//
                     // coupling with fluid model
-                    form2( _test=Xh, _trial=M_fluidOutletWindkesselSpace, _matrix=A,
+                    form2( _test=XhV, _trial=M_fluidOutletWindkesselSpace, _matrix=A,
                            _rowstart=rowStartInMatrix,
                            _colstart=blockStartWindkesselCol/*colStartInMatrixWindkessel*/ ) +=
                         integrate( _range=markedfaces(mesh,markerOutlet),
@@ -398,6 +401,90 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
         this->log("FluidMechanics","updateLinearPDE","assembly windkessel bc in "+(boost::format("%1% s") %timeElapsedBC).str() );
     }
 
+    //--------------------------------------------------------------------------------------------------//
+
+    if ( !M_bodySetBC.empty() )
+    {
+        this->log("FluidMechanics","updateLinearPDE","assembly of body bc");
+
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+            double massBody = bpbc.massExpr().evaluate()(0,0);
+            auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
+            auto const& momentOfInertia = bpbc.body().momentOfInertia();
+            //std::cout << "momentOfInertia = " << momentOfInertia<< std::endl;
+            bool hasActiveDofTranslationalVelocity = bpbc.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+            int nLocalDofAngularVelocity = bpbc.spaceAngularVelocity()->nLocalDofWithoutGhost();
+            bool hasActiveDofAngularVelocity = nLocalDofAngularVelocity > 0;
+            if ( BuildCstPart)
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity );
+                    auto const& basisToContainerGpTranslationalVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexTranslationalVelocity );
+                    for (int d=0;d<nDim;++d)
+                    {
+                        A->add( basisToContainerGpTranslationalVelocityRow[d], basisToContainerGpTranslationalVelocityCol[d],
+                                bpbc.bdfTranslationalVelocity()->polyDerivCoefficient(0)*massBody );
+                    }
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexAngularVelocity );
+                    auto const& basisToContainerGpAngularVelocityCol = A->mapCol().dofIdToContainerId( colStartInMatrix+startBlockIndexAngularVelocity );
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
+                    {
+                        for (int j=0;j<nLocalDofAngularVelocity;++j)
+                        {
+                            A->add( basisToContainerGpAngularVelocityRow[i], basisToContainerGpAngularVelocityCol[j],
+                                    bpbc.bdfAngularVelocity()->polyDerivCoefficient(0)*momentOfInertia(i,j) );
+                        }
+                    }
+                }
+            }
+
+            if ( BuildNonCstPart )
+            {
+                if ( hasActiveDofTranslationalVelocity )
+                {
+                    auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
+                    auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
+                    for (int d=0;d<nDim;++d)
+                    {
+                        F->add( basisToContainerGpTranslationalVelocityVector[d],
+                                massBody*translationalVelocityPolyDeriv(d) );
+
+                        if ( bpbc.gravityForceEnabled() )
+                        {
+                            F->add( basisToContainerGpTranslationalVelocityVector[d],
+                                    bpbc.gravityForceWithMass()(d) );
+                        }
+                    }
+
+                }
+                if ( hasActiveDofAngularVelocity )
+                {
+                    auto const& basisToContainerGpAngularVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexAngularVelocity );
+                    auto angularVelocityPolyDeriv = bpbc.bdfAngularVelocity()->polyDeriv();
+                    auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
+                    for (int i=0;i<nLocalDofAngularVelocity;++i)
+                    {
+                        F->add( basisToContainerGpAngularVelocityVector[i],
+                                //momentOfInertia(0,0)*angularVelocityPolyDeriv(i)
+                                contribRhsAngularVelocity(i,0)
+                                );
+                    }
+                }
+
+            }
+        } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
+
+    }
     //--------------------------------------------------------------------------------------------------//
 
 #if 0

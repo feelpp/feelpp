@@ -73,6 +73,10 @@ public:
 
     typedef Cst<T> expression_type;
 
+    Cst() : M_constant( 0 )
+    {
+        //DVLOG(2) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
+    }
     constexpr explicit Cst( const T& value )
         :
         M_constant( value )
@@ -131,7 +135,28 @@ public:
     typename Lambda<TheExpr...>::type
     operator()( TheExpr... e  ) { return typename Lambda<TheExpr...>::type(M_constant); }
 
-    void setParameterValues( std::map<std::string,value_type> const& mp ) {}
+    // void setParameterValues( std::map<std::string,value_type> const& mp ) {}
+
+    template <typename SymbolsExprType>
+    expression_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
+    // template <typename TheSymbolExprType>
+    // bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const { return false; }
+    // template <typename TheSymbolExprType>
+    // void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const {}
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        return expression_type(0);
+    }
+
+
+
 
     template<typename Geo_t, typename Basis_i_t=mpl::void_, typename Basis_j_t = Basis_i_t>
     struct tensor
@@ -228,10 +253,6 @@ public:
     };
 
 protected:
-    Cst() : M_constant( 0 )
-    {
-        //DVLOG(2) << "Cst::Cst( default ) : constant value: " << M_constant << "\n";
-    }
 
     const T M_constant;
 };

@@ -1,4 +1,5 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 
 #ifndef FEELPP_TOOLBOXES_HEAT_UPDATESTABILIZATIONGLS_HPP
 #define FEELPP_TOOLBOXES_HEAT_UPDATESTABILIZATIONGLS_HPP 1
@@ -29,9 +30,18 @@ residualTransientLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& ka
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
 auto
 residualTransientLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
-                             TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1> )
+                             TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                             typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_scalar >* = nullptr )
 {
     return rhocp*(idt(u)*heatToolbox.timeStepBdfTemperature()->polyDerivCoefficient(0) + timeSteppingScaling*gradt(u)*uconv ) - timeSteppingScaling*kappa*laplaciant(u);
+}
+template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
+auto
+residualTransientLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
+                             TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                             typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_tensor2 >* = nullptr )
+{
+    return rhocp*(idt(u)*heatToolbox.timeStepBdfTemperature()->polyDerivCoefficient(0) + timeSteppingScaling*gradt(u)*uconv ) - timeSteppingScaling*inner(kappa,hesst(u));
 }
 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
@@ -44,9 +54,18 @@ residualStationaryLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& k
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
 auto
 residualStationaryLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
-                              TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1> )
+                              TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1>,
+                              typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_scalar >* = nullptr )
 {
     return rhocp*gradt(u)*uconv - kappa*laplaciant(u);
+}
+template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
+auto
+residualStationaryLinearExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
+                              TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1>,
+                              typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_tensor2 >* = nullptr )
+{
+    return rhocp*gradt(u)*uconv -inner(kappa,hesst(u));
 }
 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TimeDerivativeExprType, typename TemperatureFieldType, typename HeatType >
@@ -59,9 +78,19 @@ residualTransientResidualExpr( RhoCpExprType const& rhocp, KappaExprType const& 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TimeDerivativeExprType, typename TemperatureFieldType, typename HeatType >
 auto
 residualTransientResidualExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv, TimeDerivativeExprType const& dudt,
-                               TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1> )
+                               TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                               typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_scalar >* = nullptr )
 {
     return rhocp*( dudt + timeSteppingScaling*gradv(u)*uconv ) - timeSteppingScaling*kappa*laplacianv(u);
+}
+
+template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TimeDerivativeExprType, typename TemperatureFieldType, typename HeatType >
+auto
+residualTransientResidualExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv, TimeDerivativeExprType const& dudt,
+                               TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                               typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_tensor2 >* = nullptr )
+{
+    return rhocp*( dudt + timeSteppingScaling*gradv(u)*uconv ) - timeSteppingScaling*inner(kappa,hessv(u));
 }
 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
@@ -74,9 +103,18 @@ residualStationaryResidualExpr( RhoCpExprType const& rhocp, KappaExprType const&
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
 auto
 residualStationaryResidualExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
-                                TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1> )
+                                TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1>,
+                                typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_scalar >* = nullptr )
 {
     return rhocp*gradv(u)*uconv - kappa*laplacianv(u);
+}
+template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
+auto
+residualStationaryResidualExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
+                                TemperatureFieldType const& u, HeatType const& heatToolbox, mpl::int_<1>,
+                                typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_tensor2 >* = nullptr )
+{
+    return rhocp*gradv(u)*uconv - inner(kappa,hessv(u));
 }
 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
@@ -89,9 +127,18 @@ residualTransientResidualWithoutTimeDerivativeExpr( RhoCpExprType const& rhocp, 
 template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
 auto
 residualTransientResidualWithoutTimeDerivativeExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
-                                                    TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1> )
+                                                    TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                                                    typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_scalar >* = nullptr )
 {
     return timeSteppingScaling*(rhocp*gradv(u)*uconv - kappa*laplacianv(u));
+}
+template<typename RhoCpExprType, typename KappaExprType, typename VelocityConvectionExprType, typename TemperatureFieldType, typename HeatType >
+auto
+residualTransientResidualWithoutTimeDerivativeExpr( RhoCpExprType const& rhocp, KappaExprType const& kappa, VelocityConvectionExprType const& uconv,
+                                                    TemperatureFieldType const& u, double timeSteppingScaling, HeatType const& heatToolbox, mpl::int_<1>,
+                                                    typename std::enable_if_t< KappaExprType::template evaluator_t<typename HeatType::mesh_type::element_type>::shape::is_tensor2 >* = nullptr )
+{
+    return timeSteppingScaling*(rhocp*gradv(u)*uconv - inner(kappa,hessv(u)) );
 }
 
 
@@ -172,7 +219,7 @@ updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
                        _expr=-timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
                        _geomap=heatToolbox.geomap() );
     }
-
+#if 0 // TODO VINCENT
     if ( heatToolbox.timeStepping() == "Theta" )
     {
         if ( heatToolbox.fieldVelocityConvectionIsUsedAndOperational() )
@@ -188,7 +235,7 @@ updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
                            _expr=tau*stab_residual_old*stab_test,
                            _geomap=heatToolbox.geomap() );
         }
-        else if constexpr ( StabResidualType == 1 )
+        else if constexpr ( StabResidualType == 1  && Expr<ConvectionExprType>::template evaluator_t<typename HeatToolbox::mesh_type::element_type>::shape::is_scalar ) // TODO kappa is matrix!!!
         {
             auto previousSol = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-solution") );
             auto tOld = Xh->element( previousSol, heatToolbox.rowStartInVector() );
@@ -201,161 +248,177 @@ updateResidualStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
         }
         // TODO body forces
     }
+#endif
 
     heatToolbox.log("Heat","updateResidualStabilizationGLS", "finish"+sc);
 }
 
 
-} // namespace HeatDetail_StabGLS
-
-template< typename ConvexType, typename BasisTemperatureType >
-template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+template <int StabResidualType,typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename TestFunctionExpr,typename HeatToolbox>
 void
-Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
-                                                                        Expr<ConductivityExprType> const& kappa,
-                                                                        Expr<ConvectionExprType> const& uconv,
-                                                                        RangeType const& range,
-                                                                        DataUpdateLinear & data ) const
+updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
+                                 Expr<ConductivityExprType> const& kappa,
+                                 Expr<ConvectionExprType> const& uconv,
+                                 RangeType const& range,
+                                 TestFunctionExpr const& stab_test,
+                                 ModelAlgebraic::DataUpdateLinear & data,
+                                 HeatToolbox const& heatToolbox )
 {
-    static const int StabResidualType = ( nOrderTemperature>1 )? 1 : 0;
+    //static const int StabResidualType = ( nOrderTemperature>1 )? 1 : 0;
 
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
 
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("Heat","updateLinearPDEStabilizationGLS", "start"+sc);
+    heatToolbox.log("Heat","updateLinearPDEStabilizationGLS", "start"+sc);
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
+    if ( !heatToolbox.isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(heatToolbox.prefix(),"time-stepping.scaling") );
 
-    auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto const& u = this->fieldTemperature();
-    auto const& v = this->fieldTemperature();
+    auto mesh = heatToolbox.mesh();
+    auto Xh = heatToolbox.spaceTemperature();
+    auto const& u = heatToolbox.fieldTemperature();
+    auto const& v = heatToolbox.fieldTemperature();
 
     auto bilinearForm_PatternCoupled = form2( _test=Xh,_trial=Xh,_matrix=A,
                                               _pattern=size_type(Pattern::COUPLED),
-                                              _rowstart=this->rowStartInMatrix(),
-                                              _colstart=this->colStartInMatrix() );
+                                              _rowstart=heatToolbox.rowStartInMatrix(),
+                                              _colstart=heatToolbox.colStartInMatrix() );
     auto myLinearForm = form1( _test=Xh, _vector=F,
-                               _rowstart=this->rowStartInVector() );
+                               _rowstart=heatToolbox.rowStartInVector() );
 
 
 
     auto rhocpuconv = rhocp*uconv;
-    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
-    auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
+    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *heatToolbox.stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
+#if 1
+    auto tauFieldPtr = heatToolbox.stabilizationGLSParameter()->fieldTauPtr();
     tauFieldPtr->on(_range=range,_expr=tauExpr);
     auto tau = idv(tauFieldPtr);
+#else
+    auto tau = tauExpr;
+#endif
 
-    if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg"  )
+    if (!heatToolbox.isStationary())
     {
-        auto stab_test = rhocp*grad(u)*uconv;
-        if (!this->isStationary())
-        {
-            auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, *this, mpl::int_<StabResidualType>() );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-            auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-            auto stab_residual_linear = rhocp*idv( rhsTimeStep );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= val(tau*stab_residual_linear)*stab_test,
-                           _geomap=this->geomap() );
-        }
-        else
-        {
-            auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, *this, mpl::int_<StabResidualType>() );
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-        }
-        for( auto const& d : this->bodyForces() )
-        {
-            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
-            myLinearForm +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr=timeSteppingScaling*tau*expression(d,this->symbolsExpr())*stab_test,
-                           _geomap=this->geomap() );
-        }
-
-        if ( this->timeStepping() == "Theta" )
-        {
-            auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
-            auto tOld = Xh->element( previousSol, this->rowStartInVector() );
-            CHECK( this->fieldVelocityConvectionIsUsedAndOperational() ) << "something wrong";
-            auto previousConv = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field") );
-            auto uConvOld = this->fieldVelocityConvection().functionSpace()->element( previousConv );
-            //auto stab_residual_old = (1.0 - timeSteppingScaling)*rhocp*gradv(tOld)*idv(uConvOld);
-            auto stab_residual_old = HeatDetail_StabGLS::residualTransientResidualWithoutTimeDerivativeExpr( rhocp, kappa, idv(uConvOld), tOld, 1.0-timeSteppingScaling, *this, mpl::int_<StabResidualType>() );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr=-tau*stab_residual_old*stab_test,
-                           _geomap=this->geomap() );
-            // TODO body forces
-        }
+        auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
+        bilinearForm_PatternCoupled +=
+            integrate( _range=range,
+                       _expr=tau*stab_residual_bilinear*stab_test,
+                       _geomap=heatToolbox.geomap() );
+        auto rhsTimeStep = heatToolbox.timeStepBdfTemperature()->polyDeriv();
+        auto stab_residual_linear = rhocp*idv( rhsTimeStep );
+        myLinearForm +=
+            integrate( _range=range,
+                       _expr= val(tau*stab_residual_linear)*stab_test,
+                       _geomap=heatToolbox.geomap() );
     }
-    else if ( ( this->stabilizationGLSType() == "gls" ) || ( this->stabilizationGLSType() == "unusual-gls" ) )
+    else
     {
-        int stabCoeffDiffusion = (this->stabilizationGLSType() == "gls")? -1 : 1;
-        auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
-        if (!this->isStationary())
-        {
-            auto stab_residual_bilinear = rhocp*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + timeSteppingScaling*gradt(u)*uconv ) - timeSteppingScaling*kappa*laplaciant(u);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-            auto rhsTimeStep = this->timeStepBdfTemperature()->polyDeriv();
-            auto stab_residual_linear = rhocp*idv( rhsTimeStep );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr= val(tau*stab_residual_linear)*stab_test,
-                           //_expr= tau*stab_residual_linear*stab_test,
-                           _geomap=this->geomap() );
-        }
-        else
-        {
-            auto stab_residual_bilinear = rhocp*gradt(u)*uconv - kappa*laplaciant(u);
-            bilinearForm_PatternCoupled +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-        }
-        for( auto const& d : this->bodyForces() )
-        {
-            auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)), range );
-            myLinearForm +=
-                integrate( _range=rangeBodyForceUsed,
-                           _expr=timeSteppingScaling*tau*expression(d,this->symbolsExpr())*stab_test,
-                           _geomap=this->geomap() );
-        }
-
-        if ( this->timeStepping() == "Theta" )
-        {
-            auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
-            auto tOld = Xh->element( previousSol, this->rowStartInVector() );
-            CHECK( this->fieldVelocityConvectionIsUsedAndOperational() ) << "something wrong";
-            auto previousConv = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field") );
-            auto uConvOld = this->fieldVelocityConvection().functionSpace()->element( previousConv );
-            //auto stab_residual_old = (1.0 - timeSteppingScaling)*rhocp*gradv(tOld)*idv(uConvOld) -  (1.0 - timeSteppingScaling)*kappa*laplacianv(u);
-            auto stab_residual_old = HeatDetail_StabGLS::residualTransientResidualWithoutTimeDerivativeExpr( rhocp, kappa, idv(uConvOld), tOld, 1.0-timeSteppingScaling, *this, mpl::int_<StabResidualType>() );
-            myLinearForm +=
-                integrate( _range=range,
-                           _expr=-tau*stab_residual_old*stab_test,
-                           _geomap=this->geomap() );
-            // TODO body forces
-        }
-
+        auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, heatToolbox, mpl::int_<StabResidualType>() );
+        bilinearForm_PatternCoupled +=
+            integrate( _range=range,
+                       _expr=tau*stab_residual_bilinear*stab_test,
+                       _geomap=heatToolbox.geomap() );
     }
-
-    this->log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
+    for( auto const& d : heatToolbox.bodyForces() )
+    {
+        auto rangeBodyForceUsed = ( markers(d).empty() )? range : intersect( markedelements(mesh,markers(d)),range );
+        myLinearForm +=
+            integrate( _range=rangeBodyForceUsed,
+                       _expr=timeSteppingScaling*tau*expression(d,heatToolbox.symbolsExpr())*stab_test,
+                       _geomap=heatToolbox.geomap() );
+    }
+#if 0 // TODO VINCENT
+    if ( heatToolbox.timeStepping() == "Theta" )
+    {
+        auto previousSol = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-solution") );
+        auto tOld = Xh->element( previousSol, heatToolbox.rowStartInVector() );
+        CHECK( heatToolbox.fieldVelocityConvectionIsUsedAndOperational() ) << "something wrong";
+        auto previousConv = data.vectorInfo( prefixvm( heatToolbox.prefix(),"time-stepping.previous-convection-velocity-field") );
+        auto uConvOld = heatToolbox.fieldVelocityConvection().functionSpace()->element( previousConv );
+        //auto stab_residual_old = (1.0 - timeSteppingScaling)*rhocp*gradv(tOld)*idv(uConvOld);
+        auto stab_residual_old = HeatDetail_StabGLS::residualTransientResidualWithoutTimeDerivativeExpr( rhocp, kappa, idv(uConvOld), tOld, 1.0-timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
+        myLinearForm +=
+            integrate( _range=range,
+                       _expr=-tau*stab_residual_old*stab_test,
+                       _geomap=heatToolbox.geomap() );
+        // TODO body forces
+    }
+#endif
+    heatToolbox.log("Heat","updateLinearPDEStabilizationGLS", "finish"+sc);
 }
+
+
+template <int StabResidualType,typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType,typename TestFunctionExpr,typename HeatToolbox>
+void
+updateJacobianStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
+                                Expr<ConductivityExprType> const& kappa,
+                                Expr<ConvectionExprType> const& uconv,
+                                RangeType const& range,
+                                TestFunctionExpr const& stab_test,
+                                ModelAlgebraic::DataUpdateJacobian & data,
+                                HeatToolbox const& heatToolbox )
+{
+    //static const int StabResidualType = ( nOrderTemperature>1 )? 1 : 0;
+
+    const vector_ptrtype& XVec = data.currentSolution();
+    sparse_matrix_ptrtype& J = data.jacobian();
+    bool buildCstPart = data.buildCstPart();
+    bool buildNonCstPart = !buildCstPart;
+
+    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
+    heatToolbox.log("Heat","updateJacobianStabilizationGLS", "start"+sc);
+
+    double timeSteppingScaling = 1.;
+    if ( !heatToolbox.isStationary() )
+        timeSteppingScaling = data.doubleInfo( prefixvm(heatToolbox.prefix(),"time-stepping.scaling") );
+
+    auto mesh = heatToolbox.mesh();
+    auto Xh = heatToolbox.spaceTemperature();
+    auto u = Xh->element( XVec, heatToolbox.rowStartInVector() );
+    auto const& v = heatToolbox.fieldTemperature();
+
+    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=heatToolbox.rowStartInMatrix(),
+                               _colstart=heatToolbox.colStartInMatrix() );
+#if 0
+    auto rhocpuconv = rhocp*uconv;
+    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *heatToolbox.stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
+    auto tauFieldPtr = heatToolbox.stabilizationGLSParameter()->fieldTauPtr();
+    tauFieldPtr->on(_range=range,_expr=tauExpr);
+    auto tau = idv(tauFieldPtr);
+#else
+    auto tau = idv( heatToolbox.stabilizationGLSParameter()->fieldTauPtr() );
+#endif
+
+    if (!heatToolbox.isStationary())
+    {
+        auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, heatToolbox, mpl::int_<StabResidualType>() );
+        bilinearForm +=
+            integrate( _range=range,
+                       _expr=tau*stab_residual_bilinear*stab_test,
+                       _geomap=heatToolbox.geomap() );
+    }
+    else
+    {
+        auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, heatToolbox, mpl::int_<StabResidualType>() );
+        bilinearForm +=
+            integrate( _range=range,
+                       _expr=tau*stab_residual_bilinear*stab_test,
+                       _geomap=heatToolbox.geomap() );
+    }
+
+    heatToolbox.log("Heat","updateJacobianStabilizationGLS", "finish"+sc);
+
+}
+
+
+} // namespace HeatDetail_StabGLS
+
 
 template< typename ConvexType, typename BasisTemperatureType >
 template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
@@ -368,81 +431,26 @@ Heat<ConvexType,BasisTemperatureType>::updateJacobianStabilizationGLS( Expr<RhoC
 {
     static const int StabResidualType = ( nOrderTemperature>1 )? 1 : 0;
 
-    const vector_ptrtype& XVec = data.currentSolution();
-    sparse_matrix_ptrtype& J = data.jacobian();
-    bool buildCstPart = data.buildCstPart();
-    bool buildNonCstPart = !buildCstPart;
-
-    std::string sc=(buildCstPart)?" (cst)":" (non cst)";
-    this->log("Heat","updateJacobianStabilizationGLS", "start"+sc);
-
-    double timeSteppingScaling = 1.;
-    if ( !this->isStationary() )
-        timeSteppingScaling = data.doubleInfo( prefixvm(this->prefix(),"time-stepping.scaling") );
-
-    auto mesh = this->mesh();
-    auto Xh = this->spaceTemperature();
-    auto u = Xh->element( XVec, this->rowStartInVector() );
-    auto const& v = this->fieldTemperature();
-
-    auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=J,
-                               _pattern=size_type(Pattern::COUPLED),
-                               _rowstart=this->rowStartInMatrix(),
-                               _colstart=this->colStartInMatrix() );
-#if 0
-    auto rhocpuconv = rhocp*uconv;
-    auto tauExpr = Feel::FeelModels::stabilizationGLSParameterExpr( *this->stabilizationGLSParameter(),rhocpuconv/*rhocp*uconv*/, kappa );
-    auto tauFieldPtr = this->stabilizationGLSParameter()->fieldTauPtr();
-    tauFieldPtr->on(_range=range,_expr=tauExpr);
-    auto tau = idv(tauFieldPtr);
-#else
-    auto tau = idv( this->stabilizationGLSParameter()->fieldTauPtr() );
-#endif
-
-    if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg"  )
+    auto const& u = this->fieldTemperature();
+    if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg" )
     {
         auto stab_test = rhocp*grad(u)*uconv;
-        if (!this->isStationary())
-        {
-            auto stab_residual_bilinear = HeatDetail_StabGLS::residualTransientLinearExpr( rhocp, kappa, uconv, u, timeSteppingScaling, *this, mpl::int_<StabResidualType>() );
-            bilinearForm +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-        }
-        else
-        {
-            auto stab_residual_bilinear = HeatDetail_StabGLS::residualStationaryLinearExpr( rhocp, kappa, uconv, u, *this, mpl::int_<StabResidualType>() );
-            bilinearForm +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-        }
+        HeatDetail_StabGLS::updateJacobianStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
     }
-    else if ( ( this->stabilizationGLSType() == "gls" ) || ( this->stabilizationGLSType() == "unusual-gls" ) )
+    else
     {
         int stabCoeffDiffusion = (this->stabilizationGLSType() == "gls")? -1 : 1;
-        auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
-        if (!this->isStationary())
-        {
-            auto stab_residual_bilinear = rhocp*(idt(u)*this->timeStepBdfTemperature()->polyDerivCoefficient(0) + timeSteppingScaling*gradt(u)*uconv ) - timeSteppingScaling*kappa*laplaciant(u);
-            bilinearForm +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
-        }
+        if constexpr ( Expr<ConductivityExprType>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
+            {
+                auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
+                HeatDetail_StabGLS::updateJacobianStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
+            }
         else
         {
-            auto stab_residual_bilinear = rhocp*gradt(u)*uconv - kappa*laplaciant(u);
-            bilinearForm +=
-                integrate( _range=range,
-                           _expr=tau*stab_residual_bilinear*stab_test,
-                           _geomap=this->geomap() );
+            auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*inner(kappa,hess(u));
+            HeatDetail_StabGLS::updateJacobianStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
         }
     }
-
-    this->log("Heat","updateJacobianStabilizationGLS", "finish"+sc);
-
 }
 
 template< typename ConvexType, typename BasisTemperatureType >
@@ -467,10 +475,51 @@ Heat<ConvexType,BasisTemperatureType>::updateResidualStabilizationGLS( Expr<RhoC
     else
     {
         int stabCoeffDiffusion = (this->stabilizationGLSType() == "gls")? -1 : 1;
-        auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
-        HeatDetail_StabGLS::updateResidualStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this, exprs... );
+        if constexpr ( Expr<ConductivityExprType>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
+            {
+                auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
+                HeatDetail_StabGLS::updateResidualStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this, exprs... );
+            }
+        else
+        {
+            auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*inner(kappa,hess(u));
+            HeatDetail_StabGLS::updateResidualStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this, exprs... );
+        }
     }
 }
+
+template< typename ConvexType, typename BasisTemperatureType >
+template <typename RhoCpExprType,typename ConductivityExprType,typename ConvectionExprType,typename RangeType>
+void
+Heat<ConvexType,BasisTemperatureType>::updateLinearPDEStabilizationGLS( Expr<RhoCpExprType> const& rhocp,
+                                                                        Expr<ConductivityExprType> const& kappa,
+                                                                        Expr<ConvectionExprType> const& uconv,
+                                                                        RangeType const& range,
+                                                                        DataUpdateLinear & data ) const
+{
+    static const int StabResidualType = ( nOrderTemperature>1 )? 1 : 0;
+    auto const& u = this->fieldTemperature();
+    if ( nOrderTemperature <= 1 || this->stabilizationGLSType() == "supg" )
+    {
+        auto stab_test = rhocp*grad(u)*uconv;
+        HeatDetail_StabGLS::updateLinearPDEStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
+    }
+    else
+    {
+        int stabCoeffDiffusion = (this->stabilizationGLSType() == "gls")? -1 : 1;
+        if constexpr ( Expr<ConductivityExprType>::template evaluator_t<typename mesh_type::element_type>::shape::is_scalar )
+            {
+                auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*kappa*laplacian(u);
+                HeatDetail_StabGLS::updateLinearPDEStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
+            }
+        else
+        {
+            auto stab_test = rhocp*grad(u)*uconv + stabCoeffDiffusion*inner(kappa,hess(u));
+            HeatDetail_StabGLS::updateLinearPDEStabilizationGLS<StabResidualType>( rhocp, kappa, uconv, range, stab_test, data, *this );
+        }
+    }
+}
+
 
 } // namespace Feel
 } // namespace FeelModels

@@ -506,9 +506,6 @@ ThermoElectricHDG<Dim, OrderT, OrderV, OrderG>::exportResults()
     e->add("k", M_k);
     e->save();
 
-    M_electro->executePostProcessMeasures(M_electro->currentTime(), M_electro->allFields(), M_electro->symbolsExpr() );
-    M_thermo->executePostProcessMeasures(M_thermo->currentTime(), M_thermo->allFields(), M_thermo->symbolsExpr() );
-
     double meanT = mean(_range=elements(M_mesh), _expr=idv(M_temperature))(0,0);
     auto mima = minmax(_range=elements(M_mesh), _pset=_Q<>(), _expr=idv(M_temperature));
     double miT = mima.min();

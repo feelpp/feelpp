@@ -57,52 +57,38 @@ int main(int argc, char *argv[])
     std::string discretization = soption(_name="case.discretization");
 
     auto dimt = hana::make_tuple(hana::int_c<2>,hana::int_c<3>);
-    auto discretizationg = hana::make_tuple(hana::int_c<1>,hana::int_c<2>);
 #if FEELPP_INSTANTIATION_ORDER_MAX >= 3
-    auto discretizationt = hana::make_tuple( hana::make_tuple("T3", hana::int_c<3> ),
-                                             hana::make_tuple("T2", hana::int_c<2> ),
-                                             hana::make_tuple("T1", hana::int_c<1> ) );
-    auto discretizationv = hana::make_tuple( hana::make_tuple("V3", hana::int_c<3> ),
-                                             hana::make_tuple("V2", hana::int_c<2> ),
-                                             hana::make_tuple("V1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P3", hana::int_c<3> ),
+                                             hana::make_tuple("P2", hana::int_c<2> ),
+                                             hana::make_tuple("P1", hana::int_c<1> ) );
 #elif FEELPP_INSTANTIATION_ORDER_MAX >= 2
-    auto discretizationt = hana::make_tuple( hana::make_tuple("T2", hana::int_c<2> ),
-                                             hana::make_tuple("T1", hana::int_c<1> ) );
-    auto discretizationv = hana::make_tuple( hana::make_tuple("V2", hana::int_c<2> ),
-                                             hana::make_tuple("V1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P2", hana::int_c<2> ),
+                                             hana::make_tuple("P1", hana::int_c<1> ) );
 #else
-    auto discretizationt = hana::make_tuple( hana::make_tuple("T1", hana::int_c<1> ) );
-    auto discretizationv = hana::make_tuple( hana::make_tuple("V1", hana::int_c<1> ) );
+    auto discretizationt = hana::make_tuple( hana::make_tuple("P1", hana::int_c<1> ) );
 #endif
 
     bool hasRun = false;
-    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationg,discretizationt,discretizationv)),
-                    [&discretization,&dimension,&hasRun]( auto const& d )
+    std::vector<std::string> combinations;
+    hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationt)),
+                    [&discretization,&dimension,&hasRun,&combinations]( auto const& d )
                         {
                             constexpr int _dim = std::decay_t<decltype(hana::at_c<0>(d))>::value;
-                            constexpr int _gorder = std::decay_t<decltype(hana::at_c<1>(d))>::value;
-                            std::string const& _discretizationt = hana::at_c<0>( hana::at_c<2>(d) );
-                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<2>(d) ))>::value;
-                            std::string const& _discretizationv = hana::at_c<0>( hana::at_c<3>(d) );
-                            constexpr int _vorder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<3>(d) ))>::value;
-                            if ( dimension == _dim && discretization == _discretizationt+_discretizationv+"G"+std::to_string(_gorder) )
+                            std::string const& _discretizationt = hana::at_c<0>( hana::at_c<1>(d) );
+                            constexpr int _torder = std::decay_t<decltype(hana::at_c<1>( hana::at_c<1>(d) ))>::value;
+                            combinations.push_back(std::to_string(_dim)+","+_discretizationt);
+                            if ( dimension == _dim && discretization == _discretizationt )
                             {
                                 hasRun = true;
-                                runApplicationThermoElectric<_dim,_torder,_vorder,_gorder>();
+                                runApplicationThermoElectric<_dim,_torder,_torder,1>();
                             }
                         } );
     if( !hasRun )
     {
         Feel::cout << tc::red << "Wrong dimension (" << dimension << ") or discretization (" << discretization
                    << ") Possible combination:" << tc::reset << std::endl;
-        hana::for_each( hana::cartesian_product(hana::make_tuple(dimt,discretizationg,discretizationt,discretizationv)),
-                        []( auto const& d )
-                            {
-                                Feel::cout << "\t(" << std::decay_t<decltype(hana::at_c<0>(d))>::value << ","
-                                           << hana::at_c<0>( hana::at_c<2>(d) ) << hana::at_c<0>( hana::at_c<3>(d) )
-                                           << "G" << std::decay_t<decltype(hana::at_c<1>(d))>::value <<  ")" << std::endl;
-                            }
-                        );
+        for( auto const& s : combinations )
+            Feel::cout << "\t("<< s << ")" << std::endl;
     }
 
     std::ofstream os ( "timers.md" );

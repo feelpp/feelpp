@@ -13,10 +13,10 @@
     {
         "Cu":
         {
-            "k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T",
-            //"Cp":"1000.005", //[ J/(kg*K) ]
-            // "rho":"1.205", //[ kg/(m^3) ]
-            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T"
+            "sigma":"sigma0/(1+alpha*(heat_T-T0))+0*heat_T:sigma0:alpha:T0:heat_T",
+            //"k":"sigma0*Lorentz*heat_T/(1+alpha*(heat_T-T0)):sigma0:alpha:T0:Lorentz:heat_T"
+            //"k":"materials_Cu_sigma*Lorentz*heat_T:materials_Cu_sigma:Lorentz:heat_T"
+            "k":"sigma*Lorentz*heat_T:sigma:Lorentz:heat_T"
         }
     },
     "BoundaryConditions":
@@ -70,7 +70,7 @@
         {
             "Exports":
             {
-                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","heat.pid"]
+                "fields":["heat.temperature","electric.electric-potential","electric.electric-field","electric.current-density","pid","materials.electric-conductivity","materials.thermal-conductivity"]
             }
         },
         "heat":
@@ -82,13 +82,13 @@
                     "FluxV0":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-materials_Cu_k*heat_dn_T:materials_Cu_k:heat_dn_T",
                         "markers":"V0"
                     },
                     "FluxV1":
                     {
                         "type":"integrate",
-                        "expr":"-heat_Cu_k*heat_dnT:heat_Cu_k:heat_dnT",
+                        "expr":"-materials_Cu_k*heat_dn_T:materials_Cu_k:heat_dn_T",
                         "markers":"V1"
                     },
                     "temp":
@@ -152,19 +152,19 @@
                     "Intensity0":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-materials_Cu_sigma*electric_dn_P:materials_Cu_sigma:electric_dn_P",
                         "markers":"V0"
                     },
                     "Intensity1":
                     {
                         "type":"integrate",
-                        "expr":"-electric_Cu_sigma*electric_dnP:electric_Cu_sigma:electric_dnP",
+                        "expr":"-materials_Cu_sigma*electric_dn_P:materials_Cu_sigma:electric_dn_P",
                         "markers":"V1"
                     },
                     "Power":
                     {
                         "type":"integrate",
-                        "expr":"electric_Cu_sigma*(electric_dxP^2+electric_dyP^2+electric_dzP^2):electric_Cu_sigma:electric_dxP:electric_dyP:electric_dzP",
+                        "expr":"materials_Cu_sigma*(electric_grad_P_0^2+electric_grad_P_1^2+electric_grad_P_2^2):materials_Cu_sigma:electric_grad_P_0:electric_grad_P_1:electric_grad_P_2",
                         "markers":"Cu"
                     }
                 },

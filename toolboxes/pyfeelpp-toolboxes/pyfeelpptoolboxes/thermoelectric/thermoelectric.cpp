@@ -42,8 +42,6 @@ void defToolbox(py::module &m)
     using toolbox_t = ThermoElectric< model_heat_type,model_electric_type >;
     using element_thermoelectricpotential_t = typename toolbox_t::electric_model_type::element_electricpotential_type;
     using element_thermoelectricpotential_ptr_t = typename toolbox_t::electric_model_type::element_electricpotential_ptrtype;
-    using element_thermoelectricfield_t = typename toolbox_t::electric_model_type::element_electricfield_type;
-    using element_thermoelectricfield_ptr_t = typename toolbox_t::electric_model_type::element_electricfield_ptrtype;
 
     std::string pyclass_name = std::string("Thermoelectric_") + std::to_string(nDim) + std::string("DP") + std::to_string(OrderPotential);
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
