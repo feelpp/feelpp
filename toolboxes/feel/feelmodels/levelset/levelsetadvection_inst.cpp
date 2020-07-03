@@ -10,56 +10,40 @@
         /**/
 #include <feel/feelmodels/advection/advection.cpp>
 
+#define LEVELSETSPACEMANAGER_CLASS_TYPE \
+    LevelSetSpaceManager< \
+        LEVELSET_CONVEX_TYPE, \
+        LEVELSET_BASIS_TYPE, \
+        LEVELSET_PERIODICITY_TYPE, \
+        LEVELSET_BASISPN_TYPE \
+        >                    \
+    /**/
+
 namespace Feel {
 namespace FeelModels {
 
+extern template class LEVELSETSPACEMANAGER_CLASS_TYPE;
+
 // Scalar advection
 template class AdvDiffReac<
-    typename LevelSetSpaceManager<
-        Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>,
-        Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>,
-        LEVELSET_PERIODICITY,
-        Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>
-            >::space_scalar_type,
-    FunctionSpace<
-        Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        Feel::detail::bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>,
-        double,
-        Periodicity<LEVELSET_PERIODICITY>,
-        mortars<NoMortar>
-            >
+    typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type,
+    LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE
     >;
 // Vectorial advection
 template class AdvDiffReac<
-    typename LevelSetSpaceManager<
-        Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>,
-        Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>,
-        LEVELSET_PERIODICITY,
-        Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>
-            >::space_vectorial_type,
-    FunctionSpace<
-        Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        Feel::detail::bases<Lagrange<LEVELSET_VELOCITY_ORDER, Vectorial, Continuous, PointSetFekete>>,
-        double,
-        Periodicity<LEVELSET_PERIODICITY>,
-        mortars<NoMortar>
-            >
+    typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_vectorial_type,
+    LEVELSET_FUNCTIONSPACEADVECTIONVELOCITY_TYPE
     >;
 
-// Scalar iso advection (for reinitializerHJ)
-template class AdvDiffReac<
-    typename LevelSetSpaceManager<
-        Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>,
-        Lagrange<LEVELSET_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>,
-        LEVELSET_PERIODICITY,
-        Lagrange<LEVELSET_PN_ORDERPOLY, Scalar, Continuous, LEVELSET_INTERPOLATION_POINTS>
-            >::space_scalar_type,
-    FunctionSpace<
-        Mesh<Simplex<LEVELSET_DIM,LEVELSET_ORDERGEO,LEVELSET_DIM>>,
-        bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>,
-        Periodicity<LEVELSET_PERIODICITY>
-            >
-    >;
-
+//#if LEVELSET_ORDERPOLY != LEVELSET_VELOCITY_ORDER
+//// Scalar iso advection (for HJ redistanciation)
+//template class AdvDiffReac<
+    //typename FeelModels::LEVELSETSPACEMANAGER_CLASS_TYPE::space_scalar_type,
+    //FunctionSpace<
+        //Mesh<LEVELSET_CONVEX_TYPE>,
+        //bases<Lagrange<LEVELSET_ORDERPOLY, Vectorial, Continuous, LEVELSET_INTERPOLATION_POINTS>>
+            //>
+    //>;
+//#endif
 }
 }

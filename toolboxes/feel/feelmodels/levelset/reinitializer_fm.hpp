@@ -81,6 +81,10 @@ public:
     typedef std::shared_ptr<functionspace_reinitP1_type> functionspace_reinitP1_ptrtype;
 
     //--------------------------------------------------------------------//
+    // Range
+    typedef elements_reference_wrapper_t<mesh_type> range_elements_type;
+
+    //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     // Constructor
@@ -89,6 +93,7 @@ public:
             std::string const& prefix = "" );
     //--------------------------------------------------------------------//
     // Run reinitialization
+    element_type run( element_type const& phi, range_elements_type const& rangeInitialElts );
     element_type run( element_type const& phi );
     //--------------------------------------------------------------------//
     // Parameters
@@ -126,8 +131,14 @@ private:
     //--------------------------------------------------------------------//
     //--------------------------------------------------------------------//
     template<typename FST>
+    element_type run_impl( element_type const& phi, range_elements_type const& rangeInitialElts,
+            typename std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
+    template<typename FST>
     element_type run_impl( element_type const& phi, 
             typename std::enable_if< UseReinitP1Space<FST>::value >::type* =0);
+    template<typename FST>
+    element_type run_impl( element_type const& phi, range_elements_type const& rangeInitialElts,
+            typename std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
     template<typename FST>
     element_type run_impl( element_type const& phi, 
             typename std::enable_if< !UseReinitP1Space<FST>::value >::type* =0);
@@ -186,6 +197,13 @@ ReinitializerFM<FunctionSpaceType>::ReinitializerFM(
 {
     this->loadParametersFromOptionsVm();
     this->init<FunctionSpaceType>( space );
+}
+
+template<typename FunctionSpaceType>
+typename ReinitializerFM<FunctionSpaceType>::element_type 
+ReinitializerFM<FunctionSpaceType>::run( element_type const& phi, range_elements_type const& rangeInitialElts )
+{
+    return run_impl<FunctionSpaceType>( phi, rangeInitialElts );
 }
 
 template<typename FunctionSpaceType>
@@ -249,6 +267,39 @@ ReinitializerFM<FunctionSpaceType>::init(functionspace_ptrtype const& space,
 template<typename FunctionSpaceType>
 template<typename FST>
 typename ReinitializerFM<FunctionSpaceType>::element_type 
+ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, range_elements_type const& rangeInitialElts,
+        typename std::enable_if< UseReinitP1Space<FST>::value >::type*)
+{
+    auto phi_reinit = this->functionSpace()->element();
+    auto phi_reinitP1 = M_spaceReinitP1->element();
+
+    if( nOrder > 1 )
+    {
+        M_opInterpolationToP1->apply( phi, phi_reinitP1 );
+    }
+    else
+    {
+        phi_reinitP1 = vf::project( M_spaceReinitP1, elements(this->mesh()), idv(phi) );
+    }
+
+    //phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1, this->useMarker2AsMarkerDone() );
+    phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1 );
+    // TODO: provide possible rangeInitialElts
+
+    if( nOrder > 1 )
+    {
+        M_opInterpolationFromP1->apply( phi_reinitP1, phi_reinit );
+    }
+    else
+    {
+        phi_reinit = vf::project( this->functionSpace(), elements(this->mesh()), idv(phi_reinitP1) );
+    }
+    
+    return phi_reinit;
+}
+template<typename FunctionSpaceType>
+template<typename FST>
+typename ReinitializerFM<FunctionSpaceType>::element_type 
 ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, 
         typename std::enable_if< UseReinitP1Space<FST>::value >::type*)
 {
@@ -264,7 +315,7 @@ ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi,
         phi_reinitP1 = vf::project( _space=M_spaceReinitP1, _range=elements(this->mesh()), _expr=idv(phi) );
     }
 
-    phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1, this->useMarker2AsMarkerDone() );
+    phi_reinitP1 = M_reinitializerFMS->march( phi_reinitP1 );
 
     if( nOrder > 1 )
     {
@@ -282,10 +333,18 @@ ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi,
 template<typename FunctionSpaceType>
 template<typename FST>
 typename ReinitializerFM<FunctionSpaceType>::element_type 
+ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, range_elements_type const& rangeInitialElts, 
+        typename std::enable_if< !UseReinitP1Space<FST>::value >::type*)
+{
+    return M_reinitializerFMS->march( phi, rangeInitialElts );
+}
+template<typename FunctionSpaceType>
+template<typename FST>
+typename ReinitializerFM<FunctionSpaceType>::element_type 
 ReinitializerFM<FunctionSpaceType>::run_impl( element_type const& phi, 
         typename std::enable_if< !UseReinitP1Space<FST>::value >::type*)
 {
-    return M_reinitializerFMS->march( phi, this->useMarker2AsMarkerDone() );
+    return M_reinitializerFMS->march( phi );
 }
 
 } // namespace Feel

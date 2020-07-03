@@ -1,27 +1,42 @@
 #undef SOLIDMECHANICS_DIM
 #undef SOLIDMECHANICS_ORDERGEO
 #undef SOLIDMECHANICS_ORDER_DISPLACEMENT
-#undef SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME
 
 #define SOLIDMECHANICS_DIM @SOLIDMECHANICS_DIM@
 #define SOLIDMECHANICS_ORDERGEO @SOLIDMECHANICS_ORDERGEO@
 #define SOLIDMECHANICS_ORDER_DISPLACEMENT @SOLIDMECHANICS_ORDER_DISPLACEMENT@
-#define SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME @SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME@
 
 #define SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS PointSetFekete
 
 #define SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS \
-    template< typename ConvexType, typename BasisDisplacementType, bool UseCstMechProp> \
+    template< typename ConvexType, typename BasisDisplacementType> \
         /**/
 #define SOLIDMECHANICS_CLASS_TEMPLATE_TYPE \
-    SolidMechanics<ConvexType,BasisDisplacementType,UseCstMechProp> \
+    SolidMechanics<ConvexType,BasisDisplacementType> \
         /**/
 #define SOLIDMECHANICS_CLASS_TYPE \
     SolidMechanics< Simplex<SOLIDMECHANICS_DIM,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
-        Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS >, \
-        SOLIDMECHANICS_USE_CST_DENSITY_COEFFLAME                                  \
+        Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS > \
         >                                                              \
     /**/
 #define SOLIDMECHANICS_CLASS_INSTANTIATION \
     template class SOLIDMECHANICS_CLASS_TYPE ;  \
+    /**/
+
+
+
+
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS \
+    template< typename ConvexType, typename BasisDisplacementType> \
+        /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE \
+    SolidMechanics1dReduced<ConvexType,BasisDisplacementType> \
+        /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_TYPE \
+    SolidMechanics1dReduced< Simplex<1,SOLIDMECHANICS_ORDERGEO,SOLIDMECHANICS_DIM>, \
+        Lagrange<SOLIDMECHANICS_ORDER_DISPLACEMENT, Vectorial,Continuous,SOLIDMECHANICS_DISPLACEMENT_INTERPOLATIONPOINTS > \
+        >                                                              \
+    /**/
+#define SOLIDMECHANICS_1DREDUCED_CLASS_INSTANTIATION \
+    template class SOLIDMECHANICS_1DREDUCED_CLASS_TYPE ;  \
     /**/

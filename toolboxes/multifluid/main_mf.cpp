@@ -18,7 +18,7 @@ runApplicationMultiFluid()
     typedef FeelModels::LevelSet< convex_type, 
                                   Lagrange<OrderLevelset, Scalar, Continuous, PointSetFekete>,
                                   NoPeriodicity,
-                                  typename model_fluid_type::space_fluid_velocity_type,
+                                  typename model_fluid_type::space_velocity_type,
                                   Lagrange<OrderPNLevelset, Scalar, Continuous, PointSetFekete>
                                   > model_levelset_type;
 
@@ -78,8 +78,8 @@ main( int argc, char** argv )
             runApplicationMultiFluid<2,1,1>();
         else if( levelset_feapprox == "P2" )
             runApplicationMultiFluid<2,1,2>();
-        else if( levelset_feapprox == "P3" )
-            runApplicationMultiFluid<2,1,3>();
+        //else if( levelset_feapprox == "P3" )
+            //runApplicationMultiFluid<2,1,3>();
         else CHECK( false ) << "invalid levelset-feapprox " << levelset_feapprox;
     }
     /*#if FEELPP_DIM == 2

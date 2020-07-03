@@ -1,0 +1,79 @@
+{
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"equation1",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"toto",
+                    "symbol":"Y"
+                }
+            },
+            {
+                "name":"equation2",
+                "unknown":
+                {
+                    "basis":"Pch2",
+                    "name":"toto",
+                    "symbol":"Y"
+                }
+            }
+        ]
+    },
+    "Materials":
+    {
+        "mymat1":
+        {
+            "markers":"Omega",
+            //"physics":"equation1",//"generic_pde"
+            "equation1_c":"1", // diffusion
+            "equation1_a":"1", // reaction
+            //"equation1_d":"1"// first time derivative
+            "equation1_f":"1",
+            "equation2_c":"10", // diffusion
+            "equation2_a":"1" // reaction
+            //"equation2_d":"1"// first time derivative
+            //"equation2_f":"0"
+        }
+    },
+    "BoundaryConditions":
+    {
+        "equation1":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":["Left","Bottom","Right","Top"],
+                    "expr":"0"
+                }
+            }
+        },
+        "equation2":
+        {
+            "Dirichlet":
+            {
+                "mybc":
+                {
+                    "markers":"Left",
+                    "expr":"1"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "cfpdes":
+        {
+            "Exports":
+            {
+                "fields":["all"]
+            }
+        }
+    }
+}

@@ -246,6 +246,14 @@ public :
         {
             M_aleFactory->updateMetricMeshAdaptation( e );
         }
+
+    template < typename FieldDispType, typename ExprT, typename RangeType >
+    void updateDisplacementFieldFromVelocity( FieldDispType & d, Expr<ExprT> const& v, RangeType const& range ) const
+        {
+            unwrap_ptr(d).on(_range=range,
+                             _expr= (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() ) );
+        }
+
 private :
 
     void updateIdentityMap();

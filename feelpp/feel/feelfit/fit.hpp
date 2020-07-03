@@ -87,6 +87,7 @@ public:
     }
 
     Interpolator const& interpolator() const { return *M_interpolator; }
+    std::shared_ptr<Interpolator> const& interpolatorPtr() const { return M_interpolator; }
 
     //! polynomial order
     uint16_type polynomialOrder() const { return M_expr.polynomialOrder(); }
@@ -102,6 +103,33 @@ public:
             else
                 return evaluate_type::Constant( this->interpolator().diff( M_expr.evaluate( parallel,worldcomm )(0,0) ) );
         }
+
+    template <typename SymbolsExprType>
+    auto applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return Fit<std::decay_t<decltype(M_expr.applySymbolsExpr( se ))>,InterpOperator>( M_expr.applySymbolsExpr( se ), this->interpolatorPtr() );
+        }
+
+    template <typename TheSymbolExprType>
+    bool hasSymbolDependency( std::string const& symb, TheSymbolExprType const& se ) const
+        {
+            return M_expr.hasSymbolDependency( symb, se );
+        }
+
+    template <typename TheSymbolExprType>
+    void dependentSymbols( std::string const& symb, std::map<std::string,std::set<std::string>> & res, TheSymbolExprType const& se ) const
+        {
+            return M_expr.dependentSymbols( symb, res, se );
+        }
+
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+    {
+        CHECK( false ) << "TODO";
+        return *this;
+    }
+
 
     // geo_t : transformation geométrique
     // basis_i_t : fonctions tests

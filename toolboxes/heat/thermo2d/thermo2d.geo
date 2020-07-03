@@ -27,7 +27,8 @@ Plane Surface(11) = {10};
 
 
 Physical Line("MarkerDirichlet") = {6};
-Physical Line("MarkerNeumann") = {3,5,7,9};
+Physical Line("MarkerNeumann_1") = {3,5};
+Physical Line("MarkerNeumann_2") = {7,9};
 Physical Line("MarkerRobin") = {8};
 Physical Line("wall") = {1,2};
 Physical Line("Interface_1_2") = {4};

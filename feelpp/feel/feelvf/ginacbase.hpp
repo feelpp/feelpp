@@ -46,7 +46,8 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
           M_params( vec_type::Zero( M_syms.size() ) ),
           M_indexSymbolXYZ(),
           M_indexSymbolN(),
-          M_context( 0 )
+          M_context( 0 ),
+          M_isNumericExpression( false )
     {
         // detect if symbol x,y,z are present and get index access in M_params
         std::map<int, std::string> lstxyz{{0, "x"}, {1, "y"}, {2, "z"}};
@@ -73,7 +74,6 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         for ( auto const& is : M_indexSymbolN )
             VLOG( 1 ) << "index symbol relation:  " << is.first << " -> " << is.second << "\n";
 
-        this->setParameterFromOption();
         if ( hasSymbol( "x" ) || hasSymbol( "y" ) || hasSymbol( "z" ) )
             M_context = M_context | vm::POINT;
         if ( hasAnySymbolN() )
@@ -111,53 +111,26 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         return M_context;
     }
 
-    void setParameterFromOption()
-    {
-        using namespace GiNaC;
-        std::map<std::string, value_type> m;
-        for ( auto const& s : M_syms )
-        {
-            if ( Environment::vm().count( s.get_name() ) )
-            {
-                // use try/catch in order to catch casting exception for
-                // option that do not return double. Indeed we are only
-                // collecting symbols in option database which can be cast
-                // to numerical types
-                try
-                {
-                    value_type v = option( _name = s.get_name() ).as<double>();
-                    m.insert( std::make_pair( s.get_name(), v ) );
-                    VLOG( 1 ) << "symbol " << s.get_name() << " found in option with value " << v;
-                }
-                catch ( ... )
-                {
-                }
+    //! return true if the expression is numeric (i.e. not a symbolic expression)
+    bool isNumericExpression() const { return M_isNumericExpression; }
 
-                //                    try
-                //                    {
-                //                        expression_type e( soption( _name=s.get_name() ), 0 );
-                //                        if( is_a<numeric>(e) )
-                //                        {
-                //                            LOG(INFO) << "symbol " << s.get_name() << " found in option with value " << v;
-                //                        }
-                //                        else
-                //                        {
-                //                            ;
-                //                        }
-                //                    }
-                //                    catch(...)
-                //                    {}
+    uint16_type index( std::string const& sname ) const
+        {
+            auto it = std::find_if( M_syms.begin(), M_syms.end(),
+                                    [=]( GiNaC::symbol const& s ) { return s.get_name() == sname; } );
+            if ( it != M_syms.end() )
+            {
+                return it-M_syms.begin();
             }
+            return invalid_uint16_type_value;
         }
-        this->setParameterValues( m );
-    }
 
     void setParameterValues( vec_type const& p )
     {
         CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
         M_params = p;
     }
-    void setParameterValues( std::map<std::string, value_type> const& mp )
+    virtual void setParameterValues( std::map<std::string, value_type> const& mp )
     {
         CHECK( M_params.size() == M_syms.size() ) << "Invalid number of parameters " << M_params.size() << " >= symbol size : " << M_syms.size();
         for ( auto const& p : mp )
@@ -179,6 +152,13 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
         }
     }
 
+    void eraseParameterValues( std::set<std::string> const& symbNames )
+        {
+            for ( std::string const& symbName : symbNames )
+                M_symbolNameToValue.erase( symbName );
+        }
+
+
   protected:
     std::vector<GiNaC::symbol> M_syms;
     vec_type M_params;
@@ -186,6 +166,7 @@ class GiNaCBase : public Feel::vf::ExprDynamicBase
     std::set<std::pair<uint16_type, uint16_type>> M_indexSymbolN;
     std::map<std::string, value_type> M_symbolNameToValue;
     size_type M_context;
+    bool M_isNumericExpression;
 };
 
 } // namespace Feel::vf

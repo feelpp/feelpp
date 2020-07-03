@@ -177,6 +177,10 @@ interpolate( std::shared_ptr<SpaceType> const& space,
             EntityProcessType entityProcess = (upExtendedElt)? EntityProcessType::ALL : EntityProcessType::LOCAL_ONLY;
             rangeElt = elements( f.functionSpace()->mesh(), entityProcess );
         }
+        // need to sync if the function f is defined on a partial mesh support
+        if ( hasMeshSupportPartialDomain )
+            applyVectorSync = true;
+
         auto it = rangeElt.template get<1>();
         auto en = rangeElt.template get<2>();
 

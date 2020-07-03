@@ -164,7 +164,7 @@ private:
 
 template <typename T>
 inline
-SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos ( std::string const& prefix, WorldComm const& worldComm )
+SolverNonLinearTrilinos<T>::SolverNonLinearTrilinos ( std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm = Environment::vm() )
 {}
 
 
