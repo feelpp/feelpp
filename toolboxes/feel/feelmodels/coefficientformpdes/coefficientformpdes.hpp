@@ -48,6 +48,33 @@ public :
 
     static constexpr auto tuple_type_unknown_basis = hana::to_tuple(hana::tuple_t<BasisUnknownType...>);
 
+private :
+    struct internal_detail
+    {
+        template <typename FilterBasisUnknownType, int Index,typename ResType, typename... SomeType>
+        static constexpr auto applyFilterBasisUnknownImpl( ResType && res, hana::tuple<SomeType...> const& t )
+        {
+            constexpr int nTupleElt = std::decay_t<decltype(hana::size( t ))>::value;
+            if constexpr ( Index < nTupleElt )
+            {
+                auto const& currentBasis = hana::at( t, hana::int_c<Index> );
+                //using current_basis_type = typename traits::template remove_hana_type_t< std::decay_t<decltype( currentBasis ) > >;
+                using current_basis_type = typename std::decay_t<decltype( currentBasis ) >::type;
+                if constexpr ( FilterBasisUnknownType::template apply<current_basis_type>::value )
+                    return applyFilterBasisUnknownImpl<FilterBasisUnknownType,Index+1>( hana::append( std::forward<ResType>( res ), currentBasis ), t );
+                else
+                    return applyFilterBasisUnknownImpl<FilterBasisUnknownType,Index+1>( std::forward<ResType>( res ), t );
+            }
+            else
+                return std::move( res );
+        }
+    };
+
+    template <typename FilterBasisUnknownType>
+    static constexpr auto tuple_type_unknown_basis_filtered = internal_detail::template applyFilterBasisUnknownImpl<FilterBasisUnknownType,0>( hana::tuple<>{}, tuple_type_unknown_basis );
+
+public :
+
     struct traits
     {
         template <typename TheType>
@@ -111,13 +138,19 @@ public :
                 }
 
         };
+
+
     public :
-        using model_fields_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, TransformModelFields{} ) ) )>;
+        template <typename FilterBasisUnknownType>
+        using model_fields_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, TransformModelFields{} ) ) )>;
 
-        using model_fields_view_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis, typename TransformModelFields::View{} ) ) )>;
+        template <typename FilterBasisUnknownType>
+        using model_fields_view_type = std::decay_t<decltype( TransformModelFields::toModelFields( hana::transform( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, typename TransformModelFields::View{} ) ) )>;
 
-        using trial_selector_model_fields_type = std::decay_t<decltype( TransformTrialSelectorModelFields::toTrialSelectorModelFields( hana::transform( tuple_type_unknown_basis, TransformTrialSelectorModelFields{} ) ) )>;
+        template <typename FilterBasisUnknownType>
+        using trial_selector_model_fields_type = std::decay_t<decltype( TransformTrialSelectorModelFields::toTrialSelectorModelFields( hana::transform( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, TransformTrialSelectorModelFields{} ) ) )>;
     };
+
 
     struct FilterBasisUnknownAll {
         template<typename T>
@@ -128,8 +161,6 @@ public :
         template<typename T>
         struct apply { static constexpr bool value = std::is_same_v<T,TheBasisType>; };
     };
-
-public :
 
     using variant_unknown_basis_type = std::decay_t<decltype(traits::variant_from_tuple(tuple_type_unknown_basis))>;
 
@@ -218,10 +249,10 @@ public :
 
 private :
 
-    template <typename ResType>
+    template <typename FilterBasisUnknownType,typename ResType>
     void modelFieldsImpl( std::string const& prefix, ResType && res ) const
         {
-            hana::for_each( tuple_type_unknown_basis, [this,&prefix,&res]( auto const& e )
+            hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&prefix,&res]( auto const& e )
                             {
                                 for (auto const& cfpdeBase : M_coefficientFormPDEs )
                                 {
@@ -235,10 +266,10 @@ private :
                             });
         }
 
-    template <typename ResType>
+    template <typename FilterBasisUnknownType,typename ResType>
     void modelFieldsImpl( vector_ptrtype sol, size_type rowStartInVector, std::string const& prefix, ResType && res ) const
         {
-            hana::for_each( tuple_type_unknown_basis, [this,&sol,&rowStartInVector,&prefix,&res]( auto const& e )
+            hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&sol,&rowStartInVector,&prefix,&res]( auto const& e )
                             {
                                 for (auto const& cfpdeBase : M_coefficientFormPDEs )
                                 {
@@ -254,10 +285,10 @@ private :
                             });
         }
 
-    template <typename ResType>
+    template <typename FilterBasisUnknownType,typename ResType>
     void trialSelectorModelFieldsImpl( size_type startBlockSpaceIndex, ResType && res ) const
         {
-            hana::for_each( tuple_type_unknown_basis, [this,&startBlockSpaceIndex,&res]( auto const& e )
+            hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&startBlockSpaceIndex,&res]( auto const& e )
                             {
                                 for (auto const& cfpdeBase : M_coefficientFormPDEs )
                                 {
@@ -274,24 +305,27 @@ private :
 
 public :
 
+    template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
     auto modelFields( std::string const& prefix = "" ) const
         {
-            typename traits::model_fields_type res;
-            this->modelFieldsImpl( prefix, std::move(res) );
+            typename traits::template model_fields_type<FilterBasisUnknownType> res;
+            this->modelFieldsImpl<FilterBasisUnknownType>( prefix, std::move(res) );
             return res;
         }
 
+    template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-            typename traits::model_fields_view_type res;
-            this->modelFieldsImpl( sol, rowStartInVector, prefix, std::move(res) );
+            typename traits::template model_fields_view_type<FilterBasisUnknownType> res;
+            this->modelFieldsImpl<FilterBasisUnknownType>( sol, rowStartInVector, prefix, std::move(res) );
             return res;
         }
 
+    template <typename FilterBasisUnknownType = FilterBasisUnknownAll>
     auto trialSelectorModelFields( size_type startBlockSpaceIndex = 0 ) const
         {
-            typename traits::trial_selector_model_fields_type res;
-            this->trialSelectorModelFieldsImpl( startBlockSpaceIndex, std::move(res) );
+            typename traits::template trial_selector_model_fields_type<FilterBasisUnknownType> res;
+            this->trialSelectorModelFieldsImpl<FilterBasisUnknownType>( startBlockSpaceIndex, std::move(res) );
             return res;
         }
 
