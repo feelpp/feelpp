@@ -110,23 +110,23 @@ void ModelBoundaryConditions::setup()
 std::map<ModelBoundaryId, ModelBoundaryCondition>
 ModelBoundaryConditions::flatten() const
 {
-    //cout << " - flatten" << std::endl;
+    // cout << " - flatten" << std::endl;
     std::map<ModelBoundaryId, ModelBoundaryCondition> f_;
     for ( auto const& [bcfield, bc1] : *this )
     {
-        //cout << "   field : " << bcfield << std::endl;
+        // cout << "   field : " << bcfield << std::endl;
         for ( auto const& [bctype, bc2] : bc1 )
         {
-            //cout << "   type : " << bctype << std::endl;
+            // cout << "   type : " << bctype << std::endl;
             for ( auto const& [bcname, bc] : bc2 )
             {
-                //cout << "   name : " << bctype << std::endl;
+                // cout << "   name : " << bctype << std::endl;
                 ModelBoundaryId bcid{ std::tuple{ bcfield, bctype, bcname } };
-                //cout << "   * " << bcid << std::endl;
+                // cout << "   * " << bcid << std::endl;
                 f_[bcid] = bc;
             }
         }
-        return f_;
     }
+    return f_;
 }
 } // namespace Feel
