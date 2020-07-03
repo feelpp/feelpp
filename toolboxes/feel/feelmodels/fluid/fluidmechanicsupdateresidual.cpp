@@ -141,6 +141,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
                            _expr= timeSteppingScaling*val( idv(rho)*trans( gradv(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idv(u)  ))*id(v),
                            _geomap=this->geomap() );
         }
+
+
+        //! gravity force
+        if ( doAssemblyRhs && physicFluidData->gravityForceEnabled() )
+        {
+            auto const& gravityForce = physicFluidData->gravityForceExpr();
+            bool assembleGravityTerm = gravityForce.expression().isNumericExpression()? BuildCstPart : BuildNonCstPart;
+            if ( assembleGravityTerm )
+            {
+                auto const& gravityForceExpr = gravityForce; // TODO apply symbols expr
+                linearFormV_PatternCoupled +=
+                    integrate( _range=M_rangeMeshElements,
+                               _expr= -timeSteppingScaling*idv(rho)*inner(gravityForceExpr,id(u)),
+                               _geomap=this->geomap() );
+            }
+        }
+
     } // foreach physic
 
     timeElapsedBis=thetimerBis.elapsed();thetimerBis.restart();
@@ -239,13 +256,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
             linearFormV_PatternCoupled +=
                 integrate( _range=M_rangeMeshElements,
                            _expr= -timeSteppingScaling*trans(idv(*M_SourceAdded))*id(v),
-                           _geomap=this->geomap() );
-        }
-        if ( M_useGravityForce )
-        {
-            linearFormV_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr= -timeSteppingScaling*idv(rho)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
         }
     }

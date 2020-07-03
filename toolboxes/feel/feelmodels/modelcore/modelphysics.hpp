@@ -14,6 +14,7 @@
 #include <vector>
 
 #include <feel/feelmodels/modelmodels.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
 #include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
@@ -119,6 +120,9 @@ public :
 
     //! add a subphysic model
     void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
+
+    //! set parameter values in expression
+    virtual void setParameterValues( std::map<std::string,double> const& mp ) {}
 private :
     std::string M_type, M_name;
     std::set<std::string> M_subphysicsTypes;
@@ -137,8 +141,21 @@ public :
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
+
+    bool gravityForceEnabled() const { return M_gravityForceEnabled; }
+    auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
+
+    //! set parameter values in expression
+    void setParameterValues( std::map<std::string,double> const& mp ) override
+        {
+            if ( M_gravityForceEnabled )
+                M_gravityForceExpr.setParameterValues( mp );
+        }
+
 private :
     std::string M_equation;
+    bool M_gravityForceEnabled;
+    ModelExpression M_gravityForceExpr;
 };
 
 template <uint16_type Dim>

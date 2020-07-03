@@ -39,6 +39,7 @@
 #include <boost/spirit/home/phoenix/stl/algorithm.hpp>
 #endif
 #include <feel/feelmesh/submeshdata.hpp>
+#include <feel/feelmesh/meshsupport.hpp>
 
 
 namespace Feel
@@ -96,10 +97,27 @@ public :
                        worldcomm_ptr_t const& wc,
                        size_type updateComponentsMesh  )
         :
+        CreateSubmeshTool( std::make_shared<MeshSupport<MeshType>>( inputMesh ), range, wc, updateComponentsMesh )
+        {}
+
+    CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
+                       std::list<IteratorRange> const& range,
+                       worldcomm_ptr_t const& wc,
+                       size_type updateComponentsMesh  )
+        :
+        CreateSubmeshTool( std::make_shared<MeshSupport<MeshType>>( inputMesh ), range, wc, updateComponentsMesh )
+        {}
+
+    CreateSubmeshTool( std::shared_ptr<MeshSupport<MeshType>> inputMesh,
+                       IteratorRange const& range,
+                       worldcomm_ptr_t const& wc,
+                       size_type updateComponentsMesh  )
+        :
         super( wc ),
-        M_mesh( inputMesh ),
+        M_meshSupport( inputMesh ),
+        M_mesh( inputMesh->mesh() ),
         M_listRange(),
-        M_smd( new smd_type( inputMesh ) ),
+        M_smd( new smd_type( M_mesh ) ),
         M_updateComponentsMesh( updateComponentsMesh ),
         M_subMeshIsOnBoundaryFaces( false ),
         M_isView( false )
@@ -107,19 +125,21 @@ public :
             M_listRange.push_back( range );
         }
 
-    CreateSubmeshTool( std::shared_ptr<MeshType> inputMesh,
+    CreateSubmeshTool( std::shared_ptr<MeshSupport<MeshType>> inputMesh,
                        std::list<IteratorRange> const& range,
                        worldcomm_ptr_t const& wc,
                        size_type updateComponentsMesh  )
         :
         super( wc ),
-        M_mesh( inputMesh ),
+        M_meshSupport( inputMesh ),
+        M_mesh( inputMesh->mesh() ),
         M_listRange( range ),
-        M_smd( new smd_type( inputMesh ) ),
+        M_smd( new smd_type( M_mesh ) ),
         M_updateComponentsMesh( updateComponentsMesh ),
         M_subMeshIsOnBoundaryFaces( false ),
         M_isView( false )
         {}
+
 
     CreateSubmeshTool & operator=( CreateSubmeshTool const& t ) = default;
     CreateSubmeshTool & operator=( CreateSubmeshTool     && t ) = default;
@@ -193,6 +213,7 @@ private:
     typename MeshType::edge_type const&
     entityExtracted( size_type id, rank_type pid, mpl::int_<MESH_EDGES> /**/ ) const;
 
+    std::shared_ptr<MeshSupport<MeshType>> M_meshSupport;
     mesh_ptrtype M_mesh;
     std::list<range_type> M_listRange;
     smd_ptrtype M_smd;
@@ -535,12 +556,19 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                     rank_type otherPid = theface.partition2();
                     DCHECK( theface.idInOthersPartitions().find( otherPid ) != theface.idInOthersPartitions().end() ) << "no id stored for other partition " << otherPid;
                     faceIdsToCheck[otherPid].insert( std::make_pair(theface.id(), theface.idInOthersPartitions( otherPid )) );
+
+                    // special cases with partial mesh support (a face is not connected to an active element in the mesh support context)
+                    if ( M_meshSupport->isPartialSupport() )
+                    {
+                        if ( ( theface.element0().isGhostCell() && !M_meshSupport->hasElement(theface.element1().id() ) ) ||
+                             ( theface.element1().isGhostCell() && !M_meshSupport->hasElement(theface.element0().id() ) ) )
+                            faceIdsInRangeMustBeGhost[ theface.id() ] = invalid_v<rank_type>;
+                    }
                 }
             }
         }
 
         this->updateParallelInputRange( newMesh, faceIdsInRange, faceIdsToCheck, faceIdsInRangeMustBeGhost );
-
     } // nProc > 1
 
     //-----------------------------------------------------------//
@@ -612,6 +640,9 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
                             const rank_type procIdGhost = itProcGhost.first;
                             for (size_type eltIdGhost : itProcGhost.second)
                             {
+                                if ( M_meshSupport->isPartialSupport() && !M_meshSupport->hasElement( eltIdGhost ) )
+                                    continue;
+
                                 auto const& ghostElt = M_mesh->element(eltIdGhost);
                                 for ( uint16_type s=0; s<ghostElt.numTopologicalFaces; s++ )
                                 {
@@ -637,6 +668,7 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::build( mpl::int_<MESH_FACES> /
 
                                     // store ghost faces to find in other process
                                     CHECK( procIdGhost == ghostElt.processId() ) << "not allow";
+                                    //continue;
                                     ghostCellsFind[procIdGhost].insert(boost::make_tuple( ghostFace.id(),
                                                                                           ghostFace.idInOthersPartitions(ghostElt.processId())) );
                                 }
@@ -912,14 +944,19 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
 {
     const rank_type proc_id = newMesh->worldComm().localRank();
     // init container
-    std::map<rank_type,std::vector<size_type> > dataToSend,dataToRecv, memoryDataMpi;
+    std::map<rank_type,std::vector<size_type> > dataToSend,dataToRecv;
+    std::map<rank_type,std::vector<std::tuple<size_type,bool>> > memoryDataMpi;
     for ( auto const& faceIdToCheck : entityIdsToCheck )
     {
         rank_type otherPid = faceIdToCheck.first;
         for ( auto const& faceIdPair : faceIdToCheck.second)
         {
             dataToSend[otherPid].push_back( faceIdPair.second );
-            memoryDataMpi[otherPid].push_back( faceIdPair.first );
+
+            if ( entityIdsInRangeMustBeGhost.find( faceIdPair.first ) != entityIdsInRangeMustBeGhost.end() )
+                memoryDataMpi[otherPid].push_back( std::make_tuple(faceIdPair.first,true ) );
+            else
+                memoryDataMpi[otherPid].push_back( std::make_tuple(faceIdPair.first,false ) );
         }
     }
     // prepare mpi comm
@@ -927,15 +964,36 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     int nbRequest=2*neighborSubdomains;
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
-    // first send/recv
+
+    // get size of data to transfer
+    std::map<rank_type,size_type> sizeRecv;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, dataToSend[neighborRank] );
-        reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, dataToRecv[neighborRank] );
+        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // first send/recv
+    cptRequest=0;
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
     // treat recv and prepare resend data
+    // reponse=0 -> entity is not in the range
+    // reponse=1 -> entity is in the range and no constraint
+    // reponse=2 -> entity is in the range but considered ghost
     std::map<rank_type,std::vector<int> > dataToReSend,dataToReRecv;
     for ( auto const& dataToRecvBase : dataToRecv )
     {
@@ -947,17 +1005,21 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
             size_type idRecv = idsRecv[k];
             if ( entityIdsInRange.find( idRecv ) == entityIdsInRange.end() )
                 continue;
-            dataToReSend[procRecv][k] = 1;
+
+            auto itFindEntityeMustBeGhost = entityIdsInRangeMustBeGhost.find( idRecv );
+            if ( itFindEntityeMustBeGhost != entityIdsInRangeMustBeGhost.end() )
+            {
+                CHECK( itFindEntityeMustBeGhost->second == invalid_v<rank_type> ) << "something wrong";
+                dataToReSend[procRecv][k] = 2;
+            }
+            else
+                dataToReSend[procRecv][k] = 1;
         }
     }
     // second send/recv
     cptRequest=0;
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-#if 0
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank , 0, dataToReSend[neighborRank] );
-        reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank , 0, dataToReRecv[neighborRank] );
-#else
         int nSendData = dataToReSend[neighborRank].size();
         if ( nSendData > 0 )
             reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 1, &(dataToReSend[neighborRank][0]), nSendData );
@@ -966,7 +1028,6 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
         dataToReRecv[neighborRank].resize( nRecvData );
         if ( nRecvData > 0 )
             reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 1, &(dataToReRecv[neighborRank][0]), nRecvData );
-#endif
     }
     // wait all requests
     mpi::wait_all(reqs, reqs + cptRequest);
@@ -976,14 +1037,20 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelInputRange( mesh
     for ( auto const& dataToReRecvBase : dataToReRecv )
     {
         rank_type procRecv = dataToReRecvBase.first;
-        if ( procRecv >= proc_id )
-            continue;
         auto const& idsPresentRecv = dataToReRecvBase.second;
         for (int k=0;k<idsPresentRecv.size();++k)
         {
+            if ( idsPresentRecv[k] == 0 || idsPresentRecv[k] == 2 )
+                continue;
+
+            size_type idRemove = std::get<0>( memoryDataMpi[procRecv][k] );
+            bool isForcedToBeGhost =  std::get<1>( memoryDataMpi[procRecv][k] );
+
+            if ( !isForcedToBeGhost && procRecv >= proc_id )
+                continue;
+
             if ( idsPresentRecv[k] == 1 )
             {
-                size_type idRemove = memoryDataMpi[procRecv][k];
                 if ( entityIdsInRangeMustBeGhost.find( idRemove ) == entityIdsInRangeMustBeGhost.end() )
                     entityIdsInRangeMustBeGhost[idRemove] = procRecv;
                 else
@@ -1041,20 +1108,32 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
     // prepare mpi comm
     mpi::request * reqs = new mpi::request[nbRequest];
     int cptRequest=0;
-    // first send
-    auto itDataToSend = dataToSend.begin();
-    auto const enDataToSend = dataToSend.end();
-    for ( ; itDataToSend!=enDataToSend ; ++itDataToSend )
+
+    // get size of data to transfer
+    std::map<rank_type,size_type> sizeRecv;
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
-        reqs[cptRequest++] = newMesh->worldComm().localComm().isend( itDataToSend->first , 0, itDataToSend->second );
-    }
-    // first recv
-    for ( auto & dataToRecvPair : dataToRecv )
-    {
-        reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( dataToRecvPair.first , 0, dataToRecvPair.second );
+        reqs[cptRequest++] = this->worldComm().localComm().isend( neighborRank , 0, (size_type)dataToSend[neighborRank].size() );
+        reqs[cptRequest++] = this->worldComm().localComm().irecv( neighborRank , 0, sizeRecv[neighborRank] );
     }
     // wait all requests
-    mpi::wait_all(reqs, reqs + nbRequest);
+    mpi::wait_all(reqs, reqs + cptRequest);
+
+    // first send
+    cptRequest=0;
+    for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
+    {
+        int nSendData = dataToSend[neighborRank].size();
+        if ( nSendData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().isend( neighborRank, 0, &(dataToSend[neighborRank][0]), nSendData );
+
+        int nRecvData = sizeRecv[neighborRank];
+        dataToRecv[neighborRank].resize( nRecvData );
+        if ( nRecvData > 0 )
+            reqs[cptRequest++] = newMesh->worldComm().localComm().irecv( neighborRank, 0, &(dataToRecv[neighborRank][0]), nRecvData );
+    }
+    // wait all requests
+    mpi::wait_all(reqs, reqs + cptRequest);
 
     // treat first recv and resend answer
     cptRequest=0;
@@ -1083,8 +1162,8 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
         // second send
         reqs[cptRequest++] = newMesh->worldComm().localComm().isend( rankRecv, 1, &(dataToReSend[rankRecv][0]), nData );
     }
-    // second recv
 
+    // second recv
     for ( rank_type neighborRank : M_mesh->neighborSubdomains() )
     {
         int nRecvData = dataToSend[neighborRank].size();
@@ -1271,78 +1350,16 @@ CreateSubmeshTool<MeshType,IteratorRange,TheTag>::updateParallelSubMesh( std::sh
 }
 
 
-
-
-/**
- * @addtogroup FreeFunctions
- * @{
- */
-template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>
-createSubmeshTool( std::shared_ptr<MeshType> inputMesh,
-                   IteratorRange const& range,
-                   worldcomm_ptr_t const& wc,
-                   size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-                   bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
-{
-    CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>
-        t( inputMesh,range,wc,updateComponentsMesh );
-    t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
-    return t;
-}
-#if 0
-/**
- * @brief create a submesh
- * @code
- * auto mesh = unitSquare();
- * auto m = CreateSubmesh( mesh, elements(mesh) );
- * @endcode
- */
-template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-typename CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
-createSubmesh( std::shared_ptr<MeshType> inputMesh,
-               IteratorRange const& range,
-               size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
-               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-               bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
-{
-    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,inputMesh->worldCommPtr(),updateComponentsMesh );
-    t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
-    return t.build(ctx);
-}
-
-/**
- * @brief create a submesh from a range of (sub)elements
- * @code
- * auto mesh = unitSquare();
- * auto m = CreateSubmesh( mesh, elements(mesh), mesh->worldComm() );
- * @endcode
- */
-template <typename MeshType,typename IteratorRange, int TheTag = MeshType::tag>
-typename CreateSubmeshTool<MeshType,typename Feel::detail::submeshrangetype<IteratorRange>::type,TheTag>::mesh_build_ptrtype
-createSubmesh( std::shared_ptr<MeshType> inputMesh,
-               IteratorRange const& range,
-               worldcomm_ptr_t const& wc,
-               size_type ctx = EXTRACTION_KEEP_MESH_RELATION,
-               size_type updateComponentsMesh = MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES,
-               bool subMeshIsOnBoundaryFaces = false /*allow to reduce mpi comm*/ )
-
-{
-    auto t = createSubmeshTool<MeshType,IteratorRange,TheTag>( inputMesh,range,wc,updateComponentsMesh );
-    t.subMeshIsOnBoundaryFaces( subMeshIsOnBoundaryFaces );
-    return t.build(ctx);
-}
-#endif
-
-
 namespace detail
 {
 template<typename Args>
 struct createSubmesh
 {
-    using mesh_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< typename parameter::binding<Args, tag::mesh>::type >::type >::type;
+    using mesh_or_support_type = typename Feel::remove_shared_ptr< typename Feel::meta::remove_all< typename parameter::binding<Args, tag::mesh>::type >::type >::type;
+    using mesh_type = typename mpl::if_c< is_mesh_v<mesh_or_support_type>, mesh_or_support_type, typename mesh_or_support_type::mesh_type>::type;
     using range_type = typename Feel::meta::remove_all< typename parameter::binding<Args, tag::range>::type >::type;
-    using ptrtype = typename CreateSubmeshTool<mesh_type,typename Feel::detail::submeshrangetype<range_type>::type,mesh_type::tag>::mesh_build_ptrtype;
+    using builder_type = CreateSubmeshTool<mesh_type,typename Feel::detail::submeshrangetype<range_type>::type,mesh_type::tag>;
+    using ptrtype = typename builder_type::mesh_build_ptrtype;
 };
 }
 
@@ -1363,7 +1380,7 @@ BOOST_PARAMETER_FUNCTION(
       )
                          )
 {
-    auto t = createSubmeshTool/*<MeshType,IteratorRange,TheTag>*/( mesh,range,worldcomm,update );
+    typename Feel::detail::createSubmesh< Args>::builder_type t( mesh,range,worldcomm,update );
     t.subMeshIsOnBoundaryFaces( only_on_boundary_faces );
     t.setIsView( view );
     return t.build(context);
