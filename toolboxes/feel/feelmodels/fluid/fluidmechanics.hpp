@@ -863,19 +863,14 @@ public :
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     // post process
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
-    //std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    //bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
-
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     template <typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
-    void exportFields( double time );
-    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
+    // void exportFields( double time );
+    // bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
+    // bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
 private :
     void executePostProcessMeasures( double time );
@@ -1539,9 +1534,9 @@ private :
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
     //----------------------------------------------------
     // post-process field exported
-    std::set<std::string> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessFieldOnTraceExported;
-    std::set<std::string> M_postProcessUserFieldExported;
+    // std::set<std::string> M_postProcessFieldExported;
+    // std::set<std::string> M_postProcessFieldOnTraceExported;
+    // std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
     bool M_isHOVisu;
@@ -1614,15 +1609,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     this->updateFields( symbolsExpr );
 
     auto fields = this->modelFields();
-    if ( nOrderGeo == 1 )
+    if constexpr ( nOrderGeo == 1 )
     {
         this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
     }
+    else this->exportResultsImplHO( time );
+
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );
 
-    if ( this->isMoveDomain() && this->hasPostProcessFieldExported( "alemesh" ) )
+    if ( this->isMoveDomain() && this->hasPostProcessExportsField( "alemesh" ) )
         this->meshALE()->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");
