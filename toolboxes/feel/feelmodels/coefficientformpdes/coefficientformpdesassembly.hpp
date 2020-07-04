@@ -18,9 +18,6 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-
-    std::cout << "SSSSSsize of tuple_type_unknown_basis : " << std::decay_t<decltype(hana::size( tuple_type_unknown_basis ))>::value
-              << " and filtered : " <<  std::decay_t<decltype(hana::size( tuple_type_unknown_basis_filtered<FilterBasisUnknownType> ))>::value << std::endl;
     hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
                         for ( auto const& cfpdeBase : M_coefficientFormPDEs )

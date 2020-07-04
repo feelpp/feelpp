@@ -328,13 +328,27 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateAutomaticSolverSelection()
     for ( int k=0;k<nEq;++k )
     {
         auto const& cfpdeBase = M_coefficientFormPDEs[k];
-        if ( cfpdeBase->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) ||
-             ( cfpdeBase->applyStabilization() && cfpdeBase->stabilizationGLS_applyShockCapturing() )
-             )
+
+        hana::for_each( tuple_type_unknown_basis, [this,&cfpdeBase,&isLinear,&se,&trialSymbolNames]( auto const& e )
         {
-            isLinear = false;
+            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                return;
+
+            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+            if ( !cfpde ) CHECK( false ) << "failure in dynamic_pointer_cast";
+
+            if ( cfpde->hasSymbolDependencyInCoefficients( trialSymbolNames, se ) ||
+                 cfpde->hasSymbolDependencyInBoundaryConditions( trialSymbolNames, se ) ||
+                 ( cfpde->applyStabilization() && cfpde->stabilizationGLS_applyShockCapturing() )
+                 )
+            {
+                isLinear = false;
+                return;
+            }
+        });
+        if ( !isLinear )
             break;
-        }
     }
 
     M_solverName = ( isLinear )? "Linear" : "Newton";
