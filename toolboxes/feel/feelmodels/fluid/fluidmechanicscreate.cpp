@@ -110,7 +110,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-    M_isHOVisu = nOrderGeo > 1;
+    M_isHOVisu = nOrderGeo > 2;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
     //--------------------------------------------------------------//
@@ -584,7 +584,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";//change_coords_only, change, static
 
-    if ( nOrderGeo == 1 /*&& doExport*/ )
+    if constexpr ( nOrderGeo <= 2 /*&& doExport*/ )
     {
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
