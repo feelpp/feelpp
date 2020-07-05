@@ -1609,12 +1609,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     this->updateFields( symbolsExpr );
 
     auto fields = this->modelFields();
-    if constexpr ( nOrderGeo == 1 )
+    if constexpr ( nOrderGeo <= 2 )
     {
         this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
     }
-    else this->exportResultsImplHO( time );
+    if ( M_isHOVisu )
+        this->exportResultsImplHO( time );
 
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );
