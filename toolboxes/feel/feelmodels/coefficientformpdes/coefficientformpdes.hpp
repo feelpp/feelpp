@@ -71,7 +71,10 @@ private :
     };
 
     template <typename FilterBasisUnknownType>
-    static constexpr auto tuple_type_unknown_basis_filtered = internal_detail::template applyFilterBasisUnknownImpl<FilterBasisUnknownType,0>( hana::tuple<>{}, tuple_type_unknown_basis );
+    using tuple_type_unknown_basis_filtered_t = std::decay_t<decltype(internal_detail::template applyFilterBasisUnknownImpl<FilterBasisUnknownType,0>( hana::tuple<>{}, tuple_type_unknown_basis ) )>;
+
+    template <typename FilterBasisUnknownType>
+    static constexpr tuple_type_unknown_basis_filtered_t<FilterBasisUnknownType> tuple_type_unknown_basis_filtered = internal_detail::template applyFilterBasisUnknownImpl<FilterBasisUnknownType,0>( hana::tuple<>{}, tuple_type_unknown_basis );
 
 public :
 
