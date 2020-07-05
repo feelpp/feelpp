@@ -101,6 +101,13 @@ ExporterEnsightGold<MeshType,N>::init()
         }
     }
 
+
+
+    M_nodesOrderingInElementToEnsight[ Simplex<1,2>::type() + "_1d_g2" ] = { 0,1,2 };
+    M_nodesOrderingInElementToEnsight[ Simplex<2,2>::type() + "_2d_g2" ] = { 0,1,2,4,5,3 };
+    M_nodesOrderingInElementToEnsight[ Simplex<3,2>::type() + "_3d_g2" ] = { 0,1,2,3,5,6,4,7,8,9 };
+
+
     /* TODO Do a cleanup of previous stored files */
     /* to avoid conflicts */
     /* example case: where a new simulation has fewer timesteps */
@@ -1332,9 +1339,15 @@ ExporterEnsightGold<MeshType,N>::writeGeoMarkedElements( MPI_File fh, mesh_conti
     
     auto const& pointsIdsInElt_B = mp.pointIdsInElements( part );
     std::vector<int32_t> pointsIdsInElt(pointsIdsInElt_B.size());
-    for ( int k=0;k<pointsIdsInElt_B.size();++k)
-        pointsIdsInElt[k] = pointsIdsInElt_B[k] +1 ;
-
+    if constexpr ( N == 1 )
+    {
+        for ( int k=0;k<pointsIdsInElt_B.size();++k)
+            pointsIdsInElt[k] = pointsIdsInElt_B[k] +1 ;
+    }
+    else
+    {
+        mp.udpateOrderingOfPointsIdsInElt( part, currentPid, pointsIdsInElt, M_nodesOrderingInElementToEnsight, 1 );
+    }
     localOffset = mp.startElementIds( part,currentPid )*mesh_type::element_type::numPoints*sizeOfInt32_t;
     MPI_File_write_at(fh, posInFile+localOffset, pointsIdsInElt.data(), pointsIdsInElt.size(), MPI_INT32_T, &status );
     posInFile += gnole*mesh_type::element_type::numPoints*sizeOfInt32_t;
@@ -1706,7 +1719,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         VLOG(1) << "field size=" << __field_size;
                         __field = Eigen::VectorXf::Zero( __field_size );
 
-                        const int np = __step->mesh()->numLocalVertices();
+                        //const int np = __step->mesh()->numLocalVertices();
 
                         auto const& r =  mp.rangeElement( part );
                         auto elt_it = r.template get<1>();
@@ -1715,6 +1728,7 @@ ExporterEnsightGold<MeshType,N>::saveFields( timeset_ptrtype __ts, typename time
                         {
                             auto const& elt = unwrap_ref( *elt_it );
                             auto const& locglob_ind = d->localToGlobalIndices( elt.id() );
+                            const int np = N==1? elt.numVertices : elt.numPoints;
                             for ( uint16_type p = 0; p < np; ++p )
                             {
                                 index_type ptid = mp.pointIdToContiguous(part,elt.point( p ).id());
