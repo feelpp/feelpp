@@ -101,7 +101,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useFSISemiImplicitScheme = false;
     M_couplingFSIcondition = "dirichlet-neumann";
 
-    M_isHOVisu = nOrderGeo > 1;
+    M_isHOVisu = nOrderGeo > 2;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
 
@@ -423,12 +423,15 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createExporters()
     std::string geoExportType="static";//change_coords_only, change, static
     if (!M_isHOVisu)
     {
-        M_exporter = exporter( _mesh=this->mesh(),
-                               //_name=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
-                               _name="Export",
-                               _geo=geoExportType,
-                               _worldcomm=M_XhDisplacement->worldComm(),
-                               _path=this->exporterPath() );
+        if constexpr ( nOrderGeo <= 2 /*&& doExport*/ )
+        {
+            M_exporter = exporter( _mesh=this->mesh(),
+                                   //_name=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
+                                   _name="Export",
+                                   _geo=geoExportType,
+                                   _worldcomm=M_XhDisplacement->worldComm(),
+                                   _path=this->exporterPath() );
+        }
     }
     else
     {

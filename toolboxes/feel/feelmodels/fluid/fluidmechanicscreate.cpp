@@ -1640,7 +1640,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
         //M_postProcessFieldOnTraceExported = this->postProcessFieldOnTraceExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
         //if ( !M_postProcessFieldOnTraceExported.empty() && nOrderGeo == 1 )
-        if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo == 1  )
+        if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();

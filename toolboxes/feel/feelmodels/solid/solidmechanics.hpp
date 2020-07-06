@@ -849,7 +849,11 @@ SolidMechanics<ConvexType,BasisDisplacementType>::exportResults( double time, Mo
     this->log("SolidMechanics","exportResults", "start");
     this->timerTool("PostProcessing").start();
 
-    this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    if constexpr ( nOrderGeo <= 2 )
+    {
+        this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+    }
+
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
     // TODO
     //this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfTemperature->iteration(), mfields );
