@@ -12,10 +12,10 @@ class Filter:
         self.stateDim = stateDim
         self.obsDim = obsDim
 
-        self._stateEstimateList = []
-        self._obsEstimateList = []
-                
-        self._stateEstimate = numpy.zeros((stateDim,1))
+        self._stateEstimateList = numpy.zeros((stateDim,0))
+        self._obsEstimateList = numpy.zeros((obsDim,0))
+
+        self._stateEstimate = numpy.zeros((stateDim,1))    
         self._stateForecast = numpy.zeros((stateDim,1))
         self._obsEstimate = numpy.zeros((obsDim,1))
 
@@ -24,30 +24,49 @@ class Filter:
         self._obsCov = numpy.eye(obsDim)
         self._crossCov = numpy.ones((stateDim,obsDim))
         self._sigmaHk = defect*numpy.eye(obsDim)
+        self._sigmaAk = defect*numpy.eye(stateDim)
         self._gain = numpy.ones((stateDim,obsDim))
         
         self._sigmaScheme = defect*numpy.eye(stateDim)  # arbitrarily initialized with the observation defect parameter
         self._sigmaPoints = numpy.zeros((stateDim,2*stateDim+1))
         self._sigmaSigns = numpy.concatenate((numpy.zeros((stateDim,1)),numpy.eye(stateDim),-numpy.eye(stateDim)), axis=1)
+
+        self._alpha, self._beta, self._kappa, self._lambda, self._factor = 0, 0, 0, 0, 0
         
-        self._weights = numpy.ones((1,2*stateDim+1))#*1/stateDim
-        self._weights[0] = 1-(stateDim-1)/stateDim # a negative weight causes issues with sqrt matrix
-        self._weights3 = self._weights.copy().reshape(1,1,2*stateDim+1)
-        self._weights3[0,0,0] = 3
+        if 0: # method 1
+            self.setNumericalParameters( 1, 0, 3-stateDim )
+            self._weightsMean = numpy.ones((1,2*stateDim+1))/(2*(stateDim+self._lambda))
+            self._weightsMean[0] = self._kappa/(self.stateDim+self._kappa)
+            # self._lambda/(self.stateDim+self._lambda)
+            self._weightsCov = numpy.copy(self._weightsMean)
+            self._weightsCov[0] += 1 - self._alpha**2 + self._beta
+
+        if 1: # method 2
+            self._weightsMean = numpy.zeros((1,2*stateDim+1))
+            self._weightsMean[0,0] = 0.9 # or any value < 1
+            self._weightsMean[0,1:] = (1-self._weightsMean[0,0])/(2*stateDim)
+            self._weightsCov = self._weightsMean
+            self._factor = stateDim/(1-self._weightsMean[0,0])
+
+    def setNumericalParameters( self, a, b, k ):
+        self._alpha, self._beta, self._kappa, self._lambda, self._factor = a, b, k, (self.stateDim + k)*a**2 - self.stateDim, self.stateDim + self._kappa
+
+    def setState( self, state ):
+        self._stateEstimate = state
         
     def setSigmaHk( self, M ): # M is a numpy obsDim*obsDim matrix
         self._sigmaHk = M
 
     def setSigmaPoints( self ):
-        self._sigmaScheme = scipy.linalg.sqrtm( 3*self._stateCov ).T @ self._sigmaSigns
-        # numpy.transpose( numpy.linalg.cholesky( 3*self._stateCov ) ) @ self._sigmaSigns
+        self._sigmaScheme = numpy.sqrt(self._factor) * scipy.linalg.sqrtm( self._stateCov ).T @ self._sigmaSigns
+        # numpy.linalg.cholesky( 3*self._stateCov ).T @ self._sigmaSigns
         self._sigmaPoints = self._stateEstimate + self._sigmaScheme
 
     def _setStateEstimate( self, value ):
         self._stateEstimate = value
         
     def getSigmaHk( self ):
-        return list(self._sigmaHk.T)
+        return self._sigmaHk
         
     def getSigmaPoints( self ):
         return self._sigmaPoints
@@ -90,10 +109,13 @@ class Filter:
 
     def _sigmaCrossCov( self, x, cut ):
         return numpy.outer( x[:cut], x[cut:] )
-        
+
+    def _weightedCov( self, x ):
+        return numpy.inner( self._weightsCov, x )
+    
     def saveStep( self ):
-        self._stateEstimateList.append( self.getStateEstimate().copy() )
-        self._obsEstimateList.append( self.getObsEstimate().copy() )
+        self._stateEstimateList = numpy.hstack( (self._stateEstimateList, self.getStateEstimate().copy() ) )
+        self._obsEstimateList = numpy.hstack( (self._obsEstimateList,  self.getObsEstimate().copy() ) )
 
     def step( self, measurement ):
         
@@ -101,20 +123,39 @@ class Filter:
         self.transformSet(self._sigmaPoints)
         self.observeSet(self._sigmaPoints)
         
-        self._stateForecast = self._sigmaPoints @ self._weights.T
-        self._stateCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCov, axis = 0, arr = self._sigmaPoints - self._stateForecast ) ).T )
+        self._stateForecast = self._sigmaPoints @ self._weightsMean.T
+        assert self._stateCov.dtype == "float64"
 
-        self._obsEstimate = self._obsForecast @ self._weights.T
-        self._obsCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCov, axis = 0, arr = self._obsForecast - self._obsEstimate ) ).T ) + self._sigmaHk
-        # (self._weights*(self._obsForecast-self._obsEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate) + self._sigmaHk
+        self._stateCov = numpy.apply_along_axis(
+            self._weightedCov,
+            axis = 2,
+            arr = numpy.apply_along_axis(
+                self._sigmaCov,
+                axis = 0,
+                arr = self._sigmaPoints-self._stateForecast
+            )
+        ).reshape((self.stateDim,self.stateDim))
+        + self._sigmaAk
 
-        self._crossCov = sum( ( self._weights3 * numpy.apply_along_axis( self._sigmaCrossCov, axis = 0, arr = numpy.concatenate( (self._sigmaPoints - self._stateEstimate, self._obsForecast - self._obsEstimate), axis = 0 ), cut = self.stateDim ) ).T ).T
-        # (self._weights*(self._sigmaPoints-self._stateEstimate)) @ numpy.transpose(self._obsForecast-self._obsEstimate)
+        assert self._stateCov.dtype == "float64"
+
+        self._obsEstimate = self._obsForecast @ self._weightsMean.T
+        self._obsCov =  numpy.apply_along_axis( self._weightedCov, axis = 2, arr = numpy.apply_along_axis( self._sigmaCov, axis = 0, arr = self._obsForecast-self._obsEstimate ) ).reshape((self.obsDim,self.obsDim)) + self._sigmaHk
+
+        assert [self._obsCov.dtype, self._obsCov.shape] == ["float64", (self.obsDim,self.obsDim)]
+
+        assert [self._crossCov.dtype, self._crossCov.shape] == ["float64", (self.stateDim, self.obsDim)]
+
+        self._crossCov = numpy.apply_along_axis( self._weightedCov, axis = 2, arr = numpy.apply_along_axis( self._sigmaCrossCov, axis = 0, arr = numpy.vstack( (self._sigmaPoints - self._stateEstimate, self._obsForecast - self._obsEstimate) ), cut = self.stateDim ) ).reshape((self.stateDim,self.obsDim))
+
+        assert [self._crossCov.dtype, self._crossCov.shape] == ["float64", (self.stateDim, self.obsDim)]
 
         self._gain = self._crossCov @ numpy.linalg.inv(self._obsCov)
-        print('==================================')
-        print( self._obsCov.dtype, self._crossCov.dtype, self._gain.dtype )
-        print('==================================')
+
+        assert self._gain.dtype == "float64"
+
+        self._stateCov -= self._gain @ self._obsCov @ self._gain.T
+        
         self._stateEstimate += self._gain @ ( numpy.matrix(measurement).T - self._obsEstimate )
 
         self.saveStep()
