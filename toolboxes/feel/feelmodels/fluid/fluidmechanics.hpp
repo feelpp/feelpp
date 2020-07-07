@@ -63,11 +63,10 @@ namespace FeelModels
 {
 
 template< typename ConvexType, typename BasisVelocityType,
-          typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete>,
-          typename BasisDVType=Lagrange<0, Scalar,Discontinuous/*,PointSetFekete*/> >
+          typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete> >
 class FluidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,
-                       public std::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType> >,
+                       public std::enable_shared_from_this< FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType> >,
                        public MarkerManagementDirichletBC,
                        public MarkerManagementNeumannBC,
                        public MarkerManagementALEMeshBC,
@@ -78,7 +77,7 @@ public:
     using super_type = ModelNumerical;
     using super2_type = ModelPhysics<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
-    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
+    typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -1658,10 +1657,10 @@ private :
 }; // FluidMechanics
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExprType const& symbolsExpr, ExportsExprType const& exportsExpr )
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExprType const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
@@ -1690,10 +1689,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     this->log("FluidMechanics","exportResults", "finish" );
 }
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename TupleFieldsType, typename SymbolsExpr>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr )
 {
     bool hasMeasure = false;
 
@@ -1758,10 +1757,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exec
 }
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename SymbolsExprType>
-typename FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::force_type
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const
+typename FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::force_type
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const
 {
     auto sigmaExpr = this->stressTensorExpr( se );
     return integrate(_range=rangeFaces,

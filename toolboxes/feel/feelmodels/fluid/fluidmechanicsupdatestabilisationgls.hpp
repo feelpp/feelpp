@@ -709,10 +709,10 @@ updateResidualStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
 
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType, typename AdditionalMatType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateLinearPDEStabilisationGLS( DataUpdateLinear & data,
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEStabilisationGLS( DataUpdateLinear & data,
                                                                                                              Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
                                                                                                              std::string const& matName,
                                                                                                              AdditionalRhsType const& addRhsTuple, AdditionalMatType const& addMatTuple ) const
@@ -755,10 +755,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
 
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateJacobianStabilisationGLS( DataUpdateJacobian & data,
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianStabilisationGLS( DataUpdateJacobian & data,
                                                                                                             element_velocity_external_storage_type const& u,
                                                                                                             element_pressure_external_storage_type const& p,
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
@@ -780,10 +780,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::upda
 }
 
 
-template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::updateResidualStabilisationGLS( DataUpdateResidual & data,
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualStabilisationGLS( DataUpdateResidual & data,
                                                                                                             element_velocity_external_storage_type const& u,
                                                                                                             element_pressure_external_storage_type const& p,
                                                                                                             Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
