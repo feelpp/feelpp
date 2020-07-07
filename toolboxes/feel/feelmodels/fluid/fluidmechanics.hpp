@@ -54,6 +54,7 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 
 namespace Feel
@@ -858,12 +859,15 @@ public :
     // post process
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
-    template <typename SymbolsExpr>
-    void exportResults( double time, SymbolsExpr const& symbolsExpr );
+    template <typename ModelFieldsType,typename SymbolsExpr,typename ExportsExprType>
+    void exportResults( double time, ModelFieldsType const& mfields, SymbolsExpr const& symbolsExpr, ExportsExprType const& exportsExpr );
 
-    // void exportFields( double time );
-    // bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    // bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
+    template <typename SymbolsExpr>
+    void exportResults( double time, SymbolsExpr const& symbolsExpr )
+        {
+            return this->exportResults( time, this->modelFields(), symbolsExpr, this->exprPostProcessExports( symbolsExpr ) );
+        }
+
     void setDoExport(bool b);
 private :
     void executePostProcessMeasures( double time );
@@ -871,7 +875,6 @@ private :
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
     void updateConvectionVelocityExtrapolated();
     void updateTimeStepCurrentResidual();
-    //void exportResultsImpl( double time );
     void exportResultsImplHO( double time );
 public :
     //___________________________________________________________________________________//
@@ -1069,13 +1072,6 @@ public :
 
 
     //___________________________________________________________________________________//
-    // fields
-    template <typename SymbolsExpr>
-    void updateFields( SymbolsExpr const& symbolsExpr )
-        {
-            //this->materialProperties()->updateFields( symbolsExpr );
-            this->updateVorticity();
-        }
 #if 0
     auto allFields( std::string const& prefix = "" ) const
         {
@@ -1104,11 +1100,85 @@ public :
         }
 #endif
     //___________________________________________________________________________________//
+
+    template <typename SymbExprType>
+    auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
+        {
+            auto const& u = this->fieldVelocity();
+            typedef decltype(curlv(u)) _expr_vorticity_type;
+            std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVorticity;
+            mapExprVorticity[prefixvm(prefix,"vorticity")].push_back( std::make_tuple( curlv(u), M_rangeMeshElements, "element" ) );
+            return hana::make_tuple( mapExprVorticity );
+        }
+
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
         {
-            return hana::make_tuple();
+            return hana::concat( this->materialsProperties()->exprPostProcessExports( this->mesh(),this->physicsAvailable(),se ),
+                                 this->exprPostProcessExportsToolbox( se, prefix ) );
         }
+
+    //___________________________________________________________________________________//
+    // toolbox expressions
+    //___________________________________________________________________________________//
+
+    template <typename VelocityFieldType, typename PressureFieldType, typename SymbolsExprType = symbols_expression_empty_t>
+    auto stressTensorExpr( VelocityFieldType const& u, PressureFieldType const& p, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            using _stesstensor_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),
+                                                                                                                 *std::static_pointer_cast<ModelPhysicFluid<nDim>>( this->physicsFromCurrentType().begin()->second ),
+                                                                                                                 MaterialProperties{""},true,se))>;
+            std::vector<std::pair<std::string,_stesstensor_expr_type>> theExprs;
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                {
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                    auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+                    auto const stressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
+                    theExprs.push_back( std::make_pair( matName, stressTensorExpr ) );
+                }
+            }
+
+            return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs );
+        };
+
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto stressTensorExpr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return this->stressTensorExpr( this->fieldVelocity(), this->fieldPressure(), se );
+        }
+
+    template <typename VelocityFieldType, typename SymbolsExprType = symbols_expression_empty_t>
+    auto dynamicViscosityExpr( VelocityFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            using _viscosity_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecViscosity(gradv(u),
+                                                                                                   *std::static_pointer_cast<ModelPhysicFluid<nDim>>( this->physicsFromCurrentType().begin()->second ),
+                                                                                                   MaterialProperties{""},se))>;
+            std::vector<std::pair<std::string,_viscosity_expr_type>> theExprs;
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+                for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+                {
+                    auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                    auto const& matProps = this->materialsProperties()->materialProperties( matName );
+                    auto const viscosityExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+                    theExprs.push_back( std::make_pair( matName, viscosityExpr ) );
+                }
+            }
+
+            return expr<typename mesh_type::index_type>( this->materialsProperties()->exprSelectorByMeshElementMapping(), theExprs );
+        };
+
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto dynamicViscosityExpr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return this->dynamicViscosityExpr( this->fieldVelocity(), se );
+        }
+
 
     //___________________________________________________________________________________//
     // boundary conditions + body forces
@@ -1268,7 +1338,8 @@ public :
     double computeMeshArea( std::set<std::string> const& markers ) const;
 
     // compute measures : drag,lift,flow rate, mean pressure, mean div, norm div
-    force_type computeForce( std::string const& markerName ) const;
+    template <typename SymbolsExprType>
+    force_type computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const;
     double computeFlowRate( std::string const& marker, bool useExteriorNormal=true ) const;
     double computeFlowRate( std::list<std::string> const& markers, bool useExteriorNormal=true ) const;
     double computePressureSum() const;
@@ -1588,30 +1659,23 @@ private :
 
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
-template <typename SymbolsExpr>
+template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>
 void
-FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exportResults( double time, SymbolsExpr const& symbolsExpr )
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exportResults( double time, ModelFieldsType const& mfields, SymbolsExprType const& symbolsExpr, ExportsExprType const& exportsExpr )
 {
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
 
-    // this->modelProperties().parameters().updateParameterValues();
-    // auto paramValues = this->modelProperties().parameters().toParameterValues();
-    // this->modelProperties().postProcess().setParameterValues( paramValues );
-
-    this->updateFields( symbolsExpr );
-
-    auto fields = this->modelFields();
     if constexpr ( nOrderGeo <= 2 )
     {
-        this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
-        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
+        this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr/*, exportsExpr*/ );
     }
     if ( M_isHOVisu )
         this->exportResultsImplHO( time );
 
-    this->executePostProcessMeasures( time, fields, symbolsExpr );
-    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );
+    this->executePostProcessMeasures( time, mfields, symbolsExpr );
+    this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), mfields );
 
     if ( this->isMoveDomain() && this->hasPostProcessExportsField( "alemesh" ) )
         this->meshALE()->exportResults( time );
@@ -1636,8 +1700,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exec
     // forces (lift,drag) measures
     for ( auto const& ppForces : M_postProcessMeasuresForces )
     {
-        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
-        auto measuredForce = this->computeForce( ppForces.meshMarkers().front() );
+        auto measuredForce = this->computeForce( markedfaces( this->mesh(),ppForces.meshMarkers() ), symbolsExpr );
         std::string name = ppForces.name();
         this->postProcessMeasuresIO().setMeasure( "drag_"+name, measuredForce(0,0) );
         this->postProcessMeasuresIO().setMeasure( "lift_"+name, measuredForce(1,0) );
@@ -1693,6 +1756,19 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::exec
         this->upload( this->postProcessMeasuresIO().pathFile() );
     }
 }
+
+
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType, typename BasisDVType>
+template <typename SymbolsExprType>
+typename FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::force_type
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::computeForce( range_faces_type const& rangeFaces, SymbolsExprType const& se ) const
+{
+    auto sigmaExpr = this->stressTensorExpr( se );
+    return integrate(_range=rangeFaces,
+                     _expr= sigmaExpr*N(),
+                     _geomap=this->geomap() ).evaluate();
+}
+
 
 //---------------------------------------------------------------------------------------------------------//
 #if 0
