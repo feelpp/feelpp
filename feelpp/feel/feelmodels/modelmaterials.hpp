@@ -436,23 +436,28 @@ public:
     /**
      * get the list of symbols associated to expressions
      */
-    auto symbolsExpr( std::string const& matname ) const
+    auto symbolsExpr() const
     {
-        auto extract = [this,&matname](auto const& e_ij) {
+        auto extract = [this](auto const& e_ij) {
             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
             using _expr_type = std::decay_t< decltype( ModelExpression{}.expr<ni,nj>() ) >;
             symbol_expression_t<_expr_type> seParamValue;
-            for( auto const& [symbName,mparam] : this->at( matname ).properties() )
+            for ( auto const& [cname, mat] : *this )
             {
-                if ( !mparam.hasExpr<ni,nj>() )
-                    continue;
-                auto const& theexpr = mparam.expr<ni,nj>();
-                seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
+                for( auto const& [symbName,mparam] : mat.properties() )
+                {  
+                    if ( !mparam.template hasExpr<ni,nj>() )
+                        continue;
+                    auto const& theexpr = mparam.template expr<ni,nj>();
+                    LOG(INFO) << "material " << cname << " has property " << symbName;
+                    seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
+                }
             }
             return seParamValue;
         };
         auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, extract );
+        
         return Feel::vf::symbolsExpr( SymbolsExpr( tupleSymbolExprs ) );
     }
 private:
