@@ -62,14 +62,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     auto deft = sym(gradt(u));
     //Identity Matrix
     auto const Id = eye<nDim,nDim>();
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
-    auto const& rho = this->materialProperties()->fieldRho();
 
     //--------------------------------------------------------------------------------------------------//
 
     if (BuildNonCstPart && !this->markerSlipBC().empty() )
     {
+#if 0
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
         double gammaTau = doption(_name="bc-slip-gammaTau",_prefix=this->prefix());
@@ -89,7 +87,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                        //- trans(id(v))*N()* trans(2*idv(*M_P0Mu)*deft*N())*N()
                        _geomap=this->geomap()
                        );
-
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -130,6 +130,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
     // weak formulation of the boundaries conditions
     if ( this->hasMarkerDirichletBCnitsche() )
     {
+#if 0
         if ( BuildCstPart)
         {
             auto viscousStressTensor = 2*idv(mu)*deft;
@@ -153,6 +154,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                                _geomap=this->geomap() );
             }
         }
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//

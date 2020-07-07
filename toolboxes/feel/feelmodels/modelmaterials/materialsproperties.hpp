@@ -68,6 +68,8 @@ public :
     std::set<std::string> markers() const { return M_markers; }
     void setMarkers( std::set<std::string> const& m ) { M_markers = m; }
 
+    std::string const& materialName() const { return M_materialName; }
+
 private :
     std::string M_materialName;
     std::set<std::string> M_markers;
@@ -309,7 +311,19 @@ public :
         }
 
 
-
+    //! return the physics that are used in the material \matName from \physicsCollection
+    std::map<std::string,typename modelphysics_type::model_physic_ptrtype> physicsFromMaterial( std::string const& matName, std::map<std::string,typename modelphysics_type::model_physic_ptrtype> const& physicsCollection ) const
+        {
+            std::map<std::string,typename modelphysics_type::model_physic_ptrtype> res;
+            for ( auto const& [physicName,physicData] : physicsCollection )
+            {
+                auto const& matNames = this->physicToMaterials( physicName );
+                if ( matNames.find( matName ) == matNames.end() )
+                    continue;
+                res[physicName] = physicData;
+            }
+            return res;
+        }
 
 
     void addProperty( MaterialProperties & matProperties, std::string const& propName, ModelExpression const& propExpr, bool onlyInPhysicDescription = false )

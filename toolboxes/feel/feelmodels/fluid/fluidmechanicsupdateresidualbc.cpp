@@ -46,10 +46,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
 
     auto Id = eye<nDim,nDim>();
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
-    // density
-    auto const& rho = this->materialProperties()->fieldRho();
 
     //--------------------------------------------------------------------------------------------------//
     // Neumann boundary condition
@@ -215,6 +211,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
 
     if (!BuildCstPart && !UseJacobianLinearTerms && !this->markerSlipBC().empty() )
     {
+#if 0
         // slip condition :
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
@@ -235,6 +232,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                        //- trans(id(v))*N()* trans(2*idv(mu)*defv*N())*N()
                        _geomap=this->geomap()
                        );
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//
@@ -242,6 +242,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
     // weak formulation of the boundaries conditions
     if ( this->hasMarkerDirichletBCnitsche() )
     {
+#if 0
         if ( !BuildCstPart && !UseJacobianLinearTerms )
         {
             // deformation and stress tensor (eval)
@@ -261,6 +262,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualWeakBC( DataUpdateResidual & d
                                _expr= -timeSteppingScaling*this->dirichletBCnitscheGamma()*inner( expression(d,this->symbolsExpr()),id(v) )/hFace(),
                                _geomap=this->geomap() );
         }
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
 
     //------------------------------------------------------------------------------------//

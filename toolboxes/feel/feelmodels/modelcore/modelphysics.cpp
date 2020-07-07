@@ -50,6 +50,11 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
         this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
     }
+    if ( M_type == "fluid" || M_type == "heat-fluid" )
+    {
+        this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
+    }
+
 }
 
 template <uint16_type Dim>
@@ -69,7 +74,8 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
     :
     super_type( "fluid", name, model ),
     M_equation( "Navier-Stokes" ),
-    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
+    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) ),
+    M_dynamicViscosity( soption(_name="viscosity.law",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
 {
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
@@ -100,6 +106,9 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
             gravityStr = "{0,0,-9.80665}";
         M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
     }
+
+    if ( auto vl = pt.template get_optional<std::string>("viscosity_law") )
+        M_dynamicViscosity.setLaw( *vl );
 }
 
 template <uint16_type Dim>

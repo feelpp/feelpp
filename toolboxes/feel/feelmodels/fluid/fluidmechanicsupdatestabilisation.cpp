@@ -18,6 +18,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
+#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
         auto rho = idv(this->materialProperties()->fieldRho());
@@ -188,7 +189,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
 
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateLinearPDEStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
-
+#endif // VINCENT
 } // updateLinearPDEStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -199,6 +200,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
+#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
         auto rho = idv(this->materialProperties()->fieldRho());
@@ -371,7 +373,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateResidualStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
-
+#endif // VINCENT
 } // updateResidualStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -380,6 +382,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
+#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
         auto rho = idv(this->materialProperties()->fieldRho());
@@ -515,7 +518,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateJacobianStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
-
+#endif // VINCENT
 } // updateJacobianStabilisation
 
 //--------------------------------------------------------------------------------------------//

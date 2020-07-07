@@ -25,7 +25,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::FluidMechanics( std::string const& prefix, s
     super_type( prefix,keyword,worldComm,subPrefix, modelRep ),
     ModelBase( prefix,keyword,worldComm,subPrefix, modelRep ),
     ModelPhysics<nDim>( "fluid" ),
-    M_materialProperties( new material_properties_type( prefix ) ),
     M_applyMovingMeshBeforeSolve( true )
 {
     if (this->verbose()) Feel::FeelModels::Log(this->prefix()+".FluidMechanics","constructor", "start",
@@ -248,9 +247,9 @@ createFluidFunctionSpaces( FMtype const& FM, std::vector<bool> const& extendedDT
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
 {
-    this->log("FluidMechanics","createFunctionSpaces","start");
+    this->log("FluidMechanics","initFunctionSpaces","start");
     this->timerTool("Constructor").start();
 
     // maybe build extended dof table
@@ -269,13 +268,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
         hasExtendedDofTable = true;
     }
 
-    // update rho, mu, nu,...
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    M_materialProperties->updateForUse( this->mesh(), this->modelProperties().materials(), hasExtendedDofTable );
-
-    // fluid mix space : velocity and pressure
-    if ( M_materialProperties->isDefinedOnWholeMesh() )
+    // fluid spaces : velocity and pressure
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+    if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
         M_XhVelocity = space_velocity_type::New( _mesh=M_mesh,
@@ -285,7 +280,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     }
     else
     {
-        M_rangeMeshElements = markedelements(this->mesh(), M_materialProperties->markers());
+        M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
         M_XhVelocity = space_velocity_type::New( _mesh=M_mesh,
                                                  _extended_doftable=extendedDT[0],
                                                  _range=M_rangeMeshElements );
@@ -297,7 +292,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpaces()
     M_fieldVelocity.reset( new element_velocity_type(M_XhVelocity,"velocity") );
     M_fieldPressure.reset( new element_pressure_type(M_XhPressure,"pressure") );
 
-    double tElapsed = this->timerTool("Constructor").stop("createSpaces");
+    double tElapsed = this->timerTool("Constructor").stop("initFunctionSpaces");
     this->log("FluidMechanics","createFunctionSpaces", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
@@ -737,7 +732,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
 {
-    if ( M_materialProperties->isDefinedOnWholeMesh() )
+    if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
         M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
     else
         M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
@@ -751,7 +746,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
-    if ( M_materialProperties->isDefinedOnWholeMesh() )
+    if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm() );
     else
         M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm(),
@@ -913,18 +908,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
         this->initPhysics( this->keyword(), this->modelProperties().models() );
 
+    // material properties
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
+
+
     if ( !M_mesh )
         this->initMesh();
 
+    this->materialsProperties()->addMesh( this->mesh() );
+
+
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
-#if 0
-    if ( M_modelName.empty() )
-    {
-        std::string theFluidModel = this->modelProperties().models().model( this->keyword() ).equations();
-        this->setModelName( theFluidModel );
-    }
-#endif
+
     if ( M_solverName.empty() )
     {
         bool isLinear = true;
@@ -943,18 +946,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             M_solverName="Newton";
     }
 
-#if 0
-    // material properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    if ( !M_materialsProperties )
-    {
-        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
-        M_materialsProperties->updateForUse( this->modelProperties().materials() );
-    }
-#endif
     // functionSpaces and elements
-    this->createFunctionSpaces();
+    this->initFunctionSpaces();
 
     this->initBoundaryConditions();
 
@@ -996,16 +989,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         {
             std::string locationExpression = soption(_prefix=this->prefix(),_name="stabilization-gls.convection-diffusion.location.expressions");
             auto rangeStab = elements(this->mesh(),expr(locationExpression));
-            for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-                M_stabilizationGLSEltRangeConvectionDiffusion[rangeData.first] = intersect( rangeStab, rangeData.second );
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                M_stabilizationGLSEltRangeConvectionDiffusion[matName] = intersect( rangeStab, range );
+            }
         }
         else
         {
-            for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-                M_stabilizationGLSEltRangeConvectionDiffusion[rangeData.first] = rangeData.second;
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+            {
+                auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+                M_stabilizationGLSEltRangeConvectionDiffusion[matName] = range;
+            }
         }
-        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-            M_stabilizationGLSEltRangePressure[rangeData.first] = rangeData.second;
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            M_stabilizationGLSEltRangePressure[matName] = range;
+        }
     }
     //-------------------------------------------------//
     // init function defined in json
@@ -1642,10 +1644,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
         //if ( !M_postProcessFieldOnTraceExported.empty() && nOrderGeo == 1 )
         if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
-            if ( !M_materialProperties->isDefinedOnWholeMesh() )
+            bool usePartialMeshSupport = this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport();
+            if ( usePartialMeshSupport )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
 #if 1
-            auto rangeTrace = ( M_materialProperties->isDefinedOnWholeMesh() )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+            auto rangeTrace = ( !usePartialMeshSupport )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=this->mesh(), _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 #else
             auto rangeTrace = M_bodySetBC.begin()->second.rangeMarkedFacesOnFluid();
@@ -2184,11 +2187,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::updateForUse( self_ty
     if ( M_gravityForceEnabled )
     {
         // TODO !!!
+        auto const& matNames = fluidToolbox.materialsProperties()->physicToMaterials( fluidToolbox.physicsAvailableFromCurrentType() );
+        CHECK( matNames.size() == 1 ) << "support only one";
+        std::string matName = *matNames.begin();
+        auto const& densityExpr = fluidToolbox.materialsProperties()->density( matName ).template expr<1,1>();
+        double rho = densityExpr.evaluate()(0,0);
+#if 0
         CHECK( fluidToolbox.materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
         std::string matName = fluidToolbox.materialProperties()->rangeMeshElementsByMaterial().begin()->first;
         double rho = fluidToolbox.materialProperties()->cstDensity( matName );
         //auto const& rho = fluidToolbox.materialProperties()->fieldRho();
-
+#endif
         double massBody = massExpr().evaluate()(0,0);
         double massOfFluid = M_body->evaluateMassFromDensity( cst( rho ) );
         // if ( Environment::isMasterRank() )
