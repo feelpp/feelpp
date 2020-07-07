@@ -135,6 +135,35 @@ class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
+    struct DynamicViscosity
+    {
+        DynamicViscosity( std::string const& ln )
+            :
+            M_lawName( ln )
+            {
+                CHECK( this->checkLawName() ) << "invalid law name " << ln;
+            }
+        DynamicViscosity( DynamicViscosity const& ) = default;
+        DynamicViscosity( DynamicViscosity && ) = default;
+
+        void setLaw( std::string const& ln ) { M_lawName = ln; CHECK( this->checkLawName() ) << "invalid law name " << ln; }
+        std::string const& lawName() const { return M_lawName; }
+
+        bool isNewtonianLaw() const { return (this->lawName() == "newtonian"); }
+        bool isPowerLaw() const { return (this->lawName() == "power_law"); }
+        bool isCarreauLaw() const { return (this->lawName() == "carreau_law"); }
+        bool isCarreauYasudaLaw() const { return (this->lawName() == "carreau-yasuda_law"); }
+        bool isWalburnSchneckLaw() const { return (this->lawName() == "walburn-schneck_law"); }
+
+        bool checkLawName() const
+            {
+                return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() || this->isWalburnSchneckLaw() );
+            }
+
+    private :
+        std::string M_lawName;
+    };
+
     ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
@@ -144,6 +173,8 @@ public :
 
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
     auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
+
+    DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override
@@ -156,6 +187,8 @@ private :
     std::string M_equation;
     bool M_gravityForceEnabled;
     ModelExpression M_gravityForceExpr;
+
+    DynamicViscosity M_dynamicViscosity;
 };
 
 template <uint16_type Dim>
@@ -188,6 +221,9 @@ public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
+
+    using model_physic_type = ModelPhysic<nDim>;
+    using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
 
     //using subphysic_description_type = std::map<std::pair<std::string,std::string>, std::map<std::string,std::string> >;
     using subphysic_description_type = std::map<std::string,std::string>;

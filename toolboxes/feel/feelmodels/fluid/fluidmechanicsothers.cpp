@@ -113,12 +113,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
         if ( physicFluidData->gravityForceEnabled() )
              *_ostr << "\n     -- gravity force expr  : " << str( physicFluidData->gravityForceExpr().expression() );
     }
-    *_ostr << this->materialProperties()->getInfo()->str();
-    // *_ostr << "\n   Physical Parameters"
-    //        << "\n     -- rho : " << this->materialProperties()->cstRho()
-    //        << "\n     -- mu  : " << this->materialProperties()->cstMu()
-    //        << "\n     -- nu  : " << this->materialProperties()->cstNu();
-    // *_ostr << this->materialProperties()->getInfo()->str();
+    *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
     *_ostr << "\n   Boundary conditions"
            << this->getInfoDirichletBC()
            << this->getInfoNeumannBC()
@@ -1001,10 +996,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matri
     }
     CHECK( pmmMat ) << "pmmMat is not initialized";
 
+    pmmMat->zero();
     auto massbf = form2( _trial=this->functionSpacePressure(), _test=this->functionSpacePressure(),_matrix=pmmMat);
+    auto u = this->functionSpaceVelocity()->element( vecSol, this->rowStartInVector() );
     auto const& p = this->fieldPressure();
-    auto coeff = cst(1.)/idv(this->materialProperties()->fieldMu());
-    massbf = integrate( _range=M_rangeMeshElements, _expr=coeff*inner( idt(p),id(p) ) );
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto coeff = cst(1.)/fluidMecViscosity(gradv(u),*physicFluidData,matProps);
+            massbf += integrate( _range=range, _expr=coeff*inner( idt(p),id(p) ) );
+        }
+    }
     pmmMat->close();
     M_pmmNeedUpdate = false;
 }
@@ -1029,15 +1036,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            std::string const& matName = rangeData.first;
-            auto const& therange = rangeData.second;
+            auto const& therange = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto const& rhoExpr = this->materialsProperties()->density( matName ).template expr<1,1>();
+
+#if 0
             auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
             auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-            //auto rhoExpr = this->materialProperties()->density( matName ).expr();
-            auto const& fieldRho = this->materialProperties()->fieldRho();
-            auto rhoExpr = idv( fieldRho );
+#else
+            CHECK( false ) << "TODO VINCENT";
+            auto muExpr = cst(0.);
+#endif
+
             if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
                 if (this->isMoveDomain() )
@@ -1085,6 +1097,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             }
             if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
             {
+#if 0
                 //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
                 //Warning : it's a copy past, should be improve : TODO!
                 double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
@@ -1098,16 +1111,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                 norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
 
                 myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+#else
+                CHECK(false) << "TODO : require P0d space, maybe try to find another alternative";
+#endif
             }
         }
     } // foreach physic
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
-        auto const& fieldRho = this->materialProperties()->fieldRho();
-        auto rhoExpr = idv( fieldRho );
+        // auto const& fieldRho = this->materialProperties()->fieldRho();
+        // auto rhoExpr = idv( fieldRho );
+        auto se = this->symbolsExpr();
+        auto rhoExpr = this->materialsProperties()->template materialPropertyExpr<1,1>( "density", se );
         for( auto const& d : M_bcDirichlet )
-            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), expression(d,this->symbolsExpr()) );
+            myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), expression(d,se) );
         for( auto const& d : M_bcMovingBoundaryImposed )
             myOpPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, name(d), idv(M_meshALE->velocity()) );
         for ( auto const& inletbc : M_fluidInletDesc )
@@ -1134,7 +1152,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
 {
-    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = M_materialProperties->isDefinedOnWholeMesh();
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+    M_definePressureCstOnlyOneZoneAppliedOnWholeMesh = mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() );
     M_definePressureCstMeshRanges.clear();
     for ( auto const& markers : M_definePressureCstMarkers )
     {
@@ -1215,7 +1234,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
 {
-
+    return;
     if (!M_XhVorticity) this->createFunctionSpacesVorticity();
 
     detail::updateVorticityImpl( this->fieldVelocity(),*M_fieldVorticity, M_rangeMeshElements, this->geomap(), mpl::int_<nDim>() );
@@ -1444,7 +1463,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::string
     {
         std::string matName = rangeFacesMat.first;
         auto const& rangeFaces = rangeFacesMat.second;
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+
+        auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+        CHECK( mphysics.size() <= 1 ) << "something wrong";
+        if ( mphysics.empty() )
+            continue;
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*N(),
                           _geomap=this->geomap() );
@@ -1466,7 +1493,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress( std::string const& na
     {
         std::string matName = rangeFacesMat.first;
         auto const& rangeFaces = rangeFacesMat.second;
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+
+        auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+        CHECK( mphysics.size() <= 1 ) << "something wrong";
+        if ( mphysics.empty() )
+            continue;
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*vf::N() - (trans(sigmav*vf::N())*vf::N())*vf::N(),
                           _geomap=this->geomap() );
@@ -1499,8 +1534,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
     {
         std::string matName = rangeFacesMat.first;
         auto const& rangeFaces = rangeFacesMat.second;
+
+        auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+        CHECK( mphysics.size() <= 1 ) << "something wrong";
+        if ( mphysics.empty() )
+            continue;
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+        auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
         // stress tensor : -p*Id + 2*mu*D(u)
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u)*inv(Fa),idv(p),*this->materialProperties(),matName,true);
+        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u)*inv(Fa),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*det(Fa)*trans(inv(Fa))*N(),
                           _geomap=this->geomap() );
@@ -1757,22 +1800,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::force_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
 {
-    using namespace Feel::vf;
-
     // current solution
     auto const& u = this->fieldVelocity();
     auto const& p = this->fieldPressure();
-#if 0
-    //deformation tensor
-    auto defv = sym(gradv(u));
-    // Identity Matrix
-    auto const Id = eye<nDim,nDim>();
-    // Tenseur des contraintes
-    auto Sigmav = val(-idv(p)*Id + 2*idv(this->materialProperties()->fieldMu())*defv);
-#endif
-    CHECK( this->materialProperties()->rangeMeshElementsByMaterial().size() == 1 ) << "support only one";
-    std::string matName = this->materialProperties()->rangeMeshElementsByMaterial().begin()->first;
-    auto sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+
+    // TODO VINCENT!!!!
+    auto const& matNames = this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() );
+    CHECK( matNames.size() == 1 ) << "support only one";
+    std::string matName = *matNames.begin();
+    auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+    CHECK( mphysics.size() == 1 ) << "not allow";
+    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+    auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+    // stress tensor : -p*Id + 2*mu*D(u)
+    auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
 
     return integrate(_range=markedfaces(M_mesh,markerName),
                      _expr= sigmav*N(),
@@ -2378,7 +2420,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateRangeDistributionByMaterialName( std::
     if ( !M_rangeDistributionByMaterialName )
     {
         M_rangeDistributionByMaterialName = std::make_shared<RangeDistributionByMaterialName<mesh_type>>();
-        M_rangeDistributionByMaterialName->init( this->materialProperties()->rangeMeshElementsByMaterial() );
+        auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
+        M_rangeDistributionByMaterialName->init( mom->rangeMeshElementsByMaterial() );
     }
     M_rangeDistributionByMaterialName->update( key, rangeFaces );
 }

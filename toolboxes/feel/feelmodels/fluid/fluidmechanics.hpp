@@ -46,7 +46,6 @@
 #include <feel/feelmodels/modelcore/options.hpp>
 #include <feel/feelmodels/modelalg/modelalgebraicfactory.hpp>
 
-#include <feel/feelmodels/fluid/fluidmechanicsmaterialproperties.hpp>
 #include <feel/feelmodels/modelmaterials/materialsproperties.hpp>
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -192,13 +191,7 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // functionspace for rho, mu, nu
-    typedef BasisDVType basis_densityviscosity_type;
-    static const uint16_type nOrderDensityViscosity = BasisDVType::nOrder;
-    typedef FunctionSpace<mesh_type, bases<basis_densityviscosity_type> > space_densityviscosity_type;
-    // viscosity model desc
-    typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type; // TO REMOVE
-    typedef std::shared_ptr<material_properties_type> material_properties_ptrtype; // TO REMOVE
+    // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
@@ -734,7 +727,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
-    void createFunctionSpaces();
+    void initFunctionSpaces();
     void createALE();
     void initBoundaryConditions();
     void initFluidInlet();
@@ -970,6 +963,12 @@ public :
     void updateDefinePressureCst();
 
     //___________________________________________________________________________________//
+    // physical parameters
+    materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
+    materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
+    void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
+
+#if 0
     // physical parameters rho,mu,nu,...
     material_properties_ptrtype & materialProperties() { return M_materialProperties; }
     material_properties_ptrtype const& materialProperties() const { return M_materialProperties; }
@@ -994,7 +993,7 @@ public :
         this->materialProperties()->updateDynamicViscosityField( __expr );
         M_pmmNeedUpdate = true;
     }
-
+#endif
     //___________________________________________________________________________________//
     // toolbox fields
     //___________________________________________________________________________________//
@@ -1457,7 +1456,6 @@ private :
 #endif
     //----------------------------------------------------
     // physical properties/parameters and space
-    material_properties_ptrtype M_materialProperties; // TO REMOVE
     materialsproperties_ptrtype M_materialsProperties;
     // boundary conditions + body forces
     map_vector_field<nDim,1,2> M_bcDirichlet;
@@ -1533,11 +1531,6 @@ private :
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
     //----------------------------------------------------
-    // post-process field exported
-    // std::set<std::string> M_postProcessFieldExported;
-    // std::set<std::string> M_postProcessFieldOnTraceExported;
-    // std::set<std::string> M_postProcessUserFieldExported;
-
     // exporter option
     bool M_isHOVisu;
     // exporter fluid

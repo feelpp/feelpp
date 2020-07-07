@@ -33,6 +33,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     //bool BuildNonCstPart_robinFSI = BuildNonCstPart;
     //if (this->useFSISemiImplicitScheme()) BuildNonCstPart_robinFSI=BuildCstPart;
 
+    bool Build_TransientTerm = BuildNonCstPart;
+    if ( !this->isStationaryModel() && this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT )
+        Build_TransientTerm=BuildCstPart;
+
+
     double timeSteppingScaling = 1.;
     if ( !this->isStationaryModel() )
     {
@@ -74,17 +79,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     auto p = XhP->element(XVec, rowStartInVector+1);
     auto const& q = p;
 
+    auto se = this->symbolsExpr();
     //--------------------------------------------------------------------------------------------------//
 
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
     // strain tensor
     auto const deft = sym(gradt(u));
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
-    auto const& rho = this->materialProperties()->fieldRho();
-    // stress tensor
-    auto const Sigmat = -idt(p)*Id + 2*idv(mu)*deft;
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
@@ -92,91 +93,99 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     boost::mpi::timer timerAssemble;
 
     //--------------------------------------------------------------------------------------------------//
-    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-
-        // convection terms
-        if ( physicFluidData->equation() == "Navier-Stokes" )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
-            if ( BuildNonCstPart )
-            {
-                if (this->doStabConvectionEnergy())
-                {
-                    // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
-                    // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
-                    // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
+            auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
-                    auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u,rho);
-                    bilinearFormVV_PatternCoupled +=
-                        //bilinearForm_PatternDefault +=
-                        integrate ( _range=M_rangeMeshElements,
-                                    _expr=timeSteppingScaling*convecTerm,
-                                    _geomap=this->geomap() );
-                }
-                else
-                {
-#if 0
-                    auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
-#else
-                    auto const convecTerm = Feel::FeelModels::fluidMecConvectionJacobian(u,rho);
-#endif
-                    bilinearFormVV_PatternCoupled +=
-                        //bilinearForm_PatternDefault +=
-                        integrate ( _range=M_rangeMeshElements,
-                                    _expr=timeSteppingScaling*convecTerm,
-                                    _geomap=this->geomap() );
-                }
-            }
-            if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
+            // stress tensor sigma : grad(v)
+            if ( BuildCstPart )
+                bilinearFormVP +=
+                    integrate( _range=range,
+                               _expr= -idt(p)*div(v),
+                               _geomap=this->geomap() );
+
+            if ( ( physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildCstPart ) ||
+                 ( !physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildNonCstPart ) )
             {
-                auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+                auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianViscousStressTensorJacobian(gradv(u),u,*physicFluidData,matProps);
                 bilinearFormVV_PatternCoupled +=
-                    integrate ( _range=M_rangeMeshElements,
-                                _expr= timeSteppingScaling*idv(rho)*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
-                                _geomap=this->geomap() );
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
+                               _geomap=this->geomap() );
             }
-        }
+
+            // convection terms
+            if ( physicFluidData->equation() == "Navier-Stokes" )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                if ( BuildNonCstPart )
+                {
+                    if (this->doStabConvectionEnergy())
+                    {
+                        // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
+                        // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
+                        // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
+
+                        auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u);
+                        bilinearFormVV_PatternCoupled +=
+                            //bilinearForm_PatternDefault +=
+                            integrate ( _range=range,
+                                        _expr=timeSteppingScaling*convecTerm,
+                                        _geomap=this->geomap() );
+                    }
+                    else
+                    {
+                        //auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
+                        auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobian(u);
+
+                        bilinearFormVV_PatternCoupled +=
+                            //bilinearForm_PatternDefault +=
+                            integrate ( _range=range,
+                                        _expr=timeSteppingScaling*convecTerm,
+                                        _geomap=this->geomap() );
+                    }
+                }
+#if defined( FEELPP_MODELS_HAS_MESHALE )
+                if (this->isMoveDomain() && BuildCstPart )
+                {
+                    bilinearFormVV_PatternCoupled +=
+                        //bilinearForm_PatternDefault +=
+                        integrate (_range=range,
+                                   _expr= -timeSteppingScaling*trans(gradt(u)*densityExpr*idv( this->meshVelocity() ))*id(v),
+                                   _geomap=this->geomap() );
+                }
+#endif
+
+                if ( data.hasVectorInfo( "explicit-part-of-solution" ) && BuildCstPart )
+                {
+                    auto uExplicitPartOfSolution = XhV->element( data.vectorInfo( "explicit-part-of-solution" ), rowStartInVector+startBlockIndexVelocity );
+                    bilinearFormVV_PatternCoupled +=
+                        integrate ( _range=range,
+                                    _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
+                                    _geomap=this->geomap() );
+                }
+            }
+
+            //transients terms
+            if ( !this->isStationaryModel() && Build_TransientTerm )
+            {
+                auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+                bilinearFormVV_PatternDefault +=
+                    integrate( _range=range,
+                               _expr= densityExpr*inner(idt(u),id(v))*M_bdfVelocity->polyDerivCoefficient(0),
+                               _geomap=this->geomap() );
+            }
+
+        } // foreach mat
     } // foreach physic
 
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    if (this->isMoveDomain() && BuildCstPart )
-    {
-        bilinearFormVV_PatternCoupled +=
-            //bilinearForm_PatternDefault +=
-            integrate (_range=M_rangeMeshElements,
-                       _expr= -timeSteppingScaling*trans(gradt(u)*idv(rho)*idv( this->meshVelocity() ))*id(v),
-                       _geomap=this->geomap() );
-    }
-#endif
 
     double timeElapsed = timerAssemble.elapsed();
     this->log("FluidMechanics","updateJacobian",(boost::format("assemble convection term in %1% s") %timeElapsed).str() );
-
-    //--------------------------------------------------------------------------------------------------//
-    // sigma : grad(v) on Omega
-    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
-    {
-        std::string const& matName = rangeData.first;
-        auto const& range = rangeData.second;
-        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-        if ( BuildCstPart )
-            bilinearFormVP +=
-                integrate( _range=range,
-                           _expr= -idt(p)*div(v),
-                           _geomap=this->geomap() );
-
-        if ( ( dynamicViscosity.isNewtonianLaw() && BuildCstPart ) ||
-             ( !dynamicViscosity.isNewtonianLaw() && BuildNonCstPart ) )
-        {
-            auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianViscousStressTensorJacobian(gradv(u),u,*this->materialProperties(),matName);
-            bilinearFormVV_PatternCoupled +=
-                integrate( _range=range,
-                           _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
-                           _geomap=this->geomap() );
-        }
-    }
 
     //--------------------------------------------------------------------------------------------------//
     // incompressibility term
@@ -189,21 +198,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
     }
 
     //--------------------------------------------------------------------------------------------------//
-    //transients terms
-    bool Build_TransientTerm = !BuildCstPart;
-    if ( this->timeStepBase()->strategy()==TS_STRATEGY_DT_CONSTANT ) Build_TransientTerm=BuildCstPart;
-
-    if (!this->isStationaryModel() && Build_TransientTerm/*BuildCstPart*/)
-    {
-        bilinearFormVV_PatternDefault +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr= idv(rho)*trans(idt(u))*id(v)*M_bdfVelocity->polyDerivCoefficient(0),
-                       _geomap=this->geomap() );
-    }
-
     // peusdo transient continuation
     if ( BuildNonCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )
     {
+#if 0
         double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
         auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
@@ -220,6 +218,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) 
                       //_expr=(1./pseudoTimeStepDelta)*(norm2(idv(u))/h())*inner(idt(u),id(u)),
                       //_expr=(1./pseudoTimeStepDelta)*inner(idt(u),id(u)),
                       _geomap=this->geomap() );
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
     //--------------------------------------------------------------------------------------------------//
     // define pressure cst

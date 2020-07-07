@@ -45,15 +45,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                                  _colstart=colStartInMatrix );
     // identity Matrix
     auto const Id = eye<nDim,nDim>();
-    // density
-    auto const& rho = this->materialProperties()->fieldRho();
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Nitsche formulation
     if ( this->hasMarkerDirichletBCnitsche() && BuildCstPart )
     {
+#if 0
         auto deft = sym(gradt(u));
         auto viscousStressTensor = 2*idv(mu)*deft;
          bilinearFormVV +=
@@ -69,6 +66,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
              integrate( _range=markedfaces(mesh, this->markerDirichletBCnitsche()),
                         _expr= timeSteppingScaling*inner( idt(p)*N(),id(v) ),
                         _geomap=this->geomap() );
+#else
+         CHECK( false ) << "TODO VINCENT";
+#endif
     }
     //--------------------------------------------------------------------------------------------------//
     // Dirichlet bc by using Lagrange-multiplier
@@ -248,6 +248,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
     // slip bc
     if (BuildCstPart && !this->markerSlipBC().empty() )
     {
+#if 0
         // slip condition :
         auto P = Id-N()*trans(N());
         double gammaN = doption(_name="bc-slip-gammaN",_prefix=this->prefix());
@@ -268,6 +269,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianWeakBC( DataUpdateJacobian & d
                        //- trans(id(v))*N()* trans(2*idv(mu)*deft*N())*N()
                        _geomap=this->geomap()
                        );
+#else
+        CHECK( false ) << "TODO VINCENT";
+#endif
     }
 
     //--------------------------------------------------------------------------------------------------//
