@@ -6,8 +6,8 @@ class Adv_Diff:
 
     def __init__( self, N = 101, dx = 0.01, dt = 0.005, mu = 0.01, v = 1, a = 1, b = 0 ):
 
-        self.setDiscretization([N, dx, dt])
-        self.setPhysicalParameters([mu, v])
+        self.setDiscretization(N, dx, dt)
+        self.setPhysicalParameters(mu, v)
 
         self._bc = [a, b]
         self._matrix = numpy.eye(N) - v*dt*(numpy.eye(N,N,1)+numpy.eye(N,N,-1))+mu*dt*(numpy.eye(N,N,1)+numpy.eye(N,N,-1)-2*numpy.eye(N))/(dx**2)
@@ -33,11 +33,11 @@ class Adv_Diff:
     def getMatrix( self ):
         return self._matrix
 
-    def setDiscretization( self, triplet ):
-        [self._N, self._dx, self._dt] = triplet
+    def setDiscretization( self, N, dx, dt ):
+        self._N, self._dx, self._dt = N, dx, dt
 
-    def setPhysicalParameters( self, doublet ):
-        [self._mu, self._v] = doublet
+    def setPhysicalParameters( self, mu, v ):
+        self._mu, self._v = mu, v
 
     def setBC( self, a, b ):
         self._bc = [a, b]
