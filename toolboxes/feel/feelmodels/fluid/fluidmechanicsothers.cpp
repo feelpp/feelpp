@@ -21,7 +21,6 @@
 
 #include <feel/feelpde/operatorpcd.hpp>
 
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresnormevaluation.hpp>
 #include <feel/feelmodels/modelcore/modelmeasuresstatisticsevaluation.hpp>
 
@@ -1795,32 +1794,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeMeshArea( std::set<std::string> const
     return area;
 }
 
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::force_type
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) const
-{
-    // current solution
-    auto const& u = this->fieldVelocity();
-    auto const& p = this->fieldPressure();
-
-    // TODO VINCENT!!!!
-    auto const& matNames = this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() );
-    CHECK( matNames.size() == 1 ) << "support only one";
-    std::string matName = *matNames.begin();
-    auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
-    CHECK( mphysics.size() == 1 ) << "not allow";
-    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
-    auto const& matProps = this->materialsProperties()->materialProperties( matName );
-
-    // stress tensor : -p*Id + 2*mu*D(u)
-    auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
-
-    return integrate(_range=markedfaces(M_mesh,markerName),
-                     _expr= sigmav*N(),
-                     _geomap=this->geomap() ).evaluate();
-
-}
 
 //---------------------------------------------------------------------------------------------------------//
 
