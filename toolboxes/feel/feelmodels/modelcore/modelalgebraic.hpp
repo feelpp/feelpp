@@ -391,8 +391,6 @@ public :
     virtual void updateResidualDofElimination( DataUpdateResidual & data ) const;
     virtual void updateLinearPDE( DataUpdateLinear & data ) const;
     virtual void updateLinearPDEDofElimination( DataUpdateLinear & data ) const;
-    virtual void updatePicard( DataUpdateLinear & data ) const;
-    virtual double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const;
 
     //----------------------------------------------------------------------------------//
     virtual void preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const {}
