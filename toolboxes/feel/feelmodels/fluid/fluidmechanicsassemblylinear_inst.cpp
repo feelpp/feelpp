@@ -1,6 +1,6 @@
 
 #include "fluidmechanicsconfig.h"
-#include <feel/feelmodels/fluid/fluidmechanicsupdatelinear.cpp>
+#include <feel/feelmodels/fluid/fluidmechanicsassemblylinear.cpp>
 
 namespace Feel {
 namespace FeelModels {
