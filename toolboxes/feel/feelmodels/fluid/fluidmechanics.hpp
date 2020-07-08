@@ -1151,7 +1151,8 @@ public :
         }
 
     template <typename VelocityFieldType, typename SymbolsExprType = symbols_expression_empty_t>
-    auto dynamicViscosityExpr( VelocityFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+    auto dynamicViscosityExpr( VelocityFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{},
+                               typename std::enable_if_t< is_functionspace_element_v< unwrap_ptr_t<VelocityFieldType> > >* = nullptr ) const
         {
             using _viscosity_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecViscosity(gradv(u),
                                                                                                    *std::static_pointer_cast<ModelPhysicFluid<nDim>>( this->physicsFromCurrentType().begin()->second ),
@@ -1448,15 +1449,17 @@ public :
 
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
+    template <typename ModelContextType>
+    void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+
     void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
                                           AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
-    void updateLinearPDEDofElimination( DataUpdateLinear & data ) const override;
-
-    void updatePicard( DataUpdateLinear & data ) const override;
-    double updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const override;
 
     //___________________________________________________________________________________//
 
@@ -1966,6 +1969,7 @@ FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlic
 } // namespace FeelModels
 } // namespace Feel
 
+#include <feel/feelmodels/fluid/fluidmechanicsassemblylinear.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */

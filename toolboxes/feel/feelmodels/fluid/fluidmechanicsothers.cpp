@@ -1578,37 +1578,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
 //---------------------------------------------------------------------------------------------------------//
 
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-double
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
-{
-#if 0
-    using namespace Feel::vf;
-
-    auto U1 = this->functionSpace()->element();U1 = *Unew;
-    auto u1 = U1.template element<0>();
-    auto p1 = U1.template element<1>();
-
-    auto U2 = this->functionSpace()->element();U2 = *Uold;
-    auto u2 = U2.template element<0>();
-    auto p2 = U2.template element<1>();
-
-    double err_u = integrate(_range=M_rangeMeshElements,
-                             //_expr= trans(idv(u1)-idv(u2))*(idv(u1)-idv(u2)),
-                             _expr= inner(idv(u1)-idv(u2)),
-                             _geomap=this->geomap() ).evaluate()(0,0);
-    double err_p = integrate(_range=M_rangeMeshElements,
-                             //_expr= (idv(p1)-idv(p2))*(idv(p1)-idv(p2)),
-                             _expr= inner(idv(p1)-idv(p2)),
-                             _geomap=this->geomap() ).evaluate()(0,0);
-
-    return std::sqrt(err_u+err_p);
-#endif
-    return 1.;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
 namespace FluidToolbox_detail
 {
 
