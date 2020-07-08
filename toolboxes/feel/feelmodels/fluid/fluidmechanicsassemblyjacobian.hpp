@@ -609,7 +609,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     // slip bc
     if (BuildCstPart && !this->markerSlipBC().empty() )
     {
-        auto muExpr = this->dynamicViscosityExpr( se );
+        auto muExpr = this->dynamicViscosityExpr( u,se );
         auto densityExpr = this->materialsProperties()->template materialPropertyExpr<1,1>( "density", se );
 
         auto P = Id-N()*trans(N());

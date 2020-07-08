@@ -838,16 +838,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
 
 
-
-
     //--------------------------------------------------------------------------------------------------//
 
     this->updateLinearPDEStabilisation( data );
 
     //--------------------------------------------------------------------------------------------------//
-
-    // // others bc
-    // this->updateLinearPDEWeakBC( data );
 
     double timeElapsed = this->timerTool("Solve").stop();
     this->log("FluidMechanics","updateLinearPDE","finish in "+(boost::format("%1% s") %timeElapsed).str() );
