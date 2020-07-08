@@ -1609,7 +1609,7 @@ fluidMecNewtonianViscousStressTensorJacobian( Expr<ExprGradVelocityType> const& 
                                               SymbolsExprType const& se = symbols_expression_empty_t{},
                                               uint16_type polyOrder = invalid_uint16_type_value )
 {
-    typedef FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,typename ElementVelocityType::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> > fmstresstensor_t;
+    typedef FluidMecStressTensorImpl<Expr<ExprGradVelocityType>,typename unwrap_ptr_t<ElementVelocityType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<FMSTExprApplyType::FM_ST_JACOBIAN> > fmstresstensor_t;
     return Expr< fmstresstensor_t >(  fmstresstensor_t( grad_u,/*p*/cst(0.),physicFluid,matProps,polyOrder,false,se ) );
 }
 

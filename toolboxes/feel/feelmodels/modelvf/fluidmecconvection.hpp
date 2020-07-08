@@ -596,8 +596,8 @@ inline
 auto
 fluidMecConvection( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,mpl::int_<0> > convection_t;
-    return Expr< convection_t >(  convection_t( v ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<0> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
 template<class ElementVelocityType>
@@ -605,8 +605,8 @@ inline
 auto
 fluidMecConvectionWithEnergyStab( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,mpl::int_<1> > convection_t;
-    return Expr< convection_t >(  convection_t( v ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<1> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
 template<class ElementVelocityType>
@@ -614,8 +614,8 @@ inline
 auto
 fluidMecConvectionJacobian( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,mpl::int_<2> > convection_t;
-    return Expr< convection_t >(  convection_t( v ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<2> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
 template<class ElementVelocityType>
@@ -623,8 +623,8 @@ inline
 auto
 fluidMecConvectionJacobianWithEnergyStab( ElementVelocityType const& v )
 {
-    typedef FluidMecConvectionImpl<ElementVelocityType,mpl::int_<3> > convection_t;
-    return Expr< convection_t >(  convection_t( v ) );
+    typedef FluidMecConvectionImpl<unwrap_ptr_t<ElementVelocityType>,mpl::int_<3> > convection_t;
+    return Expr< convection_t >(  convection_t( unwrap_ptr(v) ) );
 }
 
 

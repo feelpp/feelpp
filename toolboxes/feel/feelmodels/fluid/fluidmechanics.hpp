@@ -55,6 +55,7 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+#include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
 
 namespace Feel
@@ -1037,9 +1038,9 @@ public :
         {
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
-            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam/*, seMat*/, seFields );
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
@@ -1348,53 +1349,6 @@ public :
     double computeVelocityDivergenceMean() const;
     double computeVelocityDivergenceNormL2() const;
 
-#if 0
-#if 0
-    // Averaged Preassure computed on a set of slice (false for compute on actual mesh)
-    template <typename SetMeshSlicesType>
-    std::vector<double> computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/);
-    // Averaged Preassure computed on a set of slice (true for compute on ref mesh)
-    template <typename SetMeshSlicesType>
-    std::vector<double> computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/);
-    // Flow rate computed on a set of slice (false for compute on actual mesh)
-    template <typename SetMeshSlicesType>
-    std::vector<double> computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/);
-    // Flow rate computed on a set of slice (true for compute on ref mesh)
-    template <typename SetMeshSlicesType>
-    std::vector<double> computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/);
-#else
-    typedef Mesh<Simplex<1,1,nRealDim> > mesh_slice1d_type;
-    typedef std::shared_ptr<mesh_slice1d_type> mesh_slice1d_ptrtype;
-    typedef typename mpl::at_c<typename space_fluid_velocity_type::bases_list,0>::type basis_slice_velocity_type;
-    typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_velocity_type> > space_slice_velocity_type;
-    typedef OperatorInterpolation<space_fluid_velocity_type,space_slice_velocity_type> op_interp_velocity_type;
-    typedef std::shared_ptr<op_interp_velocity_type> op_interp_velocity_ptrtype;
-
-    typedef typename mpl::at_c<typename space_fluid_pressure_type::bases_list,0>::type basis_slice_pressure_type;
-    typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_pressure_type> > space_slice_pressure_type;
-    typedef OperatorInterpolation<space_fluid_pressure_type,space_slice_pressure_type> op_interp_pressure_type;
-    typedef std::shared_ptr<op_interp_pressure_type> op_interp_pressure_ptrtype;
-
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-    typedef typename mpl::at_c<typename space_mesh_disp_type::bases_list,0>::type basis_slice_meshdisp_type;
-    typedef FunctionSpace<mesh_slice1d_type, bases<basis_slice_meshdisp_type> > space_slice_meshdisp_type;
-    typedef OperatorInterpolation<space_mesh_disp_type,space_slice_meshdisp_type> op_interp_meshdisp_type;
-    typedef std::shared_ptr<op_interp_meshdisp_type> op_interp_meshdisp_ptrtype;
-
-    std::vector<double> computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                                  std::vector<op_interp_pressure_ptrtype> const& opInterp,
-                                                  bool computeOnRefMesh=false,
-                                                  std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp = std::vector<op_interp_meshdisp_ptrtype>() );
-    std::vector<double> computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                        std::vector<op_interp_velocity_ptrtype> const& opInterp,
-                                        bool computeOnRefMesh=false,
-                                        std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp = std::vector<op_interp_meshdisp_ptrtype>() );
-#else
-    //TODO?
-#endif
-
-#endif
-#endif
     //___________________________________________________________________________________//
 
     void solve();
@@ -1429,8 +1383,16 @@ public :
 
     // non linear (newton)
     void updateNewtonInitialGuess( DataNewtonInitialGuess & data ) const override;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mfields ) const;
+
     void updateJacobian( DataUpdateJacobian & data ) const override;
+    template <typename ModelContextType>
+    void updateJacobian( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
+
     void updateResidual( DataUpdateResidual & data ) const override;
+    template <typename ModelContextType>
+    void updateResidual( DataUpdateResidual & data, ModelContextType const& mfields ) const;
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
@@ -1442,8 +1404,6 @@ public :
     void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p,
                                          Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
                                          std::string const& matName, const ExprT&... exprs ) const;
-    void updateJacobianWeakBC( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
-    void updateResidualWeakBC( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
@@ -1455,7 +1415,6 @@ public :
     template <typename ModelContextType>
     void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
-    void updateLinearPDEWeakBC( DataUpdateLinear & data ) const;
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
     template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
     void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
@@ -1772,204 +1731,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::computeForce( ra
 }
 
 
-//---------------------------------------------------------------------------------------------------------//
-#if 0
-template <typename SetMeshSlicesType>
-std::vector<double>
-FLUIDMECHANICS_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
-{
-    using namespace Feel::vf;
-
-    auto solFluid = this->getSolution();
-
-    auto p = solFluid->element<1>();
-
-    auto setMS = setMeshSlices.getContainerOfMeshSlices();
-
-    auto nbSlice = setMS.size();
-    std::vector<double> res(nbSlice);
-
-    for (uint16_type i = 0 ; i<nbSlice ; ++i)
-    {
-        auto meshSlice = setMS[i];
-
-        double area = integrate(_range=elements(meshSlice),
-                                _expr=cst(1.) ).evaluate()(0,0);
-
-        res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                      _expr=idv(p) ).evaluate()(0,0));
-    }
-
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-template <typename SetMeshSlicesType>
-std::vector<double>
-FLUIDMECHANICS_CLASS_NAME::computeAveragedPreassure( SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
-{
-    using namespace Feel::vf;
-
-    this->meshALE()->revertReferenceMesh();
-
-    auto solFluid = this->getSolution();
-
-    auto p = solFluid->element<1>();
-
-    // Identity matrix
-    auto Id = BOOST_PP_IF(BOOST_PP_EQUAL(FLUIDMECHANICS_DIM,2),
-                          oneX()*trans(oneX()) + oneY()*trans(oneY()),
-                          oneX()*trans(oneX()) + oneY()*trans(oneY())+oneZ()*trans(oneZ()) );
-    // Deformation tensor
-    auto Fa = Id+gradv(*M_meshALE->displacement());
-#if (FLUIDMECHANICS_DIM==2)
-    auto Fa11 = trans(Fa*oneX())*oneX();
-    auto Fa12 = trans(Fa*oneY())*oneX();
-    auto Fa21 = trans(Fa*oneX())*oneY();
-    auto Fa22 = trans(Fa*oneY())*oneY();
-    auto detFa = Fa11*Fa22-Fa21*Fa12;
-    //sans le determinant devant car il s annule avec un terme apres
-    //auto InvFa = mat<2,2>( Fa22,-Fa12,-Fa21,Fa11);
-#endif
-#if (FLUIDMECHANICS_DIM==3)
-    auto Fa11 = trans(Fa*oneX())*oneX();
-    auto Fa12 = trans(Fa*oneY())*oneX();
-    auto Fa13 = trans(Fa*oneZ())*oneX();
-    auto Fa21 = trans(Fa*oneX())*oneY();
-    auto Fa22 = trans(Fa*oneY())*oneY();
-    auto Fa23 = trans(Fa*oneZ())*oneY();
-    auto Fa31 = trans(Fa*oneX())*oneZ();
-    auto Fa32 = trans(Fa*oneY())*oneZ();
-    auto Fa33 = trans(Fa*oneZ())*oneZ();
-    auto detFa = Fa11*(Fa22*Fa33-Fa23*Fa32) - Fa21*(Fa12*Fa33-Fa13*Fa32) + Fa31*(Fa12*Fa23 - Fa13*Fa22);
-    //sans le determinant devant car il s annule avec un terme apres
-    //auto InvFa = mat<3,3>( Fa22*Fa33-Fa23*Fa32 , Fa13*Fa32-Fa12*Fa33 , Fa12*Fa23-Fa13*Fa22,
-    //                       Fa23*Fa31-Fa21*Fa33 , Fa11*Fa33-Fa13*Fa31 , Fa13*Fa21-Fa11*Fa23,
-    //                       Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
-    //                        );
-#endif
-
-
-    auto setMS = setMeshSlices.getContainerOfMeshSlices();
-
-    auto nbSlice = setMS.size();
-    std::vector<double> res(nbSlice);
-
-    for (uint16_type i = 0 ; i<nbSlice ; ++i)
-    {
-        auto meshSlice = setMS[i];
-
-        double area = integrate(_range=elements(meshSlice),
-                                _expr=cst(1.) ).evaluate()(0,0);
-
-        res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                      _expr=idv(p)*detFa ).evaluate()(0,0));
-    }
-
-
-    this->meshALE()->revertMovingMesh();
-
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-// Flow rate computed on a set of slice
-template <typename SetMeshSlicesType>
-std::vector<double>
-FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<false> /**/)
-{
-    using namespace Feel::vf;
-
-    auto solFluid = this->getSolution();
-    auto u = solFluid->element<0>();
-
-    auto setMS = setMeshSlices.getContainerOfMeshSlices();
-    auto nbSlice = setMS.size();
-    std::vector<double> res(nbSlice);
-
-    auto dirVelocity = vec(cst(1.0),cst(0.));
-    for (uint16_type i = 0 ; i<nbSlice ; ++i)
-    {
-        auto meshSlice = setMS[i];
-        res[i] = integrate(_range=elements(meshSlice),
-                           _expr=trans(idv(u))*dirVelocity ).evaluate()(0,0);
-    }
-
-    return res;
-
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-// Flow rate computed on a set of slice
-template <typename SetMeshSlicesType>
-std::vector<double>
-FLUIDMECHANICS_CLASS_NAME::computeFlowRate(SetMeshSlicesType const & setMeshSlices,mpl::bool_<true> /**/)
-{
-    using namespace Feel::vf;
-
-    auto solFluid = this->getSolution();
-    auto u = solFluid->element<0>();
-
-    // Identity matrix
-    auto Id = BOOST_PP_IF(BOOST_PP_EQUAL(FLUIDMECHANICS_DIM,2),
-                          oneX()*trans(oneX()) + oneY()*trans(oneY()),
-                          oneX()*trans(oneX()) + oneY()*trans(oneY())+oneZ()*trans(oneZ()) );
-    // Deformation tensor
-    auto Fa = Id+gradv(*M_meshALE->displacement());
-#if (FLUIDMECHANICS_DIM==2)
-    auto Fa11 = trans(Fa*oneX())*oneX();
-    auto Fa12 = trans(Fa*oneY())*oneX();
-    auto Fa21 = trans(Fa*oneX())*oneY();
-    auto Fa22 = trans(Fa*oneY())*oneY();
-    auto detFa = Fa11*Fa22-Fa21*Fa12;
-    //sans le determinant devant car il s annule avec un terme apres
-    //auto InvFa = mat<2,2>( Fa22,-Fa12,-Fa21,Fa11);
-#endif
-#if (FLUIDMECHANICS_DIM==3)
-    auto Fa11 = trans(Fa*oneX())*oneX();
-    auto Fa12 = trans(Fa*oneY())*oneX();
-    auto Fa13 = trans(Fa*oneZ())*oneX();
-    auto Fa21 = trans(Fa*oneX())*oneY();
-    auto Fa22 = trans(Fa*oneY())*oneY();
-    auto Fa23 = trans(Fa*oneZ())*oneY();
-    auto Fa31 = trans(Fa*oneX())*oneZ();
-    auto Fa32 = trans(Fa*oneY())*oneZ();
-    auto Fa33 = trans(Fa*oneZ())*oneZ();
-    auto detFa = Fa11*(Fa22*Fa33-Fa23*Fa32) - Fa21*(Fa12*Fa33-Fa13*Fa32) + Fa31*(Fa12*Fa23 - Fa13*Fa22);
-    //sans le determinant devant car il s annule avec un terme apres
-    //auto InvFa = mat<3,3>( Fa22*Fa33-Fa23*Fa32 , Fa13*Fa32-Fa12*Fa33 , Fa12*Fa23-Fa13*Fa22,
-    //                       Fa23*Fa31-Fa21*Fa33 , Fa11*Fa33-Fa13*Fa31 , Fa13*Fa21-Fa11*Fa23,
-    //                       Fa21*Fa32-Fa22*Fa31 , Fa12*Fa31-Fa11*Fa32 , Fa11*Fa22-Fa12*Fa21
-    //                        );
-#endif
-
-
-
-    auto setMS = setMeshSlices.getContainerOfMeshSlices();
-    auto nbSlice = setMS.size();
-    std::vector<double> res(nbSlice);
-
-    auto dirVelocity = vec(cst(1.0),cst(0.));
-    for (uint16_type i = 0 ; i<nbSlice ; ++i)
-    {
-        auto meshSlice = setMS[i];
-        res[i] = integrate(_range=elements(meshSlice),
-                           _expr=trans(idv(u))*dirVelocity ).evaluate()(0,0);
-    }
-
-    return res;
-
-}
-#endif
-//---------------------------------------------------------------------------------------------------------//
-
 } // namespace FeelModels
 } // namespace Feel
 
 #include <feel/feelmodels/fluid/fluidmechanicsassemblylinear.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsassemblyjacobian.hpp>
+#include <feel/feelmodels/fluid/fluidmechanicsassemblyresidual.hpp>
 #include <feel/feelmodels/fluid/fluidmechanicsupdatestabilisationgls.hpp>
 
 #endif /* FEELPP_TOOLBOXES_FLUIDMECHANICS_HPP */
