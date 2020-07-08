@@ -2677,8 +2677,6 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     typedef typename range_gm_type::precompute_ptrtype range_geopc_ptrtype;
     typedef typename range_gm_type::precompute_type range_geopc_type;
 
-    typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
-
     auto __face_it = r.first;
     auto const __face_en = r.second;
 
@@ -2703,6 +2701,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
     if ( !gmRange )
         gmRange.reset( new range_gm_type );
 
+    typedef typename element_type::functionspace_type::basis_type::template ChangeDim<range_geoelement_type::nDim>::type fe_range_dim_type;
     fe_range_dim_type feRangeDim;
 
     std::vector<std::map<range_permutation_type, range_geopc_ptrtype> > geopcRange( range_geoelement_type::numTopologicalFaces );
@@ -2712,7 +2711,16 @@ FunctionSpace<A0, A1, A2, A3, A4>::Element<Y,Cont>::onImpl( std::pair<IteratorTy
         for ( range_permutation_type __p( range_permutation_type::IDENTITY );
               __p < range_permutation_type( range_permutation_type::N_PERMUTATIONS ); ++__p )
         {
-            geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, feRangeDim.points( __f ) ) );
+            // special case with lagrange P0d : dof point in 2d/3d faces are not connected to 1d/2d element, trick use barycenter of faces
+            if constexpr ( is_lagrange_polynomialset_P0d_v<typename element_type::functionspace_type::basis_type> )
+            {
+                auto fb = gmRange->referenceConvex().faceBarycenter( __f );
+                matrix_node_type fb_convert( fb.size(), 1 );
+                ublas::column(fb_convert,0) = fb;
+                geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, fb_convert ) );
+            }
+            else
+                geopcRange[__f][__p] = range_geopc_ptrtype(  new range_geopc_type( gmRange, feRangeDim.points( __f ) ) );
         }
     }
 
