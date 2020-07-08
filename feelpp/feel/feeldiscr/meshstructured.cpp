@@ -52,7 +52,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
         this->setStructureProperty( "00110" );
     else
         this->setStructureProperty( "00010" );
-    VLOG( 1 ) << "nx x ny = " << nx << " x " << ny << "\t" << nx * ny << std::endl;
+    LOG(INFO) << "nx x ny = " << nx << " x " << ny << "\t" << nx * ny << std::endl;
 
     rank_type nProc = wc->localSize();
     rank_type partId = wc->localRank();
@@ -135,8 +135,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
             }
             else
             {
-                coords[0] = M_pixelsize * j;
-                coords[1] = M_pixelsize * i;
+                coords[0] = M_pixelsize * i;
+                coords[1] = M_pixelsize *(M_ny - 1 - j);
             }
             if ( withPoly )
             {
@@ -177,8 +177,8 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
             }
             else
             {
-                coords[0] = M_pixelsize * j;
-                coords[1] = M_pixelsize * i;
+                coords[0] = M_pixelsize * i;
+                coords[1] = M_pixelsize *(M_ny - 1 - j); //M_pixelsize * j;
             }
             point_type pt( ptid, coords );
             pt.setProcessId( invalid_rank_type_value );
