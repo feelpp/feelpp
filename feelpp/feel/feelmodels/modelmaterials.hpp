@@ -436,9 +436,9 @@ public:
     /**
      * get the list of symbols associated to expressions
      */
-    auto symbolsExpr() const
+    auto symbolsExpr( bool add_evaluable = false ) const
     {
-        auto extract = [this](auto const& e_ij) {
+        auto extract = [this,&add_evaluable](auto const& e_ij) {
             constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
             constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
             using _expr_type = std::decay_t< decltype( ModelExpression{}.expr<ni,nj>() ) >;
@@ -447,6 +447,8 @@ public:
             {
                 for( auto const& [symbName,mparam] : mat.properties() )
                 {  
+                    if ( mparam.isEvaluable() && !add_evaluable )
+                        continue;
                     if ( !mparam.template hasExpr<ni,nj>() )
                         continue;
                     auto const& theexpr = mparam.template expr<ni,nj>();

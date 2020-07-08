@@ -170,8 +170,8 @@ public:
                                                             symbol_expression_t<_expr_type> seParamValue;
                                                             for( auto const& [symbName, mparam] : *this )
                                                             {
-                                                                //if ( mparam.isEvaluable() )
-                                                                //    continue;
+                                                                if ( mparam.isEvaluable() )
+                                                                    continue;
 
                                                                 if ( mparam.type() == "expression" )
                                                                 {
