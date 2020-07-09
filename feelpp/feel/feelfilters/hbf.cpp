@@ -228,7 +228,8 @@ Hbf2Feelpp::operator()( holo3_image<float> const& x )
  * Nx = number of columns (= number of dots in P1 in X-holo3 direction)
  * Ny = number of lines
  */
-Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_cols(nx), M_rows(ny), M_Xh( Yh )
+Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh, q0_space_ptrtype Mh )
+    :M_cols(nx), M_rows(ny), M_Xh( Yh ), M_Qh( Mh )
 {
     tic();
     LOG(INFO) << "Hbf2FeelppStruc relation creation \n";
@@ -248,6 +249,13 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh ):M_cols(n
         for( int j = 0; j < ny; ++j )
         {
             M_relation.push_back( dof_relation( std::make_pair(j,i), pid2dof[(ny)*i+j] ));
+        }
+    }
+    for( int i = std::max(cx[partId],0); i < std::min(cx[partId+1],nx-1); ++i )
+    {
+        for( int j = 0; j < ny-1; ++j )
+        {
+            M_relation_q0.push_back( dof_relation( std::make_pair(j,i), (ny-1)*i+j ));
         }
     }
     toc("structured 2 feelpp relation",FLAGS_v>0);
@@ -274,6 +282,28 @@ Hbf2FeelppStruc::operator()( holo3_image<float> const& x )
 
 }
 
+Hbf2FeelppStruc::q0_element_type
+Hbf2FeelppStruc::cellToQ0( holo3_image<float> const& x )
+{
+    tic();
+    q0_element_type u = M_Qh->element();
+    toc("h2f", FLAGS_v>0);
+    tic();
+    for( auto const & dof : M_relation_q0.left )
+    {
+        if ( dof.second < u.size())
+            u( dof.second ) = x(dof.first.first,dof.first.second);
+    }
+    toc("h2f dof", FLAGS_v>0);
+    tic();
+    sync(u,"=");
+    u.close();
+    toc("h2f sync+close()", FLAGS_v>0);
+    return u;
+
+
+}
+
 holo3_image<float>
 Hbf2FeelppStruc::operator()( q1_element_type const& u )
 {
@@ -284,6 +314,34 @@ Hbf2FeelppStruc::operator()( q1_element_type const& u )
     mpi::all_gather( Environment::worldComm(), (int)u.dof()->nLocalDofWithoutGhost(), sizes );
     
     for( auto const& dof : M_relation.left )
+    {
+        DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
+        DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
+        if ( dof.second < u.size() )
+            y( dof.first.first, dof.first.second ) = u(dof.second);
+    }
+    int p = Environment::rank();
+    int pm1 = (p==0)?0:p-1;
+    int s = 0;
+    for( int i = 0; i < p; ++i )
+        s += sizes[i];
+    holo3_image<float> x = y.transpose();
+    holo3_image<float> yy= y.transpose();
+    mpi::gatherv( Environment::worldComm(), yy.data()+s, sizes[p], 
+                  x.data(), sizes, 0 );
+    toc("H2F feelpp to holo3_image",FLAGS_v>0);
+    return x.transpose();
+}
+holo3_image<float>
+Hbf2FeelppStruc::operator()( q0_element_type const& u )
+{
+    tic();
+    holo3_image<float> y( M_rows-1, M_cols-1 );
+    y = holo3_image<float>::Zero( M_rows-1, M_cols-1 );
+    std::vector<int> sizes;
+    mpi::all_gather( Environment::worldComm(), (int)u.dof()->nLocalDofWithoutGhost(), sizes );
+    
+    for( auto const& dof : M_relation_q0.left )
     {
         DCHECK( dof.first.first < M_rows ) << "invalid row index " << dof.first.first;
         DCHECK( dof.first.second < M_cols ) << "invalid col index " << dof.first.second;
@@ -304,7 +362,7 @@ Hbf2FeelppStruc::operator()( q1_element_type const& u )
 
 
 Hbf2FeelppStruc::q1_element_type
-Hbf2FeelppStruc::operator()( holo3_image<float> const& x, q1_element_type u)
+Hbf2FeelppStruc::operator()( holo3_image<float> const& x, q1_element_type& u)
 {
     //q1_element_type u( M_Xh );
     //std::cout << "u.nDof() = " << u.nDof() << std::endl;
@@ -314,7 +372,8 @@ Hbf2FeelppStruc::operator()( holo3_image<float> const& x, q1_element_type u)
     {
         //LOG(INFO) << "dof.second = " << dof.second << " = " << dof.first.first << " : " << dof.first.second << std::endl;
         //tic();
-        u( dof.second ) = x(dof.first.first,dof.first.second);
+        if ( dof.second < u.size() )
+            u( dof.second ) = x(dof.first.first,dof.first.second);
         //toc("hbfTOFeel::operator()");
     }
     sync(u,"=");
@@ -323,6 +382,25 @@ Hbf2FeelppStruc::operator()( holo3_image<float> const& x, q1_element_type u)
 
 }
 
+void
+Hbf2FeelppStruc::cellToQ1( holo3_image<float> const& x, q1_element_type& u)
+{
+    //q1_element_type u( M_Xh );
+    //std::cout << "u.nDof() = " << u.nDof() << std::endl;
+    //std::cout << "M_relation.size() = " << M_relation.size() << std::endl;
+//#pragma omp parallel for
+    for( auto const & dof : M_relation.left )
+    {
+        //LOG(INFO) << "dof.second = " << dof.second << " = " << dof.first.first << " : " << dof.first.second << std::endl;
+        //tic();
+        if ( dof.second < u.size() )
+            u( dof.second ) = x(dof.first.first,dof.first.second);
+        //toc("hbfTOFeel::operator()");
+    }
+    sync(u,"=");
+    u.close();
+
+}
 
 //
 //HbfFineToCoarse
