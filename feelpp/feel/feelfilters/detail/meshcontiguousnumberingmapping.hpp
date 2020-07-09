@@ -448,20 +448,20 @@ struct MeshContiguousNumberingMapping
 
     //! reorder the nodes ids in the element and put the new ordering in arg \newPointsIdsInElt
     template <typename TheNodeIndexType>
-    void udpateOrderingOfPointsIdsInElt( int part, rank_type therank, std::vector<TheNodeIndexType> & newPointsIdsInElt,
-                                         std::map<std::string,std::vector<uint16_type>> const& nodesOrderingInElement, int shiftId = 0 ) const
+    void updateOrderingOfPointsIdsInElt( int part, rank_type therank, std::vector<TheNodeIndexType> & newPointsIdsInElt,
+                                         std::vector<uint16_type> const& mappingWithThisKindOfElement, int shiftId = 0,
+                                         int nPointsUsedInElt = mesh_type::element_type::numPoints ) const
         {
-            auto const& pointsIdsInElt_B = this->pointIdsInElements( part );
-            newPointsIdsInElt.resize( pointsIdsInElt_B.size() );
-            auto itFindOrdering = nodesOrderingInElement.find( (boost::format("%1%_%2%d_g%3%") %mesh_type::shape_type::type() %mesh_type::shape_type::nDim %mesh_type::shape_type::nOrder ).str() );
-            CHECK( itFindOrdering != nodesOrderingInElement.end() ) << "not found an ordering";
-            auto const& mappingWithThisKindOfElement = itFindOrdering->second;
+            CHECK( nPointsUsedInElt <= mappingWithThisKindOfElement.size() ) << "incomplete ordering";
 
             index_type _nElt = this->numberOfElement( part,therank );
+            auto const& pointsIdsInElt_B = this->pointIdsInElements( part );
+            newPointsIdsInElt.resize( _nElt*nPointsUsedInElt );
+
             for ( int k=0;k<_nElt;++k )
             {
-                for ( uint16_type p=0;p<mesh_type::element_type::numPoints;++p )
-                    newPointsIdsInElt[ k*mesh_type::element_type::numPoints + mappingWithThisKindOfElement[p] ] = pointsIdsInElt_B[ k*mesh_type::element_type::numPoints+p ] + shiftId;
+                for ( uint16_type p=0;p<nPointsUsedInElt;++p )
+                    newPointsIdsInElt[ k*nPointsUsedInElt + mappingWithThisKindOfElement[p] ] = pointsIdsInElt_B[ k*mesh_type::element_type::numPoints+p ] + shiftId;
             }
         }
 private :
