@@ -225,40 +225,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
-{
-    // if pde change -> force to rebuild all algebraic data at next solve
-    if ( type != M_modelName )
-        this->setNeedToRebuildCstPart(true);
-
-    if ( type == "Stokes" )
-        M_modelName="Stokes";
-    else if ( type == "StokesTransient" )
-        M_modelName="StokesTransient";
-    else if ( type == "Oseen" ) // not realy a model but a solver for navier stokes
-    {
-        M_modelName="Navier-Stokes";
-        M_solverName="Oseen";
-    }
-    else if ( type == "Navier-Stokes" )
-        M_modelName="Navier-Stokes";
-    else
-        CHECK( false ) << "invalid modelName "<< type << "\n";
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::string const&
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::modelName() const
-{
-    return M_modelName;
-}
-#endif
-//---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -320,27 +286,6 @@ if ( isStokes )
 #endif
 }
 
-//---------------------------------------------------------------------------------------------------------//
-
-#if 0
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::string const&
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::dynamicViscosityLaw() const
-{
-    return this->materialProperties()->dynamicViscosityLaw();
-}
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setDynamicViscosityLaw( std::string const& type )
-{
-    // if viscosity model change -> force to rebuild all algebraic data at next solve
-    if ( type != this->materialProperties()->dynamicViscosityLaw() )
-        this->setNeedToRebuildCstPart( true );
-
-    this->materialProperties()->setDynamicViscosityLaw( type );
-}
-#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1040,14 +985,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
             auto const& therange = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
             auto const& rhoExpr = this->materialsProperties()->density( matName ).template expr<1,1>();
-
-#if 0
-            auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-#else
-            CHECK( false ) << "TODO VINCENT";
-            auto muExpr = cst(0.);
-#endif
+            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps);
 
             if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
@@ -1850,153 +1788,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
-#if 0
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::vector<double>
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeAveragedPreassure( std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                                                  std::vector<op_interp_pressure_ptrtype> const& opInterp,
-                                                                  bool computeOnRefMesh,
-                                                                  std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
-{
-    int nbSlice = setMeshSlices.size();
-    std::vector<double> res(nbSlice);
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto p = solFluid->template element<1>();
-
-    bool computeOnRefMesh2 = this->isMoveDomain() && computeOnRefMesh;
-    if ( !computeOnRefMesh2 )
-    {
-        for (uint16_type i = 0 ; i<nbSlice ; ++i)
-        {
-            auto meshSlice = setMeshSlices[i];
-            double area = integrate(_range=elements(meshSlice),
-                                    _expr=cst(1.) ).evaluate()(0,0);
-            if ( opInterp[i] )
-            {
-                auto pInterp = opInterp[i]->operator()( p );
-                res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                              _expr=idv(pInterp) ).evaluate()(0,0));
-            }
-            else
-            {
-                res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                              _expr=idv(p) ).evaluate()(0,0));
-            }
-        }
-    }
-    else
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->meshALE()->revertReferenceMesh();
-        auto const Id = eye<nDim,nDim>();
-        for (uint16_type i = 0 ; i<nbSlice ; ++i)
-        {
-            auto meshSlice = setMeshSlices[i];
-            double area = integrate(_range=elements(meshSlice),
-                                    _expr=cst(1.) ).evaluate()(0,0);
-            if ( opInterp[i] )
-            {
-                auto pInterp = opInterp[i]->operator()( p );
-                auto dispInterp = opInterpMeshDisp[i]->operator()( *M_meshALE->displacement() );
-                // Deformation tensor
-                //double holl=integrate(_range=elements(meshSlice),_expr=inner(gradv(dispInterp),Id2) ).evaluate()(0,0);
-                //double holl=integrate(_range=elements(meshSlice),_expr=inner(gradv(*M_meshALE->displacement()),Id) ).evaluate()(0,0);
-                auto Fa = Id+gradv(dispInterp);
-                auto detFa = det(Fa);
-
-                res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                              _expr=idv(pInterp)*detFa ).evaluate()(0,0));
-            }
-            else
-            {
-                // Deformation tensor
-                auto Fa = Id+gradv(*M_meshALE->displacement());
-                auto detFa = det(Fa);
-                res[i] = (1./area)*(integrate(_range=elements(meshSlice),
-                                              _expr=idv(p)*detFa ).evaluate()(0,0));
-            }
-        }
-        this->meshALE()->revertMovingMesh();
-#endif
-    }
-
-
-    return res;
-
-}
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-std::vector<double>
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptrtype> const& setMeshSlices,
-                                                        std::vector<op_interp_velocity_ptrtype> const& opInterp,
-                                                        bool computeOnRefMesh,
-                                                        std::vector<op_interp_meshdisp_ptrtype> const& opInterpMeshDisp )
-{
-    int nbSlice = setMeshSlices.size();
-    std::vector<double> res(nbSlice);
-    std::vector<double> res2(nbSlice);
-
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto dirVelocity = oneX();//vec(cst(1.0),cst(0.));
-
-    bool computeOnRefMesh2 = this->isMoveDomain() && computeOnRefMesh;
-    //if ( !computeOnRefMesh2 )
-    {
-        for (uint16_type i = 0 ; i<nbSlice ; ++i)
-        {
-            auto meshSlice = setMeshSlices[i];
-            res2[i] = integrate(_range=elements(meshSlice),
-                                _expr=inner(idv(u),dirVelocity) ).evaluate()(0,0);
-        }
-    }
-    //else
-    {
-#if defined( FEELPP_MODELS_HAS_MESHALE )
-        this->meshALE()->revertReferenceMesh();
-
-        auto const Id = eye<nDim,nDim>();
-        for (uint16_type i = 0 ; i<nbSlice ; ++i)
-        {
-            auto meshSlice = setMeshSlices[i];
-            if ( opInterp[i] )
-            {
-                auto uInterp = opInterp[i]->operator()( u );
-                auto dispInterp = opInterpMeshDisp[i]->operator()( *M_meshALE->displacement() );
-                //auto Fa = Id+gradv(dispInterp);
-                auto Fa = Id+gradv(*M_meshALE->displacement());
-                auto detFa = det(Fa);
-                res[i] = integrate(_range=elements(meshSlice),
-                                   _expr=inner(idv(uInterp),dirVelocity)*detFa ).evaluate()(0,0);
-            }
-            else
-            {
-                // Deformation tensor
-                auto Fa = Id+gradv(*M_meshALE->displacement());
-                auto detFa = det(Fa);
-                res[i] = integrate(_range=elements(meshSlice),
-                                   _expr=inner(idv(u),dirVelocity)*detFa ).evaluate()(0,0);
-            }
-        }
-
-        this->meshALE()->revertMovingMesh();
-#endif
-    }
-
-    for (uint16_type i = 0 ; i<nbSlice ; ++i)
-    {
-        std::cout <<"res[i] " << res[i] <<  " res2[i] " <<  res2[i] << " jac " << std::abs(res[i] - res2[i] ) << "\n";
-        CHECK( std::abs(res[i] - res2[i] ) < 1e-5 ) << "res[i] " << res[i] <<  " res2[i] " <<  res2[i] << " jac " << std::abs(res[i] - res2[i] ) << "\n";
-    }
-
-    return res;
-}
-
-#endif // HAS_MESHALE
-#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

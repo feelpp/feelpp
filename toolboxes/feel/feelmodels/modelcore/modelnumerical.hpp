@@ -492,6 +492,10 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                 continue;
                             for ( auto const&[theexpr,range,reprs] : exprDatas )
                             {
+                                using entity_range_type = entity_range_t<std::decay_t<decltype(range)>>;
+                                if constexpr ( decay_type<ExporterType>::mesh_type::nRealDim == entity_range_type::nRealDim &&
+                                               decay_type<ExporterType>::mesh_type::nDim >= entity_range_type::nDim )
+                                {
                                 if constexpr ( std::is_base_of_v<ExprBase,decay_type<decltype(theexpr)>> )
                                 {
                                     using _expr_shape = typename std::decay_t<decltype(theexpr)>::template evaluator_t<typename  decay_type<ExporterType>::mesh_type::element_type>::shape;
@@ -549,6 +553,7 @@ ModelNumerical::updatePostProcessExports( std::shared_ptr<ExporterType> exporter
                                                     });
                                 } // is ModelExpression
 #endif
+                                } // range compatibility with exporter
                             }
                         }
                     });

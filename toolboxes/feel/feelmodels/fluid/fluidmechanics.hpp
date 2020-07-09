@@ -972,10 +972,6 @@ public :
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { M_materialsProperties = mp; }
 
 #if 0
-    // physical parameters rho,mu,nu,...
-    material_properties_ptrtype & materialProperties() { return M_materialProperties; }
-    material_properties_ptrtype const& materialProperties() const { return M_materialProperties; }
-
     void updateRho(double rho)
     {
         this->materialProperties()->setCstDensity(rho);
@@ -1070,45 +1066,30 @@ public :
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
 
-
-    //___________________________________________________________________________________//
-#if 0
-    auto allFields( std::string const& prefix = "" ) const
-        {
-            std::map<std::string,element_normalstress_ptrtype> fields_normalstress;
-            fields_normalstress[prefixvm(prefix,"trace.normal-stress")] = this->fieldNormalStressPtr();
-            fields_normalstress[prefixvm(prefix,"trace.wall-shear-stress")] = this->fieldWallShearStressPtr();
-#if 0
-            std::map<std::string,element_trace_p0c_vectorial_ptrtype> fields_NoSlipRigidTranslationalVelocity;
-            std::map<std::string,typename BodyBoundaryCondition::element_trace_angular_velocity_ptrtype> fields_NoSlipRigidAngularVelocity;
-            if ( !M_bodySetBC.empty() )
-            {
-                fields_NoSlipRigidTranslationalVelocity[prefixvm(prefix,"trace.body.translational-velocity")]= M_bodySetBC.begin()->second.fieldTranslationalVelocityPtr();
-                fields_NoSlipRigidAngularVelocity[prefixvm(prefix,"trace.body.angular-velocity")]=M_bodySetBC.begin()->second.fieldAngularVelocityPtr();
-            }
-#endif
-            std::map<std::string, typename mesh_ale_type::ale_map_element_ptrtype> fields_disp;
-            if ( this->isMoveDomain() )
-                fields_disp[prefixvm(prefix,"displacement")] = this->meshALE()->displacement();
-            return hana::make_tuple( std::make_pair( prefixvm( prefix,"velocity"),this->fieldVelocityPtr() ),
-                                     std::make_pair( prefixvm( prefix,"pressure"),this->fieldPressurePtr() ),
-                                     std::make_pair( prefixvm( prefix,"vorticity"),this->fieldVorticityPtr() ),
-                                     fields_disp,
-                                     fields_normalstress
-                                     //,fields_NoSlipRigidTranslationalVelocity,fields_NoSlipRigidAngularVelocity
-                                     );
-        }
-#endif
     //___________________________________________________________________________________//
 
     template <typename SymbExprType>
     auto exprPostProcessExportsToolbox( SymbExprType const& se, std::string const& prefix ) const
         {
             auto const& u = this->fieldVelocity();
+            auto const& p = this->fieldPressure();
+
             typedef decltype(curlv(u)) _expr_vorticity_type;
             std::map<std::string,std::vector<std::tuple< _expr_vorticity_type, elements_reference_wrapper_t<mesh_type>, std::string > > > mapExprVorticity;
             mapExprVorticity[prefixvm(prefix,"vorticity")].push_back( std::make_tuple( curlv(u), M_rangeMeshElements, "element" ) );
-            return hana::make_tuple( mapExprVorticity );
+
+            auto rangeTrace = this->functionSpaceVelocity()->template meshSupport<0>()->rangeBoundaryFaces();
+            auto sigmaExpr = this->stressTensorExpr( u,p,se );
+
+            using _expr_normalstresstensor_type = std::decay_t<decltype(sigmaExpr*N())>;
+            std::map<std::string,std::vector<std::tuple< _expr_normalstresstensor_type, faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprNormalStressTensor;
+            mapExprNormalStressTensor[prefixvm(prefix,"trace.normal-stress")].push_back( std::make_tuple( sigmaExpr*N(), rangeTrace, "element" ) );
+
+            auto wssExpr = sigmaExpr*vf::N() - (trans(sigmaExpr*vf::N())*vf::N())*vf::N();
+            std::map<std::string,std::vector<std::tuple< std::decay_t<decltype(wssExpr)> , faces_reference_wrapper_t<mesh_type>, std::string > > > mapExprWallShearStress;
+            mapExprWallShearStress[prefixvm(prefix,"trace.wall-shear-stress")].push_back( std::make_tuple( wssExpr, rangeTrace, "element" ) );
+
+            return hana::make_tuple( mapExprVorticity, mapExprNormalStressTensor, mapExprWallShearStress );
         }
 
     template <typename SymbExprType>
@@ -1630,7 +1611,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
     if constexpr ( nOrderGeo <= 2 )
     {
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
-        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr/*, exportsExpr*/ );
+        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr, exportsExpr );
     }
     if ( M_isHOVisu )
         this->exportResultsImplHO( time );
