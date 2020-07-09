@@ -1641,12 +1641,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
          if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
-            auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
-            bool usePartialMeshSupport = velocityMeshSupport->isPartialSupport();
-            if ( usePartialMeshSupport )
-                velocityMeshSupport->updateBoundaryInternalFaces();
 #if 1
-            auto rangeTrace = ( !usePartialMeshSupport )? boundaryfaces(this->mesh()) : this->functionSpaceVelocity()->dof()->meshSupport()->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
+            auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
+            auto rangeTrace = velocityMeshSupport->rangeBoundaryFaces(); // not very nice, need to store the meshsupport
             M_meshTrace = createSubmesh( _mesh=velocityMeshSupport/*this->mesh()*/, _range=rangeTrace, _context=size_type(EXTRACTION_KEEP_MESH_RELATION|EXTRACTION_KEEP_MARKERNAMES_ONLY_PRESENT),_view=true );
 #else
             auto rangeTrace = M_bodySetBC.begin()->second.rangeMarkedFacesOnFluid();
@@ -1665,12 +1662,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
                 if ( M_exporterTrace && M_exporterTrace->doExport() )
                     M_exporterTrace->restart( this->timeInitial() );
             }
-
-#if 0
-            if ( this->hasPostProcessExportsField( "trace_mesh", "trace.normal-stress" ) ||
-                 this->hasPostProcessExportsField( "trace_mesh", "trace.wall-shear-stress" ) )
-                this->createFunctionSpacesNormalStress();
-#endif
         }
     }
 
