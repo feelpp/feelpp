@@ -445,10 +445,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
 
     private :
 
-        //typename ModelExpressionScalar::expr_scalar_type::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
         typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
     };
-#if 0
+
     /**
      * -------------------------------------------------------------------------------------------------  *
      * -------------------------------------------------------------------------------------------------  *
@@ -467,39 +466,49 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef typename super_type::value_type value_type;
         typedef typename super_type::matrix_shape_type matrix_shape_type;
         using ret_type = typename super_type::ret_type;
-        
+
         tensorFluidStressTensorPowerLaw( expr_type const& expr,
-                                         Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
-                                         Feel::FeelModels::DynamicViscosityPowerLaw const& powerLawModel )
+                                         Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_powerLawModel( powerLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_muIsInInterval( this->gmc()->xRefs().size2() )
+            M_muIsInInterval( this->gmc()->xRefs().size2() ),
+            M_kExprTensor( this->expr().template materialPropertyExpr<1,1>("consistency-index").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("power-law-index").evaluator( geom ) ),
+            M_muMinExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-min").evaluator( geom ) ),
+            M_muMaxExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-max").evaluator( geom ) )
         {}
-        tensorFluidStressTensorPowerLaw( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev,
-                                         Feel::FeelModels::DynamicViscosityPowerLaw const& powerLawModel )
+        tensorFluidStressTensorPowerLaw( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_powerLawModel( powerLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_muIsInInterval( this->gmc()->xRefs().size2() )
+            M_muIsInInterval( this->gmc()->xRefs().size2() ),
+            M_kExprTensor( this->expr().template materialPropertyExpr<1,1>("consistency-index").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("power-law-index").evaluator( geom ) ),
+            M_muMinExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-min").evaluator( geom ) ),
+            M_muMaxExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-max").evaluator( geom ) )
         {}
-        tensorFluidStressTensorPowerLaw( expr_type const& expr,Geo_t const& geom,
-                                         Feel::FeelModels::DynamicViscosityPowerLaw const& powerLawModel )
+        tensorFluidStressTensorPowerLaw( expr_type const& expr,Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_powerLawModel( powerLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
             M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_muIsInInterval( this->gmc()->xRefs().size2() )
+            M_muIsInInterval( this->gmc()->xRefs().size2() ),
+            M_kExprTensor( this->expr().template materialPropertyExpr<1,1>("consistency-index").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("power-law-index").evaluator( geom ) ),
+            M_muMinExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-min").evaluator( geom ) ),
+            M_muMaxExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-max").evaluator( geom ) )
         {}
 
         void update( Geo_t const& geom ) override
         {
             super_type::updateCommon( geom );
+            M_kExprTensor.update( geom );
+            M_nExprTensor.update( geom );
+            M_muMinExprTensor.update( geom );
+            M_muMaxExprTensor.update( geom );
 
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             M_muIsInInterval.resize( this->locRes().size() );
@@ -508,6 +517,10 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void update( Geo_t const& geom, uint16_type face ) override
         {
             super_type::updateCommon( geom, face );
+            M_kExprTensor.update( geom,face );
+            M_nExprTensor.update( geom,face );
+            M_muMinExprTensor.update( geom,face );
+            M_muMaxExprTensor.update( geom,face );
 
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             M_muIsInInterval.resize( this->locRes().size() );
@@ -517,12 +530,13 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type power_k_generic = M_powerLawModel.k();
-            const value_type power_n_generic = (M_powerLawModel.n()-1.)/2.;
-            const value_type muMin = M_powerLawModel.muMin();
-            const value_type muMax = M_powerLawModel.muMax();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type power_k_generic = M_kExprTensor.evalq(0,0,q);
+                const value_type power_n_generic = ( M_nExprTensor.evalq(0,0,q) - 1.)/2.;
+                const value_type muMin = M_muMinExprTensor.evalq(0,0,q);
+                const value_type muMax = M_muMaxExprTensor.evalq(0,0,q);
+
                 //auto const mu_powerlaw = power_k_generic*pow( 2.0*inner(defv,defv) /*+chiInv*/ , cst( power_n_generic ) )/**chiSup*/;
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
@@ -572,12 +586,13 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<3> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type power_k_generic = M_powerLawModel.k();
-            const value_type power_n_generic = (M_powerLawModel.n()-1.)/2.;
-            const value_type muMin = M_powerLawModel.muMin();
-            const value_type muMax = M_powerLawModel.muMax();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type power_k_generic = M_kExprTensor.evalq(0,0,q);
+                const value_type power_n_generic = ( M_nExprTensor.evalq(0,0,q) - 1.)/2.;
+                const value_type muMin = M_muMinExprTensor.evalq(0,0,q);
+                const value_type muMax = M_muMaxExprTensor.evalq(0,0,q);
+
                 //auto const mu_powerlaw = power_k_generic*pow( 2.0*inner(defv,defv) /*+chiInv*/ , cst( power_n_generic ) )/**chiSup*/;
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
@@ -743,12 +758,14 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             return ret_type(thelocRes.data());
         }
     private :
-        Feel::FeelModels::DynamicViscosityPowerLaw const& M_powerLawModel;
+
         typename super_type::array_value_type M_locEvalPrecompute;
         typename super_type::array_value_type M_locEvalMu;
         std::vector<bool> M_muIsInInterval;
-    };
+        typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_kExprTensor, M_nExprTensor, M_muMinExprTensor, M_muMaxExprTensor;
 
+    };
+#if 0
     /**
      *
      */
@@ -1546,15 +1563,10 @@ public:
             {
             auto const& dynamicViscosity = expr.dynamicViscosity();
             if ( dynamicViscosity.isNewtonianLaw() )
-            {
-                //if ( expr.useNewNewtonianVersion() )
                 M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
-                // else
-                //     M_tensorbase.reset( new tensorFluidStressTensorNewtonianOLD<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
-            }
-#if 0
             else if ( dynamicViscosity.isPowerLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,dynamicViscosity.powerLaw()) );
+                M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+#if 0
             else if ( dynamicViscosity.isWalburnSchneckLaw() )
                 M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,dynamicViscosity.walburnSchneckLaw().powerLaw()) );
             else if ( dynamicViscosity.isCarreauLaw() )

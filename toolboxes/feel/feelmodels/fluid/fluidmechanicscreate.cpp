@@ -917,6 +917,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        if ( physicFluidData->dynamicViscosity().isNewtonianLaw() )
+            continue;
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
+            std::string newMuExprStr = (boost::format("%1%:%1%")%_viscositySymbol ).str();
+            ModelExpression newMuExpr;
+            newMuExpr.setExpr( newMuExprStr, this->worldComm(), this->repository().expr() );
+            this->materialsProperties()->addProperty( this->materialsProperties()->materialProperties( matName ), "dynamic-viscosity", newMuExpr, true );
+        }
+    }
+
 
 
     if ( !M_mesh )
