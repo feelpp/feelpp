@@ -208,7 +208,7 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
             auto itFindTypeInDesc = subPhyicsDesc.find( subPhysicType );
             CHECK( itFindTypeInDesc != subPhyicsDesc.end() ) << "type not given in subPhyicsDesc";
-            std::string const& subPhysicDefaultName = itFindTypeInDesc->second;
+            std::string const& subPhysicDefaultName = std::get<0>( itFindTypeInDesc->second );
             mapSubPhysicsTypeToDefaultNames[subPhysicType].insert( subPhysicDefaultName );
             parentPhysicToUpdate.push_back( physicData );
         }
@@ -218,13 +218,14 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
     bool useModelNameInJson = models.useModelName();
     for ( auto const& [subPhysicType,subPhysicDefaultNames] : mapSubPhysicsTypeToDefaultNames )
     {
+        auto mSubPhysics = std::get<1>( subPhyicsDesc.find( subPhysicType )->second );
         for ( std::string const& subName : subPhysicDefaultNames )
         {
             auto const& theSubModel = useModelNameInJson && models.hasModel( subName )? models.model( subName ) : ModelModel{};
             if ( std::find_if( theSubModel.variants().begin(), theSubModel.variants().end(), [&subName]( auto const& varMod ) { return subName == varMod.first; } ) == theSubModel.variants().end() )
-                M_physics.emplace( subName, ModelPhysic<Dim>::New( *this, subPhysicType, subName, theSubModel ) );
+                M_physics.emplace( subName, ModelPhysic<Dim>::New( *mSubPhysics, subPhysicType, subName, theSubModel ) );
             for ( auto const& [variantName,variantModel] : theSubModel.variants() )
-                M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, subPhysicType, variantName, variantModel ) );
+                M_physics.emplace( variantName, ModelPhysic<Dim>::New( *mSubPhysics, subPhysicType, variantName, variantModel ) );
         }
     }
 
@@ -256,7 +257,7 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
             auto itFindTypeInDesc = subPhyicsDesc.find( subPhysicType );
             CHECK( itFindTypeInDesc != subPhyicsDesc.end() ) << "type not given in subPhyicsDesc";
-            std::string const& subPhysicDefaultName = itFindTypeInDesc->second;
+            std::string const& subPhysicDefaultName = std::get<0>( itFindTypeInDesc->second );
 
             auto itFindSubphysic = std::find_if( M_physics.begin(), M_physics.end(), [&subPhysicType,&subPhysicDefaultName]( auto const& e ) { return e.second->type() == subPhysicType && e.second->name() == subPhysicDefaultName; } );
             CHECK( itFindSubphysic != M_physics.end() ) << "subphysic not found";
