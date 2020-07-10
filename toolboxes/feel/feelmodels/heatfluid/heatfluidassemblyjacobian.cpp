@@ -16,7 +16,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess( DataNewtonInitialGuess 
     vector_ptrtype& U = data.initialGuess();
     auto mctx = this->modelContext( U, this->heatModel(), this->fluidModel() );
     M_heatModel->updateNewtonInitialGuess( data, mctx );
-    M_fluidModel->updateNewtonInitialGuess( data );
+    M_fluidModel->updateNewtonInitialGuess( data, mctx );
     this->log("HeatFluid","updateNewtonInitialGuess","finish" );
 }
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -33,7 +33,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     this->log("HeatFluid","updateJacobian", "start"+sc);
 
     auto mctx = this->modelContext( XVec, this->heatModel(), this->fluidModel() );
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
     auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
     auto const& p = mctx.field( fluid_model_type::FieldTag::pressure(this->fluidModel().get()), "pressure" );
@@ -48,7 +48,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
     size_type blockIndexPressure = this->fluidModel()->startBlockSpaceIndexVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
 
     M_heatModel->updateJacobian( data, mctx );
-    M_fluidModel->updateJacobian( data/*, symbolsExpr*/ );
+    M_fluidModel->updateJacobian( data, mctx );
 
     if ( buildNonCstPart )
     {
@@ -72,17 +72,10 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
                 auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
 
-                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-                auto rhoExpr = rho.expr();
-                auto beta = thermalExpansion.expr();
-#if 0
-                form2( _test=XhT,_trial=XhT,_matrix=J,
-                       _rowstart=M_heatModel->rowStartInMatrix(),
-                       _colstart=M_heatModel->colStartInMatrix() ) +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradt(t)*idv(u))*id(t),
-                               _geomap=this->geomap() );
-#endif
+                auto rhoHeatCapacityExpr = expr( rhoHeatCapacity.expr(), se );
+                auto rhoExpr = expr( rho.template expr<1,1>(), se );
+                auto beta = expr( thermalExpansion.template expr<1,1>(), se );
+
                 form2( _test=XhT,_trial=XhV,_matrix=J,
                        _rowstart=M_heatModel->rowStartInMatrix(),
                        _colstart=M_fluidModel->colStartInMatrix() ) +=
@@ -143,6 +136,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 
                 if ( M_fluidModel->stabilizationGLS() )
                 {
+#if 0 // TODO VINCENT
                     auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
                     //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                     auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
@@ -151,6 +145,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     auto XhP = M_fluidModel->functionSpacePressure();
                     //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
                     M_fluidModel->updateJacobianStabilisationGLS( data, *u, *p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
+#endif
                 }
             } // matName
         } // physic

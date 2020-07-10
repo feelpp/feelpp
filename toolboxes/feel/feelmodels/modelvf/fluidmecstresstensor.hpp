@@ -1478,6 +1478,14 @@ public:
             return new_this_type( M_exprGradVelocity,M_exprIdPressure,M_physicFluid,M_matProps,M_polynomialOrder,M_withPressureTerm,newse );
         }
 
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            CHECK( false ) << "not implemented";
+            return *this;
+        }
+
 
     expr_grad_velocity_type const& expressionGradVelocity() const { return M_exprGradVelocity; }
     expr_id_pressure_type const& expressionIdPressure() const { return M_exprIdPressure; }
