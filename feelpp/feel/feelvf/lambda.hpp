@@ -87,6 +87,9 @@ public:
     //! expression is polynomial?
     constexpr bool isPolynomial() const { return false; }
 
+    template <typename ExpandSymbolsExprType>
+    auto applySymbolsExpr( ExpandSymbolsExprType const& se ) const { return *this; }
+
     template<typename ExprT>
     typename Lambda<ExprT>::type
     operator()( ExprT const& e )

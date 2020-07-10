@@ -825,4 +825,15 @@ BOOST_AUTO_TEST_CASE( test_7 )
     auto lap_a5 = laplacian( a5 );
     BOOST_CHECK_CLOSE( lap_a5.evaluate()(0,0), 32, 1e-12 );
 }
+
+BOOST_AUTO_TEST_CASE( test_8 )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("2*u+v*w:u:v:w");
+    a1b.setParameterValues( { { "w", 2 } } );
+    auto a1l = expr( a1b, se );
+    auto a1 = a1l( cst(3.),cst(5.) );
+    BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 16, 1e-12 );
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -223,9 +223,7 @@ public :
 
     using model_physic_type = ModelPhysic<nDim>;
     using model_physic_ptrtype = std::shared_ptr<model_physic_type>;
-
-    //using subphysic_description_type = std::map<std::pair<std::string,std::string>, std::map<std::string,std::string> >;
-    using subphysic_description_type = std::map<std::string,std::string>;
+    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
 
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
