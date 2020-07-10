@@ -1032,18 +1032,33 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
+#if 1
             auto seToolbox = this->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
             return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+#else
+            return symbols_expression_empty_t{};
+#endif
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
     template <typename ModelFieldsType>
     auto symbolsExprToolbox( ModelFieldsType const& mfields ) const
         {
-            return symbols_expression_empty_t{};
+            auto const& u = mfields.field( FieldTag::velocity(this), "velocity" );
+
+            using _expr_viscosity_type =  std::decay_t<decltype( this->dynamicViscosityExpr(u,std::string{}) )>;
+            symbol_expression_t<_expr_viscosity_type> se_viscosity;
+            for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+            {
+                std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
+                auto _viscosityExpr = this->dynamicViscosityExpr( u, matName );
+                se_viscosity.add( _viscositySymbol, _viscosityExpr );
+            }
+
+            return Feel::vf::symbolsExpr( se_viscosity );
         }
 
     //___________________________________________________________________________________//
@@ -1161,6 +1176,22 @@ public :
             return this->dynamicViscosityExpr( this->fieldVelocity(), se );
         }
 
+    template <typename VelocityFieldType, typename SymbolsExprType = symbols_expression_empty_t>
+    auto dynamicViscosityExpr( VelocityFieldType const& u, std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{},
+                               typename std::enable_if_t< is_functionspace_element_v< unwrap_ptr_t<VelocityFieldType> > >* = nullptr ) const
+        {
+            auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+            CHECK( mphysics.size() == 1 ) << "something wrong";
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            return Feel::FeelModels::fluidMecViscosity(gradv(u),*physicFluidData,matProps,se);
+        }
+
+    template <typename SymbolsExprType = symbols_expression_empty_t>
+    auto dynamicViscosityExpr( std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            return this->dynamicViscosityExpr( this->fieldVelocity(), matName, se );
+        }
 
     //___________________________________________________________________________________//
     // boundary conditions + body forces

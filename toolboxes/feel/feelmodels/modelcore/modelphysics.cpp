@@ -53,6 +53,10 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     if ( M_type == "fluid" || M_type == "heat-fluid" )
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "consistency-index", "mu_k", { scalarShape } );
+        this->addMaterialPropertyDescription( "power-law-index", "mu_power_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-min", "mu_min", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-max", "mu_max", { scalarShape } );
     }
 
 }

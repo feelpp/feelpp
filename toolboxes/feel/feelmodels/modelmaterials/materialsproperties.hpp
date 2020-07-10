@@ -41,6 +41,9 @@ public :
 
     void add( std::string const& propName, ModelExpression const& expr )
         {
+            auto itFind = this->find( propName );
+            if ( itFind != this->end() )
+                this->erase( itFind );
             this->emplace(propName, MaterialProperty(propName, expr) );
         }
 
@@ -376,6 +379,14 @@ public :
 
     MaterialProperties const&
     materialProperties( std::string const& matName ) const
+        {
+            auto itFindMatProp = M_materialNameToProperties.find( matName );
+            CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
+            return itFindMatProp->second;
+        }
+
+    MaterialProperties &
+    materialProperties( std::string const& matName )
         {
             auto itFindMatProp = M_materialNameToProperties.find( matName );
             CHECK( itFindMatProp != M_materialNameToProperties.end() ) << "material name not registered : " << matName;
