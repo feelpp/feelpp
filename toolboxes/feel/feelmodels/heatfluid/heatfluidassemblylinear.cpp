@@ -147,10 +147,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) cons
                                       this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields), this->symbolsExpr( mfields ) );
 
-    //auto mctx = this->modelContext( vecCurrentSolution, M_heatModel->startBlockSpaceIndexVector(), M_fluidModel->startBlockSpaceIndexVector() );
-    // auto const& symbolsExpr = mctx.symbolsExpr();
-    // //const vector_ptrtype& vecCurrentSolution = data.currentSolution();
-    // auto mctx = this->modelContext( /*vecCurrentSolution, startBlockIndexTemperature, startBlockIndexElectricPotential*/ );
     M_heatModel->updateLinearPDE( data,mctx );
 }
 
@@ -162,7 +158,7 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data ) const
 {
-    const vector_ptrtype& vecCurrentPicardSolution = data.currentSolution();
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
     bool buildCstPart = data.buildCstPart();
@@ -177,10 +173,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
         timeSteppingScaling = data.doubleInfo( prefixvm(M_fluidModel->prefix(),"time-stepping.scaling") );
 
 
+    auto mfields = this->modelFields( this->fluidModel()->modelFields( vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector(), this->fluidModel()->keyword() ),
+                                      this->heatModel()->modelFields( this->heatModel()->keyword() ) );
+    auto mctx = Feel::FeelModels::modelContext( std::move(mfields), this->symbolsExpr( mfields ) );
+    auto const& se = mctx.symbolsExpr();
+    auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+    auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
+    //auto const& p = mctx.field( fluid_model_type::FieldTag::pressure(this->fluidModel().get()), "pressure" );
+
     auto XhV = M_fluidModel->functionSpaceVelocity();
-    auto const& u = M_fluidModel->fieldVelocity();
     auto XhT = M_heatModel->spaceTemperature();
-    auto const& t = M_heatModel->fieldTemperature();
 
     auto mylfV = form1( _test=XhV, _vector=F,
                         _rowstart=M_fluidModel->rowStartInVector() );
@@ -194,8 +196,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
 
             auto const& rho = this->materialsProperties()->rho( matName );
             auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-            auto const& rhoExpr = rho.expr();
-            auto const& betaExpr = thermalExpansion.expr();
+            auto const& rhoExpr = expr( rho.template expr<1,1>(), se );
+            auto const& betaExpr = expr( thermalExpansion.template expr<1,1>(), se );
             double T0 = M_BoussinesqRefTemperature;
 
             mylfV +=
@@ -203,6 +205,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
                            _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
 
+#if 0 // TODO VINCENT
             if ( M_fluidModel->stabilizationGLS() )
             {
                 auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
@@ -221,6 +224,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
                     M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
 
             }
+#endif
         }
     }
 

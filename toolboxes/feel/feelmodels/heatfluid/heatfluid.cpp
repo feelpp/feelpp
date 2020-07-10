@@ -215,6 +215,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_fluidModel->setManageParameterValuesOfModelProperties( false );
     }
     M_fluidModel->setMesh( this->mesh() );
+    M_fluidModel->setMaterialsProperties( M_materialsProperties );
     M_fluidModel->init( false );
 
     if ( !this->isStationary() )
@@ -543,29 +544,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     if ( !M_useNaturalConvection )
     {
         M_fluidModel->solve();
-#if 0
-        M_heatModel->setFieldVelocityConvectionIsUsed( true );
-        for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-        {
-            auto const& range = rangeData.second;
-            M_heatModel->updateFieldVelocityConvection( range,idv(M_fluidModel->fieldVelocity()) );
-        }
-#endif
         M_heatModel->solve();
     }
     else
     {
         if ( M_useSemiImplicitTimeScheme )
         {
-#if 0
-            M_heatModel->setFieldVelocityConvectionIsUsed( true );
-            auto const& uConvection = *M_fluidModel->fieldConvectionVelocityExtrapolatedPtr();
-            for ( auto const& rangeData : this->rangeMeshElementsByMaterial() )
-            {
-                auto const& range = rangeData.second;
-                M_heatModel->updateFieldVelocityConvection( range,idv(uConvection) );
-            }
-#endif
             M_heatModel->solve();
             M_fluidModel->solve();
         }

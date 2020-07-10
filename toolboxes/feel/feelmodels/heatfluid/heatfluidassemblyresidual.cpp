@@ -37,7 +37,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     //auto mesh = this->mesh();
 
     auto mctx = this->modelContext( XVec, /*this->rowStartInVector()+*/this->heatModel()->rowStartInVector(), /*this->rowStartInVector()+*/this->fluidModel()->rowStartInVector() );
-    auto const& symbolsExpr = mctx.symbolsExpr();
+    auto const& se = mctx.symbolsExpr();
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
     auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
     auto const& p = mctx.field( fluid_model_type::FieldTag::pressure(this->fluidModel().get()), "pressure" );
@@ -49,20 +49,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     size_type blockIndexTemperature = this->heatModel()->rowStartInVector() + this->heatModel()->startSubBlockSpaceIndex("temperature");
     size_type blockIndexVelocity = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("velocity");
     size_type blockIndexPressure = this->fluidModel()->rowStartInVector() + this->fluidModel()->startSubBlockSpaceIndex("pressure");
-    // auto const t = XhT->element(XVec, blockIndexTemperature );
-    // auto const u = XhV->element(XVec, blockIndexVelocity );
-    // auto const p = XhP->element(XVec, blockIndexPressure );
-
-    // //auto symbolsExpr = this->symbolsExpr(t,u,p);
-    // auto mfield = this->modelFields( XVec, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
-    // auto symbolsExpr = this->symbolsExpr( mfield );
-
 
 
     if ( doAssemblyHeat )
         M_heatModel->updateResidual( data, mctx );
     if ( doAssemblyFluid )
-        M_fluidModel->updateResidual( data/*,symbolsExpr*/ );
+        M_fluidModel->updateResidual( data, mctx );
 
     double timeSteppingScaling_fluid = 1.;
     if ( !M_fluidModel->isStationaryModel() && doAssemblyFluid )
@@ -73,10 +65,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     if ( buildNonCstPart )
     {
-        //auto XhV = M_fluidModel->functionSpaceVelocity();
-        //auto const u = XhV->element(XVec, M_fluidModel->rowStartInVector()+0 );
-        //auto XhT = M_heatModel->spaceTemperature();
-        //auto const t = XhT->element(XVec, M_heatModel->rowStartInVector()+0 );
         auto mylfT = form1( _test=XhT, _vector=R,
                             _rowstart=M_heatModel->rowStartInVector()+0 );
         auto mylfV = form1( _test=XhV, _vector=R,
@@ -88,21 +76,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
             for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
             {
                 auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-                auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
-                auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
-#if 0
-                if ( doAssemblyHeat )
-                {
-                    mylfT +=
-                        integrate( _range=range,
-                                   _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idv(u))*id(t),
-                                   _geomap=this->geomap() );
-                }
-#endif
+                //auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
+                //auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
+
                 auto const& rho = this->materialsProperties()->rho( matName );
                 auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
-                auto rhoExpr = rho.expr();
-                auto beta = thermalExpansion.expr();
+                auto rhoExpr = expr( rho.template expr<1,1>(), se );
+                auto beta = expr( thermalExpansion.template expr<1,1>(), se );
                 double T0 = M_BoussinesqRefTemperature;
                 if ( doAssemblyFluid )
                 {
@@ -129,7 +109,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     else
                         M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
                 }
-#endif
+
 
                 if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                 {
@@ -149,6 +129,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     else
                         M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual );
                 }
+#endif
             } //matName
         } // physic
     } // nonCstPart
