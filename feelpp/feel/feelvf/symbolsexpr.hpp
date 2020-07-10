@@ -117,6 +117,13 @@ struct SymbolExpr1
     SymbolExprComponentSuffix const& componentSuffix() const { return M_secs; }
     SymbolExprUpdateFunction const& updateFunction() const { return M_seuf; }
 
+    template<typename... TheExpr>
+    auto
+    applyLambda( TheExpr... e ) const
+    {
+        using new_expr_type = typename ExprT::template Lambda<TheExpr...>::type;
+        return SymbolExpr1<new_expr_type>( M_symbol, M_expr(e...), M_secs, M_seuf );
+    }
 private :
     std::string M_symbol;
     expr_type M_expr;
@@ -166,6 +173,24 @@ struct SymbolExpr : public std::vector<SymbolExpr1<ExprT>>
     {
         this->push_back( symbolexpr1_type( s,e,secs,seuf ) );
     }
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        using type = SymbolExpr<typename ExprT::template Lambda<TheExpr...>::type>;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    applyLambda( TheExpr... e ) const
+    {
+        typename Lambda<TheExpr...>::type res;
+        res.reserve( this->size() );
+        for ( auto const& se1 : *this )
+            res.push_back( se1.applyLambda( e... ) );
+        return res;
+    }
+
 };
 
 template<typename ExprT>
@@ -248,6 +273,31 @@ struct SymbolsExpr
 
     tuple_type const& tuple() const { return tupleExpr; }
     tuple_type & tuple() { return tupleExpr; }
+
+
+    template<typename... TheExpr>
+    struct Lambda
+    {
+        struct TransformLambdaExpr
+        {
+            template <typename T>
+            constexpr auto operator()(T const& t) const
+                {
+                    return typename T::template Lambda<TheExpr...>::type{};
+                }
+        };
+
+        using lambda_tuple_type = std::decay_t<decltype( hana::transform( tuple_type{}, TransformLambdaExpr{} ) ) >;
+        using type = SymbolsExpr<lambda_tuple_type>;
+    };
+
+    template<typename... TheExpr>
+    typename Lambda<TheExpr...>::type
+    applyLambda( TheExpr... e ) const
+        {
+            return typename Lambda<TheExpr...>::type( hana::transform( tupleExpr, [&e...]( auto const& t) { return t.applyLambda(e...); } ) );
+        }
+
 
     tuple_type tupleExpr;
 };
