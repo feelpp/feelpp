@@ -3336,16 +3336,17 @@ public:
         ptsInContext( Context_t const & context,  mpl::int_<2> ) const
         {
             //new context for the interpolation
-            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type> gmc_interp_type;
+            typedef typename Context_t::gm_type::template Context< Context_t::context|vm::POINT, typename Context_t::element_type, Context_t::subEntityCoDim> gmc_interp_type;
             typedef std::shared_ptr<gmc_interp_type> gmc_interp_ptrtype;
 
-            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
-            typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
+            // typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::permutation_type permutation_type;
+            // typedef typename Context_t::gm_type::template Context<Context_t::context,typename Context_t::element_type>::precompute_ptrtype precompute_ptrtype;
 
             //not good because ?
             //gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(),context.pcFaces(), context.faceId()) );
             //good with this
-            std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
+            //std::vector<std::map<permutation_type, precompute_ptrtype> > __geo_pcfaces = context.pcFaces();
+            auto __geo_pcfaces = context.pcFaces();
             gmc_interp_ptrtype __c_interp( new gmc_interp_type( context.geometricMapping(), context.element_c(), __geo_pcfaces , context.faceId() ) );
 
             return __c_interp->xReal();
