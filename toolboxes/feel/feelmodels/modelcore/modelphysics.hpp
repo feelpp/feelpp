@@ -153,11 +153,10 @@ public :
         bool isPowerLaw() const { return (this->lawName() == "power_law"); }
         bool isCarreauLaw() const { return (this->lawName() == "carreau_law"); }
         bool isCarreauYasudaLaw() const { return (this->lawName() == "carreau-yasuda_law"); }
-        bool isWalburnSchneckLaw() const { return (this->lawName() == "walburn-schneck_law"); }
 
         bool checkLawName() const
             {
-                return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() || this->isWalburnSchneckLaw() );
+                return ( this->isNewtonianLaw() || this->isPowerLaw() || this->isCarreauLaw() || this->isCarreauYasudaLaw() );
             }
 
     private :

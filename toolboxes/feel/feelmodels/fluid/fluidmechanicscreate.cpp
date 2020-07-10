@@ -213,6 +213,40 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("FluidMechanics","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
+{
+    this->log("FluidMechanics","initMesh", "start");
+    this->timerTool("Constructor").start();
+
+    auto paramValues = this->modelProperties().parameters().toParameterValues();
+    this->modelProperties().materials().setParameterValues( paramValues );
+    if ( !M_materialsProperties )
+    {
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
+    }
+
+    // modif expression of a material properties with non newtonian cases
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        if ( physicFluidData->dynamicViscosity().isNewtonianLaw() )
+            continue;
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
+            std::string newMuExprStr = (boost::format("%1%:%1%")%_viscositySymbol ).str();
+            ModelExpression newMuExpr;
+            newMuExpr.setExpr( newMuExprStr, this->worldComm(), this->repository().expr() );
+            this->materialsProperties()->addProperty( this->materialsProperties()->materialProperties( matName ), "dynamic-viscosity", newMuExpr, true );
+        }
+    }
+
+    double tElapsed = this->timerTool("Constructor").stop("initMesh");
+    this->log("FluidMechanics","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
+}
 //---------------------------------------------------------------------------------------------------------//
 #if 0
 namespace detail
@@ -908,31 +942,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
         this->initPhysics( this->keyword(), this->modelProperties().models() );
 
-    // material properties
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
-    if ( !M_materialsProperties )
-    {
-        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
-        M_materialsProperties->updateForUse( this->modelProperties().materials() );
-    }
-
-    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
-    {
-        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-        if ( physicFluidData->dynamicViscosity().isNewtonianLaw() )
-            continue;
-        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
-        {
-            std::string _viscositySymbol = (boost::format("%1%_%2%_mu")%this->keyword() %matName).str();
-            std::string newMuExprStr = (boost::format("%1%:%1%")%_viscositySymbol ).str();
-            ModelExpression newMuExpr;
-            newMuExpr.setExpr( newMuExprStr, this->worldComm(), this->repository().expr() );
-            this->materialsProperties()->addProperty( this->materialsProperties()->materialProperties( matName ), "dynamic-viscosity", newMuExpr, true );
-        }
-    }
-
-
+    this->initMaterialProperties();
 
     if ( !M_mesh )
         this->initMesh();

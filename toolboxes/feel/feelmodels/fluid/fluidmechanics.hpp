@@ -728,6 +728,7 @@ public:
 private :
     void loadParameterFromOptionsVm();
     void initMesh();
+    void initMaterialProperties();
     void initFunctionSpaces();
     void createALE();
     void initBoundaryConditions();

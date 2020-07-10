@@ -57,6 +57,13 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
         this->addMaterialPropertyDescription( "power-law-index", "mu_power_law_n", { scalarShape } );
         this->addMaterialPropertyDescription( "viscosity-min", "mu_min", { scalarShape } );
         this->addMaterialPropertyDescription( "viscosity-max", "mu_max", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-zero-shear", "mu_0", { scalarShape } );
+        this->addMaterialPropertyDescription( "viscosity-infinite-shear", "mu_inf", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-law-lambda", "mu_carreau_law_lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-law-n", "mu_carreau_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-lambda", "mu_carreau_yasuda_law_lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-n", "mu_carreau_yasuda_law_n", { scalarShape } );
+        this->addMaterialPropertyDescription( "carreau-yasuda-law-a", "mu_carreau_yasuda_law_a", { scalarShape } );
     }
 
 }
