@@ -158,7 +158,7 @@ densityviscosity_options(std::string const& prefix)
         (prefixvm(prefix,"viscosity.infinite_shear").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "parameter mu_inf for generalized Newtonian [ Pa.s ] ")
         (prefixvm(prefix,"viscosity.min").c_str(), Feel::po::value< double >()->default_value( 0.00345 ), "min viscosity with power law [ Pa.s ]  ")
         (prefixvm(prefix,"viscosity.max").c_str(), Feel::po::value< double >()->default_value( 0.056 ), "max viscosity with power law [ Pa.s ] ")
-        (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
+        // (prefixvm(prefix,"hematocrit").c_str(), Feel::po::value< double >()->default_value( 40 ), "hematocrit : RBC volume fraction (Vrbc/Vtotal) [ percentage ] ")
         (prefixvm(prefix,"power_law.n").c_str(), Feel::po::value< double >()->default_value( 0.6 ), "parameter n in power_law ")
         (prefixvm(prefix,"power_law.k").c_str(), Feel::po::value< double >()->default_value( 0.035 ), "parameter k in power_law [ Pa.s^n ] ")
         (prefixvm(prefix,"carreau_law.lambda").c_str(), Feel::po::value< double >()->default_value( 3.313 ), "parameter lambda in carreau_law [ s ] ")
@@ -166,13 +166,13 @@ densityviscosity_options(std::string const& prefix)
         (prefixvm(prefix,"carreau-yasuda_law.lambda").c_str(), Feel::po::value< double >()->default_value( 1.902 ), "parameter lambda in carreau-yasuda_law [ s ] ")
         (prefixvm(prefix,"carreau-yasuda_law.n").c_str(), Feel::po::value< double >()->default_value( 0.22 ), "parameter n in carreau-yasuda_law ")
         (prefixvm(prefix,"carreau-yasuda_law.a").c_str(), Feel::po::value< double >()->default_value( 1.25 ), "parameter a in carreau-yasuda_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C1").c_str(), Feel::po::value< double >()->default_value( 0.00797 ), "parameter C1 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C2").c_str(), Feel::po::value< double >()->default_value( 0.0608 ), "parameter C2 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C3").c_str(), Feel::po::value< double >()->default_value( 0.00499 ), "parameter C3 in walburn-schneck_law ")
-        (prefixvm(prefix,"walburn-schneck_law.C4").c_str(), Feel::po::value< double >()->default_value( 14.585 ), "parameter C4 in walburn-schneck_law [l/g] ")
-        (prefixvm(prefix,"TPMA").c_str(), Feel::po::value< double >()->default_value( 25.9 ), "parameter TPMA (Total Proteins Minus Albumin) [ g/l ] ")
+        // (prefixvm(prefix,"walburn-schneck_law.C1").c_str(), Feel::po::value< double >()->default_value( 0.00797 ), "parameter C1 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C2").c_str(), Feel::po::value< double >()->default_value( 0.0608 ), "parameter C2 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C3").c_str(), Feel::po::value< double >()->default_value( 0.00499 ), "parameter C3 in walburn-schneck_law ")
+        // (prefixvm(prefix,"walburn-schneck_law.C4").c_str(), Feel::po::value< double >()->default_value( 14.585 ), "parameter C4 in walburn-schneck_law [l/g] ")
+        // (prefixvm(prefix,"TPMA").c_str(), Feel::po::value< double >()->default_value( 25.9 ), "parameter TPMA (Total Proteins Minus Albumin) [ g/l ] ")
         ;
-    
+
     return densityviscosityOptions;
 }
 

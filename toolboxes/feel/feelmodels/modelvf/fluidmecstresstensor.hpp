@@ -765,7 +765,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_kExprTensor, M_nExprTensor, M_muMinExprTensor, M_muMaxExprTensor;
 
     };
-#if 0
+
     /**
      *
      */
@@ -777,36 +777,47 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
         using ret_type = typename super_type::ret_type;
-        
+
         tensorFluidStressTensorCarreau( expr_type const& expr,
-                                        Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
-                                        Feel::FeelModels::DynamicViscosityCarreauLaw const& carreauLawModel )
+                                        Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_carreauLawModel( carreauLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-n").evaluator( geom ) )
         {}
-        tensorFluidStressTensorCarreau( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev,
-                                        Feel::FeelModels::DynamicViscosityCarreauLaw const& carreauLawModel )
+        tensorFluidStressTensorCarreau( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_carreauLawModel( carreauLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-n").evaluator( geom ) )
         {}
-        tensorFluidStressTensorCarreau( expr_type const& expr,Geo_t const& geom,
-                                        Feel::FeelModels::DynamicViscosityCarreauLaw const& carreauLawModel )
+        tensorFluidStressTensorCarreau( expr_type const& expr,Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_carreauLawModel( carreauLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-law-n").evaluator( geom ) )
         {}
 
         void update( Geo_t const& geom ) override
         {
             super_type::updateCommon( geom );
+
+            M_lambdaExprTensor.update( geom );
+            M_nExprTensor.update( geom );
+            M_mu0ExprTensor.update( geom );
+            M_muInfExprTensor.update( geom );
 
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
@@ -815,6 +826,11 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom, face );
 
+            M_lambdaExprTensor.update( geom, face );
+            M_nExprTensor.update( geom, face );
+            M_mu0ExprTensor.update( geom, face );
+            M_muInfExprTensor.update( geom, face );
+
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
@@ -822,17 +838,18 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type mu_inf = M_carreauLawModel.muInf();
-            const value_type mu_0 = M_carreauLawModel.mu0();
-            const value_type carreau_lambda = M_carreauLawModel.lambda();
-            const value_type carreau_n = M_carreauLawModel.n();
-            const value_type carreau_lambda_pow2_time2 = math::pow(carreau_lambda,2.)*2.0;
-            const value_type carreauValPower =  (carreau_n-1)/2.0;
-            const value_type carreau_lambda2 = math::pow(carreau_lambda,2);
-            const value_type part1_carreauLaw = ( (carreau_n-1)/2.0 )*( mu_0 - mu_inf )*carreau_lambda2;
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+                const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+                const value_type carreau_lambda = M_lambdaExprTensor.evalq(0,0,q);
+                const value_type carreau_n = M_nExprTensor.evalq(0,0,q);
+                const value_type carreau_lambda_pow2_time2 = math::pow(carreau_lambda,2.)*2.0;
+                const value_type carreauValPower =  (carreau_n-1)/2.0;
+                const value_type carreau_lambda2 = math::pow(carreau_lambda,2);
+                const value_type part1_carreauLaw = ( (carreau_n-1)/2.0 )*( mu_0 - mu_inf )*carreau_lambda2;
+
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
                 const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1);
@@ -868,17 +885,18 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<3> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type mu_inf = M_carreauLawModel.muInf();
-            const value_type mu_0 = M_carreauLawModel.mu0();
-            const value_type carreau_lambda = M_carreauLawModel.lambda();
-            const value_type carreau_n = M_carreauLawModel.n();
-            const value_type carreau_lambda_pow2_time2 = math::pow(carreau_lambda,2.)*2.0;
-            const value_type carreauValPower =  (carreau_n-1)/2.0;
-            const value_type carreau_lambda2 = math::pow(carreau_lambda,2);
-            const value_type part1_carreauLaw = ( (carreau_n-1)/2.0 )*( mu_0 - mu_inf )*carreau_lambda2;
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+                const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+                const value_type carreau_lambda = M_lambdaExprTensor.evalq(0,0,q);
+                const value_type carreau_n = M_nExprTensor.evalq(0,0,q);
+                const value_type carreau_lambda_pow2_time2 = math::pow(carreau_lambda,2.)*2.0;
+                const value_type carreauValPower =  (carreau_n-1)/2.0;
+                const value_type carreau_lambda2 = math::pow(carreau_lambda,2);
+                const value_type part1_carreauLaw = ( (carreau_n-1)/2.0 )*( mu_0 - mu_inf )*carreau_lambda2;
+
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
                 const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1), du2vdz = gradVelocityEval(1,2);
@@ -946,8 +964,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/ , mpl::int_<2> /**/ ) const
         {
-            const value_type mu_inf = M_carreauLawModel.muInf();
-            const value_type mu_0 = M_carreauLawModel.mu0();
+            const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+            const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
             /*const value_type carreau_lambda = this->expr().viscosityModelDesc().carreau_lambda();
             const value_type carreau_n = this->expr().viscosityModelDesc().carreau_n();
             const value_type carreau_lambda2 = math::pow(carreau_lambda,2);*/
@@ -973,8 +991,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
-            const value_type mu_inf = M_carreauLawModel.muInf();
-            const value_type mu_0 = M_carreauLawModel.mu0();
+            const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+            const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
             /*const value_type carreau_lambda = this->expr().viscosityModelDesc().carreau_lambda();
             const value_type carreau_n = this->expr().viscosityModelDesc().carreau_n();
             const value_type carreau_lambda2 = math::pow(carreau_lambda,2);*/
@@ -1013,9 +1031,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             return ret_type(this->locMatrixShape().data());
         }
     private :
-        Feel::FeelModels::DynamicViscosityCarreauLaw const& M_carreauLawModel;
         typename super_type::array_value_type M_locEvalPrecompute;//M_locEvalDxD;
         typename super_type::array_value_type M_locEvalMu;
+        typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/> M_mu0ExprTensor, M_muInfExprTensor, M_lambdaExprTensor, M_nExprTensor;
     };
 
 
@@ -1030,36 +1048,51 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         typedef ExprType expr_type;
         typedef typename super_type::value_type value_type;
         using ret_type = typename super_type::ret_type;
-        
+
         tensorFluidStressTensorCarreauYasuda( expr_type const& expr,
-                                              Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu,
-                                              Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& carreauYasudaLawModel )
+                                              Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            M_carreauYasudaLawModel( carreauYasudaLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-n").evaluator( geom ) ),
+            M_aExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-a").evaluator( geom ) )
         {}
-        tensorFluidStressTensorCarreauYasuda( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev,
-                                              Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& carreauYasudaLawModel )
+        tensorFluidStressTensorCarreauYasuda( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_carreauYasudaLawModel( carreauYasudaLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-n").evaluator( geom ) ),
+            M_aExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-a").evaluator( geom ) )
         {}
-        tensorFluidStressTensorCarreauYasuda( expr_type const& expr,Geo_t const& geom,
-                                              Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& carreauYasudaLawModel )
+        tensorFluidStressTensorCarreauYasuda( expr_type const& expr,Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_carreauYasudaLawModel( carreauYasudaLawModel ),
             M_locEvalPrecompute( boost::extents[ this->gmc()->xRefs().size2()] ),
-            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] )
+            M_locEvalMu( boost::extents[ this->gmc()->xRefs().size2()] ),
+            M_mu0ExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-zero-shear").evaluator( geom ) ),
+            M_muInfExprTensor( this->expr().template materialPropertyExpr<1,1>("viscosity-infinite-shear").evaluator( geom ) ),
+            M_lambdaExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-lambda").evaluator( geom ) ),
+            M_nExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-n").evaluator( geom ) ),
+            M_aExprTensor( this->expr().template materialPropertyExpr<1,1>("carreau-yasuda-law-a").evaluator( geom ) )
         {}
 
         void update( Geo_t const& geom ) override
         {
             super_type::updateCommon( geom );
+
+            M_mu0ExprTensor.update( geom );
+            M_muInfExprTensor.update( geom );
+            M_lambdaExprTensor.update( geom );
+            M_nExprTensor.update( geom );
+            M_aExprTensor.update( geom );
 
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
@@ -1069,6 +1102,12 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom, face );
 
+            M_mu0ExprTensor.update( geom, face );
+            M_muInfExprTensor.update( geom, face );
+            M_lambdaExprTensor.update( geom, face );
+            M_nExprTensor.update( geom, face );
+            M_aExprTensor.update( geom, face );
+
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
@@ -1076,19 +1115,20 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<2> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type mu_inf = M_carreauYasudaLawModel.muInf();
-            const value_type mu_0 = M_carreauYasudaLawModel.mu0();
-            const value_type carreauYasuda_lambda = M_carreauYasudaLawModel.lambda();
-            const value_type carreauYasuda_n = M_carreauYasudaLawModel.n();
-            const value_type carreauYasuda_a = M_carreauYasudaLawModel.a();
-            const value_type carreauYasuda_lambda_pow_a = math::pow(carreauYasuda_lambda,carreauYasuda_a);
-            const value_type carreauYasudaValPower = carreauYasuda_a/2.;
-            const value_type carreauYasudaValPower2 = (carreauYasuda_n-1)/carreauYasuda_a;
-            const value_type carreauYasuda_lambdaA = math::pow(carreauYasuda_lambda,carreauYasuda_a);
-            const value_type part1_carreauYasudaLaw = ( (carreauYasuda_n-1)/carreauYasuda_a )*( mu_0 - mu_inf);
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+                const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_lambda = M_lambdaExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_n = M_nExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_a = M_aExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_lambda_pow_a = math::pow(carreauYasuda_lambda,carreauYasuda_a);
+                const value_type carreauYasudaValPower = carreauYasuda_a/2.;
+                const value_type carreauYasudaValPower2 = (carreauYasuda_n-1)/carreauYasuda_a;
+                const value_type carreauYasuda_lambdaA = math::pow(carreauYasuda_lambda,carreauYasuda_a);
+                const value_type part1_carreauYasudaLaw = ( (carreauYasuda_n-1)/carreauYasuda_a )*( mu_0 - mu_inf);
+
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
                 const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1);
@@ -1128,20 +1168,22 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         void updateImpl( mpl::int_<3> /**/ )
         {
             const bool withPressure = this->expr().withPressureTerm();
-            const value_type mu_inf = M_carreauYasudaLawModel.muInf();
-            const value_type mu_0 = M_carreauYasudaLawModel.mu0();
-            const value_type carreauYasuda_lambda = M_carreauYasudaLawModel.lambda();
-            const value_type carreauYasuda_n = M_carreauYasudaLawModel.n();
-            const value_type carreauYasuda_a = M_carreauYasudaLawModel.a();
-            const value_type carreauYasuda_lambda_pow_a = math::pow(carreauYasuda_lambda,carreauYasuda_a);
-            const value_type carreauYasudaValPower = carreauYasuda_a/2.;
-            const value_type carreauYasudaValPower2 = (carreauYasuda_n-1)/carreauYasuda_a;
-
-            const value_type carreauYasuda_lambdaA = math::pow(carreauYasuda_lambda,carreauYasuda_a);
-            const value_type part1_carreauYasudaLaw = ( (carreauYasuda_n-1)/carreauYasuda_a )*( mu_0 - mu_inf);
 
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
+                const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+                const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_lambda = M_lambdaExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_n = M_nExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_a = M_aExprTensor.evalq(0,0,q);
+                const value_type carreauYasuda_lambda_pow_a = math::pow(carreauYasuda_lambda,carreauYasuda_a);
+                const value_type carreauYasudaValPower = carreauYasuda_a/2.;
+                const value_type carreauYasudaValPower2 = (carreauYasuda_n-1)/carreauYasuda_a;
+
+                const value_type carreauYasuda_lambdaA = math::pow(carreauYasuda_lambda,carreauYasuda_a);
+                const value_type part1_carreauYasudaLaw = ( (carreauYasuda_n-1)/carreauYasuda_a )*( mu_0 - mu_inf);
+
+
                 auto const& gradVelocityEval = this->locGradVelocity(q);
                 const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
                 const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1), du2vdz = gradVelocityEval(1,2);
@@ -1212,11 +1254,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<2> /**/ ) const
         {
-            const value_type mu_inf = M_carreauYasudaLawModel.muInf();
-            const value_type mu_0 = M_carreauYasudaLawModel.mu0();
-            /*const value_type carreauYasuda_lambda = this->expr().viscosityModelDesc().carreauYasuda_lambda();
-            const value_type carreauYasuda_n = this->expr().viscosityModelDesc().carreauYasuda_n();
-             const value_type carreauYasuda_a = this->expr().viscosityModelDesc().carreauYasuda_a();*/
+            const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+            const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+
             auto const& gradTrial = this->fecTrial()->grad( j, q );
             const value_type du1tdx = gradTrial(0,0,0), du1tdy = gradTrial(0,1,0);
             const value_type du2tdx = gradTrial(1,0,0), du2tdy = gradTrial(1,1,0);
@@ -1245,11 +1285,9 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         ret_type
         evalijq( uint16_type i, uint16_type j, uint16_type q, mpl::true_ /**/, mpl::int_<3> /**/ ) const
         {
-            const value_type mu_inf = M_carreauYasudaLawModel.muInf();
-            const value_type mu_0 = M_carreauYasudaLawModel.mu0();
-            /*const value_type carreauYasuda_lambda = this->expr().viscosityModelDesc().carreauYasuda_lambda();
-            const value_type carreauYasuda_n = this->expr().viscosityModelDesc().carreauYasuda_n();
-             const value_type carreauYasuda_a = this->expr().viscosityModelDesc().carreauYasuda_a();*/
+            const value_type mu_inf = M_muInfExprTensor.evalq(0,0,q);
+            const value_type mu_0 = M_mu0ExprTensor.evalq(0,0,q);
+
             auto const& gradTrial = this->fecTrial()->grad( j, q );
             const value_type du1tdx = gradTrial(0,0,0), du1tdy = gradTrial(0,1,0), du1tdz = gradTrial(0,2,0);
             const value_type du2tdx = gradTrial(1,0,0), du2tdy = gradTrial(1,1,0), du2tdz = gradTrial(1,2,0);
@@ -1291,11 +1329,11 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             return ret_type(this->locMatrixShape().data());
         }
     private :
-        Feel::FeelModels::DynamicViscosityCarreauYasudaLaw const& M_carreauYasudaLawModel;
         typename super_type::array_value_type M_locEvalPrecompute;//M_locEvalDxD;
         typename super_type::array_value_type M_locEvalMu;
+        typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/> M_mu0ExprTensor, M_muInfExprTensor, M_lambdaExprTensor, M_nExprTensor, M_aExprTensor;
     };
-#endif
+
 /// \cond detail
 /**
  * \class FluidMecStressTensorImpl
@@ -1561,22 +1599,17 @@ public:
         template<typename... TheArgsType>
         void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
             {
-            auto const& dynamicViscosity = expr.dynamicViscosity();
-            if ( dynamicViscosity.isNewtonianLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
-            else if ( dynamicViscosity.isPowerLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
-#if 0
-            else if ( dynamicViscosity.isWalburnSchneckLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,dynamicViscosity.walburnSchneckLaw().powerLaw()) );
-            else if ( dynamicViscosity.isCarreauLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorCarreau<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,dynamicViscosity.carreauLaw()) );
-            else if ( dynamicViscosity.isCarreauYasudaLaw() )
-                M_tensorbase.reset( new tensorFluidStressTensorCarreauYasuda<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,geom,dynamicViscosity.carreauYasudaLaw()) );
-#endif
-            else
-                CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
-
+                auto const& dynamicViscosity = expr.dynamicViscosity();
+                if ( dynamicViscosity.isNewtonianLaw() )
+                    M_tensorbase.reset( new tensorFluidStressTensorNewtonian<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                else if ( dynamicViscosity.isPowerLaw() )
+                    M_tensorbase.reset( new tensorFluidStressTensorPowerLaw<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                else if ( dynamicViscosity.isCarreauLaw() )
+                    M_tensorbase.reset( new tensorFluidStressTensorCarreau<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                else if ( dynamicViscosity.isCarreauYasudaLaw() )
+                    M_tensorbase.reset( new tensorFluidStressTensorCarreauYasuda<Geo_t, Basis_i_t, Basis_j_t,this_type>(expr,theInitArgs...) );
+                else
+                    CHECK ( false ) << "invalid viscosity model : "<< dynamicViscosity.lawName() <<"\n";
             }
     private:
         tensorbase_ptrtype M_tensorbase;
