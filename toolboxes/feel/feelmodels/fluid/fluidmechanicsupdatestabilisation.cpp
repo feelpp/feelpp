@@ -18,15 +18,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLinear & data ) const
 {
-#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
+#if 0 // VINCENT
         auto rho = idv(this->materialProperties()->fieldRho());
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
 
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
             this->updateLinearPDEStabilisationGLS( data, rho, mu, rangeData.first );
+#endif // VINCENT
     }
 
     //using namespace Feel::vf;
@@ -59,9 +60,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
     auto const& v = u;
     auto const& p = this->fieldPressure();
     auto const& q = p;
-
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
 
     auto rowStartInMatrix = this->rowStartInMatrix();
     auto colStartInMatrix = this->colStartInMatrix();
@@ -126,7 +124,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         double gamma = this->stabCIPDivergenceGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
+        auto muExpr = this->dynamicViscosityExpr( u_extrapoled/*, se*/ );
+        auto Re = beta_abs*hFace()/muExpr;
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         bilinearFormVV_PatternExtended +=
             integrate( _range=marked3faces(XhV->mesh(),1),
@@ -140,13 +139,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
         double gamma = this->stabCIPPressureGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
+        auto muExpr = this->dynamicViscosityExpr( u_extrapoled/*, se*/ );
 #if 1
         //double order_scaling = math::pow( double(nOrderPressure), 3.5 );
         //auto beta_abs = vf::sqrt( trans(idv(u_extrapoled))*idv(u_extrapoled));
         //auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) )/cst(order_scaling);
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, muExpr) );
 #else
-        auto Re = beta_abs*hFace()/idv(mu);
+        auto Re = beta_abs*hFace()/muExpr;
         auto cip_stab_coeff_expr =  gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)/max(beta_abs,cst(1e-6)); //last max in order to not divide by 0
 #endif
         auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=A,
@@ -163,7 +163,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
 
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateLinearPDEStabilisation",(boost::format("finish in %1% s") % timeElapsed).str() );
-#endif // VINCENT
+
 } // updateLinearPDEStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -174,15 +174,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
-#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
+#if 0 // VINCENT
         auto rho = idv(this->materialProperties()->fieldRho());
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
 
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
             this->updateResidualStabilisationGLS( data, u, p, rho, mu, rangeData.first );
+#endif // VINCENT
     }
 
     this->log("FluidMechanics","updateResidualStabilisation", "start" );
@@ -204,8 +205,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
 
     auto const& v = u;
     auto const& q = p;
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
 
     //--------------------------------------------------------------------------------------------------//
 
@@ -226,7 +225,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         {
             double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
             linearFormV_PatternCoupled +=
-                integrate( _range=elements(XhV->mesh()),
+                integrate( _range=M_rangeMeshElements,
                            _expr=/*vf::h()**/beta*divv(u)*div(v),
                            _geomap=this->geomap() );
         }
@@ -266,7 +265,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         double gamma = this->stabCIPDivergenceGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
+        auto muExpr = this->dynamicViscosityExpr( u/*, se*/ );
+        auto Re = beta_abs*hFace()/muExpr;
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         linearFormV_PatternExtended +=
             integrate( _range=marked3faces(XhV->mesh(),1),
@@ -282,7 +282,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
         double gamma = this->stabCIPPressureGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto muExpr = this->dynamicViscosityExpr( u/*, se*/ );
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, muExpr) );
         linearFormP_PatternExtended +=
             integrate( _range=marked3faces(XhV->mesh(),1),
                        _expr=val(cip_stab_coeff_expr)*( jumpv(gradv(p))*jump(grad(q)) ),
@@ -294,7 +295,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateResidualStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
-#endif // VINCENT
 } // updateResidualStabilisation
 
 //--------------------------------------------------------------------------------------------//
@@ -303,14 +303,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const
 {
-#if 0 // VINCENT
     if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
     {
+ #if 0 // VINCENT
         auto rho = idv(this->materialProperties()->fieldRho());
         //auto mu = Feel::vf::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
         auto mu = idv(this->materialProperties()->fieldMu());
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
             this->updateJacobianStabilisationGLS( data, u, p, rho, mu, rangeData.first );
+#endif // VINCENT
     }
 
     this->log("FluidMechanics","updateJacobianStabilisation", "start" );
@@ -334,9 +335,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     auto XhP = this->functionSpacePressure();
     auto const& v = u;
     auto const& q = p;
-
-    // dynamic viscosity
-    auto const& mu = this->materialProperties()->fieldMu();
 
     size_type rowStartInMatrix = this->rowStartInMatrix();
     size_type colStartInMatrix = this->colStartInMatrix();
@@ -410,7 +408,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         double gamma = this->stabCIPDivergenceGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto Re = beta_abs*hFace()/idv(mu);
+        auto muExpr = this->dynamicViscosityExpr( u/*, se*/ );
+        auto Re = beta_abs*hFace()/muExpr;
         auto cip_div_coeff_expr = gamma*min(cst(1.),Re)*vf::pow(hFace(),2.0)*beta_abs;
         bilinearFormVV_PatternExtended +=
             integrate( _range=marked3faces(XhV->mesh(),1),
@@ -423,7 +422,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
         double gamma = this->stabCIPPressureGamma();
         auto const& u_extrapoled = this->timeStepBDF()->poly();
         auto beta_abs = vf::norm2(idv(u_extrapoled));
-        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, idv(mu)) );
+        auto muExpr = this->dynamicViscosityExpr( u/*, se*/ );
+        auto cip_stab_coeff_expr =  gamma*( vf::pow(hFace(),3.0) / vf::max( hFace()*beta_abs, muExpr) );
 
         auto bilinearFormPP_PatternExtended = form2( _test=XhP,_trial=XhP,_matrix=J,
                                                      _pattern=size_type(Pattern::EXTENDED),
@@ -439,7 +439,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
     double timeElapsed = thetimer.elapsed();
     this->log("FluidMechanics","updateJacobianStabilisation",
               (boost::format("finish in %1% s") % timeElapsed).str() );
-#endif // VINCENT
 } // updateJacobianStabilisation
 
 //--------------------------------------------------------------------------------------------//

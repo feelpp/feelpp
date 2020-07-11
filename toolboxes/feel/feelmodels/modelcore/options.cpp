@@ -352,7 +352,6 @@ fluidStructInteraction_options( std::string const& prefix )
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-constant").c_str(), Feel::po::value<double>(),"use-operator-constant")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-operator-proportional-to-identity").c_str(), Feel::po::value<bool>()->default_value( false ),"use-operator-proportional-to-identity")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.use-aitken").c_str(), Feel::po::value<bool>()->default_value( false ), "use-aitken")
-        (prefixvm(prefix,"coupling-robin-neumann-generalized.use-precompute-bc").c_str(), Feel::po::value<bool>()->default_value( true ),"use-precompute-bc")
         (prefixvm(prefix,"coupling-robin-neumann-generalized.strategy-time-step-compatibility").c_str(), Feel::po::value<std::string>()->default_value( "default" ),"strategy-time-step-compatibility")
 
         (prefixvm(prefix,"transfert-velocity-F2S.use-extrapolation").c_str(), Feel::po::value<bool>()->default_value( true ), "transfert-velocity-F2S.use-extrapolation")

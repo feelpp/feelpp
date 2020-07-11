@@ -892,14 +892,22 @@ public :
     bool applyMovingMeshBeforeSolve() const { return M_applyMovingMeshBeforeSolve; }
     void setApplyMovingMeshBeforeSolve( bool b ) { M_applyMovingMeshBeforeSolve = b; }
     bool isMoveDomain() const { return M_isMoveDomain; }
-#if 0
-    std::string const& modelName() const;
-    void setModelName( std::string const& type );
-#endif
+
     std::string const& solverName() const;
     void setSolverName( std::string const& type );
 
     bool isStationaryModel() const;
+
+    bool hasNonNewtonianViscosity() const
+        {
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+                if ( !physicFluidData->dynamicViscosity().isNewtonianLaw() )
+                    return true;
+            }
+            return false;
+        }
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
@@ -1148,6 +1156,16 @@ public :
             return this->stressTensorExpr( this->fieldVelocity(), this->fieldPressure(), se );
         }
 
+    template <typename VelocityFieldType, typename PressureFieldType, typename SymbolsExprType = symbols_expression_empty_t>
+    auto stressTensorExpr( VelocityFieldType const& u, PressureFieldType const& p, std::string const& matName, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+        {
+            auto mphysics = this->materialsProperties()->physicsFromMaterial( matName, this->physicsFromCurrentType() );
+            CHECK( mphysics.size() == 1 ) << "something wrong";
+            auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            return Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
+        }
+
     template <typename VelocityFieldType, typename SymbolsExprType = symbols_expression_empty_t>
     auto dynamicViscosityExpr( VelocityFieldType const& u, SymbolsExprType const& se = symbols_expression_empty_t{},
                                typename std::enable_if_t< is_functionspace_element_v< unwrap_ptr_t<VelocityFieldType> > >* = nullptr ) const
@@ -1172,7 +1190,8 @@ public :
         };
 
     template <typename SymbolsExprType = symbols_expression_empty_t>
-    auto dynamicViscosityExpr( SymbolsExprType const& se = symbols_expression_empty_t{} ) const
+    auto dynamicViscosityExpr( SymbolsExprType const& se = symbols_expression_empty_t{},
+                               typename std::enable_if_t< is_symbols_expression_v<SymbolsExprType> >* = nullptr ) const
         {
             return this->dynamicViscosityExpr( this->fieldVelocity(), se );
         }

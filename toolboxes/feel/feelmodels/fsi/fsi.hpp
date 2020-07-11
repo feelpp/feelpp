@@ -375,7 +375,6 @@ private :
     typename fluid_type::space_velocity_type::element_ptrtype/*element_meshvelocityonboundary_ptrtype*/ M_coulingRNG_operatorDiagonalOnFluid;
     sparse_matrix_ptrtype M_coulingRNG_matrixTimeDerivative, M_coulingRNG_matrixStress;
     vector_ptrtype M_coulingRNG_vectorTimeDerivative,  M_coulingRNG_vectorStress;
-    bool M_coulingRNG_usePrecomputeBC;
     std::string M_coulingRNG_strategyTimeStepCompatibility;
 
     op_interpolation2dTo2dnonconf_disp_ptrtype M_opDisp2dTo2dnonconf;

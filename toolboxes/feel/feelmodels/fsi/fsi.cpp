@@ -69,7 +69,6 @@ FSI<FluidType,SolidType>::FSI(std::string const& prefix,worldcomm_ptr_t const& w
     M_couplingNitscheFamily_gamma( doption(_name="coupling-nitsche-family.gamma",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_gamma0( doption(_name="coupling-nitsche-family.gamma0",_prefix=this->prefix()) ),
     M_couplingNitscheFamily_alpha( doption(_name="coupling-nitsche-family.alpha",_prefix=this->prefix()) ),
-    M_coulingRNG_usePrecomputeBC( boption(_name="coupling-robin-neumann-generalized.use-precompute-bc",_prefix=this->prefix()) ),
     M_coulingRNG_strategyTimeStepCompatibility( soption(_name="coupling-robin-neumann-generalized.strategy-time-step-compatibility",_prefix=this->prefix()) )
 {
     this->log("FSI","constructor","start");
@@ -671,7 +670,7 @@ FSI<FluidType,SolidType>::initCouplingRobinNeumannGeneralized()
     }
 
 
-    if ( M_coulingRNG_usePrecomputeBC )
+    if ( true )
     {
         // create matrix which represent time derivative  bc operator
         auto dmFullFluidSpace = this->fluidModel()->algebraicFactory()->sparsityMatrixGraph()->mapRowPtr();
@@ -862,7 +861,7 @@ FSI<FluidType,SolidType>::updateInHousePreconditionerPCD_fluid( operatorpcdbase_
         for ( auto const& rangeFacesMat : this->fluidModel()->rangeDistributionByMaterialName()->rangeMeshFacesByMaterial( "interface_fsi" ) )
         {
             std::string matName = rangeFacesMat.first;
-            auto rhoExpr = this->fluidModel()->materialProperties()->density( matName ).expr();
+            auto rhoExpr = this->fluidModel()->materialsProperties()->density( matName ).expr();
             opPCD->updateFpBoundaryConditionWithDirichlet( rhoExpr, "FSI_FluidDirichlet_" + matName, idv(this/*M_fluidModel*/->meshVelocity2()) );
         }
     }
@@ -1017,7 +1016,7 @@ FSI<FluidType,SolidType>::solveImpl2()
             {
                 bool useExtrap = boption(_prefix=this->prefix(),_name="transfert-velocity-F2S.use-extrapolation");
                 this->transfertVelocityF2S(cptFSI,useExtrap);
-                if ( M_fluidModel->materialProperties()->hasNonNewtonianLaw() )
+                if ( this->fluidModel()->hasNonNewtonianViscosity() )
                     this->transfertGradVelocityF2S();
             }
             M_solidModel->solve();
