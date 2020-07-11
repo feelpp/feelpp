@@ -228,12 +228,13 @@ template <typename ExprT>
 SymbolExpr<ExprT>
 symbolExpr( std::vector<std::tuple<std::string,ExprT,SymbolExprComponentSuffix,SymbolExprUpdateFunction>> const& e ) { return SymbolExpr<ExprT>( e ); }
 
+struct SymbolsExprBase {};
 
 struct SymbolsExprTag {};
 
 //! store set of SymbolExpr object into a hana::tuple
 template<typename TupleExprType>
-struct SymbolsExpr
+struct SymbolsExpr : public SymbolsExprBase
 {
     using tuple_type = TupleExprType;
     using feelpp_tag = SymbolsExprTag;
@@ -329,6 +330,13 @@ template<typename... ExprT>
 using symbols_expression_t = typename SymbolsExprTraits<ExprT...>::type;
 
 using symbols_expression_empty_t = SymbolsExpr<hana::tuple<>>;
+
+template<typename SymbolsExprType>
+using is_symbols_expression = typename std::is_base_of<SymbolsExprBase,SymbolsExprType>::type;
+
+template<typename SymbolsExprType>
+constexpr bool is_symbols_expression_v = is_symbols_expression<SymbolsExprType>::value;
+
 
 //! build a SymbolsExpr object
 template<typename... ExprT>
