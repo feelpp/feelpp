@@ -3,7 +3,7 @@ set(FEELPP_MODELS_LEVELSET_PN_ORDER "2" CACHE STRING "order of isoPN basis in le
 
 # geo order 1 (non-periodic)
 foreach(_DIM 2 3)
-  math(EXPR _PHI_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}-1")
+  math(EXPR _PHI_ORDER "${FEELPP_INSTANTIATION_ORDER_MAX}")
   feelpp_max( MAX_ORDER 1 ${_PHI_ORDER})
   message(STATUS "[feelpp] LEVELSET ${_DIM}D PNG1 N=1..${MAX_ORDER}")
   foreach( _PHI_ORDER RANGE 1 ${MAX_ORDER} )
@@ -38,7 +38,12 @@ add_library(Feelpp::feelpp_toolbox_levelset_lib ALIAS feelpp_toolbox_levelset_li
 set_target_properties(feelpp_toolbox_levelset_lib PROPERTIES OUTPUT_NAME "feelpp_toolbox_levelset_lib")
 target_link_libraries(feelpp_toolbox_levelset_lib ${FEELPP_MODELS_LIBRARIES_LEVELSET})
 set_property(TARGET feelpp_toolbox_levelset_lib PROPERTY MACOSX_RPATH ON)
-install(TARGETS feelpp_toolbox_levelset_lib DESTINATION lib/ COMPONENT Libs EXPORT feelpp-toolboxes-targets)
+set_target_properties(feelpp_toolbox_levelset_lib PROPERTIES VERSION ${FEELPP_TOOLBOXES_SHARED_VERSION} SOVERSION ${FEELPP_TOOLBOXES_SHARED_SOVERSION})
+install(TARGETS feelpp_toolbox_levelset_lib EXPORT feelpp-toolboxes-targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} )
 
 FILE(GLOB files "*.hpp")
 INSTALL(FILES ${files} DESTINATION include/feelpp/toolboxes/feel/feelmodels/levelset COMPONENT Devel)

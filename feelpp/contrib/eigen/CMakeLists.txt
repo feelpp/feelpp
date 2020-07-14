@@ -421,11 +421,11 @@ else()
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/eigen3/cmake"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/cmake"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
-    "${CMAKE_INSTALL_DATADIR}/pkgconfig"
+    "${CMAKE_INSTALL_DATADIR}/feelpp/eigen3/pkgconfig"
     CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
     )
 
@@ -463,7 +463,7 @@ endif()
 
 option(BUILD_TESTING "Enable creation of Eigen tests." OFF)
 message(STATUS "[eigen] BUILD_TESTING set to ${BUILD_TESTING}")
-if(BUILD_TESTING)
+if(0)#BUILD_TESTING)
   include(EigenConfigureTesting)
 
   if(EIGEN_LEAVE_TEST_IN_ALL_TARGET)
@@ -514,7 +514,7 @@ endif()
 
 add_subdirectory(unsupported)
 
-add_subdirectory(demos EXCLUDE_FROM_ALL)
+#add_subdirectory(demos EXCLUDE_FROM_ALL)
 
 # must be after test and unsupported, for configuring buildtests.in
 add_subdirectory(scripts EXCLUDE_FROM_ALL)
@@ -530,7 +530,7 @@ endif()
 
 configure_file(scripts/cdashtesting.cmake.in cdashtesting.cmake @ONLY)
 
-if(BUILD_TESTING)
+if(0)#BUILD_TESTING)
   ei_testing_print_summary()
 endif()
 

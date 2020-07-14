@@ -158,7 +158,7 @@ public :
             }
         }
 
-#if 1
+#if 0
     self_type& operator=( self_type const& q ) = default;
 #else
     self_type& operator=( self_type const& q )
@@ -174,6 +174,7 @@ public :
             else
                 M_quad = q.M_quad;
 
+#if 0
             this->M_npoints = M_quad.numberOfPoints();
             this->M_points.resize( nDim, M_quad.numberOfPoints() );
             this->M_w.resize( M_quad.numberOfPoints() );
@@ -182,6 +183,16 @@ public :
             M_prod.resize( M_quad.numberOfPoints() );
             M_exprq.resize( M_quad.numberOfPoints() );
             M_w_sum = q.M_w_sum;
+#endif
+            M_w = q.M_w;
+            M_w_sum = q.M_w_sum;
+            M_w_face = q.M_w_face;
+            M_n_face = q.M_n_face;
+            M_w_edge = q.M_w_edge;
+            M_n_edge = q.M_n_edge;
+            M_prod = q.M_prod;
+            M_exprq = q.M_exprq;
+
             return *this;
         }
 #endif

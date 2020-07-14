@@ -2407,7 +2407,9 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     {
         return;
     }
-    boost::timer tim,ltim;
+
+    tic();
+    tic();
     size_type nldof =
         fe_type::nDofPerVolume * element_type::numVolumes +
         fe_type::nDofPerFace * element_type::numGeometricFaces +
@@ -2431,9 +2433,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
                 M_localIndicesPerm[FEType::nLocalDof*c+i] = FEType::nLocalDof*c + 2*fe_type::nDofPerVertex*element_type::numVertices +
                     fe_type::nDofPerEdge*element_type::numEdges-1-i;
         }
-    if (Environment::isMasterRank() && FLAGS_v>1)
-        std::cout << "   . buildDofMap allocation done in " << ltim.elapsed() << "s\n";
-    ltim.restart();
+    toc( "DofTable buildDofMap allocation", FLAGS_v > 1 );
+    tic();
     // compute the number of dof on current processor
     auto rangeElements = (this->hasMeshSupport())? this->meshSupport()->rangeElements() : elements(M);
     auto it_elt = boost::get<1>( rangeElements );
@@ -2497,9 +2498,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
         }
     }
 
-    if (Environment::isMasterRank() && FLAGS_v>1)
-        std::cout << "   . buildDofMap dof generation done in " << ltim.elapsed() << "s\n";
-    ltim.restart();
+    toc( "DofTable buildDofMap dof generation", FLAGS_v > 1 );
+    tic();
 #if 0
     for ( auto mit = M_dof_marker.right.begin(), men = M_dof_marker.right.end() ; mit != men ; ++mit )
     {
@@ -2602,11 +2602,8 @@ DofTable<MeshType, FEType, PeriodicityType, MortarType>::buildDofMap( mesh_type&
     if ( this->worldComm().localSize() > 1 )
         this->generateDofPoints( M, true );
     toc("DofTable generateDofPoints", FLAGS_v>1);
-    if (Environment::isMasterRank() && FLAGS_v>1)
-    {
-        std::cout << "   . buildDofMap dof arrays done in " << ltim.elapsed() << "s\n";
-        std::cout << " . DofTable::buildDofMap done in " << tim.elapsed() << "\n";
-    }
+
+    toc( "DofTable buildDofMap done", FLAGS_v>1);
 }
 
 template<typename MeshType, typename FEType, typename PeriodicityType, typename MortarType>

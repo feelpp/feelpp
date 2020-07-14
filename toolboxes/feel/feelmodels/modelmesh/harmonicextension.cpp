@@ -59,6 +59,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( mesh_ptrtype mesh, backend
                                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, worldcomm,"",modelRep ),
+    ModelBase( prefix, worldcomm,"",modelRep ),
     M_backend( backend ),
     M_mesh( mesh ),
     M_useAdaptPenal( option(_prefix=this->prefix(),_name="use_adaptive_penalisation").template as<bool>() )
@@ -75,6 +76,7 @@ HarmonicExtension<MeshType,Order>::HarmonicExtension( space_ptrtype space, backe
                                                       ModelBaseRepository const& modelRep )
     :
     super_type( prefix, space->worldCommPtr(),"",modelRep ),
+    ModelBase( prefix, space->worldCommPtr(),"",modelRep ),
     M_backend( backend ),
     M_mesh( space->mesh() ),
     M_Xh( space ),

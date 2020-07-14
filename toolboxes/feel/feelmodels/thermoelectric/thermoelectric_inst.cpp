@@ -1,5 +1,4 @@
 
-
 #include "thermoelectricconfig.h"
 #include <feel/feelmodels/thermoelectric/thermoelectric.cpp>
 

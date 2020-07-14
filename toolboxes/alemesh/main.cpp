@@ -1,6 +1,8 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
+#include <feel/feelmesh/remesh.hpp>
+#include <feel/feeldiscr/quality.hpp>
 
 template <Feel::uint16_type OrderGeo>
 void
@@ -42,6 +44,36 @@ runALEMesh()
 
     alemesh->exportResults();
 
+    if ( boption( "remesh" ) )
+    {
+        auto const& mesh = alemesh->movingMesh();
+        auto Xh = Pch<1>( mesh );
+        auto met = Xh->element();
+        if ( !soption( "remesh.metric" ).empty() )
+            met.on( _range=elements(mesh), _expr=expr(soption("remesh.metric")) );
+        else
+        {
+            auto [ havg, hmin, hmax ] = hMeasures( mesh );
+            met.on( _range=elements(mesh), _expr=cst(hmax)  );
+        }
+
+
+        
+        auto r =  remesher( mesh );
+    
+        r.setMetric( met );
+        auto out = r.execute();
+        out->updateForUse();
+        auto ein = exporter( _mesh=mesh, _name="meshin" );
+        ein->add( "etaQ", etaQ(mesh) );
+        ein->add( "nsrQ", nsrQ(mesh) );
+        ein->save();
+        auto eout = exporter( _mesh=out, _name="remeshed" );
+        eout->add( "disp", disp );
+        eout->add( "etaQ", etaQ( out ) );
+        eout->add( "nsrQ", nsrQ( out ) );
+        eout->save();
+    }
 }
 
 
@@ -58,6 +90,8 @@ main( int argc, char** argv )
         ("markers.fixed", po::value<std::vector<std::string> >()->multitoken(), "list of markers on fixed boundary" )
         ("markers.free", po::value<std::vector<std::string> >()->multitoken(), "list of markers on free boundary" )
         ("mesh-adaptation-function", Feel::po::value<std::string>(), "mesh-adaptation-function")
+        ( "remesh", po::value<bool>()->default_value( 0 ), "remesh " )
+        ( "remesh.metric", po::value<std::string>()->default_value( "" ), "remesh metric expression" )
         ;
 
 	Environment env( _argc=argc, _argv=argv,

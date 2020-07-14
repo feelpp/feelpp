@@ -221,6 +221,12 @@ sign( T const& x )
                                                                         \
         expression_1_type const& expression() const { return M_expr_1; } \
                                                                         \
+        template <typename SymbolsExprType>                             \
+            auto applySymbolsExpr( SymbolsExprType const& se ) const    \
+        {                                                               \
+            return VF_FUNC_SYMBOL( O ) ( M_expr_1.applySymbolsExpr( se ) ); \
+        }                                                               \
+                                                                        \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \
         {                                                               \
@@ -432,6 +438,12 @@ sign( T const& x )
                                                                         \
         expression_1_type const& expression1() const { return M_expr_1; } \
         expression_2_type const& expression2() const { return M_expr_2; } \
+                                                                        \
+        template <typename SymbolsExprType>                             \
+            auto applySymbolsExpr( SymbolsExprType const& se ) const    \
+        {                                                               \
+            return VF_FUNC_SYMBOL( O ) ( M_expr_1.applySymbolsExpr( se ), M_expr_2.applySymbolsExpr( se ) ); \
+        }                                                               \
                                                                         \
         template<typename Geo_t, typename Basis_i_t, typename Basis_j_t = Basis_i_t> \
             struct tensor                                               \

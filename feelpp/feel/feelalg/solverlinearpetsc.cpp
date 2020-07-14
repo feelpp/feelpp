@@ -277,8 +277,7 @@ void SolverLinearPetsc<T>::init ()
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Have the Krylov subspace method use our good initial guess rather than 0
-        bool useInitialGuessNonZero = boption(_name="ksp-use-initial-guess-nonzero", _prefix=this->prefix() );
-        ierr = KSPSetInitialGuessNonzero ( M_ksp, (useInitialGuessNonZero)?PETSC_TRUE:PETSC_FALSE );
+        ierr = KSPSetInitialGuessNonzero ( M_ksp, this->M_kspUseInitialGuessNonZero?PETSC_TRUE:PETSC_FALSE );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
 
         // Set user-specified  solver and preconditioner types
@@ -323,22 +322,19 @@ void SolverLinearPetsc<T>::init ()
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGMRES ) )
         {
-            int nRestartGMRES = ioption(_name="gmres-restart", _prefix=this->prefix() );
-            ierr = KSPGMRESSetRestart( M_ksp, nRestartGMRES );
+            ierr = KSPGMRESSetRestart( M_ksp, this->M_nRestartGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPFGMRES ) )
         {
-            int nRestartFGMRES = ioption(_name="fgmres-restart", _prefix=this->prefix() );
-            ierr = KSPGMRESSetRestart( M_ksp, nRestartFGMRES );
+            ierr = KSPGMRESSetRestart( M_ksp, this->M_nRestartFGMRES );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
             if ( this->M_preconditioner )
                 this->M_preconditioner->setSide( preconditioner_type::RIGHT );
         }
         else if ( std::string((char*)ksp_type) == std::string( ( char* )KSPGCR ) )
         {
-            int nRestartGCR = ioption(_name="gcr-restart", _prefix=this->prefix() );
-            ierr = KSPGCRSetRestart( M_ksp, nRestartGCR );
+            ierr = KSPGCRSetRestart( M_ksp, this->M_nRestartGCR );
             CHKERRABORT( this->worldComm().globalComm(),ierr );
             if ( this->M_preconditioner )
                 this->M_preconditioner->setSide( preconditioner_type::RIGHT );
@@ -411,15 +407,14 @@ void SolverLinearPetsc<T>::init ()
             PetscPCFactorSetMatSolverPackage( M_pc,this->matSolverPackageType() );
         }
 
-        if ( Environment::vm(_name="ksp-monitor",_prefix=this->prefix()).template as<bool>() )
+        if ( this->M_showKSPMonitor )
         {
             //KSPMonitorSet( M_ksp,KSPMonitorDefault,PETSC_NULL,PETSC_NULL );
             KSPMonitorSet( M_ksp,__feel_petsc_monitor,(void*) this,PETSC_NULL );
         }
 
         // The value can be checked with --(prefix.)ksp-view=1
-        this->check( KSPSetNormType(M_ksp,
-                   kspNormTypeConvertStrToEnum(Environment::vm(_name="ksp-norm-type",_prefix=this->prefix()).template as<std::string>())) );
+        this->check( KSPSetNormType(M_ksp, kspNormTypeConvertStrToEnum( this->M_kspNormType ) ) );
 
     }
 }
@@ -636,7 +631,7 @@ SolverLinearPetsc<T>::solve ( MatrixSparse<T> const&  matrix_in,
     KSPConvergedReason reason;
     KSPGetConvergedReason( M_ksp,&reason );
 
-    if ( boption( _prefix=this->prefix(), _name="ksp-view" ) )
+    if ( this->M_kspView ) //boption( _prefix=this->prefix(), _name="ksp-view" ) )
         check( KSPView( M_ksp, PETSC_VIEWER_STDOUT_WORLD ) );
 
     LOG(INFO) << "[solverlinearpetsc] reason = " << reason ;
@@ -1026,23 +1021,6 @@ SolverLinearPetsc<T>::setPetscPreconditionerType()
     case ILU_PRECOND:
         ierr = PCSetType ( M_pc, ( char* ) PCILU );
         CHKERRABORT( this->worldComm().globalComm(),ierr );
-
-        if ( this->vm().count( "pc-factor-levels" ) )
-        {
-            PCFactorSetLevels( M_pc,this->vm()["pc-factor-levels"].template as<int>() );
-        }
-
-        else
-            PCFactorSetLevels( M_pc,3 );
-
-        if ( this->vm().count( "pc-factor-fill" ) )
-        {
-            PCFactorSetFill( M_pc,this->vm()["pc-factor-fill"].template as<double>() );
-        }
-
-        else
-            PCFactorSetFill( M_pc,40 );
-
         return;
 
     case LU_PRECOND:

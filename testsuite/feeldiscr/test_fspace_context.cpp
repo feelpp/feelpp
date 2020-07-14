@@ -220,17 +220,17 @@ testFspaceContext()
 
 
     //projection on the mesh
-    auto px = vf::project( Xh , elements(mesh), exprX );
-    auto px2 = vf::project( Xh , elements(mesh), exprX2 );
-    auto px3 = vf::project( Xh , elements(mesh), exprX3 );
-    auto px4 = vf::project( Xh , elements(mesh), exprX4 );
-    auto pxy = vf::project( Xh , elements(mesh), exprXY );
-    auto px2y2 = vf::project( Xh , elements(mesh), exprX2Y2 );
-    auto pxy3 = vf::project( Xh , elements(mesh), exprXY3 );
-    auto py = vf::project( Xh , elements(mesh), exprY );
-    auto ptheta = vf::project( Xh , elements(mesh), exprTheta );
-    auto pr = vf::project( Xh , elements(mesh), exprR );
-    auto psin2pix = vf::project( Xh , elements(mesh), exprSin2PiX );
+    auto px = vf::project( _space=Xh , _range=elements(mesh), _expr=exprX );
+    auto px2 = vf::project( _space=Xh , _range=elements(mesh), _expr=exprX2 );
+    auto px3 = vf::project( _space=Xh , _range=elements(mesh), _expr=exprX3 );
+    auto px4 = vf::project( _space=Xh , _range=elements(mesh), _expr=exprX4 );
+    auto pxy = vf::project( _space=Xh , _range=elements(mesh), _expr=exprXY );
+    auto px2y2 = vf::project( _space=Xh , _range=elements(mesh), _expr=exprX2Y2 );
+    auto pxy3 = vf::project( _space=Xh , _range=elements(mesh), _expr=exprXY3 );
+    auto py = vf::project( _space=Xh , _range=elements(mesh), _expr=exprY );
+    auto ptheta = vf::project( _space=Xh , _range=elements(mesh), _expr=exprTheta );
+    auto pr = vf::project( _space=Xh , _range=elements(mesh), _expr=exprR );
+    auto psin2pix = vf::project( _space=Xh , _range=elements(mesh), _expr=exprSin2PiX );
 
     BOOST_TEST_MESSAGE( "expression defined done\n" );
 
@@ -345,7 +345,7 @@ testFspaceContext()
     ctxv.add( t2 );
     ctxv.add( t3 );
 
-    auto vector1 = vf::project( Xhv , elements(mesh), vec( sin(Px()) , cos(Py()) ) );
+    auto vector1 = vf::project( _space=Xhv , _range=elements(mesh), _expr=vec( sin(Px()) , cos(Py()) ) );
     auto EvaluateProjVector1 = evaluateFromContext( _context=ctxv, _expr=idv(vector1) );
     auto EvaluateVector1 = evaluateFromContext( _context=ctxv, _expr=vec( sin(Px()) , cos(Py()) ) , _projection=true);
     BOOST_CHECK_SMALL( (EvaluateProjVector1-EvaluateVector1).norm() , 1e-13 );

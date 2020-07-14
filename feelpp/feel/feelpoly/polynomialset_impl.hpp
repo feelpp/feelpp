@@ -219,7 +219,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
         tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type> B( thegmc->B( 0 ).data(), gmc_type::NDim, gmc_type::PDim );
         const uint16_type Q = do_optimization_p1?1:M_npoints;
         const uint16_type I = nDof;
-        //Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
+        Eigen::array<int, 3> tensorGradShapeAfterContract{{1, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 1)}};
         for ( uint16_type i = 0; i < I; ++i )
         {
@@ -229,8 +229,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<0> )
                 if constexpr(!gmc_type::is_linear)
                     new (&B) tensor_map_fixed_size_matrix_t<gmc_type::NDim, gmc_type::PDim,value_type>(thegmc->B( q ).data(), gmc_type::NDim, gmc_type::PDim );
                 // grad = (gradphi_1,...,gradphi_nRealDim) * B^T
-                //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
-                M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
+                M_grad[i][q].reshape( tensorGradShapeAfterContract ) = ((*M_gradphi)[i][q].contract( B,dims ));
+                //M_grad[i][q] = (g_phi_i[q].contract( B,dims ));
 #if 0
                 M_dx[i][q] = M_grad[i][q].col( 0 );
 
@@ -338,7 +338,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
     const int Q = do_optimization_p1?1:M_npoints;
 
     Eigen::array<dimpair_t, 1> dims = {{dimpair_t(1, 0)}};
-    if ( is_hdiv_conforming )
+    if constexpr ( is_hdiv_conforming )
     {
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
@@ -353,7 +353,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             }
         }
     }
-    else if ( is_hcurl_conforming )
+    else if constexpr ( is_hcurl_conforming )
     {
         for ( uint16_type ii = 0; ii < I; ++ii )
         {
@@ -369,7 +369,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
         }
     }
 
-    if ( vm::has_normal_component_v<context>)
+    if constexpr ( vm::has_normal_component_v<context>)
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_normal_component.shape()[0];
@@ -390,13 +390,13 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             }
     }
 
-    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
+    if constexpr ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value )
     {
         const uint16_type Q = do_optimization_p1?1:M_npoints;//__gmc->nPoints();//M_grad.size2();
         const uint16_type I = M_grad.shape()[0];
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
-        //Eigen::array<int, 3> tensorGradShapeAfterContract{{nComponents1, 1, nRealDim}};
+        Eigen::array<int, 3> tensorGradShapeAfterContract{{nComponents1, 1, nRealDim}};
         Eigen::array<dimpair_t, 1> dims1 = {{dimpair_t(1, 1)}};
         Eigen::array<dimpair_t, 1> dims2 = {{dimpair_t(1, 0)}};
 
@@ -408,12 +408,12 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
             {
                 //M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
 
-                if ( is_hdiv_conforming )
+                if constexpr ( is_hdiv_conforming )
                 {
                     auto v = (*M_gradphi)[i][q].contract(B,dims1);
                     M_grad[i][q] =  K.contract(v,dims2)/thegmc->J(q);
                 }
-                else if ( is_hcurl_conforming )
+                else if constexpr ( is_hcurl_conforming )
                 {
                     //auto v = (*M_gradphi)[i][q].contract(B,dims1);
                     M_grad[i][q] =  B.contract((*M_gradphi)[i][q].contract(B,dims1),dims2);
@@ -423,26 +423,27 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     //std::cout << "left : " << M_grad[i][q].dimensions() << std::endl;
                     //std::cout << "right : " << (*M_gradphi)[i][q].contract(B,dims1).dimensions() << std::endl;
                     
-                    M_grad[i][q] = (*M_gradphi)[i][q].contract(B,dims1);
+                    //M_grad[i][q] = (*M_gradphi)[i][q].contract(B,dims1);
+                    M_grad[i][q].reshape( tensorGradShapeAfterContract ) = (*M_gradphi)[i][q].contract(B,dims1);
                 }
-                    //M_grad[i][q].reshape( tensorGradShapeAfterContract ) = (*M_gradphi)[i][q].contract(B,dims1);
+                
 
-                if ( vm::has_symm<context>::value )
+                if constexpr ( vm::has_symm<context>::value )
                 {
                     em_fixed_size_matrix_t<nComponents1,NDim,value_type> sg( M_symm_grad[i][q].data() );
                     em_fixed_size_cmatrix_t<nComponents1,NDim,value_type> g( M_grad[i][q].data() );
                     sg = (g+g.transpose())/2;
                 }
                 // update divergence if needed
-                if ( vm::has_div<context>::value )
+                if constexpr ( vm::has_div<context>::value )
                 {
                     M_div[i][q].setZero();
-                    if ( is_hdiv_conforming )
+                    if constexpr ( is_hdiv_conforming )
                     {
                         for( int c = 0; c < nRealDim; ++c )
                             M_div[i][q]( 0,0 ) +=  (*M_gradphi)[i][q](c,c,0)/thegmc->J(q);
                     }
-                    else if ( is_hcurl_conforming )
+                    else if constexpr ( is_hcurl_conforming )
                     {
                         //M_div[i][0]( 0,0 ) =  ( Bt*((*M_gradphi)[i][0]*Bt.transpose()) ).trace();
                     }
@@ -454,16 +455,16 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
 
                 // update curl if needed
-                if ( vm::has_curl<context>::value )
+                if constexpr ( vm::has_curl<context>::value )
                 {
-                    if ( NDim == 2 )
+                    if constexpr ( NDim == 2 )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 1,0,0 ) - M_grad[i][q]( 0,1,0 );
                         //M_curl[i][q]( 1 ) =  M_curl[i][q]( 0 );
                         //M_curl[i][q]( 2 ) =  M_curl[i][q]( 0 );
                     }
 
-                    else if ( NDim == 3 )
+                    else if constexpr ( NDim == 3 )
                     {
                         M_curl[i][q]( 0 ) =  M_grad[i][q]( 2,1,0 ) - M_grad[i][q]( 1,2,0 );
                         M_curl[i][q]( 1 ) =  M_grad[i][q]( 0,2,0 ) - M_grad[i][q]( 2,0,0 );
@@ -472,9 +473,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                 }
             }
         }
-#if 1
         // we need the normal derivative
-        if ( vm::has_first_derivative_normal<context>::value )
+        if constexpr ( vm::has_first_derivative_normal<context>::value )
         {
             // const uint16_type I = nDof*nComponents1;
             // const uint16_type Q = nPoints();
@@ -496,9 +496,8 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<1> )
                     }
                 }
         }
-#endif
     }
-    if ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
+    if constexpr ( vm::has_hessian<context>::value || vm::has_second_derivative<context>::value || vm::has_laplacian<context>::value  )
     {
         geometric_mapping_context_type* thegmc = __gmc.get();
         precompute_type* __pc = M_pc.get().get();
@@ -563,7 +562,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
     const uint16_type I = M_grad.shape()[0];
     geometric_mapping_context_type* thegmc = __gmc.get();
 
-    if ( vm::has_normal_component_v<context>)
+    if constexpr ( vm::has_normal_component_v<context>)
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_normal_component.shape()[0];
@@ -579,7 +578,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                         M_normal_component[i][q]( c1,0 ) +=  M_phi[i][q]( c1, c ) * N( c );
             }
     }
-    if ( vm::has_trace_v<context>)
+    if constexpr ( vm::has_trace_v<context>)
     {
         const uint16_type Q = M_npoints;//do_optimization_p1?1:M_npoints;
         const uint16_type I = M_trace.shape()[0];
@@ -592,7 +591,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                 M_trace[i][q]=res();
             }
     }
-    if ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
+    if constexpr ( vm::has_grad<context>::value || vm::has_first_derivative<context>::value  )
     {
 
         typedef typename boost::multi_array<value_type,4>::index_range range;
@@ -605,7 +604,7 @@ update( geometric_mapping_context_ptrtype const& __gmc, rank_t<2> )
                 Eigen::array<dimpair_t, 1> dims = {{dimpair_t(2, 1)}};
                 M_grad[i][q] = (*M_gradphi)[i][q].contract( B,dims );
                 // update divergence if needed
-                if ( vm::has_div<context>::value )
+                if constexpr ( vm::has_div<context>::value )
                 {
                     M_div[i][q].setZero();
                     // div_i = sum_j \frac{\partial u_ij}{\partial x_j}
