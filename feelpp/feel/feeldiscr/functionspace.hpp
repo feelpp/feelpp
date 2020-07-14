@@ -1286,7 +1286,7 @@ struct createWorldsComm
 
     typedef typename SpaceType::mesh_ptrtype mesh_ptrtype;
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    inline static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct UpdateWorldsComm
     {
@@ -1347,7 +1347,7 @@ struct createMeshSupport
     typedef typename mesh_support_type::range_elements_type range_elements_type;
 
     typedef typename SpaceType::meshes_list meshes_list;
-    static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
+    inline static const bool useMeshesList = !boost::is_base_of<MeshBase<>, meshes_list >::value;
 
     struct HasAllMeshSupportDefined
     {
@@ -1547,12 +1547,12 @@ template<uint16_type PN,
          uint16_type GN = 1>
 struct Order
 {
-    static const uint16_type PolynomialOrder = PN;
-    static const uint16_type GeometricOrder = GN;
+    inline static const uint16_type PolynomialOrder = PN;
+    inline static const uint16_type GeometricOrder = GN;
 
-    static const bool is_isoparametric = ( PN == GN );
-    static const bool is_subparametric = ( PN > GN );
-    static const bool is_surparametric = ( PN < GN );
+    inline static const bool is_isoparametric = ( PN == GN );
+    inline static const bool is_subparametric = ( PN > GN );
+    inline static const bool is_surparametric = ( PN < GN );
 };
 
 typedef parameter::parameters<
@@ -1708,7 +1708,7 @@ public:
     /** @name Constants
      */
     //@{
-    static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
+    inline static const bool is_composite = ( mpl::size<bases_list>::type::value > 1 );
 
     template<typename MeshListType,int N>
     struct GetMesh
@@ -1768,8 +1768,8 @@ public:
                 value_type,
                 typename mesh_type::element_type>::type::nComponents> type;
     };
-    struct nodim { static const int nDim = -1; static const int nRealDim = -1; };
-    static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
+    struct nodim { inline static const int nDim = -1; inline static const int nRealDim = -1; };
+    inline static constexpr uint16_type nDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
                                           mpl::identity<meshes_list >,
                                           mpl::identity<nodim> >::type::type::nDim;
     static constexpr uint16_type nRealDim = mpl::if_<boost::is_base_of<MeshBase<>, meshes_list >,
@@ -1803,19 +1803,19 @@ public:
                               mpl::identity<boost::none_t>,
                               mpl::identity<typename basis_0_type::polyset_type> >::type::type polyset_type;
 
-    static const uint16_type nComponents = mpl::transform<bases_list,
+    inline static const uint16_type nComponents = mpl::transform<bases_list,
                              GetNComponents<mpl::_1>,
                              mpl::inserter<mpl::int_<0>,mpl::plus<mpl::_,mpl::_> > >::type::value;
-    static const uint16_type N_COMPONENTS = nComponents;
-    static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
+    inline static const uint16_type N_COMPONENTS = nComponents;
+    inline static const uint16_type nSpaces = mpl::size<bases_list>::type::value;
     static constexpr uint16_type nRealComponents = is_tensor2symm?basis_0_type::nComponents1*(basis_0_type::nComponents1+1)/2:nComponents;
     typedef typename GetPeriodicity<periodicity_type,0>::type periodicity_0_type;
-    static const bool is_periodic = periodicity_0_type::is_periodic;
+    inline static const bool is_periodic = periodicity_0_type::is_periodic;
 
     typedef typename GetMortar<mortar_list,0>::type mortar_0_type;
-    static const bool is_mortar = mortar_0_type::is_mortar;
-    static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
-    static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
+    inline static const bool is_mortar = mortar_0_type::is_mortar;
+    inline static const bool is_hdiv_conforming = Feel::is_hdiv_conforming<basis_0_type>::value;
+    inline static const bool is_hcurl_conforming = Feel::is_hcurl_conforming<basis_0_type>::value;
 
     //@}
 
@@ -1946,7 +1946,7 @@ public:
                               mpl::identity<typename basis_0_type::template Context<vm::POINT|vm::GRAD|vm::JACOBIAN|vm::Hessian|vm::KB, basis_0_type, gm_type, geoelement_type> > >::type::type basis_context_type;
                               //mpl::identity<typename basis_0_type::template Context<vm::POINT, basis_0_type, gm_type, geoelement_type, pts_gmc_type::context> > >::type::type basis_context_type;
 #else
-    static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
+    inline static const size_type basis_context_value = ( basis_0_type::is_product && nComponents > 1 )?
         vm::POINT|vm::GRAD|vm::JACOBIAN|vm::KB :
         vm::POINT|vm::GRAD|vm::JACOBIAN|vm::HESSIAN|vm::KB;
     typedef typename mpl::if_<mpl::bool_<is_composite>,
@@ -1997,7 +1997,7 @@ public:
         public std::map<int,basis_context_ptrtype>
     {
     public:
-        static const bool is_rb_context = false;
+        inline static const bool is_rb_context = false;
         typedef std::map<int,basis_context_ptrtype> super;
         typedef typename super::value_type bc_type;
         typedef typename matrix_node<value_type>::type matrix_node_type;
@@ -2253,23 +2253,23 @@ public:
         typedef std::shared_ptr<functionspace_type> functionspace_ptrtype;
         using index_type = typename mesh_type::index_type;
         
-        static const uint16_type nDim = mesh_type::nDim;
-        static const uint16_type nRealDim = mesh_type::nRealDim;
-        static const bool is_composite = functionspace_type::is_composite;
-        static const bool is_scalar = functionspace_type::is_scalar;
-        static const bool is_vectorial = functionspace_type::is_vectorial;
-        static const bool is_tensor2 = functionspace_type::is_tensor2;
-        static const bool is_tensor2symm = functionspace_type::is_tensor2symm;
-        static const bool is_continuous = functionspace_type::is_continuous;
-        static const uint16_type nComponents1 = functionspace_type::nComponents1;
-        static const uint16_type nComponents2 = functionspace_type::nComponents2;
-        static const uint16_type nComponents = functionspace_type::nComponents;
-        static const uint16_type nRealComponents = functionspace_type::nRealComponents;
-        static const uint16_type nSpaces = functionspace_type::nSpaces;
-        static const bool is_mortar = functionspace_type::is_mortar;
-        static const int rank = functionspace_type::rank;
-        static const bool is_hcurl_conforming = functionspace_type::is_hcurl_conforming;
-        static const bool is_hdiv_conforming = functionspace_type::is_hdiv_conforming;
+        inline static const uint16_type nDim = mesh_type::nDim;
+        inline static const uint16_type nRealDim = mesh_type::nRealDim;
+        inline static const bool is_composite = functionspace_type::is_composite;
+        inline static const bool is_scalar = functionspace_type::is_scalar;
+        inline static const bool is_vectorial = functionspace_type::is_vectorial;
+        inline static const bool is_tensor2 = functionspace_type::is_tensor2;
+        inline static const bool is_tensor2symm = functionspace_type::is_tensor2symm;
+        inline static const bool is_continuous = functionspace_type::is_continuous;
+        inline static const uint16_type nComponents1 = functionspace_type::nComponents1;
+        inline static const uint16_type nComponents2 = functionspace_type::nComponents2;
+        inline static const uint16_type nComponents = functionspace_type::nComponents;
+        inline static const uint16_type nRealComponents = functionspace_type::nRealComponents;
+        inline static const uint16_type nSpaces = functionspace_type::nSpaces;
+        inline static const bool is_mortar = functionspace_type::is_mortar;
+        inline static const int rank = functionspace_type::rank;
+        inline static const bool is_hcurl_conforming = functionspace_type::is_hcurl_conforming;
+        inline static const bool is_hdiv_conforming = functionspace_type::is_hdiv_conforming;
 
         /** @name Typedefs
          */
@@ -5897,154 +5897,109 @@ private:
 #endif
 }; // FunctionSpace
 
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::is_scalar;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::is_vectorial;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::is_tensor2symm;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::is_continuous;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents1;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nComponents2;
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nRealComponents;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::nSpaces;
-
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const bool FunctionSpace<A0,A1,A2,A3, A4>::Element<T,Cont>::is_scalar;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_vectorial;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const bool FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::is_tensor2symm;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nComponents;
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-template<typename T,  typename Cont>
-const uint16_type FunctionSpace<A0,A1,A2,A3,A4>::Element<T,Cont>::nRealComponents;
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
 FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
                                          mesh_support_vector_type const& meshSupport,
                                          size_type mesh_components,
-                                         periodicity_type const& periodicity,
                                          std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
-                                         mpl::bool_<false> )
+                                         periodicity_type const& periodicity )
 {
-    DVLOG(2) << "calling init(<space>) begin\n";
-    DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
-
-    M_mesh = __m;
-    M_periodicity = periodicity;
-    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
-
-    if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
+    Feel::Context ctx( mesh_components );
+    DVLOG(2) << "component     MESH_RENUMBER: " <<  ctx.test( MESH_RENUMBER ) << "\n";
+    DVLOG(2) << "component MESH_UPDATE_EDGES: " <<  ctx.test( MESH_UPDATE_EDGES ) << "\n";
+    DVLOG(2) << "component MESH_UPDATE_FACES: " <<  ctx.test( MESH_UPDATE_FACES ) << "\n";
+    DVLOG(2) << "component    MESH_PARTITION: " <<  ctx.test( MESH_PARTITION ) << "\n";
+#if !defined(__INTEL_COMPILER )
+    if(boption( "connect"))
+        __m->addObserver( *this );
+#endif
+    if constexpr ( is_composite )
     {
+        DVLOG(2) << "calling init(<composite>) begin\n";
+        M_mesh = __m;
 
-        if ( basis_type::nDofPerEdge || nDim >= 3 )
-            mesh_components |= MESH_UPDATE_EDGES;
+        // todo : check worldsComm size and M_functionspaces are the same!
+        mpl::range_c<int,0,nSpaces> keySpaces;
+        fusion::for_each( keySpaces,
+                          Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport, periodicity,
+                                                                             dofindices,
+                                                                             this->worldsComm(),
+                                                                             this->extendedDofTableComposite() ) );
 
-        /*
-         * update faces info in mesh only if dofs exists on faces or the
-         * expansion is continuous between elements. This case handles strong
-         * Dirichlet imposition
-         */
-        if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
-            mesh_components |= MESH_UPDATE_FACES;
+        this->initList();
+    }
+    else 
+    {
+        DVLOG(2) << "calling init(<space>) begin\n";
+        DVLOG(2) << "calling init(<space>) is_periodic: " << is_periodic << "\n";
 
-        if ( !M_mesh->isUpdatedForUse() )
+        M_mesh = __m;
+        M_periodicity = periodicity;
+        VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
+
+        if ( M_mesh->components().test( MESH_DO_NOT_UPDATE ) )
         {
-            M_mesh->components().set( mesh_components );
-            M_mesh->updateForUse();
+
+            if ( basis_type::nDofPerEdge || nDim >= 3 )
+                mesh_components |= MESH_UPDATE_EDGES;
+
+            /*
+             * update faces info in mesh only if dofs exists on faces or the
+             * expansion is continuous between elements. This case handles strong
+             * Dirichlet imposition
+             */
+            if ( basis_type::nDofPerFace || is_continuous || nDim >= 3 )
+                mesh_components |= MESH_UPDATE_FACES;
+
+            if ( !M_mesh->isUpdatedForUse() )
+            {
+                M_mesh->components().set( mesh_components );
+                M_mesh->updateForUse();
+            }
         }
+        if ( is_periodic )
+        {
+            M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
+        }
+
+        M_ref_fe = std::make_shared<basis_type>();
+
+        tic();
+        tic();
+        M_dof = std::make_shared<dof_type>( M_ref_fe, std::get<0>(periodicity), *this->worldsComm()[0] );
+        toc("FunctionSpace dof-1", FLAGS_v>0);
+        tic();
+        M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
+        toc("FunctionSpace dof-2", FLAGS_v>0);
+        DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
+        tic();
+        M_dof->setDofIndices( dofindices );
+        toc("FunctionSpace dof-3", FLAGS_v>0);
+        DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
+        tic();
+        if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
+            M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
+        toc("FunctionSpace dof-4", FLAGS_v>0);
+        tic();
+        M_dof->build( M_mesh );
+        toc("FunctionSpace dof-5", FLAGS_v>0);
+        toc("FunctionSpace dof table", FLAGS_v > 0 );
+        M_dofOnOff = M_dof;
+
+        this->applyUpdateInformationObject();
+
+        DVLOG(2) << "nb dim : " << qDim() << "\n";
+        DVLOG(2) << "nb dof : " << nDof() << "\n";
+        DVLOG(2) << "nb dof per component: " << nDofPerComponent() << "\n";
+
+
+        //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
+
+        DVLOG(2) << "calling init(<space>) end\n";
+        VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
     }
-    if ( is_periodic )
-    {
-        M_mesh->removeFacesFromBoundary( { periodicity.tag1(), periodicity.tag2() } );
-    }
-
-    M_ref_fe = std::make_shared<basis_type>();
-
-    tic();
-    tic();
-    M_dof = std::make_shared<dof_type>( M_ref_fe, fusion::at_c<0>(periodicity), *this->worldsComm()[0] );
-    toc("FunctionSpace dof-1", FLAGS_v>0);
-    tic();
-    M_dof->setBuildDofTableMPIExtended( this->extendedDofTable() );
-    toc("FunctionSpace dof-2", FLAGS_v>0);
-    DVLOG(2) << "[functionspace] Dof indices is empty ? " << dofindices.empty() << "\n";
-    tic();
-    M_dof->setDofIndices( dofindices );
-    toc("FunctionSpace dof-3", FLAGS_v>0);
-    DVLOG(2) << "[functionspace] is_periodic = " << is_periodic << "\n";
-    tic();
-    if ( fusion::at_c<0>( meshSupport ) && fusion::at_c<0>( meshSupport )->isPartialSupport() )
-        M_dof->setMeshSupport( fusion::at_c<0>( meshSupport ) );
-    toc("FunctionSpace dof-4", FLAGS_v>0);
-    tic();
-    M_dof->build( M_mesh );
-    toc("FunctionSpace dof-5", FLAGS_v>0);
-    toc("FunctionSpace dof table", FLAGS_v > 0 );
-    M_dofOnOff = M_dof;
-
-    this->applyUpdateInformationObject();
-
-    DVLOG(2) << "nb dim : " << qDim() << "\n";
-    DVLOG(2) << "nb dof : " << nDof() << "\n";
-    DVLOG(2) << "nb dof per component: " << nDofPerComponent() << "\n";
-
-
-    //detail::searchIndicesBySpace<proc_dist_map_type>( this, procDistMap);
-
-    DVLOG(2) << "calling init(<space>) end\n";
-    VLOG(1) << "FunctionSpace init begin mesh use_count : " << M_mesh.use_count();
-}
-
-template<typename A0, typename A1, typename A2, typename A3, typename A4>
-void
-FunctionSpace<A0, A1, A2, A3, A4>::init( mesh_ptrtype const& __m,
-                                         mesh_support_vector_type const& meshSupport,
-                                         size_type mesh_components,
-                                         periodicity_type const& periodicity,
-                                         std::vector<Dof<typename mesh_type::size_type>> const& dofindices,
-                                         mpl::bool_<true> )
-{
-    DVLOG(2) << "calling init(<composite>) begin\n";
-    M_mesh = __m;
-
-    // todo : check worldsComm size and M_functionspaces are the same!
-    mpl::range_c<int,0,nSpaces> keySpaces;
-    fusion::for_each( keySpaces,
-                      Feel::detail::InitializeSpace<functionspace_type>( M_functionspaces,__m, meshSupport, periodicity,
-                                                                         dofindices,
-                                                                         this->worldsComm(),
-                                                                         this->extendedDofTableComposite() ) );
-
-    this->initList();
 }
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
