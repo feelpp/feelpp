@@ -1,9 +1,9 @@
-/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4*/
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
+ */
 #ifndef __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H
 #define __FEELPP_MODELS_VF_SOLIDMECGEOMAPEULERIAN_H 1
 
 #include <feel/feelmodels/modelvf/exprtensorbase.hpp>
-#include <feel/feelmodels/solid/mechanicalpropertiesdescription.hpp>
 
 namespace Feel
 {
@@ -370,19 +370,19 @@ private:
 
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > >
+auto
 solidMecGeomapEulerian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,mpl::int_<ExprApplyType::EVAL> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 template<class ElementDispType>
 inline
-Expr< SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > >
+auto
 solidMecGeomapEulerianJacobian( ElementDispType const& v )
 {
-    typedef SolidMecGeomapEulerian<ElementDispType,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
-    return Expr< myexpr_type >(  myexpr_type( v ) );
+    typedef SolidMecGeomapEulerian<unwrap_ptr_t<ElementDispType>,mpl::int_<ExprApplyType::JACOBIAN> > myexpr_type;
+    return Expr< myexpr_type >(  myexpr_type( unwrap_ptr(v) ) );
 }
 
 

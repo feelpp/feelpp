@@ -668,7 +668,7 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
     gmsh::open( __geoname );
 
     // some options
-    gmsh::model::mesh::setOrder( M_order );
+    gmsh::option::setNumber( "Mesh.ElementOrder",(double)M_order );
     gmsh::option::setNumber( "Mesh.Algorithm", (double)GMSH_ALGORITHM_2D::FRONTAL );
     gmsh::option::setNumber( "Mesh.Algorithm3D", (double)GMSH_ALGORITHM_3D::DELAUNAY );
     if( doption("gmsh.randFactor") > 0. )
@@ -682,13 +682,17 @@ Gmsh::generate( std::string const& __geoname, uint16_type dim, bool parametric, 
 #endif
     // generate mesh
     gmsh::model::mesh::generate( dim );
-    gmsh::logger::stop();
+
+    // setOrder is operational only after mesh generation, we impose this property before with Mesh.ElementOrder
+    //gmsh::model::mesh::setOrder( M_order );
+
 #if GMSH_VERSION_GREATER_OR_EQUAL_THAN(4,2,0)
     gmsh::logger::get( gmshLog );
 #endif
     if ( FLAGS_v >= 1 )
         for ( std::string const& msg : gmshLog )
             std::cout << msg << "\n";
+    gmsh::logger::stop();
 
     // mesh refine
     for( int l = 0; l < M_refine_levels; ++l )

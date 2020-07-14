@@ -145,7 +145,7 @@ public:
         mark.on( _range=boundaryelements(M_mesh), _expr=cst(1) );
         M_mesh->updateMarker2( mark );
 
-        auto phi = thefms->march(phio, true);
+        auto phi = thefms->march(phio, boundaryelements(M_mesh));
         auto dist = vf::project( _space=Xh, _range=elements(M_mesh), _expr=M_radius - sqrt( Px()*Px()+Py()*Py()+Pz()*Pz() ) );
         auto err = vf::project( _space=Xh, _range=elements(M_mesh), _expr=abs( idv(phi) - idv(dist) ) );
 
@@ -179,12 +179,12 @@ public:
         auto phio = vf::project(_space=Xh, _range=elements(M_mesh), _expr=(Px()-x_center)*(Px()-x_center) + (Py()-y_center)*(Py()-y_center) - radius);
         auto dist = vf::project(_space=Xh, _range=elements(M_mesh), _expr=sqrt((Px()-x_center)*(Px()-x_center) + (Py()-y_center)*(Py()-y_center)) - radius);
         
-        auto phi1 = thefms->march(phio, false) ;
+        auto phi1 = thefms->march(phio) ;
 
         auto mark = vf::project(_space=Xh0, _range=elements(M_mesh), _expr=chi(abs(idv(phio)) <= 2.*doption("gmsh.hsize"))) ;
         M_mesh->updateMarker2( mark ) ;
 
-        auto phi2 = thefms->march(phio, true) ;
+        auto phi2 = thefms->march(phio, marked2elements(M_mesh, 1)) ;
         
         auto err1 = vf::project( _space=Xh, _range=elements(M_mesh), _expr=abs( idv(phi1) - idv(dist) ) );
         auto err2 = vf::project( _space=Xh, _range=elements(M_mesh), _expr=abs( idv(phi2) - idv(dist) ) );

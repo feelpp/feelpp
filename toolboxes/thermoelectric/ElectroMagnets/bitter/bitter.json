@@ -18,43 +18,18 @@
         {
             "Robin":
             {
-                "Channel0":
+                "bitter_robin":
                 {
-                    "expr1":"0.08",
-                    "expr2":"293"
-                },
-                "Channel1":
-                {
-                    "expr1":"0.08",
-                    "expr2":"293"
-                },
-                "TieRods":
-                {
-                    "expr1":"0.08",
-                    "expr2":"293"
-                },
-                "CoolingHoles":
-                {
+                    "markers":["Channel0","Channel1","TieRods","CoolingHoles"],
                     "expr1":"0.08",
                     "expr2":"293"
                 }
             },
             "Neumann":
             {
-                "V0":
+                "bitter_neumann":
                 {
-                    "expr":"0"
-                },
-                "V1":
-                {
-                    "expr":"0"
-                },
-                "top":
-                {
-                    "expr":"0"
-                },
-                "bottom":
-                {
+                    "markers":["V0","V1","top","bottom"],
                     "expr":"0"
                 }
             }
@@ -74,28 +49,9 @@
             },
             "Neumann":
             {
-                "Channel0":
+                "bitter_neumann":
                 {
-                    "expr":"0"
-                },
-                "Channel1":
-                {
-                    "expr":"0"
-                },
-                "CoolingHoles":
-                {
-                    "expr":"0"
-                },
-                "TieRods":
-                {
-                    "expr":"0"
-                },
-                "top":
-                {
-                    "expr":"0"
-                },
-                "bottom":
-                {
+                    "markers":["Channel0","Channel1","CoolingHoles","TieRods","top","bottom"],
                     "expr":"0"
                 }
             }
@@ -120,7 +76,7 @@
                     "FluxV0":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-materials_omega_k*heat_dn_T:materials_omega_k:heat_dn_T",
                         "markers":"Channel0"
                     },
                     "FluxContV0":
@@ -132,7 +88,7 @@
                     "FluxV1":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-materials_omega_k*heat_dn_T:materials_omega_k:heat_dn_T",
                         "markers":"Channel1"
                     },
                     "FluxContV1":
@@ -144,7 +100,7 @@
                     "FluxCoolingHoles":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-materials_omega_k*heat_dn_T:materials_omega_k:heat_dn_T",
                         "markers":"CoolingHoles"
                     },
                     "FluxContCoolingHoles":
@@ -156,7 +112,7 @@
                     "FluxTieRods":
                     {
                         "type":"mean",
-                        "expr":"-heat_omega_k*heat_dnT:heat_omega_k:heat_dnT",
+                        "expr":"-materials_omega_k*heat_dn_T:materials_omega_k:heat_dn_T",
                         "markers":"TieRods"
                     },
                     "FluxContTieRods":
@@ -182,19 +138,19 @@
                     "Intensity0":
                     {
                         "type":"integrate",
-                        "expr":"-electric_omega_sigma*electric_dnP:electric_omega_sigma:electric_dnP",
+                        "expr":"-materials_omega_sigma*electric_dn_P:materials_omega_sigma:electric_dn_P",
                         "markers":"V0"
                     },
                     "Intensity1":
                     {
                         "type":"integrate",
-                        "expr":"-electric_omega_sigma*electric_dnP:electric_omega_sigma:electric_dnP",
+                        "expr":"-materials_omega_sigma*electric_dn_P:materials_omega_sigma:electric_dn_P",
                         "markers":"V1"
                     },
                     "Power":
                     {
                         "type":"integrate",
-                        "expr":"electric_omega_sigma*(electric_dxP^2+electric_dyP^2+electric_dzP^2):electric_omega_sigma:electric_dxP:electric_dyP:electric_dzP",
+                        "expr":"materials_omega_sigma*(electric_grad_P_x^2+electric_grad_P_y^2+electric_grad_P_z^2):materials_omega_sigma:electric_grad_P_x:electric_grad_P_y:electric_grad_P_z",
                         "markers":"omega"
                     }
                 }

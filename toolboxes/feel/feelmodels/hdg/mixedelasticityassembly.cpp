@@ -451,7 +451,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
                     g.setParameterValues({ {"t", M_nm_mixedelasticity->time()} });
                 Feel::cout << "Neumann condition on " << marker << ": " << g << std::endl;
                 blf( 2_c ) += integrate(_quad=_Q<expr_order>(),_range=markedfaces(M_mesh,marker),
-                                        _expr= inner(expr(g)*N(), id(m)) );
+                                        _expr= inner(g*N(), id(m)) );
             }
         }
 
@@ -467,7 +467,7 @@ MixedElasticity<Dim, Order, G_Order,E_Order>::assembleF()
 
                 for( auto const& pairMat : modelProperties().materials() )
                 {
-                    auto gradu_exact = grad( g );
+                    auto gradu_exact = grad<Dim>( g );
                     auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
                     auto material = pairMat.second;
                     auto lambda = material.getScalar("lambda");
@@ -747,7 +747,7 @@ MIXEDELASTICITY_CLASS_TEMPLATE_TYPE::exportResults( double time, mesh_ptrtype me
                                 // Export the errors
                                 M_exporter -> step( time )->add(prefixvm(prefix(), "u_error_L2"), l2err_u/l2norm_uex );
                                 //------ Sigma  ------//
-                                auto gradu_exact = grad(u_exact);
+                                auto gradu_exact = grad<Dim>(u_exact);
                                 auto eps_exact   = cst(0.5) * ( gradu_exact + trans(gradu_exact) );
                                 for( auto const& pairMat : modelProperties().materials() )
                                 {

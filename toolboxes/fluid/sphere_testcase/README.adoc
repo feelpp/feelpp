@@ -1,0 +1,15 @@
+Falling sphere testcase
+
+== Description
+
+The case of a translating sphere was first studied by Stokes, who came up with a simple linear relationship between the drag force and the translational velocity of this body, namely stem:[F=6\pi \mu R V], where stem:[R] is the radius of the sphere and stem:[V] its velocity, stem:[\mu] is the viscosity of the fluid. Another well known relationship, valid for a settling sphere under gravity, is
+[stem]
+++++
+        V = \frac{2(\rho_s-\rho_f)gR^2}{9\mu},
+++++
+where stem:[\rho_s] and stem:[\rho_f] are the sphere and fluid densities, respectively, and stem:[g] is the gravity acceleration.
+
+We use these relationships as benchmarks for the fluid-rigid body coupling solver. It will allow us to assess both the correctness of the translational velocity and the correct evaluation of fluid forces via boundary integrations.
+
+The three-dimensional computational domain is composed by a larger sphere containing the smaller one. We impose homogeneous Dirichlet boundary conditions on the outer sphere and zero average pressure using a Lagrange multiplier. This latter imposition is necessary because imposing Dirichlet boundary conditions alone makes pressure determined up to a constant. We impose gravity as the driving force. We run these simulations in the low Reynolds number regime, and notice that the expected settling velocity and drag are instantaneously reached.
+                

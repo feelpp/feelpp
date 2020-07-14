@@ -1,0 +1,197 @@
+// -*- mode: javascript -*-
+{
+    "Name": "ISO 10211:2007 Thermal bridges in building construction",
+    "ShortName":"ThermalBridges",
+    "Models":
+    {
+        "equations":[
+            {
+                "name":"heat",
+                "unknown":
+                {
+                    "basis":"Pch1",
+                    "name":"temperature",
+                    "symbol":"T"
+                }
+            }]
+    },
+    "Parameters":
+    {
+        "h_top":"1.0/0.06", // h coeff
+        "h_bottom":"1.0/0.11", // h coeff
+        "T0_top":0, // temperature exterior
+        "T0_bottom":20 // temperature exterior
+    },
+    "Materials":
+    {
+        "Concrete":
+        {
+            "markers":"mat1",
+            "k":"1.15",//[ W/(m*K) ]
+            "Cp":"880", //[ J/(kg*K) ]
+            "rho":"2300", //[ kg/(m^3) ]
+            "heat_c":"materials_Concrete_k:materials_Concrete_k"
+        },
+        "Wood":
+        {
+            "markers":"mat2",
+            "k":"0.12",//[ W/(m*K) ]
+            "Cp":"2500", //[ J/(kg*K) ]
+            "rho":"500", //[ kg/(m^3) ]
+            "heat_c":"materials_Wood_k:materials_Wood_k"
+        },
+        "Insulation":
+        {
+            "markers":"mat3",
+            "k":"0.029",//[ W/(m*K) ]
+            "Cp":"1000", //[ J/(kg*K) ]
+            "rho":"150", //[ kg/(m^3) ]
+            "heat_c":"materials_Insulation_k:materials_Insulation_k"
+        },
+        "Aluminium":
+        {
+            "markers":"mat4",
+            "k":"230",//[ W/(m*K) ]
+            "Cp":"900", //[ J/(kg*K) ]
+            "rho":"2700", //[ kg/(m^3) ]
+            "heat_c":"materials_Aluminium_k:materials_Aluminium_k"
+        }
+
+    },
+    "BoundaryConditions":
+    {
+        "heat":
+        {
+            "Neumann":
+            {
+                "top":
+                {
+                    "expr":"-h_top*(heat_T-T0_top):h_top:heat_T:T0_top"
+                },
+                "bottom":
+                {
+                    "expr":"-h_bottom*(heat_T-T0_bottom):h_bottom:heat_T:T0_bottom"
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "use-model-name":1,
+        "heat":
+        {
+        "Exports":
+        {
+            "fields":["temperature","pid"]
+        },
+        "Measures":
+        {
+            "Statistics":
+            {
+                "Check_Heat-Flux_top":
+                {
+                    "type":"integrate",
+                    "expr":"-materials_Concrete_k*heat_dn_T - h_top*(heat_T-T0_top):materials_Concrete_k:heat_dn_T:heat_T:h_top:T0_top",
+                    "markers":"top"
+                },
+                "Check_Heat-Flux_bottom":
+                {
+                    "type":"integrate",
+                    "expr":"-materials_Aluminium_k*heat_dn_T - h_bottom*(heat_T-T0_bottom):materials_Aluminium_k:heat_dn_T:heat_T:h_bottom:T0_bottom",
+                    "markers":"bottom"
+                },
+                "CheckGeneric_Heat-Flux_%1_1%":
+                {
+                    "type":"integrate",
+                    "expr":"-materials_%1_2%_k*heat_dn_T - h_%1_1%*(heat_T-T0_%1_1%):materials_%1_2%_k:heat_dn_T:heat_T:h_%1_1%:T0_%1_1%",
+                    "markers":"%1_1%",
+                    "index1":[ ["top", "Concrete"],["bottom", "Aluminium"] ]
+                },
+                "Inward-Heat-Flux_bottom":
+                {
+                    "type":"integrate",
+                    "expr":"-h_bottom*(heat_T-T0_bottom):heat_T:h_bottom:T0_bottom",
+                    "markers":"bottom"
+                }
+                // "Inward-Heat-Flux_V2_bottom":
+                // {
+                //     "type":"integrate",
+                //     "expr":"-heat_nflux:heat_nflux",
+                //     "markers":"bottom"
+                // }
+            },
+            "Points":
+            {
+                "point%1_1%":
+                {
+                    "coord":"%1_2%",
+                    "fields":"temperature",
+                    "index1":[ ["A", "{0,0.0475}"],
+                               ["B", "{0.5,0.0475}"],
+                               ["C", "{0,0.0415}"],
+                               ["D", "{0.015,0.0415}"],
+                               ["E", "{0.5,0.0415}"],
+                               ["F", "{0,0.0365}"],
+                               ["G", "{0.015,0.0365}"],
+                               ["H", "{0,0}"],
+                               ["I", "{0.5,0}"]
+                             ]
+                }
+            }
+        },
+        "Checkers":
+        {
+            "Measures":
+            {
+                "Points_point%1_1%_temperature":
+                {
+                    "value":"%1_2%",
+                    "tolerance":1e-1,
+                    "index1": [ [ "A", "7.1" ],
+                                [ "B", "0.8" ],
+                                [ "C", "7.9" ],
+                                [ "D", "6.3" ],
+                                [ "E", "0.8" ],
+                                [ "F", "16.4" ],
+                                [ "G", "16.3" ],
+                                [ "H", "16.8" ],
+                                [ "I", "18.3" ]
+                              ]
+                },
+                "Statistics_Check_Heat-Flux_top_integrate":
+                {
+                    "value":0,
+                    "tolerance":0.5
+                },
+                "Statistics_Check_Heat-Flux_bottom_integrate":
+                {
+                    "value":0,
+                    "tolerance":0.5
+                },
+                "Statistics_CheckGeneric_Heat-Flux_%1%_integrate":
+                {
+                    "value":0,
+                    "tolerance":0.5,
+                    "index1":["top","bottom"]
+                },
+                "Statistics_Inward-Heat-Flux_bottom_integrate":
+                {
+                    "value":9.5,
+                    "tolerance":1e-1
+                }
+                // "Statistics_Inward-Heat-Flux_V2_bottom_integrate":
+                // {
+                //     "value":9.5,
+                //     "tolerance":1e-1
+                // }
+                // "Normal_Heat_Flux_bottom":
+                // {
+                //     "value":9.5,
+                //     "tolerance":1e-1
+                // }
+            }
+        }
+        }
+    }
+
+}
