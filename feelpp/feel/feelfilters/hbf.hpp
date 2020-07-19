@@ -186,10 +186,6 @@ public:
     typedef meta::Pch<MeshStructured,1>::ptrtype q1_space_ptrtype;
     typedef meta::Pch<MeshStructured,1>::type space_type;
     typedef space_type::element_type q1_element_type;
-    typedef Pdh_ptrtype<MeshStructured,0> q0_space_ptrtype;
-    typedef Pdh_type<MeshStructured,0> q0_space_type;
-    typedef q0_space_type::element_type q0_element_type;
-
 
     typedef boost::bimap<bimaps::unordered_set_of<std::pair<int,int>>, bimaps::unordered_set_of<int>, bimaps::list_of_relation > dof_table;
     typedef dof_table::value_type dof_relation;
@@ -200,7 +196,7 @@ public:
      * \param ny indicates the number of nodes in y direction
      * the number of cells is nx-1 and ny-1 in the x and y direction respectively
      */
-    Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh, q0_space_ptrtype Mh );
+    Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh );
 
     /**
      * build a Q1 element from a nodal image
@@ -211,22 +207,17 @@ public:
     /**
      * build a Q0 element from a cell image
      */
-    q0_element_type cellToQ0( holo3_image<float> const& x );
     void cellToQ1( holo3_image<float> const& x, q1_element_type& u );
+    
     /**
      * from a Q1 element build a nodal image
      */
     holo3_image<float>  operator()( q1_element_type const& u );
 
-    /**
-     * from a Q0 element build a cell image
-     */
-    holo3_image<float>  operator()( q0_element_type const& u );
 private:
     int M_rows;
     int M_cols;
     q1_space_ptrtype M_Xh;
-    q0_space_ptrtype M_Qh;
     dof_table M_relation, M_relation_q0;
   
 };
