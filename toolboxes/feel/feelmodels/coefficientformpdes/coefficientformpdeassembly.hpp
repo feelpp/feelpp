@@ -29,8 +29,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "Theta" )
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( this->timeStepping() == "Theta" )
+            timeSteppingScaling = this->M_timeStepThetaValue;
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
@@ -38,7 +38,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
 
     auto mesh = this->mesh();
     auto Xh = this->spaceUnknown();
-    auto const& u = this->fieldUnknown();
+    auto const& u = mctx.field( FieldTag::unknown(this), this->unknownName() );
     auto const& v = this->fieldUnknown();
 
     auto bilinearForm = form2( _test=Xh,_trial=Xh,_matrix=A,
@@ -50,7 +50,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
@@ -102,6 +102,39 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateLinearPDE( ModelAlgebraic
                     bilinearForm +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*coeff_c_expr*inner(gradt(u),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
+        if constexpr ( unknown_is_scalar )
+        {
+            // conservative flux convection
+            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) )
+            {
+                auto const& coeff_alpha = this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() );
+                auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim,1>(), se );
+                bool build_conservativeFluxConvectionTerm = coeff_alpha_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_conservativeFluxConvectionTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*idt(u)*inner(trans(coeff_alpha_expr),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            // conservative flux source
+            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+            {
+                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
                                    _geomap=this->geomap() );
                 }
             }
@@ -381,8 +414,8 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
     double timeSteppingScaling = 1.;
     if ( !this->isStationary() )
     {
-        if ( M_timeStepping == "Theta" )
-            timeSteppingScaling = M_timeStepThetaValue;
+        if ( this->timeStepping() == "Theta" )
+            timeSteppingScaling = this->M_timeStepThetaValue;
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
 
@@ -402,7 +435,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
@@ -445,6 +478,44 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                            _geomap=this->geomap() );
                     }
                 }
+                if ( coeffDiffusionDependOnUnknown && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&coeff_c_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+
+                            auto coeff_c_diff_expr = diffSymbolicExpr( coeff_c_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                            if ( !coeff_c_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            if constexpr ( unknown_is_vectorial )
+                            {
+                                form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                       _pattern=size_type(Pattern::COUPLED),
+                                       _rowstart=this->rowStartInMatrix(),
+                                       _colstart=trialBlockIndex ) +=
+                                    integrate( _range=range,
+                                               _expr= timeSteppingScaling*inner(coeff_c_diff_expr*gradv(u),grad(v)),
+                                               _geomap=this->geomap() );
+                            }
+                            else
+                            {
+                                form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                       _pattern=size_type(Pattern::COUPLED),
+                                       _rowstart=this->rowStartInMatrix(),
+                                       _colstart=trialBlockIndex ) +=
+                                    integrate( _range=range,
+                                               _expr= timeSteppingScaling*grad(v)*(coeff_c_diff_expr*trans(gradv(u))),
+                                               _geomap=this->geomap() );
+                            }
+                        }
+                    });
+                }
             }
             else
             {
@@ -485,10 +556,83 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
             }
         }
 
+        if constexpr ( unknown_is_scalar )
+        {
+            // conservative flux convection
+            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) )
+            {
+                auto const& coeff_alpha = this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() );
+                auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim,1>(), se );
+                bool build_conservativeFluxConvectionTerm = coeff_alpha_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
+                if ( build_conservativeFluxConvectionTerm )
+                {
+                    bilinearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*idt(u)*inner(trans(coeff_alpha_expr),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+                bool coeffConservativeFluxConvectionDependOnUnknown = coeff_alpha.hasSymbolDependency( trialSymbolNames, se );
+                if ( coeffConservativeFluxConvectionDependOnUnknown && buildNonCstPart )
+                {
+                    hana::for_each( tse.map(), [this,&coeff_alpha_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_alpha_diff_expr = diffSymbolicExpr( coeff_alpha_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_alpha_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr= timeSteppingScaling*idv(u)*inner(trans(coeff_alpha_diff_expr),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
+                }
+            }
+
+            // conservative flux source
+            if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+            {
+                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+                bool coeffConservativeFluxSourceDependOnUnknown = coeff_gamma.hasSymbolDependency( trialSymbolNames, se );
+                if ( coeffConservativeFluxSourceDependOnUnknown )
+                {
+                    auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
+                    hana::for_each( tse.map(), [this,&coeff_gamma_expr,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                    {
+                        for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                        {
+                            auto trialXh = trialSpacePair.first;
+                            auto trialBlockIndex = trialSpacePair.second;
+                            auto coeff_gamma_diff_expr = diffSymbolicExpr( coeff_gamma_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+                            if ( !coeff_gamma_diff_expr.expression().hasExpr() )
+                                continue;
+
+                            form2( _test=Xh,_trial=trialXh,_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=trialBlockIndex ) +=
+                                integrate( _range=range,
+                                           _expr= -timeSteppingScaling*inner(trans(coeff_gamma_diff_expr),grad(v)),
+                                           _geomap=this->geomap() );
+                        }
+                    });
+                }
+            }
+        }
+
+
         // Reaction
         if ( this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
         {
             auto const& coeff_a = this->materialsProperties()->materialProperty( matName, this->reactionCoefficientName() );
+            bool coeffReactionDependOnUnknown = coeff_a.hasSymbolDependency( trialSymbolNames, se );
             auto coeff_a_expr = expr( coeff_a.expr(), se );
             bool build_ReactionTerm = coeff_a_expr.expression().isNumericExpression()? buildCstPart : buildNonCstPart;
             if ( build_ReactionTerm )
@@ -497,6 +641,31 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     integrate( _range=range,
                                _expr= timeSteppingScaling*coeff_a_expr*inner(idt(u), id(v)),
                                _geomap=this->geomap() );
+            }
+            if ( coeffReactionDependOnUnknown && buildNonCstPart )
+            {
+                hana::for_each( tse.map(), [this,&coeff_a_expr,&u,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
+                    for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto coeff_a_diff_expr = diffSymbolicExpr( coeff_a_expr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !coeff_a_diff_expr.expression().hasExpr() )
+                            continue;
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=range,
+                                       _expr= timeSteppingScaling*coeff_a_diff_expr*inner(idv(u), id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                });
             }
         }
 
@@ -533,7 +702,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                                    [&coeff_f,&se] { return expr( coeff_f.expr(), se ); },
                                                    [&coeff_f,&se] { return expr( coeff_f.template expr<nDim,1>(), se ); } );
 
-                hana::for_each( tse.map(), [this,&coeff_f_expr,&v,&J,&range,&Xh]( auto const& e )
+                hana::for_each( tse.map(), [this,&coeff_f_expr,&v,&J,&range,&Xh,&timeSteppingScaling]( auto const& e )
                 {
                     // NOTE : a strange compilation error related to boost fusion if we use [trialXh,trialBlockIndex] in the loop for
                     for ( auto const& trialSpacePair /*[trialXh,trialBlockIndex]*/ : hana::second(e).blockSpaceIndex() )
@@ -550,7 +719,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                                _rowstart=this->rowStartInMatrix(),
                                _colstart=trialBlockIndex ) +=
                             integrate( _range=range,
-                                       _expr= -inner(coeff_f_diff_expr,id(v)),
+                                       _expr= -timeSteppingScaling*inner(coeff_f_diff_expr,id(v)),
                                        _geomap=this->geomap() );
                     }
                 });
@@ -566,6 +735,46 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
 
     } // for each material
 
+
+    // Neumann bc :  k \nabla u  n = g
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : M_bcNeumann )
+        {
+            auto neumannExprBase = expression( d );
+            bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+            if ( neumannnBcDependOnUnknown )
+            {
+                auto neumannExpr = expr( neumannExprBase, se );
+                hana::for_each( tse.map(), [this,&d,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto neumannDiffExpr = diffSymbolicExpr( neumannExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !neumannDiffExpr.expression().hasExpr() )
+                            continue;
+
+                        auto neumannDiffExprUsed = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                                                  [&neumannDiffExpr] { return neumannDiffExpr; },
+                                                                  [&neumannDiffExpr] { return neumannDiffExpr*N(); } );
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                                       _expr= -timeSteppingScaling*inner(neumannDiffExprUsed, id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                });
+            }
+        }
+    }
+
     // Robin bc
     for( auto const& d : this->M_bcRobin )
     {
@@ -580,6 +789,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                                _expr= timeSteppingScaling*theExpr1*idt(u)*id(v),
                                _geomap=this->geomap() );
+
+                if ( theExpr1.hasSymbolDependency( trialSymbolNames ) )
+                    CHECK( false ) << "TODO";
+                auto theExpr2base = expression2( d );
+                if ( theExpr2base.hasSymbolDependency( trialSymbolNames, se ) )
+                    CHECK( false ) << "TODO";
             }
         else
             CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
@@ -601,17 +816,24 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("CoefficientFormPDE","updateResidual", "start"+sc);
 
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( "time-stepping.evaluate-residual-without-time-derivative" );
+    if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
+    {
+        if ( this->isStationary() )
+            return;
+        if ( this->timeStepping() != "Theta" )
+            return;
+    }
+
     double timeSteppingScaling = 1.;
-    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !this->isStationary() )
     {
-        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm( this->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
-        if ( M_timeStepping == "Theta" )
+        if ( this->timeStepping() == "Theta" )
         {
             if ( timeSteppingEvaluateResidualWithoutTimeDerivative )
-                timeSteppingScaling = 1. - M_timeStepThetaValue;
+                timeSteppingScaling = 1. - this->M_timeStepThetaValue;
             else
-                timeSteppingScaling = M_timeStepThetaValue;
+                timeSteppingScaling = this->M_timeStepThetaValue;
         }
         data.addDoubleInfo( prefixvm(this->prefix(),"time-stepping.scaling"), timeSteppingScaling );
     }
@@ -629,7 +851,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
 
     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( this->physicDefault() ) )
     {
-        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( matName );
+        auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
 
         // Convection
         if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->convectionCoefficientName() ) )
@@ -685,6 +907,40 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
                 }
             }
         }
+
+        if constexpr ( unknown_is_scalar )
+        {
+            // conservative flux convection
+            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxConvectionCoefficientName() ) )
+            {
+                auto const& coeff_alpha = this->materialsProperties()->materialProperty( matName, this->conservativeFluxConvectionCoefficientName() );
+                auto coeff_alpha_expr = expr( coeff_alpha.template expr<nDim,1>(), se );
+                bool build_conservativeFluxConvectionTerm = coeff_alpha_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxConvectionTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling*idv(u)*inner(trans(coeff_alpha_expr),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+
+            // conservative flux source
+            if ( this->materialsProperties()->hasProperty( matName, this->conservativeFluxSourceCoefficientName() ) )
+            {
+                auto const& coeff_gamma = this->materialsProperties()->materialProperty( matName, this->conservativeFluxSourceCoefficientName() );
+                auto coeff_gamma_expr = expr( coeff_gamma.template expr<nDim,1>(), se );
+                bool build_conservativeFluxSourceTerm = coeff_gamma_expr.expression().isNumericExpression()? buildNonCstPart && !UseJacobianLinearTerms : buildNonCstPart;
+                if ( build_conservativeFluxSourceTerm )
+                {
+                    linearForm +=
+                        integrate( _range=range,
+                                   _expr= -timeSteppingScaling*inner(trans(coeff_gamma_expr),grad(v)),
+                                   _geomap=this->geomap() );
+                }
+            }
+        }
+
 
         // Reaction
         if ( buildNonCstPart && this->materialsProperties()->hasProperty( matName, this->reactionCoefficientName() ) )
@@ -746,7 +1002,7 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
             {
                 linearForm +=
                     integrate( _range=range,
-                               _expr= -inner(coeff_f_expr,id(v)),
+                               _expr= -timeSteppingScaling*inner(coeff_f_expr,id(v)),
                                _geomap=this->geomap() );
             }
         }
@@ -763,12 +1019,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     // Neumann bc
     for( auto const& d : this->M_bcNeumann )
     {
-        auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
-                                      [&d,&se] { return expression( d,se ); },
-                                      [&d,&se] { return expression( d,se )*N(); } );
-        bool build_BcNeumann = buildCstPart; // TODO : if theExpr depends on unkwnon, then it's buildNonCstPart
-        if ( build_BcNeumann )
+        auto neumannExprBase = expression( d );
+        bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+        bool assembleNeumannBcTerm = neumannnBcDependOnUnknown? buildNonCstPart : buildCstPart;
+        if ( assembleNeumannBcTerm )
         {
+            auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                          [&neumannExprBase,&se] { return expr( neumannExprBase, se ); },
+                                          [&neumannExprBase,&se] { return expr( neumannExprBase, se )*N(); } );
             linearForm +=
                 integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -timeSteppingScaling*inner(theExpr,id(v)),

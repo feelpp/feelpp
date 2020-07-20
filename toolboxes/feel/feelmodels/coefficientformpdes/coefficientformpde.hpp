@@ -47,9 +47,6 @@ public:
     typedef typename space_unknown_type::element_external_storage_type element_unknown_external_storage_type;
     static constexpr bool unknown_is_scalar = space_unknown_type::is_scalar;
     static constexpr bool unknown_is_vectorial = space_unknown_type::is_vectorial;
-    // materials properties
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
-    typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
     // time scheme
     typedef Bdf<space_unknown_type> bdf_unknown_type;
     typedef std::shared_ptr<bdf_unknown_type> bdf_unknown_ptrtype;
@@ -58,13 +55,13 @@ public:
     typedef std::shared_ptr<measure_points_evaluation_type> measure_points_evaluation_ptrtype;
 
 
-    CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+    CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
                         std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
                         std::string const& subPrefix  = "",
                         ModelBaseRepository const& modelRep = ModelBaseRepository() );
-
+#if 0
     CoefficientFormPDE( std::string const& prefix,
                         std::string const& keyword = "cfpde",
                         worldcomm_ptr_t const& worldComm = Environment::worldCommPtr(),
@@ -73,8 +70,15 @@ public:
         :
         CoefficientFormPDE( typename super_type::super2_type(), prefix, keyword, worldComm, subPrefix, modelRep )
         {}
+#endif
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    std::shared_ptr<super_type> shared_from_this_cfpdebase() override { return std::dynamic_pointer_cast<super_type>( this->shared_from_this() ); }
 
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"CoefficientFormPDEMesh.path"); }
+    //! return current shared_ptr of type CoefficientFormPDEBase
+    std::shared_ptr<const super_type> shared_from_this_cfpdebase() const override { return std::dynamic_pointer_cast<const super_type>( this->shared_from_this() ); }
+
+    //! return true is the unknown is scalar
+    bool unknownIsScalar() const override { return unknown_is_scalar; }
 
     //___________________________________________________________________________________//
     // mesh, space, element unknown
@@ -92,12 +96,11 @@ public:
 
     //___________________________________________________________________________________//
     // time step scheme
-    std::string const& timeStepping() const { return M_timeStepping; }
     bdf_unknown_ptrtype const& timeStepBdfUnknown() const { return M_bdfUnknown; }
     //std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBdfUnknown(); }
     std::shared_ptr<TSBase> timeStepBase() const override { return this->timeStepBdfUnknown(); }
-    void startTimeStep();
-    void updateTimeStep();
+    void startTimeStep() override;
+    void updateTimeStep() override;
     //___________________________________________________________________________________//
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -106,6 +109,10 @@ public:
 
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
+
+
+    template <typename SymbolsExprType>
+    bool hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const;
 
     //___________________________________________________________________________________//
     // execute post-processing
@@ -129,7 +136,7 @@ public:
     template <typename SymbExprType>
     auto exprPostProcessExports( SymbExprType const& se, std::string const& prefix = "" ) const
         {
-            return this->materialsProperties()->exprPostProcessExports( this->physicsAvailable(),se );
+            return this->materialsProperties()->exprPostProcessExports( this->mesh(), this->physicsAvailable(), se );
         }
 
     //___________________________________________________________________________________//
@@ -224,10 +231,7 @@ private :
     element_unknown_ptrtype M_fieldUnknown;
 
     // time discretisation
-    std::string M_timeStepping;
     bdf_unknown_ptrtype M_bdfUnknown;
-    double M_timeStepThetaValue;
-    vector_ptrtype M_timeStepThetaSchemePreviousContrib;
 
     // boundary conditions
     using map_field_dirichlet = typename mpl::if_c<unknown_is_scalar,  map_scalar_field<2>,  map_vector_field<nDim,1,2> >::type;
@@ -241,6 +245,42 @@ private :
     // post-process
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename SymbolsExprType>
+bool
+CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
+{
+    bool hasDependency = false;
+    for( auto const& d : M_bcNeumann )
+    {
+        auto neumannExpr = expression( d );
+        if ( neumannExpr.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    if ( hasDependency )
+        return true;
+
+    for( auto const& d : this->M_bcRobin )
+    {
+        auto theExpr1 = expression1( d );
+        if ( theExpr1.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+        auto theExpr2 = expression2( d );
+        if ( theExpr2.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    return hasDependency;
+}
 
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>

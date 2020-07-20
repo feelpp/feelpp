@@ -12,14 +12,15 @@ namespace FeelModels
 {
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type const& genericPDE,
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::CoefficientFormPDE( typename super_type::super2_type::infos_type const& infosPDE,
                                                             std::string const& prefix,
                                                             std::string const& keyword,
                                                             worldcomm_ptr_t const& worldComm,
                                                             std::string const& subPrefix,
                                                             ModelBaseRepository const& modelRep )
     :
-    super_type( genericPDE, prefix, keyword, worldComm, subPrefix, modelRep )
+    super_type( infosPDE, prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep, ModelBaseCommandLineOptions( coefficientformpde_options( prefix ) ) )
 {}
 
 
@@ -30,10 +31,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     this->log("CoefficientFormPDE","init", "start" );
     this->timerTool("Constructor").start();
 
+    this->initMaterialProperties();
+
     if ( !this->M_mesh )
         this->initMesh();
 
-    this->initMaterialProperties();
+    this->materialsProperties()->addMesh( this->mesh() );
 
     this->initFunctionSpaces();
 
@@ -91,15 +94,16 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("CoefficientFormPDE","initFunctionSpaces", "start" );
     this->timerTool("Constructor").start();
 
+    auto mom = this->materialsProperties()->materialsOnMesh( this->mesh() );
     // functionspace
-    if ( this->materialsProperties()->isDefinedOnWholeMesh( this->physic() ) )
+    if ( mom->isDefinedOnWholeMesh( this->physic() ) )
     {
         this->M_rangeMeshElements = elements(this->mesh());
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        this->M_rangeMeshElements = markedelements(this->mesh(), this->materialsProperties()->markers( this->physic() ));
+        this->M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physic() ));
         M_Xh = space_unknown_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=this->M_rangeMeshElements );
     }
 
@@ -192,10 +196,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initTimeStep()
     this->log("CoefficientFormPDE","initTimeStep", "start" );
     this->timerTool("Constructor").start();
 
+    CHECK( this->timeStepping() == "BDF" || this->timeStepping() == "Theta" ) << "invalid time-stepping";
+
     std::string myFileFormat = soption(_name="ts.file-format");// without prefix
 
     int bdfOrder = 1;
-    if ( M_timeStepping == "BDF" )
+    if ( this->timeStepping() == "BDF" )
         bdfOrder = ioption(_prefix=this->prefix(),_name="bdf.order",_vm=this->clovm());
     int nConsecutiveSave = std::max( 3, bdfOrder ); // at least 3 is required when restart with theta scheme
 
@@ -302,6 +308,16 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- symbol of unknown : " << this->unknownSymbol()
            << "\n     -- basis : " << this->unknownBasis()
            << "\n     -- number of dof : " << this->spaceUnknown()->nDof() << " (" << this->spaceUnknown()->nLocalDof() << ")";
+    if ( !this->isStationary() )
+    {
+        *_ostr << "\n   Time Discretization"
+               << "\n     -- initial time : " << this->timeStepBase()->timeInitial()
+               << "\n     -- final time   : " << this->timeStepBase()->timeFinal()
+               << "\n     -- time step    : " << this->timeStepBase()->timeStep()
+               << "\n     -- type : " << this->timeStepping();
+        if ( this->timeStepping() == "BDF" )
+            *_ostr << " ( order=" << this->timeStepBdfUnknown()->timeOrder() << " )";
+    }
     if ( this->algebraicFactory() )
         *_ostr << this->algebraicFactory()->getInfo()->str();
     *_ostr << "\n||==============================================||"
@@ -317,10 +333,7 @@ void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("CoefficientFormPDE","startTimeStep", "start");
-#if 0
-    // some time stepping require to compute residual without time derivative
-    this->updateTimeStepCurrentResidual();
-#endif
+
     // start time step
     if (!this->doRestart())
         M_bdfUnknown->start( M_bdfUnknown->unknowns() );
@@ -340,12 +353,9 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->log("CoefficientFormPDE","updateTimeStep", "start");
     this->timerTool("TimeStepping").setAdditionalParameter("time",this->currentTime());
     this->timerTool("TimeStepping").start();
-#if 0
-    // some time stepping require to compute residual without time derivative
-    this->updateTimeStepCurrentResidual();
-#endif
+
     bool rebuildCstAssembly = false;
-    if ( M_timeStepping == "BDF" )
+    if ( this->timeStepping() == "BDF" )
     {
         int previousTimeOrder = this->timeStepBdfUnknown()->timeOrder();
         M_bdfUnknown->next( this->fieldUnknown() );
@@ -353,13 +363,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateTimeStep()
         rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
         this->updateTime( this->timeStepBdfUnknown()->time() );
     }
-#if 0
-    else if ( M_timeStepping == "Theta" )
+    else if ( this->timeStepping() == "Theta" )
     {
         M_bdfUnknown->next( this->fieldUnknown() );
         this->updateTime( this->timeStepBdfUnknown()->time() );
     }
-#endif
+
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 

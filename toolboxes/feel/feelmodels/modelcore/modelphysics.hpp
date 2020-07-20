@@ -14,6 +14,8 @@
 #include <vector>
 
 #include <feel/feelmodels/modelmodels.hpp>
+#include <feel/feelmodels/modelexpression.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
 {
@@ -67,6 +69,9 @@ class MaterialPropertyDescription : public std::tuple<std::string,std::vector<st
 };
 
 template <uint16_type Dim>
+class ModelPhysics;
+
+template <uint16_type Dim>
 class ModelPhysic
 {
 public :
@@ -79,7 +84,7 @@ public :
     ModelPhysic( ModelPhysic const& ) = default;
     ModelPhysic( ModelPhysic && ) = default;
 
-    static std::shared_ptr<ModelPhysic<Dim>> New( std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
+    static std::shared_ptr<ModelPhysic<Dim>> New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model = ModelModel{} );
 
     std::string const& type() const { return M_type; }
     std::string const& name() const { return M_name; }
@@ -115,6 +120,9 @@ public :
 
     //! add a subphysic model
     void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
+
+    //! set parameter values in expression
+    virtual void setParameterValues( std::map<std::string,double> const& mp ) {}
 private :
     std::string M_type, M_name;
     std::set<std::string> M_subphysicsTypes;
@@ -127,29 +135,65 @@ class ModelPhysicFluid : public ModelPhysic<Dim>
 {
     using super_type = ModelPhysic<Dim>;
 public :
-    ModelPhysicFluid( std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
 
     std::string const& equation() const { return M_equation; }
     void setEquation( std::string const& eq );
+
+    bool gravityForceEnabled() const { return M_gravityForceEnabled; }
+    auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
+
+    //! set parameter values in expression
+    void setParameterValues( std::map<std::string,double> const& mp ) override
+        {
+            if ( M_gravityForceEnabled )
+                M_gravityForceExpr.setParameterValues( mp );
+        }
+
 private :
     std::string M_equation;
+    bool M_gravityForceEnabled;
+    ModelExpression M_gravityForceExpr;
 };
 
 template <uint16_type Dim>
-class ModelPhysics
+class ModelPhysicSolid : public ModelPhysic<Dim>
+{
+    using super_type = ModelPhysic<Dim>;
+public :
+    ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
+    ModelPhysicSolid( ModelPhysicSolid const& ) = default;
+    ModelPhysicSolid( ModelPhysicSolid && ) = default;
+
+    std::string const& equation() const { return M_equation; }
+    void setEquation( std::string const& eq );
+
+    std::string const& materialModel() const { return M_materialModel; }
+    std::string const& formulation() const { return M_formulation; }
+    std::string const& decouplingEnergyVolumicLaw() const { return M_decouplingEnergyVolumicLaw; }
+    std::string const& compressibleNeoHookeanVariantName() const { return M_compressibleNeoHookeanVariantName; }
+
+    bool useDisplacementPressureFormulation() const { return M_formulation == "displacement-pressure"; }
+private :
+    std::string M_equation, M_materialModel, M_formulation;
+    std::string M_decouplingEnergyVolumicLaw, M_compressibleNeoHookeanVariantName;
+};
+
+template <uint16_type Dim>
+class ModelPhysics : virtual public ModelBase
 {
 public :
     using material_property_description_type = MaterialPropertyDescription;
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
 
-    //using subphysic_description_type = std::map<std::pair<std::string,std::string>, std::map<std::string,std::string> >;
-    using subphysic_description_type = std::map<std::string,std::string>;
+    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
 
     //ModelPhysics() = default;
-    explicit ModelPhysics( std::string const& type ) : M_physicType( type ) {}
+    explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}
+    ModelPhysics( std::string const& type, ModelBase const& mbase ) : ModelBase(mbase), M_physicType( type ) {}
     ModelPhysics( ModelPhysics const& ) = default;
     ModelPhysics( ModelPhysics && ) = default;
 

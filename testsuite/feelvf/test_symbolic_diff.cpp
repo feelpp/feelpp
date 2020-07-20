@@ -28,7 +28,8 @@
 #include <feel/feelcore/testsuite.hpp>
 
 // #include <feel/feeldiscr/functionspace.hpp>
-// #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/pch.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 // #include <feel/feelfilters/exporter.hpp>
 // #include <feel/feelmesh/concatenate.hpp>
 // #include <feel/feelfilters/unitcube.hpp>
@@ -99,5 +100,51 @@ BOOST_AUTO_TEST_CASE( test2 )
     my_eval_diff( pow( inner( myvec, vec( a1, a2 ), mpl::int_<InnerProperties::SQRT>() ), cst(2.) ) );
     my_eval_diff( pow(myvec(0,0),2.0) + pow(myvec(1,0),2.0) );
 }
+
+BOOST_AUTO_TEST_CASE( test3 )
+{
+    using namespace Feel;
+    auto mesh = loadMesh(_mesh=new Mesh<Simplex<3,1>>);
+    auto Vh = Pch<2>( mesh );
+    auto u = Vh->element( inner(P()) );
+
+    auto e1 = expr( "u*u:u");
+    auto e2 = expr( "2*e1:e1");
+    auto e3base = expr( "3*e2:e2");
+
+    auto e3 = expr( e3base, symbolExpr("e1",e1), symbolExpr("e2",e2), symbolExpr("u",inner(P()) ) );
+    auto diff_e3_x = e3.diff<1>( "x" );
+    auto diff_e3_y = e3.diff<1>( "y" );
+    auto diff_e3_z = e3.diff<1>( "z" );
+    auto grad_e3 = grad<3>( e3 );
+    auto diff_e3_x_exact = 3*4*inner(P())*2*Px();
+    auto diff_e3_y_exact = 3*4*inner(P())*2*Py();
+    auto diff_e3_z_exact = 3*4*inner(P())*2*Pz();
+    auto grad_e3_exact = trans(vec(diff_e3_x_exact,diff_e3_y_exact,diff_e3_z_exact));
+
+    double error_diff_e3_x = normL2(_range=elements(mesh),_expr= diff_e3_x - diff_e3_x_exact );
+    double error_diff_e3_y = normL2(_range=elements(mesh),_expr= diff_e3_y - diff_e3_y_exact );
+    double error_diff_e3_z = normL2(_range=elements(mesh),_expr= diff_e3_z - diff_e3_z_exact );
+    double error_grad_e3 = normL2(_range=elements(mesh),_expr= grad_e3 - grad_e3_exact );
+    BOOST_CHECK_SMALL( error_diff_e3_x, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e3_y, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e3_z, 1e-10 );
+    BOOST_CHECK_SMALL( error_grad_e3, 1e-10 );
+
+    auto e3b = expr( e3base, symbolExpr("e1",e1), symbolExpr("e2",e2), symbolExpr("u",idv(u)) );
+    auto diff_e3b_x = e3b.diff<1>( "x" );
+    auto diff_e3b_y = e3b.diff<1>( "y" );
+    auto diff_e3b_z = e3b.diff<1>( "z" );
+    auto grad_e3b = grad<3>( e3b );
+    double error_diff_e3b_x = normL2(_range=elements(mesh),_expr= diff_e3b_x - diff_e3_x_exact );
+    double error_diff_e3b_y = normL2(_range=elements(mesh),_expr= diff_e3b_y - diff_e3_y_exact );
+    double error_diff_e3b_z = normL2(_range=elements(mesh),_expr= diff_e3b_z - diff_e3_z_exact );
+    double error_grad_e3b = normL2(_range=elements(mesh),_expr= grad_e3b - grad_e3_exact );
+    BOOST_CHECK_SMALL( error_diff_e3b_x, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e3b_y, 1e-10 );
+    BOOST_CHECK_SMALL( error_diff_e3b_z, 1e-10 );
+    BOOST_CHECK_SMALL( error_grad_e3b, 1e-10 );
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

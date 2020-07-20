@@ -28,6 +28,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::LevelSet(
         ModelBaseRepository const& modelRep ) 
 :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep ),
     M_advectionToolbox( new advection_toolbox_type( prefix, keyword, worldComm, subPrefix, modelRep ) ),
     M_doUpdateCauchyGreenTensor(true),
     M_doUpdateCauchyGreenInvariant1(true),
@@ -663,7 +664,7 @@ LEVELSET_CLASS_TEMPLATE_TYPE::leftCauchyGreenTensorExpr() const
     auto Y = M_backwardCharacteristicsAdvection->fieldSolutionPtr();
     auto const& N = this->N();
 
-    return leftCauchyGreenTensorExpr( *Y, *N );
+    return Feel::FeelModels::leftCauchyGreenTensorExpr( *Y, *N );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS
@@ -690,7 +691,7 @@ LEVELSET_CLASS_TEMPLATE_DECLARATIONS
 auto
 LEVELSET_CLASS_TEMPLATE_TYPE::cauchyGreenInvariant1Expr() const
 {
-    return cauchyGreenInvariant1Expr( this->leftCauchyGreenTensorExpr() );
+    return Feel::FeelModels::cauchyGreenInvariant1Expr( this->leftCauchyGreenTensorExpr() );
 }
 
 LEVELSET_CLASS_TEMPLATE_DECLARATIONS

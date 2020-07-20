@@ -42,7 +42,7 @@ namespace Feel
 namespace FeelModels
 {
 
-class ModelAlgebraic : public ModelBase
+class ModelAlgebraic : virtual public ModelBase
 {
 public :
     typedef ModelBase super_type;
@@ -102,6 +102,20 @@ public :
                 return M_matrixInfos.find(info)->second;
             }
 
+        void addParameterValuesInfo( std::string const& info, std::map<std::string,double> const& pv ) { M_parameterValuesInfos[info] = pv; }
+        void eraseParameterValuesInfo( std::string const& info ) { M_parameterValuesInfos.erase( info ); }
+        bool hasParameterValuesInfo( std::string const& info ) const { return M_parameterValuesInfos.find( info ) != M_parameterValuesInfos.end(); }
+        std::map<std::string,double> & parameterValuesInfo( std::string const& info )
+            {
+                CHECK( this->hasParameterValuesInfo( info ) ) << "parameter values info "<< info << "is missing";
+                return M_parameterValuesInfos.find(info)->second;
+            }
+        std::map<std::string,double> const& parameterValuesInfo( std::string const& info ) const
+            {
+                CHECK( this->hasParameterValuesInfo( info ) ) << "parameter values info "<< info << "is missing";
+                return M_parameterValuesInfos.find(info)->second;
+            }
+
         void copyInfos( DataUpdateBase const& dub )
             {
                 for ( std::string const& info : dub.M_infos )
@@ -112,6 +126,8 @@ public :
                     this->addVectorInfo( info,vec );
                 for ( auto const& [info,mat] : dub.M_matrixInfos )
                     this->addMatrixInfo( info,mat );
+                for ( auto const& [info,pv] : dub.M_parameterValuesInfos )
+                    this->addParameterValuesInfo( info,pv );
             }
 
         void clearInfos()
@@ -120,12 +136,14 @@ public :
                 M_doubleInfos.clear();
                 M_vectorInfos.clear();
                 M_matrixInfos.clear();
+                M_parameterValuesInfos.clear();
             }
     private :
         std::set<std::string> M_infos;
         std::map<std::string,double> M_doubleInfos;
         std::map<std::string,vector_ptrtype> M_vectorInfos;
         std::map<std::string,sparse_matrix_ptrtype> M_matrixInfos;
+        std::map<std::string,std::map<std::string,double>> M_parameterValuesInfos;
 
     };
 

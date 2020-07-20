@@ -75,7 +75,8 @@ class FluidMechanics : public ModelNumerical,
                        public MarkerManagementPressureBC
 {
 public:
-    typedef ModelNumerical super_type;
+    using super_type = ModelNumerical;
+    using super2_type = ModelPhysics<ConvexType::nDim>;
     using size_type = typename super_type::size_type;
     typedef FluidMechanics< ConvexType,BasisVelocityType,BasisPressureType,BasisDVType > self_type;
     typedef std::shared_ptr<self_type> self_ptrtype;
@@ -198,7 +199,7 @@ public:
     // viscosity model desc
     typedef FluidMechanicsMaterialProperties<space_densityviscosity_type> material_properties_type; // TO REMOVE
     typedef std::shared_ptr<material_properties_type> material_properties_ptrtype; // TO REMOVE
-    typedef MaterialsProperties<mesh_type> materialsproperties_type;
+    typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
 
 
@@ -278,21 +279,27 @@ public:
 
     //___________________________________________________________________________________//
 
-    class Body : public ModelPhysics<nDim>
+    class Body //: public ModelPhysics<nDim>,
+    //  public std::enable_shared_from_this<Body>
     {
     public :
         using moment_of_inertia_type = typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<3> >,
                                                        eigen_matrix_type<nDim, nDim>,
                                                        eigen_matrix_type<1, 1> >::type;
 
-        Body()
+        Body() = default;
+            // :
+            // ModelPhysics<nDim>( "body" )
+            // {}
+        explicit Body( std::shared_ptr<ModelPhysics<nRealDim>> const& mphysics )
             :
-            ModelPhysics<nDim>( "body" )
+            M_modelPhysics( mphysics ),
+            M_mass( 0 )
             {}
         Body( Body const& ) = default;
         Body( Body && ) = default;
 
-        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh, std::string const& exprRepository );
+        void setup( pt::ptree const& p, ModelMaterials const& mats, mesh_ptrtype mesh );
 
         void updateForUse();
 
@@ -325,7 +332,29 @@ public:
             }
 
 
+        template <typename ExprType>
+        double evaluateMassFromDensity( Expr<ExprType> const& densityExpr ) const
+            {
+                CHECK( M_materialsProperties ) << "no materialsProperties defined";
+                auto mom = M_materialsProperties->materialsOnMesh(M_mesh);
+                double mass = 0;
+                for ( auto const& rangeData : mom->rangeMeshElementsByMaterial() )
+                {
+                    auto const& range = rangeData.second;
+                    mass += integrate(_range=range,_expr=densityExpr).evaluate()(0,0);
+                }
+                return mass;
+            }
+
+        void setParameterValues( std::map<std::string,double> const& mp )
+            {
+                if ( M_materialsProperties )
+                    M_materialsProperties->setParameterValues( mp );
+            }
+
     private :
+        std::shared_ptr<ModelPhysics<nRealDim>> M_modelPhysics;
+        mesh_ptrtype M_mesh;
         materialsproperties_ptrtype M_materialsProperties;
         eigen_vector_type<nRealDim> M_massCenter;//, M_massCenterRef;
         double M_mass;
@@ -351,7 +380,7 @@ public:
             static auto angular_velocity( BodyBoundaryCondition const* t ) { return ModelFieldTag<BodyBoundaryCondition,1>( t ); }
         };
 
-        BodyBoundaryCondition() = default;
+        BodyBoundaryCondition();
         BodyBoundaryCondition( BodyBoundaryCondition const& ) = default;
         BodyBoundaryCondition( BodyBoundaryCondition && ) = default;
 
@@ -400,12 +429,12 @@ public:
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
-        Body const& body() const { return M_body; }
-        auto massExpr() const { return M_body.massExpr(); }
-        auto momentOfInertiaExpr() const { return M_body.momentOfInertiaExpr(); }
+        Body const& body() const { return *M_body; }
+        auto massExpr() const { return M_body->massExpr(); }
+        auto momentOfInertiaExpr() const { return M_body->momentOfInertiaExpr(); }
         auto massCenterExpr() const
             {
-                return M_body.massCenterExpr();
+                return M_body->massCenterExpr();
             }
 
         bool hasTranslationalVelocityExpr() const { return M_translationalVelocityExpr.template hasExpr<nDim,1>(); }
@@ -457,6 +486,12 @@ public:
         void updateElasticVelocityFromExpr( self_type const& fluidToolbox );
 
         //---------------------------------------------------------------------------//
+        // gravity
+        bool gravityForceEnabled() const { return M_gravityForceEnabled; }
+        //double massOfFluid() const { return M_massOfFluid; }
+        eigen_vector_type<nRealDim> const& gravityForceWithMass() const { return M_gravityForceWithMass; }
+
+        //---------------------------------------------------------------------------//
 
         void setParameterValues( std::map<std::string,double> const& mp )
             {
@@ -464,6 +499,8 @@ public:
                 M_angularVelocityExpr.setParameterValues( mp );
                 for ( auto & [bcName,eve] : M_elasticVelocityExprBC )
                     std::get<0>( eve ).setParameterValues( mp );
+                if ( M_body )
+                    M_body->setParameterValues( mp );
             }
 
     private :
@@ -480,12 +517,16 @@ public:
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
 
-        Body M_body;
+        std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
 
         space_trace_velocity_ptrtype M_XhElasticVelocity;
         element_trace_velocity_ptrtype M_fieldElasticVelocity;
         std::map<std::string, std::tuple< ModelExpression, std::set<std::string>>> M_elasticVelocityExprBC;
+
+        bool M_gravityForceEnabled;
+        //double M_massOfFluid;
+        eigen_vector_type<nRealDim> M_gravityForceWithMass;
     };
 
     class BodySetBoundaryCondition : public std::map<std::string,BodyBoundaryCondition>
@@ -822,19 +863,14 @@ public :
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
     // post process
-    std::set<std::string> postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    bool hasPostProcessFieldExported( std::string const& fieldName ) const { return M_postProcessFieldExported.find( fieldName ) != M_postProcessFieldExported.end(); }
-    //std::set<std::string> postProcessFieldOnTraceExported( std::set<std::string> const& ifields, std::string const& prefix = "" ) const;
-    //bool hasPostProcessFieldOnTraceExported( std::string const& fieldName ) const { return M_postProcessFieldOnTraceExported.find( fieldName ) != M_postProcessFieldOnTraceExported.end(); }
-
     void exportResults() { this->exportResults( this->currentTime() ); }
     void exportResults( double time );
     template <typename SymbolsExpr>
     void exportResults( double time, SymbolsExpr const& symbolsExpr );
 
-    void exportFields( double time );
-    bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
-    bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
+    // void exportFields( double time );
+    // bool updateExportedFields( export_ptrtype exporter, std::set<std::string> const& fields, double time );
+    // bool updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time );
     void setDoExport(bool b);
 private :
     void executePostProcessMeasures( double time );
@@ -1497,13 +1533,10 @@ private :
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
     //----------------------------------------------------
-    vector_field_expression<nDim,1,2> M_gravityForce;
-    bool M_useGravityForce;
-    //----------------------------------------------------
     // post-process field exported
-    std::set<std::string> M_postProcessFieldExported;
-    std::set<std::string> M_postProcessFieldOnTraceExported;
-    std::set<std::string> M_postProcessUserFieldExported;
+    // std::set<std::string> M_postProcessFieldExported;
+    // std::set<std::string> M_postProcessFieldOnTraceExported;
+    // std::set<std::string> M_postProcessUserFieldExported;
 
     // exporter option
     bool M_isHOVisu;
@@ -1576,15 +1609,18 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType,BasisDVType>::expo
     this->updateFields( symbolsExpr );
 
     auto fields = this->modelFields();
-    if ( nOrderGeo == 1 )
+    if constexpr ( nOrderGeo <= 2 )
     {
-        this->executePostProcessExports( M_exporter, time, fields/*, symbolsExpr*/ );
-        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields/*, symbolsExpr*/ );
+        this->executePostProcessExports( M_exporter, time, fields, symbolsExpr );
+        this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, fields, symbolsExpr );
     }
+    if ( M_isHOVisu )
+        this->exportResultsImplHO( time );
+
     this->executePostProcessMeasures( time, fields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), fields );
 
-    if ( this->isMoveDomain() && this->hasPostProcessFieldExported( "alemesh" ) )
+    if ( this->isMoveDomain() && this->hasPostProcessExportsField( "alemesh" ) )
         this->meshALE()->exportResults( time );
 
     this->timerTool("PostProcessing").stop("exportResults");

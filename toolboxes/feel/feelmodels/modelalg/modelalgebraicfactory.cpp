@@ -36,28 +36,28 @@ namespace Feel
 namespace FeelModels
 {
 
-ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix )
+ModelAlgebraicFactory::ModelAlgebraicFactory( std::string const& prefix, po::variables_map const& vm )
     :
     M_useSolverPtAP( false ),
-    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type")] ),
-    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal") ),
+    M_dofElimination_strategy( Feel::ContextOnMap[soption(_prefix=prefix,_name="on.type",_vm=vm)] ),
+    M_dofElimination_valueOnDiagonal( doption(_prefix=prefix,_name="on.value_on_diagonal",_vm=vm) ),
     M_hasBuildLinearJacobian(false),
     M_hasBuildResidualCst(false),
     M_hasBuildLinearSystemCst(false),
-    M_usePseudoTransientContinuation( boption(_prefix=prefix,_name="pseudo-transient-continuation") ),
-    M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=prefix,_name="pseudo-transient-continuation.evolution") ),
-    M_pseudoTransientContinuationDelta0( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta0") ),
-    M_pseudoTransientContinuationDeltaMax( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta-max") ),
-    M_pseudoTransientContinuationSerVariant( soption(_prefix=prefix,_name="pseudo-transient-continuation.ser-variant") ),
-    M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high") ),
-    M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low") ),
-    M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high") ),
-    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low") )
+    M_usePseudoTransientContinuation( boption(_prefix=prefix,_name="pseudo-transient-continuation",_vm=vm) ),
+    M_pseudoTransientContinuationEvolutionMethod( soption(_prefix=prefix,_name="pseudo-transient-continuation.evolution",_vm=vm) ),
+    M_pseudoTransientContinuationDelta0( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta0",_vm=vm) ),
+    M_pseudoTransientContinuationDeltaMax( doption(_prefix=prefix,_name="pseudo-transient-continuation.delta-max",_vm=vm) ),
+    M_pseudoTransientContinuationSerVariant( soption(_prefix=prefix,_name="pseudo-transient-continuation.ser-variant",_vm=vm) ),
+    M_pseudoTransientContinuationExpurThresholdHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-high",_vm=vm) ),
+    M_pseudoTransientContinuationExpurThresholdLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.threshold-low",_vm=vm) ),
+    M_pseudoTransientContinuationExpurBetaHigh( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-high",_vm=vm) ),
+    M_pseudoTransientContinuationExpurBetaLow( doption(_prefix=prefix,_name="pseudo-transient-continuation.expur.beta-low",_vm=vm) )
 {}
 
 ModelAlgebraicFactory::ModelAlgebraicFactory( model_ptrtype const& model, backend_ptrtype const& backend )
     :
-    ModelAlgebraicFactory( model->prefix() )
+    ModelAlgebraicFactory( model->prefix(), model->clovm() )
 {
     model->log( model->prefix()+".MethodNum","constructor1", "start" );
     this->init( model,backend );
@@ -197,6 +197,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_solverPtAP_matPtAP->clear();
             M_J->PtAP( *M_solverPtAP_matP, *M_solverPtAP_matPtAP );
 
+            M_solverPtAP_matPtAP->setIndexSplit( M_J->indexSplit() );
+
+
             M_solverPtAP_solution = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapColPtr() );
             M_solverPtAP_PtF = M_solverPtAP_backend->newVector( M_solverPtAP_matPtAP->mapRowPtr() );
 
@@ -249,6 +252,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( this->backend() ) << "backend not init\n";
         std::shared_ptr<NullSpace<value_type> > mynullspace( new NullSpace<value_type>(this->backend(),nullSpace) );
         this->backend()->attachNullSpace( mynullspace );
+        if ( M_solverPtAP_backend )
+            M_solverPtAP_backend->attachNullSpace( mynullspace );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( NullSpace<value_type> const& nearNullSpace )
@@ -256,6 +261,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( this->backend() ) << "backend not init\n";
         std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         this->backend()->attachNearNullSpace( myNearNullSpace );
+        if ( M_solverPtAP_backend )
+            M_solverPtAP_backend->attachNearNullSpace( myNearNullSpace );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace, std::string const& prefix )
@@ -264,12 +271,44 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         CHECK( M_PrecondManage ) << "preconditioner not init\n";
         std::shared_ptr<NullSpace<value_type> > myNearNullSpace( new NullSpace<value_type>(this->backend(),nearNullSpace) );
         M_PrecondManage->attachNearNullSpace( k, myNearNullSpace, prefix );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachNearNullSpace( k, myNearNullSpace, prefix );
     }
     void
     ModelAlgebraicFactory::attachNearNullSpace( int k, NullSpace<value_type> const& nearNullSpace )
     {
         this->attachNearNullSpace( k, nearNullSpace, this->preconditionerTool()->name() );
     }
+
+
+    void
+    ModelAlgebraicFactory::attachAuxiliarySparseMatrix( std::string const& key,sparse_matrix_ptrtype const& mat )
+    {
+        M_PrecondManage->attachAuxiliarySparseMatrix( key, mat );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachAuxiliarySparseMatrix( key, mat );
+    }
+
+    bool
+    ModelAlgebraicFactory::hasAuxiliarySparseMatrix( std::string const& key ) const
+    {
+        return M_PrecondManage->hasAuxiliarySparseMatrix( key );
+    }
+
+    sparse_matrix_ptrtype const&
+    ModelAlgebraicFactory::auxiliarySparseMatrix( std::string const& key ) const
+    {
+        return M_PrecondManage->auxiliarySparseMatrix( key );
+    }
+
+    void
+    ModelAlgebraicFactory::attachOperatorPCD( std::string const& key, typename preconditioner_type::operator_pcdbase_ptrtype const& opPCD )
+    {
+        M_PrecondManage->attachOperatorPCD( key, opPCD );
+        if ( M_solverPtAP_prec )
+            M_solverPtAP_prec->attachOperatorPCD( key, opPCD );
+    }
+
 
     void
     ModelAlgebraicFactory::addFunctionLinearAssembly( function_assembly_linear_type const& func, std::string const& key )

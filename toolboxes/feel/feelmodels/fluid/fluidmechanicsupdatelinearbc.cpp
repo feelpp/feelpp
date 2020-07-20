@@ -453,18 +453,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEWeakBC( DataUpdateLinear & da
                 if ( hasActiveDofTranslationalVelocity )
                 {
                     auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
-                    //std::vector<double> _gravity = { 0., 2. };
-                    //double massTilde = 10;
                     auto translationalVelocityPolyDeriv = bpbc.bdfTranslationalVelocity()->polyDeriv();
                     for (int d=0;d<nDim;++d)
                     {
                         F->add( basisToContainerGpTranslationalVelocityVector[d],
                                 massBody*translationalVelocityPolyDeriv(d) );
-#if 0
-                        F->add( basisToContainerGpTranslationalVelocityVector[d],
-                                massTilde*_gravity[d] );
-#endif
+
+                        if ( bpbc.gravityForceEnabled() )
+                        {
+                            F->add( basisToContainerGpTranslationalVelocityVector[d],
+                                    bpbc.gravityForceWithMass()(d) );
+                        }
                     }
+
                 }
                 if ( hasActiveDofAngularVelocity )
                 {

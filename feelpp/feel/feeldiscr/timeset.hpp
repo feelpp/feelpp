@@ -112,7 +112,7 @@ public:
     using size_type = typename mesh_type::size_type;
 
     typedef Pdh_type<MeshType,0> scalar_p0_space_type;
-    typedef Pch_type<MeshType,1> scalar_p1_space_type;
+    typedef Pch_type<MeshType,N/*1*/> scalar_p1_space_type;
     typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
     typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
 
@@ -140,7 +140,7 @@ public:
         using size_type = typename mesh_type::size_type;
 
         typedef Pdh_type<MeshType,0> scalar_p0_space_type;
-        typedef Pch_type<MeshType,1> scalar_p1_space_type;
+        typedef Pch_type<MeshType,N/*1*/> scalar_p1_space_type;
         typedef std::shared_ptr<scalar_p0_space_type> scalar_p0_space_ptrtype;
         typedef std::shared_ptr<scalar_p1_space_type> scalar_p1_space_ptrtype;
 

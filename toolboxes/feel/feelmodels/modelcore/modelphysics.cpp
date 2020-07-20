@@ -19,7 +19,7 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     for ( std::string const& submodel : model.submodels() )
         M_subphysics[submodel];
 
-    if ( type == "GenericPDE" )
+    if ( type == "GenericPDE" || type == "GenericPDEs" )
         return;
 
     if ( M_type == "thermo-electric" )
@@ -42,29 +42,64 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     {
         this->addMaterialPropertyDescription( "electric-conductivity", "sigma", { scalarShape } );
     }
+    if ( M_type == "solid" )
+    {
+        this->addMaterialPropertyDescription( "Young-modulus", "E", { scalarShape } );
+        this->addMaterialPropertyDescription( "Poisson-ratio", "nu", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-first-parameter", "lambda", { scalarShape } );
+        this->addMaterialPropertyDescription( "Lame-second-parameter", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "bulk-modulus", "K", { scalarShape } );
+    }
 }
 
 template <uint16_type Dim>
 std::shared_ptr<ModelPhysic<Dim>>
-ModelPhysic<Dim>::New( std::string const& type, std::string const& name, ModelModel const& model )
+ModelPhysic<Dim>::New( ModelPhysics<Dim> const& mphysics, std::string const& type, std::string const& name, ModelModel const& model )
 {
     if ( type == "fluid" )
-        return std::make_shared<ModelPhysicFluid<Dim>>( name, model );
+        return std::make_shared<ModelPhysicFluid<Dim>>( mphysics, name, model );
+    else if ( type == "solid" )
+        return std::make_shared<ModelPhysicSolid<Dim>>( mphysics, name, model );
     else
         return std::make_shared<ModelPhysic<Dim>>( type, name, model );
 }
 
 template <uint16_type Dim>
-ModelPhysicFluid<Dim>::ModelPhysicFluid( std::string const& name, ModelModel const& model )
+ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
     :
     super_type( "fluid", name, model ),
-    M_equation( "Navier-Stokes" )
+    M_equation( "Navier-Stokes" ),
+    M_gravityForceEnabled( boption(_name="use-gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) )
 {
     auto const& pt = model.ptree();
     if ( auto eq = pt.template get_optional<std::string>("equations") )
         this->setEquation( *eq );
     if ( auto eq = pt.template get_optional<std::string>("equation") )
         this->setEquation( *eq );
+
+
+    // setup gravity force
+    if ( auto hasGravity = pt.template get_optional<bool>("gravity") )
+    {
+        M_gravityForceEnabled = *hasGravity;
+    }
+    else if ( auto ptreeGravity = pt.get_child_optional("gravity") )
+    {
+        if ( auto hasGravity = ptreeGravity->template get_optional<bool>("enable") )
+            M_gravityForceEnabled = *hasGravity;
+        M_gravityForceExpr.setExpr( "expr",*ptreeGravity,mphysics.worldComm(),mphysics.repository().expr() );
+    }
+    if ( M_gravityForceEnabled && !M_gravityForceExpr.template hasExpr<Dim,1>() )
+    {
+        std::string gravityStr;
+        if ( mphysics.clovm().count(prefixvm(mphysics.prefix(),"gravity-force").c_str()) )
+            gravityStr = soption(_name="gravity-force",_prefix=mphysics.prefix(),_vm=mphysics.clovm());
+        else if (Dim == 2 )
+            gravityStr = "{0,-9.80665}";
+        else if (Dim == 3 )
+            gravityStr = "{0,0,-9.80665}";
+        M_gravityForceExpr.setExpr( gravityStr,mphysics.worldComm(),mphysics.repository().expr() );
+    }
 }
 
 template <uint16_type Dim>
@@ -76,6 +111,54 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 }
 
 template <uint16_type Dim>
+ModelPhysicSolid<Dim>::ModelPhysicSolid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model )
+    :
+    super_type( "solid", name, model ),
+    M_equation( "Hyper-Elasticity" ),
+    M_materialModel( soption(_prefix=mphysics.prefix(), _name="material_law",_vm=mphysics.clovm() ) ),
+    M_formulation( soption(_prefix=mphysics.prefix(), _name="formulation",_vm=mphysics.clovm() ) ),
+    M_decouplingEnergyVolumicLaw( "classic" ),
+    M_compressibleNeoHookeanVariantName( "default" )
+{
+    if ( mphysics.clovm().count(prefixvm(mphysics.prefix(),"model").c_str()) )
+        this->setEquation( soption(_name="model",_prefix=mphysics.prefix(),_vm=mphysics.clovm()) );
+    auto const& pt = model.ptree();
+    if ( auto eq = pt.template get_optional<std::string>("equations") )
+        this->setEquation( *eq );
+    if ( auto eq = pt.template get_optional<std::string>("equation") )
+        this->setEquation( *eq );
+
+    if ( auto e = pt.template get_optional<std::string>("material-model") )
+        M_materialModel = *e;
+    CHECK( M_materialModel == "StVenantKirchhoff" || M_materialModel == "NeoHookean" ) << "invalid material-model :" << M_materialModel;
+
+    if ( auto e = pt.template get_optional<std::string>("formulation") )
+        M_formulation = *e;
+
+    if ( auto e = pt.template get_optional<std::string>("volumetric-strain-energy") )
+        M_decouplingEnergyVolumicLaw = *e;
+    if ( auto e = pt.template get_optional<std::string>("neo-Hookean.variant") )
+        M_compressibleNeoHookeanVariantName = *e;
+
+    CHECK( M_decouplingEnergyVolumicLaw == "classic" || M_decouplingEnergyVolumicLaw == "simo1985" ) << "invalid decouplingEnergyVolumicLaw : " << M_decouplingEnergyVolumicLaw;
+    CHECK( M_compressibleNeoHookeanVariantName == "default" || M_compressibleNeoHookeanVariantName == "molecular-theory" ||
+           M_compressibleNeoHookeanVariantName == "molecular-theory-simo1985" ) << "invalid compressibleNeoHookeanVariantName : " <<  M_compressibleNeoHookeanVariantName;
+
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicSolid<Dim>::setEquation( std::string const& eq )
+{
+    CHECK( eq == "Hyper-Elasticity" || eq == "hyperelasticity" || eq == "Elasticity" || eq == "linear-elasticity" || eq == "Generalised-String" ) << "invalid equation of solid : " << eq;
+    M_equation = eq;
+#if 0
+    if ( M_equation == "Elasticity" )
+        M_equation = "linear-elasticity";
+#endif
+}
+
+template <uint16_type Dim>
 void
 ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& models, subphysic_description_type const& subPhyicsDesc )
 {
@@ -83,9 +166,10 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
     M_physicDefault = name;
     auto const& theGlobalModel = models.model( name );
-    M_physics.emplace( name, ModelPhysic<Dim>::New( type, name, theGlobalModel ) );
+    if ( std::find_if( theGlobalModel.variants().begin(), theGlobalModel.variants().end(), [&name]( auto const& varMod ) { return name == varMod.first; } ) == theGlobalModel.variants().end() )
+        M_physics.emplace( name, ModelPhysic<Dim>::New( *this, type, name, theGlobalModel ) );
     for ( auto const& [variantName,variantModel] : theGlobalModel.variants() )
-        M_physics.emplace( variantName, ModelPhysic<Dim>::New( type, variantName, variantModel ) );
+        M_physics.emplace( variantName, ModelPhysic<Dim>::New( *this, type, variantName, variantModel ) );
 
     // list of subphysics from description
     std::map<std::string, std::set<std::string>> mapSubPhysicsTypeToDefaultNames;
@@ -104,7 +188,7 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
             auto itFindTypeInDesc = subPhyicsDesc.find( subPhysicType );
             CHECK( itFindTypeInDesc != subPhyicsDesc.end() ) << "type not given in subPhyicsDesc";
-            std::string const& subPhysicDefaultName = itFindTypeInDesc->second;
+            std::string const& subPhysicDefaultName = std::get<0>( itFindTypeInDesc->second );
             mapSubPhysicsTypeToDefaultNames[subPhysicType].insert( subPhysicDefaultName );
             parentPhysicToUpdate.push_back( physicData );
         }
@@ -114,12 +198,14 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
     bool useModelNameInJson = models.useModelName();
     for ( auto const& [subPhysicType,subPhysicDefaultNames] : mapSubPhysicsTypeToDefaultNames )
     {
+        auto mSubPhysics = std::get<1>( subPhyicsDesc.find( subPhysicType )->second );
         for ( std::string const& subName : subPhysicDefaultNames )
         {
             auto const& theSubModel = useModelNameInJson && models.hasModel( subName )? models.model( subName ) : ModelModel{};
-            M_physics.emplace( subName, ModelPhysic<Dim>::New( subPhysicType, subName, theSubModel ) );
+            if ( std::find_if( theSubModel.variants().begin(), theSubModel.variants().end(), [&subName]( auto const& varMod ) { return subName == varMod.first; } ) == theSubModel.variants().end() )
+                M_physics.emplace( subName, ModelPhysic<Dim>::New( *mSubPhysics, subPhysicType, subName, theSubModel ) );
             for ( auto const& [variantName,variantModel] : theSubModel.variants() )
-                M_physics.emplace( variantName, ModelPhysic<Dim>::New( subPhysicType, variantName, variantModel ) );
+                M_physics.emplace( variantName, ModelPhysic<Dim>::New( *mSubPhysics, subPhysicType, variantName, variantModel ) );
         }
     }
 
@@ -151,7 +237,7 @@ ModelPhysics<Dim>::initPhysics( std::string const& name, ModelModels const& mode
 
             auto itFindTypeInDesc = subPhyicsDesc.find( subPhysicType );
             CHECK( itFindTypeInDesc != subPhyicsDesc.end() ) << "type not given in subPhyicsDesc";
-            std::string const& subPhysicDefaultName = itFindTypeInDesc->second;
+            std::string const& subPhysicDefaultName = std::get<0>( itFindTypeInDesc->second );
 
             auto itFindSubphysic = std::find_if( M_physics.begin(), M_physics.end(), [&subPhysicType,&subPhysicDefaultName]( auto const& e ) { return e.second->type() == subPhysicType && e.second->name() == subPhysicDefaultName; } );
             CHECK( itFindSubphysic != M_physics.end() ) << "subphysic not found";

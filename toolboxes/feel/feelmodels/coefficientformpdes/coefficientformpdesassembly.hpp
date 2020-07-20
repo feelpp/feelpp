@@ -18,20 +18,17 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDE( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+    hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
                         {
-                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                            {
-                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                    continue;
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
 
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                cfpde->updateLinearPDE( data, mctx );
-                            }
+                            cfpde->updateLinearPDE( data, mctx );
                         }
                     });
 }
@@ -52,20 +49,17 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+    hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
                         {
-                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                            {
-                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                    continue;
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
 
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                cfpde->updateLinearPDEDofElimination( data, mctx );
-                            }
+                            cfpde->updateLinearPDEDofElimination( data, mctx );
                         }
                     });
 }
@@ -86,20 +80,17 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateNewtonInitialGuess( DataNewtonInitialGuess & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+    hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
                         {
-                            for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                            {
-                                if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                    continue;
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
 
-                                using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                cfpde->updateNewtonInitialGuess( data, mctx );
-                            }
+                            cfpde->updateNewtonInitialGuess( data, mctx );
                         }
                     });
 }
@@ -121,21 +112,18 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateJacobian( DataUpdateJacobian & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+    hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
-                            {
-                                for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                                {
-                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                        continue;
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
 
-                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                    cfpde->updateJacobian( data, mctx );
-                                }
-                            }
+                            cfpde->updateJacobian( data, mctx );
+                        }
                     });
 
 }
@@ -157,21 +145,18 @@ template <typename FilterBasisUnknownType,typename ModelContextType>
 void
 CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateResidual( DataUpdateResidual & data, ModelContextType const& mctx ) const
 {
-    hana::for_each( tuple_type_unknown_basis, [this,&data,&mctx]( auto const& e )
+    hana::for_each( tuple_type_unknown_basis_filtered<FilterBasisUnknownType>, [this,&data,&mctx]( auto const& e )
                     {
-                        if constexpr ( FilterBasisUnknownType::template apply<typename std::decay_t<decltype(e)>::type>::value )
-                            {
-                                for ( auto const& cfpdeBase : M_coefficientFormPDEs )
-                                {
-                                    if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
-                                        continue;
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
 
-                                    using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
-                                    auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
 
-                                    cfpde->updateResidual( data, mctx );
-                                }
-                            }
+                            cfpde->updateResidual( data, mctx );
+                        }
                     });
 }
 template< typename ConvexType, typename... BasisUnknownType>

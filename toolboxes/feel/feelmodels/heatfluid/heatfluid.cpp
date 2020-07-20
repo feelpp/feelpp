@@ -46,7 +46,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::HeatFluid( std::string const& prefix,
                                           ModelBaseRepository const& modelRep )
     :
     super_type( prefix, keyword, worldComm, subPrefix, modelRep ),
-    ModelPhysics<mesh_type::nDim>( "heat-fluid" )
+    ModelPhysics<mesh_type::nDim>( "heat-fluid" ),
+    ModelBase( prefix, keyword, worldComm, subPrefix, modelRep )
 {
     this->log("HeatFluid","constructor", "start" );
 
@@ -170,22 +171,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
     {
         typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = M_heatModel->keyword();
-        subPhyicsDesc[M_fluidModel->physicType()] = M_fluidModel->keyword();
+        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(),M_heatModel );
+        subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
         this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
     }
-
-    if ( !M_mesh )
-        this->initMesh();
 
     // physical properties
     if ( !M_materialsProperties )
     {
         auto paramValues = this->modelProperties().parameters().toParameterValues();
         this->modelProperties().materials().setParameterValues( paramValues );
-        M_materialsProperties.reset( new materialsproperties_type( this->prefix(), this->repository().expr() ) );
-        M_materialsProperties->updateForUse( M_mesh, this->modelProperties().materials(), *this );
+        M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
+        M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
+
+    if ( !M_mesh )
+        this->initMesh();
+
+    this->materialsProperties()->addMesh( this->mesh() );
 
     // init heat toolbox
     M_heatModel->setPhysics( this->physics( M_heatModel->physicType() ), M_heatModel->keyword() );
@@ -337,16 +340,16 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::initPostProcess()
 
     // need to not include export fields of material of subphysics
     std::set<std::string> ppExportsAllFieldsAvailableHeat = Feel::FeelModels::detail::set_difference( this->heatModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->heatModel()->physicsAvailable() ) );
+                                                                                                      this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->heatModel()->physicsAvailable() ) );
     std::set<std::string> ppExportsAllFieldsAvailablefluid = Feel::FeelModels::detail::set_difference( this->fluidModel()->postProcessExportsAllFieldsAvailable(),
-                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->fluidModel()->physicsAvailable() ) );
+                                                                                                       this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->fluidModel()->physicsAvailable() ) );
    std::set<std::string> ppExportsAllFieldsAvailable;
    for ( auto const& s : ppExportsAllFieldsAvailableHeat )
        ppExportsAllFieldsAvailable.insert( prefixvm( this->heatModel()->keyword(), s) );
    for ( auto const& s : ppExportsAllFieldsAvailablefluid )
        ppExportsAllFieldsAvailable.insert( prefixvm( this->fluidModel()->keyword(), s) );
     this->setPostProcessExportsAllFieldsAvailable( ppExportsAllFieldsAvailable );
-    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->physicsAvailable() ) );
+    this->addPostProcessExportsAllFieldsAvailable( this->materialsProperties()->postProcessExportsAllFieldsAvailable( this->mesh(),this->physicsAvailable() ) );
     this->setPostProcessExportsPidName( "pid" );
     super_type::initPostProcess();
 
@@ -483,7 +486,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::exportResults( double time )
     M_fluidModel->exportResults( time, symbolExpr );
 
     //auto fields = hana::concat( M_heatModel->allFields( M_heatModel->keyword() ), M_fluidModel->allFields( M_fluidModel->keyword() ) );
-    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->physicsAvailable(),symbolExpr ),
+    auto exprExport = hana::concat( M_materialsProperties->exprPostProcessExports( this->mesh(),this->physicsAvailable(),symbolExpr ),
                                     hana::concat( M_heatModel->exprPostProcessExportsToolbox( symbolExpr,M_heatModel->keyword() ),
                                                   M_fluidModel->exprPostProcessExports( symbolExpr,M_fluidModel->keyword() ) ) );
     this->executePostProcessExports( M_exporter, time, mfields, symbolExpr, exprExport );
