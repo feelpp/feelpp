@@ -525,6 +525,7 @@ std::pair<int,int> ElemFineToCoarse::operator()( int num)
 }
 
 
+template holo3_image<bool> readHBF(std::string const&);
 template holo3_image<double> readHBF(std::string const&);
 template holo3_image<float> readHBF(std::string const&);
 template holo3_image<__int8> readHBF(std::string const&);
@@ -537,6 +538,7 @@ template holo3_image<unsigned __int16> readHBF(std::string const&);
 template holo3_image<unsigned __int32> readHBF(std::string const&);
 template holo3_image<unsigned __int64> readHBF(std::string const&);
 
+template void writeHBF( std::string const& , holo3_image<bool> const& );
 template void writeHBF( std::string const& , holo3_image<double> const& );
 template void writeHBF( std::string const& , holo3_image<float> const& );
 template void writeHBF( std::string const& , holo3_image<__int8> const& );
