@@ -132,3 +132,4 @@ pyfeelpp-env
 projects
 *bak
 /build*
+feelpp/.vscode/settings.json
