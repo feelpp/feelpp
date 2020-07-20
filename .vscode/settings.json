@@ -4,5 +4,6 @@
         "type_traits": "cpp",
         "stdexcept": "cpp",
         "regex": "cpp"
-    }
+    },
+    "cmake.parallelJobs": 5
 }

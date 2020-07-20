@@ -101,7 +101,7 @@ std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::ifstream& 
 /**
  * @brief read an HBF file containing an array of floats
  * @param s file name
- * @return eigen array of floats
+ * @return eigen array of type T
  */
 template <typename T>
 holo3_image<T>
@@ -111,7 +111,7 @@ readHBF( std::string const& s );
  * @brief write a HBF file containing an array of floats
  *
  * @param s file name
- * @param x eigen array of floats
+ * @param x eigen array of type T
  */
 template <typename T>
 void
