@@ -296,28 +296,26 @@ MULTIFLUID_CLASS_TEMPLATE_TYPE::functionSpaceInextensibilityLM() const
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 typename MULTIFLUID_CLASS_TEMPLATE_TYPE::element_levelset_ptrtype const&
-MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt( bool up ) const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::globalLevelsetElt( bool update ) const
 {
     if( !M_globalLevelsetElt )
         M_globalLevelsetElt.reset( new element_levelset_type(this->functionSpaceLevelset(), "GlobalLevelset") );
-    if( up && M_doUpdateGlobalLevelset )
-        this->updateGlobalLevelsetElt( M_globalLevelsetElt, M_doUpdateGlobalLevelset );
+
+    if( update )
+        this->updateGlobalLevelsetElt();
 
     return M_globalLevelsetElt;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
-MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const
+MULTIFLUID_CLASS_TEMPLATE_TYPE::updateGlobalLevelsetElt() const
 {
-    if ( !doUpdateGlobalLevelset )
-        return;
-
-    globalLevelsetElt->on(
-        _range=elements( M_globalLevelsetElt->mesh() ),
-        _expr=this->globalLevelsetExpr()
-                            );
-    doUpdateGlobalLevelset = false;
+    M_globalLevelsetElt->on(
+            _range=elements( M_globalLevelsetElt->mesh() ),
+            _expr=this->globalLevelsetExpr()
+            );
+    M_doUpdateGlobalLevelset = false;
 }
 
 MULTIFLUID_CLASS_TEMPLATE_DECLARATIONS
