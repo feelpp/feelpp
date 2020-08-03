@@ -40,3 +40,6 @@
 [submodule "feelpp/contrib/indicators"]
 	path = feelpp/contrib/indicators
 	url = https://github.com/feelpp/indicators.git
+[submodule ".buildkite/feelpp/contrib/simple-web-server"]
+	path = .buildkite/feelpp/contrib/simple-web-server
+	url = https://gitlab.com/feelpp/Simple-Web-Server.git
