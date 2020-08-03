@@ -227,7 +227,7 @@ public:
     face_type const& face( size_type i ) const
     {
         auto itFindFace = M_faces.find( i );
-        CHECK( itFindFace != M_faces.end() ) << " face " << i << "does not found";
+        CHECK( itFindFace != M_faces.end() ) << " face " << i << " does not exist";
         return itFindFace->second;
     }
 
