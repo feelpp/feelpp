@@ -1,0 +1,63 @@
+{
+    "buildType": {
+        "default": "debug",
+        "description": "The build type.",
+        "choices": {
+            "debug": {
+                "short": "Debug",
+                "long": "Disable optimizations - include debug information.",
+                "buildType": "Debug"
+            },
+            "debug-full": {
+                "short": "DebugFull",
+                "long": "Disable optimizations - include full debug information.",
+                "buildType": "DebugFull"
+            },
+            "asan": {
+                "short": "Asan",
+                "long": "Instrument with Address Sanitizer.",
+                "buildType": "Asan"
+            },
+            "coverage": {
+                "short": "Coverage",
+                "long": "Enable coverage reporting in Clang/GCC.",
+                "buildType": "Coverage"
+            },
+            "release": {
+                "short": "Release",
+                "long": "Optimize for speed - exclude debug information.",
+                "buildType": "Release"
+            },
+            "minsize": {
+                "short": "MinSizeRel",
+                "long": "Optimize for smallest binary size - exclude debug information.",
+                "buildType": "MinSizeRel"
+            },
+            "reldeb": {
+                "short": "RelWithDebInfo",
+                "long": "Optimize for speed - include debug information.",
+                "buildType": "RelWithDebInfo"
+            }
+        }
+    },
+    "webserver": {
+        "default": "no",
+        "description": "Enable/Disable the Web Server REST API.",
+        "choices": {
+            "yes": {
+                "short": "SimpleWebServer",
+                "long": "Use Simple Web Server for the REST API.",
+                "settings": {
+                    "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "ON"
+                }
+            },
+            "no": {
+                "short": "No SimpleWebServer",
+                "long": "Do not enable Simple Web Server for the REST API.",
+                "settings": {
+                    "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF"
+                }
+            }
+        }
+    }
+}
