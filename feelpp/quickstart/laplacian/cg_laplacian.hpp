@@ -24,6 +24,8 @@
 #ifndef FEELPP_CG_LAPLACIAN_HPP
 #define FEELPP_CG_LAPLACIAN_HPP 1
 
+#include <feel/feelmodels/modelproperties.hpp>
+
 namespace Feel {
 
 /**
