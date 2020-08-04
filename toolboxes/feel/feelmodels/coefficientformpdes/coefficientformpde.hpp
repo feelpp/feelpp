@@ -110,6 +110,10 @@ public:
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
 
+
+    template <typename SymbolsExprType>
+    bool hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const;
+
     //___________________________________________________________________________________//
     // execute post-processing
     //___________________________________________________________________________________//
@@ -241,6 +245,42 @@ private :
     // post-process
     measure_points_evaluation_ptrtype M_measurePointsEvaluation;
 };
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename SymbolsExprType>
+bool
+CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryConditions( std::set<std::string> const& symbs, SymbolsExprType const& se ) const
+{
+    bool hasDependency = false;
+    for( auto const& d : M_bcNeumann )
+    {
+        auto neumannExpr = expression( d );
+        if ( neumannExpr.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    if ( hasDependency )
+        return true;
+
+    for( auto const& d : this->M_bcRobin )
+    {
+        auto theExpr1 = expression1( d );
+        if ( theExpr1.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+        auto theExpr2 = expression2( d );
+        if ( theExpr2.hasSymbolDependency( symbs, se ) )
+        {
+            hasDependency = true;
+            break;
+        }
+    }
+    return hasDependency;
+}
 
 template< typename ConvexType, typename BasisUnknownType>
 template <typename ModelFieldsType, typename SymbolsExpr, typename ExportsExprType>

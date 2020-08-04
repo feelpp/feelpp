@@ -445,6 +445,25 @@ struct MeshContiguousNumberingMapping
             }
         }
 
+
+    //! reorder the nodes ids in the element and put the new ordering in arg \newPointsIdsInElt
+    template <typename TheNodeIndexType>
+    void updateOrderingOfPointsIdsInElt( int part, rank_type therank, std::vector<TheNodeIndexType> & newPointsIdsInElt,
+                                         std::vector<uint16_type> const& mappingWithThisKindOfElement, int shiftId = 0,
+                                         int nPointsUsedInElt = mesh_type::element_type::numPoints ) const
+        {
+            CHECK( nPointsUsedInElt <= mappingWithThisKindOfElement.size() ) << "incomplete ordering";
+
+            index_type _nElt = this->numberOfElement( part,therank );
+            auto const& pointsIdsInElt_B = this->pointIdsInElements( part );
+            newPointsIdsInElt.resize( _nElt*nPointsUsedInElt );
+
+            for ( int k=0;k<_nElt;++k )
+            {
+                for ( uint16_type p=0;p<nPointsUsedInElt;++p )
+                    newPointsIdsInElt[ k*nPointsUsedInElt + mappingWithThisKindOfElement[p] ] = pointsIdsInElt_B[ k*mesh_type::element_type::numPoints+p ] + shiftId;
+            }
+        }
 private :
 
     template <int TupleId>

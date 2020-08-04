@@ -189,8 +189,7 @@ public :
     using material_property_shape_dim_type = typename material_property_description_type::shape_dim_type;
     inline static const uint16_type nDim = Dim;
 
-    //using subphysic_description_type = std::map<std::pair<std::string,std::string>, std::map<std::string,std::string> >;
-    using subphysic_description_type = std::map<std::string,std::string>;
+    using subphysic_description_type = std::map<std::string,std::tuple<std::string,std::shared_ptr<ModelPhysics<Dim>>>>;
 
     //ModelPhysics() = default;
     explicit ModelPhysics( std::string const& type ) : ModelBase(""), M_physicType( type ) {}

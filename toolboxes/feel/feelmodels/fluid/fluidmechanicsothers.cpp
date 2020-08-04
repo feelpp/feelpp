@@ -87,10 +87,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     std::string doExport_str;
-    for ( std::string const& fieldName : M_postProcessFieldExported )
+    for ( std::string const& fieldName : this->postProcessExportsFields() )
         doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
-    for ( std::string const& fieldName : M_postProcessUserFieldExported )
-        doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
+    // for ( std::string const& fieldName : M_postProcessUserFieldExported )
+    //     doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -412,7 +412,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
 } // FluidMechanics::exportResult
 
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
@@ -574,6 +574,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     //----------------------//
     return hasFieldToExport;
 }
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -588,18 +589,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     //    this->meshALE()->revertReferenceMesh();
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
     bool hasFieldToExport = false;
-    if ( this->hasPostProcessFieldExported( "pid" ) )
+    if ( this->hasPostProcessExportsField( "pid" ) )
     {
         M_exporter_ho->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "velocity" ) )
+    if ( this->hasPostProcessExportsField( "velocity" ) )
     {
         M_opIvelocity->apply( this->fieldVelocity(),*M_velocityVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity_ho")), *M_velocityVisuHO );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "pressure" ) )
+    if ( this->hasPostProcessExportsField( "pressure" ) )
     {
         M_opIpressure->apply( this->fieldPressure(),*M_pressureVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure_ho")), *M_pressureVisuHO );
@@ -622,7 +623,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif
         }
 #endif
-        if ( this->hasPostProcessFieldExported( "displacement" ) )
+        if ( this->hasPostProcessExportsField( "displacement" ) )
         {
             //M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
             M_opImeshdisp->apply( *M_meshALE->displacement() , *M_meshdispVisuHO);
@@ -712,6 +713,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif
 }
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time )
@@ -739,6 +741,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_pt
 
     return hasFieldToExport;
 }
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void

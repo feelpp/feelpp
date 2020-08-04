@@ -175,8 +175,8 @@ THERMOELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
     {
         typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = M_heatModel->keyword();
-        subPhyicsDesc[M_electricModel->physicType()] = M_electricModel->keyword();
+        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(), M_heatModel );
+        subPhyicsDesc[M_electricModel->physicType()] = std::make_tuple( M_electricModel->keyword(), M_electricModel );
         this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
     }
 

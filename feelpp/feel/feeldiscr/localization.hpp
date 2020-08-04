@@ -489,7 +489,7 @@ Localization<MeshType>::isIn( size_type _id, const node_type & _pt ) const
     //get element with the id
     auto const& elt = mesh->element( _id );
 
-    if ( elt.isOnBoundary() )
+    if ( elt.isOnBoundary() || nDim != nRealDim )
         {
 #if 0
             // get inverse geometric transformation
@@ -554,7 +554,7 @@ Localization<MeshType>::isIn( std::vector<size_type> _ids, const node_type & _pt
         //get element with the id
         auto const& elt = mesh->element( _ids[i] );
 
-        if ( elt.isOnBoundary() )
+        if ( elt.isOnBoundary() || nDim != nRealDim )
             {
 #if 0
                 // get inverse geometric transformation

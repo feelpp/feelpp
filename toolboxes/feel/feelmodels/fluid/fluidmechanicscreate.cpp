@@ -110,7 +110,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     //--------------------------------------------------------------//
     // exporters options
-    M_isHOVisu = nOrderGeo > 1;
+    M_isHOVisu = nOrderGeo > 2;
     if ( Environment::vm().count(prefixvm(this->prefix(),"hovisu").c_str()) )
         M_isHOVisu = boption(_name="hovisu",_prefix=this->prefix());
     //--------------------------------------------------------------//
@@ -584,7 +584,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
     //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;//(this->isMoveDomain())?ExporterGeometry::EXPORTER_GEOMETRY_CHANGE_COORDS_ONLY:ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
     std::string geoExportType="static";//change_coords_only, change, static
 
-    if ( nOrderGeo == 1 /*&& doExport*/ )
+    if constexpr ( nOrderGeo <= 2 /*&& doExport*/ )
     {
         M_exporter = exporter( _mesh=this->mesh(),
                                _name="Export",
@@ -1568,7 +1568,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateUserFunctions( bool onlyExprWithTimeSy
     }
 }
 
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 std::set<std::string>
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::string> const& ifields, std::string const& prefix ) const
@@ -1606,13 +1606,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postProcessFieldExported( std::set<std::stri
     }
     return res;
 }
-
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 {
-    this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement"} );
+    this->setPostProcessExportsAllFieldsAvailable( {"velocity","pressure","vorticity","displacement","alemesh"} );
     this->setPostProcessExportsPidName( "pid" );
     this->setPostProcessExportsAllFieldsAvailable( "trace_mesh", {"trace.normal-stress","trace.wall-shear-stress" /*, "trace.body.translational-velocity", "trace.body.angular-velocity"*/ } );
     this->setPostProcessExportsPidName( "trace_mesh", "trace.pid" );
@@ -1640,7 +1640,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initPostProcess()
 
         //M_postProcessFieldOnTraceExported = this->postProcessFieldOnTraceExported( this->modelProperties().postProcess().exports( this->keyword() ).fields() );
         //if ( !M_postProcessFieldOnTraceExported.empty() && nOrderGeo == 1 )
-        if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo == 1  )
+        if ( !this->postProcessExportsFields( "trace_mesh" ).empty() && nOrderGeo <= 2  )
         {
             if ( !M_materialProperties->isDefinedOnWholeMesh() )
                 this->functionSpaceVelocity()->dof()->meshSupport()->updateBoundaryInternalFaces();
