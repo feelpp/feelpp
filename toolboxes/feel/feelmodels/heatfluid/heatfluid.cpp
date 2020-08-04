@@ -171,8 +171,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( this->physics().empty() )
     {
         typename ModelPhysics<mesh_type::nDim>::subphysic_description_type subPhyicsDesc;
-        subPhyicsDesc[M_heatModel->physicType()] = M_heatModel->keyword();
-        subPhyicsDesc[M_fluidModel->physicType()] = M_fluidModel->keyword();
+        subPhyicsDesc[M_heatModel->physicType()] = std::make_tuple( M_heatModel->keyword(),M_heatModel );
+        subPhyicsDesc[M_fluidModel->physicType()] = std::make_tuple( M_fluidModel->keyword(), M_fluidModel );
         this->initPhysics( this->keyword(), this->modelProperties().models(), subPhyicsDesc );
     }
 

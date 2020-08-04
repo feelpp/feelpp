@@ -58,7 +58,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
     this->timerTool("Solve").start();
 
     double timeSteppingScaling = 1.;
-    if ( !this->isStationaryModel() )
+    if ( !this->isStationary() )
     {
         if ( M_timeStepping == "Theta" )
             timeSteppingScaling = M_timeStepThetaValue;

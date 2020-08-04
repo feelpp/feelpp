@@ -149,11 +149,17 @@ public:
     template<typename... TheExpr>
     struct Lambda
     {
-        typedef this_type type;
+        using new_se_type = typename SymbolsExprType::template Lambda<TheExpr...>::type;
+        using type = GinacMatrix<M,N,Order,new_se_type>;
     };
     template<typename... TheExpr>
     typename Lambda<TheExpr...>::type
-    operator()( TheExpr... e  ) { return *this; }
+    operator()( TheExpr... e  )
+    {
+        typename Lambda<TheExpr...>::type res( this->expression(), this->symbols(), this->fun(), this->exprDesc(), M_expr.applyLambda( e... ) );
+        res.setParameterValues( this->symbolNameToValue() );
+        return res;
+    }
 
     //@}
 

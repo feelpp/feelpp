@@ -735,6 +735,46 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
 
     } // for each material
 
+
+    // Neumann bc :  k \nabla u  n = g
+    if ( buildNonCstPart )
+    {
+        for( auto const& d : M_bcNeumann )
+        {
+            auto neumannExprBase = expression( d );
+            bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+            if ( neumannnBcDependOnUnknown )
+            {
+                auto neumannExpr = expr( neumannExprBase, se );
+                hana::for_each( tse.map(), [this,&d,&neumannExpr,&u,&v,&J,&Xh,&timeSteppingScaling]( auto const& e )
+                {
+                    for ( auto const& trialSpacePair : hana::second(e).blockSpaceIndex() )
+                    {
+                        auto trialXh = trialSpacePair.first;
+                        auto trialBlockIndex = trialSpacePair.second;
+
+                        auto neumannDiffExpr = diffSymbolicExpr( neumannExpr, hana::second(e), trialXh, trialBlockIndex, this->worldComm(), this->repository().expr() );
+
+                        if ( !neumannDiffExpr.expression().hasExpr() )
+                            continue;
+
+                        auto neumannDiffExprUsed = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                                                  [&neumannDiffExpr] { return neumannDiffExpr; },
+                                                                  [&neumannDiffExpr] { return neumannDiffExpr*N(); } );
+
+                        form2( _test=Xh,_trial=trialXh,_matrix=J,
+                               _pattern=size_type(Pattern::COUPLED),
+                               _rowstart=this->rowStartInMatrix(),
+                               _colstart=trialBlockIndex ) +=
+                            integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
+                                       _expr= -timeSteppingScaling*inner(neumannDiffExprUsed, id(v)),
+                                       _geomap=this->geomap() );
+                    }
+                });
+            }
+        }
+    }
+
     // Robin bc
     for( auto const& d : this->M_bcRobin )
     {
@@ -749,6 +789,12 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateJacobian( ModelAlgebraic:
                     integrate( _range=markedfaces(mesh,M_bcRobinMarkerManagement.markerRobinBC( name(d) ) ),
                                _expr= timeSteppingScaling*theExpr1*idt(u)*id(v),
                                _geomap=this->geomap() );
+
+                if ( theExpr1.hasSymbolDependency( trialSymbolNames ) )
+                    CHECK( false ) << "TODO";
+                auto theExpr2base = expression2( d );
+                if ( theExpr2base.hasSymbolDependency( trialSymbolNames, se ) )
+                    CHECK( false ) << "TODO";
             }
         else
             CHECK( false ) << "robin bc with vectorial unknown can not be implemented for now";
@@ -973,12 +1019,14 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::updateResidual( ModelAlgebraic:
     // Neumann bc
     for( auto const& d : this->M_bcNeumann )
     {
-        auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
-                                      [&d,&se] { return expression( d,se ); },
-                                      [&d,&se] { return expression( d,se )*N(); } );
-        bool build_BcNeumann = buildCstPart; // TODO : if theExpr depends on unkwnon, then it's buildNonCstPart
-        if ( build_BcNeumann )
+        auto neumannExprBase = expression( d );
+        bool neumannnBcDependOnUnknown = neumannExprBase.hasSymbolDependency( trialSymbolNames, se );
+        bool assembleNeumannBcTerm = neumannnBcDependOnUnknown? buildNonCstPart : buildCstPart;
+        if ( assembleNeumannBcTerm )
         {
+            auto theExpr = hana::eval_if( hana::bool_c<unknown_is_scalar>,
+                                          [&neumannExprBase,&se] { return expr( neumannExprBase, se ); },
+                                          [&neumannExprBase,&se] { return expr( neumannExprBase, se )*N(); } );
             linearForm +=
                 integrate( _range=markedfaces(this->mesh(),M_bcNeumannMarkerManagement.markerNeumannBC(MarkerManagementNeumannBC::NeumannBCShape::SCALAR,name(d)) ),
                            _expr= -timeSteppingScaling*inner(theExpr,id(v)),
