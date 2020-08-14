@@ -60,10 +60,10 @@ class Filter:
     def setNumericalParameters( self, a, b, k ):
         self._alpha, self._beta, self._kappa, self._lambda, self._factor = a, b, k, (self.stateDim + k)*a**2 - self.stateDim, self.stateDim + k
 
-    def stepTime( dt ):
+    def stepTime( self, dt ):
         self.time += dt
 
-    def resetTime():
+    def resetTime( self ):
         self.time = 0
         
     def setState( self, state ):
