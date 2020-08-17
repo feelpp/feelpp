@@ -282,6 +282,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 }
             }
 
+            //--------------------------------------------------------------------------------------------------//
+            if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+            {
+                this->updateLinearPDEStabilizationGLS( data, mctx, *physicFluidData, matProps, range, fieldVelocityPressureExtrapolated );
+            }
+
 
         } // foreach material
 
