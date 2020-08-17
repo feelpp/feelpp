@@ -223,6 +223,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _geomap=this->geomap() );
             }
 
+            // stabilization gls
+            if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+            {
+                this->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range );
+            }
 
         } // foreach mat
     } // foreach physic

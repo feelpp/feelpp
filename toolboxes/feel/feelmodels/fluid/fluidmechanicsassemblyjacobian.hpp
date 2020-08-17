@@ -325,6 +325,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _geomap=this->geomap() );
             }
 
+            // stabilization gls
+            if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
+            {
+                this->updateJacobianStabilizationGLS( data, mctx, *physicFluidData, matProps, range );
+            }
+
         } // foreach mat
     } // foreach physic
 
