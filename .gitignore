@@ -133,3 +133,4 @@ projects
 *bak
 /build*
 feelpp/quickstart/laplacian/qs_laplacian/
+doc/api/DocCmakeLists.doc
