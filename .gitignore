@@ -134,3 +134,4 @@ projects
 /build*
 feelpp/quickstart/laplacian/qs_laplacian/
 doc/api/DocCmakeLists.doc
+node_modules
