@@ -5,7 +5,7 @@
             "includePath": [
                 "/usr/local/include",
                 "/usr/include",
-                "${workspaceRoot}/**",
+                "${workspaceRoot}/**"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -13,7 +13,7 @@
                 "path": [
                     "/usr/local/include",
                     "/usr/include",
-                    "${workspaceRoot}/**",
+                    "${workspaceRoot}/**"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -46,7 +46,8 @@
                 "databaseFilename": ""
             },
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}/compile_commands.json"
         },
         {
             "name": "Win32",
