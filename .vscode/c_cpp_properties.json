@@ -32,6 +32,7 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
+                "/usr/lib/x86_64-linux-gnu/openmpi/include",
                 "${workspaceFolder}/**"
             ],
             "defines": [],
