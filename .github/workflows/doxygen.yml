@@ -27,7 +27,7 @@ jobs:
     - name: Configure Feelpp
       run: |
         mkdir build && cd build
-        CXX=clang++ ../configure -r --prefix=./install
+        CXX=clang++ cmake -DFEELPP_ENABLE_DOXYGEN=ON ..
     - name: Build Doxygen
       run: make doxygen
       working-directory: build
