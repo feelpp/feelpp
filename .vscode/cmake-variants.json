@@ -44,18 +44,38 @@
         "default": "no",
         "description": "Enable/Disable the Web Server REST API.",
         "choices": {
-            "yes": {
+            "sws": {
                 "short": "SimpleWebServer",
                 "long": "Use Simple Web Server for the REST API.",
                 "settings": {
                     "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "ON"
                 }
             },
-            "no": {
+            "nosws": {
                 "short": "No SimpleWebServer",
                 "long": "Do not enable Simple Web Server for the REST API.",
                 "settings": {
                     "FEELPP_ENABLE_SIMPLE_WEB_SERVER": "OFF"
+                }
+            }
+        }
+    },
+    "doxygen": {
+        "default": "nodoxygen",
+        "description": "Enable/Disable Doxygen API docs build",
+        "choices": {
+            "doxygen": {
+                "short": "Doxygen",
+                "long": "Enable Doxygen to build the API Docs.",
+                "settings": {
+                    "FEELPP_ENABLE_DOXYGEN": "ON"
+                }
+            },
+            "nodoxygen": {
+                "short": "No Doxygen",
+                "long": "Disable Doxygen to build the API Docs.",
+                "settings": {
+                    "FEELPP_ENABLE_DOXYGEN": "OFF"
                 }
             }
         }
