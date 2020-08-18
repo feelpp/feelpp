@@ -246,6 +246,12 @@ private:
 };
 
 
+/**
+ * provide random expression in ]lo,hi[
+ * @ingroup DSEL-Variational-Formulation
+ * @param lo lower end of the interval
+ * @param hi upper of the interval
+ */
 template<typename T>
 inline
 Expr< Rand<T> >
@@ -255,6 +261,12 @@ rand()
     return Expr< rand_t >(  rand_t( T(0), T(1) ) );
 }
 
+/**
+ * provide random expression in ]lo,hi[
+ * @ingroup DSEL-Variational-Formulation
+ * @param lo lower end of the interval
+ * @param hi upper of the interval
+ */
 template<typename T>
 inline
 Expr< Rand<T> >

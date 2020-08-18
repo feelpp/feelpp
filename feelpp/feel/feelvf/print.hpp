@@ -305,7 +305,7 @@ private:
 };
 
 /**
-   \ingroup vf
+   \ingroup DSEL-Variational-Formulation
 
    print an expression during evaluation. This function is typically used for
    debugging purposes and it allows to check the numerical results of

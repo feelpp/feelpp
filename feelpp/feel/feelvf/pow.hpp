@@ -324,6 +324,13 @@ protected:
     expression_2_type M_expr_2;
 };
 
+/**
+ * @brief provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ * \code
+   std::cout << integrate( _range=elements(mesh), _expr=pow( Px(), Py() ) ).evaluate();
+   \endcode
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
 // Expr< Pow<typename mpl::if_<boost::is_arithmetic<ExprT1>,
@@ -353,6 +360,10 @@ pow( ExprT1 const& __e1, ExprT2 const& __e2 )
 }
 
 
+/**
+ * provide pow expression e1^e2
+ * @ingroup DSEL-Variational-Formulation
+ */
 template<typename ExprT1,  typename ExprT2>
 inline
 auto
