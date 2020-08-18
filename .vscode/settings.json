@@ -98,7 +98,11 @@
         "compare": "cpp",
         "concepts": "cpp",
         "stop_token": "cpp",
-        "cfenv": "cpp"
+        "cfenv": "cpp",
+        "any": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
+        "slist": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
     "cmake.configureOnOpen": true,
