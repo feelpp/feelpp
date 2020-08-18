@@ -1,5 +1,9 @@
 var classFeel_1_1vf_1_1Rand =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1Rand_1_1HasTestFunction.html", "structFeel_1_1vf_1_1Rand_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1Rand_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1Rand_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1Rand_1_1Lambda.html", "structFeel_1_1vf_1_1Rand_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1Rand_1_1tensor.html", "structFeel_1_1vf_1_1Rand_1_1tensor" ],
     [ "evaluate", "classFeel_1_1vf_1_1Rand.html#af0ebe40ad908403e670b11b2baf46f03", null ],
     [ "evaluate", "classFeel_1_1vf_1_1Rand.html#a8cc2be68865adeb0cb7d9eaa0916382b", null ],
     [ "evaluate", "classFeel_1_1vf_1_1Rand.html#a38dc5cd3a9a8fa81a77b422731390cb9", null ],

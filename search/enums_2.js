@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['licensekey_4065',['LicenseKey',['../classFeel_1_1AboutData.html#a0a827cfc2cac83144e4595e19641ba3e',1,'Feel::AboutData']]]
+  ['geoentitycontext_4167',['GeoEntityContext',['../namespaceFeel.html#a5df59a8b1a63f40c3c1d5a65162254d5',1,'Feel']]]
 ];

@@ -1,5 +1,8 @@
 var classFeel_1_1vf_1_1PrintExpr =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1PrintExpr_1_1HasTestFunction.html", "structFeel_1_1vf_1_1PrintExpr_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1PrintExpr_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1PrintExpr_1_1HasTrialFunction" ],
+    [ "tensor", "structFeel_1_1vf_1_1PrintExpr_1_1tensor.html", "structFeel_1_1vf_1_1PrintExpr_1_1tensor" ],
     [ "assemble", "classFeel_1_1vf_1_1PrintExpr.html#a0bfe5ea14cd3b6f6a7ff5db9f68527f0", null ],
     [ "assemble", "classFeel_1_1vf_1_1PrintExpr.html#a3cfbe93103d69778f51556dabc1d2c65", null ],
     [ "evaluate", "classFeel_1_1vf_1_1PrintExpr.html#a3d293bc1cdc57fb0d6072546051ff694", null ],

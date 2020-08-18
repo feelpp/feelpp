@@ -1,5 +1,9 @@
 var classFeel_1_1vf_1_1UnaryMinus =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1UnaryMinus_1_1HasTestFunction.html", "structFeel_1_1vf_1_1UnaryMinus_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1UnaryMinus_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1UnaryMinus_1_1Lambda.html", "structFeel_1_1vf_1_1UnaryMinus_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor.html", "structFeel_1_1vf_1_1UnaryMinus_1_1tensor" ],
     [ "applySymbolsExpr", "classFeel_1_1vf_1_1UnaryMinus.html#a33c9027098039b795b79eb93c73066db", null ],
     [ "dependentSymbols", "classFeel_1_1vf_1_1UnaryMinus.html#aaf4233f8b8cff3c6bc47446971695db5", null ],
     [ "diff", "classFeel_1_1vf_1_1UnaryMinus.html#aaf0b447e49fb396e286718a8d8a17693", null ],

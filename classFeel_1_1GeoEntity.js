@@ -1,5 +1,6 @@
 var classFeel_1_1GeoEntity =
 [
+    [ "reference_convex", "structFeel_1_1GeoEntity_1_1reference__convex.html", "structFeel_1_1GeoEntity_1_1reference__convex" ],
     [ "boost::serialization::access", "classFeel_1_1GeoEntity.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "active", "classFeel_1_1GeoEntity.html#ac06205fa0578e8bc4c9c4b01c30e41f6", null ],
     [ "addElement", "classFeel_1_1GeoEntity.html#a6ce964fd454c2a49c7f66f3b9bbe56f8", null ],

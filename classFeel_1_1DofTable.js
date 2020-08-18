@@ -1,5 +1,7 @@
 var classFeel_1_1DofTable =
 [
+    [ "element_access", "structFeel_1_1DofTable_1_1element__access.html", "structFeel_1_1DofTable_1_1element__access" ],
+    [ "face_access", "structFeel_1_1DofTable_1_1face__access.html", "structFeel_1_1DofTable_1_1face__access" ],
     [ "DofFromBoundary", "classFeel_1_1DofTable.html#a500799b8a902106411b918cacc540558", null ],
     [ "DofFromEdge", "classFeel_1_1DofTable.html#ae36cf74dbdd24002880f0fe65d4f6a36", null ],
     [ "DofFromElement", "classFeel_1_1DofTable.html#a4930b993b5183a70c6fe06ecd4bba6f6", null ],

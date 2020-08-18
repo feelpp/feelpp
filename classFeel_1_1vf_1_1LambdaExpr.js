@@ -1,5 +1,9 @@
 var classFeel_1_1vf_1_1LambdaExpr =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction.html", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1LambdaExpr_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1LambdaExpr_1_1Lambda.html", "structFeel_1_1vf_1_1LambdaExpr_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1LambdaExpr_1_1tensor.html", "structFeel_1_1vf_1_1LambdaExpr_1_1tensor" ],
     [ "applySymbolsExpr", "classFeel_1_1vf_1_1LambdaExpr.html#a9c52907cd0856675ae33704d79ecbb0e", null ],
     [ "isPolynomial", "classFeel_1_1vf_1_1LambdaExpr.html#a161265b8b062d0b74ec4cd6df3f4df6f", null ],
     [ "LambdaImpl", "classFeel_1_1vf_1_1LambdaExpr.html#a8a278b8a858eed3b3b55f09bb28cc1ef", null ],

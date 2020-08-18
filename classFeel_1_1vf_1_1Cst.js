@@ -1,5 +1,9 @@
 var classFeel_1_1vf_1_1Cst =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1Cst_1_1HasTestFunction.html", "structFeel_1_1vf_1_1Cst_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1Cst_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1Cst_1_1HasTrialFunction" ],
+    [ "Lambda", "structFeel_1_1vf_1_1Cst_1_1Lambda.html", "structFeel_1_1vf_1_1Cst_1_1Lambda" ],
+    [ "tensor", "structFeel_1_1vf_1_1Cst_1_1tensor.html", "structFeel_1_1vf_1_1Cst_1_1tensor" ],
     [ "applySymbolsExpr", "classFeel_1_1vf_1_1Cst.html#a1d05022428a6c3da7f95db5d825e6424", null ],
     [ "diff", "classFeel_1_1vf_1_1Cst.html#a90d6082b7dcfeaa9d8bf2e46d64e4bb2", null ],
     [ "evaluate", "classFeel_1_1vf_1_1Cst.html#a29d41539fff392cac0063c9fdd42988d", null ],

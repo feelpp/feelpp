@@ -1,5 +1,6 @@
 var classFeel_1_1Hypercube =
 [
+    [ "PolyDims", "structFeel_1_1Hypercube_1_1PolyDims.html", "structFeel_1_1Hypercube_1_1PolyDims" ],
     [ "dimension", "classFeel_1_1Hypercube.html#ab10128fb3a571cb7a5a47d06a231ffbc", null ],
     [ "e2p", "classFeel_1_1Hypercube.html#a52a23e7c65d87ebf834c74fca727d8fe", null ],
     [ "f2e", "classFeel_1_1Hypercube.html#a8dcc030f77703493745d64fe96205149", null ],

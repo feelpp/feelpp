@@ -1,5 +1,7 @@
 var classFeel_1_1QuadPtLocalization =
 [
+    [ "bilinearformContext", "structFeel_1_1QuadPtLocalization_1_1bilinearformContext.html", "structFeel_1_1QuadPtLocalization_1_1bilinearformContext" ],
+    [ "linearformContext", "structFeel_1_1QuadPtLocalization_1_1linearformContext.html", "structFeel_1_1QuadPtLocalization_1_1linearformContext" ],
     [ "beginElement", "classFeel_1_1QuadPtLocalization.html#a9fce527bcdefc06a95cd6fc81348ecb9", null ],
     [ "eltForThisQuadPt", "classFeel_1_1QuadPtLocalization.html#a185800b0d2c360ab3e813e27feed3edf", null ],
     [ "eltForThisQuadPt", "classFeel_1_1QuadPtLocalization.html#a454c94280baa9d57479a7cc83cd18541", null ],

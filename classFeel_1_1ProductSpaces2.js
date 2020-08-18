@@ -1,5 +1,6 @@
 var classFeel_1_1ProductSpaces2 =
 [
+    [ "Element", "classFeel_1_1ProductSpaces2_1_1Element.html", "classFeel_1_1ProductSpaces2_1_1Element" ],
     [ "element", "classFeel_1_1ProductSpaces2.html#a75fdeea4ed346b49546043660a6e911e", null ],
     [ "elementPtr", "classFeel_1_1ProductSpaces2.html#a39ade7f3eeb21744f55289fabac102b4", null ],
     [ "numberOfSpaces", "classFeel_1_1ProductSpaces2.html#ae7bdd4c31776cea89eb1ddda41d59e20", null ],

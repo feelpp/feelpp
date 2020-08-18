@@ -1,5 +1,7 @@
 var structFeel_1_1vf_1_1Rand_1_1tensor =
 [
+    [ "expr", "structFeel_1_1vf_1_1Rand_1_1tensor_1_1expr.html", "structFeel_1_1vf_1_1Rand_1_1tensor_1_1expr" ],
+    [ "is_zero", "structFeel_1_1vf_1_1Rand_1_1tensor_1_1is__zero.html", "structFeel_1_1vf_1_1Rand_1_1tensor_1_1is__zero" ],
     [ "evalij", "structFeel_1_1vf_1_1Rand_1_1tensor.html#a1f8b30608179366e60b413e4cc147969", null ],
     [ "evalijq", "structFeel_1_1vf_1_1Rand_1_1tensor.html#a7a9de9fb8915ab926099b80dbe1e3fa3", null ],
     [ "evalijq", "structFeel_1_1vf_1_1Rand_1_1tensor.html#adb5534ef1c5e2802926db82cc74502f9", null ],

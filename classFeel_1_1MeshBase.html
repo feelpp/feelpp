@@ -154,9 +154,9 @@ Constructors, destructor</h2></td></tr>
 <tr class="memitem:afcb698f62f591ac546ab1a3fb1ad8ae7"><td class="memItemLeft" align="right" valign="top"><a id="afcb698f62f591ac546ab1a3fb1ad8ae7"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> (<a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:afcb698f62f591ac546ab1a3fb1ad8ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a79f508d24dd86dff0d3506a6e3dd1fcf"><td class="memItemLeft" align="right" valign="top"><a id="a79f508d24dd86dff0d3506a6e3dd1fcf"></a>
+<tr class="memitem:aa172f5a588939063d5a420a7d0586aca"><td class="memItemLeft" align="right" valign="top"><a id="aa172f5a588939063d5a420a7d0586aca"></a>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~MeshBase</b> ()</td></tr>
-<tr class="separator:a79f508d24dd86dff0d3506a6e3dd1fcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:aa172f5a588939063d5a420a7d0586aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05251024eec7f7427d6cbe66f1a6fba8"><td class="memItemLeft" align="right" valign="top"><a id="a05251024eec7f7427d6cbe66f1a6fba8"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8">MeshBase</a> (uint16_type <a class="el" href="group__Traits.html#gad49d4c069c0294ed87f17f835fba7702">topodim</a>, uint16_type <a class="el" href="group__Traits.html#ga752cd9f96c58a347bac755eee478bf09">realdim</a>, worldcomm_ptr_t const &amp;<a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
 <tr class="memdesc:a05251024eec7f7427d6cbe66f1a6fba8"><td class="mdescLeft">&#160;</td><td class="mdescRight">build from a topological dimension, a real dimension and a communicator <br /></td></tr>
@@ -249,16 +249,16 @@ class&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="cla
 std::map&lt; std::string, std::vector&lt; size_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#af3c545665ed90d1eabf264355187ace4">M_markername</a></td></tr>
 <tr class="memdesc:af3c545665ed90d1eabf264355187ace4"><td class="mdescLeft">&#160;</td><td class="mdescRight">marker name dictionnary ( std::string -&gt; &lt;int,int&gt; ) get&lt;0&gt;() provides the id get&lt;1&gt;() provides the topological dimension <br /></td></tr>
 <tr class="separator:af3c545665ed90d1eabf264355187ace4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4e2658cd2c25fb989f5ee615480dbc5"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#af4e2658cd2c25fb989f5ee615480dbc5">clear</a> ()</td></tr>
-<tr class="memdesc:af4e2658cd2c25fb989f5ee615480dbc5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Empty all containers of the mesh.  <a href="classFeel_1_1MeshBase.html#af4e2658cd2c25fb989f5ee615480dbc5">More...</a><br /></td></tr>
-<tr class="separator:af4e2658cd2c25fb989f5ee615480dbc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8ea6b4bb1774e80a43d434737903aea"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#ab8ea6b4bb1774e80a43d434737903aea">clear</a> ()</td></tr>
+<tr class="memdesc:ab8ea6b4bb1774e80a43d434737903aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Empty all containers of the mesh.  <a href="classFeel_1_1MeshBase.html#ab8ea6b4bb1774e80a43d434737903aea">More...</a><br /></td></tr>
+<tr class="separator:ab8ea6b4bb1774e80a43d434737903aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c6f515280960aa9996b3c04abc4d461"><td class="memItemLeft" align="right" valign="top"><a id="a1c6f515280960aa9996b3c04abc4d461"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a1c6f515280960aa9996b3c04abc4d461">updateForUse</a> ()=0</td></tr>
 <tr class="memdesc:a1c6f515280960aa9996b3c04abc4d461"><td class="mdescLeft">&#160;</td><td class="mdescRight">update all info for this mesh. <br /></td></tr>
 <tr class="separator:a1c6f515280960aa9996b3c04abc4d461"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2203c80c959cd54ebee9917c6608d24f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a2203c80c959cd54ebee9917c6608d24f">updateForUse</a> (size_type <a class="el" href="classFeel_1_1MeshBase.html#a8ef08b31f77fdfa0eb05890e3b4b3f4d">components</a>)</td></tr>
-<tr class="memdesc:a2203c80c959cd54ebee9917c6608d24f"><td class="mdescLeft">&#160;</td><td class="mdescRight">update all info for this mesh according the <code>components</code>  <a href="classFeel_1_1MeshBase.html#a2203c80c959cd54ebee9917c6608d24f">More...</a><br /></td></tr>
-<tr class="separator:a2203c80c959cd54ebee9917c6608d24f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a031d7a0207fb7fa156aa1063f9c872b8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a031d7a0207fb7fa156aa1063f9c872b8">updateForUse</a> (size_type <a class="el" href="classFeel_1_1MeshBase.html#a8ef08b31f77fdfa0eb05890e3b4b3f4d">components</a>)</td></tr>
+<tr class="memdesc:a031d7a0207fb7fa156aa1063f9c872b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">update all info for this mesh according the <code>components</code>  <a href="classFeel_1_1MeshBase.html#a031d7a0207fb7fa156aa1063f9c872b8">More...</a><br /></td></tr>
+<tr class="separator:a031d7a0207fb7fa156aa1063f9c872b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c6f5b47dfb96f5851f491d4f14dbf0d"><td class="memItemLeft" align="right" valign="top"><a id="a5c6f5b47dfb96f5851f491d4f14dbf0d"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a5c6f5b47dfb96f5851f491d4f14dbf0d">updateForUseAfterMovingNodes</a> (<a class="el" href="classbool.html">bool</a> upMeasures=true)=0</td></tr>
 <tr class="memdesc:a5c6f5b47dfb96f5851f491d4f14dbf0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">update the mesh when nodes have moved <br /></td></tr>
@@ -376,8 +376,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <tr class="separator:a17cd486efd7fac68e0107a925fa7edfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a985cc2d5e2ea281591279acdb4bdbe59"><td class="memItemLeft" align="right" valign="top">flag_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a985cc2d5e2ea281591279acdb4bdbe59">markerId</a> (boost::any const &amp;marker) const</td></tr>
 <tr class="separator:a985cc2d5e2ea281591279acdb4bdbe59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab703e0b26036c5537498b59058dca661"><td class="memItemLeft" align="right" valign="top">std::set&lt; flag_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#ab703e0b26036c5537498b59058dca661">markersId</a> (boost::any const &amp;marker) const</td></tr>
-<tr class="separator:ab703e0b26036c5537498b59058dca661"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a5dccf666a32b871ca3569db63bdc7f"><td class="memItemLeft" align="right" valign="top">std::set&lt; flag_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a8a5dccf666a32b871ca3569db63bdc7f">markersId</a> (boost::any const &amp;marker) const</td></tr>
+<tr class="separator:a8a5dccf666a32b871ca3569db63bdc7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab4330e8d4947e50620e710f653174f8"><td class="memItemLeft" align="right" valign="top"><a id="aab4330e8d4947e50620e710f653174f8"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#aab4330e8d4947e50620e710f653174f8">setUpdatedForUse</a> (<a class="el" href="classbool.html">bool</a> u)</td></tr>
 <tr class="memdesc:aab4330e8d4947e50620e710f653174f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">set to the flag whether the mesh is updated for proper use <br /></td></tr>
@@ -399,22 +399,19 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr class="separator:ac0282c0755dbad7b8406d6c3a899aaca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="af4e2658cd2c25fb989f5ee615480dbc5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4e2658cd2c25fb989f5ee615480dbc5">&#9670;&nbsp;</a></span>clear()</h2>
+<a id="ab8ea6b4bb1774e80a43d434737903aea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8ea6b4bb1774e80a43d434737903aea">&#9670;&nbsp;</a></span>clear()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
+template&lt;typename IndexT &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::clear </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
+          <td class="memname">void <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::clear</td>
         </tr>
       </table>
   </td>
@@ -712,13 +709,10 @@ template&lt;typename IndexT  = uint32_type&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
+template&lt;typename IndexT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::isPartitioned </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::isPartitioned</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -838,7 +832,7 @@ template&lt;typename IndexT  = uint32_type&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
+template&lt;typename IndexT &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">flag_type <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::markerId </td>
@@ -915,16 +909,16 @@ template&lt;typename IndexT  = uint32_type&gt; </div>
 
 </div>
 </div>
-<a id="ab703e0b26036c5537498b59058dca661"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab703e0b26036c5537498b59058dca661">&#9670;&nbsp;</a></span>markersId()</h2>
+<a id="a8a5dccf666a32b871ca3569db63bdc7f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a5dccf666a32b871ca3569db63bdc7f">&#9670;&nbsp;</a></span>markersId()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
+template&lt;typename IndexT &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">std::set&lt;flag_type&gt; <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::markersId </td>
+          <td class="memname">std::set&lt; flag_type &gt; <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::markersId </td>
           <td>(</td>
           <td class="paramtype">boost::any const &amp;&#160;</td>
           <td class="paramname"><em>marker</em></td><td>)</td>
@@ -1435,19 +1429,19 @@ template&lt;typename IndexT  = uint32_type&gt; </div>
 
 </div>
 </div>
-<a id="a2203c80c959cd54ebee9917c6608d24f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2203c80c959cd54ebee9917c6608d24f">&#9670;&nbsp;</a></span>updateForUse()</h2>
+<a id="a031d7a0207fb7fa156aa1063f9c872b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a031d7a0207fb7fa156aa1063f9c872b8">&#9670;&nbsp;</a></span>updateForUse()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename IndexT  = uint32_type&gt; </div>
+template&lt;typename IndexT &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::updateForUse </td>
+          <td class="memname">void <a class="el" href="classFeel_1_1MeshBase.html">Feel::MeshBase</a>&lt; IndexT &gt;::updateForUse </td>
           <td>(</td>
           <td class="paramtype">size_type&#160;</td>
           <td class="paramname"><em>components</em></td><td>)</td>

@@ -1,6 +1,9 @@
 var group__Toolboxes =
 [
     [ "Electric", "classFeel_1_1FeelModels_1_1Electric.html", [
+      [ "FieldTag", "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html", [
+        [ "potential", "structFeel_1_1FeelModels_1_1Electric_1_1FieldTag.html#a7c0324a40c4b7e4266ed11bed1e6c8df", null ]
+      ] ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1Electric.html#aa18efa1f49026b11f00c39eadc6bf759", null ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1Electric.html#a2cd09fd0c10c24ae824fae8daf32b8bb", null ],
       [ "backend", "classFeel_1_1FeelModels_1_1Electric.html#aa90c03c51954ec014b1d05d31055ba79", null ],
@@ -89,6 +92,99 @@ var group__Toolboxes =
       [ "Electric", "classFeel_1_1FeelModels_1_1Electric.html#a1d27405999eca72c1b78ad690d26f983", null ]
     ] ],
     [ "FluidMechanics", "classFeel_1_1FeelModels_1_1FluidMechanics.html", [
+      [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html", [
+        [ "evaluateMassFromDensity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a802d1ca49bc4a107778fea0bcfa700ff", null ],
+        [ "hasMaterialsProperties", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a08c85c1aebe7930fbfbe1f71ed65ba76", null ],
+        [ "mass", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#accc8c1e0cc4b6d1c10677a6c3a814e76", null ],
+        [ "massCenter", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a93430c51aa45c9068773af77a7872b3f", null ],
+        [ "massCenterExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a8c61966bfdbe540cd710fd6abc9f7f1a", null ],
+        [ "massExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ad1a02d3b8d92412db483c2b940eeaf7a", null ],
+        [ "momentOfInertia", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aa38a03824964f74b0cb0b3d738a5638e", null ],
+        [ "momentOfInertiaExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a7548466f4bbcd06f132a044249a8de6b", null ],
+        [ "setMass", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#abcb53900d67e6a64aebb0a25aa850368", null ],
+        [ "setMassCenter", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a820b01224627ee815001d9b3e74499c8", null ],
+        [ "setMomentOfInertia", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a117c2b14f916047ed73adb6221d43723", null ],
+        [ "setMomentOfInertia", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aa518a4bc524151b55607b155c76b0e3e", null ],
+        [ "setParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a9c8f33b849d073ecbf23fe661583e7f8", null ],
+        [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a3be26c057a99b40830a6aa7b8418107e", null ],
+        [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a22c560bbd79d526482e2ea3d2dbe477f", null ],
+        [ "moment_of_inertia_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#af97a6427cbe4ed2139be0c68bc67762e", null ],
+        [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ae06a1f60d5528dbd2994d91d57bb1866", null ],
+        [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#aec7da7d26e0f1397ecf58de2c074c14b", null ],
+        [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#a4156be46fdda77973f7762b4443056c2", null ],
+        [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html#ac44f67d8b15ca314d2e33fbfc31d1f81", null ]
+      ] ],
+      [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html", [
+        [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html", [
+          [ "angular_velocity", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html#ace72b067cefa0040a122558f52482230", null ],
+          [ "translational_velocity", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html#af110aec50a6b6f06b1689bb44193ba49", null ]
+        ] ],
+        [ "angularVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a5b33d964ac6d6004dfc38f0ceef72f8a", null ],
+        [ "bdfAngularVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a15509e1763780dbbcc030f8050037a2f", null ],
+        [ "bdfTranslationalVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a882ab1b0002f0d5a1586e58d5b32d913", null ],
+        [ "body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a094c80c0e9063c223213c6cc3030f71e", null ],
+        [ "elasticVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8c4bb50d71dade995c16ed3d10b89611", null ],
+        [ "fieldAngularVelocityPtr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aced84bceb570e9cacf5279323c16f861", null ],
+        [ "fieldElasticVelocityPtr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a8ea63c569933e9f3dce1e7ca4f5c7a0d", null ],
+        [ "fieldTranslationalVelocityPtr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#acc1083350e74cc361926cb30eb184e23", null ],
+        [ "gravityForceEnabled", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a531d0c3d73c5b55604b3f12cbb6190ca", null ],
+        [ "gravityForceWithMass", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a121fb9fd3dadd365a776ba9e51706242", null ],
+        [ "hasAngularVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a45f6ffea7b2ed724d38c1a616bf186c4", null ],
+        [ "hasElasticVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ab55006b9fb19ab3fcdfd046e66a2da60", null ],
+        [ "hasElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ab5c0d342f101ccf7939c55bc1cac9faf", null ],
+        [ "hasTranslationalVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aacdad688385e7be88394dbe711f69b00", null ],
+        [ "init", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ab4b4340c71640552abf8392144854014", null ],
+        [ "initTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9f90293e3a1d95dc96f22e669a0a6570", null ],
+        [ "markers", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a5842dd9b4000e8f7e7d7ba1fbd768e2a", null ],
+        [ "massCenterExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a2e12ef233aee85bb98d54d086116f27f", null ],
+        [ "massExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a1563dc5568898d0dad71dbd55c7d9edc", null ],
+        [ "matrixPTilde_angular", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa3436657d98f509bd3a1b102c4a5847a", null ],
+        [ "matrixPTilde_translational", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aae64857d79384da5434cbecf35dd5955", null ],
+        [ "mesh", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9b4ec47b1a358c9a68b3289ee33375ad", null ],
+        [ "momentOfInertiaExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ae01811a0af09b2a36f9fb7280da77c06", null ],
+        [ "name", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a6a25d9690ac1bba38e0319a35eaf3b6e", null ],
+        [ "rangeMarkedFacesOnFluid", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a43f666b92f7ed0fe361fcc1eddd0bb04", null ],
+        [ "rigidVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#afd1a65db93de8eb4f2de1e40f1a07494", null ],
+        [ "rigidVelocityExprFromFields", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a79ea86ceeed47b37c84ff5588098be27", null ],
+        [ "setParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a19236b8bb3c2eef6e40564bc8932ecf5", null ],
+        [ "setup", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a22844ac25c0d82fc7793f79f42f1d884", null ],
+        [ "spaceAngularVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#af873a9da1e8ee9397ba52ac50cedb863", null ],
+        [ "spaceTranslationalVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a95f2454d322a436dd2e3e8c05cf66d9a", null ],
+        [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a36497807cc78699de33d77c9febf3d3c", null ],
+        [ "translationalVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ae71db29be70a7a25bfa9e73e339365be", null ],
+        [ "updateElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9fcab6f8628b7b69dd7b18b94bdcf509", null ],
+        [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aec85913894c82e14a156d49e696f8c3c", null ],
+        [ "updateTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9bdbe72fcd968c106b8c0784a880f8d9", null ],
+        [ "bdf_trace_angular_velocity_ptrtype", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#aa9f51d404c7cd55a41c7fc434876e04a", null ],
+        [ "bdf_trace_angular_velocity_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a9ff9b298a641cd4c20c836bb5a9e9047", null ],
+        [ "element_trace_angular_velocity_ptrtype", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a4ec4a25a8dbea40f819488950c0c92b1", null ],
+        [ "element_trace_angular_velocity_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ad3b5a189f5358de856966f0dd70c0573", null ],
+        [ "space_trace_angular_velocity_ptrtype", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#ae63a7d7dc5ba9a418cf239a1fa225d9f", null ],
+        [ "space_trace_angular_velocity_type", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a98a71624b7ff7fcda30dfcf1d6b83b99", null ],
+        [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a05dece9514f0257102cde01743b2e8d9", null ],
+        [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#af11378fde961d145e870b8f06ac65527", null ],
+        [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html#a6e2f854d53f663a0865ce32b1343c7f5", null ]
+      ] ],
+      [ "BodySetBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html", [
+        [ "hasAngularVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a4e2485e49eb5a50d0591871209beb5dd", null ],
+        [ "hasElasticVelocity", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a398270f4f11a5cf4f6cc790396b3932f", null ],
+        [ "hasElasticVelocityFromExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a3e917e68618de30a7525f9da46e2eea1", null ],
+        [ "hasTranslationalVelocityExpr", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a201174569bbc8a9f2a74d0290e61e706", null ],
+        [ "init", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a565ba98dd788e335b5e234428ad8ebae", null ],
+        [ "initTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a8ab5c1e3a7684968407597c7835ee356", null ],
+        [ "modelFields", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a38c13b3c63b4ce93a52ab3519fec582c", null ],
+        [ "modelFields", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a4c8e0340725292737fcde32224ffa2a4", null ],
+        [ "setParameterValues", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#aaeb2010e8610f6273222d88e27af3a12", null ],
+        [ "startTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#acac58d81e73194a51c886d7922b80076", null ],
+        [ "updateAlgebraicFactoryForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#abbd9ed6babee676c20dbb93b5822fc6f", null ],
+        [ "updateForUse", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a7501222e90d0ab2044153f43363652c3", null ],
+        [ "updateTimeStep", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodySetBoundaryCondition.html#a10107f5690c53e1b01e682290bae0022", null ]
+      ] ],
+      [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html", [
+        [ "mesh_displacement", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html#a54dd3efdee1a3efc97f4448cc3131dc8", null ],
+        [ "pressure", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html#a1af933254377dda4317fc03d9c6d1c78", null ],
+        [ "velocity", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1FieldTag.html#a3ff0f5eb642f716d2f54a47f7c26e3b3", null ]
+      ] ],
       [ "addUpdateInHousePreconditionerPCD", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a129062fa05b1e756d8831102d7602820", null ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a062343244e3237f594f37de222bc0fdb", null ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1FluidMechanics.html#ad01e13ac335c4037e4ab874cb531658b", null ],
@@ -445,6 +541,10 @@ var group__Toolboxes =
       [ "FluidMechanics", "classFeel_1_1FeelModels_1_1FluidMechanics.html#a8e39afc417bba7285e15af1e6cb016da", null ]
     ] ],
     [ "SolidMechanics", "classFeel_1_1FeelModels_1_1SolidMechanics.html", [
+      [ "FieldTag", "structFeel_1_1FeelModels_1_1SolidMechanics_1_1FieldTag.html", [
+        [ "displacement", "structFeel_1_1FeelModels_1_1SolidMechanics_1_1FieldTag.html#a5a6b9ed6ec8e936f536dea63c9a167ec", null ],
+        [ "pressure", "structFeel_1_1FeelModels_1_1SolidMechanics_1_1FieldTag.html#ae57fbf6123f97112957a3d742f979417", null ]
+      ] ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1SolidMechanics.html#a1b4d195275c6073f1bd0567ad2df5b8c", null ],
       [ "algebraicFactory", "classFeel_1_1FeelModels_1_1SolidMechanics.html#ad8f8be5d8395c86471940d0c3669b14b", null ],
       [ "backend", "classFeel_1_1FeelModels_1_1SolidMechanics.html#a373bb3a4cc0fd7c58f6ec7d3adb68093", null ],

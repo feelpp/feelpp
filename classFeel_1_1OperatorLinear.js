@@ -1,5 +1,6 @@
 var classFeel_1_1OperatorLinear =
 [
+    [ "domain_element", "structFeel_1_1OperatorLinear_1_1domain__element.html", null ],
     [ "add", "classFeel_1_1OperatorLinear.html#a622ee6a0d70c94040162d4f9b4ca9189", null ],
     [ "add", "classFeel_1_1OperatorLinear.html#a885f22dcc9ba718ca690d19c0fd45680", null ],
     [ "adjoint", "classFeel_1_1OperatorLinear.html#a34b29cafaa6d2c5def5e33a4b080776e", null ],

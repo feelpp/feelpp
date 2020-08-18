@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['geoentitycontext_4064',['GeoEntityContext',['../namespaceFeel.html#a5df59a8b1a63f40c3c1d5a65162254d5',1,'Feel']]]
+  ['elementstype_4166',['ElementsType',['../namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590',1,'Feel']]]
 ];

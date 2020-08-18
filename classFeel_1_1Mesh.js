@@ -1,5 +1,11 @@
 var classFeel_1_1Mesh =
 [
+    [ "gmc", "structFeel_1_1Mesh_1_1gmc.html", "structFeel_1_1Mesh_1_1gmc" ],
+    [ "Inverse", "structFeel_1_1Mesh_1_1Inverse.html", "structFeel_1_1Mesh_1_1Inverse" ],
+    [ "parent_mesh", "structFeel_1_1Mesh_1_1parent__mesh.html", "structFeel_1_1Mesh_1_1parent__mesh" ],
+    [ "trace_mesh", "structFeel_1_1Mesh_1_1trace__mesh.html", "structFeel_1_1Mesh_1_1trace__mesh" ],
+    [ "trace_trace_mesh", "structFeel_1_1Mesh_1_1trace__trace__mesh.html", "structFeel_1_1Mesh_1_1trace__trace__mesh" ],
+    [ "UpdateNumGlobalEntitiesForAllReduce", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce.html", "structFeel_1_1Mesh_1_1UpdateNumGlobalEntitiesForAllReduce" ],
     [ "boost::serialization::access", "classFeel_1_1Mesh.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "addElement", "classFeel_1_1Mesh.html#afc67a615dec1b247e990e17369c06682", null ],
     [ "addElement", "classFeel_1_1Mesh.html#ab50b6878aa77f63727085eb5663a5016", null ],

@@ -1,5 +1,8 @@
 var classFeel_1_1vf_1_1TimeExpr =
 [
+    [ "HasTestFunction", "structFeel_1_1vf_1_1TimeExpr_1_1HasTestFunction.html", "structFeel_1_1vf_1_1TimeExpr_1_1HasTestFunction" ],
+    [ "HasTrialFunction", "structFeel_1_1vf_1_1TimeExpr_1_1HasTrialFunction.html", "structFeel_1_1vf_1_1TimeExpr_1_1HasTrialFunction" ],
+    [ "tensor", "structFeel_1_1vf_1_1TimeExpr_1_1tensor.html", "structFeel_1_1vf_1_1TimeExpr_1_1tensor" ],
     [ "assemble", "classFeel_1_1vf_1_1TimeExpr.html#a1e7ab9a2afa8dfe3894882ddf7a3284f", null ],
     [ "assemble", "classFeel_1_1vf_1_1TimeExpr.html#a2b56d6f05b8e4d3f7dd882a53588fc1a", null ],
     [ "expression", "classFeel_1_1vf_1_1TimeExpr.html#a91c0d168d96f4773887dad870b377491", null ],

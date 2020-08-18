@@ -1,5 +1,6 @@
 var classFeel_1_1Oseen =
 [
+    [ "im", "structFeel_1_1Oseen_1_1im.html", "structFeel_1_1Oseen_1_1im" ],
     [ "couplePstab", "classFeel_1_1Oseen.html#a87a09c15956789a4f50453a37e11dfb1", null ],
     [ "decouplePstab", "classFeel_1_1Oseen.html#a6576b2538e26f67a62debec2fbcffbeb", null ],
     [ "pressure", "classFeel_1_1Oseen.html#a6d6db143a42a6bf88d695785e718f059", null ],

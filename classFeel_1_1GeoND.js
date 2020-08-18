@@ -1,5 +1,8 @@
 var classFeel_1_1GeoND =
 [
+    [ "GetGm", "structFeel_1_1GeoND_1_1GetGm.html", "structFeel_1_1GeoND_1_1GetGm" ],
+    [ "GetImMeasure", "structFeel_1_1GeoND_1_1GetImMeasure.html", "structFeel_1_1GeoND_1_1GetImMeasure" ],
+    [ "tt", "structFeel_1_1GeoND_1_1tt.html", "structFeel_1_1GeoND_1_1tt" ],
     [ "boost::serialization::access", "classFeel_1_1GeoND.html#ac98d07dd8f7b70e16ccb9a01abf56b9c", null ],
     [ "applyDisplacement", "classFeel_1_1GeoND.html#a208fbd54997e54f38b07481001e82d9e", null ],
     [ "applyDisplacementG", "classFeel_1_1GeoND.html#a9d9c43cae16be7baefc4411cd9cde48a", null ],

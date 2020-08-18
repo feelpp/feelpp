@@ -102,6 +102,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1vf_1_1GinacMatrix.html','
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Instances and minimal complete definitions</a> &#124;
 <a href="classFeel_1_1vf_1_1GinacMatrix-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt; Class Template Reference</div>  </div>
@@ -125,6 +126,21 @@ class Feel::vf::GinacMatrix&lt; M, N, Order, SymbolsExprType &gt;</h3>
   </map>
 </div></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Instances and minimal complete definitions</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1FunctorsVariadicExpr.html">FunctorsVariadicExpr</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1HasTestFunction.html">HasTestFunction</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1HasTrialFunction.html">HasTrialFunction</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1Lambda.html">Lambda</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1tensor.html">tensor</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1vf_1_1GinacMatrix_1_1TransformSymbolsExprTupleToAny.html">TransformSymbolsExprTupleToAny</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:aa7bf8665e540e17a6de41daf8dab4492"><td class="memItemLeft" align="right" valign="top"><a id="aa7bf8665e540e17a6de41daf8dab4492"></a>
@@ -189,10 +205,10 @@ Constructors, destructor</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (<a class="el" href="classdouble.html">value_type</a> value)</td></tr>
 <tr class="separator:af838a564bc48f43baccb4f1411a989f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af01f95811e1be40b560fec5903a44f74"><td class="memItemLeft" align="right" valign="top"><a id="af01f95811e1be40b560fec5903a44f74"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::matrix const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a6d964ec675d740e92cab803221f09bd6">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::matrix const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
 <tr class="separator:af01f95811e1be40b560fec5903a44f74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22e0e22688f402a4c3b43ca721f93cb5"><td class="memItemLeft" align="right" valign="top"><a id="a22e0e22688f402a4c3b43ca721f93cb5"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a6d964ec675d740e92cab803221f09bd6">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, std::string const &amp;exprDesc, std::string filename=&quot;&quot;, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;world=<a class="el" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>(), std::string const &amp;dirLibExpr=<a class="el" href="classFeel_1_1Environment.html#a532f0caaaa996a0e99ca0a364a176e6c">Environment::exprRepository</a>(), symbols_expression_type const &amp;expr=symbols_expression_type())</td></tr>
 <tr class="separator:a22e0e22688f402a4c3b43ca721f93cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a4393cc80b7a90a69d56c4c3fcb15a1"><td class="memItemLeft" align="right" valign="top"><a id="a4a4393cc80b7a90a69d56c4c3fcb15a1"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>GinacMatrix</b> (GiNaC::ex const &amp;fun, std::vector&lt; GiNaC::symbol &gt; const &amp;syms, GiNaC::FUNCP_CUBA const &amp;cfun, std::string const &amp;exprDesc, symbols_expression_type const &amp;expr)</td></tr>

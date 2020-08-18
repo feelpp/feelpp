@@ -4,8 +4,8 @@ var classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC =
     [ "addMarkerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a41b9b72634f579f9b492d36b2eff35fa", null ],
     [ "clearMarkerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a7527e5a88242c4a7a6e0612e443e7e60", null ],
     [ "getInfoNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#afe5cde841e5516343356fb2516f59e4f", null ],
-    [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a37b5e32ae1f55a7ce587192dbe2b1415", null ],
-    [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#ae9740875156813091eeb050db9ee81d9", null ],
+    [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a6b8907d6c5d478e5d88485f59383cbea", null ],
+    [ "markerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a52574e9861440e026db69cadf2422c8a", null ],
     [ "setMarkerNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#acbb85704a4bf950270a225723d2415e6", null ],
     [ "updateInformationObjectNeumannEulerianFrameBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a04d3c15eb1c763dafb5106c8e9779f88", null ],
     [ "NeumannEulerianFrameBCShape", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannEulerianFrameBC.html#a0204ffb173d73c9b37edcdf82f3d7cbb", [

@@ -23,6 +23,7 @@ var dir_201afb6b72871638822819f2c834f547 =
       [ "DofTableInfos", "structFeel_1_1DofTableInfos.html", "structFeel_1_1DofTableInfos" ]
     ] ],
     [ "doftablempi.hpp", "doftablempi_8hpp.html", "doftablempi_8hpp" ],
+    [ "dummy.cpp", "feeldiscr_2dummy_8cpp.html", null ],
     [ "expansion.hpp", "expansion_8hpp.html", "expansion_8hpp" ],
     [ "fsfunctional.hpp", "fsfunctional_8hpp.html", [
       [ "FsFunctional", "classFeel_1_1FsFunctional.html", "classFeel_1_1FsFunctional" ]
@@ -46,7 +47,11 @@ var dir_201afb6b72871638822819f2c834f547 =
     ] ],
     [ "makemesh.hpp", "makemesh_8hpp.html", "makemesh_8hpp" ],
     [ "measureofelementsatpoints.hpp", "measureofelementsatpoints_8hpp.html", "measureofelementsatpoints_8hpp" ],
+    [ "mesh.cpp", "mesh_8cpp.html", "mesh_8cpp" ],
     [ "mesh.hpp", "mesh_8hpp.html", "mesh_8hpp" ],
+    [ "mesh1.cpp", "mesh1_8cpp.html", "mesh1_8cpp" ],
+    [ "mesh2.cpp", "mesh2_8cpp.html", "mesh2_8cpp" ],
+    [ "mesh3.cpp", "mesh3_8cpp.html", "mesh3_8cpp" ],
     [ "meshimpl.hpp", "meshimpl_8hpp.html", "meshimpl_8hpp" ],
     [ "moch.hpp", "moch_8hpp.html", "moch_8hpp" ],
     [ "mortar.hpp", "mortar_8hpp.html", [
@@ -96,8 +101,10 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "product.hpp", "product_8hpp.html", "product_8hpp" ],
     [ "quadptlocalization.hpp", "quadptlocalization_8hpp.html", "quadptlocalization_8hpp" ],
     [ "region.hpp", "region_8hpp.html", "region_8hpp" ],
+    [ "stencil.cpp", "stencil_8cpp.html", "stencil_8cpp" ],
     [ "syncdofs.hpp", "syncdofs_8hpp.html", "syncdofs_8hpp" ],
     [ "thch.hpp", "thch_8hpp.html", [
       [ "THch", "structFeel_1_1meta_1_1THch.html", "structFeel_1_1meta_1_1THch" ]
-    ] ]
+    ] ],
+    [ "timeset.cpp", "timeset_8cpp.html", null ]
 ];

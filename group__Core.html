@@ -103,6 +103,7 @@ $(document).ready(function(){initNavTree('group__Core.html',''); initResizable()
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">Core</div>  </div>
@@ -153,12 +154,22 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides interface to MPI Communicators.  <a href="classFeel_1_1WorldComm.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:gae90df41f69fcb79f06345d1acd0d6d6f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f">Feel::DebugLevels</a> { <b>DEBUG_INFO</b> = 0, 
+<b>DEBUG_WARN</b> = 1, 
+<b>DEBUG_ERROR</b> = 2, 
+<b>DEBUG_FATAL</b> = 3
+ }</td></tr>
+<tr class="memdesc:gae90df41f69fcb79f06345d1acd0d6d6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Area debugging tool.  <a href="group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f">More...</a><br /></td></tr>
+<tr class="separator:gae90df41f69fcb79f06345d1acd0d6d6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga04bfed51236168ad3de2687d7a6b06d0"><td class="memItemLeft" align="right" valign="top">FEELPP_EXPORT <a class="el" href="classFeel_1_1AboutData.html">AboutData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga04bfed51236168ad3de2687d7a6b06d0">Feel::makeAboutDefault</a> (std::string name)</td></tr>
+<tr class="memitem:ga04bfed51236168ad3de2687d7a6b06d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga04bfed51236168ad3de2687d7a6b06d0">Feel::makeAboutDefault</a> (std::string name)</td></tr>
 <tr class="separator:ga04bfed51236168ad3de2687d7a6b06d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3f3c872a2bc40a65ef5d1ac7d1f914ac"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga3f3c872a2bc40a65ef5d1ac7d1f914ac">Feel::prefixvm</a> (std::string const &amp;prefix, std::string const &amp;opt, std::string const &amp;sep=&quot;.&quot;)</td></tr>
-<tr class="separator:ga3f3c872a2bc40a65ef5d1ac7d1f914ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafdf3582bcb29eaf28321e1f5c48bfa36"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gafdf3582bcb29eaf28321e1f5c48bfa36">Feel::prefixvm</a> (std::string const &amp;prefix, std::string const &amp;opt, std::string const &amp;sep)</td></tr>
+<tr class="separator:gafdf3582bcb29eaf28321e1f5c48bfa36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaae0f4355cdf5c3eece015092baefd653"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:gaae0f4355cdf5c3eece015092baefd653"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Core.html#gaae0f4355cdf5c3eece015092baefd653">Feel::range</a> (T &amp;&amp;beg, T &amp;&amp;end)</td></tr>
 <tr class="separator:gaae0f4355cdf5c3eece015092baefd653"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,10 +179,41 @@ Functions</h2></td></tr>
 <tr class="memitem:ga20b086e2b647a6ea042a680acad526f4"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ga20b086e2b647a6ea042a680acad526f4"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Core.html#ga20b086e2b647a6ea042a680acad526f4">Feel::range</a> (T &amp;&amp;end)</td></tr>
 <tr class="separator:ga20b086e2b647a6ea042a680acad526f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac439cb7d6f8853b1ac07f790e6695a7b"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gac439cb7d6f8853b1ac07f790e6695a7b">Feel::sanitize</a> (std::string const &amp;s)</td></tr>
-<tr class="memdesc:gac439cb7d6f8853b1ac07f790e6695a7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">trim string to remove special characters  <a href="group__Core.html#gac439cb7d6f8853b1ac07f790e6695a7b">More...</a><br /></td></tr>
-<tr class="separator:gac439cb7d6f8853b1ac07f790e6695a7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">Feel::sanitize</a> (std::string const  &amp;s)</td></tr>
+<tr class="memdesc:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="mdescLeft">&#160;</td><td class="mdescRight">trim string to remove special characters  <a href="group__Core.html#gaa90565f9cd5f52a52eeea0e4b7858b87">More...</a><br /></td></tr>
+<tr class="separator:gaa90565f9cd5f52a52eeea0e4b7858b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="gae90df41f69fcb79f06345d1acd0d6d6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae90df41f69fcb79f06345d1acd0d6d6f">&#9670;&nbsp;</a></span>DebugLevels</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f">Feel::DebugLevels</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/debug.cpp&gt;</code></p>
+
+<p>Area debugging tool. </p>
+<p><code>VLOG(1)</code> provides a debug stream to which you can pass a number, say 100, associated to an area of the code, say a class <code>A</code>. In the implementation of the class <code>A</code>, you use debug statement like</p>
+<p>void A::f() { DVLOG(2) &lt;&lt; "A::f() is called.\n"; do something here }</p>
+<p>Now the debug message "A::f() is called." will be seen only if the area 100 is defined in the environment(shell) variable <code>DEBUG</code> while executing a program <code>A::f()</code> is called <code>runWithA</code> that makes use of our class <code>A</code>.</p>
+<blockquote class="doxtable">
+<p>runwithA </p>
+</blockquote>
+<p>--&gt; no debug message related to A </p><blockquote class="doxtable">
+<p>export DEBUG="100" runwithA </p>
+</blockquote>
+<p>A::f() is called.</p>
+<p>With this tool you can select the area you want to debug explicitly while keeping the others hidden.</p>
+<dl class="section author"><dt>Author</dt><dd>Christophe Prud'homme (<a href="#" onclick="location.href='mai'+'lto:'+'chr'+'is'+'top'+'he'+'.pr'+'ud'+'hom'+'me'+'@fe'+'el'+'pp.'+'or'+'g'; return false;">chris<span style="display: none;">.nosp@m.</span>toph<span style="display: none;">.nosp@m.</span>e.pru<span style="display: none;">.nosp@m.</span>dhom<span style="display: none;">.nosp@m.</span>me@fe<span style="display: none;">.nosp@m.</span>elpp<span style="display: none;">.nosp@m.</span>.org</a>) </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ga04bfed51236168ad3de2687d7a6b06d0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga04bfed51236168ad3de2687d7a6b06d0">&#9670;&nbsp;</a></span>makeAboutDefault()</h2>
@@ -189,7 +231,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="environment_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/environment.hpp</a>&gt;</code></p>
+<p><code>#include &lt;/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/environment.cpp&gt;</code></p>
 <p>default <code>makeAbout</code> function to define the <code><a class="el" href="classFeel_1_1AboutData.html" title="This class is used to store information about a program.">AboutData</a></code> structure of the Feel++ application </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">name</td><td>name or short name of the application </td></tr>
@@ -199,8 +241,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga3f3c872a2bc40a65ef5d1ac7d1f914ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3f3c872a2bc40a65ef5d1ac7d1f914ac">&#9670;&nbsp;</a></span>prefixvm()</h2>
+<a id="gafdf3582bcb29eaf28321e1f5c48bfa36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafdf3582bcb29eaf28321e1f5c48bfa36">&#9670;&nbsp;</a></span>prefixvm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,7 +273,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feel_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/feel.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feel_8cpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/feel.cpp</a>&gt;</code></p>
 <p>Function that compute the command line option prefix for the option variable map</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
@@ -241,6 +283,8 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a775136d895312f831d778398a21bde86">Feel::densityviscosity_options()</a>, <a class="el" href="namespaceFeel.html#afa7874c383f35f85b71da1ea89161b88">Feel::editPtreeFromOptions()</a>, and <a class="el" href="classFeel_1_1Application.html#a0642acdfe3fdb86f2e6b4558c60af1de">Feel::Application::run()</a>.</p>
 
 </div>
 </div>
@@ -351,8 +395,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="gac439cb7d6f8853b1ac07f790e6695a7b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac439cb7d6f8853b1ac07f790e6695a7b">&#9670;&nbsp;</a></span>sanitize()</h2>
+<a id="gaa90565f9cd5f52a52eeea0e4b7858b87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa90565f9cd5f52a52eeea0e4b7858b87">&#9670;&nbsp;</a></span>sanitize()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -367,9 +411,10 @@ template&lt;typename T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p><code>#include &lt;<a class="el" href="feel_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/feel.hpp</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="feel_8cpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/feel.cpp</a>&gt;</code></p>
 
 <p>trim string to remove special characters </p>
+<dl class="section note"><dt>Note</dt><dd>Ensight variable description forbids ( [ + @ ! * $ ) ] - space # ^ /) see ensight gold file format documentation</dd></dl>
 <p>trim string removing all leading and trailing spaces and replace all special characters " ;:," inside the block by a _ </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">s</td><td>a string to be trimmed </td></tr>

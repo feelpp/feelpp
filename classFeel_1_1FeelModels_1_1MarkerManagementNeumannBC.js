@@ -4,8 +4,8 @@ var classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC =
     [ "addMarkerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a61236ba616afb6c214b3a2ca2d123100", null ],
     [ "clearMarkerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#aa880048567a8c1a4a02ce6ebc2c34cfc", null ],
     [ "getInfoNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a78b24f288ec955fe5a4b6e5d332a0c78", null ],
-    [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a11b69cd5c379cccff01ff3ba46b1a438", null ],
-    [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a31c6d518857e53c68e77c5a12abb34f0", null ],
+    [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a185b57c6e091219237c3d14578065c4b", null ],
+    [ "markerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a51652d01fd9361f75ef29f8a869cb6da", null ],
     [ "setMarkerNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a5ccf9eb9416356f3351d590e46764344", null ],
     [ "updateInformationObjectNeumannBC", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a821f6d35b9fef573a93af3ffdf90872a", null ],
     [ "NeumannBCShape", "classFeel_1_1FeelModels_1_1MarkerManagementNeumannBC.html#a21cd46a0e4430c0fbb054028a63e62e9", [

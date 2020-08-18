@@ -1,5 +1,7 @@
 var classFeel_1_1GeometricSpace =
 [
+    [ "Context", "classFeel_1_1GeometricSpace_1_1Context.html", "classFeel_1_1GeometricSpace_1_1Context" ],
+    [ "ContextGeometric", "classFeel_1_1GeometricSpace_1_1ContextGeometric.html", "classFeel_1_1GeometricSpace_1_1ContextGeometric" ],
     [ "context", "classFeel_1_1GeometricSpace.html#a208633bb0a081fa049e937aba5901711", null ],
     [ "contextBasis", "classFeel_1_1GeometricSpace.html#a2b6ff0f68e57b11bcfebf0a3dacfde99", null ],
     [ "mesh", "classFeel_1_1GeometricSpace.html#a3329c0fd13c9ffc660f7b11844b29887", null ],
