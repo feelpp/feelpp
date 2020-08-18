@@ -1,16 +1,16 @@
 {
     "toolboxes": {
-        "default": "notoolboxes",
+        "default": "toolboxes",
         "description": "Enable/Disable Feel++ Toolboxes build",
         "choices": {
-            "doxygen": {
+            "toolboxes": {
                 "short": "Toolboxes",
                 "long": "Enable Feel++ Toolboxes.",
                 "settings": {
                     "FEELPP_ENABLE_TOOLBOXES": "ON"
                 }
             },
-            "nodoxygen": {
+            "notoolboxes": {
                 "short": "No Toolboxes",
                 "long": "Disable Feel++ toolboxes.",
                 "settings": {
