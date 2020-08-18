@@ -17,7 +17,7 @@ jobs:
 #        BRANCH: "master"
 #        MESSAGE: ":github: Triggered from a GitHub Action by Holo3 Project"
   build:
-    runs-on: self-hosted
+    runs-on: ubuntu-20.04
     if: "!contains(github.event.head_commit.message, 'doc skip')"
     steps:
     - uses: actions/checkout@v2
@@ -25,6 +25,8 @@ jobs:
         lfs: true
     - name: Update Dependencies
       run: |
+        echo "deb https://dl.bintray.com/feelpp/ubuntu focal latest" | sudo tee -a /etc/apt/sources.list
+        wget -qO - https://bintray.com/user/downloadSubjectPublicKey?username=bintray | sudo apt-key add -
         sudo apt update
         sudo apt --reinstall install -y libfeelpp1 libfeelpp-dev feelpp-tools doxygen
     - name: Configure Feelpp
