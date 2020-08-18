@@ -14,11 +14,6 @@ Distributed under the LGPL
 The reference documentation is split into logical modules, as documented in
 the user manual."/>
 
-    <tab type="user" visible="yes" url="functions.html" title="Alphabetical index"/>
-    <!-- The intro of "classmembers" controls what appears on the functions.html
-         page, which we're using as our index. So it's basically controlling the
-         intro of our "Index".
-    -->
     <tab type="classindex" visible="yes" title="Index of Classes" intro="
       This is the index of all classes provided by the library"/>
 
@@ -28,7 +23,7 @@ This is a list of all the headers provided by the library."/>
     <tab type="pages" visible="yes" title="" intro=""/>
 
     <!-- We don't use what's below -->
-    <tab type="namespaces" visible="yes" title="Namespaces">
+    <tab type="namespaces" visible="no" title="Namespaces">
       <tab type="namespacelist" visible="yes" title="List of Namespaces" intro=""/>
       <tab type="namespacemembers" visible="no" title="" intro=""/>
     </tab>

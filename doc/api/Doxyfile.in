@@ -23,9 +23,15 @@ ENABLED_SECTIONS        =
 
 # Resources
 OUTPUT_DIRECTORY        = 
-INPUT                   = @CMAKE_SOURCE_DIR@/feelpp/feel \
-                          @CMAKE_SOURCE_DIR@/toolboxes/feel \
-                          @CMAKE_CURRENT_SOURCE_DIR@/MainPage.md
+INPUT                   =   @CMAKE_SOURCE_DIR@/feelpp/feel/feelcore \
+                            @CMAKE_SOURCE_DIR@/feelpp/feel/feelmesh \
+                            @CMAKE_SOURCE_DIR@/feelpp/feel/feeldiscr \
+                            @CMAKE_SOURCE_DIR@/feelpp/feel/feelvf \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/modelcore \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/electric \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/fluid \
+                            @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/solid \
+                            @CMAKE_CURRENT_SOURCE_DIR@/index.md
 FILE_PATTERNS           = *.hpp *.md
 RECURSIVE               = YES
 EXCLUDE                 =
@@ -55,12 +61,12 @@ GENERATE_HTML           = YES
 GENERATE_LATEX          = NO
 
 GENERATE_TODOLIST       = YES
-GENERATE_TESTLIST       = YES
-GENERATE_BUGLIST        = YES
-GENERATE_DEPRECATEDLIST = YES
+GENERATE_TESTLIST       = NO
+GENERATE_BUGLIST        = NO
+GENERATE_DEPRECATEDLIST = NO
 SHOW_USED_FILES         = NO
 SHOW_FILES              = YES
-SHOW_NAMESPACES         = YES
+SHOW_NAMESPACES         = NO
 LAYOUT_FILE             = @CMAKE_CURRENT_SOURCE_DIR@/layout.xml
 
 
