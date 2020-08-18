@@ -117,7 +117,7 @@ class Feel::PointSet&lt; Convex, T &gt;</h3>
 
 <p>Class of all <a class="el" href="classFeel_1_1PointSet.html" title="Class of all PointSet on a Convex.">PointSet</a> on a <a class="el" href="classFeel_1_1Convex.html" title="Convex base class.">Convex</a>. </p>
 <dl class="section author"><dt>Author</dt><dd>Gilles Steiner</dd></dl>
-<p>This is a template class to represent every type of Point Set we may encounter, for example : Equidistant points, Fekete points, quadrature points (<a class="el" href="classFeel_1_1Gauss.html" title="Gauss quadrature points.">Gauss</a>, Gauss-Lobatto, etc). The class will then be specialised into QuadraturePointSet. </p>
+<p>This is a template class to represent every type of Point Set we may encounter, for example : Equidistant points, Fekete points, quadrature points (<a class="el" href="classFeel_1_1Gauss.html">Gauss</a>, Gauss-Lobatto, etc). The class will then be specialised into QuadraturePointSet. </p>
 </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::PointSet&lt; Convex, T &gt;:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -126,9 +126,8 @@ class Feel::PointSet&lt; Convex, T &gt;</h3>
  <div class="center">
   <img src="classFeel_1_1PointSet.png" usemap="#Feel::PointSet_3C_20Convex_2C_20T_20_3E_map" alt=""/>
   <map id="Feel::PointSet_3C_20Convex_2C_20T_20_3E_map" name="Feel::PointSet_3C_20Convex_2C_20T_20_3E_map">
-<area href="classFeel_1_1VisitableBase.html" alt="Feel::VisitableBase&lt;&gt;" shape="rect" coords="0,0,282,24"/>
-<area href="classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="Feel::PointSetBase" shape="rect" coords="292,0,574,24"/>
-<area href="classFeel_1_1PointSetEquiSpaced.html" alt="Feel::PointSetEquiSpaced&lt; Convex, Order, T &gt;" shape="rect" coords="146,112,428,136"/>
+<area href="classFeel_1_1VisitableBase.html" alt="Feel::VisitableBase&lt;&gt;" shape="rect" coords="0,0,172,24"/>
+<area href="classFeel_1_1PointSetBase.html" title="base class for point sets, to be used eg with SFINAE" alt="Feel::PointSetBase" shape="rect" coords="182,0,354,24"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -138,7 +137,7 @@ Public Types</h2></td></tr>
 typedef <a class="el" href="classFeel_1_1Convex.html">Convex</a>&#160;</td><td class="memItemRight" valign="bottom"><b>convex_type</b></td></tr>
 <tr class="separator:a975709cac35cada9010b8ce44d05b435"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a171a70945defe11efd81feff6eda5121"><td class="memItemLeft" align="right" valign="top"><a id="a171a70945defe11efd81feff6eda5121"></a>
-typedef <a class="el" href="structFeel_1_1node.html">node</a>&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b></td></tr>
+typedef node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>node_type</b></td></tr>
 <tr class="separator:a171a70945defe11efd81feff6eda5121"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf9e34e5cc3efe06081ef6db58f0f811"><td class="memItemLeft" align="right" valign="top"><a id="acf9e34e5cc3efe06081ef6db58f0f811"></a>
 typedef ublas::matrix&lt; value_type, ublas::column_major &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>nodes_type</b></td></tr>
@@ -208,7 +207,7 @@ nodes_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>po
 &#160;</td><td class="memItemRight" valign="bottom"><b>PointSet</b> (uint32_type Npoints, uint16_type Dim)</td></tr>
 <tr class="separator:af52b66b3b7b879f5b1cdeb60491e2ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a669a84156dc1f1c9131cdf7bdb50863e"><td class="memItemLeft" align="right" valign="top"><a id="a669a84156dc1f1c9131cdf7bdb50863e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setName</b> (std::string name, uint32_type <a class="el" href="structFeel_1_1order.html">order</a>)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setName</b> (std::string name, uint32_type order)</td></tr>
 <tr class="separator:a669a84156dc1f1c9131cdf7bdb50863e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c950a11dc92bc8bb1fe5d78fca03b33"><td class="memItemLeft" align="right" valign="top"><a id="a6c950a11dc92bc8bb1fe5d78fca03b33"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>toPython</b> ()</td></tr>

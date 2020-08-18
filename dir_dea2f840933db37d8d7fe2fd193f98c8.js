@@ -12,6 +12,7 @@ var dir_dea2f840933db37d8d7fe2fd193f98c8 =
       [ "DataUpdateResidual", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual.html", "classFeel_1_1FeelModels_1_1ModelAlgebraic_1_1DataUpdateResidual" ]
     ] ],
     [ "modelbase.hpp", "modelbase_8hpp.html", "modelbase_8hpp" ],
+    [ "modelcore.hpp", "modelcore_8hpp.html", null ],
     [ "modelnumerical.hpp", "modelnumerical_8hpp.html", [
       [ "ModelNumerical", "classFeel_1_1FeelModels_1_1ModelNumerical.html", "classFeel_1_1FeelModels_1_1ModelNumerical" ]
     ] ]

@@ -495,13 +495,13 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::str</b>
 std::string&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::str</b> (ex const &amp;f)</td></tr>
 <tr class="separator:ac523099cc35eea912a9f028a416d46ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d457f70c83d00ab64b9a20de4c79984"><td class="memItemLeft" align="right" valign="top"><a id="a0d457f70c83d00ab64b9a20de4c79984"></a>
-ex&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (ex const &amp;f, symbol const &amp;l, const double <a class="el" href="val_8hpp.html#aeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
+ex&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (ex const &amp;f, symbol const &amp;l, const double <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
 <tr class="separator:a0d457f70c83d00ab64b9a20de4c79984"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addf3e1aac4b66950121c06db09eacd84"><td class="memItemLeft" align="right" valign="top"><a id="addf3e1aac4b66950121c06db09eacd84"></a>
 ex&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (ex const &amp;f, symbol const &amp;l, ex const &amp;g)</td></tr>
 <tr class="separator:addf3e1aac4b66950121c06db09eacd84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa319c49a91b6262c13274720a546bc05"><td class="memItemLeft" align="right" valign="top"><a id="aa319c49a91b6262c13274720a546bc05"></a>
-matrix&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (matrix const &amp;f, symbol const &amp;l, const double <a class="el" href="val_8hpp.html#aeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
+matrix&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (matrix const &amp;f, symbol const &amp;l, const double <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a>)</td></tr>
 <tr class="separator:aa319c49a91b6262c13274720a546bc05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7805714f247e7abe623b1a4a4a8443d7"><td class="memItemLeft" align="right" valign="top"><a id="a7805714f247e7abe623b1a4a4a8443d7"></a>
 matrix&#160;</td><td class="memItemRight" valign="bottom"><b>GiNaC::substitute</b> (matrix const &amp;f, symbol const &amp;l, ex const &amp;g)</td></tr>
@@ -531,7 +531,7 @@ template&lt;&gt; </td></tr>
 template&lt;&gt; </td></tr>
 <tr class="memitem:a5721a7bd89a59ca5ffa0e7cd4d69ce3a"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; symbol &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::symbols&lt; 3 &gt;</b> ()</td></tr>
 <tr class="separator:a5721a7bd89a59ca5ffa0e7cd4d69ce3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a9bad5cdf97915f137a3ba0f7832a75"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; bool, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ginac_8hpp.html#a9a9bad5cdf97915f137a3ba0f7832a75">GiNaC::toNumericValues</a> (ex const &amp;expr)</td></tr>
+<tr class="memitem:a9a9bad5cdf97915f137a3ba0f7832a75"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; <a class="el" href="classbool.html">bool</a>, double &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ginac_8hpp.html#a9a9bad5cdf97915f137a3ba0f7832a75">GiNaC::toNumericValues</a> (ex const &amp;expr)</td></tr>
 <tr class="memdesc:a9a9bad5cdf97915f137a3ba0f7832a75"><td class="mdescLeft">&#160;</td><td class="mdescRight">get real values of an expression (can be a list) if it is a numeric expression  <a href="ginac_8hpp.html#a9a9bad5cdf97915f137a3ba0f7832a75">More...</a><br /></td></tr>
 <tr class="separator:a9a9bad5cdf97915f137a3ba0f7832a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1841a7634f8111e407d78006b157d694"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ginac_8hpp.html#a1841a7634f8111e407d78006b157d694">GiNaC::totalDegree</a> (ex const &amp;expr, std::vector&lt; std::pair&lt; symbol, <a class="el" href="classint.html">int</a> &gt;&gt; const &amp;symbolsDegree)</td></tr>
@@ -699,7 +699,7 @@ template&lt;typename ExprT , int Order = 2&gt; </div>
         <tr>
           <td class="memname">Expr&lt; GinacEx&lt;&gt; &gt; Feel::vf::expr </td>
           <td>(</td>
-          <td class="paramtype">double&#160;</td>
+          <td class="paramtype"><a class="el" href="classdouble.html">double</a>&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -763,7 +763,7 @@ template&lt;typename ExprT , int Order = 2&gt; </div>
 
 <p>functor enabling ginac </p>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1fem_1_1CrouzeixRaviart.html#a00a9a8f7c6102b8034b3ca358805f239">Feel::fem::CrouzeixRaviart&lt; N, RealDim, PolySetType, T, Convex, TheTAG &gt;::dofParent()</a>, <a class="el" href="classFeel_1_1fem_1_1CrouzeixRaviart.html#a95b02c828e9863db3e9a549f9d0ae92d">Feel::fem::CrouzeixRaviart&lt; N, RealDim, PolySetType, T, Convex, TheTAG &gt;::familyName()</a>, <a class="el" href="unary_8hpp.html#a2850942bde1d14f61c7e7b620cc836f0">Feel::vf::operator+()</a>, and <a class="el" href="unary_8hpp.html#afcb7134df078e3f16ae93260d952db8b">Feel::vf::operator-()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a3d0d5acdc1a40d6942f44cf5e9373387">Feel::internalelements()</a>, <a class="el" href="unary_8hpp.html#a2850942bde1d14f61c7e7b620cc836f0">Feel::vf::operator+()</a>, <a class="el" href="unary_8hpp.html#afcb7134df078e3f16ae93260d952db8b">Feel::vf::operator-()</a>, and <a class="el" href="group__DSEL-Variational-Formulation.html#ga00218e2f351eaf8e36042f5475764cb2">Feel::vf::pow()</a>.</p>
 
 </div>
 </div>
@@ -838,7 +838,7 @@ template&lt;int M, int N, int Order&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">std::map&lt; std::string, double &gt; const &amp;&#160;</td>
+          <td class="paramtype">std::map&lt; std::string, <a class="el" href="classdouble.html">double</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>mp</em>, </td>
         </tr>
         <tr>
@@ -1139,7 +1139,7 @@ template&lt;int M, int N, int Order = 2&gt; </div>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt;std::pair&lt; bool,double&gt; &gt; GiNaC::toNumericValues </td>
+          <td class="memname">std::vector&lt;std::pair&lt; <a class="el" href="classbool.html">bool</a>,double&gt; &gt; GiNaC::toNumericValues </td>
           <td>(</td>
           <td class="paramtype">ex const &amp;&#160;</td>
           <td class="paramname"><em>expr</em></td><td>)</td>

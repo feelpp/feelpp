@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1FunctionSpace_1_1Element.
  <div class="center">
   <img src="classFeel_1_1FunctionSpace_1_1Element.png" usemap="#Feel::FunctionSpace_3C_20A0_2C_20A1_2C_20A2_2C_20A3_2C_20A4_20_3E::Element_3C_20T_2C_20Cont_20_3E_map" alt=""/>
   <map id="Feel::FunctionSpace_3C_20A0_2C_20A1_2C_20A2_2C_20A3_2C_20A4_20_3E::Element_3C_20T_2C_20Cont_20_3E_map" name="Feel::FunctionSpace_3C_20A0_2C_20A1_2C_20A2_2C_20A3_2C_20A4_20_3E::Element_3C_20T_2C_20Cont_20_3E_map">
-<area href="classFeel_1_1VectorUblas.html" alt="Feel::VectorUblas&lt; double &gt;" shape="rect" coords="0,0,387,24"/>
+<area href="classVectorUblas.html" alt="VectorUblas" shape="rect" coords="0,0,387,24"/>
 <area href="classFeel_1_1FunctionSpaceBase_1_1ElementBase.html" alt="Feel::FunctionSpaceBase::ElementBase" shape="rect" coords="1191,0,1578,24"/>
   </map>
 </div></div>
@@ -153,17 +153,17 @@ typedef std::shared_ptr&lt; pc_type &gt;&#160;</td><td class="memItemRight" vali
 typedef functionspace_type::return_type&#160;</td><td class="memItemRight" valign="bottom"><b>return_type</b></td></tr>
 <tr class="separator:ade7a6310f020f6d9fa57a31e13024b53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae885b6392d0ab2a43c846908cb74fb7c"><td class="memItemLeft" align="right" valign="top"><a id="ae885b6392d0ab2a43c846908cb74fb7c"></a>
-typedef <a class="el" href="structFeel_1_1matrix__node.html">matrix_node</a>&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
+typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:ae885b6392d0ab2a43c846908cb74fb7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9201b4364c737c72553bbeb8a0cde9bb"><td class="memItemLeft" align="right" valign="top"><a id="a9201b4364c737c72553bbeb8a0cde9bb"></a>
 typedef mpl::if_&lt; mpl::bool_&lt; is_composite &gt;, mpl::identity&lt; boost::none_t &gt;, mpl::identity&lt; typename basis_0_type::polynomial_type &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>polynomial_view_type</b></td></tr>
 <tr class="separator:a9201b4364c737c72553bbeb8a0cde9bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91252edd5ab2f3726dd83deb60824354"><td class="memItemLeft" align="right" valign="top"><a id="a91252edd5ab2f3726dd83deb60824354"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; is_modal &gt;, mpl::identity&lt; mpl::identity&lt; boost::none_t &gt; &gt;, mpl::identity&lt; <a class="el" href="structFeel_1_1local__interpolant.html">local_interpolant</a>&lt; basis_0_type &gt; &gt; &gt;::type::type::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a91252edd5ab2f3726dd83deb60824354">local_interpolant_type</a></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; is_modal &gt;, mpl::identity&lt; mpl::identity&lt; boost::none_t &gt; &gt;, mpl::identity&lt; local_interpolant&lt; basis_0_type &gt; &gt; &gt;::type::type::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a91252edd5ab2f3726dd83deb60824354">local_interpolant_type</a></td></tr>
 <tr class="memdesc:a91252edd5ab2f3726dd83deb60824354"><td class="mdescLeft">&#160;</td><td class="mdescRight">interpolate type if available <br /></td></tr>
 <tr class="separator:a91252edd5ab2f3726dd83deb60824354"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc93627bf05153bdc15c0a3a516d36b4"><td class="memItemLeft" align="right" valign="top"><a id="adc93627bf05153bdc15c0a3a516d36b4"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; is_modal &gt;, mpl::identity&lt; mpl::identity&lt; boost::none_t &gt; &gt;, mpl::identity&lt; <a class="el" href="structFeel_1_1local__interpolants.html">local_interpolants</a>&lt; basis_0_type &gt; &gt; &gt;::type::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>local_interpolants_type</b></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; is_modal &gt;, mpl::identity&lt; mpl::identity&lt; boost::none_t &gt; &gt;, mpl::identity&lt; local_interpolants&lt; basis_0_type &gt; &gt; &gt;::type::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>local_interpolants_type</b></td></tr>
 <tr class="separator:adc93627bf05153bdc15c0a3a516d36b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66b9d04d5969fc1d10ab539d71eddd91"><td class="memItemLeft" align="right" valign="top"><a id="a66b9d04d5969fc1d10ab539d71eddd91"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
@@ -227,7 +227,7 @@ template&lt;size_type FECTX = DefaultCTX, size_type GEOCTX = DefaultCTX&gt; </td
 <tr class="memitem:aea9b2cb42295e65eada83af40edaa3dc"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>fec_ptr_t</b> = std::shared_ptr&lt; fec_t&lt; FECTX, GEOCTX &gt; &gt;</td></tr>
 <tr class="separator:aea9b2cb42295e65eada83af40edaa3dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a38b4aa15da53f84513f266894d3e49"><td class="memItemLeft" align="right" valign="top"><a id="a0a38b4aa15da53f84513f266894d3e49"></a>
-static constexpr size_type&#160;</td><td class="memItemRight" valign="bottom"><b>DefaultCTX</b> = (<a class="el" href="namespaceFeel.html#abe8553fc6f61b04603084069b2148eb2">is_hdiv_conforming</a>?vm::POINT|vm::JACOBIAN:(<a class="el" href="namespaceFeel.html#aa109333efc322298cbdfac46166d80b4">is_hcurl_conforming</a>?vm::POINT|vm::KB:vm::POINT))</td></tr>
+static constexpr size_type&#160;</td><td class="memItemRight" valign="bottom"><b>DefaultCTX</b> = (is_hdiv_conforming?vm::POINT|vm::JACOBIAN:(is_hcurl_conforming?vm::POINT|vm::KB:vm::POINT))</td></tr>
 <tr class="separator:a0a38b4aa15da53f84513f266894d3e49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
@@ -269,10 +269,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>initFromSpace</b> (fu
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Operator overloads</h2></td></tr>
 <tr class="memitem:a722f2ebb0e9d10218b92470745f5fc27"><td class="memItemLeft" align="right" valign="top"><a id="a722f2ebb0e9d10218b92470745f5fc27"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_t</b> = <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; <a class="el" href="classFeel_1_1Lagrange.html">Lagrange</a>&lt; 0, <a class="el" href="structFeel_1_1Scalar.html">Scalar</a>, <a class="el" href="classFeel_1_1Discontinuous.html">Discontinuous</a> &gt; &gt;&gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_t</b> = <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 0, Scalar, Discontinuous &gt; &gt;&gt;</td></tr>
 <tr class="separator:a722f2ebb0e9d10218b92470745f5fc27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f64f28ec1295d607eed10c6e7f346f7"><td class="memItemLeft" align="right" valign="top"><a id="a4f64f28ec1295d607eed10c6e7f346f7"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_element_t</b> = typename <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; <a class="el" href="classFeel_1_1Lagrange.html">Lagrange</a>&lt; 0, <a class="el" href="structFeel_1_1Scalar.html">Scalar</a>, <a class="el" href="classFeel_1_1Discontinuous.html">Discontinuous</a> &gt; &gt;&gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_element_t</b> = typename <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 0, Scalar, Discontinuous &gt; &gt;&gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;</td></tr>
 <tr class="separator:a4f64f28ec1295d607eed10c6e7f346f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a515a8869d4aeb55c1c99ce7d011659"><td class="memItemLeft" align="right" valign="top"><a id="a2a515a8869d4aeb55c1c99ce7d011659"></a>
 <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> &amp;&amp;__e)</td></tr>
@@ -380,11 +380,11 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>plus_assign</b> (inde
 std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dofs</b> (std::vector&lt; index_type &gt; const &amp;e) const</td></tr>
 <tr class="separator:a032e5fc767a693ca180f078ff835908f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5034e3267dbfe4fcd1c211b6e3ce3085"><td class="memItemLeft" align="right" valign="top"><a id="a5034e3267dbfe4fcd1c211b6e3ce3085"></a>
-std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dofs</b> (std::vector&lt; index_type &gt; const &amp;e, <a class="el" href="classFeel_1_1DataMap.html">DataMap</a>&lt; size_type &gt; const &amp;dm, <a class="el" href="classint.html">int</a> block) const</td></tr>
+std::vector&lt; <a class="el" href="classint.html">int</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dofs</b> (std::vector&lt; index_type &gt; const &amp;e, DataMap&lt; size_type &gt; const &amp;dm, <a class="el" href="classint.html">int</a> block) const</td></tr>
 <tr class="separator:a5034e3267dbfe4fcd1c211b6e3ce3085"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9385e943763c8ddfc03bac2ddf3302a"><td class="memTemplParams" colspan="2"><a id="ab9385e943763c8ddfc03bac2ddf3302a"></a>
 template&lt;typename Tloc &gt; </td></tr>
-<tr class="memitem:ab9385e943763c8ddfc03bac2ddf3302a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>assignE</b> (index_type e, Tloc &amp;&amp;loc, bool symm=true)</td></tr>
+<tr class="memitem:ab9385e943763c8ddfc03bac2ddf3302a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>assignE</b> (index_type e, Tloc &amp;&amp;loc, <a class="el" href="classbool.html">bool</a> symm=true)</td></tr>
 <tr class="separator:ab9385e943763c8ddfc03bac2ddf3302a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a679e9cb74cba3d0357cf59f21ba703ef"><td class="memItemLeft" align="right" valign="top"><a id="a679e9cb74cba3d0357cf59f21ba703ef"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>assign</b> (index_type e, <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a91252edd5ab2f3726dd83deb60824354">local_interpolant_type</a> const &amp;Ihloc)</td></tr>
@@ -532,7 +532,7 @@ template&lt;typename p0_space_type &gt; </td></tr>
 value_type&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> () const</td></tr>
 <tr class="separator:a264569d53af594fff5c02369e8522609"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a323f78adee1b9610b7691c1bfa8297b5"><td class="memItemLeft" align="right" valign="top"><a id="a323f78adee1b9610b7691c1bfa8297b5"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> (bool parallel) const</td></tr>
+value_type&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> (<a class="el" href="classbool.html">bool</a> parallel) const</td></tr>
 <tr class="separator:a323f78adee1b9610b7691c1bfa8297b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a80c8a470d7a08aa97f3e99dd252072"><td class="memTemplParams" colspan="2"><a id="a8a80c8a470d7a08aa97f3e99dd252072"></a>
 template&lt;typename p0_space_type &gt; </td></tr>
@@ -542,7 +542,7 @@ template&lt;typename p0_space_type &gt; </td></tr>
 value_type&#160;</td><td class="memItemRight" valign="bottom"><b>min</b> () const</td></tr>
 <tr class="separator:a92555f4a22e234db2518bff70b383b4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a073804172592ecd4b5b0611e00b6813a"><td class="memItemLeft" align="right" valign="top"><a id="a073804172592ecd4b5b0611e00b6813a"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>min</b> (bool parallel) const</td></tr>
+value_type&#160;</td><td class="memItemRight" valign="bottom"><b>min</b> (<a class="el" href="classbool.html">bool</a> parallel) const</td></tr>
 <tr class="separator:a073804172592ecd4b5b0611e00b6813a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc72a400ab11cf2bfb5b2c23d6d1855a"><td class="memTemplParams" colspan="2"><a id="adc72a400ab11cf2bfb5b2c23d6d1855a"></a>
 template&lt;typename p0_space_type &gt; </td></tr>
@@ -568,13 +568,13 @@ template&lt;typename Context_t &gt; </td></tr>
 <tr class="memitem:a4ff6e68036c785976a88d182ada6748d"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>id</b> (Context_t const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, id_array_type &amp;v) const</td></tr>
 <tr class="separator:a4ff6e68036c785976a88d182ada6748d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0abbf7449ebb181fe3a6c3038095c66"><td class="memItemLeft" align="right" valign="top"><a id="ae0abbf7449ebb181fe3a6c3038095c66"></a>
-Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">functionspace_type::Context</a> const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, bool do_communications=true) const</td></tr>
+Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">functionspace_type::Context</a> const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, <a class="el" href="classbool.html">bool</a> do_communications=true) const</td></tr>
 <tr class="separator:ae0abbf7449ebb181fe3a6c3038095c66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65518821448c446d7d1b100a4597549b"><td class="memItemLeft" align="right" valign="top"><a id="a65518821448c446d7d1b100a4597549b"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">functionspace_type::Context</a> const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, <a class="el" href="classint.html">int</a> i, bool do_communications=true) const</td></tr>
+value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Context.html">functionspace_type::Context</a> const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, <a class="el" href="classint.html">int</a> i, <a class="el" href="classbool.html">bool</a> do_communications=true) const</td></tr>
 <tr class="separator:a65518821448c446d7d1b100a4597549b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a082b8c595506caf1b4d1ba636b2672a9"><td class="memItemLeft" align="right" valign="top"><a id="a082b8c595506caf1b4d1ba636b2672a9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>idInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>idInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a082b8c595506caf1b4d1ba636b2672a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9765a310c1ea0a273c82c642d9ba7591"><td class="memTemplParams" colspan="2"><a id="a9765a310c1ea0a273c82c642d9ba7591"></a>
 template&lt;typename Context_t &gt; </td></tr>
@@ -589,9 +589,9 @@ template&lt;typename Context_t &gt; </td></tr>
 <tr class="memitem:a0ef34ead32c3fdae61a840ba9c7066f8"><td class="memItemLeft" align="right" valign="top">pc_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a0ef34ead32c3fdae61a840ba9c7066f8">pcPtr</a> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5">geoelement_type</a> const &amp;elt) const</td></tr>
 <tr class="separator:a0ef34ead32c3fdae61a840ba9c7066f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7ead04df2f4dbe0ae13ee3a977ff5b0"><td class="memItemLeft" align="right" valign="top"><a id="ae7ead04df2f4dbe0ae13ee3a977ff5b0"></a>
-<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc">id_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (Eigen::Matrix&lt; value_type, nDim, 1 &gt; const &amp;__x, bool extrapolate=false, bool parallel=true) const</td></tr>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc">id_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (Eigen::Matrix&lt; value_type, nDim, 1 &gt; const &amp;__x, <a class="el" href="classbool.html">bool</a> extrapolate=false, <a class="el" href="classbool.html">bool</a> parallel=true) const</td></tr>
 <tr class="separator:ae7ead04df2f4dbe0ae13ee3a977ff5b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13eb982bccc1f598ee2e9517e4d87c44"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc">id_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a13eb982bccc1f598ee2e9517e4d87c44">operator()</a> (node_type const &amp;__x, bool extrapolate=false, bool parallel=true) const</td></tr>
+<tr class="memitem:a13eb982bccc1f598ee2e9517e4d87c44"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc">id_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a13eb982bccc1f598ee2e9517e4d87c44">operator()</a> (node_type const &amp;__x, <a class="el" href="classbool.html">bool</a> extrapolate=false, <a class="el" href="classbool.html">bool</a> parallel=true) const</td></tr>
 <tr class="memdesc:a13eb982bccc1f598ee2e9517e4d87c44"><td class="mdescLeft">&#160;</td><td class="mdescRight">interpolate the function at node (real coordinate) x  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a13eb982bccc1f598ee2e9517e4d87c44">More...</a><br /></td></tr>
 <tr class="separator:a13eb982bccc1f598ee2e9517e4d87c44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ea540b2bd6c54066c041fbd6e7bb141"><td class="memTemplParams" colspan="2"><a id="a8ea540b2bd6c54066c041fbd6e7bb141"></a>
@@ -616,7 +616,7 @@ template&lt;typename ContextType , typename EType  = this_type&gt; </td></tr>
 <tr class="memdesc:a23d09da3497086f665251f741a37ea66"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute Symmetric Gradient only in the vectorial case <br /></td></tr>
 <tr class="separator:a23d09da3497086f665251f741a37ea66"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ac40e4847c98fcd87a98e4fb62f6802"><td class="memItemLeft" align="right" valign="top"><a id="a8ac40e4847c98fcd87a98e4fb62f6802"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>gradInterpolate</b> (matrix_node_type __ptsReal, grad_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>gradInterpolate</b> (matrix_node_type __ptsReal, grad_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a8ac40e4847c98fcd87a98e4fb62f6802"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92091b2347bda703c61f2cdfba289960"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8">grad_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a92091b2347bda703c61f2cdfba289960">grad</a> (node_type const &amp;__x) const</td></tr>
 <tr class="memdesc:a92091b2347bda703c61f2cdfba289960"><td class="mdescLeft">&#160;</td><td class="mdescRight">interpolate the gradient of the function at node (real coordinate) x  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a92091b2347bda703c61f2cdfba289960">More...</a><br /></td></tr>
@@ -666,13 +666,13 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a11eea8e509350e76836593e6c6b17428"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dz</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, id_array_type &amp;v) const</td></tr>
 <tr class="separator:a11eea8e509350e76836593e6c6b17428"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cbbbd9b93732728307fa50f35c992f4"><td class="memItemLeft" align="right" valign="top"><a id="a6cbbbd9b93732728307fa50f35c992f4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dxInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dxInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a6cbbbd9b93732728307fa50f35c992f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a355ecf7b40a890c7ee5eaab3d3cbe456"><td class="memItemLeft" align="right" valign="top"><a id="a355ecf7b40a890c7ee5eaab3d3cbe456"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dyInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dyInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a355ecf7b40a890c7ee5eaab3d3cbe456"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12a1f397fb2da98ad06e22c1f167d85f"><td class="memItemLeft" align="right" valign="top"><a id="a12a1f397fb2da98ad06e22c1f167d85f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dzInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dzInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a12a1f397fb2da98ad06e22c1f167d85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a648460b2b14f904761b766f7406e62c4"><td class="memTemplParams" colspan="2"><a id="a648460b2b14f904761b766f7406e62c4"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -687,7 +687,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a4e88af8e95edb8fe2dd8a2e8030fd9dc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dn_</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, dn_array_type &amp;v) const</td></tr>
 <tr class="separator:a4e88af8e95edb8fe2dd8a2e8030fd9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80958f393258b35b98efba78a2dc377b"><td class="memItemLeft" align="right" valign="top"><a id="a80958f393258b35b98efba78a2dc377b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dnInterpolate</b> (matrix_node_type __ptsReal, dn_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dnInterpolate</b> (matrix_node_type __ptsReal, dn_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a80958f393258b35b98efba78a2dc377b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e29de0e1b8f023d489a297dea4fc8e4"><td class="memTemplParams" colspan="2"><a id="a3e29de0e1b8f023d489a297dea4fc8e4"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -706,7 +706,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a883399df1bd43e9f2304f57c632a20ce"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>div_</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, div_array_type &amp;v) const</td></tr>
 <tr class="separator:a883399df1bd43e9f2304f57c632a20ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf6c7f95e63b9911597a1f01c4475f95"><td class="memItemLeft" align="right" valign="top"><a id="abf6c7f95e63b9911597a1f01c4475f95"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>divInterpolate</b> (matrix_node_type __ptsReal, div_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>divInterpolate</b> (matrix_node_type __ptsReal, div_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:abf6c7f95e63b9911597a1f01c4475f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4192b14b5b5cae4346d361581eb7cb9f"><td class="memTemplParams" colspan="2"><a id="a4192b14b5b5cae4346d361581eb7cb9f"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -733,7 +733,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a171703b57ba96b7df03e6aaeb48e9982"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>curl</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, curl_array_type &amp;v) const</td></tr>
 <tr class="separator:a171703b57ba96b7df03e6aaeb48e9982"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6f7d27c2476e80507130deced4df8cd"><td class="memItemLeft" align="right" valign="top"><a id="aa6f7d27c2476e80507130deced4df8cd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>curlInterpolate</b> (matrix_node_type __ptsReal, curl_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>curlInterpolate</b> (matrix_node_type __ptsReal, curl_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:aa6f7d27c2476e80507130deced4df8cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1c10cc3725f34881ea77bce4e96007b"><td class="memTemplParams" colspan="2"><a id="ae1c10cc3725f34881ea77bce4e96007b"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -768,13 +768,13 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:ad67ff97a03a950cefbeaa8a2551356f1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>curlz</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, comp_curl_array_type &amp;v) const</td></tr>
 <tr class="separator:ad67ff97a03a950cefbeaa8a2551356f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9a40030be4137398a94a033b091b222"><td class="memItemLeft" align="right" valign="top"><a id="ab9a40030be4137398a94a033b091b222"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>curlxInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>curlxInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:ab9a40030be4137398a94a033b091b222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9066fbee3e1164dbb2a963c2866204dc"><td class="memItemLeft" align="right" valign="top"><a id="a9066fbee3e1164dbb2a963c2866204dc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>curlyInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>curlyInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a9066fbee3e1164dbb2a963c2866204dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cb2beaedc93fe23ee6de67d735a2791"><td class="memItemLeft" align="right" valign="top"><a id="a8cb2beaedc93fe23ee6de67d735a2791"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>curlzInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>curlzInterpolate</b> (matrix_node_type __ptsReal, comp_curl_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a8cb2beaedc93fe23ee6de67d735a2791"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a896b6c06faef97c35bab4edea007b450"><td class="memTemplParams" colspan="2"><a id="a896b6c06faef97c35bab4edea007b450"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -789,7 +789,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a4d80ef0c97430058c9f9239fef0b17e0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>hess_</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, hess_array_type &amp;v, mpl::int_&lt; 0 &gt;) const</td></tr>
 <tr class="separator:a4d80ef0c97430058c9f9239fef0b17e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49af861ebf9c9e5a901eb34bb36af518"><td class="memItemLeft" align="right" valign="top"><a id="a49af861ebf9c9e5a901eb34bb36af518"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>hessInterpolate</b> (matrix_node_type __ptsReal, hess_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>hessInterpolate</b> (matrix_node_type __ptsReal, hess_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a49af861ebf9c9e5a901eb34bb36af518"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21486fe4c798bc6bcf79cb11a537cb18"><td class="memTemplParams" colspan="2"><a id="a21486fe4c798bc6bcf79cb11a537cb18"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -820,7 +820,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:ad1739c8f50c8a1b5b8d85b2eceb3f4e1"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>laplacian_</b> (ContextType const &amp;<a class="el" href="classFeel_1_1FunctionSpace.html#a61f9b4f1b7d27e43889f288a948a30dc">context</a>, id_array_type &amp;v, mpl::int_&lt; 1 &gt;) const</td></tr>
 <tr class="separator:ad1739c8f50c8a1b5b8d85b2eceb3f4e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8d1d172af279dff6498af7286239dd0c"><td class="memItemLeft" align="right" valign="top"><a id="a8d1d172af279dff6498af7286239dd0c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>laplacianInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>laplacianInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a8d1d172af279dff6498af7286239dd0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7399863631cf1c0fcf1c312051e3e27"><td class="memTemplParams" colspan="2"><a id="ab7399863631cf1c0fcf1c312051e3e27"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -847,11 +847,11 @@ template&lt;int i&gt; </td></tr>
 <tr class="separator:a1de482d337c6ce8cee8bdb1c1e80090c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3f944146c8a95d77eb6ce885b0cd39c"><td class="memTemplParams" colspan="2"><a id="ae3f944146c8a95d77eb6ce885b0cd39c"></a>
 template&lt;typename BackendType &gt; </td></tr>
-<tr class="memitem:ae3f944146c8a95d77eb6ce885b0cd39c"><td class="memTemplItemLeft" align="right" valign="top">BackendType::vector_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extractValuesWithMarker</b> (std::string const &amp;m, std::shared_ptr&lt; <a class="el" href="namespaceFeel.html#a4da28efa430cc4bd3a6a86cde30a9809">BackendType</a> &gt; backend)</td></tr>
+<tr class="memitem:ae3f944146c8a95d77eb6ce885b0cd39c"><td class="memTemplItemLeft" align="right" valign="top">BackendType::vector_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extractValuesWithMarker</b> (std::string const &amp;m, std::shared_ptr&lt; BackendType &gt; backend)</td></tr>
 <tr class="separator:ae3f944146c8a95d77eb6ce885b0cd39c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a7e39efd749a6f75cf64c07e8a58aaa"><td class="memTemplParams" colspan="2"><a id="a7a7e39efd749a6f75cf64c07e8a58aaa"></a>
 template&lt;typename BackendType &gt; </td></tr>
-<tr class="memitem:a7a7e39efd749a6f75cf64c07e8a58aaa"><td class="memTemplItemLeft" align="right" valign="top">BackendType::vector_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extractValuesWithoutMarker</b> (std::string const &amp;m, std::shared_ptr&lt; <a class="el" href="namespaceFeel.html#a4da28efa430cc4bd3a6a86cde30a9809">BackendType</a> &gt; backend)</td></tr>
+<tr class="memitem:a7a7e39efd749a6f75cf64c07e8a58aaa"><td class="memTemplItemLeft" align="right" valign="top">BackendType::vector_ptrtype&#160;</td><td class="memTemplItemRight" valign="bottom"><b>extractValuesWithoutMarker</b> (std::string const &amp;m, std::shared_ptr&lt; BackendType &gt; backend)</td></tr>
 <tr class="separator:a7a7e39efd749a6f75cf64c07e8a58aaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4305027e3cabfede109e30277779c61"><td class="memTemplParams" colspan="2"><a id="af4305027e3cabfede109e30277779c61"></a>
 template&lt;int i&gt; </td></tr>
@@ -905,7 +905,7 @@ worldscomm_ptr_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"
 size_type&#160;</td><td class="memItemRight" valign="bottom"><b>start</b> () const</td></tr>
 <tr class="separator:a63df1f46787a4a1da116a925fb47f019"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab804ed52c16726af5dc9ec109b4fd560"><td class="memItemLeft" align="right" valign="top"><a id="ab804ed52c16726af5dc9ec109b4fd560"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAComponent</b> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isAComponent</b> () const</td></tr>
 <tr class="separator:ab804ed52c16726af5dc9ec109b4fd560"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe8c4da3af1ca6a61c93f98a25203e29"><td class="memItemLeft" align="right" valign="top"><a id="afe8c4da3af1ca6a61c93f98a25203e29"></a>
 ComponentType&#160;</td><td class="memItemRight" valign="bottom"><b>component</b> () const</td></tr>
@@ -935,27 +935,27 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setFunctionSpace</b> 
 <tr class="memdesc:a8a2ab8427fbddcc0ac2e165d71ed974b"><td class="mdescLeft">&#160;</td><td class="mdescRight">save function space element in file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a8a2ab8427fbddcc0ac2e165d71ed974b">More...</a><br /></td></tr>
 <tr class="separator:a8a2ab8427fbddcc0ac2e165d71ed974b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7da68e4d2366e13ac93ae953fa0b34bb"><td class="memItemLeft" align="right" valign="top"><a id="a7da68e4d2366e13ac93ae953fa0b34bb"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((bool), load, tag,(required(path, *))(optional(<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>,(std::string), M_name)(type,(std::string), std::string(&quot;default&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((<a class="el" href="classbool.html">bool</a>), load, tag,(required(path, *))(optional(<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>,(std::string), M_name)(type,(std::string), std::string(&quot;default&quot;))(suffix,(std::string), std::string(&quot;&quot;))(sep,(std::string), std::string(&quot;&quot;))))</td></tr>
 <tr class="separator:a7da68e4d2366e13ac93ae953fa0b34bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35ce80988cfa11dbc180586965569ed4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">loadImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;)</td></tr>
+<tr class="memitem:a35ce80988cfa11dbc180586965569ed4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">loadImpl</a> (std::string const &amp;path, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, std::string const &amp;type=&quot;binary&quot;, std::string const &amp;suffix=&quot;&quot;, std::string const &amp;sep=&quot;&quot;)</td></tr>
 <tr class="memdesc:a35ce80988cfa11dbc180586965569ed4"><td class="mdescLeft">&#160;</td><td class="mdescRight">load function space element from file  <a href="classFeel_1_1FunctionSpace_1_1Element.html#a35ce80988cfa11dbc180586965569ed4">More...</a><br /></td></tr>
 <tr class="separator:a35ce80988cfa11dbc180586965569ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58755725c93358e26be6e3e6d3208f93"><td class="memItemLeft" align="right" valign="top"><a id="a58755725c93358e26be6e3e6d3208f93"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>printMatlab</b> (std::string fname, bool gmsh=false) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>printMatlab</b> (std::string fname, <a class="el" href="classbool.html">bool</a> gmsh=false) const</td></tr>
 <tr class="separator:a58755725c93358e26be6e3e6d3208f93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ce5402381edbf1943cf498f6bff4340"><td class="memItemLeft" align="right" valign="top"><a id="a9ce5402381edbf1943cf498f6bff4340"></a>
 p0dh_element_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a9ce5402381edbf1943cf498f6bff4340">ewiseMean</a> (std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">p0dh_t</a> &gt; &amp;P0dh) const</td></tr>
 <tr class="memdesc:a9ce5402381edbf1943cf498f6bff4340"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the element wise mean value of an element <br /></td></tr>
 <tr class="separator:a9ce5402381edbf1943cf498f6bff4340"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4142f9722e9e4a14024ee72e29f07ef1"><td class="memItemLeft" align="right" valign="top"><a id="a4142f9722e9e4a14024ee72e29f07ef1"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), on, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(accumulate, *(boost::is_integral&lt; mpl::_ &gt;), false)(<a class="el" href="classFeel_1_1VectorUblas.html#ab5f04bb463ec8fe9ed852959b1b3a37f">close</a>,(bool), false)(verbose,(bool), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), on, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(accumulate, *(boost::is_integral&lt; mpl::_ &gt;), false)(close,(<a class="el" href="classbool.html">bool</a>), false)(verbose,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
 <tr class="separator:a4142f9722e9e4a14024ee72e29f07ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add3c947e2814b4e660e2b20cba827f03"><td class="memItemLeft" align="right" valign="top"><a id="add3c947e2814b4e660e2b20cba827f03"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), plus, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(<a class="el" href="classFeel_1_1VectorUblas.html#ab5f04bb463ec8fe9ed852959b1b3a37f">close</a>,(bool), false)(verbose,(bool), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((void), plus, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a44dfae35c3eeb0100867655c46e0cb26">mesh</a>()))(prefix,(std::string), &quot;&quot;)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(close,(<a class="el" href="classbool.html">bool</a>), false)(verbose,(<a class="el" href="classbool.html">bool</a>), boption(_prefix=prefix, _name=&quot;on.verbose&quot;))))</td></tr>
 <tr class="separator:add3c947e2814b4e660e2b20cba827f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplParams" colspan="2"><a id="a5192ab3467d8c516d9542088a0dd9716"></a>
 template&lt;typename RangeType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (RangeType const &amp;r, ExprType const &amp;e, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate=true, bool verbose=false)</td></tr>
+<tr class="memitem:a5192ab3467d8c516d9542088a0dd9716"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_NO_EXPORT void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (RangeType const &amp;r, ExprType const &amp;e, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate=true, <a class="el" href="classbool.html">bool</a> verbose=false)</td></tr>
 <tr class="separator:a5192ab3467d8c516d9542088a0dd9716"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
@@ -993,83 +993,40 @@ typedef mpl::range_c&lt; <a class="el" href="classint.html">int</a>, 0, <a class
 <tr class="memitem:a59cc876f05824434767295fffaedec5b"><td class="memItemLeft" align="right" valign="top"><a id="a59cc876f05824434767295fffaedec5b"></a>
 typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
 <tr class="separator:a59cc876f05824434767295fffaedec5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_types_classFeel_1_1VectorUblas"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1VectorUblas')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1VectorUblas.html">Feel::VectorUblas&lt; double &gt;</a></td></tr>
-<tr class="memitem:ae65ee3b71c949d2aec7a07180dfda276 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae65ee3b71c949d2aec7a07180dfda276"></a>
-typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
-<tr class="separator:ae65ee3b71c949d2aec7a07180dfda276 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3f394adf091b8fed3daad29fd693def9 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a3f394adf091b8fed3daad29fd693def9"></a>
-typedef <a class="el" href="structFeel_1_1type__traits.html">type_traits</a>&lt; value_type &gt;::real_type&#160;</td><td class="memItemRight" valign="bottom"><b>real_type</b></td></tr>
-<tr class="separator:a3f394adf091b8fed3daad29fd693def9 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81e14815d5d921fada13ef7874fd1286 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a81e14815d5d921fada13ef7874fd1286"></a>
-typedef <a class="el" href="classStorage.html">Storage</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
-<tr class="separator:a81e14815d5d921fada13ef7874fd1286 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa14864f60d07899e27f56c8d50810094 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa14864f60d07899e27f56c8d50810094"></a>
-typedef vector_type::difference_type&#160;</td><td class="memItemRight" valign="bottom"><b>difference_type</b></td></tr>
-<tr class="separator:aa14864f60d07899e27f56c8d50810094 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76bb4916c53aba4709712bf33e33e6e0 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a76bb4916c53aba4709712bf33e33e6e0"></a>
-typedef ublas::basic_range&lt; typename <a class="el" href="classSizeT.html">vector_type::size_type</a>, difference_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b></td></tr>
-<tr class="separator:a76bb4916c53aba4709712bf33e33e6e0 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a680eb6e0d8a5a11d16232272a595d61d inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a680eb6e0d8a5a11d16232272a595d61d"></a>
-typedef ublas::basic_slice&lt; typename <a class="el" href="classSizeT.html">vector_type::size_type</a>, difference_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>slice_type</b></td></tr>
-<tr class="separator:a680eb6e0d8a5a11d16232272a595d61d inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac7385bfc107349d9a0928673eccb358 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aac7385bfc107349d9a0928673eccb358"></a>
-typedef <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>clone_type</b></td></tr>
-<tr class="separator:aac7385bfc107349d9a0928673eccb358 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa489a5be6019593f5c9d1ae63190e47f inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa489a5be6019593f5c9d1ae63190e47f"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Vector.html">clone_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>clone_ptrtype</b></td></tr>
-<tr class="separator:aa489a5be6019593f5c9d1ae63190e47f inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8cb9f16162b35b3db7b3f7d07f60f9f inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ad8cb9f16162b35b3db7b3f7d07f60f9f"></a>
-typedef <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type, <a class="el" href="classStorage.html">Storage</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
-<tr class="separator:ad8cb9f16162b35b3db7b3f7d07f60f9f inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa95a3471f1183eb153b5c99146666aa3 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa95a3471f1183eb153b5c99146666aa3"></a>
-typedef vector_type::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>iterator</b></td></tr>
-<tr class="separator:aa95a3471f1183eb153b5c99146666aa3 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c65eb7bb3e8de34f843e88c3b7e1eb7 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a8c65eb7bb3e8de34f843e88c3b7e1eb7"></a>
-typedef vector_type::const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>const_iterator</b></td></tr>
-<tr class="separator:a8c65eb7bb3e8de34f843e88c3b7e1eb7 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e89c13be0b83242460471ddeea504d9 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a2e89c13be0b83242460471ddeea504d9"></a>
-typedef <a class="el" href="classFeel_1_1DataMap.html">super1::datamap_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>datamap_type</b></td></tr>
-<tr class="separator:a2e89c13be0b83242460471ddeea504d9 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b90b17c1868f8b6d92245a0bd827cb8 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a5b90b17c1868f8b6d92245a0bd827cb8"></a>
-typedef super1::datamap_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>datamap_ptrtype</b></td></tr>
-<tr class="separator:a5b90b17c1868f8b6d92245a0bd827cb8 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae83fdffde45f2d8f70cae22256a3081 inherit pub_types_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aae83fdffde45f2d8f70cae22256a3081"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>size_type</b> = typename <a class="el" href="classSizeT.html">datamap_type::size_type</a></td></tr>
-<tr class="separator:aae83fdffde45f2d8f70cae22256a3081 inherit pub_types_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a97e1b6250760c1a6fdf1ac7f017588e1"><td class="memTemplParams" colspan="2"><a id="a97e1b6250760c1a6fdf1ac7f017588e1"></a>
 template&lt;int i, typename ExprT &gt; </td></tr>
-<tr class="memitem:a97e1b6250760c1a6fdf1ac7f017588e1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>element</b> (ExprT e, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, bool updateOffViews, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *)</td></tr>
+<tr class="memitem:a97e1b6250760c1a6fdf1ac7f017588e1"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>element</b> (ExprT e, std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews, typename std::enable_if&lt; std::is_base_of&lt; <a class="el" href="classFeel_1_1ExprBase.html">ExprBase</a>, ExprT &gt;::value &gt;::type *)</td></tr>
 <tr class="separator:a97e1b6250760c1a6fdf1ac7f017588e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15d8dd71ea456d79856bef6d3cfffbbd"><td class="memTemplParams" colspan="2"><a id="a15d8dd71ea456d79856bef6d3cfffbbd"></a>
 template&lt;int i&gt; </td></tr>
-<tr class="memitem:a15d8dd71ea456d79856bef6d3cfffbbd"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>elementImpl</b> (std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, bool updateOffViews)</td></tr>
+<tr class="memitem:a15d8dd71ea456d79856bef6d3cfffbbd"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt;::template <a class="el" href="structFeel_1_1FunctionSpace_1_1Element_1_1sub__element.html">sub_element</a>&lt; i &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>elementImpl</b> (std::string const &amp;<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#a4f483954320a6dc780d542c00ab0af74">name</a>, <a class="el" href="classbool.html">bool</a> updateOffViews)</td></tr>
 <tr class="separator:a15d8dd71ea456d79856bef6d3cfffbbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplParams" colspan="2"><a id="a267b22f165ca82859fa5c13dfaf122f3"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a822c39538709589ddc423825b9adf5ce">MESH_EDGES</a> &gt;)</td></tr>
+<tr class="memitem:a267b22f165ca82859fa5c13dfaf122f3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a822c39538709589ddc423825b9adf5ce">MESH_EDGES</a> &gt;)</td></tr>
 <tr class="separator:a267b22f165ca82859fa5c13dfaf122f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplParams" colspan="2"><a id="a1d8f46b791df8e085dc28ce1242a77f6"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;)</td></tr>
+<tr class="memitem:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590aba9f37f6ea35ac09cf969b638eac11d6">MESH_ELEMENTS</a> &gt;)</td></tr>
 <tr class="separator:a1d8f46b791df8e085dc28ce1242a77f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplParams" colspan="2"><a id="a8e366a972476a1b830212675adcadd77"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
+<tr class="memitem:a8e366a972476a1b830212675adcadd77"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;)</td></tr>
 <tr class="separator:a8e366a972476a1b830212675adcadd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplParams" colspan="2"><a id="aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::false_)</td></tr>
+<tr class="memitem:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::false_)</td></tr>
 <tr class="separator:aa4fb9a6f4c5fdb99cdae98f1ccfca6ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplParams" colspan="2"><a id="a930c1e6c1b3048c2534c19a1b5151efb"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::true_)</td></tr>
+<tr class="memitem:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a45f482eab6ccb2dd97a838fbbf7b287a">MESH_FACES</a> &gt;, mpl::true_)</td></tr>
 <tr class="separator:a930c1e6c1b3048c2534c19a1b5151efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplParams" colspan="2"><a id="a0b3023fd3d994f6737507048537acd6f"></a>
 template&lt;typename IteratorType , typename ExprType &gt; </td></tr>
-<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, bool accumulate, bool verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3">MESH_POINTS</a> &gt;)</td></tr>
+<tr class="memitem:a0b3023fd3d994f6737507048537acd6f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>onImpl</b> (std::pair&lt; IteratorType, IteratorType &gt; const &amp;r, ExprType const &amp;ex, std::string const &amp;prefix, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> accumulate, <a class="el" href="classbool.html">bool</a> verbose, mpl::int_&lt; <a class="el" href="namespaceFeel.html#a9e8a34e55922ab08cf593c8f9addd590a9a4435f4374f50c44d57dbbcff2b0fd3">MESH_POINTS</a> &gt;)</td></tr>
 <tr class="separator:a0b3023fd3d994f6737507048537acd6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a270af0814cf52eb5c4f43d3635b9a1f8"><td class="memTemplParams" colspan="2"><a id="a270af0814cf52eb5c4f43d3635b9a1f8"></a>
 template&lt;typename ContOtherType &gt; </td></tr>
@@ -1079,381 +1036,35 @@ template&lt;typename ContOtherType &gt; </td></tr>
 template&lt;typename VectorExpr &gt; </td></tr>
 <tr class="memitem:a673417210147f8d2602e4f5b8942e75a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; Y, Cont &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>operator=</b> (VectorExpr const &amp;__v)</td></tr>
 <tr class="separator:a673417210147f8d2602e4f5b8942e75a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_classFeel_1_1VectorUblas"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classFeel_1_1VectorUblas')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classFeel_1_1VectorUblas.html">Feel::VectorUblas&lt; double &gt;</a></td></tr>
-<tr class="memitem:a3df958053795e3cd96a1826ffcb834e3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a3df958053795e3cd96a1826ffcb834e3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>close</b> ()</td></tr>
-<tr class="separator:a3df958053795e3cd96a1826ffcb834e3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15e289991670fd81dc6c8b38ab6cd260 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a15e289991670fd81dc6c8b38ab6cd260"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a15e289991670fd81dc6c8b38ab6cd260">resize</a> (size_type n, bool preserve=true)</td></tr>
-<tr class="memdesc:a15e289991670fd81dc6c8b38ab6cd260 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">resize with size <code>n</code> <br /></td></tr>
-<tr class="separator:a15e289991670fd81dc6c8b38ab6cd260 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6efb92fff1bc5da0cbedba9d746bfaa6 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a6efb92fff1bc5da0cbedba9d746bfaa6"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a6efb92fff1bc5da0cbedba9d746bfaa6">clear</a> ()</td></tr>
-<tr class="memdesc:a6efb92fff1bc5da0cbedba9d746bfaa6 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release all memory and return to a state just like after having called the default constructor. <br /></td></tr>
-<tr class="separator:a6efb92fff1bc5da0cbedba9d746bfaa6 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a907dd87bfcbd7a325164b6586b759c2e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a907dd87bfcbd7a325164b6586b759c2e">zero</a> ()</td></tr>
-<tr class="memdesc:a907dd87bfcbd7a325164b6586b759c2e inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all entries to 0.  <a href="classFeel_1_1VectorUblas.html#a907dd87bfcbd7a325164b6586b759c2e">More...</a><br /></td></tr>
-<tr class="separator:a907dd87bfcbd7a325164b6586b759c2e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c976d38de919f66edd4ca7227324ebd inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a5c976d38de919f66edd4ca7227324ebd"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>zero</b> (size_type, size_type)</td></tr>
-<tr class="separator:a5c976d38de919f66edd4ca7227324ebd inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1909966e78e76f32a23328710dd83869 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a1909966e78e76f32a23328710dd83869"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a1909966e78e76f32a23328710dd83869">add</a> (const size_type i, const value_type &amp;value)</td></tr>
-<tr class="memdesc:a1909966e78e76f32a23328710dd83869 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add <code>value</code> to the value already accumulated. <br /></td></tr>
-<tr class="separator:a1909966e78e76f32a23328710dd83869 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a163c97bae1ef688f8ce2916aa615b2b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a163c97bae1ef688f8ce2916aa615b2b1">add</a> (const T &amp;a)</td></tr>
-<tr class="memdesc:a163c97bae1ef688f8ce2916aa615b2b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U(0-DIM)+=s\).  <a href="classFeel_1_1VectorUblas.html#a163c97bae1ef688f8ce2916aa615b2b1">More...</a><br /></td></tr>
-<tr class="separator:a163c97bae1ef688f8ce2916aa615b2b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fde1f660cc5a9abaa098088610c2de3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a2fde1f660cc5a9abaa098088610c2de3">add</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v)</td></tr>
-<tr class="memdesc:a2fde1f660cc5a9abaa098088610c2de3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U+=V\).  <a href="classFeel_1_1VectorUblas.html#a2fde1f660cc5a9abaa098088610c2de3">More...</a><br /></td></tr>
-<tr class="separator:a2fde1f660cc5a9abaa098088610c2de3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00480b98596aed32e8954fda0d00b92f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a00480b98596aed32e8954fda0d00b92f">add</a> (const T &amp;a, const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v)</td></tr>
-<tr class="memdesc:a00480b98596aed32e8954fda0d00b92f inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U+=a*V\).  <a href="classFeel_1_1VectorUblas.html#a00480b98596aed32e8954fda0d00b92f">More...</a><br /></td></tr>
-<tr class="separator:a00480b98596aed32e8954fda0d00b92f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8757d7d0459f8d2c804e0f3d5822f1b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="af8757d7d0459f8d2c804e0f3d5822f1b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#af8757d7d0459f8d2c804e0f3d5822f1b">addVector</a> (<a class="el" href="classint.html">int</a> *i, <a class="el" href="classint.html">int</a> n, value_type *v, size_type K=0, size_type K2=invalid_v&lt; size_type &gt;)</td></tr>
-<tr class="memdesc:af8757d7d0459f8d2c804e0f3d5822f1b inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">v([i1,i2,...,in]) += [value1,...,valuen] <br /></td></tr>
-<tr class="separator:af8757d7d0459f8d2c804e0f3d5822f1b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4197b7e81d8ffb28584124bc544663d1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a4197b7e81d8ffb28584124bc544663d1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a4197b7e81d8ffb28584124bc544663d1">addVector</a> (const std::vector&lt; value_type &gt; &amp;v, const std::vector&lt; size_type &gt; &amp;dof_indices)</td></tr>
-<tr class="memdesc:a4197b7e81d8ffb28584124bc544663d1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\( U+=v \) where <code>v</code> is a std::vector&lt;T&gt; and you want to specify WHERE to add it <br /></td></tr>
-<tr class="separator:a4197b7e81d8ffb28584124bc544663d1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80ffae4890cbabf424931e51d4e1577c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a80ffae4890cbabf424931e51d4e1577c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a80ffae4890cbabf424931e51d4e1577c">addVector</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;V, const std::vector&lt; size_type &gt; &amp;dof_indices)</td></tr>
-<tr class="memdesc:a80ffae4890cbabf424931e51d4e1577c inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\( U+=V \) where U and V are type <code>NumericVector&lt;T&gt;</code> and you want to specify WHERE to add the <code>NumericVector&lt;T&gt;</code> V <br /></td></tr>
-<tr class="separator:a80ffae4890cbabf424931e51d4e1577c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c523141f5746b1d662a74a0e100b20f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a5c523141f5746b1d662a74a0e100b20f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a5c523141f5746b1d662a74a0e100b20f">addVector</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;, const <a class="el" href="classFeel_1_1MatrixSparse.html">MatrixSparse</a>&lt; value_type &gt; &amp;)</td></tr>
-<tr class="memdesc:a5c523141f5746b1d662a74a0e100b20f inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\( U+=A*V\), add the product of a <code>MatrixSparse</code> <code>A</code> and a <code>Vector</code> <code>V</code> to <code>this</code>, where <code>this=U</code>. <br /></td></tr>
-<tr class="separator:a5c523141f5746b1d662a74a0e100b20f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6138d0ff4936f9ac0675dd99292aa1b9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a6138d0ff4936f9ac0675dd99292aa1b9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a6138d0ff4936f9ac0675dd99292aa1b9">addVector</a> (const ublas::vector&lt; value_type &gt; &amp;V, const std::vector&lt; size_type &gt; &amp;dof_indices)</td></tr>
-<tr class="memdesc:a6138d0ff4936f9ac0675dd99292aa1b9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U+=V \) where U and V are type uvlas::vector&lt;T&gt; and you want to specify WHERE to add the DenseVector&lt;T&gt; V <br /></td></tr>
-<tr class="separator:a6138d0ff4936f9ac0675dd99292aa1b9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3e37a953858bb9cc5ba7ad895a5bb94 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae3e37a953858bb9cc5ba7ad895a5bb94"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae3e37a953858bb9cc5ba7ad895a5bb94">set</a> (size_type i, const value_type &amp;value)</td></tr>
-<tr class="memdesc:ae3e37a953858bb9cc5ba7ad895a5bb94 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">set to <code>value</code> <br /></td></tr>
-<tr class="separator:ae3e37a953858bb9cc5ba7ad895a5bb94 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa32da83dac7875f497bc30264dbc59ce inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa32da83dac7875f497bc30264dbc59ce"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aa32da83dac7875f497bc30264dbc59ce">setVector</a> (<a class="el" href="classint.html">int</a> *i, <a class="el" href="classint.html">int</a> n, value_type *v)</td></tr>
-<tr class="memdesc:aa32da83dac7875f497bc30264dbc59ce inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">v([i1,i2,...,in]) = [value1,...,valuen] <br /></td></tr>
-<tr class="separator:aa32da83dac7875f497bc30264dbc59ce inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6511d061672956d3bed43e3ff107fc76 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a6511d061672956d3bed43e3ff107fc76"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a6511d061672956d3bed43e3ff107fc76">insert</a> (const std::vector&lt; T &gt; &amp;, const std::vector&lt; size_type &gt; &amp;)</td></tr>
-<tr class="memdesc:a6511d061672956d3bed43e3ff107fc76 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\( U=v \) where v is a DenseVector&lt;T&gt; and you want to specify WHERE to insert it <br /></td></tr>
-<tr class="separator:a6511d061672956d3bed43e3ff107fc76 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77f8e0350adc16ea9b8aef465588135d inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a77f8e0350adc16ea9b8aef465588135d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a77f8e0350adc16ea9b8aef465588135d">insert</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;, const std::vector&lt; size_type &gt; &amp;)</td></tr>
-<tr class="memdesc:a77f8e0350adc16ea9b8aef465588135d inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U=V\), where U and V are type <a class="el" href="classFeel_1_1Vector.html">Vector&lt;T&gt;</a> and you want to specify WHERE to insert the <a class="el" href="classFeel_1_1Vector.html">Vector&lt;T&gt;</a> V <br /></td></tr>
-<tr class="separator:a77f8e0350adc16ea9b8aef465588135d inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab41bd775c6c9859fcedab543578baf39 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ab41bd775c6c9859fcedab543578baf39"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab41bd775c6c9859fcedab543578baf39">insert</a> (const ublas::vector&lt; T &gt; &amp;, const std::vector&lt; size_type &gt; &amp;)</td></tr>
-<tr class="memdesc:ab41bd775c6c9859fcedab543578baf39 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\( U+=V \) where U and V are type DenseVector&lt;T&gt; and you want to specify WHERE to insert the DenseVector&lt;T&gt; V <br /></td></tr>
-<tr class="separator:ab41bd775c6c9859fcedab543578baf39 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab983fd4b4eca22821161332b7d71fca2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ab983fd4b4eca22821161332b7d71fca2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab983fd4b4eca22821161332b7d71fca2">scale</a> (const T factor)</td></tr>
-<tr class="memdesc:ab983fd4b4eca22821161332b7d71fca2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scale each element of the vector by the given factor. <br /></td></tr>
-<tr class="separator:ab983fd4b4eca22821161332b7d71fca2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aace862771e2884fedcb658b09e4a02f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aace862771e2884fedcb658b09e4a02f1">printMatlab</a> (const std::string name=&quot;NULL&quot;, bool renumber=false) const</td></tr>
-<tr class="memdesc:aace862771e2884fedcb658b09e4a02f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print the contents of the vector in Matlab's sparse vector forvec.  <a href="classFeel_1_1VectorUblas.html#aace862771e2884fedcb658b09e4a02f1">More...</a><br /></td></tr>
-<tr class="separator:aace862771e2884fedcb658b09e4a02f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abfaa3f119bbcb7435a80c5cf0bbbd59c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">real_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#abfaa3f119bbcb7435a80c5cf0bbbd59c">min</a> () const</td></tr>
-<tr class="separator:abfaa3f119bbcb7435a80c5cf0bbbd59c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad76a6a752d5a7b82ac82a7ebd9a29362 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ad76a6a752d5a7b82ac82a7ebd9a29362"></a>
-real_type&#160;</td><td class="memItemRight" valign="bottom"><b>min</b> (bool parallel) const</td></tr>
-<tr class="separator:ad76a6a752d5a7b82ac82a7ebd9a29362 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1317e673656ed4d6bd8428dcd5c74b74 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">real_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a1317e673656ed4d6bd8428dcd5c74b74">max</a> () const</td></tr>
-<tr class="separator:a1317e673656ed4d6bd8428dcd5c74b74 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae159d4340bdbae7a5f661ce1b5c664a5 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae159d4340bdbae7a5f661ce1b5c664a5"></a>
-real_type&#160;</td><td class="memItemRight" valign="bottom"><b>max</b> (bool parallel) const</td></tr>
-<tr class="separator:ae159d4340bdbae7a5f661ce1b5c664a5 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae801b1b2d2d6fd02ee40bba06fd8d32b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">real_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae801b1b2d2d6fd02ee40bba06fd8d32b">l1Norm</a> () const</td></tr>
-<tr class="separator:ae801b1b2d2d6fd02ee40bba06fd8d32b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41373c9c84b8b9c99f02158c23bd5fe7 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">real_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a41373c9c84b8b9c99f02158c23bd5fe7">l2Norm</a> () const</td></tr>
-<tr class="separator:a41373c9c84b8b9c99f02158c23bd5fe7 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8dcb3fe6d94309a6eaccc9c48c5111e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">real_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab8dcb3fe6d94309a6eaccc9c48c5111e">linftyNorm</a> () const</td></tr>
-<tr class="separator:ab8dcb3fe6d94309a6eaccc9c48c5111e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8fe7222c73a2e335eae28f790f2b9742 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a8fe7222c73a2e335eae28f790f2b9742">sum</a> () const</td></tr>
-<tr class="separator:a8fe7222c73a2e335eae28f790f2b9742 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b2ee7f040fc12f88d69861b9cf92b3c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a6b2ee7f040fc12f88d69861b9cf92b3c"></a>
-FEELPP_DONT_INLINE <a class="el" href="classFeel_1_1VectorUblas.html">this_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a6b2ee7f040fc12f88d69861b9cf92b3c">sqrt</a> () const</td></tr>
-<tr class="memdesc:a6b2ee7f040fc12f88d69861b9cf92b3c inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">@compute sqrt on each element of the vector. <br /></td></tr>
-<tr class="separator:a6b2ee7f040fc12f88d69861b9cf92b3c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b71de05dc10696a7af9d91914821880 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a5b71de05dc10696a7af9d91914821880"></a>
-<a class="el" href="classFeel_1_1VectorUblas.html">this_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a5b71de05dc10696a7af9d91914821880">pow</a> (<a class="el" href="classint.html">int</a> n) const</td></tr>
-<tr class="memdesc:a5b71de05dc10696a7af9d91914821880 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">@compute pow on each element of the vector. <br /></td></tr>
-<tr class="separator:a5b71de05dc10696a7af9d91914821880 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27a01f9e24c489bd8e88cab97c627c6a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a27a01f9e24c489bd8e88cab97c627c6a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a27a01f9e24c489bd8e88cab97c627c6a">localize</a> (std::vector&lt; value_type &gt; &amp;) const</td></tr>
-<tr class="memdesc:a27a01f9e24c489bd8e88cab97c627c6a inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a copy of the global vector in the local vector <code>v_local</code>. <br /></td></tr>
-<tr class="separator:a27a01f9e24c489bd8e88cab97c627c6a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a689ebbb60bce7c3c387cf10ca5381e81 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a689ebbb60bce7c3c387cf10ca5381e81"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a689ebbb60bce7c3c387cf10ca5381e81">localize</a> (ublas::vector&lt; value_type &gt; &amp;v_local) const</td></tr>
-<tr class="memdesc:a689ebbb60bce7c3c387cf10ca5381e81 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a copy of the global vector in the local vector <code>v_local</code>. <br /></td></tr>
-<tr class="separator:a689ebbb60bce7c3c387cf10ca5381e81 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83226460c14c9b585851ffc2f0036fee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a83226460c14c9b585851ffc2f0036fee"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>localize</b> (ublas::vector&lt; value_type, <a class="el" href="classFeel_1_1detail_1_1shallow__array__adaptor.html">Feel::detail::shallow_array_adaptor</a>&lt; T &gt; &gt; &amp;v_local) const</td></tr>
-<tr class="separator:a83226460c14c9b585851ffc2f0036fee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c68b8e37423f24729284405e491e414 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0c68b8e37423f24729284405e491e414"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a0c68b8e37423f24729284405e491e414">localize</a> (ublas::vector_range&lt; ublas::vector&lt; value_type &gt; &gt; &amp;v_local) const</td></tr>
-<tr class="memdesc:a0c68b8e37423f24729284405e491e414 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a copy of the global vector in the local vector <code>v_local</code>. <br /></td></tr>
-<tr class="separator:a0c68b8e37423f24729284405e491e414 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f37a1b4f79e5bbe9be79e9441f62256 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a4f37a1b4f79e5bbe9be79e9441f62256"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>localize</b> (ublas::vector_range&lt; ublas::vector&lt; value_type, <a class="el" href="classFeel_1_1detail_1_1shallow__array__adaptor.html">Feel::detail::shallow_array_adaptor</a>&lt; T &gt; &gt; &gt; &amp;v_local) const</td></tr>
-<tr class="separator:a4f37a1b4f79e5bbe9be79e9441f62256 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac231e78f8a4b33933cb20f254fe895b0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ac231e78f8a4b33933cb20f254fe895b0"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ac231e78f8a4b33933cb20f254fe895b0">localize</a> (ublas::vector_slice&lt; ublas::vector&lt; value_type &gt; &gt; &amp;v_local) const</td></tr>
-<tr class="memdesc:ac231e78f8a4b33933cb20f254fe895b0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a copy of the global vector in the local vector <code>v_local</code>. <br /></td></tr>
-<tr class="separator:ac231e78f8a4b33933cb20f254fe895b0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34bf65605a7dabc6dbdd6fc2d1ea01b9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a34bf65605a7dabc6dbdd6fc2d1ea01b9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>localize</b> (ublas::vector_slice&lt; ublas::vector&lt; value_type, <a class="el" href="classFeel_1_1detail_1_1shallow__array__adaptor.html">Feel::detail::shallow_array_adaptor</a>&lt; T &gt; &gt; &gt; &amp;v_local) const</td></tr>
-<tr class="separator:a34bf65605a7dabc6dbdd6fc2d1ea01b9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5b3b1e9b2b6b5617eb84572370a401c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae5b3b1e9b2b6b5617eb84572370a401c"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae5b3b1e9b2b6b5617eb84572370a401c">localize</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v_local) const</td></tr>
-<tr class="memdesc:ae5b3b1e9b2b6b5617eb84572370a401c inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same, but fills a <code>NumericVector&lt;T&gt;</code> instead of a <code>std::vector</code>. <br /></td></tr>
-<tr class="separator:ae5b3b1e9b2b6b5617eb84572370a401c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a406e2553de46aba1427b91c26c597c88 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a406e2553de46aba1427b91c26c597c88"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a406e2553de46aba1427b91c26c597c88">localize</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v_local, const std::vector&lt; size_type &gt; &amp;send_list) const</td></tr>
-<tr class="memdesc:a406e2553de46aba1427b91c26c597c88 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a local vector <code>v_local</code> containing only information relevant to this processor, as defined by the <code>send_list</code>. <br /></td></tr>
-<tr class="separator:a406e2553de46aba1427b91c26c597c88 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a3db515c2e42dbb1ef8c0aca8a35a62 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a8a3db515c2e42dbb1ef8c0aca8a35a62"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a8a3db515c2e42dbb1ef8c0aca8a35a62">localize</a> (const size_type first_local_idx, const size_type last_local_idx, const std::vector&lt; size_type &gt; &amp;send_list)</td></tr>
-<tr class="memdesc:a8a3db515c2e42dbb1ef8c0aca8a35a62 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates a local vector with selected values from neighboring processors, as defined by <code>send_list</code>. <br /></td></tr>
-<tr class="separator:a8a3db515c2e42dbb1ef8c0aca8a35a62 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1db83907181ba638ac50b925bbce874 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab1db83907181ba638ac50b925bbce874">localizeToOneProcessor</a> (ublas::vector&lt; T &gt; &amp;v_local, const size_type proc_id=0) const</td></tr>
-<tr class="memdesc:ab1db83907181ba638ac50b925bbce874 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a local copy of the global vector in <code>v_local</code> only on processor <code>proc_id</code>.  <a href="classFeel_1_1VectorUblas.html#ab1db83907181ba638ac50b925bbce874">More...</a><br /></td></tr>
-<tr class="separator:ab1db83907181ba638ac50b925bbce874 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e3f8b555606adc0972f4a8ac0f68feb inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a1e3f8b555606adc0972f4a8ac0f68feb">localizeToOneProcessor</a> (std::vector&lt; T &gt; &amp;v_local, const size_type proc_id=0) const</td></tr>
-<tr class="memdesc:a1e3f8b555606adc0972f4a8ac0f68feb inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a local copy of the global vector in <code>v_local</code> only on processor <code>proc_id</code>.  <a href="classFeel_1_1VectorUblas.html#a1e3f8b555606adc0972f4a8ac0f68feb">More...</a><br /></td></tr>
-<tr class="separator:a1e3f8b555606adc0972f4a8ac0f68feb inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d5b34e2b8861ed46fba1b531e561eb0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0d5b34e2b8861ed46fba1b531e561eb0"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><b>dot</b> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; const &amp;__v) const</td></tr>
-<tr class="separator:a0d5b34e2b8861ed46fba1b531e561eb0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a330ecf4be61d61396a17acbd943c7c1e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a330ecf4be61d61396a17acbd943c7c1e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> ()</td></tr>
-<tr class="separator:a330ecf4be61d61396a17acbd943c7c1e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f114012254069e7ab278b3b8d8074b4 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0f114012254069e7ab278b3b8d8074b4"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (size_type __s)</td></tr>
-<tr class="separator:a0f114012254069e7ab278b3b8d8074b4 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd854e0a841f0256c31d6e007d5e8546 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="abd854e0a841f0256c31d6e007d5e8546"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:abd854e0a841f0256c31d6e007d5e8546 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2523e7961fe59b0187163f585fc545f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ad2523e7961fe59b0187163f585fc545f"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (size_type __s, size_type __n_local)</td></tr>
-<tr class="separator:ad2523e7961fe59b0187163f585fc545f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c9096519ae783cd8459f598b80b9cf3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a4c9096519ae783cd8459f598b80b9cf3"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a> const &amp;m)</td></tr>
-<tr class="separator:a4c9096519ae783cd8459f598b80b9cf3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f7bc07d4b5e3682ed544763fe0d4044 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a1f7bc07d4b5e3682ed544763fe0d4044"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt; &amp;m, range_type const &amp;range, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a1f7bc07d4b5e3682ed544763fe0d4044 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aacb926001b8c3f7c3b8b41368416d77e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aacb926001b8c3f7c3b8b41368416d77e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt; &amp;m, range_type const &amp;rangeActive, range_type const &amp;rangeGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:aacb926001b8c3f7c3b8b41368416d77e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27b72d813cfd39db018bbf6d12807eca inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a27b72d813cfd39db018bbf6d12807eca"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt;::shallow_array_adaptor::type &amp;m, range_type const &amp;rangeActive, range_type const &amp;rangeGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a27b72d813cfd39db018bbf6d12807eca inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad68ddb074fab45db02f9cb3e4c1238cc inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ad68ddb074fab45db02f9cb3e4c1238cc"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt; &amp;m, slice_type const &amp;range, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:ad68ddb074fab45db02f9cb3e4c1238cc inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13aa3060d651d51f59104d0ca0c71064 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a13aa3060d651d51f59104d0ca0c71064"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt; &amp;m, slice_type const &amp;sliceActive, slice_type const &amp;sliceGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a13aa3060d651d51f59104d0ca0c71064 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5f01dbfe3fbc37bb8fe134c7a30b55a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ad5f01dbfe3fbc37bb8fe134c7a30b55a"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt;::shallow_array_adaptor::type &amp;m, slice_type const &amp;sliceActive, slice_type const &amp;sliceGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:ad5f01dbfe3fbc37bb8fe134c7a30b55a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac0228de2de50cc14a73d4bdb88eedee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aac0228de2de50cc14a73d4bdb88eedee"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (ublas::vector&lt; value_type &gt; &amp;m, range_type const &amp;range)</td></tr>
-<tr class="separator:aac0228de2de50cc14a73d4bdb88eedee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea7edc2c21b2b6ad33223f728105c345 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aea7edc2c21b2b6ad33223f728105c345"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (ublas::vector&lt; value_type &gt; &amp;m, range_type const &amp;range, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:aea7edc2c21b2b6ad33223f728105c345 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca0ddb91944fd71e94c83a1ede2ae319 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aca0ddb91944fd71e94c83a1ede2ae319"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type &gt; &amp;m, slice_type const &amp;slice)</td></tr>
-<tr class="separator:aca0ddb91944fd71e94c83a1ede2ae319 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc4884a4bfd1529ef36b1a17aea1075c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="adc4884a4bfd1529ef36b1a17aea1075c"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (ublas::vector&lt; value_type &gt; &amp;m, slice_type const &amp;slice)</td></tr>
-<tr class="separator:adc4884a4bfd1529ef36b1a17aea1075c inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a917c267faead4d609ced4e5d55451a4e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a917c267faead4d609ced4e5d55451a4e"></a>
-FEELPP_DEPRECATED&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (ublas::vector&lt; value_type &gt; &amp;m, slice_type const &amp;slice, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a917c267faead4d609ced4e5d55451a4e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32c533feaed33a375996a7d212b09933 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a32c533feaed33a375996a7d212b09933"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (ublas::vector&lt; value_type &gt; &amp;mActive, slice_type const &amp;sliceActive, ublas::vector&lt; value_type &gt; &amp;mGhost, slice_type const &amp;sliceGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a32c533feaed33a375996a7d212b09933 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a644863d95051ca42669763b4a23aca0e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a644863d95051ca42669763b4a23aca0e"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (typename this_type::shallow_array_adaptor::subtype &amp;mActive, slice_type const &amp;sliceActive, typename this_type::shallow_array_adaptor::subtype &amp;mGhost, slice_type const &amp;sliceGhost, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a644863d95051ca42669763b4a23aca0e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a187109850072428e148766ff7327e9ad inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a187109850072428e148766ff7327e9ad"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>VectorUblas</b> (size_type nActiveDof, value_type *arrayActiveDof, size_type nGhostDof, value_type *arrayGhostDof, datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="separator:a187109850072428e148766ff7327e9ad inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a327b68666e9a596f7d03d8070aedbd16 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a327b68666e9a596f7d03d8070aedbd16"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>~VectorUblas</b> ()</td></tr>
-<tr class="separator:a327b68666e9a596f7d03d8070aedbd16 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d6016fb298ed30c37f30b34723db0b5 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a3d6016fb298ed30c37f30b34723db0b5">init</a> (const size_type N, const size_type n_local, const bool fast=false)</td></tr>
-<tr class="memdesc:a3d6016fb298ed30c37f30b34723db0b5 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the dimension of the vector to <code>N</code>.  <a href="classFeel_1_1VectorUblas.html#a3d6016fb298ed30c37f30b34723db0b5">More...</a><br /></td></tr>
-<tr class="separator:a3d6016fb298ed30c37f30b34723db0b5 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acda2f4eb0de79136e5d1836d836847f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="acda2f4eb0de79136e5d1836d836847f1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#acda2f4eb0de79136e5d1836d836847f1">init</a> (const size_type n, const bool fast=false)</td></tr>
-<tr class="memdesc:acda2f4eb0de79136e5d1836d836847f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">call init with n_local = N, <br /></td></tr>
-<tr class="separator:acda2f4eb0de79136e5d1836d836847f1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1f5426d801fa1c0e107d847c987667e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae1f5426d801fa1c0e107d847c987667e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae1f5426d801fa1c0e107d847c987667e">init</a> (datamap_ptrtype const &amp;dm)</td></tr>
-<tr class="memdesc:ae1f5426d801fa1c0e107d847c987667e inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">init from a <code>DataMap</code> <br /></td></tr>
-<tr class="separator:ae1f5426d801fa1c0e107d847c987667e inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae25f12f0287e0c2c337310268acd0582 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae25f12f0287e0c2c337310268acd0582"></a>
-clone_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae25f12f0287e0c2c337310268acd0582">clone</a> () const</td></tr>
-<tr class="memdesc:ae25f12f0287e0c2c337310268acd0582 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a copy of this vector and returns it in an <code>shared_ptr&lt;&gt;</code>. <br /></td></tr>
-<tr class="separator:ae25f12f0287e0c2c337310268acd0582 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8978f59806f86688b940989d045ec92a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a8978f59806f86688b940989d045ec92a"></a>
-<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a8978f59806f86688b940989d045ec92a">operator=</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;V)</td></tr>
-<tr class="memdesc:a8978f59806f86688b940989d045ec92a inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">\(U = V\): copy all components. <br /></td></tr>
-<tr class="separator:a8978f59806f86688b940989d045ec92a inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a352675a67abf48365c879d361826bc5d inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a352675a67abf48365c879d361826bc5d"></a>
-<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; value_type &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (const <a class="el" href="classFeel_1_1VectorUblas.html">this_type</a> &amp;V)</td></tr>
-<tr class="separator:a352675a67abf48365c879d361826bc5d inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d516642b1d413962f7e0553ba1c8aff inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a8d516642b1d413962f7e0553ba1c8aff"></a>
-<a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; value_type, <a class="el" href="classStorage.html">Storage</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (ublas::vector_expression&lt; AE &gt; const &amp;e)</td></tr>
-<tr class="separator:a8d516642b1d413962f7e0553ba1c8aff inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e2a18d0a48d47e7e687c845c0036086 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a4e2a18d0a48d47e7e687c845c0036086"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a4e2a18d0a48d47e7e687c845c0036086">operator()</a> (size_type i) const</td></tr>
-<tr class="memdesc:a4e2a18d0a48d47e7e687c845c0036086 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access components, returns <code>u(i)</code>. <br /></td></tr>
-<tr class="separator:a4e2a18d0a48d47e7e687c845c0036086 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a5c3f73700191caa90febf049ca7fa4 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a1a5c3f73700191caa90febf049ca7fa4"></a>
-T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a1a5c3f73700191caa90febf049ca7fa4">operator()</a> (size_type i)</td></tr>
-<tr class="memdesc:a1a5c3f73700191caa90febf049ca7fa4 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access components, returns <code>u(i)</code>. <br /></td></tr>
-<tr class="separator:a1a5c3f73700191caa90febf049ca7fa4 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac02d648e56afcfd44d50a6f99d213150 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ac02d648e56afcfd44d50a6f99d213150"></a>
-T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ac02d648e56afcfd44d50a6f99d213150">operator[]</a> (size_type i) const</td></tr>
-<tr class="memdesc:ac02d648e56afcfd44d50a6f99d213150 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access components, returns <code>u(i)</code>. <br /></td></tr>
-<tr class="separator:ac02d648e56afcfd44d50a6f99d213150 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0448a31ed364629d5a02cf6381afa9ae inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0448a31ed364629d5a02cf6381afa9ae"></a>
-T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a0448a31ed364629d5a02cf6381afa9ae">operator[]</a> (size_type i)</td></tr>
-<tr class="memdesc:a0448a31ed364629d5a02cf6381afa9ae inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access components, returns <code>u(i)</code>. <br /></td></tr>
-<tr class="separator:a0448a31ed364629d5a02cf6381afa9ae inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8bed6a5619c55b7c40003012519e4bf2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a8bed6a5619c55b7c40003012519e4bf2">operator+=</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v)</td></tr>
-<tr class="memdesc:a8bed6a5619c55b7c40003012519e4bf2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Addition operator.  <a href="classFeel_1_1VectorUblas.html#a8bed6a5619c55b7c40003012519e4bf2">More...</a><br /></td></tr>
-<tr class="separator:a8bed6a5619c55b7c40003012519e4bf2 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71a436c432a4db65940afbacf46b3699 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a71a436c432a4db65940afbacf46b3699">operator-=</a> (const <a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;v)</td></tr>
-<tr class="memdesc:a71a436c432a4db65940afbacf46b3699 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subtraction operator.  <a href="classFeel_1_1VectorUblas.html#a71a436c432a4db65940afbacf46b3699">More...</a><br /></td></tr>
-<tr class="separator:a71a436c432a4db65940afbacf46b3699 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a031e4ac01cc669ed33387bfa74ddd2d3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a031e4ac01cc669ed33387bfa74ddd2d3"></a>
-<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a031e4ac01cc669ed33387bfa74ddd2d3">operator*=</a> (T const &amp;v)</td></tr>
-<tr class="memdesc:a031e4ac01cc669ed33387bfa74ddd2d3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">multiplication by a scalar value <br /></td></tr>
-<tr class="separator:a031e4ac01cc669ed33387bfa74ddd2d3 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c7d0370d99f66e4344c06840d014592 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0c7d0370d99f66e4344c06840d014592"></a>
-iterator&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> ()</td></tr>
-<tr class="separator:a0c7d0370d99f66e4344c06840d014592 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab55c1147aef0114bd9927d77719aa415 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ab55c1147aef0114bd9927d77719aa415"></a>
-const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>begin</b> () const</td></tr>
-<tr class="separator:ab55c1147aef0114bd9927d77719aa415 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b851e7243ff76b4cb0f290ed1c93680 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a1b851e7243ff76b4cb0f290ed1c93680"></a>
-iterator&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> ()</td></tr>
-<tr class="separator:a1b851e7243ff76b4cb0f290ed1c93680 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a162af4515d08a8dd491a6bf1f84269c1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a162af4515d08a8dd491a6bf1f84269c1"></a>
-const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>end</b> () const</td></tr>
-<tr class="separator:a162af4515d08a8dd491a6bf1f84269c1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3c499ca2505be4b5c47c0edf5f1b7f0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="af3c499ca2505be4b5c47c0edf5f1b7f0"></a>
-iterator&#160;</td><td class="memItemRight" valign="bottom"><b>beginGhost</b> ()</td></tr>
-<tr class="separator:af3c499ca2505be4b5c47c0edf5f1b7f0 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4a619f55788a021e37d421ab0b76ef7b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a4a619f55788a021e37d421ab0b76ef7b"></a>
-const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>beginGhost</b> () const</td></tr>
-<tr class="separator:a4a619f55788a021e37d421ab0b76ef7b inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af49c510e3094d15de5ba0a33eeb911db inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="af49c510e3094d15de5ba0a33eeb911db"></a>
-iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endGhost</b> ()</td></tr>
-<tr class="separator:af49c510e3094d15de5ba0a33eeb911db inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98d47a4919be35110f63dd35c9d64585 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a98d47a4919be35110f63dd35c9d64585"></a>
-const_iterator&#160;</td><td class="memItemRight" valign="bottom"><b>endGhost</b> () const</td></tr>
-<tr class="separator:a98d47a4919be35110f63dd35c9d64585 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea20d8190e94facde9a5f5892cad0a93 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aea20d8190e94facde9a5f5892cad0a93"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aea20d8190e94facde9a5f5892cad0a93">start</a> () const</td></tr>
-<tr class="memdesc:aea20d8190e94facde9a5f5892cad0a93 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">if the vector is a range, return the first index of the range, otherwise returns 0 <br /></td></tr>
-<tr class="separator:aea20d8190e94facde9a5f5892cad0a93 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a238f48a5e6019b4b83fa68a1610f4193 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a238f48a5e6019b4b83fa68a1610f4193"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a238f48a5e6019b4b83fa68a1610f4193">startNonContiguousGhosts</a> () const</td></tr>
-<tr class="memdesc:a238f48a5e6019b4b83fa68a1610f4193 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">if the vector is a range, return the first index of the range, otherwise returns 0 <br /></td></tr>
-<tr class="separator:a238f48a5e6019b4b83fa68a1610f4193 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65fa93189b6a8fcee95065d606886d85 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a65fa93189b6a8fcee95065d606886d85"></a>
-unsigned <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a65fa93189b6a8fcee95065d606886d85">rowStart</a> () const</td></tr>
-<tr class="memdesc:a65fa93189b6a8fcee95065d606886d85 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">return row_start, the index of the first vector row stored on this processor <br /></td></tr>
-<tr class="separator:a65fa93189b6a8fcee95065d606886d85 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6a0c897f57eb8872ae911070376e7b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa6a0c897f57eb8872ae911070376e7b1"></a>
-size_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aa6a0c897f57eb8872ae911070376e7b1">rowStop</a> () const</td></tr>
-<tr class="memdesc:aa6a0c897f57eb8872ae911070376e7b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">return row_stop, the index of the last vector row (+1) stored on this processor <br /></td></tr>
-<tr class="separator:aa6a0c897f57eb8872ae911070376e7b1 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd519646a5e7510ba93b5226310c8831 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#acd519646a5e7510ba93b5226310c8831">isInitialized</a> () const</td></tr>
-<tr class="separator:acd519646a5e7510ba93b5226310c8831 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5f04bb463ec8fe9ed852959b1b3a37f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ab5f04bb463ec8fe9ed852959b1b3a37f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab5f04bb463ec8fe9ed852959b1b3a37f">close</a> () const</td></tr>
-<tr class="memdesc:ab5f04bb463ec8fe9ed852959b1b3a37f inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight"><code>close</code> the ublas vector, that will copy the content of write optimized vector into a read optimized vector <br /></td></tr>
-<tr class="separator:ab5f04bb463ec8fe9ed852959b1b3a37f inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a507debea6e2d35f39a5804efcef8b457 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a507debea6e2d35f39a5804efcef8b457"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a507debea6e2d35f39a5804efcef8b457">closed</a> () const</td></tr>
-<tr class="memdesc:a507debea6e2d35f39a5804efcef8b457 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">see if vector has been closed and fully assembled yet <br /></td></tr>
-<tr class="separator:a507debea6e2d35f39a5804efcef8b457 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a57bb5a1ef9f3a0dcf4a5ddd83a9f8456 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a57bb5a1ef9f3a0dcf4a5ddd83a9f8456"></a>
-<a class="el" href="classStorage.html">vector_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a57bb5a1ef9f3a0dcf4a5ddd83a9f8456">vec</a> () const</td></tr>
-<tr class="memdesc:a57bb5a1ef9f3a0dcf4a5ddd83a9f8456 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the read optimized ublas vector. <br /></td></tr>
-<tr class="separator:a57bb5a1ef9f3a0dcf4a5ddd83a9f8456 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4d6a68c9ad31332bc203111fb3eb010 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aa4d6a68c9ad31332bc203111fb3eb010"></a>
-<a class="el" href="classStorage.html">vector_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aa4d6a68c9ad31332bc203111fb3eb010">vec</a> ()</td></tr>
-<tr class="memdesc:aa4d6a68c9ad31332bc203111fb3eb010 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the read optimized ublas vector. <br /></td></tr>
-<tr class="separator:aa4d6a68c9ad31332bc203111fb3eb010 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab852d38613a13d3f3e149cae3b08cf45 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ab852d38613a13d3f3e149cae3b08cf45"></a>
-<a class="el" href="classStorage.html">vector_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ab852d38613a13d3f3e149cae3b08cf45">vecNonContiguousGhosts</a> () const</td></tr>
-<tr class="memdesc:ab852d38613a13d3f3e149cae3b08cf45 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return ghost ublas vector (can be not used) <br /></td></tr>
-<tr class="separator:ab852d38613a13d3f3e149cae3b08cf45 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ca6e4384cd921fd138b7490971bbfcf inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a7ca6e4384cd921fd138b7490971bbfcf"></a>
-<a class="el" href="classStorage.html">vector_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a7ca6e4384cd921fd138b7490971bbfcf">vecNonContiguousGhosts</a> ()</td></tr>
-<tr class="memdesc:a7ca6e4384cd921fd138b7490971bbfcf inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return ghost ublas vector (can be not used) <br /></td></tr>
-<tr class="separator:a7ca6e4384cd921fd138b7490971bbfcf inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae93df05ab14d9aa0d34718c632ed11c7 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae93df05ab14d9aa0d34718c632ed11c7"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae93df05ab14d9aa0d34718c632ed11c7">areGlobalValuesUpdated</a> () const</td></tr>
-<tr class="memdesc:ae93df05ab14d9aa0d34718c632ed11c7 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">update global values array <br /></td></tr>
-<tr class="separator:ae93df05ab14d9aa0d34718c632ed11c7 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acacdc91df72fef16795f0047a1aaaabf inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="acacdc91df72fef16795f0047a1aaaabf"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#acacdc91df72fef16795f0047a1aaaabf">updateGlobalValues</a> () const</td></tr>
-<tr class="memdesc:acacdc91df72fef16795f0047a1aaaabf inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">update global values <br /></td></tr>
-<tr class="separator:acacdc91df72fef16795f0047a1aaaabf inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae21f8130314c20db1ac5d1698a05b6ee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae21f8130314c20db1ac5d1698a05b6ee"></a>
-value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#ae21f8130314c20db1ac5d1698a05b6ee">globalValue</a> (size_type i) const</td></tr>
-<tr class="memdesc:ae21f8130314c20db1ac5d1698a05b6ee inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the <code>i</code> -th global value <br /></td></tr>
-<tr class="separator:ae21f8130314c20db1ac5d1698a05b6ee inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae5334525f7b7ac9f5b36bd749ed64c9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#aae5334525f7b7ac9f5b36bd749ed64c9">outdateGlobalValues</a> ()</td></tr>
-<tr class="memdesc:aae5334525f7b7ac9f5b36bd749ed64c9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">outdate global values array e.g.  <a href="classFeel_1_1VectorUblas.html#aae5334525f7b7ac9f5b36bd749ed64c9">More...</a><br /></td></tr>
-<tr class="separator:aae5334525f7b7ac9f5b36bd749ed64c9 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d41f1c8447823c193e433c22c1a0566 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a1d41f1c8447823c193e433c22c1a0566"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a1d41f1c8447823c193e433c22c1a0566">setConstant</a> (value_type v)</td></tr>
-<tr class="memdesc:a1d41f1c8447823c193e433c22c1a0566 inherit pub_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">set the entries to the constant <code>v</code> <br /></td></tr>
-<tr class="separator:a1d41f1c8447823c193e433c22c1a0566 inherit pub_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a61bc5a1a6d6db11328d59948f399e9e1"><td class="memItemLeft" align="right" valign="top"><a id="a61bc5a1a6d6db11328d59948f399e9e1"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
 <tr class="separator:a61bc5a1a6d6db11328d59948f399e9e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf65c91a6813fc97bc53076ee64760e6"><td class="memItemLeft" align="right" valign="top"><a id="adf65c91a6813fc97bc53076ee64760e6"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_continuous</b> = functionspace_type::is_continuous</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_continuous</b> = functionspace_type::is_continuous</td></tr>
 <tr class="separator:adf65c91a6813fc97bc53076ee64760e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85cd1b59e81ab9c5696b74cbd8bb4bb3"><td class="memItemLeft" align="right" valign="top"><a id="a85cd1b59e81ab9c5696b74cbd8bb4bb3"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_hcurl_conforming</b> = functionspace_type::is_hcurl_conforming</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hcurl_conforming</b> = functionspace_type::is_hcurl_conforming</td></tr>
 <tr class="separator:a85cd1b59e81ab9c5696b74cbd8bb4bb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f4b9b7a5089bae4e018d686ca32d8e0"><td class="memItemLeft" align="right" valign="top"><a id="a0f4b9b7a5089bae4e018d686ca32d8e0"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_hdiv_conforming</b> = functionspace_type::is_hdiv_conforming</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_hdiv_conforming</b> = functionspace_type::is_hdiv_conforming</td></tr>
 <tr class="separator:a0f4b9b7a5089bae4e018d686ca32d8e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36a059914990fac3cec8ba0f502e63fa"><td class="memItemLeft" align="right" valign="top"><a id="a36a059914990fac3cec8ba0f502e63fa"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
 <tr class="separator:a36a059914990fac3cec8ba0f502e63fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7223a328693ec448a4accd971fd847c"><td class="memItemLeft" align="right" valign="top"><a id="ac7223a328693ec448a4accd971fd847c"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_scalar</b> = functionspace_type::is_scalar</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_scalar</b> = functionspace_type::is_scalar</td></tr>
 <tr class="separator:ac7223a328693ec448a4accd971fd847c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addad3175c566adb41f475d9b8b5a914b"><td class="memItemLeft" align="right" valign="top"><a id="addad3175c566adb41f475d9b8b5a914b"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2</b> = functionspace_type::is_tensor2</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2</b> = functionspace_type::is_tensor2</td></tr>
 <tr class="separator:addad3175c566adb41f475d9b8b5a914b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cabb4e0651ac96c14bfc8a293b10d64"><td class="memItemLeft" align="right" valign="top"><a id="a6cabb4e0651ac96c14bfc8a293b10d64"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2symm</b> = functionspace_type::is_tensor2symm</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_tensor2symm</b> = functionspace_type::is_tensor2symm</td></tr>
 <tr class="separator:a6cabb4e0651ac96c14bfc8a293b10d64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a464cd2f824f5b039d6d28a666d68d39a"><td class="memItemLeft" align="right" valign="top"><a id="a464cd2f824f5b039d6d28a666d68d39a"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_vectorial</b> = functionspace_type::is_vectorial</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_vectorial</b> = functionspace_type::is_vectorial</td></tr>
 <tr class="separator:a464cd2f824f5b039d6d28a666d68d39a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a773834c128b7f5e38bfa08d7fbe2d76e"><td class="memItemLeft" align="right" valign="top"><a id="a773834c128b7f5e38bfa08d7fbe2d76e"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = functionspace_type::nComponents</td></tr>
@@ -1479,30 +1090,6 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 <tr class="memitem:a8614e5aeb14b2bfaf317992f58d0d113"><td class="memItemLeft" align="right" valign="top"><a id="a8614e5aeb14b2bfaf317992f58d0d113"></a>
 static const <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>rank</b> = functionspace_type::rank</td></tr>
 <tr class="separator:a8614e5aeb14b2bfaf317992f58d0d113"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_static_attribs_classFeel_1_1VectorUblas"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_classFeel_1_1VectorUblas')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="classFeel_1_1VectorUblas.html">Feel::VectorUblas&lt; double &gt;</a></td></tr>
-<tr class="memitem:a261f9e9db285fc3ad3057e774bbd120f inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a261f9e9db285fc3ad3057e774bbd120f"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_shallow_array_adaptor_vector</b></td></tr>
-<tr class="separator:a261f9e9db285fc3ad3057e774bbd120f inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0daf172520240a01f24d82b4b6abf7c6 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a0daf172520240a01f24d82b4b6abf7c6"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_extarray_vector</b></td></tr>
-<tr class="separator:a0daf172520240a01f24d82b4b6abf7c6 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac27d4129bbb65669484eec81dbcfc170 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ac27d4129bbb65669484eec81dbcfc170"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_range_vector</b></td></tr>
-<tr class="separator:ac27d4129bbb65669484eec81dbcfc170 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae496827bd62e8343402a246d957ee68a inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="ae496827bd62e8343402a246d957ee68a"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_slice_vector</b></td></tr>
-<tr class="separator:ae496827bd62e8343402a246d957ee68a inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabce78167b49398fc689ecb88b06e536 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="aabce78167b49398fc689ecb88b06e536"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>has_non_contiguous_ghosts</b></td></tr>
-<tr class="separator:aabce78167b49398fc689ecb88b06e536 inherit pub_static_attribs_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_static_methods_classFeel_1_1VectorUblas"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_classFeel_1_1VectorUblas')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classFeel_1_1VectorUblas.html">Feel::VectorUblas&lt; double &gt;</a></td></tr>
-<tr class="memitem:a35e6667f82e39523ffa23a6f9a1ed349 inherit pub_static_methods_classFeel_1_1VectorUblas"><td class="memItemLeft" align="right" valign="top"><a id="a35e6667f82e39523ffa23a6f9a1ed349"></a>
-static this_type::shallow_array_adaptor::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1VectorUblas.html#a35e6667f82e39523ffa23a6f9a1ed349">createView</a> (<a class="el" href="classFeel_1_1Vector.html">Vector</a>&lt; T &gt; const &amp;<a class="el" href="classFeel_1_1VectorUblas.html#a57bb5a1ef9f3a0dcf4a5ddd83a9f8456">vec</a>)</td></tr>
-<tr class="memdesc:a35e6667f82e39523ffa23a6f9a1ed349 inherit pub_static_methods_classFeel_1_1VectorUblas"><td class="mdescLeft">&#160;</td><td class="mdescRight">create a VectorUblas as a view of another Vector type (as VectorPetsc) <br /></td></tr>
-<tr class="separator:a35e6667f82e39523ffa23a6f9a1ed349 inherit pub_static_methods_classFeel_1_1VectorUblas"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="abdac810ae98cd82e98863f569f12fdc5"></a>
@@ -1854,7 +1441,7 @@ template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </di
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a geometric mapping context associated with the element </dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd>should be in the element of the mesh </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000003">Todo:</a></b></dt><dd>should be in the element of the mesh </dd></dl>
 
 </div>
 </div>
@@ -1917,8 +1504,8 @@ template&lt;typename ContextType &gt; </div>
 
 <p>interpolate the function derivative in the first component at a set of points(defined in the reference element) in an element. </p>
 <dl class="section warning"><dt>Warning</dt><dd>this operation assumes that the interpolation is done on the mesh associated with the discretization space</dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000007">Todo:</a></b></dt><dd>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000004">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000005">Todo:</a></b></dt><dd>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative </dd></dl>
 
 </div>
 </div>
@@ -1956,8 +1543,8 @@ template&lt;typename ContextType &gt; </div>
 
 <p>interpolate the function second order derivatives at a set of points(defined in the reference element) in an element. </p>
 <dl class="section warning"><dt>Warning</dt><dd>this operation assumes that the interpolation is done on the mesh associated with the discretization space</dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000008">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000009">Todo:</a></b></dt><dd>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative </dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000006">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000007">Todo:</a></b></dt><dd>need to introduce the geometric transformation to incorporate the pseudo-inverse of the jacobian for the derivative </dd></dl>
 
 </div>
 </div>
@@ -1995,7 +1582,7 @@ template&lt;typename Context_t &gt; </div>
 
 <p>interpolate the function at a set of points(defined in the reference element) in an element. </p>
 <dl class="section warning"><dt>Warning</dt><dd>this operation assumes that the interpolation is done on the mesh associated with the discretization space</dd></dl>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000004">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd>handle the case where the mesh/element is not the same as the one associated with the discretization space.</dd></dl>
 
 </div>
 </div>
@@ -2035,7 +1622,7 @@ template&lt;typename A0 , typename A1  = parameter::void_, typename A2  = parame
 template&lt;typename T  = double, typename Cont  = VectorUblas&lt;T&gt;&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;::loadImpl </td>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1FunctionSpace.html">Feel::FunctionSpace</a>&lt; A0, A1, A2, A3, A4 &gt;::<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;::loadImpl </td>
           <td>(</td>
           <td class="paramtype">std::string const &amp;&#160;</td>
           <td class="paramname"><em>path</em>, </td>
@@ -2236,13 +1823,13 @@ template&lt;typename Y , typename Cont &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>extrapolate</em> = <code>false</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>parallel</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>

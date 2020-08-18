@@ -149,7 +149,7 @@ typedef Eigen::Matrix&lt; value_type, Eigen::Dynamic, 1 &gt;&#160;</td><td class
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Constructors, destructor</h2></td></tr>
 <tr class="memitem:a381d45d303047e6f40bbf63cc225a5ae"><td class="memItemLeft" align="right" valign="top"><a id="a381d45d303047e6f40bbf63cc225a5ae"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>EvaluatorContext</b> (context_type const &amp;ctx, context2_type const &amp;ctx2, expression_type const &amp;__expr, <a class="el" href="classint.html">int</a> max_points_used, GeomapStrategyType geomap_strategy, bool mpi_communications, bool projection, worldcomm_ptr_t const &amp;<a class="el" href="classFeel_1_1CommObject.html#aeb18eadafa42eea1161c4ba45941bd9d">worldComm</a>)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>EvaluatorContext</b> (context_type const &amp;ctx, context2_type const &amp;ctx2, expression_type const &amp;__expr, <a class="el" href="classint.html">int</a> max_points_used, GeomapStrategyType geomap_strategy, <a class="el" href="classbool.html">bool</a> mpi_communications, <a class="el" href="classbool.html">bool</a> projection, worldcomm_ptr_t const &amp;<a class="el" href="classFeel_1_1CommObject.html#aeb18eadafa42eea1161c4ba45941bd9d">worldComm</a>)</td></tr>
 <tr class="separator:a381d45d303047e6f40bbf63cc225a5ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5858c2ecdcab002ae76101b38113174d"><td class="memItemLeft" align="right" valign="top"><a id="a5858c2ecdcab002ae76101b38113174d"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>EvaluatorContext</b> (<a class="el" href="classFeel_1_1vf_1_1details_1_1EvaluatorContext.html">EvaluatorContext</a> const &amp;__vfi)</td></tr>
@@ -186,7 +186,7 @@ uint16_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" hre
 <tr class="memdesc:af224df4a7e934149b0503dde001db7a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">polynomial order <br /></td></tr>
 <tr class="separator:af224df4a7e934149b0503dde001db7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27c163371a1f6d4807ff0217d362109c"><td class="memItemLeft" align="right" valign="top"><a id="a27c163371a1f6d4807ff0217d362109c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1details_1_1EvaluatorContext.html#a27c163371a1f6d4807ff0217d362109c">isPolynomial</a> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1vf_1_1details_1_1EvaluatorContext.html#a27c163371a1f6d4807ff0217d362109c">isPolynomial</a> () const</td></tr>
 <tr class="memdesc:a27c163371a1f6d4807ff0217d362109c"><td class="mdescLeft">&#160;</td><td class="mdescRight">expression is polynomial? <br /></td></tr>
 <tr class="separator:a27c163371a1f6d4807ff0217d362109c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -208,7 +208,7 @@ Additional Inherited Members</h2></td></tr>
 &#160;</td><td class="memItemRight" valign="bottom"><b>CommObject</b> (worldcomm_ptr_t const &amp;w)</td></tr>
 <tr class="separator:aff9016eecf0278f21aa0fc6623af0843 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a5fb26839b00f17ba7163062bbde02868"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a5fb26839b00f17ba7163062bbde02868">hasWorldComm</a> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1CommObject.html#a5fb26839b00f17ba7163062bbde02868">hasWorldComm</a> () const</td></tr>
 <tr class="memdesc:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="mdescLeft">&#160;</td><td class="mdescRight">returns true if worldcomm is allocated, false othewise <br /></td></tr>
 <tr class="separator:a5fb26839b00f17ba7163062bbde02868 inherit pub_methods_classFeel_1_1CommObject"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71fe391611d6038022857e936b8aa1a2 inherit pub_methods_classFeel_1_1CommObject"><td class="memItemLeft" align="right" valign="top"><a id="a71fe391611d6038022857e936b8aa1a2"></a>

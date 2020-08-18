@@ -127,15 +127,15 @@ typedef super1::gic_type&#160;</td><td class="memItemRight" valign="bottom"><b>g
 typedef super::gic_type&#160;</td><td class="memItemRight" valign="bottom"><b>gic_type</b></td></tr>
 <tr class="separator:a715ec9b8814df6095a616f2bf555be46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7699ee0cac0ed008dbf0d8bed857a5c"><td class="memItemLeft" align="right" valign="top"><a id="ad7699ee0cac0ed008dbf0d8bed857a5c"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; GeoShape::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, nOrder, nRealDim, T, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, nOrder, nRealDim, T, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; GeoShape::is_simplex &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, nOrder, nRealDim, T, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, nOrder, nRealDim, T, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
 <tr class="separator:ad7699ee0cac0ed008dbf0d8bed857a5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a66d0cc4b8b79cbe453f645bdd30710ee"><td class="memItemLeft" align="right" valign="top"><a id="a66d0cc4b8b79cbe453f645bdd30710ee"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; GeoShape::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, 1, nRealDim, T, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, 1, nRealDim, T, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>super1</b></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; GeoShape::is_simplex &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, 1, nRealDim, T, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, 1, nRealDim, T, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::<a class="el" href="classFeel_1_1Mesh.html">type::type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>super1</b></td></tr>
 <tr class="separator:a66d0cc4b8b79cbe453f645bdd30710ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac185371906f16543813451440531aa5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d">distribute</a> (bool extrapolation=false)</td></tr>
+<tr class="memitem:ac185371906f16543813451440531aa5d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d">distribute</a> (<a class="el" href="classbool.html">bool</a> extrapolation=false)</td></tr>
 <tr class="memdesc:ac185371906f16543813451440531aa5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">distribute the points of the mesh in a kdtree  <a href="structFeel_1_1Mesh_1_1Inverse.html#ac185371906f16543813451440531aa5d">More...</a><br /></td></tr>
 <tr class="separator:ac185371906f16543813451440531aa5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25cdb1d35ba857a7bae6fca99c84616d"><td class="memItemLeft" align="right" valign="top"><a id="a25cdb1d35ba857a7bae6fca99c84616d"></a>
@@ -163,7 +163,7 @@ template&lt;typename Shape , typename T , int Tag, typename IndexT &gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classFeel_1_1Mesh.html">Feel::Mesh</a>&lt; Shape, T, <a class="el" href="structFeel_1_1Tag.html">Tag</a>, IndexT &gt;::Inverse::distribute </td>
           <td>(</td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>extrapolation</em> = <code>false</code></td><td>)</td>
           <td></td>
         </tr>
@@ -171,7 +171,7 @@ template&lt;typename Shape , typename T , int Tag, typename IndexT &gt; </div>
 </div><div class="memdoc">
 
 <p>distribute the points of the mesh in a kdtree </p>
-<p>extrapolation = false : Only the points inside the mesh are distributed. extrapolation = true : Try to project the exterior points. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000011">Todo:</a></b></dt><dd>: for extrapolation, verify that all the points have been taken into account, else test them on the frontiere convexes. </dd></dl>
+<p>extrapolation = false : Only the points inside the mesh are distributed. extrapolation = true : Try to project the exterior points. </p><dl class="todo"><dt><b><a class="el" href="todo.html#_todo000009">Todo:</a></b></dt><dd>: for extrapolation, verify that all the points have been taken into account, else test them on the frontiere convexes. </dd></dl>
 
 </div>
 </div>

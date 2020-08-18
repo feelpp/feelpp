@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['node_5felem_5ftype_8620',['node_elem_type',['../classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df',1,'Feel::Localization']]],
-  ['numerical_5fhessian_5ftype_8621',['numerical_hessian_type',['../classFeel_1_1core__data.html#a0ce147ef58aa6f7d12f825d543f48fcf',1,'Feel::core_data']]],
-  ['numericaltype_8622',['NumericalType',['../classFeel_1_1Iteration.html#aa2b19cdcf7dcb39156b0e4edb68e80e8',1,'Feel::Iteration']]]
+  ['p0_5fspace_5ftype_4043',['p0_space_type',['../classFeel_1_1MeshAdaptation.html#a159f2b5a094ff79fb0d58234a813daab',1,'Feel::MeshAdaptation']]],
+  ['p1vec_5fbasis_5ftype_4044',['p1vec_basis_type',['../classFeel_1_1MeshAdaptation.html#a6975689f48fe98fde1191191711a1bcc',1,'Feel::MeshAdaptation']]],
+  ['permutation_5fvector_5ftype_4045',['permutation_vector_type',['../classFeel_1_1DofTable.html#adbe592edfeab055b96434942490bc0d8',1,'Feel::DofTable']]],
+  ['pidtodofid_5ftype_4046',['pidtodofid_type',['../classFeel_1_1DofTable.html#ace90bef4efe0e877bd06e332f02dd8f8',1,'Feel::DofTable']]]
 ];

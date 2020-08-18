@@ -142,7 +142,7 @@ typedef fs_type&#160;</td><td class="memItemRight" valign="bottom"><b>space_type
 typedef std::shared_ptr&lt; space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b></td></tr>
 <tr class="separator:af2e51b25bc909a5183805aca01684801"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad008a564facf157be9125d1e56b7c747"><td class="memItemLeft" align="right" valign="top"><a id="ad008a564facf157be9125d1e56b7c747"></a>
-typedef <a class="el" href="classFeel_1_1Backend.html">super::backend_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
+typedef super::backend_type&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
 <tr class="separator:ad008a564facf157be9125d1e56b7c747"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75f8a32b85c129429c613dd37df861c2"><td class="memItemLeft" align="right" valign="top"><a id="a75f8a32b85c129429c613dd37df861c2"></a>
 typedef super::backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
@@ -157,7 +157,7 @@ typedef image_element_type::value_type&#160;</td><td class="memItemRight" valign
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Constructors, destructor</h2></td></tr>
 <tr class="memitem:ad1b39747f8702fabde29789312d01d2a"><td class="memItemLeft" align="right" valign="top"><a id="ad1b39747f8702fabde29789312d01d2a"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorSteklovPc</b> (space_ptrtype Xh, backend_ptrtype backend=<a class="el" href="classFeel_1_1Backend.html">Backend</a>&lt; double &gt;::build(BACKEND_PETSC))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorSteklovPc</b> (space_ptrtype Xh, backend_ptrtype backend=Backend&lt; <a class="el" href="classdouble.html">double</a> &gt;::build(BACKEND_PETSC))</td></tr>
 <tr class="separator:ad1b39747f8702fabde29789312d01d2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c9d29bb76684714ee3a306cadab2e32"><td class="memItemLeft" align="right" valign="top"><a id="a6c9d29bb76684714ee3a306cadab2e32"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>~OperatorSteklovPc</b> ()</td></tr>
@@ -166,7 +166,7 @@ Constructors, destructor</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Methods</h2></td></tr>
 <tr class="memitem:a9d83c8ef38011035432b81ff0cdaf452"><td class="memItemLeft" align="right" valign="top"><a id="a9d83c8ef38011035432b81ff0cdaf452"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((value_type), steklovpc, tag,(required(domain, *)(image, *))(optional(quad, *,(typename <a class="el" href="structFeel_1_1OperatorSteklovPc_1_1integrate__type.html">integrate_type</a>&lt; Args, decltype(<a class="el" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(this-&gt;M_Xh-&gt;mesh()))&gt;::_quad_type()))(quad1, *,(typename <a class="el" href="structFeel_1_1OperatorSteklovPc_1_1integrate__type.html">integrate_type</a>&lt; Args, decltype(<a class="el" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(this-&gt;M_Xh-&gt;mesh()))&gt;::_quad1_type()))(geomap, *, GeomapStrategyType::GEOMAP_OPT)))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((value_type), steklovpc, tag,(required(domain, *)(image, *))(optional(quad, *,(typename <a class="el" href="structFeel_1_1OperatorSteklovPc_1_1integrate__type.html">integrate_type</a>&lt; Args, decltype(<a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;M_Xh-&gt;mesh()))&gt;::_quad_type()))(quad1, *,(typename <a class="el" href="structFeel_1_1OperatorSteklovPc_1_1integrate__type.html">integrate_type</a>&lt; Args, decltype(<a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(this-&gt;M_Xh-&gt;mesh()))&gt;::_quad1_type()))(geomap, *, GeomapStrategyType::GEOMAP_OPT)))</td></tr>
 <tr class="separator:a9d83c8ef38011035432b81ff0cdaf452"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a9b2118b6a9bb46f411114c1a1cf513"><td class="memTemplParams" colspan="2"><a id="a1a9b2118b6a9bb46f411114c1a1cf513"></a>
 template&lt;typename First , typename Second &gt; </td></tr>
@@ -186,13 +186,13 @@ typedef <a class="el" href="classFeel_1_1OperatorLinear.html">OperatorLinear</a>
 typedef super::backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
 <tr class="separator:a1cfd046609f7b4251776da6c470593fb inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f804ecb5adb0b43b39d64e83271e901 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a9f804ecb5adb0b43b39d64e83271e901"></a>
-typedef <a class="el" href="classFeel_1_1Backend.html">super::backend_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
+typedef super::backend_type&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
 <tr class="separator:a9f804ecb5adb0b43b39d64e83271e901 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bf5baa5334298f49c65e42245685c1f inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a3bf5baa5334298f49c65e42245685c1f"></a>
-typedef domain_space_type::template Element&lt; typename domain_space_type::value_type, typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; typename domain_space_type::value_type &gt;::range::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_range_type</b></td></tr>
+typedef domain_space_type::template Element&lt; typename domain_space_type::value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; typename domain_space_type::value_type &gt;::range::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_range_type</b></td></tr>
 <tr class="separator:a3bf5baa5334298f49c65e42245685c1f inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb18484c8e42882d4b1abac408cd7ae5 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="acb18484c8e42882d4b1abac408cd7ae5"></a>
-typedef domain_space_type::template Element&lt; typename domain_space_type::value_type, typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; typename domain_space_type::value_type &gt;::slice::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_slice_type</b></td></tr>
+typedef domain_space_type::template Element&lt; typename domain_space_type::value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; typename domain_space_type::value_type &gt;::slice::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_slice_type</b></td></tr>
 <tr class="separator:acb18484c8e42882d4b1abac408cd7ae5 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad9bcc698865002685702e2a98c913512 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ad9bcc698865002685702e2a98c913512"></a>
 typedef domain_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_type</b></td></tr>
@@ -204,10 +204,10 @@ typedef super::domain_space_ptrtype&#160;</td><td class="memItemRight" valign="b
 typedef super::domain_space_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_space_type</b></td></tr>
 <tr class="separator:abe2c43a056eace70ade31fb93fc1cd1c inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a308fcf41ef29e84ac01992638dc4b6aa inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a308fcf41ef29e84ac01992638dc4b6aa"></a>
-typedef dual_image_space_type::template Element&lt; typename dual_image_space_type::value_type, typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; typename dual_image_space_type::value_type &gt;::range::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_range_type</b></td></tr>
+typedef dual_image_space_type::template Element&lt; typename dual_image_space_type::value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; typename dual_image_space_type::value_type &gt;::range::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_range_type</b></td></tr>
 <tr class="separator:a308fcf41ef29e84ac01992638dc4b6aa inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4a5ed0688ead74d0ceed2bc9f9bb65e inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ad4a5ed0688ead74d0ceed2bc9f9bb65e"></a>
-typedef dual_image_space_type::template Element&lt; typename dual_image_space_type::value_type, typename <a class="el" href="classFeel_1_1VectorUblas.html">VectorUblas</a>&lt; typename dual_image_space_type::value_type &gt;::slice::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_slice_type</b></td></tr>
+typedef dual_image_space_type::template Element&lt; typename dual_image_space_type::value_type, typename <a class="el" href="classVectorUblas.html">VectorUblas</a>&lt; typename dual_image_space_type::value_type &gt;::slice::type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_slice_type</b></td></tr>
 <tr class="separator:ad4a5ed0688ead74d0ceed2bc9f9bb65e inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a481f77fe49dde0f3665b6473c1b44304 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a481f77fe49dde0f3665b6473c1b44304"></a>
 typedef dual_image_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_type</b></td></tr>
@@ -222,10 +222,10 @@ typedef super::dual_image_space_type&#160;</td><td class="memItemRight" valign="
 typedef <a class="el" href="classFeel_1_1FsFunctionalLinear.html">FsFunctionalLinear</a>&lt; fs_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>image_element_type</b></td></tr>
 <tr class="separator:ad4c0eaa6208f072d1f1056b8eb77b707 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a41a785d7808c841c315290c0da0fdde4 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a41a785d7808c841c315290c0da0fdde4"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MatrixSparse.html">matrix_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; matrix_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_ptrtype</b></td></tr>
 <tr class="separator:a41a785d7808c841c315290c0da0fdde4 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e192eca3633cf81c9d2b8a36d83e29c inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a8e192eca3633cf81c9d2b8a36d83e29c"></a>
-typedef <a class="el" href="classFeel_1_1MatrixSparse.html">backend_type::sparse_matrix_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_type</b></td></tr>
+typedef backend_type::sparse_matrix_type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_type</b></td></tr>
 <tr class="separator:a8e192eca3633cf81c9d2b8a36d83e29c inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae959081f0177a55bfc38880e57a4b4b2 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ae959081f0177a55bfc38880e57a4b4b2"></a>
 typedef <a class="el" href="classFeel_1_1Operator.html">Operator</a>&lt; fs_type, fs_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super_type</b></td></tr>
@@ -237,14 +237,14 @@ typedef <a class="el" href="classFeel_1_1OperatorLinear.html">OperatorLinear</a>
 typedef backend_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vector_ptrtype</b></td></tr>
 <tr class="separator:a9005a9b092ad4408fd317f9392afc54a inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3e578ceeb438420ace0ee703897b027 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ad3e578ceeb438420ace0ee703897b027"></a>
-typedef <a class="el" href="classFeel_1_1Vector.html">backend_type::vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
+typedef backend_type::vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
 <tr class="separator:ad3e578ceeb438420ace0ee703897b027 inherit pub_types_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_classFeel_1_1Operator"><td colspan="2" onclick="javascript:toggleInherit('pub_types_classFeel_1_1Operator')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="classFeel_1_1Operator.html">Feel::Operator&lt; fs_type, fs_type &gt;</a></td></tr>
 <tr class="memitem:afcf11b15f4ee7411b495a49b3b5f5c2a inherit pub_types_classFeel_1_1Operator"><td class="memItemLeft" align="right" valign="top"><a id="afcf11b15f4ee7411b495a49b3b5f5c2a"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Backend.html">backend_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; backend_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
 <tr class="separator:afcf11b15f4ee7411b495a49b3b5f5c2a inherit pub_types_classFeel_1_1Operator"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a747421da5e997ce9fd6169f3ec1590cf inherit pub_types_classFeel_1_1Operator"><td class="memItemLeft" align="right" valign="top"><a id="a747421da5e997ce9fd6169f3ec1590cf"></a>
-typedef <a class="el" href="classFeel_1_1Backend.html">Backend</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
+typedef Backend&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
 <tr class="separator:a747421da5e997ce9fd6169f3ec1590cf inherit pub_types_classFeel_1_1Operator"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaba15e550e317b2107fc8d7fcf5dc7bb inherit pub_types_classFeel_1_1Operator"><td class="memItemLeft" align="right" valign="top"><a id="aaba15e550e317b2107fc8d7fcf5dc7bb"></a>
 typedef domain_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>domain_element_type</b></td></tr>
@@ -278,7 +278,7 @@ typedef domain_space_type::value_type&#160;</td><td class="memItemRight" valign=
 adjoint_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>adjoint</b> (<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> options=MATRIX_TRANSPOSE_ASSEMBLED) const</td></tr>
 <tr class="separator:a34b29cafaa6d2c5def5e33a4b080776e inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71ea01c306fcf6c06b82f6d2fbb32aa8 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a71ea01c306fcf6c06b82f6d2fbb32aa8"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (const domain_element&lt; typename domain_element_type::value_type, <a class="el" href="classStorage.html">Storage</a> &gt; &amp;de, <a class="el" href="classFeel_1_1FsFunctionalLinear.html">image_element_type</a> &amp;ie) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (const domain_element&lt; typename domain_element_type::value_type, Storage &gt; &amp;de, <a class="el" href="classFeel_1_1FsFunctionalLinear.html">image_element_type</a> &amp;ie) const</td></tr>
 <tr class="separator:a71ea01c306fcf6c06b82f6d2fbb32aa8 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad159e41fe6ce7724a2b025134f43140d inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ad159e41fe6ce7724a2b025134f43140d"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>apply</b> (const domain_element_range_type &amp;de, dual_image_element_range_type &amp;ie)</td></tr>
@@ -321,19 +321,19 @@ backend_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>back
 void&#160;</td><td class="memItemRight" valign="bottom"><b>close</b> ()</td></tr>
 <tr class="separator:ad90408c29db857e6ba90fb338f420cbe inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ebb692c3440aff6199f8bdc64d517dd inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a2ebb692c3440aff6199f8bdc64d517dd"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>energy</b> (const typename domain_space_type::element_type &amp;de, const typename dual_image_space_type::element_type &amp;ie) const</td></tr>
+virtual <a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>energy</b> (const typename domain_space_type::element_type &amp;de, const typename dual_image_space_type::element_type &amp;ie) const</td></tr>
 <tr class="separator:a2ebb692c3440aff6199f8bdc64d517dd inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6b668a9a2617c79b1ac656918099a3f inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ad6b668a9a2617c79b1ac656918099a3f"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype backend, bool buildMatrix=true, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype backend, <a class="el" href="classbool.html">bool</a> buildMatrix=true, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
 <tr class="separator:ad6b668a9a2617c79b1ac656918099a3f inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae90e2269f5b963645139b8cee7328a10 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="ae90e2269f5b963645139b8cee7328a10"></a>
 domain_element_type&#160;</td><td class="memItemRight" valign="bottom"><b>inv</b> (RhsExpr const &amp;rhs_expr)</td></tr>
 <tr class="separator:ae90e2269f5b963645139b8cee7328a10 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af13144ac72bcb168062d5671e3c0e6a3 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="af13144ac72bcb168062d5671e3c0e6a3"></a>
-<a class="el" href="classFeel_1_1MatrixSparse.html">matrix_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mat</b> ()</td></tr>
+matrix_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mat</b> ()</td></tr>
 <tr class="separator:af13144ac72bcb168062d5671e3c0e6a3 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2615d1d9ebcaa3f086b6e7b3cf7e78d5 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a2615d1d9ebcaa3f086b6e7b3cf7e78d5"></a>
-<a class="el" href="classFeel_1_1MatrixSparse.html">matrix_type</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mat</b> () const</td></tr>
+matrix_type const &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mat</b> () const</td></tr>
 <tr class="separator:a2615d1d9ebcaa3f086b6e7b3cf7e78d5 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af981b6d31cae03ee28bcd67651358b1a inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="af981b6d31cae03ee28bcd67651358b1a"></a>
 matrix_ptrtype &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>matPtr</b> ()</td></tr>
@@ -372,7 +372,7 @@ T2&#160;</td><td class="memItemRight" valign="bottom"><b>operator()</b> (T1 &amp
 <a class="el" href="classFeel_1_1OperatorLinear.html">this_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1OperatorLinear.html">this_type</a> const &amp;m)=default</td></tr>
 <tr class="separator:aea8b39cf185d3f1fd27051ba7a064008 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a551623161a09882ded43dbbbb1f9be30 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="a551623161a09882ded43dbbbb1f9be30"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorLinear</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype backend, bool buildMatrix=true, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>OperatorLinear</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype backend, <a class="el" href="classbool.html">bool</a> buildMatrix=true, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
 <tr class="separator:a551623161a09882ded43dbbbb1f9be30 inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb0dd27114b75b1769e33208beeb18be inherit pub_methods_classFeel_1_1OperatorLinear"><td class="memItemLeft" align="right" valign="top"><a id="afb0dd27114b75b1769e33208beeb18be"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>OperatorLinear</b> (<a class="el" href="classFeel_1_1OperatorLinear.html">OperatorLinear</a> &amp;&amp;ol)=default</td></tr>

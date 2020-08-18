@@ -130,10 +130,10 @@ typedef std::map&lt; size_type, container_output_type &gt;&#160;</td><td class="
 <tr class="memdesc:a137c9c40f6e77939a1c4e03a40ac25aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">map between element id and list of node described in the reference elt typedef std::map&lt;size_type, std::list&lt;boost::tuple&lt;size_type,node_type&gt; &gt; &gt; container_search_type <br /></td></tr>
 <tr class="separator:a137c9c40f6e77939a1c4e03a40ac25aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7dfc9fe852a9bc0bbf93c7493123259c"><td class="memItemLeft" align="right" valign="top"><a id="a7dfc9fe852a9bc0bbf93c7493123259c"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; mesh_type::element_type::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, 1, nRealDim, value_type, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, 1, nRealDim, value_type, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gm1_inverse_type</b></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; mesh_type::element_type::is_simplex &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, 1, nRealDim, value_type, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, 1, nRealDim, value_type, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>gm1_inverse_type</b></td></tr>
 <tr class="separator:a7dfc9fe852a9bc0bbf93c7493123259c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fbed6858e1fcaaa03be6cc734d8c652"><td class="memItemLeft" align="right" valign="top"><a id="a7fbed6858e1fcaaa03be6cc734d8c652"></a>
-typedef mpl::if_&lt; mpl::bool_&lt; mesh_type::element_type::is_simplex &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, nOrder, nRealDim, value_type, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; <a class="el" href="classFeel_1_1GeoMapInverse.html">GeoMapInverse</a>&lt; nDim, nOrder, nRealDim, value_type, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a7fbed6858e1fcaaa03be6cc734d8c652">gm_inverse_type</a></td></tr>
+typedef mpl::if_&lt; mpl::bool_&lt; mesh_type::element_type::is_simplex &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, nOrder, nRealDim, value_type, <a class="el" href="classFeel_1_1Simplex.html">Simplex</a> &gt; &gt;, mpl::identity&lt; GeoMapInverse&lt; nDim, nOrder, nRealDim, value_type, <a class="el" href="classFeel_1_1Hypercube.html">Hypercube</a> &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a7fbed6858e1fcaaa03be6cc734d8c652">gm_inverse_type</a></td></tr>
 <tr class="memdesc:a7fbed6858e1fcaaa03be6cc734d8c652"><td class="mdescLeft">&#160;</td><td class="mdescRight">geomap inverse <br /></td></tr>
 <tr class="separator:a7fbed6858e1fcaaa03be6cc734d8c652"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58c07335758362f4068e89ad16e19695"><td class="memItemLeft" align="right" valign="top"><a id="a58c07335758362f4068e89ad16e19695"></a>
@@ -158,7 +158,7 @@ typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Localization.html">
 typedef <a class="el" href="classFeel_1_1Localization.html">Localization</a>&#160;</td><td class="memItemRight" valign="bottom"><b>localization_type</b></td></tr>
 <tr class="separator:afb41de0c2f55db31feb550e3709b491e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21ec7dd082018a7648d03bab18e4991a"><td class="memItemLeft" align="right" valign="top"><a id="a21ec7dd082018a7648d03bab18e4991a"></a>
-typedef <a class="el" href="structFeel_1_1matrix__node.html">matrix_node</a>&lt; typename node_type::value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
+typedef matrix_node&lt; typename node_type::value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a21ec7dd082018a7648d03bab18e4991a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb76eaf29de0f6f9e68fbf6c5a4a83f1"><td class="memItemLeft" align="right" valign="top"><a id="adb76eaf29de0f6f9e68fbf6c5a4a83f1"></a>
 typedef std::weak_ptr&lt; mesh_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh_ptrtype</b></td></tr>
@@ -193,7 +193,7 @@ Public Member Functions</h2></td></tr>
 node_type const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>barycenter</b> () const</td></tr>
 <tr class="separator:aa3a1612557688dc3781ad521d0541e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafef1239ed75a332ed02496c1d8cf4d1"><td class="memItemLeft" align="right" valign="top"><a id="aafef1239ed75a332ed02496c1d8cf4d1"></a>
-std::vector&lt; boost::tuple&lt; bool, node_type &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>barycentersWorld</b> () const</td></tr>
+std::vector&lt; boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, node_type &gt; &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>barycentersWorld</b> () const</td></tr>
 <tr class="separator:aafef1239ed75a332ed02496c1d8cf4d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a336e700f94a452c6f806209800e3e28b"><td class="memItemLeft" align="right" valign="top"><a id="a336e700f94a452c6f806209800e3e28b"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>computeBarycenter</b> ()</td></tr>
@@ -202,23 +202,23 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>computeBarycenter</b>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>computeBarycentersWorld</b> ()</td></tr>
 <tr class="separator:a8b19839ffeea56f250cbf6fd3c04d92e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f33151b01a5feac50be0035c8b41ec2"><td class="memItemLeft" align="right" valign="top"><a id="a8f33151b01a5feac50be0035c8b41ec2"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>doExtrapolation</b> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>doExtrapolation</b> () const</td></tr>
 <tr class="separator:a8f33151b01a5feac50be0035c8b41ec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6da0479cb71c107ad5a9ada97440260"><td class="memItemLeft" align="right" valign="top"><a id="af6da0479cb71c107ad5a9ada97440260"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasComputedBarycentersWorld</b> ()</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasComputedBarycentersWorld</b> ()</td></tr>
 <tr class="separator:af6da0479cb71c107ad5a9ada97440260"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1976b1359589344841da6aa8b447d867"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; bool, node_type, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a1976b1359589344841da6aa8b447d867">isIn</a> (size_type _id, const node_type &amp;_pt) const</td></tr>
+<tr class="memitem:a1976b1359589344841da6aa8b447d867"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, node_type, <a class="el" href="classdouble.html">double</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a1976b1359589344841da6aa8b447d867">isIn</a> (size_type _id, const node_type &amp;_pt) const</td></tr>
 <tr class="separator:a1976b1359589344841da6aa8b447d867"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c8255942574507a566dad53acb9741b"><td class="memItemLeft" align="right" valign="top"><a id="a7c8255942574507a566dad53acb9741b"></a>
-boost::tuple&lt; bool, node_type, double &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>isIn</b> (size_type _id, const node_type &amp;_pt, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;) const</td></tr>
+boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, node_type, <a class="el" href="classdouble.html">double</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>isIn</b> (size_type _id, const node_type &amp;_pt, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;) const</td></tr>
 <tr class="separator:a7c8255942574507a566dad53acb9741b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a653519329ef1be741acc2aa0f525d471"><td class="memItemLeft" align="right" valign="top"><a id="a653519329ef1be741acc2aa0f525d471"></a>
-boost::tuple&lt; uint16_type, std::vector&lt; bool &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>isIn</b> (std::vector&lt; size_type &gt; _ids, const node_type &amp;_pt)</td></tr>
+boost::tuple&lt; uint16_type, std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>isIn</b> (std::vector&lt; size_type &gt; _ids, const node_type &amp;_pt)</td></tr>
 <tr class="separator:a653519329ef1be741acc2aa0f525d471"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae95e40dc21ace203e878aaf542f3492e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#ae95e40dc21ace203e878aaf542f3492e">isInit</a> () const</td></tr>
+<tr class="memitem:ae95e40dc21ace203e878aaf542f3492e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#ae95e40dc21ace203e878aaf542f3492e">isInit</a> () const</td></tr>
 <tr class="separator:ae95e40dc21ace203e878aaf542f3492e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd1dae77e885d6de95286e6a86d79b5f"><td class="memItemLeft" align="right" valign="top"><a id="acd1dae77e885d6de95286e6a86d79b5f"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isInitBoundaryFaces</b> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>isInitBoundaryFaces</b> () const</td></tr>
 <tr class="separator:acd1dae77e885d6de95286e6a86d79b5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42b5cbd56569eea9ae58f787f70ed08d"><td class="memItemLeft" align="right" valign="top"><a id="a42b5cbd56569eea9ae58f787f70ed08d"></a>
 kdtree_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>kdtree</b> ()</td></tr>
@@ -232,7 +232,7 @@ kdtree_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><
 &#160;</td><td class="memItemRight" valign="bottom"><b>Localization</b> (<a class="el" href="classFeel_1_1Localization.html">Localization</a> const &amp;L)</td></tr>
 <tr class="separator:aaa82890cce8fc97987040882fe3b4fd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc1ad77ee38818abb6a7d8e47c6e64e8"><td class="memItemLeft" align="right" valign="top"><a id="acc1ad77ee38818abb6a7d8e47c6e64e8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Localization</b> (std::shared_ptr&lt; mesh_type &gt; m, bool init_b=true)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Localization</b> (std::shared_ptr&lt; mesh_type &gt; m, <a class="el" href="classbool.html">bool</a> init_b=true)</td></tr>
 <tr class="separator:acc1ad77ee38818abb6a7d8e47c6e64e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb42130a77f8f4e6d89a51f4011f02f8"><td class="memItemLeft" align="right" valign="top"><a id="acb42130a77f8f4e6d89a51f4011f02f8"></a>
 mesh_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> ()</td></tr>
@@ -254,23 +254,23 @@ container_search_iterator_type&#160;</td><td class="memItemRight" valign="bottom
 <tr class="memitem:a70997b2a50933887d9c0d52ee4374153"><td class="memItemLeft" align="right" valign="top"><a id="a70997b2a50933887d9c0d52ee4374153"></a>
 container_search_iterator_type&#160;</td><td class="memItemRight" valign="bottom"><b>result_analysis_end</b> ()</td></tr>
 <tr class="separator:a70997b2a50933887d9c0d52ee4374153"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76888a246565ef1a40ed974fc4c84e46"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; bool &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a76888a246565ef1a40ed974fc4c84e46">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical)</td></tr>
+<tr class="memitem:a76888a246565ef1a40ed974fc4c84e46"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a76888a246565ef1a40ed974fc4c84e46">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical)</td></tr>
 <tr class="separator:a76888a246565ef1a40ed974fc4c84e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3258d4d1cd1e41377b0229eb5b96789"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; bool &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#ad3258d4d1cd1e41377b0229eb5b96789">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical, const matrix_node_type &amp;setPoints, mpl::int_&lt; 0 &gt;)</td></tr>
+<tr class="memitem:ad3258d4d1cd1e41377b0229eb5b96789"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#ad3258d4d1cd1e41377b0229eb5b96789">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical, const matrix_node_type &amp;setPoints, mpl::int_&lt; 0 &gt;)</td></tr>
 <tr class="separator:ad3258d4d1cd1e41377b0229eb5b96789"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09dd7e3e26cbc70e999e286e2ce9226c"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; bool &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a09dd7e3e26cbc70e999e286e2ce9226c">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;)</td></tr>
+<tr class="memitem:a09dd7e3e26cbc70e999e286e2ce9226c"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;, size_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a09dd7e3e26cbc70e999e286e2ce9226c">run_analysis</a> (const matrix_node_type &amp;m, const size_type &amp;eltHypothetical, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;)</td></tr>
 <tr class="separator:a09dd7e3e26cbc70e999e286e2ce9226c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01b1380cd47a82e288c975486c702edf"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; bool, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a01b1380cd47a82e288c975486c702edf">searchElement</a> (const node_type &amp;p)</td></tr>
+<tr class="memitem:a01b1380cd47a82e288c975486c702edf"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a01b1380cd47a82e288c975486c702edf">searchElement</a> (const node_type &amp;p)</td></tr>
 <tr class="separator:a01b1380cd47a82e288c975486c702edf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8cb180ef81029da9c34bfcf9bdc9a524"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; bool, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a8cb180ef81029da9c34bfcf9bdc9a524">searchElement</a> (const node_type &amp;p, const matrix_node_type &amp;setPoints, mpl::int_&lt; 0 &gt;)</td></tr>
+<tr class="memitem:a8cb180ef81029da9c34bfcf9bdc9a524"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a8cb180ef81029da9c34bfcf9bdc9a524">searchElement</a> (const node_type &amp;p, const matrix_node_type &amp;setPoints, mpl::int_&lt; 0 &gt;)</td></tr>
 <tr class="separator:a8cb180ef81029da9c34bfcf9bdc9a524"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6021effb47d4fa3b812ba6db8705ccc6"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; bool, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a6021effb47d4fa3b812ba6db8705ccc6">searchElement</a> (const node_type &amp;p, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;)</td></tr>
+<tr class="memitem:a6021effb47d4fa3b812ba6db8705ccc6"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, size_type, node_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a6021effb47d4fa3b812ba6db8705ccc6">searchElement</a> (const node_type &amp;p, const matrix_node_type &amp;setPoints, mpl::int_&lt; 1 &gt;)</td></tr>
 <tr class="separator:a6021effb47d4fa3b812ba6db8705ccc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42d4c883941874d69eebb92c6932a3fe"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; bool, std::list&lt; boost::tuple&lt; size_type, node_type &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a42d4c883941874d69eebb92c6932a3fe">searchElements</a> (const node_type &amp;p)</td></tr>
+<tr class="memitem:a42d4c883941874d69eebb92c6932a3fe"><td class="memItemLeft" align="right" valign="top">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, std::list&lt; boost::tuple&lt; size_type, node_type &gt; &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a42d4c883941874d69eebb92c6932a3fe">searchElements</a> (const node_type &amp;p)</td></tr>
 <tr class="separator:a42d4c883941874d69eebb92c6932a3fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9fd7402b56538a07eaa0644b2c49c128"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a9fd7402b56538a07eaa0644b2c49c128">setExtrapolation</a> (bool b)</td></tr>
+<tr class="memitem:a9fd7402b56538a07eaa0644b2c49c128"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a9fd7402b56538a07eaa0644b2c49c128">setExtrapolation</a> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
 <tr class="separator:a9fd7402b56538a07eaa0644b2c49c128"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">setMesh</a> (std::shared_ptr&lt; mesh_type &gt; m, bool b=true)</td></tr>
+<tr class="memitem:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#afb07ebe36fbcc5c9fd926641dd108d58">setMesh</a> (std::shared_ptr&lt; mesh_type &gt; m, <a class="el" href="classbool.html">bool</a> b=true)</td></tr>
 <tr class="separator:afb07ebe36fbcc5c9fd926641dd108d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Localization.html#a7d54fa323c45777c5484ff5b0b9c1ce6">updateForUse</a> ()</td></tr>
 <tr class="separator:a7d54fa323c45777c5484ff5b0b9c1ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -299,7 +299,7 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; bool, typename MeshType::node_type, double &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::isIn </td>
+          <td class="memname">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, typename MeshType::node_type, <a class="el" href="classdouble.html">double</a> &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::isIn </td>
           <td>(</td>
           <td class="paramtype">size_type&#160;</td>
           <td class="paramname"><em>_id</em>, </td>
@@ -331,7 +331,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::isInit </td>
+          <td class="memname"><a class="el" href="classbool.html">bool</a> <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::isInit </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -375,7 +375,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; std::vector&lt; bool &gt;, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
+          <td class="memname">boost::tuple&lt; std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
           <td>(</td>
           <td class="paramtype">const matrix_node_type &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -409,7 +409,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt;std::vector&lt;bool&gt;, size_type&gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
+          <td class="memname">boost::tuple&lt;std::vector&lt;<a class="el" href="classbool.html">bool</a>&gt;, size_type&gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
           <td>(</td>
           <td class="paramtype">const matrix_node_type &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -453,7 +453,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; std::vector&lt; bool &gt;, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
+          <td class="memname">boost::tuple&lt; std::vector&lt; <a class="el" href="classbool.html">bool</a> &gt;, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::run_analysis </td>
           <td>(</td>
           <td class="paramtype">const matrix_node_type &amp;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
@@ -497,7 +497,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; bool, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
+          <td class="memname">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
           <td>(</td>
           <td class="paramtype">const node_type &amp;&#160;</td>
           <td class="paramname"><em>p</em></td><td>)</td>
@@ -521,7 +521,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt;bool, size_type,node_type&gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
+          <td class="memname">boost::tuple&lt;<a class="el" href="classbool.html">bool</a>, size_type,node_type&gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
           <td>(</td>
           <td class="paramtype">const node_type &amp;&#160;</td>
           <td class="paramname"><em>p</em>, </td>
@@ -559,7 +559,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; bool, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
+          <td class="memname">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElement </td>
           <td>(</td>
           <td class="paramtype">const node_type &amp;&#160;</td>
           <td class="paramname"><em>p</em>, </td>
@@ -597,7 +597,7 @@ template&lt;typename MeshType &gt; </div>
 template&lt;typename MeshType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::tuple&lt; bool, std::list&lt; boost::tuple&lt; typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; &gt; &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElements </td>
+          <td class="memname">boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, std::list&lt; boost::tuple&lt; typename <a class="el" href="classFeel_1_1Localization.html">Localization</a>&lt; MeshType &gt;::size_type, typename MeshType::node_type &gt; &gt; &gt; <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::searchElements </td>
           <td>(</td>
           <td class="paramtype">const node_type &amp;&#160;</td>
           <td class="paramname"><em>p</em></td><td>)</td>
@@ -621,7 +621,7 @@ template&lt;typename MeshType &gt; </div>
         <tr>
           <td class="memname">void <a class="el" href="classFeel_1_1Localization.html">Feel::Localization</a>&lt; MeshType &gt;::setExtrapolation </td>
           <td>(</td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>b</em></td><td>)</td>
           <td></td>
         </tr>
@@ -649,7 +649,7 @@ template&lt;typename MeshType &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>b</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>

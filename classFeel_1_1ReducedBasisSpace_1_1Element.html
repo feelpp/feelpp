@@ -199,7 +199,7 @@ typedef boost::multi_array&lt; _id_type, 1 &gt;&#160;</td><td class="memItemRigh
 typedef <a class="el" href="structFeel_1_1detail_1_1ID.html">Feel::detail::ID</a>&lt; value_type, nComponents1, nComponents2 &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>id_type</b></td></tr>
 <tr class="separator:a302f0bba9e16cd8cf0ed38397fc8a4cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e753629e191a8e3b4cc82bf6c8dd188"><td class="memItemLeft" align="right" valign="top"><a id="a7e753629e191a8e3b4cc82bf6c8dd188"></a>
-typedef <a class="el" href="structFeel_1_1matrix__node.html">matrix_node</a>&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
+typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a7e753629e191a8e3b4cc82bf6c8dd188"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96c7e1cf437f7c3e0487504d8bb29e8d"><td class="memItemLeft" align="right" valign="top"><a id="a96c7e1cf437f7c3e0487504d8bb29e8d"></a>
 typedef std::shared_ptr&lt; pc_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>pc_ptrtype</b></td></tr>
@@ -229,10 +229,10 @@ typedef T&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a93eec0b2aee7a1c6f1017d1af1d57427"><td class="memItemLeft" align="right" valign="top"><a id="a93eec0b2aee7a1c6f1017d1af1d57427"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>areGlobalValuesUpdated</b> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>areGlobalValuesUpdated</b> () const</td></tr>
 <tr class="separator:a93eec0b2aee7a1c6f1017d1af1d57427"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c282a0725265f2e941f70123d8f899f"><td class="memItemLeft" align="right" valign="top"><a id="a1c282a0725265f2e941f70123d8f899f"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>basisValue</b> (<a class="el" href="classint.html">int</a> N, <a class="el" href="classint.html">int</a> idx) const</td></tr>
+<a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>basisValue</b> (<a class="el" href="classint.html">int</a> N, <a class="el" href="classint.html">int</a> idx) const</td></tr>
 <tr class="separator:a1c282a0725265f2e941f70123d8f899f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7bd861a76ca1be27e74e480931cd085"><td class="memItemLeft" align="right" valign="top">super &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ae7bd861a76ca1be27e74e480931cd085">container</a> ()</td></tr>
 <tr class="separator:ae7bd861a76ca1be27e74e480931cd085"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -263,7 +263,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:aa81f4c04b179094ad7cc6d8780f7d448"><td class="memTemplItemLeft" align="right" valign="top">boost::array&lt; typename array_type::index, 1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dxExtents</b> (ContextType const &amp;<a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a>) const</td></tr>
 <tr class="separator:aa81f4c04b179094ad7cc6d8780f7d448"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab66633d75a24fbf281dc36f9576ab23"><td class="memItemLeft" align="right" valign="top"><a id="aab66633d75a24fbf281dc36f9576ab23"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dxInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dxInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:aab66633d75a24fbf281dc36f9576ab23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8fdb883d5fa57950a9d889331ed1823e"><td class="memTemplParams" colspan="2"><a id="a8fdb883d5fa57950a9d889331ed1823e"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -274,7 +274,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a73a441dd60ec5cd0bea48ec1e8a4752e"><td class="memTemplItemLeft" align="right" valign="top">boost::array&lt; typename array_type::index, 1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dyExtents</b> (ContextType const &amp;<a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a>) const</td></tr>
 <tr class="separator:a73a441dd60ec5cd0bea48ec1e8a4752e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea3b628f4c4c751637713a40c8bd8465"><td class="memItemLeft" align="right" valign="top"><a id="aea3b628f4c4c751637713a40c8bd8465"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dyInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dyInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:aea3b628f4c4c751637713a40c8bd8465"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17aab1f3016a98e257483a6dfb5d627d"><td class="memTemplParams" colspan="2"><a id="a17aab1f3016a98e257483a6dfb5d627d"></a>
 template&lt;typename ContextType &gt; </td></tr>
@@ -285,7 +285,7 @@ template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a5d3a1ae0391e3b72ed11842c97f4e08d"><td class="memTemplItemLeft" align="right" valign="top">boost::array&lt; typename array_type::index, 1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>dzExtents</b> (ContextType const &amp;<a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a>) const</td></tr>
 <tr class="separator:a5d3a1ae0391e3b72ed11842c97f4e08d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a902e9a2bf0a3fff63ee4afb746536f79"><td class="memItemLeft" align="right" valign="top"><a id="a902e9a2bf0a3fff63ee4afb746536f79"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>dzInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>dzInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:a902e9a2bf0a3fff63ee4afb746536f79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05b12d53136bcad377e3b66a4cac8650"><td class="memItemLeft" align="right" valign="top"><a id="a05b12d53136bcad377e3b66a4cac8650"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Element</b> (rbspace_ptrtype const &amp;rbspace, std::string const &amp;name=&quot;u&quot;)</td></tr>
@@ -294,7 +294,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>dzInterpolate</b> (ma
 eigen_vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (ctxrb_type const &amp;context_rb)</td></tr>
 <tr class="separator:af0dd705836c55b6218c5caeebed20f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3838c0e8afc67dc665020bd827d547a"><td class="memItemLeft" align="right" valign="top"><a id="ae3838c0e8afc67dc665020bd827d547a"></a>
-eigen_vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (ctxrbset_type const &amp;context_rb, bool do_comm=true)</td></tr>
+eigen_vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaluate</b> (ctxrbset_type const &amp;context_rb, <a class="el" href="classbool.html">bool</a> do_comm=true)</td></tr>
 <tr class="separator:ae3838c0e8afc67dc665020bd827d547a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45f3539c2351a2c393f75ffac3931c5e"><td class="memItemLeft" align="right" valign="top"><a id="a45f3539c2351a2c393f75ffac3931c5e"></a>
 space_element_type&#160;</td><td class="memItemRight" valign="bottom"><b>expansion</b> (<a class="el" href="classint.html">int</a> N=-1)</td></tr>
@@ -324,7 +324,7 @@ template&lt;typename Context_t &gt; </td></tr>
 template&lt;typename ContextType &gt; </td></tr>
 <tr class="memitem:a71627dd559f783b74d5755ba1657e84b"><td class="memTemplItemLeft" align="right" valign="top">boost::array&lt; typename array_type::index, 1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>gradExtents</b> (ContextType const &amp;<a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a>) const</td></tr>
 <tr class="separator:a71627dd559f783b74d5755ba1657e84b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3ccab73d22114b6b42a3501ed2639c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ab3ccab73d22114b6b42a3501ed2639c5">gradInterpolate</a> (matrix_node_type __ptsReal, grad_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+<tr class="memitem:ab3ccab73d22114b6b42a3501ed2639c5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ab3ccab73d22114b6b42a3501ed2639c5">gradInterpolate</a> (matrix_node_type __ptsReal, grad_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="memdesc:ab3ccab73d22114b6b42a3501ed2639c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">these functione are here for the compilation.  <a href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ab3ccab73d22114b6b42a3501ed2639c5">More...</a><br /></td></tr>
 <tr class="separator:ab3ccab73d22114b6b42a3501ed2639c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcb0cb0c8d074d415c7a6beeaf11f901"><td class="memTemplParams" colspan="2"><a id="adcb0cb0c8d074d415c7a6beeaf11f901"></a>
@@ -351,7 +351,7 @@ template&lt;typename Context_t &gt; </td></tr>
 <tr class="memitem:a37e37c7e70cab1a878604054d4c83847"><td class="memTemplItemLeft" align="right" valign="top">boost::array&lt; typename array_type::index, 1 &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#a37e37c7e70cab1a878604054d4c83847">idExtents</a> (ContextType const &amp;<a class="el" href="classFeel_1_1ReducedBasisSpace.html#a33f778e030a95f59766c571bc0f0bf98">context</a>) const</td></tr>
 <tr class="separator:a37e37c7e70cab1a878604054d4c83847"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb0d11d75c61f7cde54ad061a4b15bb9"><td class="memItemLeft" align="right" valign="top"><a id="abb0d11d75c61f7cde54ad061a4b15bb9"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>idInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, bool conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>idInterpolate</b> (matrix_node_type __ptsReal, id_array_type &amp;v, <a class="el" href="classbool.html">bool</a> conformalEval, matrix_node_type const &amp;setPointsConf) const</td></tr>
 <tr class="separator:abb0d11d75c61f7cde54ad061a4b15bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abeb459e96b3a3bb2961621a87bd976c5"><td class="memItemLeft" align="right" valign="top"><a id="abeb459e96b3a3bb2961621a87bd976c5"></a>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>localSize</b> () const</td></tr>
@@ -385,7 +385,7 @@ template&lt;typename ... CTX&gt; </td></tr>
 <tr class="memitem:ad07d3daa50252d412dc71cefe4d7b864"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><b>selectContext</b> (CTX const &amp;... ctx) const</td></tr>
 <tr class="separator:ad07d3daa50252d412dc71cefe4d7b864"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74e6f74e831e7232c237b5e329189242"><td class="memItemLeft" align="right" valign="top"><a id="a74e6f74e831e7232c237b5e329189242"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setCoefficient</b> (<a class="el" href="classint.html">int</a> index, double value)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setCoefficient</b> (<a class="el" href="classint.html">int</a> index, <a class="el" href="classdouble.html">double</a> value)</td></tr>
 <tr class="separator:a74e6f74e831e7232c237b5e329189242"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70644ba8fd46d1f0a5d6b8af0a4c2714"><td class="memItemLeft" align="right" valign="top"><a id="a70644ba8fd46d1f0a5d6b8af0a4c2714"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setReducedBasisSpace</b> (rbspace_ptrtype const &amp;rbspace)</td></tr>
@@ -400,10 +400,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateGlobalValues</b
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a9b99022d9b6d7f9838db8269bb9e945c"><td class="memItemLeft" align="right" valign="top"><a id="a9b99022d9b6d7f9838db8269bb9e945c"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_composite</b> = functionspace_type::is_composite</td></tr>
 <tr class="separator:a9b99022d9b6d7f9838db8269bb9e945c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a31738339ebede4b613849e91d97958"><td class="memItemLeft" align="right" valign="top"><a id="a5a31738339ebede4b613849e91d97958"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_mortar</b> = functionspace_type::is_mortar</td></tr>
 <tr class="separator:a5a31738339ebede4b613849e91d97958"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9ccbcd149a608f0e208d3327acaa3f8"><td class="memItemLeft" align="right" valign="top"><a id="ab9ccbcd149a608f0e208d3327acaa3f8"></a>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents1</b> = functionspace_type::nComponents1</td></tr>
@@ -507,7 +507,7 @@ template&lt;typename T  = double, typename Cont  = Eigen::Matrix&lt;T,Eigen::Dyn
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>conformalEval</em>, </td>
         </tr>
         <tr>

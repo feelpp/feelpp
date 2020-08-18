@@ -123,7 +123,7 @@ typedef fusion::result_of::value_at_key&lt; Geo_t, key_type &gt;::type::element_
 typedef mpl::if_&lt; fusion::result_of::has_key&lt; Geo_t, vf::detail::gmc&lt; 0 &gt; &gt;, mpl::identity&lt; vf::detail::gmc&lt; 0 &gt; &gt;, mpl::identity&lt; vf::detail::gmc&lt; 1 &gt; &gt; &gt;::type::type&#160;</td><td class="memItemRight" valign="bottom"><b>key_type</b></td></tr>
 <tr class="separator:a9d67c03d3d129355f84a61bba12dc82b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a86fdb69e2d8df359b3413351ea568500"><td class="memItemLeft" align="right" valign="top"><a id="a86fdb69e2d8df359b3413351ea568500"></a>
-typedef Shape&lt; gmc_type::nDim, <a class="el" href="structFeel_1_1Scalar.html">Scalar</a>, false, false &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b></td></tr>
+typedef Shape&lt; gmc_type::nDim, Scalar, false, false &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b></td></tr>
 <tr class="separator:a86fdb69e2d8df359b3413351ea568500"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6444a6212f52ba49034f3f77f6c2bb6"><td class="memItemLeft" align="right" valign="top"><a id="ae6444a6212f52ba49034f3f77f6c2bb6"></a>
 typedef ExprT::template <a class="el" href="structFeel_1_1vf_1_1Cast_1_1tensor.html">tensor</a>&lt; Geo_t, Basis_i_t, Basis_j_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>tensor_expr_type</b></td></tr>
@@ -152,7 +152,7 @@ constexpr value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evalq
 <tr class="separator:a94708dbc49a715e82651c106928a6448"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe70192ad269eaf0bdcc71069d7da8b8"><td class="memTemplParams" colspan="2"><a id="afe70192ad269eaf0bdcc71069d7da8b8"></a>
 template&lt;typename IM &gt; </td></tr>
-<tr class="memitem:afe70192ad269eaf0bdcc71069d7da8b8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (<a class="el" href="classFeel_1_1IM.html">IM</a> const &amp;)</td></tr>
+<tr class="memitem:afe70192ad269eaf0bdcc71069d7da8b8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (IM const &amp;)</td></tr>
 <tr class="separator:afe70192ad269eaf0bdcc71069d7da8b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c14e88ddbddf33da0ce8f55c1d7aca7"><td class="memItemLeft" align="right" valign="top"><a id="a6c14e88ddbddf33da0ce8f55c1d7aca7"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>tensor</b> (<a class="el" href="classFeel_1_1vf_1_1Cast.html">this_type</a> const &amp;<a class="el" href="structFeel_1_1vf_1_1Cast_1_1tensor_1_1expr.html">expr</a>, Geo_t const &amp;geom)</td></tr>

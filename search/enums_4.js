@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['geoentitycontext_8672',['GeoEntityContext',['../namespaceFeel.html#a5df59a8b1a63f40c3c1d5a65162254d5',1,'Feel']]],
-  ['gmsh_5fentity_8673',['GMSH_ENTITY',['../namespaceFeel.html#abd2154c710709e9de515c298d86dd8a1',1,'Feel']]]
+  ['referencegeometry_4067',['ReferenceGeometry',['../namespaceFeel.html#a8a2b0de2d64f5281612ba8d3077fbfd6',1,'Feel']]]
 ];

@@ -114,13 +114,13 @@ $(document).ready(function(){initNavTree('classFeel_1_1Oseen.html',''); initResi
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:adb039b2db1d016cd200df50ebc7b1f3e"><td class="memItemLeft" align="right" valign="top"><a id="adb039b2db1d016cd200df50ebc7b1f3e"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1Backend.html">backend_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; backend_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
 <tr class="separator:adb039b2db1d016cd200df50ebc7b1f3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39cb8604bce01247ae16d12a123ed55d"><td class="memItemLeft" align="right" valign="top"><a id="a39cb8604bce01247ae16d12a123ed55d"></a>
-typedef <a class="el" href="classFeel_1_1Backend.html">Backend</a>&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
+typedef Backend&lt; value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
 <tr class="separator:a39cb8604bce01247ae16d12a123ed55d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a134d02362c2d78da8e3bd3d6242cfe02"><td class="memItemLeft" align="right" valign="top"><a id="a134d02362c2d78da8e3bd3d6242cfe02"></a>
-typedef <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; <a class="el" href="classFeel_1_1Lagrange.html">Lagrange</a>&lt; 0, <a class="el" href="structFeel_1_1Scalar.html">Scalar</a>, <a class="el" href="classFeel_1_1Discontinuous.html">Discontinuous</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>basis_i_type</b></td></tr>
+typedef <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 0, Scalar, Discontinuous &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>basis_i_type</b></td></tr>
 <tr class="separator:a134d02362c2d78da8e3bd3d6242cfe02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc138317fcfe275de3a6ec822bd1f4d8"><td class="memItemLeft" align="right" valign="top"><a id="abc138317fcfe275de3a6ec822bd1f4d8"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">space_i_type::element_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>element_i_type</b></td></tr>
@@ -144,19 +144,19 @@ typedef space_type::mesh_type&#160;</td><td class="memItemRight" valign="bottom"
 typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpace.html">space_i_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_i_ptrtype</b></td></tr>
 <tr class="separator:a85034c96489eddd0802da464a34f462f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a5fceeb8342ebbf15c2a5c3715bce60"><td class="memItemLeft" align="right" valign="top"><a id="a5a5fceeb8342ebbf15c2a5c3715bce60"></a>
-typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">basis_i_type</a>, <a class="el" href="classFeel_1_1Discontinuous.html">Discontinuous</a>, value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_i_type</b></td></tr>
+typedef <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">basis_i_type</a>, Discontinuous, value_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_i_type</b></td></tr>
 <tr class="separator:a5a5fceeb8342ebbf15c2a5c3715bce60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5bd4f1ba1563e27de8aa560981bc248b"><td class="memItemLeft" align="right" valign="top"><a id="a5bd4f1ba1563e27de8aa560981bc248b"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classSpace.html">space_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; space_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>space_ptrtype</b></td></tr>
 <tr class="separator:a5bd4f1ba1563e27de8aa560981bc248b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac64aaf95c490a0c067d6c5db2c228667"><td class="memItemLeft" align="right" valign="top"><a id="ac64aaf95c490a0c067d6c5db2c228667"></a>
-typedef <a class="el" href="classSpace.html">Space</a>&#160;</td><td class="memItemRight" valign="bottom"><b>space_type</b></td></tr>
+typedef Space&#160;</td><td class="memItemRight" valign="bottom"><b>space_type</b></td></tr>
 <tr class="separator:ac64aaf95c490a0c067d6c5db2c228667"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a441606117d02cdb7d6b205aace2a8357"><td class="memItemLeft" align="right" valign="top"><a id="a441606117d02cdb7d6b205aace2a8357"></a>
 typedef backend_type::sparse_matrix_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>sparse_matrix_ptrtype</b></td></tr>
 <tr class="separator:a441606117d02cdb7d6b205aace2a8357"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac652082379d2b6571fbaa61ad22f1118"><td class="memItemLeft" align="right" valign="top"><a id="ac652082379d2b6571fbaa61ad22f1118"></a>
-typedef <a class="el" href="classFeel_1_1MatrixSparse.html">backend_type::sparse_matrix_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>sparse_matrix_type</b></td></tr>
+typedef backend_type::sparse_matrix_type&#160;</td><td class="memItemRight" valign="bottom"><b>sparse_matrix_type</b></td></tr>
 <tr class="separator:ac652082379d2b6571fbaa61ad22f1118"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60188b148bb6ccb2f63ce59547bd39ee"><td class="memItemLeft" align="right" valign="top"><a id="a60188b148bb6ccb2f63ce59547bd39ee"></a>
 typedef space_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
@@ -165,7 +165,7 @@ typedef space_type::value_type&#160;</td><td class="memItemRight" valign="bottom
 typedef backend_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vector_ptrtype</b></td></tr>
 <tr class="separator:a19eb991c29518795b637c6ef556aaf62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a913844e1d60e08b20e624c5c4121af17"><td class="memItemLeft" align="right" valign="top"><a id="a913844e1d60e08b20e624c5c4121af17"></a>
-typedef <a class="el" href="classFeel_1_1Vector.html">backend_type::vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
+typedef backend_type::vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
 <tr class="separator:a913844e1d60e08b20e624c5c4121af17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -177,7 +177,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>couplePstab</b> ()</t
 void&#160;</td><td class="memItemRight" valign="bottom"><b>decouplePstab</b> (element_p_type &amp;pStab, value_type theta)</td></tr>
 <tr class="separator:a6576b2538e26f67a62debec2fbcffbeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93dc2636c91623c0f4626c80287c8e00"><td class="memItemLeft" align="right" valign="top"><a id="a93dc2636c91623c0f4626c80287c8e00"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Oseen</b> (const space_ptrtype &amp;space, const backend_ptrtype &amp;backend, const std::set&lt; flag_type &gt; &amp;dirichletFlags, const std::set&lt; flag_type &gt; &amp;neumannFlags, bool weak_dirichlet=true, bool export_matlab=false)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Oseen</b> (const space_ptrtype &amp;space, const backend_ptrtype &amp;backend, const std::set&lt; flag_type &gt; &amp;dirichletFlags, const std::set&lt; flag_type &gt; &amp;neumannFlags, <a class="el" href="classbool.html">bool</a> weak_dirichlet=true, <a class="el" href="classbool.html">bool</a> export_matlab=false)</td></tr>
 <tr class="separator:a93dc2636c91623c0f4626c80287c8e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b60aab82fb2c2965844a73c017c2d59"><td class="memItemLeft" align="right" valign="top"><a id="a8b60aab82fb2c2965844a73c017c2d59"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Oseen</b> (const space_ptrtype &amp;space, const backend_ptrtype &amp;backend, const std::set&lt; flag_type &gt; &amp;dirichletFlags, const std::set&lt; flag_type &gt; &amp;neumannFlags, po::variables_map const &amp;vm, std::string const &amp;prefix=&quot;&quot;)</td></tr>
@@ -217,7 +217,7 @@ value_type&#160;</td><td class="memItemRight" valign="bottom"><b>stabilizationEn
 <tr class="separator:aab60ea2c8b3b660a8724d17865bec601"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a766ae57bd87895f1b1096d21106d2915"><td class="memTemplParams" colspan="2"><a id="a766ae57bd87895f1b1096d21106d2915"></a>
 template&lt;typename ItRange , typename EsigmaInc , typename EnuInc , typename EnuAbs , typename Ebeta , typename Ef , typename Ec , typename Eg , typename EnoSlip &gt; </td></tr>
-<tr class="memitem:a766ae57bd87895f1b1096d21106d2915"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (const ItRange &amp;itRange, const EsigmaInc &amp;sigmaInc, const EnuInc &amp;nuInc, const EnuAbs &amp;nuAbs, const Ebeta &amp;beta, const Ef &amp;f, const Ec &amp;c, const Eg &amp;g, const EnoSlip &amp;noSlip, bool updateStabilization=true)</td></tr>
+<tr class="memitem:a766ae57bd87895f1b1096d21106d2915"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>update</b> (const ItRange &amp;itRange, const EsigmaInc &amp;sigmaInc, const EnuInc &amp;nuInc, const EnuAbs &amp;nuAbs, const Ebeta &amp;beta, const Ef &amp;f, const Ec &amp;c, const Eg &amp;g, const EnoSlip &amp;noSlip, <a class="el" href="classbool.html">bool</a> updateStabilization=true)</td></tr>
 <tr class="separator:a766ae57bd87895f1b1096d21106d2915"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae4a8b7e5bcfb8c6f530c5b6ae63a384"><td class="memItemLeft" align="right" valign="top"><a id="aae4a8b7e5bcfb8c6f530c5b6ae63a384"></a>
 const element_u_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>velocity</b> ()</td></tr>

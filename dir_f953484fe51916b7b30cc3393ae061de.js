@@ -10,11 +10,11 @@ var dir_f953484fe51916b7b30cc3393ae061de =
       [ "CommObject", "classFeel_1_1CommObject.html", "classFeel_1_1CommObject" ]
     ] ],
     [ "constants.hpp", "constants_8hpp.html", "constants_8hpp" ],
-    [ "context.hpp", "feelcore_2context_8hpp.html", "feelcore_2context_8hpp" ],
+    [ "context.hpp", "context_8hpp.html", "context_8hpp" ],
     [ "debug.hpp", "debug_8hpp.html", null ],
     [ "disablewarnings.hpp", "disablewarnings_8hpp.html", null ],
     [ "environment.hpp", "environment_8hpp.html", "environment_8hpp" ],
-    [ "feel.hpp", "feelcore_2feel_8hpp.html", "feelcore_2feel_8hpp" ],
+    [ "feel.hpp", "feel_8hpp.html", "feel_8hpp" ],
     [ "feelassert.hpp", "feelassert_8hpp.html", null ],
     [ "feelgmsh.hpp", "feelgmsh_8hpp.html", null ],
     [ "feelmacros.hpp", "feelmacros_8hpp.html", null ],
@@ -269,7 +269,7 @@ var dir_f953484fe51916b7b30cc3393ae061de =
       [ "zmax", "structFeel_1_1tag_1_1zmax.html", "structFeel_1_1tag_1_1zmax" ],
       [ "zmin", "structFeel_1_1tag_1_1zmin.html", "structFeel_1_1tag_1_1zmin" ]
     ] ],
-    [ "policy.hpp", "feelcore_2policy_8hpp.html", [
+    [ "policy.hpp", "policy_8hpp.html", [
       [ "PolicyCreationUsingNew", "structFeel_1_1PolicyCreationUsingNew.html", "structFeel_1_1PolicyCreationUsingNew" ],
       [ "PolicyFeelTimeDefault", "structFeel_1_1PolicyFeelTimeDefault.html", "structFeel_1_1PolicyFeelTimeDefault" ]
     ] ],

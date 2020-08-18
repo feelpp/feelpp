@@ -120,10 +120,10 @@ class Feel::BlockLinearForm&lt; PS &gt;</h3>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:aa760cebee319acb8380b72f70706db6f"><td class="memItemLeft" align="right" valign="top"><a id="aa760cebee319acb8380b72f70706db6f"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>condensed_vector_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1VectorCondensed.html">condensed_vector_type</a> &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>condensed_vector_ptrtype</b> = std::shared_ptr&lt; condensed_vector_type &gt;</td></tr>
 <tr class="separator:aa760cebee319acb8380b72f70706db6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11b13680ffd472ac260d6ab93127f959"><td class="memItemLeft" align="right" valign="top"><a id="a11b13680ffd472ac260d6ab93127f959"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>condensed_vector_type</b> = <a class="el" href="classFeel_1_1VectorCondensed.html">VectorCondensed</a>&lt; value_type &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>condensed_vector_type</b> = VectorCondensed&lt; value_type &gt;</td></tr>
 <tr class="separator:a11b13680ffd472ac260d6ab93127f959"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8867d86cf3fe1bc93f11d63dc4d0b94"><td class="memItemLeft" align="right" valign="top"><a id="aa8867d86cf3fe1bc93f11d63dc4d0b94"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>product_space_t</b> = decay_type&lt; PS &gt;</td></tr>
@@ -145,7 +145,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3fda81988333c54b6f1775e2a0746e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9cb762d6c6252d2be10d63f70156c6f"><td class="memTemplParams" colspan="2"><a id="ac9cb762d6c6252d2be10d63f70156c6f"></a>
 template&lt;typename T , typename BackendT &gt; </td></tr>
-<tr class="memitem:ac9cb762d6c6252d2be10d63f70156c6f"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, BackendT &amp;&amp;b, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="structFeel_1_1ProductSpacesBase.html">ProductSpacesBase</a>, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="memitem:ac9cb762d6c6252d2be10d63f70156c6f"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, BackendT &amp;&amp;b, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
 <tr class="separator:ac9cb762d6c6252d2be10d63f70156c6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a616147df4fc6e92bec8a2bf7e07593c3"><td class="memTemplParams" colspan="2"><a id="a616147df4fc6e92bec8a2bf7e07593c3"></a>
 template&lt;typename T &gt; </td></tr>
@@ -153,15 +153,15 @@ template&lt;typename T &gt; </td></tr>
 <tr class="separator:a616147df4fc6e92bec8a2bf7e07593c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19f440758e33050e2bbf1a6a3d790e20"><td class="memTemplParams" colspan="2"><a id="a19f440758e33050e2bbf1a6a3d790e20"></a>
 template&lt;typename T , typename BackendT &gt; </td></tr>
-<tr class="memitem:a19f440758e33050e2bbf1a6a3d790e20"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="structFeel_1_1ProductSpacesBase.html">ProductSpacesBase</a>, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="memitem:a19f440758e33050e2bbf1a6a3d790e20"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
 <tr class="separator:a19f440758e33050e2bbf1a6a3d790e20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d2790d4c4a876e58154ac67b5a99da7"><td class="memTemplParams" colspan="2"><a id="a2d2790d4c4a876e58154ac67b5a99da7"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a2d2790d4c4a876e58154ac67b5a99da7"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="structFeel_1_1ProductSpaceBase.html">ProductSpaceBase</a>, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="memitem:a2d2790d4c4a876e58154ac67b5a99da7"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="classProductSpaceBase.html">ProductSpaceBase</a>, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
 <tr class="separator:a2d2790d4c4a876e58154ac67b5a99da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5bca3e94179862a4f5691c43475fa79b"><td class="memTemplParams" colspan="2"><a id="a5bca3e94179862a4f5691c43475fa79b"></a>
 template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a5bca3e94179862a4f5691c43475fa79b"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="structFeel_1_1ProductSpacesBase.html">ProductSpacesBase</a>, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="memitem:a5bca3e94179862a4f5691c43475fa79b"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockLinearForm</b> (T &amp;&amp;ps, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &gt; *=nullptr)</td></tr>
 <tr class="separator:a5bca3e94179862a4f5691c43475fa79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fe0a08dcca6b72c5848478512243c1c"><td class="memItemLeft" align="right" valign="top"><a id="a1fe0a08dcca6b72c5848478512243c1c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>close</b> ()</td></tr>

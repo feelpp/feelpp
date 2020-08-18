@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['communicator_5ftype_8558',['communicator_type',['../classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637',1,'Feel::WorldComm']]],
-  ['container_5fsearch_5ftype_8559',['container_search_type',['../classFeel_1_1Localization.html#a137c9c40f6e77939a1c4e03a40ac25aa',1,'Feel::Localization']]],
-  ['convergence_5fiteration_5ftype_8560',['convergence_iteration_type',['../classFeel_1_1Aitken.html#aa5b5ac816e44dd9317437741d2f50c42',1,'Feel::Aitken']]],
-  ['convex_5ftype_8561',['convex_type',['../classFeel_1_1FeelModels_1_1MixedElasticity.html#a2eab688a08ec9994c70aa3196dc4ac72',1,'Feel::FeelModels::MixedElasticity::convex_type()'],['../classFeel_1_1FeelModels_1_1MixedPoisson.html#a33d3004e26d04c7650118da3392bc869',1,'Feel::FeelModels::MixedPoisson::convex_type()']]],
-  ['crb_5felements_5fdb_5ftype_8562',['crb_elements_db_type',['../classFeel_1_1CRB.html#a2964effaa2b0cd23cbb5fa8963982fb5',1,'Feel::CRB::crb_elements_db_type()'],['../classFeel_1_1CRBTrilinear.html#a176f56fb4656022dcb6b570ce4c19f27',1,'Feel::CRBTrilinear::crb_elements_db_type()']]]
+  ['dim_5ftype_4002',['dim_type',['../namespaceFeel.html#a5155120d1dda406c1dde284a66a1b000',1,'Feel']]],
+  ['dof_5felement_5ftype_4003',['dof_element_type',['../classFeel_1_1DofTable.html#a52821bc2a9b63a4f0de3aa9fa30bc225',1,'Feel::DofTable']]],
+  ['dof_5fid_5ftype_4004',['dof_id_type',['../namespaceFeel.html#a0000e01f08a533adfaebdc8c57cb2cc7',1,'Feel']]],
+  ['domain_5fspace_5ftype_4005',['domain_space_type',['../classFeel_1_1OperatorLagrangeP1.html#a382f9a8fad9a4b38895891bb9674bc5b',1,'Feel::OperatorLagrangeP1']]],
+  ['dual_5fimage_5fspace_5ftype_4006',['dual_image_space_type',['../classFeel_1_1OperatorLagrangeP1.html#a667c951be4adda3dbd6daa016325411b',1,'Feel::OperatorLagrangeP1']]]
 ];

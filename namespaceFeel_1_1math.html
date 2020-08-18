@@ -102,15 +102,11 @@ $(document).ready(function(){initNavTree('namespaceFeel_1_1math.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#nested-classes">Classes</a>  </div>
   <div class="headertitle">
 <div class="title">Feel::math Namespace Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p>Class that contains methods for computing <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic functions related to complex analysis.  
-<a href="namespaceFeel_1_1math.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
@@ -119,140 +115,10 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1math_1_1pi__tag.html">pi_tag</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ad55ceefb5ce4da15f04a5c86e6ca5d44"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:ad55ceefb5ce4da15f04a5c86e6ca5d44"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel_1_1math.html#ad55ceefb5ce4da15f04a5c86e6ca5d44">ellipjc</a> (std::complex&lt; T &gt; u, T m, std::complex&lt; T &gt; &amp;sn, std::complex&lt; T &gt; &amp;cn, std::complex&lt; T &gt; &amp;dn)</td></tr>
-<tr class="memdesc:ad55ceefb5ce4da15f04a5c86e6ca5d44"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes three main <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic functions, \(sn(u,m)\), \(cn(u,m)\) and \(dn(u,m)\) (see class description).  <a href="namespaceFeel_1_1math.html#ad55ceefb5ce4da15f04a5c86e6ca5d44">More...</a><br /></td></tr>
-<tr class="separator:ad55ceefb5ce4da15f04a5c86e6ca5d44"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7aa14ff68cffa7784bb0aba2c8e8c0e"><td class="memTemplParams" colspan="2"><a id="af7aa14ff68cffa7784bb0aba2c8e8c0e"></a>
-template&lt;typename T &gt; </td></tr>
-<tr class="memitem:af7aa14ff68cffa7784bb0aba2c8e8c0e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>ellipjc</b> (std::vector&lt; std::complex&lt; T &gt;&gt; u, T l, std::vector&lt; std::complex&lt; T &gt;&gt; &amp;sn, std::vector&lt; std::complex&lt; T &gt;&gt; &amp;cn, std::vector&lt; std::complex&lt; T &gt;&gt; &amp;dn, bool flag=true)</td></tr>
-<tr class="separator:af7aa14ff68cffa7784bb0aba2c8e8c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa345663c9121b2b0e72eb76a51e01eb5"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:aa345663c9121b2b0e72eb76a51e01eb5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel_1_1math.html#aa345663c9121b2b0e72eb76a51e01eb5">ellipkkp</a> (T L, T &amp;K, T &amp;Kp)</td></tr>
-<tr class="memdesc:aa345663c9121b2b0e72eb76a51e01eb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the quarter periods (K and K') of Jacobian elliptic functions (see class description).  <a href="namespaceFeel_1_1math.html#aa345663c9121b2b0e72eb76a51e01eb5">More...</a><br /></td></tr>
-<tr class="separator:aa345663c9121b2b0e72eb76a51e01eb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Class that contains methods for computing <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic functions related to complex analysis. </p>
-<p>The <code>math</code> namespace unifies calls to functions and constants with respect to numerical types.</p>
-<p>These functions are inverse of the elliptic integral of first kind, i.e. </p><p class="formulaDsp">
-\[ u(k,m)=\int_{0}^{k}\frac{dt}{\sqrt{(1-t^{2})(1-m^{2}t^{2})}} =\int_{0}^{\varphi}\frac{d\theta}{\sqrt{(1-m^{2}sin^{2}\theta)}} \]
-</p>
-<p> where \(k=sin\varphi\), \(t=sin\theta\) and parameter \(m, 0\le m \le 1\) is called modulus. Three main <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic functions are defined as \(sn(u,m)=k=sin\theta\), \(cn(u,m)=cos\theta=\sqrt{1-sn(u,m)^{2}}\) and \(dn(u,m)=\sqrt{1-m^{2}sn(u,m)^{2}}\). For \(k=1\), i.e. \(\varphi=\frac{\pi}{2}\), \(u(1,m)=K(m)\) is known as the complete elliptic integral of first kind. Similarly, \(u(1,m&#39;))= K&#39;(m&#39;)\), \(m&#39;=\sqrt{1-m^{2}}\) is called the complementary complete elliptic integral of first kind. <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> functions are double periodic with quardratic periods \(K\) and \(K&#39;\).</p>
-<p>This namespace provides two sets of methods for computing \(K,K&#39;\), and \(sn,cn,dn\). Useful for computing rational approximation of matrix functions given by Cauchy's integral formula, etc. </p>
-</div><h2 class="groupheader">Function Documentation</h2>
-<a id="ad55ceefb5ce4da15f04a5c86e6ca5d44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad55ceefb5ce4da15f04a5c86e6ca5d44">&#9670;&nbsp;</a></span>ellipjc()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void Feel::math::ellipjc </td>
-          <td>(</td>
-          <td class="paramtype">std::complex&lt; T &gt;&#160;</td>
-          <td class="paramname"><em>u</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T&#160;</td>
-          <td class="paramname"><em>m</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::complex&lt; T &gt; &amp;&#160;</td>
-          <td class="paramname"><em>sn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::complex&lt; T &gt; &amp;&#160;</td>
-          <td class="paramname"><em>cn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">std::complex&lt; T &gt; &amp;&#160;</td>
-          <td class="paramname"><em>dn</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Computes three main <a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic functions, \(sn(u,m)\), \(cn(u,m)\) and \(dn(u,m)\) (see class description). </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">u</td><td>the elliptic integral of the first kind \(u(k,m)\) </td></tr>
-    <tr><td class="paramname">m</td><td>the modulus parameter, \(0\le m \le 1\) </td></tr>
-    <tr><td class="paramname">sn</td><td><a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic function sn(u,m) </td></tr>
-    <tr><td class="paramname">cn</td><td><a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic function cn(u,m) </td></tr>
-    <tr><td class="paramname">dn</td><td><a class="el" href="classFeel_1_1Jacobi.html" title="1D Jacobi polynomial">Jacobi</a> elliptic function dn(u,m) </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="aa345663c9121b2b0e72eb76a51e01eb5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa345663c9121b2b0e72eb76a51e01eb5">&#9670;&nbsp;</a></span>ellipkkp()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void Feel::math::ellipkkp </td>
-          <td>(</td>
-          <td class="paramtype">T&#160;</td>
-          <td class="paramname"><em>L</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T &amp;&#160;</td>
-          <td class="paramname"><em>K</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">T &amp;&#160;</td>
-          <td class="paramname"><em>Kp</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Computes the quarter periods (K and K') of Jacobian elliptic functions (see class description). </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">L</td><td></td></tr>
-    <tr><td class="paramname">K</td><td>the quarter period (to be computed) on the T axis </td></tr>
-    <tr><td class="paramname">Kp</td><td>the quarter period (to be computed) on the Imaginary axis computed </td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#a8f7e07a56e7e3cee160eba6dfb09182a">Feel::exp()</a>, and <a class="el" href="namespaceFeel.html#ac65c23f92c08f76643dbe02316519ff0">Feel::log()</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+<div class="textblock"><p>The <code>math</code> namespace unifies calls to functions and constants with respect to numerical types. </p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

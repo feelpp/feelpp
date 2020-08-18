@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['dim_5ftype_8563',['dim_type',['../namespaceFeel.html#a5155120d1dda406c1dde284a66a1b000',1,'Feel']]],
-  ['dimpair_5ft_8564',['dimpair_t',['../namespaceFeel.html#a4ba2a092820c129b259097798a379890',1,'Feel']]],
-  ['dof_5felement_5ftype_8565',['dof_element_type',['../classFeel_1_1DofTable.html#a52821bc2a9b63a4f0de3aa9fa30bc225',1,'Feel::DofTable']]],
-  ['dof_5fid_5ftype_8566',['dof_id_type',['../namespaceFeel.html#a0000e01f08a533adfaebdc8c57cb2cc7',1,'Feel']]],
-  ['domain_5fspace_5ftype_8567',['domain_space_type',['../classFeel_1_1OperatorLagrangeP1.html#a382f9a8fad9a4b38895891bb9674bc5b',1,'Feel::OperatorLagrangeP1']]],
-  ['dual_5fimage_5fspace_5ftype_8568',['dual_image_space_type',['../classFeel_1_1OperatorLagrangeP1.html#a667c951be4adda3dbd6daa016325411b',1,'Feel::OperatorLagrangeP1']]]
+  ['el2el_5ftype_4007',['el2el_type',['../classFeel_1_1OperatorLagrangeP1.html#a4732a0f9fa8462dbec7d4292b6f24a25',1,'Feel::OperatorLagrangeP1']]],
+  ['element_5fedge_5ftype_4008',['element_edge_type',['../classFeel_1_1Mesh3D.html#a9c4ef0b3b5515806efb3ce8128634948',1,'Feel::Mesh3D']]],
+  ['element_5fptr_5ft_4009',['element_ptr_t',['../group__Traits.html#ga3938281072c721669a9a3e387930e27e',1,'Feel']]],
+  ['element_5ft_4010',['element_t',['../group__Traits.html#ga08aa0446d996817498103cd75c9bb7aa',1,'Feel']]],
+  ['export_5fptrtype_4011',['export_ptrtype',['../classFeel_1_1MeshAdaptation.html#ac05476eee719ac8247557877460f805f',1,'Feel::MeshAdaptation']]],
+  ['export_5ftype_4012',['export_type',['../classFeel_1_1MeshAdaptation.html#ade5824416261358762c84f14ae61ef8f',1,'Feel::MeshAdaptation']]]
 ];

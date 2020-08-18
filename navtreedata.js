@@ -23,8 +23,14 @@ for the JavaScript code in this file
 var NAVTREE =
 [
   [ "Feel++", "index.html", [
+    [ "Feel++ API by Doxygen", "index.html", [
+      [ "Preface", "index.html#tutorial-preface", null ],
+      [ "Objectives", "index.html#Objectives", null ],
+      [ "Organisation of this manual", "index.html#autotoc_md0", [
+        [ "Supported Compilers", "index.html#tutorial-compilers", null ]
+      ] ]
+    ] ],
     [ "Reference documentation", "modules.html", "modules" ],
-    [ "Alphabetical index", "functions.html", null ],
     [ "Index of Classes", "classes.html", null ],
     [ "Headers", "files.html", "files" ],
     [ "Feel Macros", "Macros.html", [
@@ -41,29 +47,22 @@ var NAVTREE =
       ] ],
       [ "Integers", "Types.html#ints", null ]
     ] ],
-    [ "MainPage", "md_MainPage.html", null ],
-    [ "Todo List", "todo.html", null ],
-    [ "Deprecated List", "deprecated.html", null ],
-    [ "Namespaces", "namespaces.html", [
-      [ "List of Namespaces", "namespaces.html", "namespaces_dup" ]
-    ] ]
+    [ "Todo List", "todo.html", null ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
 "Macros.html",
-"classFeel_1_1Application.html#a7af1b14cd93c7bccc1bba9fdcf85d4dc",
-"classFeel_1_1Mesh1D.html#a9275fa4c835d82419f0bd1d6bc1b5f6d",
-"classFeel_1_1MeshBase.html#afcb698f62f591ac546ab1a3fb1ad8ae7",
-"dir_b11038f8b6f08f7364ae0efcd6878c96.html",
-"feelmesh_2filters_8hpp.html#a3e49f3152b3f4d68482616d7bfaf0604",
-"feelpoly_2policy_8hpp.html#a33113db8751dc7996636d10050838623",
-"geotool_8hpp.html#a031c57751279b21f262b31932c191965",
-"gmshenums_8hpp.html#abd2154c710709e9de515c298d86dd8a1aee8089c3adca2fcff0ae5961db2ca4ad",
-"maxwell_8hpp.html",
-"pdhv_8hpp.html#ae7af58fd90da17489daace913d3ccb99",
-"unitcube_8hpp.html"
+"classFeel_1_1FeelModels_1_1Electric.html#a812faed19de2c5dc7a4630697fb43ff3",
+"classFeel_1_1FeelModels_1_1FluidMechanics.html#a87ee851734f8f002f0c9553e9b2082aa",
+"classFeel_1_1FeelModels_1_1SolidMechanics.html#a6cee133e5d5bdb6140298554a1a88a86",
+"classFeel_1_1Mesh1D.html#a8d2cf08b49b5ac2d6e22d09af9a3a5a0",
+"classFeel_1_1MeshBase.html#af5e7a2305b5f0c32bb8fdd0218166710",
+"environment_8hpp.html#a9d884d4731e720a51730fbeb9c3e9e1b",
+"fsfunctionallinear_8hpp.html#a05966e0d7f7d617539f33c92eb34d5b0",
+"markermanagement_8hpp.html#a34fd4fa77ef26e92dfb4be995de6ea78",
+"projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

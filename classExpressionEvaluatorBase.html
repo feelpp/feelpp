@@ -117,7 +117,7 @@ Public Member Functions</h2></td></tr>
 <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>component</b> ()</td></tr>
 <tr class="separator:ac5cf3d2a331ae7b0ea6f68fb13b1ba7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd5cc7042db3f3cc215c40b912f4be02"><td class="memItemLeft" align="right" valign="top"><a id="afd5cc7042db3f3cc215c40b912f4be02"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> (<a class="el" href="classint.html">int</a> q, <a class="el" href="classint.html">int</a> comp)=0</td></tr>
+virtual <a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>eval</b> (<a class="el" href="classint.html">int</a> q, <a class="el" href="classint.html">int</a> comp)=0</td></tr>
 <tr class="separator:afd5cc7042db3f3cc215c40b912f4be02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32d8a3eb6da266be26afbdfa2e00f546"><td class="memItemLeft" align="right" valign="top"><a id="a32d8a3eb6da266be26afbdfa2e00f546"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>ExpressionEvaluatorBase</b> (range_type const &amp;r, <a class="el" href="classint.html">int</a> comp=0)</td></tr>
@@ -135,10 +135,10 @@ virtual <a class="el" href="classint.html">int</a>&#160;</td><td class="memItemR
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (element_type const &amp;elt)=0</td></tr>
 <tr class="separator:a9c0f010f9f1a04b6feac21a15ba3794f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dd749f4cbba74d33ec8438bb78c86a7"><td class="memItemLeft" align="right" valign="top"><a id="a2dd749f4cbba74d33ec8438bb78c86a7"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (parameterelement_type const &amp;mu)=0</td></tr>
+virtual <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>update</b> (parameterelement_type const &amp;mu)=0</td></tr>
 <tr class="separator:a2dd749f4cbba74d33ec8438bb78c86a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa19118aa344239eb850c9dd12c974972"><td class="memItemLeft" align="right" valign="top"><a id="aa19118aa344239eb850c9dd12c974972"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>weight</b> (<a class="el" href="classint.html">int</a> i)=0</td></tr>
+virtual <a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>weight</b> (<a class="el" href="classint.html">int</a> i)=0</td></tr>
 <tr class="separator:aa19118aa344239eb850c9dd12c974972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-types"></a>
@@ -150,13 +150,13 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>element_type</b> = t
 using&#160;</td><td class="memItemRight" valign="bottom"><b>gm_type</b> = typename element_type::type::gm_type</td></tr>
 <tr class="separator:a977766514217e65efda5b92189772c5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad25c0a07038f3b5f7e0ef42a29bd1d0e"><td class="memItemLeft" align="right" valign="top"><a id="ad25c0a07038f3b5f7e0ef42a29bd1d0e"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterelement_type</b> = typename <a class="el" href="classFeel_1_1ParameterSpace_1_1Element.html">parameterspace_type::element_type</a></td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterelement_type</b> = typename parameterspace_type::element_type</td></tr>
 <tr class="separator:ad25c0a07038f3b5f7e0ef42a29bd1d0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1df95884e2862fb42a811252f4b38fa8"><td class="memItemLeft" align="right" valign="top"><a id="a1df95884e2862fb42a811252f4b38fa8"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_ptrtype</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1ParameterSpace.html">parameterspace_type</a> &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_ptrtype</b> = std::shared_ptr&lt; parameterspace_type &gt;</td></tr>
 <tr class="separator:a1df95884e2862fb42a811252f4b38fa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1233c23b69736d195c8e13a6be6ea23"><td class="memItemLeft" align="right" valign="top"><a id="aa1233c23b69736d195c8e13a6be6ea23"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_type</b> = <a class="el" href="classFeel_1_1ParameterSpace.html">ParameterSpace</a>&lt;&gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>parameterspace_type</b> = ParameterSpace&lt;&gt;</td></tr>
 <tr class="separator:aa1233c23b69736d195c8e13a6be6ea23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a953adccc801a02f75f08a7f80ac752"><td class="memItemLeft" align="right" valign="top"><a id="a0a953adccc801a02f75f08a7f80ac752"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>range_type</b> = RangeType</td></tr>

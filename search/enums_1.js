@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['crberrortype_8667',['CRBErrorType',['../namespaceFeel.html#a87e77631faf5262bc0eaca80b8e9190f',1,'Feel']]]
+  ['geoentitycontext_4064',['GeoEntityContext',['../namespaceFeel.html#a5df59a8b1a63f40c3c1d5a65162254d5',1,'Feel']]]
 ];

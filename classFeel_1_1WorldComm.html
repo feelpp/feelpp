@@ -112,7 +112,7 @@ $(document).ready(function(){initNavTree('classFeel_1_1WorldComm.html',''); init
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><p>Provides interface to MPI Communicators. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000002">Todo:</a></b></dt><dd><p class="startdd">define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> </p>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd><p class="startdd">define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> </p>
 <p class="enddd">define sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></p>
 </dd></dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> world = <a class="code" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>();</div>
@@ -194,24 +194,24 @@ worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>clone</b> 
 <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>godSize</b> () const</td></tr>
 <tr class="separator:a9ef4f31fa344edd9d3209fa833d5f8c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abaf9428aad75f594406d12e6f8a2f12a"><td class="memItemLeft" align="right" valign="top"><a id="abaf9428aad75f594406d12e6f8a2f12a"></a>
-boost::tuple&lt; bool, std::set&lt; <a class="el" href="classint.html">int</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>hasMultiLocalActivity</b> () const</td></tr>
+boost::tuple&lt; <a class="el" href="classbool.html">bool</a>, std::set&lt; <a class="el" href="classint.html">int</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>hasMultiLocalActivity</b> () const</td></tr>
 <tr class="separator:abaf9428aad75f594406d12e6f8a2f12a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca2f7a2d70ff58e1757103aff6a644b2"><td class="memItemLeft" align="right" valign="top"><a id="aca2f7a2d70ff58e1757103aff6a644b2"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>hasSubWorlds</b> (<a class="el" href="classint.html">int</a> n) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>hasSubWorlds</b> (<a class="el" href="classint.html">int</a> n) const</td></tr>
 <tr class="separator:aca2f7a2d70ff58e1757103aff6a644b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abec941971d651336d1ef606e24bb92c4"><td class="memItemLeft" align="right" valign="top"><a id="abec941971d651336d1ef606e24bb92c4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (<a class="el" href="classint.html">int</a> color=0, bool colormap=false)</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (<a class="el" href="classint.html">int</a> color=0, <a class="el" href="classbool.html">bool</a> colormap=false)</td></tr>
 <tr class="separator:abec941971d651336d1ef606e24bb92c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6139b2b28abc16414895e279430bdbbd"><td class="memItemLeft" align="right" valign="top"><a id="a6139b2b28abc16414895e279430bdbbd"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a6139b2b28abc16414895e279430bdbbd">isActive</a> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a6139b2b28abc16414895e279430bdbbd">isActive</a> () const</td></tr>
 <tr class="memdesc:a6139b2b28abc16414895e279430bdbbd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if current worldcomm is active in God worldcomm. <br /></td></tr>
 <tr class="separator:a6139b2b28abc16414895e279430bdbbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5a950d70bfa275540869ca949c87966"><td class="memItemLeft" align="right" valign="top"><a id="ae5a950d70bfa275540869ca949c87966"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ae5a950d70bfa275540869ca949c87966">isActive</a> (<a class="el" href="classint.html">int</a> <a class="el" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a>) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ae5a950d70bfa275540869ca949c87966">isActive</a> (<a class="el" href="classint.html">int</a> <a class="el" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a>) const</td></tr>
 <tr class="memdesc:ae5a950d70bfa275540869ca949c87966"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if worldcomm <code>rank</code> is active in God worldcomm. <br /></td></tr>
 <tr class="separator:ae5a950d70bfa275540869ca949c87966"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbd5864205c0a3c6023de481410e3ccb"><td class="memItemLeft" align="right" valign="top"><a id="afbd5864205c0a3c6023de481410e3ccb"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#afbd5864205c0a3c6023de481410e3ccb">isMasterRank</a> () const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#afbd5864205c0a3c6023de481410e3ccb">isMasterRank</a> () const</td></tr>
 <tr class="memdesc:afbd5864205c0a3c6023de481410e3ccb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if process has master rank, <code>false</code> otherwise. <br /></td></tr>
 <tr class="separator:afbd5864205c0a3c6023de481410e3ccb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab82a3763fb2804c4192477971e74c8ce"><td class="memItemLeft" align="right" valign="top"><a id="ab82a3763fb2804c4192477971e74c8ce"></a>
@@ -264,7 +264,7 @@ worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>operator+<
 <tr class="memdesc:abacf640637f39f4ff2af2b8d22297e17"><td class="mdescLeft">&#160;</td><td class="mdescRight">copy a worldcomm <br /></td></tr>
 <tr class="separator:abacf640637f39f4ff2af2b8d22297e17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace65a2ba7a2c86db0e3a6fc15137a8e6"><td class="memItemLeft" align="right" valign="top"><a id="ace65a2ba7a2c86db0e3a6fc15137a8e6"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==</a> (<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;wc) const</td></tr>
+<a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==</a> (<a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> const &amp;wc) const</td></tr>
 <tr class="memdesc:ace65a2ba7a2c86db0e3a6fc15137a8e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">comparison of worldcomm <br /></td></tr>
 <tr class="separator:ace65a2ba7a2c86db0e3a6fc15137a8e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34a9fa2d7b4a6d29d5f7d73f4348faf6"><td class="memItemLeft" align="right" valign="top"><a id="a34a9fa2d7b4a6d29d5f7d73f4348faf6"></a>
@@ -353,14 +353,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>upMasterRank</b> ()</
 &#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_globalComm, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_localComm, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_godComm, <a class="el" href="classint.html">int</a> _localColor, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;<a class="el" href="classFeel_1_1WorldComm.html#a6139b2b28abc16414895e279430bdbbd">isActive</a>)</td></tr>
 <tr class="separator:a8bddafe293c666912be64e1df6d958bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a857fdd1d4db4cdc6f88f5d8ed0a8fd80"><td class="memItemLeft" align="right" valign="top"><a id="a857fdd1d4db4cdc6f88f5d8ed0a8fd80"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_globalComm, <a class="el" href="classint.html">int</a> _color, bool _isActive)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_globalComm, <a class="el" href="classint.html">int</a> _color, <a class="el" href="classbool.html">bool</a> _isActive)</td></tr>
 <tr class="separator:a857fdd1d4db4cdc6f88f5d8ed0a8fd80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee58710d8c993dd3d6797e60b28593cf"><td class="memItemLeft" align="right" valign="top"><a id="aee58710d8c993dd3d6797e60b28593cf"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf">WorldComm</a> (<a class="el" href="classint.html">int</a> _color)</td></tr>
 <tr class="memdesc:aee58710d8c993dd3d6797e60b28593cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>color</code> <br /></td></tr>
 <tr class="separator:aee58710d8c993dd3d6797e60b28593cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ccc003f06bd63620d696d64075e6810"><td class="memItemLeft" align="right" valign="top"><a id="a0ccc003f06bd63620d696d64075e6810"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classint.html">int</a> _colorLocal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#aac08779f8d3178c2c9b88426ffa76246">localRank</a>, <a class="el" href="classint.html">int</a> _colorGlobal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank</a>, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_godComm, bool _isActive, bool _doInitActiveMap=true)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classint.html">int</a> _colorLocal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#aac08779f8d3178c2c9b88426ffa76246">localRank</a>, <a class="el" href="classint.html">int</a> _colorGlobal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank</a>, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_godComm, <a class="el" href="classbool.html">bool</a> _isActive, <a class="el" href="classbool.html">bool</a> _doInitActiveMap=true)</td></tr>
 <tr class="separator:a0ccc003f06bd63620d696d64075e6810"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d4df2d2d1098f8039f89c5688667b1b"><td class="memItemLeft" align="right" valign="top"><a id="a3d4df2d2d1098f8039f89c5688667b1b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b">WorldComm</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;_colorWorld)</td></tr>

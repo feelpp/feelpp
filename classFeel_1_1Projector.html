@@ -136,22 +136,22 @@ typedef domain_space_type::element_type&#160;</td><td class="memItemRight" valig
 typedef dual_image_space_type::element_type&#160;</td><td class="memItemRight" valign="bottom"><b>dual_image_element_type</b></td></tr>
 <tr class="separator:abfbccec8402d781f7952454d91709e30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5aa2833bc6cc5ba1a169645678a2763b"><td class="memItemLeft" align="right" valign="top"><a id="a5aa2833bc6cc5ba1a169645678a2763b"></a>
-typedef <a class="el" href="classFeel_1_1Backend.html">super::backend_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
+typedef super::backend_type&#160;</td><td class="memItemRight" valign="bottom"><b>backend_type</b></td></tr>
 <tr class="separator:a5aa2833bc6cc5ba1a169645678a2763b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a965c522e4cc1981d8a07196de190c607"><td class="memItemLeft" align="right" valign="top"><a id="a965c522e4cc1981d8a07196de190c607"></a>
 typedef super::backend_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>backend_ptrtype</b></td></tr>
 <tr class="separator:a965c522e4cc1981d8a07196de190c607"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73764469331660bd90a07c2a98a59419"><td class="memItemLeft" align="right" valign="top"><a id="a73764469331660bd90a07c2a98a59419"></a>
-typedef <a class="el" href="classFeel_1_1MatrixSparse.html">backend_type::sparse_matrix_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_type</b></td></tr>
+typedef backend_type::sparse_matrix_type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_type</b></td></tr>
 <tr class="separator:a73764469331660bd90a07c2a98a59419"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83b186d233898db1566552c9d41c068a"><td class="memItemLeft" align="right" valign="top"><a id="a83b186d233898db1566552c9d41c068a"></a>
-typedef <a class="el" href="classFeel_1_1Vector.html">backend_type::vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
+typedef backend_type::vector_type&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b></td></tr>
 <tr class="separator:a83b186d233898db1566552c9d41c068a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aafc9ceb486046122444bd353370f8869"><td class="memItemLeft" align="right" valign="top"><a id="aafc9ceb486046122444bd353370f8869"></a>
 typedef backend_type::vector_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>vector_ptrtype</b></td></tr>
 <tr class="separator:aafc9ceb486046122444bd353370f8869"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96a3629e4308c209a7760f1683245ac9"><td class="memItemLeft" align="right" valign="top"><a id="a96a3629e4308c209a7760f1683245ac9"></a>
-typedef std::shared_ptr&lt; <a class="el" href="classFeel_1_1MatrixSparse.html">matrix_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_ptrtype</b></td></tr>
+typedef std::shared_ptr&lt; matrix_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_ptrtype</b></td></tr>
 <tr class="separator:a96a3629e4308c209a7760f1683245ac9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa811a044bb7359e00d501d34ed970114"><td class="memItemLeft" align="right" valign="top"><a id="aa811a044bb7359e00d501d34ed970114"></a>
 typedef <a class="el" href="classFeel_1_1FsFunctionalLinear.html">FsFunctionalLinear</a>&lt; DualImageSpace &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>image_element_type</b></td></tr>
@@ -166,7 +166,7 @@ typedef faces_reference_wrapper_t&lt; typename dual_image_space_type::mesh_type 
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Constructors, destructor</h2></td></tr>
 <tr class="memitem:a2705d2a3914718bb0b7c605c10ab8673"><td class="memItemLeft" align="right" valign="top"><a id="a2705d2a3914718bb0b7c605c10ab8673"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Projector</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype abackend=<a class="el" href="classFeel_1_1Backend.html">Backend</a>&lt; double &gt;::build(soption(_name=&quot;backend&quot;)), ProjectorType proj_type=L2, double epsilon=0.01, double gamma=20, DirichletType dirichlet_type=WEAK)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Projector</b> (domain_space_ptrtype domainSpace, dual_image_space_ptrtype dualImageSpace, backend_ptrtype abackend=Backend&lt; <a class="el" href="classdouble.html">double</a> &gt;::build(soption(_name=&quot;backend&quot;)), ProjectorType proj_type=L2, <a class="el" href="classdouble.html">double</a> epsilon=0.01, <a class="el" href="classdouble.html">double</a> gamma=20, DirichletType dirichlet_type=WEAK)</td></tr>
 <tr class="separator:a2705d2a3914718bb0b7c605c10ab8673"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85ba04c771e3ebd22ae19ed7f8e88c4e"><td class="memItemLeft" align="right" valign="top"><a id="a85ba04c771e3ebd22ae19ed7f8e88c4e"></a>
 virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~Projector</b> ()</td></tr>
@@ -183,7 +183,7 @@ template&lt;typename RangeT , typename ExprT &gt; </td></tr>
 <tr class="memitem:a1975a91503f50f447540dfac426b9947"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>projectL2</b> (RangeT <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, ExprT const &amp;expr)</td></tr>
 <tr class="separator:a1975a91503f50f447540dfac426b9947"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1682189785aaeae3c602e2734d0283a9"><td class="memItemLeft" align="right" valign="top"><a id="a1682189785aaeae3c602e2734d0283a9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((dual_image_element_type), <a class="el" href="namespaceFeel.html#ae89776231eca6bd68ba734da512759b3">project</a>, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, self_type::rangeElements(this-&gt;domainSpace(), this-&gt;dualImageSpace()))(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(grad_expr, *,(vf::zero&lt; domain_space_type::nComponents, domain_space_type::nDim &gt;()))(div_expr, *, cst(0.))(curl_expr, *,(vf::zero&lt; mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nComponents &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::int_&lt; 1 &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, mpl::int_&lt; 3 &gt;, mpl::int_&lt; 1 &gt; &gt;::type &gt;::type::value, 1 &gt;()))))</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_MEMBER_FUNCTION</b> ((dual_image_element_type), project, tag,(required(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, self_type::rangeElements(this-&gt;domainSpace(), this-&gt;dualImageSpace()))(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(grad_expr, *,(vf::zero&lt; domain_space_type::nComponents, domain_space_type::nDim &gt;()))(div_expr, *, cst(0.))(curl_expr, *,(vf::zero&lt; mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nComponents &gt;, mpl::int_&lt; 1 &gt; &gt;, mpl::int_&lt; 1 &gt;, typename mpl::if_&lt; mpl::equal_to&lt; mpl::int_&lt; domain_space_type::nDim &gt;, mpl::int_&lt; 3 &gt; &gt;, mpl::int_&lt; 3 &gt;, mpl::int_&lt; 1 &gt; &gt;::type &gt;::type::value, 1 &gt;()))))</td></tr>
 <tr class="separator:a1682189785aaeae3c602e2734d0283a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb455429f276e9f2a60c96f147038018"><td class="memTemplParams" colspan="2"><a id="abb455429f276e9f2a60c96f147038018"></a>
 template&lt;typename RhsExpr &gt; </td></tr>
@@ -215,10 +215,10 @@ template&lt;typename Expr &gt; </td></tr>
 <tr class="memitem:a26dbf28a7df39fddc12edacc39be16a8"><td class="memTemplItemLeft" align="right" valign="top">dual_image_element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>derivate</b> (Expr const &amp;expr)</td></tr>
 <tr class="separator:a26dbf28a7df39fddc12edacc39be16a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2aef30466c3e43dc7fc5865d228e0a81"><td class="memItemLeft" align="right" valign="top"><a id="a2aef30466c3e43dc7fc5865d228e0a81"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>epsilon</b> () const</td></tr>
+<a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>epsilon</b> () const</td></tr>
 <tr class="separator:a2aef30466c3e43dc7fc5865d228e0a81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07c88d77609297e6778f88a2287c0b4f"><td class="memItemLeft" align="right" valign="top"><a id="a07c88d77609297e6778f88a2287c0b4f"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>gamma</b> () const</td></tr>
+<a class="el" href="classdouble.html">double</a>&#160;</td><td class="memItemRight" valign="bottom"><b>gamma</b> () const</td></tr>
 <tr class="separator:a07c88d77609297e6778f88a2287c0b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a59b577ed968c3e50e0e19054424e2d87"><td class="memItemLeft" align="right" valign="top"><a id="a59b577ed968c3e50e0e19054424e2d87"></a>
 ProjectorType&#160;</td><td class="memItemRight" valign="bottom"><b>projectorType</b> () const</td></tr>

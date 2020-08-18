@@ -126,13 +126,13 @@ typedef fusion::result_of::value_at_key&lt; Geo_t, key_type &gt;::type::element_
 using&#160;</td><td class="memItemRight" valign="bottom"><b>key_type</b> = key_t&lt; Geo_t &gt;</td></tr>
 <tr class="separator:a5dddce1be1f6e194bacf6b1efcbd669f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3440ade5d1c4809fb0c6c9034819db5c"><td class="memItemLeft" align="right" valign="top"><a id="a3440ade5d1c4809fb0c6c9034819db5c"></a>
-typedef Shape&lt; gmc_type::nDim, <a class="el" href="structFeel_1_1Vectorial.html">Vectorial</a>, false, false &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b></td></tr>
+typedef Shape&lt; gmc_type::nDim, Vectorial, false, false &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>shape</b></td></tr>
 <tr class="separator:a3440ade5d1c4809fb0c6c9034819db5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0fd3cad51dc68c4ff42684d39c2a501"><td class="memItemLeft" align="right" valign="top"><a id="ac0fd3cad51dc68c4ff42684d39c2a501"></a>
-typedef expression_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
+typedef <a class="el" href="classdouble.html">expression_type::value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>value_type</b></td></tr>
 <tr class="separator:ac0fd3cad51dc68c4ff42684d39c2a501"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5dabb39ec48b54122800de9b4798f26c"><td class="memItemLeft" align="right" valign="top"><a id="a5dabb39ec48b54122800de9b4798f26c"></a>
-using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b> = Eigen::Matrix&lt; value_type, nComponents, 1 &gt;</td></tr>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>vector_type</b> = Eigen::Matrix&lt; <a class="el" href="classdouble.html">value_type</a>, nComponents, 1 &gt;</td></tr>
 <tr class="separator:a5dabb39ec48b54122800de9b4798f26c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
@@ -144,27 +144,27 @@ Public Member Functions</h2></td></tr>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evalijq</b> (uint16_type i, uint16_type j, uint16_type) const</td></tr>
 <tr class="separator:a1e043203a530a38cf5f01cf3bd3df4d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad0b5001440dc272a8b5878f993514f5b"><td class="memItemLeft" align="right" valign="top"><a id="ad0b5001440dc272a8b5878f993514f5b"></a>
-FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
+FEELPP_STRONG_INLINE <a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
 <tr class="separator:ad0b5001440dc272a8b5878f993514f5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1de5736afcd21b02896593baeb287d5"><td class="memTemplParams" colspan="2"><a id="ac1de5736afcd21b02896593baeb287d5"></a>
 template&lt;int PatternContext&gt; </td></tr>
-<tr class="memitem:ac1de5736afcd21b02896593baeb287d5"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_STRONG_INLINE value_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_&lt; PatternContext &gt;) const</td></tr>
+<tr class="memitem:ac1de5736afcd21b02896593baeb287d5"><td class="memTemplItemLeft" align="right" valign="top">FEELPP_STRONG_INLINE <a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>evalijq</b> (uint16_type, uint16_type, uint16_type c1, uint16_type c2, uint16_type q, mpl::int_&lt; PatternContext &gt;) const</td></tr>
 <tr class="separator:ac1de5736afcd21b02896593baeb287d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa0cacf3bb82cbd3ed1b892512844bfd"><td class="memItemLeft" align="right" valign="top"><a id="afa0cacf3bb82cbd3ed1b892512844bfd"></a>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evaliq</b> (uint16_type i, uint16_type) const</td></tr>
 <tr class="separator:afa0cacf3bb82cbd3ed1b892512844bfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5625024ec3402f7e4d04ac5430357e68"><td class="memItemLeft" align="right" valign="top"><a id="a5625024ec3402f7e4d04ac5430357e68"></a>
-FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evaliq</b> (uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
+FEELPP_STRONG_INLINE <a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>evaliq</b> (uint16_type, uint16_type c1, uint16_type c2, uint16_type q) const</td></tr>
 <tr class="separator:a5625024ec3402f7e4d04ac5430357e68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79cbe9e7855956fd05c87227d239345c"><td class="memItemLeft" align="right" valign="top"><a id="a79cbe9e7855956fd05c87227d239345c"></a>
-FEELPP_STRONG_INLINE value_type&#160;</td><td class="memItemRight" valign="bottom"><b>evalq</b> (uint16_type c1, uint16_type, uint16_type) const</td></tr>
+FEELPP_STRONG_INLINE <a class="el" href="classdouble.html">value_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>evalq</b> (uint16_type c1, uint16_type, uint16_type) const</td></tr>
 <tr class="separator:a79cbe9e7855956fd05c87227d239345c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae746076a62e19c5a55ae1adf00b91dd3"><td class="memItemLeft" align="right" valign="top"><a id="ae746076a62e19c5a55ae1adf00b91dd3"></a>
 FEELPP_STRONG_INLINE Eigen::Map&lt; const vector_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>evalq</b> (uint16_type) const</td></tr>
 <tr class="separator:ae746076a62e19c5a55ae1adf00b91dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39c16628ae86659b71477b492187cceb"><td class="memTemplParams" colspan="2"><a id="a39c16628ae86659b71477b492187cceb"></a>
 template&lt;typename IM &gt; </td></tr>
-<tr class="memitem:a39c16628ae86659b71477b492187cceb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (<a class="el" href="classFeel_1_1IM.html">IM</a> const &amp;)</td></tr>
+<tr class="memitem:a39c16628ae86659b71477b492187cceb"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>init</b> (IM const &amp;)</td></tr>
 <tr class="separator:a39c16628ae86659b71477b492187cceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a229881dd603e5f4dc3c0e85c42f9003b"><td class="memItemLeft" align="right" valign="top"><a id="a229881dd603e5f4dc3c0e85c42f9003b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>tensor</b> (<a class="el" href="classFeel_1_1vf_1_1One.html">expression_type</a> const &amp;expr, Geo_t const &amp;)</td></tr>
@@ -198,7 +198,7 @@ Static Public Attributes</h2></td></tr>
 static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>nComponents</b> = gmc_type::nDim</td></tr>
 <tr class="separator:a15940ddaffaba08fda1a8c9a77ec7b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a829d26cb409469cbc70739f05b48603b"><td class="memItemLeft" align="right" valign="top"><a id="a829d26cb409469cbc70739f05b48603b"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>theshape</b> = ( shape::M == gmc_type::nDim &amp;&amp; shape::N == 1 )</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>theshape</b> = ( shape::M == gmc_type::nDim &amp;&amp; shape::N == 1 )</td></tr>
 <tr class="separator:a829d26cb409469cbc70739f05b48603b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->

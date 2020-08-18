@@ -171,17 +171,14 @@ template&lt;typename ExprT &gt; </div>
 <p>time an expression during evaluation. This function is typically used for debugging purposes and it allows to check the numerical results of expressions and sub-expressions.</p>
 <p>The following code times the intermediary results of the evaluation of \(\int_\Omega x y\)</p>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> e = Px()*Py();</div>
-<div class="line">std::cout &lt;&lt; <a class="code" href="namespaceFeel.html#a4c300b4c137594540a9428af36363049">integrate</a>( _range=<a class="code" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(mesh), _expr=<a class="code" href="time_8hpp.html#a7b8e7efef6f811bfb5d726bfd61782a8">time</a>(e,<span class="stringliteral">&quot;e=&quot;</span>) ).evaluate();</div>
+<div class="line">std::cout &lt;&lt; integrate( _range=<a class="code" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(mesh), _expr=<a class="code" href="time_8hpp.html#a7b8e7efef6f811bfb5d726bfd61782a8">time</a>(e,<span class="stringliteral">&quot;e=&quot;</span>) ).evaluate();</div>
 </div><!-- fragment --><dl class="section return"><dt>Returns</dt><dd>the expression that was timeed. </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Bdf.html#a0e1f1e9dd7dcfadda059a8b9cb8a1e6f">Feel::Bdf&lt; fluid_space_type &gt;::polyDeriv()</a>.</p>
 
 </div>
 </div>
 </div><!-- contents -->
 </div><!-- doc-content -->
-<div class="ttc" id="anamespaceFeel_html_a4c300b4c137594540a9428af36363049"><div class="ttname"><a href="namespaceFeel.html#a4c300b4c137594540a9428af36363049">Feel::integrate</a></div><div class="ttdeci">Poly::value_type integrate(Polynomial&lt; Poly, PsetType &gt; const &amp;p)</div><div class="ttdoc">integrate a polynomial over a convex</div><div class="ttdef"><b>Definition:</b> operations.hpp:43</div></div>
-<div class="ttc" id="anamespaceFeel_html_a8ba35386809fcc96e11bf7865d8ad824"><div class="ttname"><a href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">Feel::elements</a></div><div class="ttdeci">elements_type const  &amp; elements() const</div><div class="ttdef"><b>Definition:</b> elements.hpp:280</div></div>
+<div class="ttc" id="anamespaceFeel_html_a55b180ac7bf9d1ebd55a0b79f97e131e"><div class="ttname"><a href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements</a></div><div class="ttdeci">elements_type const  &amp; elements() const</div><div class="ttdef"><b>Definition:</b> elements.hpp:280</div></div>
 <div class="ttc" id="atime_8hpp_html_a7b8e7efef6f811bfb5d726bfd61782a8"><div class="ttname"><a href="time_8hpp.html#a7b8e7efef6f811bfb5d726bfd61782a8">Feel::vf::time</a></div><div class="ttdeci">Expr&lt; TimeExpr&lt; ExprT &gt; &gt; time(ExprT v, std::string t=&quot;&quot;)</div><div class="ttdef"><b>Definition:</b> time.hpp:283</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->

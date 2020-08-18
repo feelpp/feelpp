@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['jacobian_8409',['jacobian',['../classFeel_1_1SolverNonLinear.html#ae8c0e660c8330c633a84bb357d51e564',1,'Feel::SolverNonLinear']]]
+  ['second_3996',['second',['../structFeel_1_1BareEdge.html#abde024a4e7ad597d6a83e44d51b8ce8c',1,'Feel::BareEdge::second()'],['../structFeel_1_1BareFace.html#a1b2987500ffe80fff52fa2c7611fa45d',1,'Feel::BareFace::second()']]]
 ];

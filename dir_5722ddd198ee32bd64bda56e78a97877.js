@@ -1,7 +1,6 @@
 var dir_5722ddd198ee32bd64bda56e78a97877 =
 [
     [ "fluidmechanics.hpp", "fluidmechanics_8hpp.html", [
-      [ "FluidMechanics", "classFeel_1_1FeelModels_1_1FluidMechanics.html", "classFeel_1_1FeelModels_1_1FluidMechanics" ],
       [ "Body", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1Body" ],
       [ "BodyBoundaryCondition", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition.html", "classFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition" ],
       [ "FieldTag", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag.html", "structFeel_1_1FeelModels_1_1FluidMechanics_1_1BodyBoundaryCondition_1_1FieldTag" ],

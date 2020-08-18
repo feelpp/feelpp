@@ -2,9 +2,9 @@ var dir_a5cc16706b2f696b4aa39af29b07fbf0 =
 [
     [ "edges.hpp", "edges_8hpp.html", null ],
     [ "elements.hpp", "elements_8hpp.html", "elements_8hpp" ],
-    [ "enums.hpp", "feelpp_2feel_2feelmesh_2enums_8hpp.html", "feelpp_2feel_2feelmesh_2enums_8hpp" ],
+    [ "enums.hpp", "feelmesh_2enums_8hpp.html", "feelmesh_2enums_8hpp" ],
     [ "faces.hpp", "faces_8hpp.html", null ],
-    [ "filters.hpp", "feelmesh_2filters_8hpp.html", "feelmesh_2filters_8hpp" ],
+    [ "filters.hpp", "filters_8hpp.html", "filters_8hpp" ],
     [ "functors.hpp", "feelmesh_2functors_8hpp.html", null ],
     [ "geoentity.hpp", "geoentity_8hpp.html", "geoentity_8hpp" ],
     [ "geond.hpp", "geond_8hpp.html", "geond_8hpp" ],

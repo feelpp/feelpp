@@ -148,11 +148,11 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
 <tr class="memitem:acb19fe01823ad766e448e3ba2b40a018"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><b>Feel::vf::project_impl</b> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, IteratorRange const &amp;range_it, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_HO)</td></tr>
 <tr class="separator:acb19fe01823ad766e448e3ba2b40a018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bd3f2c215a0dff1878b8b1b368507e9"><td class="memTemplParams" colspan="2">template&lt;typename FunctionSpaceType , typename ExprT &gt; </td></tr>
-<tr class="memitem:a9bd3f2c215a0dff1878b8b1b368507e9"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a9bd3f2c215a0dff1878b8b1b368507e9">Feel::vf::sum</a> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_OPT, bool parallelSync=true)</td></tr>
+<tr class="memitem:a9bd3f2c215a0dff1878b8b1b368507e9"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a9bd3f2c215a0dff1878b8b1b368507e9">Feel::vf::sum</a> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_OPT, <a class="el" href="classbool.html">bool</a> parallelSync=true)</td></tr>
 <tr class="memdesc:a9bd3f2c215a0dff1878b8b1b368507e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">nodal projection of <code>__expr</code> onto the space <code>__functionspace</code>  <a href="projectors_8hpp.html#a9bd3f2c215a0dff1878b8b1b368507e9">More...</a><br /></td></tr>
 <tr class="separator:a9bd3f2c215a0dff1878b8b1b368507e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d2b634b98a0f9b1ead94d0b27fe41a8"><td class="memTemplParams" colspan="2">template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT &gt; </td></tr>
-<tr class="memitem:a4d2b634b98a0f9b1ead94d0b27fe41a8"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum</a> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, IteratorRange const &amp;range_it, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_OPT, bool parallelSync=true)</td></tr>
+<tr class="memitem:a4d2b634b98a0f9b1ead94d0b27fe41a8"><td class="memTemplItemLeft" align="right" valign="top">FunctionSpaceType::element_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum</a> (std::shared_ptr&lt; FunctionSpaceType &gt; const &amp;__functionspace, IteratorRange const &amp;range_it, Expr&lt; ExprT &gt; const &amp;__expr, GeomapStrategyType geomap=GeomapStrategyType::GEOMAP_OPT, <a class="el" href="classbool.html">bool</a> parallelSync=true)</td></tr>
 <tr class="memdesc:a4d2b634b98a0f9b1ead94d0b27fe41a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">nodal projection of <code>__expr</code> onto the the subspace of <code>__functionspace</code> described by the range <code>range_it</code>  <a href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">More...</a><br /></td></tr>
 <tr class="separator:a4d2b634b98a0f9b1ead94d0b27fe41a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -175,7 +175,7 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceFeel.html#ae89776231eca6bd68ba734da512759b3">project</a>&#160;</td>
+          <td class="paramtype">project&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -187,7 +187,7 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">(required(space, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a> &gt; &gt;))(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a8ba35386809fcc96e11bf7865d8ad824">elements</a>(space-&gt;mesh()))(geomap, *, GeomapStrategyType::GEOMAP_OPT)(accumulate, *(boost::is_integral&lt; mpl::_ &gt;), false))&#160;</td>
+          <td class="paramtype">(required(space, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">Feel::FunctionSpaceBase</a> &gt; &gt;))(expr, *))(optional(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *, <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements</a>(space-&gt;mesh()))(geomap, *, GeomapStrategyType::GEOMAP_OPT)(accumulate, *(boost::is_integral&lt; mpl::_ &gt;), false))&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -246,7 +246,7 @@ template&lt;typename FunctionSpaceType , typename ExprT &gt; </div>
 <p>nodal projection of <code>__expr</code> onto the space <code>__functionspace</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>the element of the space <code>__functionspace</code> resulting from the nodal projection of <code>__expr</code> </dd></dl>
 
-<p class="reference">References <a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements()</a>, and <a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum()</a>.</p>
 
 </div>
 </div>
@@ -377,6 +377,8 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
 <p>nodal projection of <code>__expr</code> onto the the subspace of <code>__functionspace</code> described by the range <code>range_it</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>the element of the space <code>__functionspace</code> resulting from the nodal projection of <code>__expr</code> over the range <code>__range_it</code> </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum()</a>.</p>
+
 </div>
 </div>
 <a id="a9bd3f2c215a0dff1878b8b1b368507e9"></a>
@@ -408,7 +410,7 @@ template&lt;typename FunctionSpaceType , typename ExprT &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>parallelSync</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
@@ -459,7 +461,7 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
           <td class="paramname"><em>parallelSync</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
@@ -473,7 +475,9 @@ template&lt;typename FunctionSpaceType , typename IteratorRange , typename ExprT
 <p>nodal projection of <code>__expr</code> onto the the subspace of <code>__functionspace</code> described by the range <code>range_it</code> </p>
 <dl class="section return"><dt>Returns</dt><dd>the element of the space <code>__functionspace</code> resulting from the nodal projection of <code>__expr</code> over the range <code>__range_it</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1CRB.html#acbd7466fb631a46376c8b8b9138ec30a">Feel::CRB&lt; TruthModelType &gt;::check()</a>, and <a class="el" href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">Feel::vf::project()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">Feel::elements()</a>, and <a class="el" href="projectors_8hpp.html#a5ad487c2da56e5147a5cb68bd33cbfcf">Feel::vf::project()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">Feel::vf::project()</a>.</p>
 
 </div>
 </div>

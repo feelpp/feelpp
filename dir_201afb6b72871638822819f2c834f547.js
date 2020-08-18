@@ -46,10 +46,10 @@ var dir_201afb6b72871638822819f2c834f547 =
     ] ],
     [ "makemesh.hpp", "makemesh_8hpp.html", "makemesh_8hpp" ],
     [ "measureofelementsatpoints.hpp", "measureofelementsatpoints_8hpp.html", "measureofelementsatpoints_8hpp" ],
-    [ "mesh.hpp", "feeldiscr_2mesh_8hpp.html", "feeldiscr_2mesh_8hpp" ],
+    [ "mesh.hpp", "mesh_8hpp.html", "mesh_8hpp" ],
     [ "meshimpl.hpp", "meshimpl_8hpp.html", "meshimpl_8hpp" ],
     [ "moch.hpp", "moch_8hpp.html", "moch_8hpp" ],
-    [ "mortar.hpp", "feeldiscr_2mortar_8hpp.html", [
+    [ "mortar.hpp", "mortar_8hpp.html", [
       [ "mortar_base", "classFeel_1_1detail_1_1mortar__base.html", null ],
       [ "Mortar", "classFeel_1_1Mortar.html", "classFeel_1_1Mortar" ],
       [ "NoMortar", "classFeel_1_1NoMortar.html", "classFeel_1_1NoMortar" ]
@@ -57,7 +57,7 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "multiscaleimage.hpp", "multiscaleimage_8hpp.html", null ],
     [ "ned1h.hpp", "ned1h_8hpp.html", "ned1h_8hpp" ],
     [ "odh.hpp", "odh_8hpp.html", "odh_8hpp" ],
-    [ "operator.hpp", "feeldiscr_2operator_8hpp.html", [
+    [ "operator.hpp", "operator_8hpp.html", [
       [ "Operator", "classFeel_1_1Operator.html", "classFeel_1_1Operator" ]
     ] ],
     [ "operatorinterpolation.hpp", "operatorinterpolation_8hpp.html", "operatorinterpolation_8hpp" ],

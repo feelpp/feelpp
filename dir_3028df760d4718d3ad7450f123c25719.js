@@ -47,7 +47,7 @@ var dir_3028df760d4718d3ad7450f123c25719 =
     [ "on.hpp", "on_8hpp.html", "on_8hpp" ],
     [ "one.hpp", "one_8hpp.html", "one_8hpp" ],
     [ "ones.hpp", "ones_8hpp.html", "ones_8hpp" ],
-    [ "operations.hpp", "feelvf_2operations_8hpp.html", null ],
+    [ "operations.hpp", "operations_8hpp.html", null ],
     [ "operators.hpp", "operators_8hpp.html", "operators_8hpp" ],
     [ "operators2.hpp", "operators2_8hpp.html", "operators2_8hpp" ],
     [ "operators3.hpp", "operators3_8hpp.html", null ],

@@ -128,7 +128,7 @@ typedef super::value_type&#160;</td><td class="memItemRight" valign="bottom"><b>
 typedef super::iterator&#160;</td><td class="memItemRight" valign="bottom"><b>iterator</b></td></tr>
 <tr class="separator:ac4d7463d5856a5c0e3261d7824a91412"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa0caf0cb651c6a2b93fc611146df89"><td class="memItemLeft" align="right" valign="top"><a id="a6aa0caf0cb651c6a2b93fc611146df89"></a>
-typedef <a class="el" href="structFeel_1_1matrix__node.html">matrix_node</a>&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
+typedef matrix_node&lt; value_type &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><b>matrix_node_type</b></td></tr>
 <tr class="separator:a6aa0caf0cb651c6a2b93fc611146df89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2cd1fae2a9e0a1918aa76572c7622fb"><td class="memItemLeft" align="right" valign="top"><a id="af2cd1fae2a9e0a1918aa76572c7622fb"></a>
 typedef std::map&lt; <a class="el" href="classint.html">int</a>, basis_context_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>super</b></td></tr>
@@ -137,7 +137,7 @@ typedef std::map&lt; <a class="el" href="classint.html">int</a>, basis_context_p
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a853e2bdb5f09e23fd452777e34b8564c"><td class="memItemLeft" align="right" valign="top"><a id="a853e2bdb5f09e23fd452777e34b8564c"></a>
-std::pair&lt; iterator, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (node_type const &amp;t)</td></tr>
+std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>add</b> (node_type const &amp;t)</td></tr>
 <tr class="separator:a853e2bdb5f09e23fd452777e34b8564c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46711d483a1adb3ff4951c8dc644cb68"><td class="memItemLeft" align="right" valign="top"><a id="a46711d483a1adb3ff4951c8dc644cb68"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addCtx</b> (basis_context_ptrtype ctx, <a class="el" href="classint.html">int</a> proc_having_the_point)</td></tr>
@@ -149,7 +149,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addCtx</b> (basis_con
 &#160;</td><td class="memItemRight" valign="bottom"><b>Context</b> (functionspace_ptrtype const &amp;Xh)</td></tr>
 <tr class="separator:a6244101435dd3d80ce4d981bba83e9ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeae8292c6dcc98b91ec08157d8d66c96"><td class="memItemLeft" align="right" valign="top"><a id="aeae8292c6dcc98b91ec08157d8d66c96"></a>
-constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><b>ctxHaveBeenMpiBroadcasted</b> () const</td></tr>
+constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>ctxHaveBeenMpiBroadcasted</b> () const</td></tr>
 <tr class="separator:aeae8292c6dcc98b91ec08157d8d66c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3dd3f9b3a1adb0a6d02212277de671e4"><td class="memItemLeft" align="right" valign="top"><a id="a3dd3f9b3a1adb0a6d02212277de671e4"></a>
 functionspace_ptrtype&#160;</td><td class="memItemRight" valign="bottom"><b>functionSpace</b> () const</td></tr>
@@ -173,13 +173,13 @@ virtual <a class="el" href="classFeel_1_1FunctionSpace.html">functionspace_type<
 void&#160;</td><td class="memItemRight" valign="bottom"><b>removeCtx</b> ()</td></tr>
 <tr class="separator:a9535eec527df698343c90ee9145b05da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d605fbcea07859c92d1e8743f839af3"><td class="memItemLeft" align="right" valign="top"><a id="a4d605fbcea07859c92d1e8743f839af3"></a>
-std::pair&lt; iterator, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>replace</b> (<a class="el" href="classint.html">int</a> ptIdInCtx, node_type const &amp;t)</td></tr>
+std::pair&lt; iterator, <a class="el" href="classbool.html">bool</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>replace</b> (<a class="el" href="classint.html">int</a> ptIdInCtx, node_type const &amp;t)</td></tr>
 <tr class="separator:a4d605fbcea07859c92d1e8743f839af3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a384ea7e9f56b5106cd975bce0729f0ec"><td class="memItemLeft" align="right" valign="top"><a id="a384ea7e9f56b5106cd975bce0729f0ec"></a>
-static const bool&#160;</td><td class="memItemRight" valign="bottom"><b>is_rb_context</b> = false</td></tr>
+static const <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><b>is_rb_context</b> = false</td></tr>
 <tr class="separator:a384ea7e9f56b5106cd975bce0729f0ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
