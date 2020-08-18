@@ -24,6 +24,7 @@
 
 #include <benchmark/benchmark.h>
 #include <feel/feelfilters/loadmesh.hpp>
+#include <feel/feeldiscr/meshstructured.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 using namespace Feel;
@@ -36,31 +37,52 @@ void BM_Space( benchmark::State& state )
     for (auto _ : state)
     {
         using mesh_t = typename SpaceT::mesh_type;
+        using mesh_ptr_t = typename SpaceT::mesh_ptrtype;
         const int Dim = mesh_t::nDim;
 
         state.PauseTiming();
-        auto m = loadMesh( _mesh=new mesh_t,
-                           _filename="feelpp-"+std::to_string(Dim)+"d-"+std::to_string(state.range(0))+".msh",
-                           _savehdf5=false,_verbose=false,
-                           _h=1./state.range(0) );
+
+        mesh_ptr_t m;
+        if constexpr ( std::is_same_v<mesh_t, MeshStructured> )
+        {
+            holo3_image<float> cx,cy;   
+            int nx_ = state.range( 0 );
+            int ny_ = state.range( 1 );
+            double psize_ = 1./state.range( 0 );
+            m = std::make_shared<MeshStructured>( nx_, ny_, psize_, cx, cy,
+                                                  Environment::worldCommPtr(),
+                                                  false, "", false );
+        }
+        else
+        {
+            m = loadMesh( _mesh = new mesh_t,
+                          _filename = "feelpp-" + std::to_string( Dim ) + "d-" + std::to_string( state.range( 0 ) ) + ".msh",
+                          _savehdf5 = false, _verbose = false,
+                          _h = 1. / state.range( 0 ) );
+        }
         state.ResumeTiming();
         auto Xh = SpaceT::New( _mesh = m,
                                _worldscomm = makeWorldsComm( 1, m->worldComm() ) );
         nitems = Xh->nLocalDof();
     }
-    state.SetItemsProcessed( state.iterations()*nitems );
-    state.SetLabel( std::to_string(SpaceT::nDim)+"D h=1/"+std::to_string(state.range(0)) + " ndofs=" + std::to_string(nitems) );
+    state.SetItemsProcessed( state.iterations() * nitems );
+    state.SetLabel( std::to_string( SpaceT::nDim ) + "D h=1/" + std::to_string( state.range( 0 ) ) + " ndofs=" + std::to_string( nitems ) );
 }
 
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,1>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64);
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,2>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64);
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,3>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64);
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,1>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32);
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,2>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32);
-BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,3>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32);
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0})->Args({64,0});
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,2>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0})->Args({64,0});
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<2>>,3>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0})->Args({64,0});
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,2>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<Mesh<Simplex<3>>,3>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
 
-BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<2>>,1>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32);
-BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<3>>,1>)->Unit(benchmark::kMillisecond)->Arg(4)->Arg(8)->Arg(16)->Arg(32);
+BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<2>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
+BENCHMARK_TEMPLATE(BM_Space,Pdh_type<Mesh<Simplex<3>>,1>)->Unit(benchmark::kMillisecond)->Args({4,0})->Args({8,0})->Args({16,0})->Args({32,0});
+
+BENCHMARK_TEMPLATE(BM_Space,Pch_type<MeshStructured,1>)->Unit(benchmark::kMillisecond)
+                    ->Args({4,4})->Args({8,8})->Args({16,16})->Args({32,32})->Args({64,64})
+                    ->Args({128,128})->Args({256,256})->Args({512,512})->Args({1024,1024})
+                    ->Args({1920,1024})->Args({2048,2048});
 
 int main(int argc, char** argv)
 {
