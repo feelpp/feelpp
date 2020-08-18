@@ -101,5 +101,6 @@
         "cfenv": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:buildType}-${variant:webserver}-${variant:doxygen}"
 }
