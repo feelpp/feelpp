@@ -84,9 +84,13 @@ if ( DOXYGEN AND FEELPP_ENABLE_DOXYGEN)
 
 
    #
-   configure_file(
+  configure_file(
      ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
      ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+     )
+  configure_file(
+     ${CMAKE_CURRENT_SOURCE_DIR}/preprocess.sh.in
+     ${CMAKE_CURRENT_BINARY_DIR}/preprocess.sh
      )
 
    file(GLOB LOGOS "${CMAKE_CURRENT_SOURCE_DIR}/pngs/logos/*")
