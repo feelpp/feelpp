@@ -1,0 +1,5 @@
+var structboost_1_1geometry_1_1traits_1_1point__type_3_01Feel_1_1detail_1_1geometry_1_1segmentWrappe4103b4104a9e2d4b2dc4408490d1749d =
+[
+    [ "type", "structboost_1_1geometry_1_1traits_1_1point__type_3_01Feel_1_1detail_1_1geometry_1_1segmentWrappe4103b4104a9e2d4b2dc4408490d1749d.html#acd2571717bc76cd1589f6675d433a449", null ],
+    [ "value_type", "structboost_1_1geometry_1_1traits_1_1point__type_3_01Feel_1_1detail_1_1geometry_1_1segmentWrappe4103b4104a9e2d4b2dc4408490d1749d.html#aed5059c903491e9bb310aebf2f6db6f1", null ]
+];

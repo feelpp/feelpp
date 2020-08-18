@@ -1,0 +1,6 @@
+var searchData=
+[
+  ['backend_5fptrtype_8555',['backend_ptrtype',['../classFeel_1_1MeshAdaptation.html#a773cd16e4345fe69c832aa7093022cbf',1,'Feel::MeshAdaptation::backend_ptrtype()'],['../classFeel_1_1FeelModels_1_1MixedElasticity.html#a252c0792fbb70bdc2b543eb62c4c3a51',1,'Feel::FeelModels::MixedElasticity::backend_ptrtype()'],['../classFeel_1_1FeelModels_1_1MixedPoisson.html#a0fa585304809196e0ef646e0ab24c434',1,'Feel::FeelModels::MixedPoisson::backend_ptrtype()']]],
+  ['backend_5ftype_8556',['backend_type',['../classFeel_1_1MeshAdaptation.html#a57b8391420b4e558eb33d5d708a76dbb',1,'Feel::MeshAdaptation::backend_type()'],['../classFeel_1_1FeelModels_1_1MixedElasticity.html#a351b8faaad35769a568af8f99f79947a',1,'Feel::FeelModels::MixedElasticity::backend_type()'],['../classFeel_1_1FeelModels_1_1MixedPoisson.html#a0293bd7566cd54be73677419234ddfb4',1,'Feel::FeelModels::MixedPoisson::backend_type()']]],
+  ['bdf_5ftype_8557',['bdf_type',['../classFeel_1_1CRB.html#a27e55857c23991212b9b3b458cd8f822',1,'Feel::CRB::bdf_type()'],['../classFeel_1_1CRBModel.html#a130cb10e39947f8daf7d049c1ca037d3',1,'Feel::CRBModel::bdf_type()'],['../classFeel_1_1POD.html#ac7c4c6d74d30bac3583d0a2cfcbf533e',1,'Feel::POD::bdf_type()']]]
+];

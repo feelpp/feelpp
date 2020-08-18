@@ -1,0 +1,67 @@
+var dir_3028df760d4718d3ad7450f123c25719 =
+[
+    [ "detail", "dir_8e1007eda518a56815ea54c5ff0df4a3.html", "dir_8e1007eda518a56815ea54c5ff0df4a3" ],
+    [ "arithmetic.hpp", "arithmetic_8hpp.html", null ],
+    [ "bilinearform.hpp", "bilinearform_8hpp.html", null ],
+    [ "bilinearformbase.hpp", "bilinearformbase_8hpp.html", [
+      [ "BilinearFormBase", "classFeel_1_1BilinearFormBase.html", "classFeel_1_1BilinearFormBase" ]
+    ] ],
+    [ "bilinearformcontext.hpp", "bilinearformcontext_8hpp.html", null ],
+    [ "binaryfunctor.hpp", "binaryfunctor_8hpp.html", null ],
+    [ "block.hpp", "block_8hpp.html", [
+      [ "BlocksStencilPattern", "classFeel_1_1BlocksStencilPattern.html", "classFeel_1_1BlocksStencilPattern" ],
+      [ "Blocks", "structFeel_1_1vf_1_1Blocks.html", "structFeel_1_1vf_1_1Blocks" ],
+      [ "BlocksBase", "structFeel_1_1vf_1_1BlocksBase.html", "structFeel_1_1vf_1_1BlocksBase" ]
+    ] ],
+    [ "cst.hpp", "cst_8hpp.html", "cst_8hpp" ],
+    [ "det.hpp", "det_8hpp.html", "det_8hpp" ],
+    [ "evaluator.hpp", "evaluator_8hpp.html", null ],
+    [ "expr.hpp", "expr_8hpp.html", null ],
+    [ "exprbase.hpp", "exprbase_8hpp.html", [
+      [ "ExprBase", "classFeel_1_1ExprBase.html", "classFeel_1_1ExprBase" ]
+    ] ],
+    [ "eye.hpp", "eye_8hpp.html", "eye_8hpp" ],
+    [ "fec.hpp", "fec_8hpp.html", null ],
+    [ "flat.hpp", "flat_8hpp.html", "flat_8hpp" ],
+    [ "form.hpp", "form_8hpp.html", "form_8hpp" ],
+    [ "formcontextbase.hpp", "formcontextbase_8hpp.html", null ],
+    [ "function.hpp", "function_8hpp.html", "function_8hpp" ],
+    [ "functordomain.hpp", "functordomain_8hpp.html", null ],
+    [ "geometricdata.hpp", "geometricdata_8hpp.html", null ],
+    [ "ginac.hpp", "ginac_8hpp.html", "ginac_8hpp" ],
+    [ "ginacbase.hpp", "ginacbase_8hpp.html", [
+      [ "GiNaCBase", "classFeel_1_1vf_1_1GiNaCBase.html", "classFeel_1_1vf_1_1GiNaCBase" ]
+    ] ],
+    [ "integrate.hpp", "integrate_8hpp.html", "integrate_8hpp" ],
+    [ "integratordirac.hpp", "integratordirac_8hpp.html", "integratordirac_8hpp" ],
+    [ "inv.hpp", "inv_8hpp.html", "inv_8hpp" ],
+    [ "lambda.hpp", "lambda_8hpp.html", "lambda_8hpp" ],
+    [ "linearform.hpp", "linearform_8hpp.html", "linearform_8hpp" ],
+    [ "linearformcontext.hpp", "linearformcontext_8hpp.html", null ],
+    [ "matvec.hpp", "matvec_8hpp.html", "matvec_8hpp" ],
+    [ "minmax.hpp", "minmax_8hpp.html", "minmax_8hpp" ],
+    [ "norm.hpp", "norm_8hpp.html", "norm_8hpp" ],
+    [ "normh1.hpp", "normh1_8hpp.html", "normh1_8hpp" ],
+    [ "norml2.hpp", "norml2_8hpp.html", "norml2_8hpp" ],
+    [ "norml2squared.hpp", "norml2squared_8hpp.html", "norml2squared_8hpp" ],
+    [ "on.hpp", "on_8hpp.html", "on_8hpp" ],
+    [ "one.hpp", "one_8hpp.html", "one_8hpp" ],
+    [ "ones.hpp", "ones_8hpp.html", "ones_8hpp" ],
+    [ "operations.hpp", "feelvf_2operations_8hpp.html", null ],
+    [ "operators.hpp", "operators_8hpp.html", "operators_8hpp" ],
+    [ "operators2.hpp", "operators2_8hpp.html", "operators2_8hpp" ],
+    [ "operators3.hpp", "operators3_8hpp.html", null ],
+    [ "pow.hpp", "pow_8hpp.html", "pow_8hpp" ],
+    [ "print.hpp", "print_8hpp.html", "print_8hpp" ],
+    [ "projectors.hpp", "projectors_8hpp.html", "projectors_8hpp" ],
+    [ "rand.hpp", "rand_8hpp.html", "rand_8hpp" ],
+    [ "shape.hpp", "shape_8hpp.html", "shape_8hpp" ],
+    [ "time.hpp", "time_8hpp.html", "time_8hpp" ],
+    [ "trace.hpp", "trace_8hpp.html", "trace_8hpp" ],
+    [ "trans.hpp", "trans_8hpp.html", "trans_8hpp" ],
+    [ "twovalued.hpp", "twovalued_8hpp.html", "twovalued_8hpp" ],
+    [ "unary.hpp", "unary_8hpp.html", "unary_8hpp" ],
+    [ "unaryfunctor.hpp", "unaryfunctor_8hpp.html", null ],
+    [ "val.hpp", "val_8hpp.html", "val_8hpp" ],
+    [ "vf.hpp", "vf_8hpp.html", null ]
+];

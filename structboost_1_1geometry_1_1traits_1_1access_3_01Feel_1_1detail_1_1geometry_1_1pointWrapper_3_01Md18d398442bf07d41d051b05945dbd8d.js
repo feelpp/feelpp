@@ -1,0 +1,6 @@
+var structboost_1_1geometry_1_1traits_1_1access_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01Md18d398442bf07d41d051b05945dbd8d =
+[
+    [ "get", "structboost_1_1geometry_1_1traits_1_1access_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01Md18d398442bf07d41d051b05945dbd8d.html#a97caa38114f0f8ab9765e5121e767f7a", null ],
+    [ "set", "structboost_1_1geometry_1_1traits_1_1access_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01Md18d398442bf07d41d051b05945dbd8d.html#a75c1a880277b0697a30cc2ba614ed0fe", null ],
+    [ "CoordinateType", "structboost_1_1geometry_1_1traits_1_1access_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01Md18d398442bf07d41d051b05945dbd8d.html#acd81db07a9818eafc7d83e252831cc22", null ]
+];

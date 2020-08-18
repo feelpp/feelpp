@@ -1,0 +1,4 @@
+var structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1segmentWrapper_3_01Ma77ea47effea60adb3fc0d76fda7c40f2 =
+[
+    [ "type", "structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1segmentWrapper_3_01Ma77ea47effea60adb3fc0d76fda7c40f2.html#acee98790d4020f3175220b04682caf41", null ]
+];

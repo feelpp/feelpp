@@ -1,0 +1,7 @@
+var structboost_1_1geometry_1_1traits_1_1indexed__access_3_01Feel_1_1detail_1_1geometry_1_1segmentWrc72ad3cfffbf1acde1c8541ec31996a5 =
+[
+    [ "get", "structboost_1_1geometry_1_1traits_1_1indexed__access_3_01Feel_1_1detail_1_1geometry_1_1segmentWrc72ad3cfffbf1acde1c8541ec31996a5.html#a92e0cc3c4dc030ff9d71572ecf46d872", null ],
+    [ "set", "structboost_1_1geometry_1_1traits_1_1indexed__access_3_01Feel_1_1detail_1_1geometry_1_1segmentWrc72ad3cfffbf1acde1c8541ec31996a5.html#aea700c37bcee828db7e30f873fe8fe10", null ],
+    [ "coordinate_type", "structboost_1_1geometry_1_1traits_1_1indexed__access_3_01Feel_1_1detail_1_1geometry_1_1segmentWrc72ad3cfffbf1acde1c8541ec31996a5.html#ab837c09cc8979459231eab676e393f68", null ],
+    [ "segment_type", "structboost_1_1geometry_1_1traits_1_1indexed__access_3_01Feel_1_1detail_1_1geometry_1_1segmentWrc72ad3cfffbf1acde1c8541ec31996a5.html#af36ec780110238b6e4d46422d118b3cf", null ]
+];

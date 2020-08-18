@@ -1,0 +1,4 @@
+var structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01MatrixType_00_01Dim_01_4_01_4 =
+[
+    [ "type", "structboost_1_1geometry_1_1traits_1_1tag_3_01Feel_1_1detail_1_1geometry_1_1pointWrapper_3_01MatrixType_00_01Dim_01_4_01_4.html#a31bde7a8d7d354c7e13e15c41aed4db1", null ]
+];
