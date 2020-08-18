@@ -5,7 +5,7 @@
             "includePath": [
                 "/usr/local/include",
                 "/usr/include",
-                "${workspaceRoot}/**"
+                "${workspaceFolder}/**"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -13,7 +13,7 @@
                 "path": [
                     "/usr/local/include",
                     "/usr/include",
-                    "${workspaceRoot}/**"
+                    "${workspaceFolder}/**"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -32,7 +32,7 @@
             "includePath": [
                 "/usr/include",
                 "/usr/local/include",
-                "${workspaceRoot}/**"
+                "${workspaceFolder}/**"
             ],
             "defines": [],
             "intelliSenseMode": "clang-x64",
@@ -40,7 +40,7 @@
                 "path": [
                     "/usr/include",
                     "/usr/local/include",
-                    "${workspaceRoot}/**"
+                    "${workspaceFolder}/**"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
@@ -52,7 +52,7 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceRoot}/**"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_DEBUG",
@@ -61,7 +61,7 @@
             "intelliSenseMode": "msvc-x64",
             "browse": {
                 "path": [
-                    "${workspaceRoot}/**"
+                    "${workspaceFolder}/**"
                 ],
                 "limitSymbolsToIncludedHeaders": true,
                 "databaseFilename": ""
