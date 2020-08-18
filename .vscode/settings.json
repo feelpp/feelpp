@@ -102,5 +102,5 @@
     },
     "C_Cpp.configurationWarnings": "Disabled",
     "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:buildType}-${variant:webserver}-${variant:doxygen}"
+    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}"
 }

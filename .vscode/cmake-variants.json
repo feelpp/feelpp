@@ -1,4 +1,44 @@
 {
+    "toolboxes": {
+        "default": "notoolboxes",
+        "description": "Enable/Disable Feel++ Toolboxes build",
+        "choices": {
+            "doxygen": {
+                "short": "Toolboxes",
+                "long": "Enable Feel++ Toolboxes.",
+                "settings": {
+                    "FEELPP_ENABLE_TOOLBOXES": "ON"
+                }
+            },
+            "nodoxygen": {
+                "short": "No Toolboxes",
+                "long": "Disable Feel++ toolboxes.",
+                "settings": {
+                    "FEELPP_ENABLE_TOOLBOXES": "OFF"
+                }
+            }
+        }
+    },
+    "mor": {
+        "default": "nomor",
+        "description": "Enable/Disable Feel++ MOR build",
+        "choices": {
+            "mor": {
+                "short": "MOR",
+                "long": "Enable Feel++ MOR.",
+                "settings": {
+                    "FEELPP_ENABLE_MOR": "ON"
+                }
+            },
+            "nomor": {
+                "short": "No MOR",
+                "long": "Disable Feel++ MOR.",
+                "settings": {
+                    "FEELPP_ENABLE_MOR": "OFF"
+                }
+            }
+        }
+    },
     "buildType": {
         "default": "debug",
         "description": "The build type.",
