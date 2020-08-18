@@ -31,11 +31,12 @@ INPUT                   =   @CMAKE_SOURCE_DIR@/feelpp/feel/feelcore \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/electric \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/fluid \
                             @CMAKE_SOURCE_DIR@/toolboxes/feel/feelmodels/solid \
-                            @CMAKE_CURRENT_SOURCE_DIR@/index.md
+                            @CMAKE_CURRENT_SOURCE_DIR@/index.md \
+                            @CMAKE_CURRENT_SOURCE_DIR@/examples.md \
 FILE_PATTERNS           = *.hpp *.md
 RECURSIVE               = YES
 EXCLUDE                 =
-EXAMPLE_PATH            = 
+EXAMPLE_PATH            = @CMAKE_SOURCE_DIR@/feelpp/quickstart 
 EXAMPLE_RECURSIVE       = YES
 IMAGE_PATH              = @CMAKE_CURRENT_SOURCE_DIR@/pngs
 FILTER_PATTERNS         = *.hpp="\"@CMAKE_CURRENT_BINARY_DIR@/preprocess.sh\""
