@@ -36,6 +36,7 @@
 #include <feel/feelvf/vf.hpp>
 #include <feel/feelvf/print.hpp>
 
+///[stokes]
 template<typename SpacePtrType>
 int
 stokes(SpacePtrType Vh)
@@ -108,8 +109,10 @@ stokes(SpacePtrType Vh)
 
     return check( thechecker, u );
 }
+///[stokes]
 int main(int argc, char**argv )
 {
+    ///[stokes-env]
     using namespace Feel;
 	po::options_description laplacianoptions( "Stokes options" );
 	laplacianoptions.add_options()
@@ -123,11 +126,15 @@ int main(int argc, char**argv )
                    _about=about(_name="qs_stokes",
                                 _author="Feel++ Consortium",
                                 _email="feelpp-devel@feelpp.org"));
-
+    ///[stokes-env]
+    
     tic();
+    ///[stokes-mesh]
     auto mesh = loadMesh(_mesh=new Mesh<Simplex<FEELPP_DIM,1>>);
+    ///[stokes-mesh]
     toc("loadMesh");
 
+    ///[stokes-space]
     int status;
     if ( soption("space") == "P1P0" )
         status = stokes( P2ch<Lagrange<1,Vectorial>,Lagrange<0,Scalar,Discontinuous>>( mesh ) );
@@ -138,5 +145,6 @@ int main(int argc, char**argv )
         // default P2P1: good space
         status = stokes( THch<1>( mesh ) );
     }
+    ///[stokes-space]
     return status;
 }
