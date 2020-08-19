@@ -45,7 +45,12 @@ BilinearFormBase<T>::BilinearFormBase( BilinearFormBase const& __vf )
     M_do_threshold( __vf.M_do_threshold ),
     M_threshold( __vf.M_threshold ),
     b_mutex()
-{}
+{
+    auto dmTest = M_matrix->mapRowPtr();
+    auto dmTrial = M_matrix->mapColPtr();
+    this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
+    this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
+}
 
 
 template<typename T>
@@ -62,6 +67,10 @@ BilinearFormBase<T>::operator=( BilinearFormBase const& form )
         M_row_startInMatrix = form.M_row_startInMatrix;
         M_col_startInMatrix = form.M_col_startInMatrix;
         M_lb = form.M_lb;
+        auto dmTest = M_matrix->mapRowPtr();
+        auto dmTrial = M_matrix->mapColPtr();
+        this->setDofIdToContainerIdTest( dmTest->dofIdToContainerId( M_row_startInMatrix ) );
+        this->setDofIdToContainerIdTrial( dmTrial->dofIdToContainerId( M_col_startInMatrix ) );
     }
 
     return *this;
