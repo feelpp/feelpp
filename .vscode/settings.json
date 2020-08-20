@@ -105,6 +105,7 @@
         "slist": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
-    "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}"
+    "cmake.configureOnOpen": false,
+    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}",
+    "cmake.parallelJobs": 5
 }
