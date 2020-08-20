@@ -7,7 +7,7 @@ D = 20
 N = 100
 T = 50
 
-flt = ukf.Filter( dynamics = lambda x : x + np.random.normal(0,0.1,D)  , observe = lambda x : x, defect = 1e-5, stateDim = D, obsDim = D )
+flt = ukf.Filter( dynamics = lambda x,t : x + np.random.normal(0,0.1,D)  , observe = lambda x,t : x, defect = 1e-5, stateDim = D, obsDim = D )
 
 signal = np.cos(np.linspace(0,D*T,D*N)).reshape(D,N)
 

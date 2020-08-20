@@ -68,6 +68,9 @@ class Filter:
         
     def setState( self, state ):
         self._stateEstimate = state
+
+    def setSigmaAk( self, M ):
+        self._sigmaAk = M
         
     def setSigmaHk( self, M ): # M is a numpy obsDim*obsDim matrix
         self._sigmaHk = M
