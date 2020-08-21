@@ -1,13 +1,15 @@
 {
     "env": {
-        "myDefaultIncludePath": ["${workspaceFolder}/feelpp/contrib/eigen",
-                                 "${workspaceFolder}/feelpp/contrib/eigen/unsupported",
-                                 "${workspaceFolder}/feelpp/contrib/tabulate",
-                                 "${workspaceFolder}/feelpp/contrib/glog/src",
-                                 "${workspaceFolder}/feelpp/contrib/gflags/src",
-                                 "${workspaceFolder}/feelpp", 
-                                 "${workspaceFolder}/toolboxes",
-                                 "${workspaceFolder}/mor"]
+        "myDefaultIncludePath": [
+            "${workspaceFolder}/feelpp/contrib/eigen",
+            "${workspaceFolder}/feelpp/contrib/eigen/unsupported",
+            "${workspaceFolder}/feelpp/contrib/tabulate",
+            "${workspaceFolder}/feelpp/contrib/glog/src",
+            "${workspaceFolder}/feelpp/contrib/gflags/src",
+            "${workspaceFolder}/feelpp",
+            "${workspaceFolder}/toolboxes",
+            "${workspaceFolder}/mor"
+        ]
     },
     "configurations": [
         {
@@ -58,7 +60,8 @@
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}/compile_commands.json",
+            "configurationProvider": "ms-vscode.cmake-tools"
         },
         {
             "name": "Win32",
