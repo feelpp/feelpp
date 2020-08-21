@@ -8,10 +8,12 @@
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 //#include <feel/feelvf/inv.hpp>
 #include <feel/feelpde/operatorpcd.hpp>
+#include <feel/feells/reinit_fms.hpp>
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
+
 
 namespace Feel {
 namespace FeelModels {
@@ -187,7 +189,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         }
     }
 
-    //--------------------------------------------------------------//
+    M_dist2WallEnabled = boption(_prefix=this->prefix(),_name="distance-to-wall.enabled");
+    if ( Environment::vm().count( prefixvm(this->prefix(),"distance-to-wall.markers").c_str() ) )
+    {
+        std::vector<std::string> tmp =  Environment::vm()[ prefixvm(this->prefix(),"distance-to-wall.markers").c_str() ].template as<std::vector<std::string> >();
+        M_dist2WallMarkers.insert( tmp.begin(), tmp.end() );
+    }
 
     // prec
     M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
@@ -750,29 +757,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createPostProcessExporters()
 
 //---------------------------------------------------------------------------------------------------------//
 
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
-{
-    if ( M_XhNormalBoundaryStress ) return;
-    M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=M_meshTrace );
-    M_fieldNormalStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
-    M_fieldWallShearStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesVorticity()
-{
-    if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm());
-    else
-        M_XhVorticity = space_vorticity_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
-                                                   _range=M_rangeMeshElements );
-    M_fieldVorticity.reset( new element_vorticity_type(M_XhVorticity));
-}
+// FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+// void
+// FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesNormalStress()
+// {
+//     if ( M_XhNormalBoundaryStress ) return;
+//     M_XhNormalBoundaryStress = space_normalstress_type::New( _mesh=M_meshTrace );
+//     M_fieldNormalStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+//     M_fieldWallShearStress.reset(new element_normalstress_type(M_XhNormalBoundaryStress));
+// }
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -1034,6 +1027,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
             M_stabilizationGLSEltRangePressure[matName] = range;
         }
     }
+
+    //-------------------------------------------------//
+    // distance to wall
+    if ( this->hasTurbulenceModel() )
+        M_dist2WallEnabled = true;
+    if ( M_dist2WallEnabled )
+        this->initDist2Wall();
+
+    if ( this->hasTurbulenceModel() )
+        this->initTurbulenceModel();
     //-------------------------------------------------//
     // init function defined in json
     this->initUserFunctions();
@@ -1933,6 +1936,109 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initInHousePreconditioner()
 
 }
 
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initDist2Wall()
+{
+    space_dist2wall_ptrtype M_spaceDist2Wall;
+    M_spaceDist2Wall = space_dist2wall_type::New(_mesh=this->mesh() );
+    M_fieldDist2Wall = M_spaceDist2Wall->elementPtr();
+
+    auto thefms = fms( M_spaceDist2Wall );
+
+    //auto phio = Xh->element();
+    //phio = vf::project(Xh, elements(mesh), h() );
+    M_fieldDist2Wall->on(_range=elements(this->mesh()),_expr=h() );
+
+    auto rangeWall = M_dist2WallMarkers.empty()? boundaryfaces(this->mesh()) : markedfaces(this->mesh(), M_dist2WallMarkers );
+
+    (*M_fieldDist2Wall) +=vf::project(_space=M_spaceDist2Wall,
+                                      _range=rangeWall,
+                                      _expr= -idv(M_fieldDist2Wall) - h()/100. );
+    *M_fieldDist2Wall = thefms->march(*M_fieldDist2Wall);
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
+{
+    M_turbulenceModelType.reset( new turbulence_model_type( prefixvm(this->prefix(),"turbulence"),
+                                                            "cfpdes",
+                                                            this->worldCommPtr(), "", this->repository() ) );
+
+    std::string eqkeyword = "turbulence_SA";
+    M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
+
+    std::ostringstream ostr;
+    ostr << "{";
+
+    ostr << "\"Materials\":{";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        if ( !physicFluidData->turbulence().isEnabled() )
+            continue;
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+        {
+            //auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+
+            ostr << "\""<<matName<<"\":{"
+                 << "\"markers\":[";
+            for ( std::string const& m : matProps.markers() )
+                ostr << "\"" << m << "\"";
+            ostr << "],";
+
+            if ( physicFluidData->turbulence().model() == "Spalart-Allmaras" )
+            {
+                //std::string prefix_symbol = "turbulence_SA";
+                std::string symb_sol_SA = prefixvm( eqkeyword, "nu" , "_" );
+                std::string symbDensity = "materials_" + matName + "_rho";
+                std::string symbDynViscosity = "materials_" + matName + "_mu";
+
+                physicFluidData->addParameter( prefixvm( eqkeyword, "c_b1", "_" ), 0.1355 );
+                physicFluidData->addParameter( prefixvm( eqkeyword, "khi", "_" ), (boost::format("%1%*%2%/%3%:%1%:%2%:%3%")%symb_sol_SA %symbDensity %symbDynViscosity ).str(), this->worldComm(), this->repository().expr() );
+
+                ostr << "\""<<eqkeyword << "_c\":\"1\","
+                     << "\""<<eqkeyword << "_f\":\"1\""
+                     << "}"; // end mymat1
+            }
+        }
+    }
+    ostr << "}"; //end Materials
+
+    ostr << ",";
+    ostr << "\"BoundaryConditions\":{";
+
+    ostr << "\"" << eqkeyword << "\":{";
+
+    ostr << "\"Dirichlet\":{";
+
+    ostr << "\"mybc\":{"
+         << "\"markers\":[\"Gamma0\",\"GammaOut\",\"Gamma1\"],"
+         << "\"expr\":\"0\""
+         << "}";
+
+    ostr << "}"; // end Dirichlet
+    ostr << "}"; // end eqkeyword
+    ostr << "}"; //end BoundaryConditions
+
+    ostr << "}";
+
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "\n" << ostr.str()  << "\n\n";
+
+    std::istringstream istr( ostr.str() );
+    pt::ptree pt;
+    pt::read_json(istr, pt);
+    auto myModelProp = std::make_shared<ModelProperties>( pt, M_turbulenceModelType->repository().expr(), M_turbulenceModelType->worldCommPtr() );
+    M_turbulenceModelType->setModelProperties( myModelProp );
+    M_turbulenceModelType->setMesh( this->mesh() );
+
+    M_turbulenceModelType->init();
+    // cfpdes->printAndSaveInfo();
+
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void

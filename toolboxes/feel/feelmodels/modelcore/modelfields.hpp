@@ -28,6 +28,7 @@ const size_type ID           = ( 1<<0 );
 const size_type MAGNITUDE    = ( 1<<1 );
 const size_type GRAD         = ( 1<<2 );
 const size_type GRAD_NORMAL  = ( 1<<3 );
+const size_type CURL         = ( 1<<4 );
 
 }
 
@@ -150,7 +151,8 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
         return Feel::vf::symbolsExpr( this->symbolsExpr_ID(),
                                       this->symbolsExpr_MAGNITUDE(),
                                       this->symbolsExpr_GRAD(),
-                                      this->symbolsExpr_GRAD_NORMAL()
+                                      this->symbolsExpr_GRAD_NORMAL(),
+                                      this->symbolsExpr_CURL()
                                       );
 
     }
@@ -224,6 +226,20 @@ class ModelField : public std::vector<ModelField1<ModelFieldTagType,FieldType> >
             return symbols_expression_empty_t{};
     }
 
+    auto symbolsExpr_CURL() const
+    {
+        if constexpr ( has_value_v<Ctx,FieldCtx::CURL> && nComponents1 > 1 && nComponents2 == 1 )
+        {
+            SymbolExprComponentSuffix secs( nRealDim==3 ? 3 : 1, 1 );
+            using _expr_type = std::decay_t<decltype( curlv(this->front().field()) )>;
+            symbol_expression_t<_expr_type> se;
+            for ( auto const& mfield : *this )
+                se.add( prefixvm( mfield.prefixSymbol(), "curl_"+mfield.symbol(),"_" ), curlv(mfield.field()), secs, mfield.updateFunctionSymbolExpr() );
+            return Feel::vf::symbolsExpr( se );
+        }
+        else
+            return symbols_expression_empty_t{};
+    }
 
 
     template <typename SelectorModelFieldType>

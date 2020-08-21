@@ -263,6 +263,22 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _geomap=this->geomap() );
             }
 
+            if ( physicFluidData->turbulence().isEnabled() && BuildNonCstPart )
+            {
+                auto lmix = min( 0.41*idv(M_fieldDist2Wall), cst(0.09)*cst(0.0635/2.) );
+                auto mut = pow(lmix,2)*abs(gradv(u)(0,1));
+                bilinearFormVV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( 2*mut*sym(gradt(u)),grad(v) ),
+                               _geomap=this->geomap() );
+                auto mutt = pow(lmix,2)*(gradv(u)(0,1)/(abs(gradv(u)(0,1))+1e-8*(abs(gradv(u)(0,1))<1e-8)  ))*gradt(u)(0,1);
+                bilinearFormVV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( 2*mutt*sym(gradv(u)),grad(v) ),
+                               _geomap=this->geomap() );
+            }
+
+
             // convection terms
             if ( physicFluidData->equation() == "Navier-Stokes" )
             {

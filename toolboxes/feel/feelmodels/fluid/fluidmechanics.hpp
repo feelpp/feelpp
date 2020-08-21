@@ -52,6 +52,8 @@
 #include <feel/feelmodels/modelmesh/meshale.hpp>
 #endif
 
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
+
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
@@ -181,17 +183,6 @@ public:
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
-    // function space vorticity
-    typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
-                               Lagrange<nOrderVelocity-1, Scalar,Discontinuous,PointSetFekete>,
-                               Lagrange<nOrderVelocity-1, Vectorial,Discontinuous,PointSetFekete> >::type basis_vorticity_type;
-    typedef FunctionSpace<mesh_type, bases<basis_vorticity_type> > space_vorticity_type;
-    typedef std::shared_ptr<space_vorticity_type> space_vorticity_ptrtype;
-    typedef typename space_vorticity_type::element_type element_vorticity_type;
-    typedef std::shared_ptr<element_vorticity_type> element_vorticity_ptrtype;
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
-    //___________________________________________________________________________________//
     // materials properties
     typedef MaterialsProperties<nRealDim> materialsproperties_type;
     typedef std::shared_ptr<materialsproperties_type> materialsproperties_ptrtype;
@@ -261,6 +252,22 @@ public:
     typedef std::shared_ptr<op_interpolation_fluidoutlet_windkessel_meshdisp_type> op_interpolation_fluidoutlet_windkessel_meshdisp_ptrtype;
 #endif
 
+    // dist2wall
+    // typedef bases<Lagrange<1,Scalar,Continuous,PointSetFekete> > basis_dist2wall_type;
+    // typedef FunctionSpace<mesh_type, basis_dist2wall_type> space_dist2wall_type;
+    using space_dist2wall_type = Pch_type<mesh_type,1>;
+    typedef std::shared_ptr<space_dist2wall_type> space_dist2wall_ptrtype;
+    typedef typename space_dist2wall_type::element_type element_dist2wall_type;
+    typedef std::shared_ptr<element_dist2wall_type> element_dist2wall_ptrtype;
+
+    // turbulence model
+    typedef FeelModels::CoefficientFormPDEs< convex_type,
+                                             Lagrange<1,Scalar,Continuous,PointSetFekete>,
+                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
+                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> > turbulence_model_type;
+    using turbulence_model_ptrtype = std::shared_ptr<turbulence_model_type>;
+
+
     struct FieldTag
     {
         static auto velocity( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
@@ -268,6 +275,7 @@ public:
         static auto mesh_displacement( self_type const* t ) { return ModelFieldTag<self_type,2>( t ); }
         //static auto body_translational_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::translational_velocity( t ); }
         //static auto body_angular_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::angular_velocity( t ); }
+        static auto dist2wall( self_type const* t ) { return ModelFieldTag<self_type,3>( t ); }
     };
 
 
@@ -734,6 +742,8 @@ private :
     void initBoundaryConditions();
     void initFluidInlet();
     void initFluidOutlet();
+    void initDist2Wall();
+    void initTurbulenceModel();
     void initUserFunctions();
     void initPostProcess() override;
     void createPostProcessExporters();
@@ -742,7 +752,6 @@ public :
     void initAlgebraicFactory();
 
     void createFunctionSpacesNormalStress();
-    void createFunctionSpacesVorticity();
     void createFunctionSpacesSourceAdded();
 
     void loadMesh(mesh_ptrtype __mesh );
@@ -771,17 +780,12 @@ public :
 
     element_velocity_ptrtype const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
 
-    element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
-    element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
-    element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
-    element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
-    element_normalstress_ptrtype const& fieldWallShearStressPtr() const { return M_fieldWallShearStress; }
-    element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
-
-    element_vorticity_ptrtype const& fieldVorticityPtr() const { return M_fieldVorticity; }
-    element_vorticity_ptrtype & fieldVorticityPtr() { return M_fieldVorticity; }
-    element_vorticity_type const& fieldVorticity() const {  CHECK( M_fieldVorticity ) << "fieldVorticity not init"; return *M_fieldVorticity; }
-    element_vorticity_type & fieldVorticity() {  CHECK( M_fieldVorticity ) << "fieldVorticity not init";return *M_fieldVorticity; }
+    // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
+    // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
+    // element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
+    // element_normalstress_ptrtype & fieldWallShearStressPtr() { return M_fieldWallShearStress; }
+    // element_normalstress_ptrtype const& fieldWallShearStressPtr() const { return M_fieldWallShearStress; }
+    // element_normalstress_type const& fieldWallShearStress() const { return *M_fieldWallShearStress; }
 
     bool useExtendedDofTable() const;
 
@@ -909,6 +913,17 @@ public :
             return false;
         }
 
+    bool hasTurbulenceModel() const
+        {
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+                if ( physicFluidData->turbulence().isEnabled() )
+                    return true;
+            }
+            return false;
+        }
+
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
     bool hasSolveNewtonianAtKickOff() const { return M_hasSolveNewtonianAtKickOff; }
@@ -1021,9 +1036,10 @@ public :
     auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
         {
             auto mfields_ale = this->modelFieldsMeshALE( prefix );
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE|FieldCtx::CURL/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
-                                                  mfields_body, mfields_ale
+                                                  mfields_body, mfields_ale,
+                                                  modelField<FieldCtx::ID>( FieldTag::dist2wall(this), prefix, "dist2wall", M_fieldDist2Wall, "dist2wall", this->keyword() )
                                                   );
         }
 
@@ -1046,7 +1062,8 @@ public :
             auto seParam = this->symbolsExprParameter();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields );
+            auto sePhysics = this->symbolsExprPhysicsFromCurrentType();
+            return Feel::vf::symbolsExpr( seToolbox, seParam, seMat, seFields, sePhysics );
 #else
             return symbols_expression_empty_t{};
 #endif
@@ -1324,7 +1341,6 @@ public :
     void updateNormalStressOnReferenceMesh( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
 
     void updateWallShearStress( std::string const& nameOfRange, element_normalstress_ptrtype & fieldToUpdate );
-    void updateVorticity();
 
     template < typename ExprT >
     void updateVelocity(vf::Expr<ExprT> const& __expr)
@@ -1521,9 +1537,6 @@ private :
     space_normalstress_ptrtype M_XhNormalBoundaryStress;
     element_normalstress_ptrtype M_fieldNormalStress;
     element_normalstress_ptrtype M_fieldWallShearStress;
-    // vorticity space
-    space_vorticity_ptrtype M_XhVorticity;
-    element_vorticity_ptrtype M_fieldVorticity;
     // fields defined in json
     std::map<std::string,component_element_velocity_ptrtype> M_fieldsUserScalar;
     std::map<std::string,element_velocity_ptrtype> M_fieldsUserVectorial;
@@ -1610,6 +1623,13 @@ private :
     std::map<int,std::vector<double> > M_fluidOutletWindkesselPressureDistal_old;
     trace_mesh_ptrtype M_fluidOutletWindkesselMesh;
     space_fluidoutlet_windkessel_ptrtype M_fluidOutletWindkesselSpace;
+
+    space_dist2wall_ptrtype M_spaceDist2Wall;
+    element_dist2wall_ptrtype M_fieldDist2Wall;
+    bool M_dist2WallEnabled;
+    std::set<std::string> M_dist2WallMarkers;
+
+    turbulence_model_ptrtype M_turbulenceModelType;
     //----------------------------------------------------
     // exporter option
     bool M_isHOVisu;
@@ -1628,8 +1648,6 @@ private :
     element_vectorial_visu_ho_ptrtype M_velocityVisuHO;
     element_scalar_visu_ho_ptrtype M_pressureVisuHO;
     element_vectorial_visu_ho_ptrtype M_meshdispVisuHO;
-    //element_vectorialdisc_visu_ho_ptrtype M_normalStressVisuHO;
-    //element_vectorialdisc_visu_ho_ptrtype M_fieldWallShearStressVisuHO;
 
     op_interpolation_visu_ho_vectorial_ptrtype M_opIvelocity;
     op_interpolation_visu_ho_scalar_ptrtype M_opIpressure;

@@ -100,6 +100,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _expr= timeSteppingScaling*inner( StressTensorExpr,grad(v) ),
                                _geomap=this->geomap() );
             }
+            
+            if ( physicFluidData->turbulence().isEnabled() && BuildNonCstPart )
+            {
+                auto lmix = min( 0.41*idv(M_fieldDist2Wall), cst(0.09)*cst(0.0635/2.) );
+                auto mut = pow(lmix,2)*abs(gradv(u)(0,1));
+                linearFormV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*inner( 2*mut*sym(gradv(u)),grad(v) ),
+                               _geomap=this->geomap() );
+            }
+            
 
 
             // convection
