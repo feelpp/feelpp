@@ -252,6 +252,9 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"use-gravity-force").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         (prefixvm(prefix,"gravity-force").c_str(), Feel::po::value<std::string>(), "gravity-force : (default is {0,-9.80665} or {0,0,-9.80665}")
 
+        (prefixvm(prefix,"distance-to-wall.enabled").c_str(), Feel::po::value<bool>()->default_value(false), "enable distance-to-wall computation")
+        (prefixvm(prefix,"distance-to-wall.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "markers used for compute distance-to-wall" )
+
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         ;
 
@@ -263,6 +266,7 @@ fluidMechanics_options(std::string const& prefix)
         .add( backend_options( prefixvm(prefix,"fluidinlet") ) )
         .add( densityviscosity_options( prefix ) )
         .add( pcd_options( prefix ) )
+        .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
         ;
 
 

@@ -53,6 +53,7 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     if ( M_type == "fluid" || M_type == "heat-fluid" )
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
+        this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
         this->addMaterialPropertyDescription( "consistency-index", "mu_k", { scalarShape } );
         this->addMaterialPropertyDescription( "power-law-index", "mu_power_law_n", { scalarShape } );
         this->addMaterialPropertyDescription( "viscosity-min", "mu_min", { scalarShape } );
@@ -120,6 +121,9 @@ ModelPhysicFluid<Dim>::ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std:
 
     if ( auto vl = pt.template get_optional<std::string>("viscosity_law") )
         M_dynamicViscosity.setLaw( *vl );
+
+    if ( auto ptreeTurbulence = pt.get_child_optional("turbulence") )
+        M_turbulence.setup( *ptreeTurbulence );
 }
 
 template <uint16_type Dim>
@@ -128,6 +132,19 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 {
     CHECK( eq == "Navier-Stokes" || eq == "Stokes" || eq == "StokesTransient" ) << "invalid equation of fluid : " << eq;
     M_equation = eq;
+}
+
+template <uint16_type Dim>
+void
+ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
+{
+    if ( auto ptEnable = pt.template get_optional<bool>("enable") )
+        M_isEnabled = *ptEnable;
+
+    if ( !M_isEnabled )
+        return;
+    if ( auto ptModel = pt.template get_optional<std::string>("model") )
+        M_model = *ptModel;
 }
 
 template <uint16_type Dim>

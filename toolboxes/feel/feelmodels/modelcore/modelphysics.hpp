@@ -121,13 +121,77 @@ public :
     //! add a subphysic model
     void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
 
+    //! add a constant (double) parameter called \pname
+    void addParameter( std::string const& pname, double val )
+        {
+            M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+        }
+    //! add a parameter called \pname describe by an expression \expr
+    void addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
+        {
+            M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
+        }
+
     //! set parameter values in expression
-    virtual void setParameterValues( std::map<std::string,double> const& mp ) {}
+    virtual void setParameterValues( std::map<std::string,double> const& mp )
+        {
+            for ( auto & [ pname, mexpr ] : M_parameterNameToExpr )
+                mexpr.setParameterValues( mp );
+
+            // TODO : maybe subphysics??
+        }
+
+    std::map<std::string,double>
+    toParameterValues() const
+        {
+            std::map<std::string,double> pv;
+            std::string prefix_symbol = M_name;
+            for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+                mexpr.updateParameterValues( prefixvm(prefix_symbol,pname,"_"), pv );
+            return pv;
+        }
+
+    void updateParameterValues( std::map<std::string,double> & mp )
+        {
+            this->setParameterValues( mp );
+
+            std::set<std::string> allSymbNames;
+            for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+                allSymbNames.insert( pname );
+
+            // erase parameters values from material properties
+            for ( auto & [pname, mexpr] : M_parameterNameToExpr )
+                mexpr.eraseParameterValues( allSymbNames );
+
+            // get value of symbols evaluables
+            int previousParam = 0;
+            std::map<std::string,double> curmp;
+            while ( true )
+            {
+                curmp = this->toParameterValues();
+                if ( curmp.size() == previousParam )
+                    break;
+                previousParam = curmp.size();
+                this->setParameterValues( curmp );
+            }
+
+            // update output parameter values
+            for ( auto const& [_name,_value] : curmp )
+                mp[_name] = _value;
+        }
+
+        auto symbolsExpr() const
+        {
+            return symbols_expression_empty_t{};
+        }
+
+
 private :
     std::string M_type, M_name;
     std::set<std::string> M_subphysicsTypes;
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> M_subphysics;
     std::map<std::string,material_property_description_type> M_materialPropertyDescription; // name -> (symbol, shapes.. )
+    std::map<std::string,ModelExpression> M_parameterNameToExpr;
 };
 
 template <uint16_type Dim>
@@ -163,6 +227,22 @@ public :
         std::string M_lawName;
     };
 
+    struct Turbulence
+    {
+        Turbulence() : M_isEnabled( false ) {}
+        Turbulence( Turbulence const& ) = default;
+        Turbulence( Turbulence && ) = default;
+
+        bool isEnabled() const { return M_isEnabled; }
+        std::string const& model() const { return M_model; }
+
+        void setup( pt::ptree const& p );
+
+    private :
+        bool M_isEnabled;
+        std::string M_model;
+    };
+
     ModelPhysicFluid( ModelPhysics<Dim> const& mphysics, std::string const& name, ModelModel const& model = ModelModel{} );
     ModelPhysicFluid( ModelPhysicFluid const& ) = default;
     ModelPhysicFluid( ModelPhysicFluid && ) = default;
@@ -174,10 +254,12 @@ public :
     auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
 
     DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
+    Turbulence const& turbulence() const { return M_turbulence; }
 
     //! set parameter values in expression
     void setParameterValues( std::map<std::string,double> const& mp ) override
         {
+            super_type::setParameterValues( mp );
             if ( M_gravityForceEnabled )
                 M_gravityForceExpr.setParameterValues( mp );
         }
@@ -188,6 +270,7 @@ private :
     ModelExpression M_gravityForceExpr;
 
     DynamicViscosity M_dynamicViscosity;
+    Turbulence M_turbulence;
 };
 
 template <uint16_type Dim>
@@ -263,6 +346,18 @@ public :
 
     void setPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<Dim>>> const& thePhysics, std::string const& physicDefault = "" );
 
+    auto symbolsExprPhysics( std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& mphysics ) const
+        {
+            using se_type = std::decay_t<decltype(mphysics.begin()->second->symbolsExpr())>;
+            se_type res;
+            for ( auto const& [name, mphysic] : mphysics )
+                res = Feel::vf::symbolsExpr( res, mphysic->symbolsExpr() );
+            return res;
+        }
+    auto symbolsExprPhysicsFromCurrentType() const
+        {
+            return symbolsExprPhysics( this->physicsFromCurrentType() );
+        }
 protected :
 
     std::string M_physicType;

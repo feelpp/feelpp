@@ -221,6 +221,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n";
 
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
+
     return _ostr;
 }
 
@@ -702,7 +705,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
-    //this->modelProperties().materials().setParameterValues( paramValues );
+    this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -715,7 +720,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
-        //this->materialsProperties()->setParameterValues( paramValues );
+        this->materialsProperties()->setParameterValues( paramValues );
     }
 
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -1138,43 +1143,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
             }
         }
     }
-}
-
-
-//---------------------------------------------------------------------------------------------------------//
-
-
-namespace detail
-{
-
-template <typename VorticityFieldType, typename VelocityFieldType, typename RangeEltType >
-void
-updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, RangeEltType const& rangeElt, GeomapStrategyType geomapUsed, mpl::int_<2> /**/ )
-{
-    fieldVorticity.on(_range=rangeElt,
-                      _expr=/*vf::abs*/(vf::dxv( fieldVelocity.template comp<ComponentType::Y>())
-                                    -vf::dyv(fieldVelocity.template comp<ComponentType::X>())),
-                      _geomap=geomapUsed );
-}
-template <typename VorticityFieldType, typename VelocityFieldType, typename RangeEltType >
-void
-updateVorticityImpl( VelocityFieldType /*const*/& fieldVelocity, VorticityFieldType & fieldVorticity, RangeEltType const& rangeElt, GeomapStrategyType geomapUsed, mpl::int_<3> /**/ )
-{
-    fieldVorticity.on(_range=rangeElt,
-                      _expr=vf::curlv(fieldVelocity),
-                      _geomap=geomapUsed );
-}
-
-} //  namesapce detail
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVorticity()
-{
-    return;
-    if (!M_XhVorticity) this->createFunctionSpacesVorticity();
-
-    detail::updateVorticityImpl( this->fieldVelocity(),*M_fieldVorticity, M_rangeMeshElements, this->geomap(), mpl::int_<nDim>() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
