@@ -1981,7 +1981,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             //auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
-            auto const& matProps = this->materialsProperties()->materialProperties( matName );
+            auto & matProps = this->materialsProperties()->materialProperties( matName );
 
             ostr << "\""<<matName<<"\":{"
                  << "\"markers\":[";
@@ -2002,6 +2002,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 ostr << "\""<<eqkeyword << "_c\":\"1\","
                      << "\""<<eqkeyword << "_f\":\"1\""
                      << "}"; // end mymat1
+
+                std::string mutExprStr = (boost::format("%1%:%1%")%symb_sol_SA ).str(); // TO FIX
+                ModelExpression mutExpr;
+                mutExpr.setExpr( mutExprStr, this->worldComm(), this->repository().expr() );
+                this->materialsProperties()->addProperty( matProps, "turbulent-dynamic-viscosity", mutExpr, true );
             }
         }
     }
@@ -2015,7 +2020,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     ostr << "\"Dirichlet\":{";
 
     ostr << "\"mybc\":{"
-         << "\"markers\":[\"Gamma0\",\"GammaOut\",\"Gamma1\"],"
+         << "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
          << "\"expr\":\"0\""
          << "}";
 
@@ -2036,7 +2041,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     M_turbulenceModelType->setMesh( this->mesh() );
 
     M_turbulenceModelType->init();
+
+    M_turbulenceModelType->algebraicFactory()->setFunctionLinearAssembly( boost::bind( static_cast<void(self_type::*)(DataUpdateLinear&) const>(&self_type::updateLinear_Turbulence),
+                                                                                       boost::ref( *this ), _1 ) );
+    M_turbulenceModelType->algebraicFactory()->setFunctionLinearDofElimination( boost::bind( static_cast<void(self_type::*)(DataUpdateLinear&) const>(&self_type::updateLinearDofElimination_Turbulence),
+                                                                                             boost::ref( *this ), _1 ) );
+    M_turbulenceModelType->algebraicFactory()->setFunctionNewtonInitialGuess( boost::bind( static_cast<void(self_type::*)(DataNewtonInitialGuess&) const>(&self_type::updateNewtonInitialGuess_Turbulence),
+                                                                                           boost::ref( *this ), _1 ) );
+    M_turbulenceModelType->algebraicFactory()->setFunctionResidualAssembly( boost::bind( static_cast<void(self_type::*)(DataUpdateResidual&) const>(&self_type::updateResidual_Turbulence),
+                                                                                         boost::ref( *this ), _1 ) );
+    M_turbulenceModelType->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( static_cast<void(self_type::*)(DataUpdateJacobian&) const>(&self_type::updateJacobian_Turbulence),
+                                                                                         boost::ref( *this ), _1 ) );
+
     // cfpdes->printAndSaveInfo();
+    M_turbulenceModelType->solve(); // TO REMOVE
+
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "holalla turb \n "<< M_turbulenceModelType->modelFields().symbolsExpr().names() << std::endl;
+
 
 }
 

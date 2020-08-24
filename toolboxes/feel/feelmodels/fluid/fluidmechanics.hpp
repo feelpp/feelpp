@@ -267,6 +267,15 @@ public:
                                              Lagrange<1,Vectorial,Continuous,PointSetFekete> > turbulence_model_type;
     using turbulence_model_ptrtype = std::shared_ptr<turbulence_model_type>;
 
+    struct FilterBasisUnknownTurbulenceModel {
+        template<typename T>
+        struct apply {
+            using basis_onmesh_type = typename T::template apply<mesh_type::nDim,mesh_type::nRealDim,double,typename mesh_type::element_type>::type;
+            static constexpr bool value = basis_onmesh_type::is_scalar && basis_onmesh_type::nOrder == 1;
+        };
+    };
+
+
 
     struct FieldTag
     {
@@ -1036,9 +1045,15 @@ public :
     auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
         {
             auto mfields_ale = this->modelFieldsMeshALE( prefix );
-            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE|FieldCtx::CURL/*|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
+
+            using mfields_turbulence_type = std::decay_t<decltype(M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>())>;
+            mfields_turbulence_type mfields_turbulence;
+            if ( M_turbulenceModelType )
+                mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>();
+
+            return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE|FieldCtx::CURL_MAGNITUDE/*FieldCtx::CURL|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
-                                                  mfields_body, mfields_ale,
+                                                  mfields_body, mfields_ale, mfields_turbulence,
                                                   modelField<FieldCtx::ID>( FieldTag::dist2wall(this), prefix, "dist2wall", M_fieldDist2Wall, "dist2wall", this->keyword() )
                                                   );
         }
@@ -1485,7 +1500,22 @@ public :
                                           MaterialProperties const& matProps, RangeType const& range,
                                           element_velocity_ptrtype beta_u ) const;
     //___________________________________________________________________________________//
-
+    // turbulence model assembly
+    void updateLinear_Turbulence( DataUpdateLinear & data ) const;
+    template <typename ModelContextType>
+    void updateLinear_Turbulence( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateLinearDofElimination_Turbulence( DataUpdateLinear & data ) const;
+    template <typename ModelContextType>
+    void updateLinearDofElimination_Turbulence( DataUpdateLinear & data, ModelContextType const& mfields ) const;
+    void updateNewtonInitialGuess_Turbulence( DataNewtonInitialGuess & data ) const;
+    template <typename ModelContextType>
+    void updateNewtonInitialGuess_Turbulence( DataNewtonInitialGuess & data, ModelContextType const& mfields ) const;
+    void updateResidual_Turbulence( DataUpdateResidual & data ) const;
+    template <typename ModelContextType>
+    void updateResidual_Turbulence( DataUpdateResidual & data, ModelContextType const& mfields ) const;
+    void updateJacobian_Turbulence( DataUpdateJacobian & data ) const;
+    template <typename ModelContextType>
+    void updateJacobian_Turbulence( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
 private :
     void updateBoundaryConditionsForUse();
 
