@@ -288,18 +288,23 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                                           Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
             :
             super_type( expr,geom,fev,feu ),
-            //M_muExprTensor( this->expr().materialProperties().property("dynamic-viscosity").template expr<1,1>().evaluator( geom ) )
-            M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
+            M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
+            M_muExprTensor( M_muExpr.evaluator( geom ) )
+            //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
         {}
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
-            M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
+            M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
+            M_muExprTensor( M_muExpr.evaluator( geom ) )
+            //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
         {}
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom )
             :
             super_type( expr,geom ),
-            M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
+            M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
+            M_muExprTensor( M_muExpr.evaluator( geom ) )
+            //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
         {}
 
         void update( Geo_t const& geom ) override
@@ -444,7 +449,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         }
 
     private :
-
+        typename expr_type::template material_property_expr_type<1,1> M_muExpr;
         typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
     };
 
@@ -1343,7 +1348,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
  * @see
  */
 template<typename ExprGradVelocityType, typename FiniteElementVelocityType, typename ExprIdPressureType, typename ModelPhysicFluidType, typename SymbolsExprType, typename SpecificExprType>
-class FluidMecStressTensorImpl
+class FluidMecStressTensorImpl : public Feel::vf::ExprDynamicBase
 {
 public:
 
@@ -1355,8 +1360,7 @@ public:
 
     static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
     static const size_type context_pressure = vm::JACOBIAN;
-    static const size_type context_muP0 = vm::JACOBIAN;
-    static const size_type context = context_velocity;
+    static const size_type context = context_velocity|vm::DYNAMIC;
 
     typedef ExprGradVelocityType expr_grad_velocity_type;
     typedef ExprIdPressureType expr_id_pressure_type;
@@ -1445,6 +1449,14 @@ public:
     /** @name  Methods
      */
     //@{
+
+    size_type dynamicContext() const
+        {
+            if ( this->dynamicViscosity().isNewtonianLaw() )
+                return Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("dynamic-viscosity") );
+            else
+                return size_type( 0 ); // TODO for others law
+        }
 
     //! polynomial order
     uint16_type polynomialOrder() const
