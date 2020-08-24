@@ -110,6 +110,8 @@ struct SymbolExpr1
         {}
     SymbolExpr1( SymbolExpr1 const& ) = default;
     SymbolExpr1( SymbolExpr1 && ) = default;
+    SymbolExpr1& operator=( SymbolExpr1 const& ) = default;
+    SymbolExpr1& operator=( SymbolExpr1&& ) = default;
 
     std::string const& symbol() const { return M_symbol; }
     expr_type const& expr() const { return M_expr; }
@@ -143,6 +145,8 @@ struct SymbolExpr : public std::vector<SymbolExpr1<ExprT>>
     SymbolExpr() = default;
     SymbolExpr( SymbolExpr const& ) = default;
     SymbolExpr( SymbolExpr && ) = default;
+    SymbolExpr& operator=( SymbolExpr const& ) = default;
+    SymbolExpr& operator=( SymbolExpr&& ) = default;
     explicit SymbolExpr( typename super_type::value_type const& e ) : super_type( 1,e ) {}
     explicit SymbolExpr( typename super_type::value_type && e ) : super_type( 1,e ) {}
     explicit SymbolExpr( std::initializer_list<typename super_type::value_type> const& e ) : super_type( e ) {}
@@ -240,6 +244,10 @@ struct SymbolsExpr : public SymbolsExprBase
     using feelpp_tag = SymbolsExprTag;
 
     SymbolsExpr() = default;
+    SymbolsExpr( SymbolsExpr const& ) = default;
+    SymbolsExpr( SymbolsExpr && ) = default;
+    SymbolsExpr& operator=( SymbolsExpr const& ) = default;
+    SymbolsExpr& operator=( SymbolsExpr&& ) = default;
 
     explicit SymbolsExpr( tuple_type const& tse )
         :
