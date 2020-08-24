@@ -93,6 +93,10 @@ ModelAlgebraicFactory::init( model_ptrtype const& model, backend_ptrtype const& 
     M_model = model;
     this->setFunctionLinearAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDE,
                                                    boost::ref( *model ), _1 ) );
+    this->setFunctionLinearDofElimination( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateLinearPDEDofElimination,
+                                                        boost::ref( *model ), _1 ) );
+    this->setFunctionNewtonInitialGuess( boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateNewtonInitialGuess,
+                                                      boost::ref( *model ), _1 ) );
     this->setFunctionJacobianAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateJacobian,
                                                      boost::ref( *model ), _1 ) );
     this->setFunctionResidualAssembly(  boost::bind( &Feel::remove_shared_ptr_type<model_ptrtype>::updateResidual,
@@ -617,7 +621,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
 
             ModelAlgebraic::DataUpdateLinear dataLinearPtAP(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,false);
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearPtAP );
+            M_functionLinearDofElimination( dataLinearPtAP );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearPtAP );
             // others dof eliminations (not need an expression)
@@ -636,7 +640,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         else
         {
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( dataLinearNonCst );
+            M_functionLinearDofElimination( dataLinearNonCst );
             for ( auto const& func : M_addFunctionLinearDofElimination )
                 func.second( dataLinearNonCst );
 
@@ -914,7 +918,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         //---------------------------------------------------------------------//
         model->timerTool("Solve").start();
         ModelAlgebraic::DataNewtonInitialGuess dataInitialGuess( U );
-        model->updateNewtonInitialGuess( dataInitialGuess );
+        M_functionNewtonInitialGuess( dataInitialGuess );
         for ( auto const& func : M_addFunctionNewtonInitialGuess )
             func.second( dataInitialGuess );
 
@@ -1248,7 +1252,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             }
 
             // dof elimination
-            this->model()->updateLinearPDEDofElimination( *dataDofElimination );
+            M_functionLinearDofElimination( *dataDofElimination );
+            for ( auto const& func : M_addFunctionLinearDofElimination )
+                func.second( *dataDofElimination );
 
             // others dof eliminations (not need an expression)
             if ( M_useSolverPtAP && M_solverPtAP_dofEliminationIds )
