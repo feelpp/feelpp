@@ -232,6 +232,8 @@ namespace FeelModels
         //---------------------------------------------------------------------------------------------------------------//
 
         void setFunctionLinearAssembly( function_assembly_linear_type const& func ) { M_functionLinearAssembly = func; }
+        void setFunctionLinearDofElimination( function_assembly_linear_type const& func ) { M_functionLinearDofElimination = func; }
+        void setFunctionNewtonInitialGuess( function_newton_initial_guess_type const& func ) { M_functionNewtonInitialGuess = func; }
         void setFunctionJacobianAssembly( function_assembly_jacobian_type const& func ) { M_functionJacobianAssembly = func; }
         void setFunctionResidualAssembly( function_assembly_residual_type const& func ) { M_functionResidualAssembly = func; }
 
@@ -298,6 +300,8 @@ namespace FeelModels
         ModelAlgebraic::DataUpdateBase M_dataInfos;
 
         function_assembly_linear_type M_functionLinearAssembly;
+        function_assembly_linear_type M_functionLinearDofElimination;
+        function_newton_initial_guess_type M_functionNewtonInitialGuess;
         function_assembly_jacobian_type M_functionJacobianAssembly;
         function_assembly_residual_type M_functionResidualAssembly;
 
