@@ -284,6 +284,7 @@ macro(genLibFluidMechanics)
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyjacobian_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyresidual_inst.cpp
       ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FEELPP_TOOLBOXES_SOURCE_DIR}/feel/feelmodels/fluid/fluidmechanicsassemblyturbulence_inst.cpp
       )
     set(FLUIDMECHANICS_CODEGEN_SOURCES
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicscreate_inst.cpp
@@ -292,6 +293,7 @@ macro(genLibFluidMechanics)
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyjacobian_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyresidual_inst.cpp
       ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsupdatestabilisation_inst.cpp
+      ${FLUIDMECHANICS_LIB_DIR}/fluidmechanicsassemblyturbulence_inst.cpp
       )
     set(FLUIDMECHANICS_LIB_DEPENDS feelpp_modelalg feelpp_modelmesh feelpp_modelcore feelpp_toolbox_coefficientformpdes_${FLUIDMECHANICS_DIM}dG${FLUIDMECHANICS_ORDERGEO} )
     if ( FEELPP_TOOLBOXES_ENABLE_MESHALE )
