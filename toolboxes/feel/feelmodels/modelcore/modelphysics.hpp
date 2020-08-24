@@ -182,7 +182,28 @@ public :
 
         auto symbolsExpr() const
         {
-            return symbols_expression_empty_t{};
+            std::string const& prefix_symbol = "physics";
+            std::string prefixAllSymbParam = prefixvm( prefix_symbol, this->name(), "_" );
+            auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, [this,&prefixAllSymbParam](auto const& e_ij) {
+                    constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
+                    constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
+
+                    using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
+                    symbol_expression_t<_expr_type> se;
+                    for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
+                    {
+                        if ( !mexpr.template hasExpr<ni,nj>() )
+                            continue;
+                        auto const& paramExpr = mexpr.template expr<ni,nj>();
+                        if ( paramExpr.expression().isEvaluable() )
+                            continue;
+
+                        std::string symbolParam = prefixvm(prefixAllSymbParam, pname, "_");
+                        se.add( symbolParam, paramExpr, SymbolExprComponentSuffix( ni,nj ) );
+                    }
+                    return se;
+                });
+            return Feel::vf::SymbolsExpr( tupleSymbolExprs );
         }
 
 
