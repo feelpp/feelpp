@@ -1966,7 +1966,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                             "cfpdes",
                                                             this->worldCommPtr(), "", this->repository() ) );
 
-    std::string eqkeyword = "turbulence_SA";
+    std::string eqkeyword = prefixvm( this->keyword(), "turbulence_SA", "_" );
     M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
 
     std::ostringstream ostr;
@@ -1996,14 +1996,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string symbDensity = "materials_" + matName + "_rho";
                 std::string symbDynViscosity = "materials_" + matName + "_mu";
 
-                physicFluidData->addParameter( prefixvm( eqkeyword, "c_b1", "_" ), 0.1355 );
-                physicFluidData->addParameter( prefixvm( eqkeyword, "khi", "_" ), (boost::format("%1%*%2%/%3%:%1%:%2%:%3%")%symb_sol_SA %symbDensity %symbDynViscosity ).str(), this->worldComm(), this->repository().expr() );
+
+                std::string symb_c_b1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_b1", "_" ), 0.1355 );
+                std::string symb_c_b2 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_b2", "_" ), 0.622 );
+                std::string symb_c_v1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_v1", "_" ), 7.1 );
+                std::string symb_khi = physicFluidData->addParameter( prefixvm( eqkeyword, "khi", "_" ), (boost::format("%1%*%2%/%3%:%1%:%2%:%3%")%symb_sol_SA %symbDensity %symbDynViscosity ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_f_v1 = physicFluidData->addParameter( prefixvm( eqkeyword, "f_v1", "_" ), (boost::format("%1%^3/(%1%^3+%2%^3):%1%:%2%") %symb_khi %symb_c_v1 ).str(), this->worldComm(), this->repository().expr() );
 
                 ostr << "\""<<eqkeyword << "_c\":\"1\","
                      << "\""<<eqkeyword << "_f\":\"1\""
                      << "}"; // end mymat1
 
-                std::string mutExprStr = (boost::format("%1%:%1%")%symb_sol_SA ).str(); // TO FIX
+                std::string mutExprStr = (boost::format("%1%*%2%*%3%:%1%:%2%:%3%")%symbDensity %symb_sol_SA %symb_f_v1 ).str();
                 ModelExpression mutExpr;
                 mutExpr.setExpr( mutExprStr, this->worldComm(), this->repository().expr() );
                 this->materialsProperties()->addProperty( matProps, "turbulent-dynamic-viscosity", mutExpr, true );
