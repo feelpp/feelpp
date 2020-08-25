@@ -64,7 +64,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
     //MeshStructured( int nx, int ny, double pixelsize, WorldComm const& );
     MeshStructured( int nx, int ny, double pixelsize,
                     std::optional<holo3_image<float>> const& cx, std::optional<holo3_image<float>> const& cy,
-                    worldcomm_ptr_t const&, bool withCoord = false, std::string pathPoly = "", bool withPoly = false );
+                    worldcomm_ptr_t const& = Environment::worldCommPtr(), bool withCoord = false, std::string pathPoly = "", bool withPoly = false );
     //MeshStructured( int nx, int ny,holo3_image<float> cx,holo3_image<float> cy, WorldComm const& );
 
     void updateGhostCellInfoByUsingNonBlockingComm(
@@ -96,7 +96,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
     // std::map<int,boost::tuple<int,rank_type> > mapGhostElt;
     // std::vector<rank_type> ghosts;
     // std::map<int,int> __idGmshToFeel;
-
+#if 0
     int localToGlobal( int ii, int jj, int rank )
     {
         return ii * M_ny + ( jj + ( rank * M_ny / this->worldComm().godSize() ) );
@@ -106,6 +106,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
         int LM_ny = ( M_ny / this->worldComm().godSize() ) * ( rank + 1 ) - ( M_ny / this->worldComm().godSize() ) * rank;
         return i * LM_ny + j - rank * M_ny / this->worldComm().godSize();
     }
+#endif    
 };
 
 } // namespace Feel
