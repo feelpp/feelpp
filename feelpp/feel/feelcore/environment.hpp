@@ -383,6 +383,29 @@ public:
         return S_worldcomm->masterRank();
     }
 
+    /** get the thread level that could be set
+     * The thread level resquested to mpi may not be supported.
+     * This function returns the maximum level of thread support that could be setup
+     * @return the maximum thread level supported with respect to the initialization request
+     */
+    static mpi::threading::level threadLevel();
+
+    /** Are we in the main thread?
+     * this function may be useful e.g. in funneled level
+     */
+    static bool isMainThread();
+
+    /** Abort all MPI processes.
+     *  Aborts all MPI processes and returns to the environment. The
+     *  precise behavior will be defined by the underlying MPI
+     *  implementation. This is equivalent to a call to @c MPI_Abort
+     *  with @c MPI_COMM_WORLD.
+     *
+     *  @param errcode The error code to return to the environment.
+     *  @returns Will not return.
+     */
+    static void abort(int errcode);
+
     /**
      * @return true if number of process is 1, hence the environment is
      * sequential
