@@ -60,7 +60,10 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/** 
+ * Solid Mechanics Toolbox
+ * \ingroup Toolboxes
+ */
 template< typename ConvexType, typename BasisDisplacementType >
 class SolidMechanics : public ModelNumerical,
                        public ModelPhysics<ConvexType::nDim>,

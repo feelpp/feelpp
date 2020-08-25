@@ -73,6 +73,7 @@ class ReversePoint
 
 /**
  * @class GeoNDCommon
+ * @ingroup Mesh
  * @brief Common data shared in a collection of multi-dimensional geometrical entity.
  */
 template <typename GeoNDType>
@@ -181,6 +182,7 @@ private :
 
 /**
  * @class GeoND
+ * @ingroup Mesh
  * @brief Base class for Multi-dimensional basis Geometrical Entities.
  *
  */

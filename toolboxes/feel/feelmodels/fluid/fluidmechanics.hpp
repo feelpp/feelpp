@@ -65,6 +65,10 @@ namespace Feel
 namespace FeelModels
 {
 
+/** 
+ * Fluid Mechanics Toolbox
+ * \ingroup Toolboxes
+ */
 template< typename ConvexType, typename BasisVelocityType,
           typename BasisPressureType = Lagrange< (BasisVelocityType::nOrder>1)? (BasisVelocityType::nOrder-1):BasisVelocityType::nOrder, Scalar,Continuous,PointSetFekete> >
 class FluidMechanics : public ModelNumerical,

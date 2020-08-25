@@ -503,6 +503,7 @@ private:
 
 /**
  * Class for Points and Vertices
+ * @ingroup Mesh
  */
 template <uint16_type Dim,
           typename SubFace = SubFaceOfNone<Dim>,
@@ -729,6 +730,7 @@ private:
 
 /**
  * \class GeoElement1D
+ * @ingroup Mesh
  * \brief class for 1D elements
  *
  * In the 2D case, we store the size_types of the adjacent 2D elements
@@ -1041,6 +1043,7 @@ private:
 
 /**
  * \class GeoElement2D
+ * @ingroup Mesh
  * \brief  Class for 2D elements.
  *
  * In the 3D case, we store the size_types of the adjacent 3D elements
@@ -1400,6 +1403,7 @@ private:
 
 /**
  * \class GeoElement3D
+ * @ingroup Mesh
  * \brief Class for 3D elements
  *
  */
