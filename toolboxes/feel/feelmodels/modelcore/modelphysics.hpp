@@ -121,15 +121,17 @@ public :
     //! add a subphysic model
     void addSubphysic( std::shared_ptr<ModelPhysic<nDim>> const& sp ) { M_subphysics[sp->name()] = sp; }
 
-    //! add a constant (double) parameter called \pname
-    void addParameter( std::string const& pname, double val )
+    //! add a constant (double) parameter called \pname and return the symbol associated
+    std::string addParameter( std::string const& pname, double val )
         {
             M_parameterNameToExpr.emplace( pname, ModelExpression(val) );
+            return this->symbolFromParameter( pname );
         }
-    //! add a parameter called \pname describe by an expression \expr
-    void addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
+    //! add a parameter called \pname describe by an expression \expr and return the symbol associated
+    std::string addParameter( std::string const& pname, std::string const& expr, WorldComm const& worldComm, std::string const& directoryLibExpr )
         {
             M_parameterNameToExpr[pname].setExpr( expr, worldComm, directoryLibExpr );
+            return this->symbolFromParameter( pname );
         }
 
     //! set parameter values in expression
@@ -145,9 +147,8 @@ public :
     toParameterValues() const
         {
             std::map<std::string,double> pv;
-            std::string prefix_symbol = M_name;
             for ( auto const& [pname, mexpr] : M_parameterNameToExpr )
-                mexpr.updateParameterValues( prefixvm(prefix_symbol,pname,"_"), pv );
+                mexpr.updateParameterValues( this->symbolFromParameter( pname ), pv );
             return pv;
         }
 
@@ -182,9 +183,7 @@ public :
 
         auto symbolsExpr() const
         {
-            std::string const& prefix_symbol = "physics";
-            std::string prefixAllSymbParam = prefixvm( prefix_symbol, this->name(), "_" );
-            auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, [this,&prefixAllSymbParam](auto const& e_ij) {
+            auto tupleSymbolExprs = hana::transform( ModelExpression::expr_shapes, [this](auto const& e_ij) {
                     constexpr int ni = std::decay_t<decltype(hana::at_c<0>(e_ij))>::value;
                     constexpr int nj = std::decay_t<decltype(hana::at_c<1>(e_ij))>::value;
 
@@ -198,7 +197,7 @@ public :
                         if ( paramExpr.expression().isEvaluable() )
                             continue;
 
-                        std::string symbolParam = prefixvm(prefixAllSymbParam, pname, "_");
+                        std::string symbolParam = this->symbolFromParameter( pname );
                         se.add( symbolParam, paramExpr, SymbolExprComponentSuffix( ni,nj ) );
                     }
                     return se;
@@ -206,6 +205,8 @@ public :
             return Feel::vf::SymbolsExpr( tupleSymbolExprs );
         }
 
+    //! return the full symbol from parameter name
+    std::string symbolFromParameter( std::string const& pname ) const { return "physics_" + prefixvm( prefixvm( M_type, M_name, "_" ), pname, "_" ); }
 
 private :
     std::string M_type, M_name;
