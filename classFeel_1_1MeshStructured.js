@@ -12,5 +12,5 @@ var classFeel_1_1MeshStructured =
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#a52ea6fcaa78f91914e5b2b809c08b9a1", null ],
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#ac64f155a30ace5c4ae2b026cbdfa354c", null ],
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#ad9eb907f99e67b1aadee27a104b1d35a", null ],
-    [ "MeshStructured", "classFeel_1_1MeshStructured.html#addd07aafef3cedb757dac52d05599cf4", null ]
+    [ "MeshStructured", "classFeel_1_1MeshStructured.html#a153945a7d33504cb7f71242916e416e5", null ]
 ];

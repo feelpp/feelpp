@@ -1,5 +1,8 @@
 var NAVTREEINDEX6 =
 {
+"classFeel_1_1FeelModels_1_1FluidMechanics.html#aa1ed32c3e811bd9103f0e64b1f26ed9b":[5,11,1,336],
+"classFeel_1_1FeelModels_1_1FluidMechanics.html#aa486b7eab95824d1603c346e893ed026":[5,11,1,340],
+"classFeel_1_1FeelModels_1_1FluidMechanics.html#aa57dd7e1ce19023c33b73a224e3ce467":[5,11,1,177],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#aa5907f9f7d89937a52b7ae7dc80bd66c":[5,11,1,145],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#aa5b9f7facd6995d5e0ece40a13ef0978":[5,11,1,353],
 "classFeel_1_1FeelModels_1_1FluidMechanics.html#aa5d6f759d22a1897677eebae469167be":[5,11,1,40],
@@ -246,8 +249,5 @@ var NAVTREEINDEX6 =
 "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html#ac1576e66a28469489c571f6e66497784":[6,1,1,4,12,0],
 "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html#acf317ce8b48b04a1d2619c9d85132c50":[6,1,1,4,12,6],
 "classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html#ae000d4089709afd2e17a37cb3caf6944":[6,1,1,4,12,2],
-"classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html#ae9eaa7d339d62cef2784c074decbe034":[6,1,1,4,12,7],
-"classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html":[6,1,1,4,13],
-"classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html#a076cb5a7dbb67ffb9401ee5963239710":[6,1,1,4,13,12],
-"classFeel_1_1FeelModels_1_1MarkerManagementDirichletBC.html#a2c3aa7e3b100e3d2139a8b75822eab14":[6,1,1,4,13,9]
+"classFeel_1_1FeelModels_1_1MarkerManagementALEMeshBC.html#ae9eaa7d339d62cef2784c074decbe034":[6,1,1,4,12,7]
 };

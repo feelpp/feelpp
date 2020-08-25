@@ -254,7 +254,7 @@ static const uint16_type&#160;</td><td class="memItemRight" valign="bottom"><b>n
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Constructors, destructor</h2></td></tr>
 <tr class="memitem:a5c9d2b2d138cbe15ecaa10a300b5f0a9"><td class="memItemLeft" align="right" valign="top"><a id="a5c9d2b2d138cbe15ecaa10a300b5f0a9"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh1D.html#a5c9d2b2d138cbe15ecaa10a300b5f0a9">Mesh1D</a> (worldcomm_ptr_t const &amp;<a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh1D.html#a5c9d2b2d138cbe15ecaa10a300b5f0a9">Mesh1D</a> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;<a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm</a>=<a class="el" href="classFeel_1_1Environment.html#a3ffa1e65a0e0cf627d2187173c7feebb">Environment::worldCommPtr</a>())</td></tr>
 <tr class="memdesc:a5c9d2b2d138cbe15ecaa10a300b5f0a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">default constructor <br /></td></tr>
 <tr class="separator:a5c9d2b2d138cbe15ecaa10a300b5f0a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54b5f15f7b0984adf483a7d97ac00e90"><td class="memItemLeft" align="right" valign="top"><a id="a54b5f15f7b0984adf483a7d97ac00e90"></a>
@@ -372,7 +372,7 @@ std::tuple&lt; face_reference_wrapper_const_iterator, face_reference_wrapper_con
 std::tuple&lt; face_reference_wrapper_const_iterator, face_reference_wrapper_const_iterator, faces_reference_wrapper_ptrtype &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>interProcessFaces</b> (<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> neighbor_pid=<a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>) const</td></tr>
 <tr class="separator:a544d1639165a3c8b400f082f4c93e301"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31958b3e705ea9eeae25ee7fdf53954a"><td class="memItemLeft" align="right" valign="top"><a id="a31958b3e705ea9eeae25ee7fdf53954a"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (worldcomm_ptr_t const &amp;_worldComm) override</td></tr>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setWorldComm</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;_worldComm) override</td></tr>
 <tr class="separator:a31958b3e705ea9eeae25ee7fdf53954a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57364bd565019318d491e20182f538f2"><td class="memItemLeft" align="right" valign="top"><a id="a57364bd565019318d491e20182f538f2"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Mesh1D.html#a57364bd565019318d491e20182f538f2">clear</a> () override</td></tr>
@@ -556,7 +556,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> ()</td></tr>
 <tr class="separator:af4cc69b1b356f01cfbee28026df42c6b inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40535014058c4a7f5cf672230a1f9c7a inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="a40535014058c4a7f5cf672230a1f9c7a"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> (worldcomm_ptr_t const &amp;w)</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> (<a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;w)</td></tr>
 <tr class="separator:a40535014058c4a7f5cf672230a1f9c7a inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbde20ce5239c632bf0e33c6aa21877b inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="abbde20ce5239c632bf0e33c6aa21877b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> (<a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a> const &amp;)=default</td></tr>
@@ -565,7 +565,7 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 &#160;</td><td class="memItemRight" valign="bottom"><b>MeshBase</b> (<a class="el" href="classFeel_1_1MeshBase.html">MeshBase</a> &amp;&amp;)=default</td></tr>
 <tr class="separator:afcb698f62f591ac546ab1a3fb1ad8ae7 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05251024eec7f7427d6cbe66f1a6fba8 inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="a05251024eec7f7427d6cbe66f1a6fba8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8">MeshBase</a> (uint16_type topodim, uint16_type realdim, worldcomm_ptr_t const &amp;worldComm=Environment::worldCommPtr())</td></tr>
+&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8">MeshBase</a> (uint16_type topodim, uint16_type realdim, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;worldComm=Environment::worldCommPtr())</td></tr>
 <tr class="memdesc:a05251024eec7f7427d6cbe66f1a6fba8 inherit pub_methods_classFeel_1_1MeshBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">build from a topological dimension, a real dimension and a communicator <br /></td></tr>
 <tr class="separator:a05251024eec7f7427d6cbe66f1a6fba8 inherit pub_methods_classFeel_1_1MeshBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa172f5a588939063d5a420a7d0586aca inherit pub_methods_classFeel_1_1MeshBase"><td class="memItemLeft" align="right" valign="top"><a id="aa172f5a588939063d5a420a7d0586aca"></a>

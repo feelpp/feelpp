@@ -1,5 +1,13 @@
 var NAVTREEINDEX37 =
 {
+"structFeel_1_1RemoteData.html#ae8cf2c49b94a56dc8bc344be45717c9c":[6,1,1,227,20],
+"structFeel_1_1RemoteData_1_1FileInfo.html":[6,1,1,227,1],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a14525a9c53b5a1fa5d3a2a409e793004":[6,1,1,227,1,4],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a194b6731d2541f2e898554430001529d":[6,1,1,227,1,0],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a1ea8af8f09262e69d58740d6602c8c7f":[6,1,1,227,1,13],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a22197c8a9de16c68ca62a680870cd796":[6,1,1,227,1,6],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a25d7aa30793ce63026c432422d9632bb":[6,1,1,227,1,9],
+"structFeel_1_1RemoteData_1_1FileInfo.html#a31947466f0e59c7a8fe3bc26854cafb1":[6,1,1,227,1,10],
 "structFeel_1_1RemoteData_1_1FileInfo.html#a35de29bd2fb83e2a3365354e2d8dce04":[6,1,1,227,1,5],
 "structFeel_1_1RemoteData_1_1FileInfo.html#a537972219c3558b0e7266b1b9ccdc1d7":[6,1,1,227,1,2],
 "structFeel_1_1RemoteData_1_1FileInfo.html#a58931430c99d9a14558a3b81aa8d90ef":[6,1,1,227,1,3],
@@ -241,13 +249,5 @@ var NAVTREEINDEX37 =
 "structFeel_1_1detail_1_1H.html#ab4b03524695e0dc6d6bcddaf9eb6735d":[6,1,1,1,30,4],
 "structFeel_1_1detail_1_1H.html#abe46855bcd938306a908dd91e99d4247":[6,1,1,1,30,10],
 "structFeel_1_1detail_1_1H.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,1,30,1],
-"structFeel_1_1detail_1_1H.html#acff61ff0151b254caaafbbcc7977a4e7":[6,1,1,1,30,5],
-"structFeel_1_1detail_1_1H.html#ae6acc823b798480e4036a63ebb16dc0b":[6,1,1,1,30,7],
-"structFeel_1_1detail_1_1H_1_1result.html":[6,1,1,1,30,0],
-"structFeel_1_1detail_1_1H_1_1result.html#aac3b504af7b592cba06aa267b1ee9196":[6,1,1,1,30,0,0],
-"structFeel_1_1detail_1_1ID.html":[6,1,1,1,32],
-"structFeel_1_1detail_1_1ID.html#a00314fbda30d5da85fdf91f0116d147f":[6,1,1,1,32,12],
-"structFeel_1_1detail_1_1ID.html#a0116bd5ca7ce544df57ef71acb94b27e":[6,1,1,1,32,17],
-"structFeel_1_1detail_1_1ID.html#a0719e83be0bb25ea0ed3f4e192ce82b4":[6,1,1,1,32,10],
-"structFeel_1_1detail_1_1ID.html#a13e11f83de77fecf4f7fdd876e72eeca":[6,1,1,1,32,15]
+"structFeel_1_1detail_1_1H.html#acff61ff0151b254caaafbbcc7977a4e7":[6,1,1,1,30,5]
 };

@@ -103,6 +103,7 @@ $(document).ready(function(){initNavTree('group__Core.html',''); initResizable()
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
@@ -154,6 +155,21 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides interface to MPI Communicators.  <a href="classFeel_1_1WorldComm.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:gad8f8196f0b8ff9495dd4119eda223772"><td class="memItemLeft" align="right" valign="top"><a id="gad8f8196f0b8ff9495dd4119eda223772"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">Feel::worldcomm_ptr_t</a> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &gt;</td></tr>
+<tr class="memdesc:gad8f8196f0b8ff9495dd4119eda223772"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> shared_ptr alias type. <br /></td></tr>
+<tr class="separator:gad8f8196f0b8ff9495dd4119eda223772"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga092633e7720ec4d42cf92197b9c35c3a"><td class="memItemLeft" align="right" valign="top"><a id="ga092633e7720ec4d42cf92197b9c35c3a"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a">Feel::worldcomm_t</a> = <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a></td></tr>
+<tr class="memdesc:ga092633e7720ec4d42cf92197b9c35c3a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> alias type. <br /></td></tr>
+<tr class="separator:ga092633e7720ec4d42cf92197b9c35c3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga56d5cf37fceae464425abf8d94524b7e"><td class="memItemLeft" align="right" valign="top"><a id="ga56d5cf37fceae464425abf8d94524b7e"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">Feel::worldscomm_ptr_t</a> = std::vector&lt; <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> &gt;</td></tr>
+<tr class="memdesc:ga56d5cf37fceae464425abf8d94524b7e"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr alias type. <br /></td></tr>
+<tr class="separator:ga56d5cf37fceae464425abf8d94524b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
 Enumerations</h2></td></tr>
 <tr class="memitem:gae90df41f69fcb79f06345d1acd0d6d6f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gae90df41f69fcb79f06345d1acd0d6d6f">Feel::DebugLevels</a> { <b>DEBUG_INFO</b> = 0, 
@@ -168,6 +184,12 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ga04bfed51236168ad3de2687d7a6b06d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1AboutData.html">AboutData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga04bfed51236168ad3de2687d7a6b06d0">Feel::makeAboutDefault</a> (std::string name)</td></tr>
 <tr class="separator:ga04bfed51236168ad3de2687d7a6b06d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91537995a7deb5c79fede37e41c29018"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga91537995a7deb5c79fede37e41c29018">Feel::makeWorldsComm</a> (<a class="el" href="classint.html">int</a> n, <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;wc)</td></tr>
+<tr class="memdesc:ga91537995a7deb5c79fede37e41c29018"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr of size n from cloning <code>wc</code>.  <a href="group__Core.html#ga91537995a7deb5c79fede37e41c29018">More...</a><br /></td></tr>
+<tr class="separator:ga91537995a7deb5c79fede37e41c29018"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4888eb1a4e327de178699f70e134901c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#ga4888eb1a4e327de178699f70e134901c">Feel::makeWorldsComm</a> (<a class="el" href="classint.html">int</a> n, <a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;wc)</td></tr>
+<tr class="memdesc:ga4888eb1a4e327de178699f70e134901c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr of size n from cloning shared_ptr <code>wc</code>.  <a href="group__Core.html#ga4888eb1a4e327de178699f70e134901c">More...</a><br /></td></tr>
+<tr class="separator:ga4888eb1a4e327de178699f70e134901c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gafdf3582bcb29eaf28321e1f5c48bfa36"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__Core.html#gafdf3582bcb29eaf28321e1f5c48bfa36">Feel::prefixvm</a> (std::string const &amp;prefix, std::string const &amp;opt, std::string const &amp;sep)</td></tr>
 <tr class="separator:gafdf3582bcb29eaf28321e1f5c48bfa36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaae0f4355cdf5c3eece015092baefd653"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
@@ -238,6 +260,88 @@ Functions</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="ga91537995a7deb5c79fede37e41c29018"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga91537995a7deb5c79fede37e41c29018">&#9670;&nbsp;</a></span>makeWorldsComm() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a> Feel::makeWorldsComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;&#160;</td>
+          <td class="paramname"><em>wc</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="worldcomm_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/worldcomm.hpp</a>&gt;</code></p>
+
+<p>Create a <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr of size n from cloning <code>wc</code>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n</td><td>size of the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> </td></tr>
+    <tr><td class="paramname">wc</td><td><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> to be cloned to fill the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> entries</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a05577af4ba88012f004dc53ae5e2be5b">Feel::DhPdh()</a>, <a class="el" href="namespaceFeel.html#a01e466264b6e3d758daacdb574b60d10">Feel::Moch()</a>, <a class="el" href="namespaceFeel.html#a1af2a82211c0e68fd7c58ec3195cf5ae">Feel::NChv()</a>, <a class="el" href="namespaceFeel.html#af478509329a473ac6d6a9e8775339198">Feel::Odh()</a>, <a class="el" href="namespaceFeel.html#ae0e37c56c2000fae9222d28298f87f07">Feel::Pchms()</a>, <a class="el" href="namespaceFeel.html#a0a78312531eb606a1eee8df8f6fea935">Feel::Pchv()</a>, <a class="el" href="namespaceFeel.html#a6d87a60f9b2f0f8a18d774cf3a6e8f9d">Feel::Pdh()</a>, <a class="el" href="namespaceFeel.html#af16022fc5414c81781f6325c50845318">Feel::Pdhms()</a>, and <a class="el" href="namespaceFeel.html#ae7af58fd90da17489daace913d3ccb99">Feel::Pdhv()</a>.</p>
+
+</div>
+</div>
+<a id="ga4888eb1a4e327de178699f70e134901c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4888eb1a4e327de178699f70e134901c">&#9670;&nbsp;</a></span>makeWorldsComm() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__Core.html#ga56d5cf37fceae464425abf8d94524b7e">worldscomm_ptr_t</a> Feel::makeWorldsComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__Core.html#gad8f8196f0b8ff9495dd4119eda223772">worldcomm_ptr_t</a> const &amp;&#160;</td>
+          <td class="paramname"><em>wc</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><code>#include &lt;<a class="el" href="worldcomm_8hpp.html">/home/runner/work/feelpp/feelpp/feelpp/feel/feelcore/worldcomm.hpp</a>&gt;</code></p>
+
+<p>Create a <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr of size n from cloning shared_ptr <code>wc</code>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n</td><td>size of the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> </td></tr>
+    <tr><td class="paramname">wc</td><td>shares_ptr <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> to be cloned to fill the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> entries</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the <a class="el" href="classFeel_1_1WorldsComm.html" title="a set of worlds communicator">WorldsComm</a> shared_ptr </dd></dl>
 
 </div>
 </div>

@@ -112,15 +112,13 @@ $(document).ready(function(){initNavTree('classFeel_1_1WorldComm.html',''); init
 <div class="contents">
 <a name="details" id="details"></a><h2 class="groupheader">Description</h2>
 <div class="textblock"><p>Provides interface to MPI Communicators. </p>
-<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd><p class="startdd">define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> </p>
-<p class="enddd">define sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></p>
-</dd></dl>
+<dl class="todo"><dt><b><a class="el" href="todo.html#_todo000001">Todo:</a></b></dt><dd>define global, local and god <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></dd></dl>
 <div class="fragment"><div class="line"><span class="keyword">auto</span> world = <a class="code" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>();</div>
-<div class="line">std::vector&lt;int&gt; mapColorWorld;</div>
+<div class="line">std::vector&lt;int&gt; <a class="code" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld</a>;</div>
 <div class="line"><span class="keywordflow">for</span>( <span class="keywordtype">int</span> <a class="code" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> : irange( world.size() ) )</div>
-<div class="line">  mapColorWorld.push_back( <a class="code" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> % 2 );</div>
+<div class="line">  <a class="code" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld</a>.push_back( <a class="code" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank</a> % 2 );</div>
 <div class="line"><span class="comment">// Creates a WorldComm where we have split the processes into two sets</span></div>
-<div class="line"><a class="code" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> worldColored( mapColorWorld );</div>
+<div class="line"><a class="code" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> worldColored( <a class="code" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld</a> );</div>
 </div><!-- fragment --> </div><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Inheritance diagram for Feel::WorldComm:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -228,27 +226,26 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (<a class="e
 <tr class="memitem:a9e39ffcd9bef33cf95993192f2928740"><td class="memItemLeft" align="right" valign="top"><a id="a9e39ffcd9bef33cf95993192f2928740"></a>
 <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>localSize</b> () const</td></tr>
 <tr class="separator:a9e39ffcd9bef33cf95993192f2928740"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a98399f702211ce6af769a08d5ba0a7"><td class="memItemLeft" align="right" valign="top"><a id="a2a98399f702211ce6af769a08d5ba0a7"></a>
-std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mapColorWorld</b> () const</td></tr>
+<tr class="memitem:a2a98399f702211ce6af769a08d5ba0a7"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld</a> () const</td></tr>
+<tr class="memdesc:a2a98399f702211ce6af769a08d5ba0a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">the colormap of the worldcomm by default the colormap set all processes to the same color <code>0</code>  <a href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">More...</a><br /></td></tr>
 <tr class="separator:a2a98399f702211ce6af769a08d5ba0a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ba413ae03587da43721a59c06607c16"><td class="memItemLeft" align="right" valign="top"><a id="a9ba413ae03587da43721a59c06607c16"></a>
-<a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><b>mapColorWorld</b> (<a class="el" href="classint.html">int</a> k) const</td></tr>
+<tr class="memitem:a9ba413ae03587da43721a59c06607c16"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classint.html">int</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a9ba413ae03587da43721a59c06607c16">mapColorWorld</a> (<a class="el" href="classint.html">int</a> k) const</td></tr>
+<tr class="memdesc:a9ba413ae03587da43721a59c06607c16"><td class="mdescLeft">&#160;</td><td class="mdescRight">the k-th entry of the colormap  <a href="classFeel_1_1WorldComm.html#a9ba413ae03587da43721a59c06607c16">More...</a><br /></td></tr>
 <tr class="separator:a9ba413ae03587da43721a59c06607c16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affcba205a0c581fa9368442248d63f09"><td class="memItemLeft" align="right" valign="top"><a id="affcba205a0c581fa9368442248d63f09"></a>
-std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mapGlobalRankToGodRank</b> () const</td></tr>
+<tr class="memitem:affcba205a0c581fa9368442248d63f09"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#affcba205a0c581fa9368442248d63f09">mapGlobalRankToGodRank</a> () const</td></tr>
+<tr class="memdesc:affcba205a0c581fa9368442248d63f09"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector that translates the global rank ids to god rank ids  <a href="classFeel_1_1WorldComm.html#affcba205a0c581fa9368442248d63f09">More...</a><br /></td></tr>
 <tr class="separator:affcba205a0c581fa9368442248d63f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f42b334bb7288e95aff8bac2a7628ba"><td class="memItemLeft" align="right" valign="top"><a id="a3f42b334bb7288e95aff8bac2a7628ba"></a>
 <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>mapGlobalRankToGodRank</b> (<a class="el" href="classint.html">int</a> k) const</td></tr>
 <tr class="separator:a3f42b334bb7288e95aff8bac2a7628ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa61810b509c2390d8ae2df6276e11af8"><td class="memItemLeft" align="right" valign="top"><a id="aa61810b509c2390d8ae2df6276e11af8"></a>
-std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mapLocalRankToGlobalRank</b> () const</td></tr>
+<tr class="memitem:aa61810b509c2390d8ae2df6276e11af8"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> &gt; const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#aa61810b509c2390d8ae2df6276e11af8">mapLocalRankToGlobalRank</a> () const</td></tr>
+<tr class="memdesc:aa61810b509c2390d8ae2df6276e11af8"><td class="mdescLeft">&#160;</td><td class="mdescRight">vector that translates the local rank ids to global rank ids  <a href="classFeel_1_1WorldComm.html#aa61810b509c2390d8ae2df6276e11af8">More...</a><br /></td></tr>
 <tr class="separator:aa61810b509c2390d8ae2df6276e11af8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa705d792fa587efb251ec015c93c3990"><td class="memItemLeft" align="right" valign="top"><a id="aa705d792fa587efb251ec015c93c3990"></a>
 <a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>mapLocalRankToGlobalRank</b> (<a class="el" href="classint.html">int</a> k) const</td></tr>
 <tr class="separator:aa705d792fa587efb251ec015c93c3990"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72784467524c2d4a8a8301c93bf6d716"><td class="memItemLeft" align="right" valign="top"><a id="a72784467524c2d4a8a8301c93bf6d716"></a>
-<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716">masterRank</a> () const</td></tr>
-<tr class="memdesc:a72784467524c2d4a8a8301c93bf6d716"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the master rank. <br /></td></tr>
+<tr class="memitem:a72784467524c2d4a8a8301c93bf6d716"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716">masterRank</a> () const</td></tr>
+<tr class="memdesc:a72784467524c2d4a8a8301c93bf6d716"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the master rank The master rank is set to be the process with the minimal rank in the worldcomm  <a href="classFeel_1_1WorldComm.html#a72784467524c2d4a8a8301c93bf6d716">More...</a><br /></td></tr>
 <tr class="separator:a72784467524c2d4a8a8301c93bf6d716"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeae94bf42ca28cf63defa77a6d6aada8"><td class="memItemLeft" align="right" valign="top"><a id="aeae94bf42ca28cf63defa77a6d6aada8"></a>
 <a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>masterWorld</b> (<a class="el" href="classint.html">int</a> n)</td></tr>
@@ -293,23 +290,23 @@ worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>subWorld</
 <tr class="memitem:aa1bceb57d41121ce6c55f34bf6825c4e"><td class="memItemLeft" align="right" valign="top"><a id="aa1bceb57d41121ce6c55f34bf6825c4e"></a>
 worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>subWorld</b> (<a class="el" href="classint.html">int</a> n) const</td></tr>
 <tr class="separator:aa1bceb57d41121ce6c55f34bf6825c4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19c57adfb0869106003d4b8548afa90f"><td class="memItemLeft" align="right" valign="top"><a id="a19c57adfb0869106003d4b8548afa90f"></a>
-<a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldComm</b> ()</td></tr>
+<tr class="memitem:a19c57adfb0869106003d4b8548afa90f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">subWorldComm</a> ()</td></tr>
+<tr class="memdesc:a19c57adfb0869106003d4b8548afa90f"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap  <a href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">More...</a><br /></td></tr>
 <tr class="separator:a19c57adfb0869106003d4b8548afa90f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad61004a966b151838096a0472761ca6a"><td class="memItemLeft" align="right" valign="top"><a id="ad61004a966b151838096a0472761ca6a"></a>
-const <a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldComm</b> () const</td></tr>
+<tr class="memitem:ad61004a966b151838096a0472761ca6a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ad61004a966b151838096a0472761ca6a">subWorldComm</a> () const</td></tr>
+<tr class="memdesc:ad61004a966b151838096a0472761ca6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap  <a href="classFeel_1_1WorldComm.html#ad61004a966b151838096a0472761ca6a">More...</a><br /></td></tr>
 <tr class="separator:ad61004a966b151838096a0472761ca6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a9c79f23ca72bb1781ce1e7bc04e37c"><td class="memItemLeft" align="right" valign="top"><a id="a8a9c79f23ca72bb1781ce1e7bc04e37c"></a>
-worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldComm</b> (<a class="el" href="classint.html">int</a> color) const</td></tr>
+<tr class="memitem:a8a9c79f23ca72bb1781ce1e7bc04e37c"><td class="memItemLeft" align="right" valign="top">worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a8a9c79f23ca72bb1781ce1e7bc04e37c">subWorldComm</a> (<a class="el" href="classint.html">int</a> color) const</td></tr>
+<tr class="memdesc:a8a9c79f23ca72bb1781ce1e7bc04e37c"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm shared_ptr associated to color <code>color</code> in the colormap  <a href="classFeel_1_1WorldComm.html#a8a9c79f23ca72bb1781ce1e7bc04e37c">More...</a><br /></td></tr>
 <tr class="separator:a8a9c79f23ca72bb1781ce1e7bc04e37c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6ee6064fe770a4578c27075ad8bccbc"><td class="memItemLeft" align="right" valign="top"><a id="ae6ee6064fe770a4578c27075ad8bccbc"></a>
-worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldComm</b> (<a class="el" href="classint.html">int</a> color, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;colormap)</td></tr>
+<tr class="memitem:ae6ee6064fe770a4578c27075ad8bccbc"><td class="memItemLeft" align="right" valign="top">worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ae6ee6064fe770a4578c27075ad8bccbc">subWorldComm</a> (<a class="el" href="classint.html">int</a> color, std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;colormap)</td></tr>
+<tr class="memdesc:ae6ee6064fe770a4578c27075ad8bccbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm shared_ptr associated to color <code>color</code> in the <code>colormap</code>  <a href="classFeel_1_1WorldComm.html#ae6ee6064fe770a4578c27075ad8bccbc">More...</a><br /></td></tr>
 <tr class="separator:ae6ee6064fe770a4578c27075ad8bccbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae58afe7f35886324b4efaae62667ee0f"><td class="memItemLeft" align="right" valign="top"><a id="ae58afe7f35886324b4efaae62667ee0f"></a>
-<a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldComm</b> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;colormap)</td></tr>
+<tr class="memitem:ae58afe7f35886324b4efaae62667ee0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#ae58afe7f35886324b4efaae62667ee0f">subWorldComm</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;colormap)</td></tr>
+<tr class="memdesc:ae58afe7f35886324b4efaae62667ee0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm shared_ptr associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the <code>colormap</code>  <a href="classFeel_1_1WorldComm.html#ae58afe7f35886324b4efaae62667ee0f">More...</a><br /></td></tr>
 <tr class="separator:ae58afe7f35886324b4efaae62667ee0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd43193528afd5d0f69ab87314bb524d"><td class="memItemLeft" align="right" valign="top"><a id="acd43193528afd5d0f69ab87314bb524d"></a>
-worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldCommPtr</b> ()</td></tr>
+<tr class="memitem:acd43193528afd5d0f69ab87314bb524d"><td class="memItemLeft" align="right" valign="top">worldcomm_ptr_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#acd43193528afd5d0f69ab87314bb524d">subWorldCommPtr</a> ()</td></tr>
+<tr class="memdesc:acd43193528afd5d0f69ab87314bb524d"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the sub worldcomm shared_ptr associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap  <a href="classFeel_1_1WorldComm.html#acd43193528afd5d0f69ab87314bb524d">More...</a><br /></td></tr>
 <tr class="separator:acd43193528afd5d0f69ab87314bb524d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e8109bc7c1186e8902331606147ef4d"><td class="memItemLeft" align="right" valign="top"><a id="a2e8109bc7c1186e8902331606147ef4d"></a>
 <a class="el" href="classFeel_1_1WorldComm.html">WorldComm</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a2e8109bc7c1186e8902331606147ef4d">subWorldCommSeq</a> ()</td></tr>
@@ -340,7 +337,7 @@ worldscomm_ptr_t const  &amp;&#160;</td><td class="memItemRight" valign="bottom"
 worldscomm_ptr_t &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>subWorldsGroupBySubspace</b> (<a class="el" href="classint.html">int</a> n)</td></tr>
 <tr class="separator:a0dba273be0f3c41e0f238a052072d439"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b305b655fd87011b33af3820b620108"><td class="memItemLeft" align="right" valign="top"><a id="a0b305b655fd87011b33af3820b620108"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>upMasterRank</b> ()</td></tr>
+FEELPP_DEPRECATED void&#160;</td><td class="memItemRight" valign="bottom"><b>upMasterRank</b> ()</td></tr>
 <tr class="separator:a0b305b655fd87011b33af3820b620108"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ed4a25902258a5ca6e66d215fa5787b"><td class="memItemLeft" align="right" valign="top"><a id="a4ed4a25902258a5ca6e66d215fa5787b"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a> ()</td></tr>
@@ -355,16 +352,14 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>upMasterRank</b> ()</
 <tr class="memitem:a857fdd1d4db4cdc6f88f5d8ed0a8fd80"><td class="memItemLeft" align="right" valign="top"><a id="a857fdd1d4db4cdc6f88f5d8ed0a8fd80"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_globalComm, <a class="el" href="classint.html">int</a> _color, <a class="el" href="classbool.html">bool</a> _isActive)</td></tr>
 <tr class="separator:a857fdd1d4db4cdc6f88f5d8ed0a8fd80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee58710d8c993dd3d6797e60b28593cf"><td class="memItemLeft" align="right" valign="top"><a id="aee58710d8c993dd3d6797e60b28593cf"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf">WorldComm</a> (<a class="el" href="classint.html">int</a> _color)</td></tr>
-<tr class="memdesc:aee58710d8c993dd3d6797e60b28593cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>color</code> <br /></td></tr>
+<tr class="memitem:aee58710d8c993dd3d6797e60b28593cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf">WorldComm</a> (<a class="el" href="classint.html">int</a> _color)</td></tr>
+<tr class="memdesc:aee58710d8c993dd3d6797e60b28593cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>_color</code> a colormap is set based on the <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> of the processes  <a href="classFeel_1_1WorldComm.html#aee58710d8c993dd3d6797e60b28593cf">More...</a><br /></td></tr>
 <tr class="separator:aee58710d8c993dd3d6797e60b28593cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ccc003f06bd63620d696d64075e6810"><td class="memItemLeft" align="right" valign="top"><a id="a0ccc003f06bd63620d696d64075e6810"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (<a class="el" href="classint.html">int</a> _colorLocal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#aac08779f8d3178c2c9b88426ffa76246">localRank</a>, <a class="el" href="classint.html">int</a> _colorGlobal, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank</a>, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_godComm, <a class="el" href="classbool.html">bool</a> _isActive, <a class="el" href="classbool.html">bool</a> _doInitActiveMap=true)</td></tr>
 <tr class="separator:a0ccc003f06bd63620d696d64075e6810"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d4df2d2d1098f8039f89c5688667b1b"><td class="memItemLeft" align="right" valign="top"><a id="a3d4df2d2d1098f8039f89c5688667b1b"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b">WorldComm</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;_colorWorld)</td></tr>
-<tr class="memdesc:a3d4df2d2d1098f8039f89c5688667b1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a set of colors. <br /></td></tr>
+<tr class="memitem:a3d4df2d2d1098f8039f89c5688667b1b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b">WorldComm</a> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;_colorWorld)</td></tr>
+<tr class="memdesc:a3d4df2d2d1098f8039f89c5688667b1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a set of colors <code>_colorWorld</code>.  <a href="classFeel_1_1WorldComm.html#a3d4df2d2d1098f8039f89c5688667b1b">More...</a><br /></td></tr>
 <tr class="separator:a3d4df2d2d1098f8039f89c5688667b1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7536db34bb5414654e42434a226c939f"><td class="memItemLeft" align="right" valign="top"><a id="a7536db34bb5414654e42434a226c939f"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>WorldComm</b> (std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;_colorWorld, <a class="el" href="classint.html">int</a> <a class="el" href="classFeel_1_1WorldComm.html#aac08779f8d3178c2c9b88426ffa76246">localRank</a>, <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_globalComm=<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a>(), <a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a> const &amp;_godComm=<a class="el" href="classFeel_1_1WorldComm.html#aa79784801c64f4733ffa9b219bcb2637">communicator_type</a>())</td></tr>
@@ -407,8 +402,349 @@ static <a class="el" href="classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7
 
 </div>
 </div>
+<a id="a2a98399f702211ce6af769a08d5ba0a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a98399f702211ce6af769a08d5ba0a7">&#9670;&nbsp;</a></span>mapColorWorld() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="classint.html">int</a>&gt; const&amp; Feel::WorldComm::mapColorWorld </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the colormap of the worldcomm by default the colormap set all processes to the same color <code>0</code> </p>
+<dl class="section return"><dt>Returns</dt><dd>the colormap </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e">showMe()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">subWorldComm()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#acd43193528afd5d0f69ab87314bb524d">subWorldCommPtr()</a>.</p>
+
+</div>
+</div>
+<a id="a9ba413ae03587da43721a59c06607c16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ba413ae03587da43721a59c06607c16">&#9670;&nbsp;</a></span>mapColorWorld() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classint.html">int</a> Feel::WorldComm::mapColorWorld </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>k</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the k-th entry of the colormap </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">k</td><td>the index of the process </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the color of the process in the colormap </dd></dl>
+
+</div>
+</div>
+<a id="affcba205a0c581fa9368442248d63f09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#affcba205a0c581fa9368442248d63f09">&#9670;&nbsp;</a></span>mapGlobalRankToGodRank()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&gt; const&amp; Feel::WorldComm::mapGlobalRankToGodRank </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>vector that translates the global rank ids to god rank ids </p>
+<dl class="section return"><dt>Returns</dt><dd>the translation table </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e">showMe()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a8a9c79f23ca72bb1781ce1e7bc04e37c">subWorldComm()</a>.</p>
+
+</div>
+</div>
+<a id="aa61810b509c2390d8ae2df6276e11af8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa61810b509c2390d8ae2df6276e11af8">&#9670;&nbsp;</a></span>mapLocalRankToGlobalRank()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;<a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a>&gt; const&amp; Feel::WorldComm::mapLocalRankToGlobalRank </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>vector that translates the local rank ids to global rank ids </p>
+<dl class="section return"><dt>Returns</dt><dd>the translation table </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e">showMe()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a8a9c79f23ca72bb1781ce1e7bc04e37c">subWorldComm()</a>.</p>
+
+</div>
+</div>
+<a id="a72784467524c2d4a8a8301c93bf6d716"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72784467524c2d4a8a8301c93bf6d716">&#9670;&nbsp;</a></span>masterRank()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceFeel.html#a9953bc678e33419edee8d48033ee31a6">rank_type</a> Feel::WorldComm::masterRank </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the master rank The master rank is set to be the process with the minimal rank in the worldcomm </p>
+<dl class="section return"><dt>Returns</dt><dd>the master rank id in the worldcomm </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1PsLogger.html#a2f72736898d3212023d583d9bf131992">Feel::PsLogger::log()</a>, <a class="el" href="classFeel_1_1WorldComm.html#ace65a2ba7a2c86db0e3a6fc15137a8e6">operator==()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a83ead4adc3644cb83017e9743350a44e">showMe()</a>.</p>
+
+</div>
+</div>
+<a id="a19c57adfb0869106003d4b8548afa90f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19c57adfb0869106003d4b8548afa90f">&#9670;&nbsp;</a></span>subWorldComm() <span class="overload">[1/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> const  &amp; Feel::WorldComm::subWorldComm </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap </p>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm with local and global communicator being the same </dd></dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1WorldComm.html#ae58afe7f35886324b4efaae62667ee0f">subWorldComm()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#acd43193528afd5d0f69ab87314bb524d">subWorldCommPtr()</a>.</p>
+
+</div>
+</div>
+<a id="ad61004a966b151838096a0472761ca6a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad61004a966b151838096a0472761ca6a">&#9670;&nbsp;</a></span>subWorldComm() <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const <a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a>&amp; Feel::WorldComm::subWorldComm </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap </p>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm with local and global communicator being the same </dd></dl>
+
+</div>
+</div>
+<a id="a8a9c79f23ca72bb1781ce1e7bc04e37c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a9c79f23ca72bb1781ce1e7bc04e37c">&#9670;&nbsp;</a></span>subWorldComm() <span class="overload">[3/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">worldcomm_ptr_t Feel::WorldComm::subWorldComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>color</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm shared_ptr associated to color <code>color</code> in the colormap </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">color</td><td>color (in the worldcomm colormap) to be used to generate the worldcomm </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm shared_ptr with local and global communicator being the same </dd></dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a6139b2b28abc16414895e279430bdbbd">isActive()</a>, <a class="el" href="classFeel_1_1WorldComm.html#ad844b065f9b0c5014fac7a175ec66823">localComm()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld()</a>, <a class="el" href="classFeel_1_1WorldComm.html#affcba205a0c581fa9368442248d63f09">mapGlobalRankToGodRank()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#aa61810b509c2390d8ae2df6276e11af8">mapLocalRankToGlobalRank()</a>.</p>
+
+</div>
+</div>
+<a id="ae6ee6064fe770a4578c27075ad8bccbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6ee6064fe770a4578c27075ad8bccbc">&#9670;&nbsp;</a></span>subWorldComm() <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">worldcomm_ptr_t Feel::WorldComm::subWorldComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>color</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>colormap</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm shared_ptr associated to color <code>color</code> in the <code>colormap</code> </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">color</td><td>color in the colormap to be used to generate the worldcomm </td></tr>
+    <tr><td class="paramname">colormap</td><td>colormap to be set in worlcomm to generate the sub worldcomm </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm shared_ptr with local and global communicator being the same </dd></dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">subWorldComm()</a>.</p>
+
+</div>
+</div>
+<a id="ae58afe7f35886324b4efaae62667ee0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae58afe7f35886324b4efaae62667ee0f">&#9670;&nbsp;</a></span>subWorldComm() <span class="overload">[5/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classFeel_1_1WorldComm.html">worldcomm_t</a> &amp; Feel::WorldComm::subWorldComm </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>colormap</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm shared_ptr associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the <code>colormap</code> </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">colormap</td><td>colormap to be set in worlcomm to generate the sub worldcomm </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm shared_ptr with local and global communicator being the same </dd></dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">subWorldComm()</a>.</p>
+
+</div>
+</div>
+<a id="acd43193528afd5d0f69ab87314bb524d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd43193528afd5d0f69ab87314bb524d">&#9670;&nbsp;</a></span>subWorldCommPtr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">worldcomm_ptr_t Feel::WorldComm::subWorldCommPtr </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>get the sub worldcomm shared_ptr associated to color <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> in the colormap </p>
+<dl class="section return"><dt>Returns</dt><dd>the worldcomm shared_ptr with local and global communicator being the same </dd></dl>
+
+<p class="reference">References <a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796">globalRank()</a>, <a class="el" href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">mapColorWorld()</a>, and <a class="el" href="classFeel_1_1WorldComm.html#a19c57adfb0869106003d4b8548afa90f">subWorldComm()</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aee58710d8c993dd3d6797e60b28593cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee58710d8c993dd3d6797e60b28593cf">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::WorldComm::WorldComm </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classint.html">int</a>&#160;</td>
+          <td class="paramname"><em>_color</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>build a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a <code>_color</code> a colormap is set based on the <code><a class="el" href="classFeel_1_1WorldComm.html#a5089aa8980e3ae1ff3d384198d19a796" title="Returns the rank in the global WorldComm.">globalRank()</a></code> of the processes </p>
+<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line"><span class="keyword">auto</span> subwc = <a class="code" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( 1 ).subWorldComm( 1 );</div>
+</div><!-- fragment --> </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">_color</td><td>color to use to generate the <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>: </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3d4df2d2d1098f8039f89c5688667b1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d4df2d2d1098f8039f89c5688667b1b">&#9670;&nbsp;</a></span>WorldComm() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Feel::WorldComm::WorldComm </td>
+          <td>(</td>
+          <td class="paramtype">std::vector&lt; <a class="el" href="classint.html">int</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>_colorWorld</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Creates a sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a> from a set of colors <code>_colorWorld</code>. </p>
+<dl class="section warning"><dt>Warning</dt><dd>do not use directly this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> to get the sub <a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a>, rather use member function <code>subWorldComm( _color )</code> on this <code><a class="el" href="classFeel_1_1WorldComm.html" title="Provides interface to MPI Communicators.">WorldComm</a></code> <div class="fragment"><div class="line">std::vector&lt;int&gt; cmap( <a class="code" href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Environment::worldComm</a>().size(), 1 );</div>
+<div class="line">cmap[0] = 0; <span class="comment">// set a different color for process 0</span></div>
+<div class="line"><span class="keyword">auto</span> subwc = <a class="code" href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">WorldComm</a>( cmap ).subWorldComm( 1 );</div>
+</div><!-- fragment --> </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
+<div class="ttc" id="aclassFeel_1_1WorldComm_html_a2a98399f702211ce6af769a08d5ba0a7"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a2a98399f702211ce6af769a08d5ba0a7">Feel::WorldComm::mapColorWorld</a></div><div class="ttdeci">std::vector&lt; int &gt; const  &amp; mapColorWorld() const</div><div class="ttdoc">the colormap of the worldcomm by default the colormap set all processes to the same color 0</div><div class="ttdef"><b>Definition:</b> worldcomm.hpp:210</div></div>
 <div class="ttc" id="aclassFeel_1_1Environment_html_a62374c8b0a45e6a7376068b986b007b7"><div class="ttname"><a href="classFeel_1_1Environment.html#a62374c8b0a45e6a7376068b986b007b7">Feel::Environment::worldComm</a></div><div class="ttdeci">static WorldComm &amp; worldComm()</div><div class="ttdoc">return the worldcomm (static)</div><div class="ttdef"><b>Definition:</b> environment.hpp:273</div></div>
 <div class="ttc" id="anamespaceFeel_html_a99aac342902035d1427a6e77b4037a78"><div class="ttname"><a href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">Feel::rank</a></div><div class="ttdeci">auto rank(C const &amp;c)</div><div class="ttdef"><b>Definition:</b> rank.hpp:37</div></div>
 <div class="ttc" id="aclassFeel_1_1WorldComm_html_a4ed4a25902258a5ca6e66d215fa5787b"><div class="ttname"><a href="classFeel_1_1WorldComm.html#a4ed4a25902258a5ca6e66d215fa5787b">Feel::WorldComm::WorldComm</a></div><div class="ttdeci">WorldComm()</div><div class="ttdoc">Default constructor.</div><div class="ttdef"><b>Definition:</b> worldcomm.cpp:41</div></div>

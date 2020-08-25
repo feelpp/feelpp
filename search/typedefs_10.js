@@ -1,20 +1,6 @@
 var searchData=
 [
-  ['scm_5ftype_8643',['scm_type',['../classFeel_1_1CRB.html#a2fc2d7ca8939cbf2816728f57c61c716',1,'Feel::CRB::scm_type()'],['../classFeel_1_1CRBTrilinear.html#a7893a523e7ba56a1517987b5b15587f3',1,'Feel::CRBTrilinear::scm_type()']]],
-  ['self_5fptrtype_8644',['self_ptrtype',['../classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953',1,'Feel::WorldComm']]],
-  ['self_5ftype_8645',['self_type',['../classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956',1,'Feel::WorldComm']]],
-  ['shape_8646',['shape',['../structFeel_1_1vf_1_1Fit_1_1tensor.html#af61d66a48222d1fb5b0272142147648f',1,'Feel::vf::Fit::tensor']]],
-  ['sig_5ftype_8647',['sig_type',['../classFeel_1_1Event_1_1SignalHandler.html#a54c808a72b8a4873ed5670f372a677d3',1,'Feel::Event::SignalHandler']]],
-  ['simget_5fiterator_8648',['simget_iterator',['../classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418',1,'Feel::Application']]],
-  ['simgetfactory_8649',['SimgetFactory',['../namespaceFeel.html#ac9648381161062499cc054fa4b0de17e',1,'Feel']]],
-  ['simgets_5ftype_8650',['simgets_type',['../classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e',1,'Feel::Application']]],
-  ['size_5ftype_8651',['size_type',['../namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58',1,'Feel']]],
-  ['solvedata_8652',['SolveData',['../classFeel_1_1SolidMechanics.html#afe625a90f7432e0bc8318a9828ade687',1,'Feel::SolidMechanics']]],
-  ['solver_5ftype_8653',['solver_type',['../classFeel_1_1SolverConstrained.html#a7b8002b9807ee0f9bc0f22c1ad0c2916',1,'Feel::SolverConstrained::solver_type()'],['../classFeel_1_1SolverUnconstrained.html#a0808722ffced9aa2b7259ebb4e857682',1,'Feel::SolverUnconstrained::solver_type()']]],
-  ['space_5ftype_8654',['space_type',['../classFeel_1_1CRB.html#a0e376b3cf00e1c16a8da2a2f6aa1232c',1,'Feel::CRB::space_type()'],['../classFeel_1_1CRBTrilinear.html#a0027e215739db3c857d6a478819fc47d',1,'Feel::CRBTrilinear::space_type()'],['../classFeel_1_1CRBElementsDB.html#a2f1589253d06addb7bd0983da7b9257c',1,'Feel::CRBElementsDB::space_type()'],['../classFeel_1_1CRBModel.html#abfd06e583290cfaeda5ea14a49065468',1,'Feel::CRBModel::space_type()'],['../structFeel_1_1PreAssembleMassMatrixInCompositeCase.html#ad43d813b35cddf2501139d7e85ba553f',1,'Feel::PreAssembleMassMatrixInCompositeCase::space_type()'],['../structFeel_1_1AssembleMassMatrixInCompositeCase.html#aa8d498b726380460ee7a718e3a28d162',1,'Feel::AssembleMassMatrixInCompositeCase::space_type()'],['../structFeel_1_1AssembleInitialGuessVInCompositeCase.html#a733088a7004a9c3efee3f00ca4c5c66e',1,'Feel::AssembleInitialGuessVInCompositeCase::space_type()'],['../classFeel_1_1CRBModelTrilinear.html#acb4d3d3ef7a9c9f3c26b53c1f59db612',1,'Feel::CRBModelTrilinear::space_type()']]],
-  ['sparse_5fmatrix_5fptrtype_8655',['sparse_matrix_ptrtype',['../classFeel_1_1MeshAdaptation.html#a12fabb2a6bfacb59e027517daa5ecab8',1,'Feel::MeshAdaptation']]],
-  ['sparse_5fmatrix_5ftype_8656',['sparse_matrix_type',['../classFeel_1_1MeshAdaptation.html#acd80f5384a3caf3f77511971516698a9',1,'Feel::MeshAdaptation']]],
-  ['statistics_5ftype_8657',['statistics_type',['../classFeel_1_1SolverConstrained.html#ae8eb09740bbb66bcb6cead169b8e8a68',1,'Feel::SolverConstrained::statistics_type()'],['../classFeel_1_1SolverUnconstrained.html#a100d4d40bd34a4696b50bb30549a8fc1',1,'Feel::SolverUnconstrained::statistics_type()']]],
-  ['super_8658',['super',['../classFeel_1_1problem.html#a678418a1d3dc8477d64cc0d801140e78',1,'Feel::problem']]],
-  ['symmetric_5fmatrix_5ftype_8659',['symmetric_matrix_type',['../classFeel_1_1problem.html#a740f80ca45550c04e99e841d7065ab4b',1,'Feel::problem']]]
+  ['worldcomm_5fptr_5ft_4186',['worldcomm_ptr_t',['../group__Core.html#gad8f8196f0b8ff9495dd4119eda223772',1,'Feel']]],
+  ['worldcomm_5ft_4187',['worldcomm_t',['../group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a',1,'Feel']]],
+  ['worldscomm_5fptr_5ft_4188',['worldscomm_ptr_t',['../group__Core.html#ga56d5cf37fceae464425abf8d94524b7e',1,'Feel']]]
 ];

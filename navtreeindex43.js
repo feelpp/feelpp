@@ -1,5 +1,13 @@
 var NAVTREEINDEX43 =
 {
+"structFeel_1_1tag_1_1space2.html":[6,1,1,11,196],
+"structFeel_1_1tag_1_1space2.html#ade3ac1c1163f485d4a365a657a7cd2af":[6,1,1,11,196,1],
+"structFeel_1_1tag_1_1space2.html#af49f54d4c22b7c4a066c1f45a489bc89":[6,1,1,11,196,0],
+"structFeel_1_1tag_1_1space2.html#af880bca557c72d85fa8fab845a1adabb":[6,1,1,11,196,2],
+"structFeel_1_1tag_1_1spectrum.html":[6,1,1,11,197],
+"structFeel_1_1tag_1_1spectrum.html#a3d915f4efbd85661d807d421f0984cb1":[6,1,1,11,197,2],
+"structFeel_1_1tag_1_1spectrum.html#a67834b565f24de281921322a34b0eed8":[6,1,1,11,197,1],
+"structFeel_1_1tag_1_1spectrum.html#af22c2a6125790da61c35d3cb63d76ba8":[6,1,1,11,197,0],
 "structFeel_1_1tag_1_1statistics.html":[6,1,1,11,198],
 "structFeel_1_1tag_1_1statistics.html#a5973ef9cdfb09d7765ee76a0bc4769b6":[6,1,1,11,198,0],
 "structFeel_1_1tag_1_1statistics.html#a5fe2d0c70f868b2d543cef33997862ee":[6,1,1,11,198,1],
@@ -241,13 +249,5 @@ var NAVTREEINDEX43 =
 "structFeel_1_1vf_1_1Cst_1_1HasTestFunction.html#aabca0a0d2821531aba76ada559f36244":[6,1,1,12,7,0,0],
 "structFeel_1_1vf_1_1Cst_1_1HasTrialFunction.html":[6,1,1,12,7,1],
 "structFeel_1_1vf_1_1Cst_1_1HasTrialFunction.html#abb6ed99b3ac3662a3e3757a149ebaeab":[6,1,1,12,7,1,0],
-"structFeel_1_1vf_1_1Cst_1_1Lambda.html":[6,1,1,12,7,2],
-"structFeel_1_1vf_1_1Cst_1_1Lambda.html#a2e99bbd0c9a14a629de371860ed017af":[6,1,1,12,7,2,0],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html":[6,1,1,12,7,3],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a047f481107c1c944a69c8c5f9b59f2a8":[6,1,1,12,7,3,9],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a05a3ca636e842ec25f530db771986582":[6,1,1,12,7,3,3],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a091fa70745ca550608ac653d1a463169":[6,1,1,12,7,3,22],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a0e28e796212a6d967137dde9804003ab":[6,1,1,12,7,3,6],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a176355d99959a536f572074821438c86":[6,1,1,12,7,3,7],
-"structFeel_1_1vf_1_1Cst_1_1tensor.html#a1915188d53a320b9d4dcbed1a7cc4aa6":[6,1,1,12,7,3,18]
+"structFeel_1_1vf_1_1Cst_1_1Lambda.html":[6,1,1,12,7,2]
 };

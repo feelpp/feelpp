@@ -1,5 +1,8 @@
 var NAVTREEINDEX24 =
 {
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#aa3eaeac59b892e5b8aa7083666c36d9e":[6,1,1,218,8],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#aa611d32215a7b6ac71d5a65ac5dbe386":[6,1,1,218,80],
+"classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#aac08523b1a89bd47d839a9e7cb0f2ed5":[6,1,1,218,85],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#aae44e207eed20f500fd79dc95947357f":[6,1,1,218,82],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#ab162d3e92319cdd06b500e8e96efb26c":[6,1,1,218,1],
 "classFeel_1_1Reference_3_01Hypercube_3_01Dim_00_01Order_00_01RDim_01_4_00_01Dim_00_01Order_00_01RDim_00_01T_01_4.html#ab1932514f1cddb35777b3f26dff2e4c7":[6,1,1,218,18],
@@ -246,8 +249,5 @@ var NAVTREEINDEX24 =
 "classFeel_1_1Simplex.html#a6a2c596cc769e71603df6187c41d70a1":[6,1,1,233,14],
 "classFeel_1_1Simplex.html#a6aa846b5edb3e90291763fec79cb3516":[6,1,1,233,45],
 "classFeel_1_1Simplex.html#a723d9604a95336cf3b7ab2e138de63da":[6,1,1,233,48],
-"classFeel_1_1Simplex.html#a7e42b46320f3c655285452491b7a1342":[6,1,1,233,51],
-"classFeel_1_1Simplex.html#a87a026e3a9955900903d45caf936baea":[6,1,1,233,1],
-"classFeel_1_1Simplex.html#a90347f4dd07ea7110d6a4b9e48e63c89":[6,1,1,233,30],
-"classFeel_1_1Simplex.html#a90506c73e64eb3a3205f2442c2eb2257":[6,1,1,233,40]
+"classFeel_1_1Simplex.html#a7e42b46320f3c655285452491b7a1342":[6,1,1,233,51]
 };
