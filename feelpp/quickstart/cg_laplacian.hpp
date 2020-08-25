@@ -26,6 +26,7 @@
 
 namespace Feel {
 
+///[cg_laplacian]
 template<typename SpaceType, typename DataT, typename = std::enable_if_t<is_functionspace_v<SpaceType>>>
 auto
 cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
@@ -76,7 +77,7 @@ cgLaplacian( std::shared_ptr<SpaceType> const& Vh, DataT && data  )
     // end::solve[]
     return boption( "no-solve" )?std::nullopt:std::optional{u};
 }
-
+///[cg_laplacian]
 
 
 }

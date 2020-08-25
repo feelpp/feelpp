@@ -45,7 +45,10 @@ namespace Feel
 {
 namespace FeelModels
 {
-
+/** 
+ * Toolbox Electric 
+ * @ingroup Toolboxes
+ */
 template< typename ConvexType, typename BasisPotentialType>
 class Electric : public ModelNumerical,
                  public ModelPhysics<ConvexType::nDim>,
