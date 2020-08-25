@@ -46,3 +46,6 @@
 [submodule "feelpp/contrib/simple-web-server"]
 	path = feelpp/contrib/simple-web-server
 	url = https://gitlab.com/feelpp/Simple-Web-Server.git
+[submodule "feelpp/contrib/range-v3"]
+	path = feelpp/contrib/range-v3
+	url = https://github.com/feelpp/range-v3.git
