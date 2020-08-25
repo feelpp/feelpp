@@ -267,7 +267,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
     };
 
 
-/**
+    /**
      * Newtonian :
      *   sigma = -pI + 2 \mu D(u) with D(u) = 0.5*(\grad u + (\grad u)^T)
      */
@@ -291,26 +291,44 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
             M_muExprTensor( M_muExpr.evaluator( geom ) )
             //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
-        {}
+        {
+            if ( expr.turbulence().isEnabled() )
+            {
+                M_mutExpr.emplace( this->expr().template materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+                M_mutExprTensor.emplace( M_mutExpr->evaluator( geom ) );
+            }
+        }
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
             :
             super_type( expr,geom,fev ),
             M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
             M_muExprTensor( M_muExpr.evaluator( geom ) )
-            //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
-        {}
+        {
+            if ( expr.turbulence().isEnabled() )
+            {
+                M_mutExpr.emplace( this->expr().template materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+                M_mutExprTensor.emplace( M_mutExpr->evaluator( geom ) );
+            }
+        }
         tensorFluidStressTensorNewtonian( expr_type const& expr, Geo_t const& geom )
             :
             super_type( expr,geom ),
             M_muExpr( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity") ),
             M_muExprTensor( M_muExpr.evaluator( geom ) )
-            //M_muExprTensor( this->expr().template materialPropertyExpr<1,1>("dynamic-viscosity").evaluator( geom ) )
-        {}
+        {
+            if ( expr.turbulence().isEnabled() )
+            {
+                M_mutExpr.emplace( this->expr().template materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+                M_mutExprTensor.emplace( M_mutExpr->evaluator( geom ) );
+            }
+        }
 
         void update( Geo_t const& geom ) override
         {
             super_type::updateCommon( geom, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
             M_muExprTensor.update( geom );
+            if ( M_mutExprTensor )
+                M_mutExprTensor->update( geom );
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
@@ -319,6 +337,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
         {
             super_type::updateCommon( geom, face, expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL );
             M_muExprTensor.update( geom, face );
+            if ( M_mutExprTensor )
+                M_mutExprTensor->update( geom, face );
             //std::fill( this->locRes().data(), this->locRes().data()+this->locRes().size(), super_type::matrix_shape_type::Zero() );
             updateImpl( mpl::int_<super_type::shape_type::nDim>() );
         }
@@ -328,9 +348,15 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             const bool withPressure = this->expr().withPressureTerm();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type muEval = M_muExprTensor.evalq(0,0,q);
+                /*const*/ value_type muEval = M_muExprTensor.evalq(0,0,q);
+                
+                if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
+                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
+                                 if ( M_mutExprTensor )
+                                     muEval += M_mutExprTensor->evalq(0,0,q);
+                
                 auto & locResAtQ = this->locRes(q);
-                if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
                 {
                     auto const& gradVelocityEval = this->locGradVelocity(q);
                     const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
@@ -346,8 +372,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                         locResAtQ(1,1) -= pres;
                     }
                 }
-                else if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ||
-                          expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
+                else if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ||
+                                    expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
                 {
                     locResAtQ(0,0) = muEval;
                 }
@@ -359,9 +385,15 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
             const bool withPressure = this->expr().withPressureTerm();
             for ( uint16_type q = 0; q < this->gmc()->nPoints(); ++q )
             {
-                const value_type muEval = M_muExprTensor.evalq(0,0,q);
+                /*const*/ value_type muEval = M_muExprTensor.evalq(0,0,q);
+                
+                if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
+                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
+                                 if ( M_mutExprTensor )
+                                     muEval += M_mutExprTensor->evalq(0,0,q);
+                
                 auto & locResAtQ = this->locRes(q);
-                if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
+                if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL )
                 {
                     auto const& gradVelocityEval = this->locGradVelocity(q);
                     const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
@@ -384,7 +416,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                         locResAtQ(2,2) -= pres;
                     }
                 }
-                else if ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ||
+                else if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_VISCOSITY_EVAL ||
                           expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
                 {
                     locResAtQ(0,0) = muEval;
@@ -451,6 +483,8 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
     private :
         typename expr_type::template material_property_expr_type<1,1> M_muExpr;
         typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>  M_muExprTensor;
+        std::optional<typename expr_type::template material_property_expr_type<1,1>> M_mutExpr;
+        std::optional<typename expr_type::template material_property_expr_type<1,1>::template tensor<Geo_t/*, Basis_i_t, Basis_j_t*/>>  M_mutExprTensor;
     };
 
     /**
@@ -1502,6 +1536,7 @@ public:
     expr_grad_velocity_type const& expressionGradVelocity() const { return M_exprGradVelocity; }
     expr_id_pressure_type const& expressionIdPressure() const { return M_exprIdPressure; }
     auto const& dynamicViscosity() const { return M_physicFluid.dynamicViscosity(); }
+    auto const& turbulence() const { return M_physicFluid.turbulence(); }
     MaterialProperties const& materialProperties() const { return M_matProps; }
     bool withPressureTerm() const { return M_withPressureTerm; }
 

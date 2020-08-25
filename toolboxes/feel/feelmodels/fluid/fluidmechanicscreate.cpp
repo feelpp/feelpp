@@ -1969,6 +1969,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     std::string eqkeyword = prefixvm( this->keyword(), "turbulence_SA", "_" );
     M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
 
+    std::string symb_dist2wall = prefixvm( this->keyword(),"dist2wall","_" );
+    std::string symb_curl_magintude = prefixvm( this->keyword(), "curl_U_magnitude", "_");
+
     std::ostringstream ostr;
     ostr << "{";
 
@@ -2000,8 +2003,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string symb_c_b1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_b1", "_" ), 0.1355 );
                 std::string symb_c_b2 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_b2", "_" ), 0.622 );
                 std::string symb_c_v1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_v1", "_" ), 7.1 );
+                std::string symb_c_t3 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_t3", "_" ), 1.2 );
+                std::string symb_c_t4 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_t4", "_" ), 0.5 );
+                std::string symb_c_w2 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w2", "_" ), 0.2 );
+                std::string symb_c_w3 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w3", "_" ), 2 );
+                std::string symb_c_kappa = physicFluidData->addParameter( prefixvm( eqkeyword, "c_kappa", "_" ), 0.41 );
+                std::string symb_c_sigma = physicFluidData->addParameter( prefixvm( eqkeyword, "c_sigma", "_" ), 2./3. );
+                std::string symb_c_w1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w1", "_" ), (boost::format("%1%/(%2%^2) + (1+%3%)/%4% :%1%:%2%:%3%:%4%")%symb_c_b1 %symb_c_kappa %symb_c_b2 %symb_c_sigma ).str(), this->worldComm(), this->repository().expr() );
+
                 std::string symb_khi = physicFluidData->addParameter( prefixvm( eqkeyword, "khi", "_" ), (boost::format("%1%*%2%/%3%:%1%:%2%:%3%")%symb_sol_SA %symbDensity %symbDynViscosity ).str(), this->worldComm(), this->repository().expr() );
-                std::string symb_f_v1 = physicFluidData->addParameter( prefixvm( eqkeyword, "f_v1", "_" ), (boost::format("%1%^3/(%1%^3+%2%^3):%1%:%2%") %symb_khi %symb_c_v1 ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_f_v1 = physicFluidData->addParameter( prefixvm( eqkeyword, "f_v1", "_" ), (boost::format("%1%^3/(%1%^3+%2%^3):%1%:%2%")%symb_khi %symb_c_v1 ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_f_v2 = physicFluidData->addParameter( prefixvm( eqkeyword, "f_v2", "_" ), (boost::format("1 - %1%/(1+%1%*%2%) :%1%:%2%")%symb_khi %symb_f_v1 ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_f_t2 = physicFluidData->addParameter( prefixvm( eqkeyword, "f_t2", "_" ), (boost::format("%1%*exp(-%2%*%3%^2) :%1%:%2%:%3%")%symb_c_t3 %symb_c_t4 %symb_khi ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_S = physicFluidData->addParameter( prefixvm( eqkeyword, "S", "_" ), (boost::format("%1% + (%2%/(%3%^2*%4%^2))*%5% :%1%:%2%:%3%:%4%:%5%")%symb_curl_magintude %symb_sol_SA  %symb_c_kappa %symb_dist2wall %symb_f_v2 ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_r = physicFluidData->addParameter( prefixvm( eqkeyword, "r", "_" ), (boost::format("min(%1%/(%2%*%3%^2*%4%^2),10):%1%:%2%:%3%:%4%")%symb_sol_SA %symb_S %symb_c_kappa %symb_dist2wall ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_g = physicFluidData->addParameter( prefixvm( eqkeyword, "g", "_" ), (boost::format("%1% + %2%*(%1%^6 - %1%):%1%:%2%")%symb_r %symb_c_w2 ).str(), this->worldComm(), this->repository().expr() );
+                std::string symb_f_w = physicFluidData->addParameter( prefixvm( eqkeyword, "f_w", "_" ), (boost::format("%1%*( (1+%2%^6)/(%1%^6+%2%^6) )^(1/6):%1%:%2%")%symb_g %symb_c_w3 ).str(), this->worldComm(), this->repository().expr() );
 
                 ostr << "\""<<eqkeyword << "_c\":\"1\","
                      << "\""<<eqkeyword << "_f\":\"1\""
