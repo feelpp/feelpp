@@ -253,8 +253,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _expr= -idt(p)*div(v),
                                _geomap=this->geomap() );
 
-            if ( ( physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildCstPart ) ||
-                 ( !physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildNonCstPart ) )
+            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildCstPart : BuildNonCstPart;
+            if ( doAssemblyStressTensor )
             {
                 auto StressTensorExprJac = Feel::FeelModels::fluidMecNewtonianViscousStressTensorJacobian(gradv(u),u,*physicFluidData,matProps);
                 bilinearFormVV +=
@@ -262,7 +262,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _expr= timeSteppingScaling*inner( StressTensorExprJac,grad(v) ),
                                _geomap=this->geomap() );
             }
-
+#if 0
             if ( physicFluidData->turbulence().isEnabled() && BuildNonCstPart )
             {
                 auto lmix = min( 0.41*idv(M_fieldDist2Wall), cst(0.09)*cst(0.0635/2.) );
@@ -277,7 +277,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                _expr= timeSteppingScaling*inner( 2*mutt*sym(gradv(u)),grad(v) ),
                                _geomap=this->geomap() );
             }
-
+#endif
 
             // convection terms
             if ( physicFluidData->equation() == "Navier-Stokes" )

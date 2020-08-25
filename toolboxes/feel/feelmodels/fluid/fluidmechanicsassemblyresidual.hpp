@@ -90,8 +90,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _expr= -idv(p)*div(v),
                                _geomap=this->geomap() );
             }
-            if ( ( physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildNonCstPart && !UseJacobianLinearTerms ) ||
-                 ( !physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildNonCstPart ) )
+
+            bool doAssemblyStressTensor = ( physicFluidData->dynamicViscosity().isNewtonianLaw() && !physicFluidData->turbulence().isEnabled() )? BuildNonCstPart && !UseJacobianLinearTerms : BuildNonCstPart;
+            if ( doAssemblyStressTensor )
             {
                 auto const StressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,false/*true*/);
                 // sigma : grad(v) on Omega
@@ -101,6 +102,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _geomap=this->geomap() );
             }
             
+#if 0
             if ( physicFluidData->turbulence().isEnabled() && BuildNonCstPart )
             {
                 auto lmix = min( 0.41*idv(M_fieldDist2Wall), cst(0.09)*cst(0.0635/2.) );
@@ -110,6 +112,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
                                _expr= timeSteppingScaling*inner( 2*mut*sym(gradv(u)),grad(v) ),
                                _geomap=this->geomap() );
             }
+#endif
             
 
 
