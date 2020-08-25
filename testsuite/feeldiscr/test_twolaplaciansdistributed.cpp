@@ -1,12 +1,7 @@
 /* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-*/
 
-#if 1
 #define BOOST_TEST_MODULE test_twolaplaciansdistributed
 #include <feel/feelcore/testsuite.hpp>
-#else
-#define USE_BOOST_TEST 0
-#endif
-
 #include <feel/options.hpp>
 
 #include <feel/feelalg/backend.hpp>
@@ -178,14 +173,13 @@ void run()
         myexporter2->step( 0 )->add( "u2", u2 );
         myexporter2->save();
     }
-
+}
 } //namespace test_twolaplaciansdistributed
 
 /*_________________________________________________*
  * Main
  *_________________________________________________*/
 
-#if USE_BOOST_TEST
 
 FEELPP_ENVIRONMENT_WITH_OPTIONS( test_twolaplaciansdistributed::makeAbout(),
                                  test_twolaplaciansdistributed::makeOptions() )
@@ -197,15 +191,3 @@ BOOST_AUTO_TEST_CASE( twolaplaciansdistributed1 )
     test_twolaplaciansdistributed::run();
 }
 BOOST_AUTO_TEST_SUITE_END()
-
-#else
-
-int main( int argc, char** argv )
-{
-    Feel::Environment env( Feel::_argc = argc, Feel::_argv = argv,
-                           Feel::_about = test_twolaplaciansdistributed::makeAbout(),
-                           Feel::_desc = test_twolaplaciansdistributed::makeOptions() );
-    test_twolaplaciansdistributed::run();
-}
-
-#endif
