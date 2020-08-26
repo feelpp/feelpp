@@ -1971,6 +1971,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
     std::string symb_dist2wall = prefixvm( this->keyword(),"dist2wall","_" );
     std::string symb_curl_magintude = prefixvm( this->keyword(), "curl_U_magnitude", "_");
+    std::string symb_velocity_x =  prefixvm( this->keyword(),"U","_") +"_0";
+    std::string symb_velocity_y =  prefixvm( this->keyword(),"U","_") +"_1";
+    std::string symb_velocity_z =  prefixvm( this->keyword(),"U","_") +"_2";
+    std::string exprstr_velocity = nDim==2? (boost::format("{%1%,%2%}:%1%:%2%")%symb_velocity_x %symb_velocity_y).str() :
+        (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
 
     std::ostringstream ostr;
     ostr << "{";
@@ -1996,6 +2001,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
             {
                 //std::string prefix_symbol = "turbulence_SA";
                 std::string symb_sol_SA = prefixvm( eqkeyword, "nu" , "_" );
+                std::string symbbase_grad_sol_SA = prefixvm( eqkeyword, "grad_nu", "_" );
+                std::string exprstrnosymb_inner_grad_sol_SA = nDim==2? (boost::format("%1%_0^2+%1%_1^2")%symbbase_grad_sol_SA ).str() :
+                    (boost::format("(%1%_0^2+%1%_1^2+%1%_2^2)")%symbbase_grad_sol_SA ).str();
+                std::string depsymb_inner_grad_sol_SA = nDim==2? (boost::format("%1%_0:%1%_1")%symbbase_grad_sol_SA ).str() :
+                    (boost::format("%1%_0:%1%_1:%1%_2")%symbbase_grad_sol_SA ).str();
                 std::string symbDensity = "materials_" + matName + "_rho";
                 std::string symbDynViscosity = "materials_" + matName + "_mu";
 
@@ -2020,9 +2030,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string symb_g = physicFluidData->addParameter( prefixvm( eqkeyword, "g", "_" ), (boost::format("%1% + %2%*(%1%^6 - %1%):%1%:%2%")%symb_r %symb_c_w2 ).str(), this->worldComm(), this->repository().expr() );
                 std::string symb_f_w = physicFluidData->addParameter( prefixvm( eqkeyword, "f_w", "_" ), (boost::format("%1%*( (1+%2%^6)/(%1%^6+%2%^6) )^(1/6):%1%:%2%")%symb_g %symb_c_w3 ).str(), this->worldComm(), this->repository().expr() );
 
-                ostr << "\""<<eqkeyword << "_c\":\"1\","
-                     << "\""<<eqkeyword << "_f\":\"1\""
-                     << "}"; // end mymat1
+                std::string exprstr_diffusion = (boost::format("(1/%1%)*(%2%/%3%+%4%):%1%:%2%:%3%:%4%:") %symb_c_sigma %symbDynViscosity %symbDensity %symb_sol_SA ).str();
+                std::string exprstr_reaction = (boost::format("-%1%*(1-%2%)*%3% + (%4%*%5% - %1%*%2%/(%6%^2))*(%7%/(%8%^2)) :%1%:%2%:%3%:%4%:%5%:%6%:%7%:%8%")%symb_c_b1 %symb_f_t2 %symb_S %symb_c_w1 %symb_f_w %symb_c_kappa %symb_sol_SA %symb_dist2wall ).str();
+                std::string exprstr_source = (boost::format("(1/%1%)*%2%*%3%:%1%:%2%:%4%") %symb_c_sigma %symb_c_b2 %exprstrnosymb_inner_grad_sol_SA %depsymb_inner_grad_sol_SA ).str();
+                ostr << "\""<<eqkeyword << "_beta\":\"" << exprstr_velocity << "\","
+                     << "\""<<eqkeyword << "_c\":\"" << exprstr_diffusion << "\","
+                     << "\""<<eqkeyword << "_a\":\"" << exprstr_reaction << "\","
+                     << "\""<<eqkeyword << "_f\":\"" << exprstr_source << "\"";
+                if ( !this->isStationaryModel() )
+                    ostr << ",\""<<eqkeyword << "_d\":\"1\"";
+                ostr << "}"; // end mymat1
 
                 std::string mutExprStr = (boost::format("%1%*%2%*%3%:%1%:%2%:%3%")%symbDensity %symb_sol_SA %symb_f_v1 ).str();
                 ModelExpression mutExpr;
@@ -2074,8 +2091,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     M_turbulenceModelType->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( static_cast<void(self_type::*)(DataUpdateJacobian&) const>(&self_type::updateJacobian_Turbulence),
                                                                                          boost::ref( *this ), _1 ) );
 
-    // cfpdes->printAndSaveInfo();
-    M_turbulenceModelType->solve(); // TO REMOVE
+    M_turbulenceModelType->printAndSaveInfo();
+    // M_turbulenceModelType->solve(); // TO REMOVE
 
     if ( this->worldComm().isMasterRank() )
         std::cout << "holalla turb \n "<< M_turbulenceModelType->modelFields().symbolsExpr().names() << std::endl;
