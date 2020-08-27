@@ -101,6 +101,11 @@ public:
     std::shared_ptr<TSBase> timeStepBase() const override { return this->timeStepBdfUnknown(); }
     void startTimeStep() override;
     void updateTimeStep() override;
+
+    //! update initial conditions with symbols expression \se
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+
     //___________________________________________________________________________________//
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
@@ -221,7 +226,6 @@ private :
     void initFunctionSpaces();
     void initBoundaryConditions();
     void initTimeStep();
-    void initInitialConditions();
     void initPostProcess() override;
 
 private :
@@ -280,6 +284,29 @@ CoefficientFormPDE<ConvexType,BasisUnknownType>::hasSymbolDependencyInBoundaryCo
         }
     }
     return hasDependency;
+}
+
+template< typename ConvexType, typename BasisUnknownType>
+template <typename SymbolsExprType>
+void
+CoefficientFormPDE<ConvexType,BasisUnknownType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    if ( !this->doRestart() )
+    {
+        std::vector<element_unknown_ptrtype> icFields;
+        if ( this->isStationary() )
+            icFields = { this->fieldUnknownPtr() };
+        else
+            icFields = this->timeStepBdfUnknown()->unknowns();
+
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().initialConditions().setParameterValues( paramValues );
+
+        super_type::updateInitialConditions( this->unknownName(), this->rangeMeshElements(), se, icFields );
+
+        if ( !this->isStationary() )
+            *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);
+    }
 }
 
 template< typename ConvexType, typename BasisUnknownType>

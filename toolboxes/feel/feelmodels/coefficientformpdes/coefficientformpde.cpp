@@ -46,8 +46,6 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    this->initInitialConditions();
-
     // stabilization gls
     if ( this->M_applyStabilization && !this->M_stabilizationGLSParameter )
     {
@@ -56,11 +54,15 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->M_stabilizationGLSParameter->init();
     }
 
+    // update constant parameters into
+    this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
     // post-process
     this->initPostProcess();
 
-    // update constant parameters into
-    this->updateParameterValues();
 
     // backend
     this->M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
@@ -164,29 +166,6 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     auto const& listMarkedPointsUnknown = std::get<2>( meshMarkersUnknownByEntities );
     if ( !listMarkedPointsUnknown.empty() )
         this->updateDofEliminationIds( this->unknownName(), Xh, markedpoints( mesh,listMarkedPointsUnknown ) );
-
-}
-
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
-void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::initInitialConditions()
-{
-    if ( !this->doRestart() )
-    {
-        std::vector<element_unknown_ptrtype> icFields;
-        if ( this->isStationary() )
-            icFields = { this->fieldUnknownPtr() };
-        else
-            icFields = this->timeStepBdfUnknown()->unknowns();
-
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-        this->updateInitialConditions( this->unknownName(), this->rangeMeshElements(), this->symbolsExpr(), icFields );
-
-        if ( !this->isStationary() )
-            *this->fieldUnknownPtr() = this->timeStepBdfUnknown()->unknown(0);
-    }
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -403,6 +382,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
 

@@ -101,12 +101,15 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         this->updateTime( M_coefficientFormPDEs.front()->currentTime() );
     }
 
+    // update constant parameters into
+    this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
 
     // post-process
     this->initPostProcess();
 
-    // update constant parameters into
-    this->updateParameterValues();
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr(), this->clovm() );
@@ -505,6 +508,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::strin
         //std::cout << "JJJ paramValues : " << paramValues << std::endl;
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
 

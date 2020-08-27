@@ -234,6 +234,10 @@ public :
     void startTimeStep();
     void updateTimeStep();
 
+    //! update initial conditions with symbols expression \se
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+
     //___________________________________________________________________________________//
     // post-process
     void exportResults() { this->exportResults( this->currentTime() ); }
@@ -475,6 +479,27 @@ private :
     std::vector<std::shared_ptr<coefficient_form_pde_base_type>> M_coefficientFormPDEs;
 
 };
+
+
+template< typename ConvexType, typename... BasisUnknownType>
+template <typename SymbolsExprType>
+void
+CoefficientFormPDEs<ConvexType,BasisUnknownType...>::updateInitialConditions( SymbolsExprType const& se )
+{
+    hana::for_each( tuple_type_unknown_basis, [this,&se]( auto & e )
+                    {
+                        for ( auto const& cfpdeBase : M_coefficientFormPDEs )
+                        {
+                            if ( this->unknowBasisTag( e ) != cfpdeBase->unknownBasis() )
+                                continue;
+
+                            using coefficient_form_pde_type = typename self_type::traits::template coefficient_form_pde_t<decltype(e)>;
+                            auto cfpde = std::dynamic_pointer_cast<coefficient_form_pde_type>( cfpdeBase );
+
+                            cfpde->updateInitialConditions( se );
+                        }
+                    });
+}
 
 
 template< typename ConvexType, typename... BasisUnknownType>
