@@ -190,6 +190,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
             integrate( _range=rangeEltConvectionDiffusion,
                        _expr=tau*inner( residual_lhs_p,stab_test ),
                        _geomap=this->geomap() );
+
+        // divergence stab
+        double lambdaCoeff = 1.;
+        bilinearFormVV +=
+            integrate( _range=rangeEltConvectionDiffusion,
+                       _expr=lambdaCoeff*2.0*inner(idv(beta_u))*tau*divt(u)*div(v),
+                       _geomap=this->geomap() );
     }
 
     if ( tauExprPSPG )
@@ -323,6 +330,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
             integrate( _range=rangeEltConvectionDiffusion,
                        _expr=tau*inner(residual_jac_p,stab_test ),
                        _geomap=this->geomap() );
+
+        // divergence stab
+        double lambdaCoeff = 1.;
+        bilinearFormVV +=
+            integrate( _range=rangeEltConvectionDiffusion,
+                       _expr=lambdaCoeff*2.0*inner(idv(u))*tau*divt(u)*div(v),
+                       _geomap=this->geomap() );
     }
 
     if ( this->stabilizationGLSType() == "pspg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "gls" )
@@ -432,6 +446,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
         myLinearFormV +=
             integrate( _range=rangeEltConvectionDiffusion,
                        _expr=tau*inner( residual_full,stab_test ),
+                       _geomap=this->geomap() );
+
+        // divergence stab
+        double lambdaCoeff = 1.;
+        myLinearFormV +=
+            integrate( _range=rangeEltConvectionDiffusion,
+                       _expr=lambdaCoeff*2.0*inner(idv(u))*tau*divv(u)*div(v),
                        _geomap=this->geomap() );
     }
 

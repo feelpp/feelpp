@@ -57,7 +57,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     if (this->doCIPStabConvection()) stabAll_str=(stabAll_str.empty())?"CIP Convection":stabAll_str+" - CIP Convection";
     if (this->doCIPStabDivergence()) stabAll_str=(stabAll_str.empty())?"CIP Divergence":stabAll_str+" - CIP Divergence";
     if (this->doCIPStabPressure()) stabAll_str=(stabAll_str.empty())?"CIP Pressure":stabAll_str+" - CIP Pressure";
-    if (this->doStabDivDiv()) stabAll_str=(stabAll_str.empty())?"DivDiv":stabAll_str+" - DivDiv";
+    //if (this->doStabDivDiv()) stabAll_str=(stabAll_str.empty())?"DivDiv":stabAll_str+" - DivDiv";
     //if (this->doCstPressureStab()) stabAll_str=(stabAll_str.empty())?"CstPressure":stabAll_str+" - CstPressure";
     if (stabAll_str.empty()) stabAll_str="OFF";
 
@@ -221,8 +221,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n";
 
-    if ( this->worldComm().isMasterRank() )
-        std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
+    // if ( this->worldComm().isMasterRank() )
+    //     std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
 
     return _ostr;
 }
@@ -720,6 +720,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
 
@@ -738,6 +739,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,dou
     this->updateFluidInletVelocity();
     M_bodySetBC.setParameterValues( paramValues );
 
+    if ( this->hasTurbulenceModel() )
+        M_turbulenceModelType->setParameterValues( paramValues );
 }
 
 
@@ -801,6 +804,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->setDynamicViscosityLaw( saveStressTensorLawType );
     }
 #endif
+
+    if ( this->hasTurbulenceModel() )
+        M_turbulenceModelType->solve();
+
     //--------------------------------------------------
     // run solver
     std::string algebraicSolver = M_solverName;
@@ -839,6 +846,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         }
     }
     //--------------------------------------------------
+
+    // if ( this->hasTurbulenceModel() )
+    //     M_turbulenceModelType->solve();
+
 
     double tElapsed = this->timerTool("Solve").stop("solve");
     if ( this->scalabilitySave() )
@@ -1207,6 +1218,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         M_bdfVelocity->start( *M_fieldVelocity );
         M_savetsPressure->start( *M_fieldPressure );
         M_bodySetBC.startTimeStep();
+        if ( this->hasTurbulenceModel() )
+            M_turbulenceModelType->startTimeStep();
     }
     // up current time
     this->updateTime( M_bdfVelocity->time() );
@@ -1283,6 +1296,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
 #endif
 
     M_bodySetBC.updateTimeStep();
+
+    if ( this->hasTurbulenceModel() )
+        M_turbulenceModelType->updateTimeStep();
 
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )

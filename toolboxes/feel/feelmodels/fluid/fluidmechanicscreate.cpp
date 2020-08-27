@@ -157,7 +157,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_stabCIPDivergenceGamma = doption(_name="stabilisation-cip-divergence-gamma",_prefix=this->prefix());
     M_stabCIPPressureGamma = doption(_name="stabilisation-cip-pressure-gamma",_prefix=this->prefix());
 
-    M_doStabDivDiv = boption(_name="stabilisation-div-div",_prefix=this->prefix());
+    // M_doStabDivDiv = boption(_name="stabilisation-div-div",_prefix=this->prefix());
     //M_doCstPressureStab = boption(_name="stabilisation-cstpressure",_prefix=this->prefix());
     M_doStabConvectionEnergy = boption(_name="stabilisation-convection-energy",_prefix=this->prefix());
 
@@ -1071,6 +1071,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // update constant parameters
     this->updateParameterValues();
 
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
     //-------------------------------------------------//
     // define start dof index ( lm , windkessel )
     this->initStartBlockIndexFieldsInMatrix();
@@ -1978,6 +1981,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
         (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
 
     std::ostringstream ostr;
+    std::vector<std::string> strInitialConditions;
     ostr << "{";
 
     ostr << "\"Materials\":{";
@@ -2045,10 +2049,31 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 ModelExpression mutExpr;
                 mutExpr.setExpr( mutExprStr, this->worldComm(), this->repository().expr() );
                 this->materialsProperties()->addProperty( matProps, "turbulent-dynamic-viscosity", mutExpr, true );
+
+                // initials coondition
+                std::ostringstream ostr_ic;
+                ostr_ic << "\"markers\":[";
+                for ( std::string const& m : matProps.markers() )
+                    ostr_ic << "\"" << m << "\"";
+                ostr_ic << "],"
+                        << "\"expr\":\"" << (boost::format("%1%/%2%:%1%:%2%")%symbDynViscosity %symbDensity ).str() << "\"";
+                strInitialConditions.push_back( ostr_ic.str() );
             }
         }
     }
     ostr << "}"; //end Materials
+
+
+    ostr << ",";
+    ostr << "\"InitialConditions\":{";
+    ostr << "\"solution\":{";
+    ostr << "\"Expression\":{";
+    for ( int k=0;k<strInitialConditions.size();++k )
+        ostr << "\"" << (boost::format("myic_%1%")%k ).str() << "\":{" << strInitialConditions[k] << "}";
+    ostr << "}"; // end Expression
+    ostr << "}"; // end solution
+    ostr << "}"; //end InitialConditions
+
 
     ostr << ",";
     ostr << "\"BoundaryConditions\":{";
@@ -2058,9 +2083,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     ostr << "\"Dirichlet\":{";
 
     ostr << "\"mybc\":{"
-         << "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
+        //<< "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
+         << "\"markers\":[\"Gamma1\",\"Gamma3\"],"
          << "\"expr\":\"0\""
          << "}";
+
+    //inlet gamma4
+    //outlet gamma2
+    ostr << ",";
+    ostr << "\"mybc2\":{"
+        //<< "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
+         << "\"markers\":[\"Gamma4\"],"
+         << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
+         << "}";
+
 
     ostr << "}"; // end Dirichlet
     ostr << "}"; // end eqkeyword
@@ -2074,10 +2110,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     std::istringstream istr( ostr.str() );
     pt::ptree pt;
     pt::read_json(istr, pt);
+    if ( this->worldComm().isMasterRank() )
+        pt::write_json( (fs::path( M_turbulenceModelType->repository().root() )/"turbulence.json").string(), pt);
     auto myModelProp = std::make_shared<ModelProperties>( pt, M_turbulenceModelType->repository().expr(), M_turbulenceModelType->worldCommPtr() );
     M_turbulenceModelType->setModelProperties( myModelProp );
     M_turbulenceModelType->setMesh( this->mesh() );
-
+    M_turbulenceModelType->setManageParameterValues( false );
     M_turbulenceModelType->init();
 
     M_turbulenceModelType->algebraicFactory()->setFunctionLinearAssembly( boost::bind( static_cast<void(self_type::*)(DataUpdateLinear&) const>(&self_type::updateLinear_Turbulence),
@@ -2092,10 +2130,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                                                          boost::ref( *this ), _1 ) );
 
     M_turbulenceModelType->printAndSaveInfo();
-    // M_turbulenceModelType->solve(); // TO REMOVE
 
-    if ( this->worldComm().isMasterRank() )
-        std::cout << "holalla turb \n "<< M_turbulenceModelType->modelFields().symbolsExpr().names() << std::endl;
+    // if ( this->worldComm().isMasterRank() )
+    //     std::cout << "holalla turb \n "<< M_turbulenceModelType->modelFields().symbolsExpr().names() << std::endl;
 
 
 }
