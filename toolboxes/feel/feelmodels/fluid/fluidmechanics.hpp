@@ -871,6 +871,10 @@ public :
     void startTimeStep();
     void updateTimeStep();
 
+    //! update initial conditions with symbols expression \se
+    template <typename SymbolsExprType>
+    void updateInitialConditions( SymbolsExprType const& se );
+
     // init/update user functions defined in json
     void updateUserFunctions( bool onlyExprWithTimeSymbol = false );
 
@@ -988,8 +992,8 @@ public :
     double stabCIPDivergenceGamma() const { return M_stabCIPDivergenceGamma; }
     double stabCIPPressureGamma() const { return M_stabCIPPressureGamma; }
 
-    bool doStabDivDiv() const { return M_doStabDivDiv; }
-    void doStabDivDiv(bool b) { M_doStabDivDiv=b; }
+    // bool doStabDivDiv() const { return M_doStabDivDiv; }
+    // void doStabDivDiv(bool b) { M_doStabDivDiv=b; }
 
     bool doStabConvectionEnergy() const { return M_doStabConvectionEnergy; }
     void doStabConvectionEnergy(bool b) { M_doStabConvectionEnergy=b; }
@@ -1631,7 +1635,7 @@ private :
     bool M_doCIPStabConvection,M_doCIPStabDivergence,M_doCIPStabPressure;
     double M_stabCIPConvectionGamma,M_stabCIPDivergenceGamma,M_stabCIPPressureGamma;
     element_velocity_ptrtype M_fieldMeshVelocityUsedWithStabCIP;
-    bool M_doStabDivDiv;
+    // bool M_doStabDivDiv;
     bool M_doStabConvectionEnergy; // see Nobile thesis
     //----------------------------------------------------
     bool M_definePressureCst;
@@ -1718,6 +1722,15 @@ private :
 
 }; // FluidMechanics
 
+template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
+template <typename SymbolsExprType>
+void
+FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateInitialConditions( SymbolsExprType const& se )
+{
+    // TODO : initial conditions for u and p
+    if ( this->hasTurbulenceModel() )
+        M_turbulenceModelType->updateInitialConditions( se );
+}
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
 template <typename ModelFieldsType, typename SymbolsExprType, typename ExportsExprType>

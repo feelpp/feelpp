@@ -79,15 +79,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDEStabilisation( DataUpdateLine
                                                _colstart=colStartInMatrix );
 
     //----------------------------------------------------------------------------------------------------//
-    // stabilisation-div-div
-    if ( this->doStabDivDiv() && BuildCstPart  )
-    {
-        double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-        bilinearFormVV_PatternCoupled +=
-            integrate( _range=M_rangeMeshElements,
-                       _expr=/*vf::h()**/beta*divt(u)*div(v),
-                       _geomap=this->geomap() );
-    }
+    // // stabilisation-div-div
+    // if ( this->doStabDivDiv() && BuildCstPart  )
+    // {
+    //     double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+    //     bilinearFormVV_PatternCoupled +=
+    //         integrate( _range=M_rangeMeshElements,
+    //                    _expr=/*vf::h()**/beta*divt(u)*div(v),
+    //                    _geomap=this->geomap() );
+    // }
     //----------------------------------------------------------------------------------------------------//
     // stabilisation-cip-convection
     if ( this->doCIPStabConvection() && BuildTermStabCIP  )
@@ -219,17 +219,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidualStabilisation( DataUpdateResid
                                               _pattern=size_type(Pattern::EXTENDED),
                                               _rowstart=rowStartInVector );
 
-    if (!BuildCstPart && !UseJacobianLinearTerms )
-    {
-        if ( this->doStabDivDiv()  )
-        {
-            double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-            linearFormV_PatternCoupled +=
-                integrate( _range=M_rangeMeshElements,
-                           _expr=/*vf::h()**/beta*divv(u)*div(v),
-                           _geomap=this->geomap() );
-        }
-    }
+    // if (!BuildCstPart && !UseJacobianLinearTerms )
+    // {
+    //     if ( this->doStabDivDiv()  )
+    //     {
+    //         double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+    //         linearFormV_PatternCoupled +=
+    //             integrate( _range=M_rangeMeshElements,
+    //                        _expr=/*vf::h()**/beta*divv(u)*div(v),
+    //                        _geomap=this->geomap() );
+    //     }
+    // }
 
     // stabilisation-cip-convection
     if ( this->doCIPStabConvection() && BuildTermStabCIP )
@@ -348,14 +348,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobianStabilisation( DataUpdateJacob
                                                  _colstart=colStartInMatrix );
 
     //--------------------------------------------------------------------------------------------------//
-    if ( BuildCstPart && this->doStabDivDiv() )
-    {
-        double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
-        bilinearFormVV_PatternCoupled +=
-            integrate( _range=elements(XhV->mesh()),
-                       _expr=/*vf::h()**/beta*divt(u)*div(v),
-                       _geomap=this->geomap() );
-    }
+    // if ( BuildCstPart && this->doStabDivDiv() )
+    // {
+    //     double beta = doption(_name="stabilisation-div-div-beta",_prefix=this->prefix());
+    //     bilinearFormVV_PatternCoupled +=
+    //         integrate( _range=elements(XhV->mesh()),
+    //                    _expr=/*vf::h()**/beta*divt(u)*div(v),
+    //                    _geomap=this->geomap() );
+    // }
 
     // stabilisation-cip-convection
     if ( this->doCIPStabConvection() && BuildTermStabCIP )
