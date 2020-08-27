@@ -78,8 +78,8 @@ CoefficientFormPDEBase<ConvexType>::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this_cfpdebase() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
