@@ -1587,6 +1587,21 @@ Environment::finalized()
     return mpi::environment::finalized();
 }
 
+mpi::threading::level 
+Environment::threadLevel()
+{
+    return mpi::environment::thread_level();
+}
+bool
+Environment::isMainThread()
+{
+    return mpi::environment::is_main_thread();
+}
+void
+Environment::abort( int error_code )
+{
+    return mpi::environment::abort( error_code );
+}
 
 std::string const&
 Environment::rootRepository()
