@@ -1467,22 +1467,16 @@ public :
 
     void updateResidualStabilisation( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
     void updateJacobianStabilisation( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p ) const;
-    // template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
-    // void updateResidualStabilisationGLS( DataUpdateResidual & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p,
-    //                                      Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-    //                                      std::string const& matName, const ExprT&... exprs ) const;
-    // template<typename DensityExprType, typename ViscosityExprType, typename... ExprT>
-    // void updateJacobianStabilisationGLS( DataUpdateJacobian & data, element_velocity_external_storage_type const& u, element_pressure_external_storage_type const& p,
-    //                                      Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu,
-    //                                      std::string const& matName, const ExprT&... exprs ) const;
-    template <typename ModelContextType,typename RangeType>
+    template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
     void updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
                                          ModelPhysicFluid<nDim> const& physicFluidData,
-                                         MaterialProperties const& matProps, RangeType const& range ) const;
-    template <typename ModelContextType,typename RangeType>
+                                         MaterialProperties const& matProps, RangeType const& range,
+                                         const ExprAddedType&... exprsAddedInResidual ) const;
+    template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
     void updateResidualStabilizationGLS( DataUpdateResidual & data, ModelContextType const& mctx,
                                          ModelPhysicFluid<nDim> const& physicFluidData,
-                                         MaterialProperties const& matProps, RangeType const& range ) const;
+                                         MaterialProperties const& matProps, RangeType const& range,
+                                         const ExprAddedType&... exprsAddedInResidual ) const;
 
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
@@ -1496,17 +1490,13 @@ public :
     void updateLinearPDEDofElimination( DataUpdateLinear & data, ModelContextType const& mfields ) const;
 
     void updateLinearPDEStabilisation( DataUpdateLinear & data ) const;
-    // // old
-    // template<typename DensityExprType, typename ViscosityExprType, typename AdditionalRhsType = hana::tuple<>, typename AdditionalMatType = hana::tuple<> >
-    // void updateLinearPDEStabilisationGLS( DataUpdateLinear & data, Expr<DensityExprType> const& rho, Expr<ViscosityExprType> const& mu, std::string const& matName,
-    //                                       AdditionalRhsType const& addRhsTuple = hana::make_tuple(), AdditionalMatType const& addMatTuple = hana::make_tuple() ) const;
-
-    // new
-    template <typename ModelContextType,typename RangeType>
+    template <typename ModelContextType,typename RangeType,typename ExprAddedRhsType = hana::tuple<>, typename ExprAddedLhsType = hana::tuple<> >
     void updateLinearPDEStabilizationGLS( DataUpdateLinear & data, ModelContextType const& mctx,
                                           ModelPhysicFluid<nDim> const& physicFluidData,
                                           MaterialProperties const& matProps, RangeType const& range,
-                                          element_velocity_ptrtype beta_u ) const;
+                                          element_velocity_ptrtype beta_u,
+                                          ExprAddedRhsType const& exprsAddedInResidualRhsTuple = hana::make_tuple(),
+                                          ExprAddedLhsType const& exprsAddedInResidualLhsTuple = hana::make_tuple() ) const;
     //___________________________________________________________________________________//
     // turbulence model assembly
     void updateLinear_Turbulence( DataUpdateLinear & data ) const;

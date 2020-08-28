@@ -187,11 +187,25 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
     auto mylfV = form1( _test=XhV, _vector=F,
                         _rowstart=M_fluidModel->rowStartInVector() );
 
+
+    typename fluid_model_type::element_velocity_ptrtype fieldVelocityPressureExtrapolated;
+    if ( this->fluidModel()->solverName() == "Picard" )
+    {
+        fieldVelocityPressureExtrapolated = XhV->elementPtr();
+        *fieldVelocityPressureExtrapolated = *XhV->elementPtr(*vecCurrentSolution, M_fluidModel->rowStartInVector());
+    }
+    else if ( !this->fluidModel()->isStationary() )
+    {
+        fieldVelocityPressureExtrapolated = this->fluidModel()->fieldConvectionVelocityExtrapolatedPtr();
+    }
+
+
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+            auto const& matProps = this->materialsProperties()->materialProperties( matName );
             auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
 
             auto const& rho = this->materialsProperties()->rho( matName );
@@ -205,9 +219,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
                            _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
 
-#if 0 // TODO VINCENT
             if ( M_fluidModel->stabilizationGLS() )
             {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
+                auto exprAddedInRhs = -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;
+                M_fluidModel->updateLinearPDEStabilizationGLS( data, mctx, *physicFluidData, matProps, range, fieldVelocityPressureExtrapolated, hana::make_tuple(exprAddedInRhs) );
+#if 0 // TODO VINCENT
                 auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
                 //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
                 auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
@@ -222,9 +239,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinearFluidSolver( DataUpdateLinear & data 
                 }
                 else
                     M_fluidModel->updateLinearPDEStabilisationGLS( data, rhoF, mu, matName, hana::make_tuple(exprAddedInRhs) );
-
-            }
 #endif
+            }
         }
     }
 

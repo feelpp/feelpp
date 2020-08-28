@@ -5,6 +5,8 @@
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
 
+#include <feel/feelmodels/modelvf/exproperations.hpp>
+
 namespace Feel
 {
 namespace FeelModels
@@ -54,12 +56,14 @@ exprResidual( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType:
 } // FluidMechanics_detail
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
-template <typename ModelContextType,typename RangeType>
+template <typename ModelContextType,typename RangeType,typename ExprAddedRhsType,typename ExprAddedLhsType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEStabilizationGLS( DataUpdateLinear & data, ModelContextType const& mctx,
                                                                                                  ModelPhysicFluid<nDim> const& physicFluidData,
                                                                                                  MaterialProperties const& matProps, RangeType const& range,
-                                                                                                 element_velocity_ptrtype beta_u ) const
+                                                                                                 element_velocity_ptrtype beta_u,
+                                                                                                 ExprAddedRhsType const& exprsAddedInResidualRhsTuple,
+                                                                                                 ExprAddedLhsType const& exprsAddedInResidualLhsTuple ) const
 {
     sparse_matrix_ptrtype& A = data.matrix();
     vector_ptrtype& F = data.rhs();
@@ -155,6 +159,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
         residual_lhs.expression().add( -timeSteppingScaling*muExpr*laplaciant(u) );
     }
 
+    auto residual_rhs_full = Feel::FeelModels::vfdetail::addExpr( hana::append( exprsAddedInResidualRhsTuple, residual_rhs ) );
+
     if ( tauExprSUPG )
     {
         tauExprSUPG->expression().setDiffusion( muExpr );
@@ -177,11 +183,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
                            _expr=tau*inner( residual_lhs,stab_test ),
                            _geomap=this->geomap() );
         }
-        if ( residual_lhs.expression().hasExpr() )
+        if ( residual_rhs.expression().hasExpr() || decltype(hana::size( exprsAddedInResidualRhsTuple ))::value > 0 )
         {
             myLinearFormV +=
                 integrate( _range=rangeEltConvectionDiffusion,
-                           _expr= tau*inner( residual_rhs,stab_test ),
+                           _expr= tau*inner( residual_rhs_full,stab_test ),
                            _geomap=this->geomap() );
         }
 
@@ -190,6 +196,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
             integrate( _range=rangeEltConvectionDiffusion,
                        _expr=tau*inner( residual_lhs_p,stab_test ),
                        _geomap=this->geomap() );
+
+        hana::for_each( exprsAddedInResidualLhsTuple, [this,&XhV,&A,&rangeEltConvectionDiffusion,&tau,&stab_test]( auto & e )
+                        {
+                            form2( _test=XhV,_trial=std::get<0>(e),_matrix=A,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=std::get<1>(e) ) +=
+                                integrate( _range=rangeEltConvectionDiffusion,
+                                           _expr=tau*inner(std::get<2>(e),stab_test ),
+                                           _geomap=this->geomap() );
+                        });
 
         // divergence stab
         double lambdaCoeff = 1.;
@@ -216,11 +233,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
                            _expr=tau*inner(residual_lhs,stab_test ),
                            _geomap=this->geomap() );
         }
-        if ( residual_rhs.expression().hasExpr() )
+        if ( residual_rhs.expression().hasExpr() || decltype(hana::size( exprsAddedInResidualRhsTuple ))::value > 0 )
         {
             myLinearFormP +=
                 integrate( _range=rangeEltPressure,
-                           _expr= tau*inner(residual_rhs,stab_test ),
+                           _expr= tau*inner(residual_rhs_full,stab_test ),
                            _geomap=this->geomap() );
         }
 
@@ -229,15 +246,27 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
             integrate( _range=rangeEltPressure,
                        _expr=tau*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=this->geomap() );
+
+        hana::for_each( exprsAddedInResidualLhsTuple, [this,&XhP,&A,&rangeEltPressure,&tau,&stab_test]( auto & e )
+                        {
+                            form2( _test=XhP,_trial=std::get<0>(e),_matrix=A,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix()+1,
+                                   _colstart=std::get<1>(e) ) +=
+                                integrate( _range=rangeEltPressure,
+                                           _expr=tau*inner(std::get<2>(e),stab_test ),
+                                           _geomap=this->geomap() );
+                        });
     }
 }
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
-template <typename ModelContextType,typename RangeType>
+template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianStabilizationGLS( DataUpdateJacobian & data, ModelContextType const& mctx,
                                                                                                 ModelPhysicFluid<nDim> const& physicFluidData,
-                                                                                                MaterialProperties const& matProps, RangeType const& range ) const
+                                                                                                MaterialProperties const& matProps, RangeType const& range,
+                                                                                                const ExprAddedType&... exprsAddedInResidual ) const
 {
     sparse_matrix_ptrtype& J = data.jacobian();
 
@@ -289,6 +318,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
                                            expr_viscous_stress_residual_type,
                                            expr_time_derivative_residual_type>();
 
+    auto additionTermsTuple = hana::make_tuple(exprsAddedInResidual...);
+
     if ( physicFluidData.equation() == "Navier-Stokes")
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
@@ -331,6 +362,17 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
                        _expr=tau*inner(residual_jac_p,stab_test ),
                        _geomap=this->geomap() );
 
+        hana::for_each( additionTermsTuple, [this,&XhV,&J,&rangeEltConvectionDiffusion,&tau,&stab_test]( auto & e )
+                        {
+                            form2( _test=XhV,_trial=std::get<0>(e),_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix(),
+                                   _colstart=std::get<1>(e) ) +=
+                                integrate( _range=rangeEltConvectionDiffusion,
+                                           _expr=tau*inner(std::get<2>(e),stab_test ),
+                                           _geomap=this->geomap() );
+                        });
+
         // divergence stab
         double lambdaCoeff = 1.;
         bilinearFormVV +=
@@ -360,16 +402,28 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
             integrate( _range=rangeEltPressure,
                        _expr=tau*inner( stab_residual_bilinear_p,stab_test ),
                        _geomap=this->geomap() );
+
+        hana::for_each( additionTermsTuple, [this,&XhP,&J,&rangeEltPressure,&tau,&stab_test]( auto & e )
+                        {
+                            form2( _test=XhP,_trial=std::get<0>(e),_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=this->rowStartInMatrix()+1,
+                                   _colstart=std::get<1>(e) ) +=
+                                integrate( _range=rangeEltPressure,
+                                           _expr=tau*inner( std::get<2>(e),stab_test ),
+                                           _geomap=this->geomap() );
+                        });
     }
 
 }
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
-template <typename ModelContextType,typename RangeType>
+template <typename ModelContextType,typename RangeType,typename... ExprAddedType>
 void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualStabilizationGLS( DataUpdateResidual & data, ModelContextType const& mctx,
                                                                                                 ModelPhysicFluid<nDim> const& physicFluidData,
-                                                                                                MaterialProperties const& matProps, RangeType const& range ) const
+                                                                                                MaterialProperties const& matProps, RangeType const& range,
+                                                                                                const ExprAddedType&... exprsAddedInResidual ) const
 {
     vector_ptrtype& R = data.residual();
     bool buildCstPart = data.buildCstPart();
@@ -417,7 +471,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
     if ( this->stabilizationGLSType() == "pspg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "gls" )
         tauExprPSPG.emplace( Feel::FeelModels::stabilizationGLSParameterExpr<expr_density_uconv_type,expr_viscosity_type,expr_coeff_null_type>( *this->stabilizationGLSParameterPressure() ) );
 
-    auto residual_full = FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, u, p, se, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative );
+    auto residual_full = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, u, p, se, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative ),
+                                                                                exprsAddedInResidual... ) );
 
     if ( physicFluidData.equation() == "Navier-Stokes")
     {
@@ -466,13 +521,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
         tauFieldPtr->on(_range=rangeEltPressure,_expr=*tauExprPSPG);
         auto tau = idv(tauFieldPtr);
 
-        if ( residual_full.expression().hasExpr() )
-        {
-            myLinearFormP +=
-                integrate( _range=rangeEltPressure,
-                           _expr=tau*inner(residual_full,stab_test ),
-                           _geomap=this->geomap() );
-        }
+        myLinearFormP +=
+            integrate( _range=rangeEltPressure,
+                       _expr=tau*inner(residual_full,stab_test ),
+                       _geomap=this->geomap() );
+
     }
 
 }

@@ -475,9 +475,13 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
                        _geomap=fluidmec.geomap() );
         hana::for_each( additionTermsTuple, [&rangeEltConvectionDiffusion,&tau,&stab_test,&fluidmec]( auto & e )
                         {
+                            form2( _test=XhV,_trial=std::get<0>(e),_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=fluidmec.rowStartInMatrix(),
+                                   _colstart=std::get<1>(e) );
                             e.first +=
                                 integrate( _range=rangeEltConvectionDiffusion,
-                                           _expr=tau*inner(e.second,stab_test ),
+                                           _expr=tau*inner( std::get<2>(e),stab_test ),
                                            _geomap=fluidmec.geomap() );
                         });
 
@@ -526,14 +530,16 @@ updateJacobianStabilizationGLS( FluidMechanicsType const& fluidmec, ModelAlgebra
                        _expr=tau*inner(stab_residual_bilinear_p,stab_test ),
                        _geomap=fluidmec.geomap() );
 
-        hana::for_each( additionTermsTuple, [&rangeEltPressure,&tau,&stab_test,&fluidmec]( auto & e )
+        hana::for_each( additionTermsTuple, [this,&rangeEltPressure,&tau,&stab_test]( auto & e )
                         {
-                            e.first +=
+                            form2( _test=XhP,_trial=std::get<0>(e),_matrix=J,
+                                   _pattern=size_type(Pattern::COUPLED),
+                                   _rowstart=fluidmec.rowStartInMatrix()+1,
+                                   _colstart=std::get<1>(e) ) +=
                                 integrate( _range=rangeEltPressure,
-                                           _expr=tau*inner(e.second,stab_test ),
-                                           _geomap=fluidmec.geomap() );
+                                           _expr=tau*inner( std::get<2>(e),stab_test ),
+                                           _geomap=this->geomap() );
                         });
-
     }
 
 
