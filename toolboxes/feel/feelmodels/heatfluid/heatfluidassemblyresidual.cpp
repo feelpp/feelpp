@@ -79,6 +79,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 //auto const& rhoHeatCapacity = this->materialsProperties()->rhoHeatCapacity( matName );
                 //auto rhoHeatCapacityExpr = rhoHeatCapacity.expr();
 
+                auto const& matProps = this->materialsProperties()->materialProperties( matName );
                 auto const& rho = this->materialsProperties()->rho( matName );
                 auto const& thermalExpansion = this->materialsProperties()->thermalExpansion( matName );
                 auto rhoExpr = expr( rho.template expr<1,1>(), se );
@@ -109,18 +110,19 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     else
                         M_heatModel->updateResidualStabilizationGLS( rhoHeatCapacityExpr,thermalConductivity.expr(),idv(u),range,data );
                 }
-
+#endif
 
                 if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                 {
-                    auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                    //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                    auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
+                    auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto expraddedInGLSResidual = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;
-                    auto XhP = M_fluidModel->functionSpacePressure();
-                    //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
+                    M_fluidModel->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range, expraddedInGLSResidual );
+#if 0
+                    // auto XhP = M_fluidModel->functionSpacePressure();
+                    // auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
                     if ( M_fluidModel->timeStepping() ==  "Theta" )
                     {
+
                         auto previousSol = data.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") );
                         auto tOld = XhT->element( previousSol, M_heatModel->rowStartInVector() );
                         auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoExpr*(beta*(idv(tOld)-T0))*M_gravityForce;
@@ -128,8 +130,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                     }
                     else
                         M_fluidModel->updateResidualStabilisationGLS( data, *u, *p, rhoF, mu, matName, expraddedInGLSResidual );
-                }
 #endif
+                }
+
             } //matName
         } // physic
     } // nonCstPart

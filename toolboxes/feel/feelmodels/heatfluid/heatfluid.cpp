@@ -25,10 +25,6 @@
 #include <feel/feelmodels/heatfluid/heatfluid.hpp>
 
 #include <feel/feelvf/vf.hpp>
-/*#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
- #include <feel/feelvf/operations.hpp>*/
 
 #include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
@@ -125,24 +121,27 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     int startIndexBlockFluid = 0;
     int startIndexBlockHeat = nBlockFluid;
+    int indexBlockVelocity = startIndexBlockFluid + this->fluidModel()->startSubBlockSpaceIndex("velocity");
+    int indexBlockTemperature = startIndexBlockHeat + this->heatModel()->startSubBlockSpaceIndex("temperature");
 
     auto blockMatFluid = M_fluidModel->buildBlockMatrixGraph();
     for (int tk1=0;tk1<nBlockFluid ;++tk1 )
         for (int tk2=0;tk2<nBlockFluid ;++tk2 )
             myblockGraph(startIndexBlockFluid+tk1,startIndexBlockFluid+tk2) = blockMatFluid(tk1,tk2);
 
-    myblockGraph(startIndexBlockHeat,startIndexBlockFluid) = stencil(_test=M_heatModel->spaceTemperature(),
+    myblockGraph(indexBlockTemperature,indexBlockVelocity) = stencil(_test=M_heatModel->spaceTemperature(),
                                                                      _trial=M_fluidModel->functionSpaceVelocity(),
                                                                      _diag_is_nonzero=false,_close=false)->graph();
 
-    myblockGraph(startIndexBlockFluid,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpaceVelocity(),
+    myblockGraph(indexBlockVelocity,indexBlockTemperature) = stencil(_test=M_fluidModel->functionSpaceVelocity(),
                                                                      _trial=M_heatModel->spaceTemperature(),
                                                                      _diag_is_nonzero=false,_close=false)->graph();
-    if ( M_fluidModel->stabilizationGLS() )
+    if ( M_fluidModel->stabilizationGLS() && ( this->fluidModel()->stabilizationGLSType() == "pspg" || this->fluidModel()->stabilizationGLSType() == "supg-pspg" || this->fluidModel()->stabilizationGLSType() == "gls" ) )
     {
-        myblockGraph(startIndexBlockFluid+1,startIndexBlockHeat) = stencil(_test=M_fluidModel->functionSpaceVelocity(),
-                                                                           _trial=M_heatModel->spaceTemperature(),
-                                                                           _diag_is_nonzero=false,_close=false)->graph();
+        int indexBlockPressure = startIndexBlockFluid + this->fluidModel()->startSubBlockSpaceIndex("pressure");
+        myblockGraph(indexBlockPressure,indexBlockTemperature) = stencil(_test=M_fluidModel->functionSpacePressure(),
+                                                                         _trial=M_heatModel->spaceTemperature(),
+                                                                         _diag_is_nonzero=false,_close=false)->graph();
     }
 
     auto blockMatHeat = M_heatModel->buildBlockMatrixGraph();

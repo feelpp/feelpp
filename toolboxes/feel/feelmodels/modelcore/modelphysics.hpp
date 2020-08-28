@@ -95,6 +95,15 @@ public :
     //! return the map of subphysics
     std::map<std::string,std::shared_ptr<ModelPhysic<nDim>>> const& subphysics() const { return M_subphysics; }
 
+    //! return a subphysic from the type of physic (the first one found, and return null shared ptr if not found)
+    std::shared_ptr<ModelPhysic<nDim>> subphysicFromType( std::string const& type ) const
+        {
+            for ( auto const& [name,sp] : this->subphysics() )
+                if ( sp->type() == type )
+                    return sp;
+            return  std::shared_ptr<ModelPhysic<nDim>>{};
+        }
+
     //! return the material properties description (.i.e. coefficients of pdes)
     std::map<std::string,material_property_description_type> const& materialPropertyDescription() const { return M_materialPropertyDescription; }
 
