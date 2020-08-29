@@ -835,5 +835,15 @@ BOOST_AUTO_TEST_CASE( test_8 )
     auto a1 = a1l( cst(3.),cst(5.) );
     BOOST_CHECK_CLOSE( a1.evaluate()(0,0), 16, 1e-12 );
 }
-
+BOOST_AUTO_TEST_CASE( test_mod )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("mod(u,v):u:v");
+    a1b.setParameterValues( { { "u", 2 }, { "v", 1 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 3 }, { "v", 6 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 3, 1e-12 );
+    a1b.setParameterValues( { { "u", 6.1 }, { "v", 3 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.1, 1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
