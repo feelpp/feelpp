@@ -105,6 +105,13 @@
         "slist": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
-    "cmake.configureOnOpen": true,
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}"
+    "C_Cpp.loggingLevel": "Debug",
+    "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
+    "C_Cpp.default.systemIncludePath" : ["${workspaceFolder}/feelpp","/usr/include","/usr/local/include"],
+    "cmake.configureOnOpen": false,
+    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}",
+    "cmake.configureArgs": [
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    
+    ]
 }
