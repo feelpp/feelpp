@@ -20,17 +20,56 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-
+#include <cmath>
 #include "parse_context.h"
 #include "power.h"
 #include "lst.h"
 #include "operators.h"
 #include "inifcns.h"
-
+#include "function.h"
 #include <cstdint> // for uintptr_t
 
 namespace GiNaC
 {
+DECLARE_FUNCTION_2P(mod)
+static ex mod_eval(const ex & x, const ex& y ) 
+{ 
+	if (is_exactly_a<numeric>(y) && is_exactly_a<numeric>(x))
+		return mod(ex_to<numeric>(x), ex_to<numeric>(y));
+	
+	return mod(x, y).hold();
+}
+static ex mod_evalf(const ex & x, const ex& y ) 
+{ 
+	if (is_exactly_a<numeric>(y) && is_exactly_a<numeric>(x))
+		return mod(ex_to<numeric>(x), ex_to<numeric>(y));
+	
+	return mod(x, y).hold();	
+}
+                                                                                
+static void mod_print_latex(const ex & arg1, const ex&  arg2,const print_context & c)
+{
+    c.s << "{"; arg1.print(c); c.s << "\%"; arg2.print(c); c.s << "|}";
+}
+                                                                                
+static void mod_print_csrc_float(const ex & arg1, const ex & arg2, const print_context & c)
+{
+    c.s << "fmod("; arg1.print(c); c.s << ","; arg2.print(c); c.s << ")";
+}
+
+                                                                                
+REGISTER_FUNCTION(mod, eval_func(mod_eval).
+                       evalf_func(mod_evalf).
+                       print_func<print_latex>(mod_print_latex).
+                       print_func<print_csrc_float>(mod_print_csrc_float).
+                       print_func<print_csrc_double>(mod_print_csrc_float));
+
+
+
+static ex mod_reader(const exvector& ev)
+{
+	return GiNaC::mod(ev[0],ev[1]);
+}
 
 static ex sqrt_reader(const exvector& ev)
 {
@@ -97,6 +136,7 @@ const prototype_table& get_default_reader()
 		
 		reader[make_pair("sqrt", 1)] = sqrt_reader;
 		reader[make_pair("pow", 2)] = pow_reader;
+		reader[make_pair("mod", 2)] = mod_reader;
 		reader[make_pair("power", 2)] = power_reader;
         reader[make_pair("min", 2)] = min_reader;
         reader[make_pair("max", 2)] = max_reader;
@@ -121,6 +161,7 @@ const prototype_table& get_builtin_reader()
 		
 		reader[make_pair("sqrt", 1)] = sqrt_reader;
 		reader[make_pair("pow", 2)] = pow_reader;
+		reader[make_pair("mod", 2)] = mod_reader;
 		reader[make_pair("power", 2)] = power_reader;
         reader[make_pair("min", 2)] = min_reader;
         reader[make_pair("max", 2)] = max_reader;

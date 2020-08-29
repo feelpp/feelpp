@@ -78,6 +78,7 @@ if ( FEELPP_HAS_SLEPC )
 endif()
 
 feelpp_add_test( twolaplaciansdistributed )
+feelpp_add_test( masterworker_laplacian )
 
 feelpp_add_test( markerhdf5_2D SRCS test_markerhdf5 DEFS CHECKH5_DIM=2 GEO markerhdf5_2D.geo)
 feelpp_add_test( markerhdf5_3D SRCS test_markerhdf5 DEFS CHECKH5_DIM=3 GEO markerhdf5_3D.geo)
