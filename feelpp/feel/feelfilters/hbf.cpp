@@ -235,8 +235,8 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
     LOG(INFO) << "Hbf2FeelppStruc relation creation \n";
     LOG(INFO) << nx << " : " << ny <<std::endl;
     
-    int procSize = Environment::worldComm().godSize();
-    rank_type partId = Environment::worldComm().localRank(); 
+    int procSize = Yh->worldComm().godSize();
+    rank_type partId = Yh->worldComm().localRank(); 
     int cx[procSize+1];
     for (int tmpProc=0;tmpProc<=procSize;tmpProc++)
         cx[tmpProc]=(tmpProc)*(nx-1)/procSize;
@@ -282,7 +282,7 @@ Hbf2FeelppStruc::operator()( q1_element_type const& u )
     holo3_image<float> y( M_rows, M_cols );
     y = holo3_image<float>::Zero( M_rows, M_cols );
     std::vector<int> sizes;
-    mpi::all_gather( Environment::worldComm(), (int)u.dof()->nLocalDofWithoutGhost(), sizes );
+    mpi::all_gather( u.worldComm(), (int)u.dof()->nLocalDofWithoutGhost(), sizes );
     
     for( auto const& dof : M_relation.left )
     {
@@ -291,14 +291,14 @@ Hbf2FeelppStruc::operator()( q1_element_type const& u )
         if ( dof.second < u.size() )
             y( dof.first.first, dof.first.second ) = u(dof.second);
     }
-    int p = Environment::rank();
+    int p = u.worldComm().rank();
     int pm1 = (p==0)?0:p-1;
     int s = 0;
     for( int i = 0; i < p; ++i )
         s += sizes[i];
     holo3_image<float> x = y.transpose();
     holo3_image<float> yy= y.transpose();
-    mpi::gatherv( Environment::worldComm(), yy.data()+s, sizes[p], 
+    mpi::gatherv( u.worldComm(), yy.data()+s, sizes[p], 
                   x.data(), sizes, 0 );
     toc("H2F feelpp to holo3_image",FLAGS_v>0);
     return x.transpose();

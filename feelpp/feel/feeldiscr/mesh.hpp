@@ -663,7 +663,7 @@ class Mesh
                 dataRecvFromAllGather;
             auto dataSendToAllGather = boost::make_tuple( boost::make_tuple( ne, neall ), boost::make_tuple( nf, nfmarkedall ),
                                                           boost::make_tuple( np, npall, npmarkedall ), nv, parts );
-            mpi::all_gather( MeshBase<>::worldComm(),
+            mpi::all_gather( MeshBase<>::worldComm().localComm(),
                              dataSendToAllGather,
                              dataRecvFromAllGather );
 
@@ -715,7 +715,7 @@ class Mesh
                 maxNumEntities.push_back( nvall );
 
             auto dataAllReduce = boost::make_tuple( numEntitiesGlobalCounter, maxNumEntities );
-            mpi::all_reduce( MeshBase<>::worldComm(), mpi::inplace( dataAllReduce ), UpdateNumGlobalEntitiesForAllReduce() );
+            mpi::all_reduce( MeshBase<>::worldComm().localComm(), mpi::inplace( dataAllReduce ), UpdateNumGlobalEntitiesForAllReduce() );
             auto const& numEntitiesGlobalCounterGlobal = boost::get<0>( dataAllReduce );
             auto const& maxNumEntitiesGlobal = boost::get<1>( dataAllReduce );
 
