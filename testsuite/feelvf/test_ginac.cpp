@@ -846,4 +846,71 @@ BOOST_AUTO_TEST_CASE( test_mod )
     a1b.setParameterValues( { { "u", 6.1 }, { "v", 3 }} );
     BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.1, 1e-12 );
 }
+BOOST_AUTO_TEST_CASE( test_step1 )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("step1(u,v):u:v");
+    a1b.setParameterValues( { { "u", 0 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 1 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "u", 0.49999 }, { "v", 0.5 }} );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "u", 0.5 }, { "v", 0.5 }} );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_rectangle )
+{
+    auto se = symbolsExpr( symbolExpr( "u", _e1 ), symbolExpr( "v", _e2 ) );
+    auto a1b = expr("rectangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", 0 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3} } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+}
+BOOST_AUTO_TEST_CASE( test_triangle )
+{
+    auto a1b = expr("triangle(t,1,2):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 0.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0, 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+}
+
+BOOST_AUTO_TEST_CASE( test_mapabcd )
+{
+    auto a1b = expr("mapabcd(t,1,2,-1,1):t");
+    a1b.setParameterValues( { { "t", -2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 3 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.5 } } );
+    BOOST_CHECK_SMALL( a1b.evaluate()(0,0), 1e-12 );
+    a1b.setParameterValues( { { "t", 2 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 1, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.25 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), -0.5, 1e-12 );
+    a1b.setParameterValues( { { "t", 1.75 } } );
+    BOOST_CHECK_CLOSE( a1b.evaluate()(0,0), 0.5, 1e-12 );
+}
 BOOST_AUTO_TEST_SUITE_END()
