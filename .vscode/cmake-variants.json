@@ -119,5 +119,25 @@
                 }
             }
         }
+    },
+    "matplot": {
+        "default": "nomatplot",
+        "description": "Enable/Disable MatPlot++",
+        "choices": {
+            "matplot": {
+                "short": "MatPlot",
+                "long": "Enable MatPlot++ for data visualisation.",
+                "settings": {
+                    "FEELPP_ENABLE_MATPLOT": "ON"
+                }
+            },
+            "nomatplot": {
+                "short": "No MatPlot",
+                "long": "Disable MatPlot++ for data visualisation.",
+                "settings": {
+                    "FEELPP_ENABLE_MATPLOT": "OFF"
+                }
+            }
+        }
     }
 }
