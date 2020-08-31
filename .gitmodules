@@ -49,3 +49,6 @@
 [submodule "feelpp/contrib/range-v3"]
 	path = feelpp/contrib/range-v3
 	url = https://github.com/feelpp/range-v3.git
+[submodule "feelpp/contrib/matplot"]
+	path = feelpp/contrib/matplot
+	url = https://github.com/feelpp/matplotplusplus.git
