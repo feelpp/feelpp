@@ -381,23 +381,26 @@ REGISTER_FUNCTION(mapabcd, eval_func(mapabcd_eval).
 DECLARE_FUNCTION_4P(pulse);
 static ex pulse_eval( const ex & x, const ex & a, const ex& b, const ex & p ) 
 { 
-	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(a) && is_exactly_a<numeric>(b)&& is_exactly_a<numeric>(c) && is_exactly_a<numeric>(d) )
+	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(a) && is_exactly_a<numeric>(b)&& is_exactly_a<numeric>(p) )
 	{
-		return std::clamp( ex_to<numeric>(c) + ( ex_to<numeric>(d)-ex_to<numeric>(c))*( ex_to<numeric>(x)-ex_to<numeric>(a))/(ex_to<numeric>(b)-ex_to<numeric>(a)), 
-				     	   ex_to<numeric>(a), ex_to<numeric>(b) );
+		if ( mod( ex_to<numeric>(x), ex_to<numeric>(p) ) < ex_to<numeric>(a) )
+			return 0.;
+		else if ( mod( ex_to<numeric>(x), ex_to<numeric>(p)  ) > ex_to<numeric>(b)   )
+			return 0.;
+		return mod( ex_to<numeric>(x), ex_to<numeric>(p) );
 	}
-	return pulse( x, a, b, c, d ).hold();
+	return pulse( x, a, b, p ).hold();
 }
                                                                                 
-static void pulse_print_latex(const ex & x, const ex & a, const ex& b, const ex & c, const ex& d, const print_context & co)
+static void pulse_print_latex(const ex & x, const ex & a, const ex& b, const ex & p, const print_context & co)
 {
-    co.s << "{ pulse("; x.print(co); co.s << ","; a.print(co); co.s << ","; b.print(co);co.s << ","; c.print(co);co.s << ","; d.print(co);co.s << ")}";
+    co.s << "{ pulse("; x.print(co); co.s << ","; a.print(co); co.s << ","; b.print(co);co.s << ","; p.print(co); co.s << ")}";
 }
                                                                                 
 static void pulse_print_csrc_float(const ex & x, const ex & a, const ex & b, const ex & p, const print_context & co)
 {
-	co.s << "(( mod("; x.print(c); co.s << ","; p.print(co); co.s << ") < "; a.print(c); co.s << ") ? 0. :";
-	co.s << "("; b.print(c); co.s << " < "; x.print(c); co.s << ") ? 0. : 1.)";	
+	co.s << "(( std::fmod("; x.print(co); co.s << ","; p.print(co); co.s << ") < "; a.print(co); co.s << ") ? 0. :";
+	co.s << "("; b.print(co); co.s << " < ";  co.s << "( std::fmod("; x.print(co); co.s << ","; p.print(co); co.s << ")"; co.s << ") ? 0. : 1.))";	
 }
 
                                                                                 
