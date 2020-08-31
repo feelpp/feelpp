@@ -296,8 +296,8 @@ static void rectangle_print_latex(const ex & arg1, const ex&  arg2,const print_c
                                                                                 
 static void rectangle_print_csrc_float(const ex & x, const ex & lo, const ex & hi, const print_context & c)
 {
-    c.s << "("; x.print(c); c.s << " < "; lo.print(c); c.s << ") ? 0. :";
-	c.s << "("; hi.print(c); c.s << " < "; x.print(c); c.s << ") ? 0. : 1.";
+    c.s << "(("; x.print(c); c.s << " < "; lo.print(c); c.s << ") ? 0. :";
+	c.s << "("; hi.print(c); c.s << " < "; x.print(c); c.s << ") ? 0. : 1.)";
 }
 
                                                                                 
@@ -376,6 +376,36 @@ REGISTER_FUNCTION(mapabcd, eval_func(mapabcd_eval).
                        print_func<print_latex>(mapabcd_print_latex).
                        print_func<print_csrc_float>(mapabcd_print_csrc_float).
                        print_func<print_csrc_double>(mapabcd_print_csrc_float));
+
+
+DECLARE_FUNCTION_4P(pulse);
+static ex pulse_eval( const ex & x, const ex & a, const ex& b, const ex & p ) 
+{ 
+	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(a) && is_exactly_a<numeric>(b)&& is_exactly_a<numeric>(c) && is_exactly_a<numeric>(d) )
+	{
+		return std::clamp( ex_to<numeric>(c) + ( ex_to<numeric>(d)-ex_to<numeric>(c))*( ex_to<numeric>(x)-ex_to<numeric>(a))/(ex_to<numeric>(b)-ex_to<numeric>(a)), 
+				     	   ex_to<numeric>(a), ex_to<numeric>(b) );
+	}
+	return pulse( x, a, b, c, d ).hold();
+}
+                                                                                
+static void pulse_print_latex(const ex & x, const ex & a, const ex& b, const ex & c, const ex& d, const print_context & co)
+{
+    co.s << "{ pulse("; x.print(co); co.s << ","; a.print(co); co.s << ","; b.print(co);co.s << ","; c.print(co);co.s << ","; d.print(co);co.s << ")}";
+}
+                                                                                
+static void pulse_print_csrc_float(const ex & x, const ex & a, const ex & b, const ex & p, const print_context & co)
+{
+	co.s << "(( mod("; x.print(c); co.s << ","; p.print(co); co.s << ") < "; a.print(c); co.s << ") ? 0. :";
+	co.s << "("; b.print(c); co.s << " < "; x.print(c); co.s << ") ? 0. : 1.)";	
+}
+
+                                                                                
+REGISTER_FUNCTION(pulse, eval_func(pulse_eval).
+                       evalf_func(pulse_eval).
+                       print_func<print_latex>(pulse_print_latex).
+                       print_func<print_csrc_float>(pulse_print_csrc_float).
+                       print_func<print_csrc_double>(pulse_print_csrc_float));
 
 static ex mod_reader(const exvector& ev)
 {
