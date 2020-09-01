@@ -36,7 +36,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 
     //auto mesh = this->mesh();
 
-    auto mctx = this->modelContext( XVec, /*this->rowStartInVector()+*/this->heatModel()->rowStartInVector(), /*this->rowStartInVector()+*/this->fluidModel()->rowStartInVector() );
+    auto mctx = this->modelContext( XVec, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+
     auto const& se = mctx.symbolsExpr();
     auto const& t = mctx.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
     auto const& u = mctx.field( fluid_model_type::FieldTag::velocity(this->fluidModel().get()), "velocity" );
@@ -116,7 +123,15 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 {
                     auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto expraddedInGLSResidual = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;
-                    M_fluidModel->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range, expraddedInGLSResidual );
+                    if ( !this->fluidModel()->isStationaryModel() && this->fluidModel()->timeStepping() ==  "Theta" )
+                    {
+                        auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
+                        auto const& tOld = mctxPrevious.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+                        auto exprAddedInRhsOld = (1.0-timeSteppingScaling_fluid)*rhoExpr*(beta*(idv(tOld)-T0))*M_gravityForce;
+                        M_fluidModel->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range, expraddedInGLSResidual, exprAddedInRhsOld );
+                    }
+                    else
+                        M_fluidModel->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range, expraddedInGLSResidual );
 #if 0
                     // auto XhP = M_fluidModel->functionSpacePressure();
                     // auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );

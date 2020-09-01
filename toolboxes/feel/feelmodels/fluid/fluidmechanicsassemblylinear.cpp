@@ -14,6 +14,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearPDE( DataUpdateLinear & data ) c
 {
     const vector_ptrtype& XVec = data.currentSolution();
     auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+
+        std::string previousVelocityExtrapolatedEntry = prefixvm( this->prefix(),"time-stepping.previous-velocity-extrapolated" );
+        vector_ptrtype previousVelocityExtrapolated;
+        if ( data.hasVectorInfo( previousVelocityExtrapolatedEntry ) )
+            previousVelocityExtrapolated = data.vectorInfo( previousVelocityExtrapolatedEntry );
+
+        auto mctxPrevious = this->modelContext/*NoTrialSymbolsExpr*/( {
+                { "solution", std::make_tuple( previousSol, this->rowStartInVector()) },
+                { "velocity_extrapolated", std::make_tuple( previousVelocityExtrapolated, 0 ) }
+            } );
+
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
     this->updateLinearPDE( data, mctx );
 }
 
