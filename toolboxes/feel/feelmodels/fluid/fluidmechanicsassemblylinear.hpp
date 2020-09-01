@@ -79,7 +79,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     auto myLinearFormV =form1( _test=XhV, _vector=F,
                                _rowstart=rowStartInVector+0 );
 
-
+#if 0
     //std::shared_ptr<element_fluid_external_storage_type> fieldVelocityPressureExtrapolated;
     element_velocity_ptrtype fieldVelocityPressureExtrapolated;
     if ( this->solverName() == "Picard" )
@@ -91,11 +91,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     {
         fieldVelocityPressureExtrapolated = M_fieldConvectionVelocityExtrapolated;
     }
-
-    auto const& u = this->fieldVelocity();
+#endif
+    auto const& u = mctx.field( FieldTag::velocity(this), "velocity" );
     auto const& v = this->fieldVelocity();
-    auto const& p = this->fieldPressure();
+    auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& q = this->fieldPressure();
+
+    auto const& beta_u = this->solverName() == "Oseen"? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
 
     auto const& se = mctx.symbolsExpr();
 
@@ -122,10 +124,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             if ( ( physicFluidData->dynamicViscosity().isNewtonianLaw() && BuildCstPart ) ||
                  ( !physicFluidData->dynamicViscosity().isNewtonianLaw() && build_StressTensorNonNewtonian ) )
             {
-                if ( fieldVelocityPressureExtrapolated )
+                if ( physicFluidData->equation() == "Navier-Stokes" )
                 {
-                    auto const& betaU = *fieldVelocityPressureExtrapolated;
-                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(betaU),*physicFluidData,matProps);
+                    //auto const& betaU = *fieldVelocityPressureExtrapolated;
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(beta_u),*physicFluidData,matProps);
                     bilinearFormVV +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
@@ -162,7 +164,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 
                 CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-                auto const& betaU = *fieldVelocityPressureExtrapolated;
+                //auto const& betaU = *fieldVelocityPressureExtrapolated;
 #if 0
                 //velocityExprFromFields
                 double myvelX=0;
@@ -178,7 +180,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 #if defined( FEELPP_MODELS_HAS_MESHALE )
                     bilinearFormVV_PatternDefault +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*( idv(betaU) -idv( this->meshVelocity() )   /*-  myVelXEXPR*/  ))*id(v),
+                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*( idv(beta_u) -idv( this->meshVelocity() )   /*-  myVelXEXPR*/  ))*id(v),
                                    _geomap=this->geomap() );
 #endif
                 }
@@ -186,7 +188,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 {
                     bilinearFormVV_PatternDefault +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(betaU) )*id(v),
+                                   _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(beta_u) )*id(v),
                                    _geomap=this->geomap() );
                 }
 
@@ -194,7 +196,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 {
                     bilinearFormVV +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*0.5*densityExpr*divt(u)*trans(idv(betaU))*id(v),
+                                   _expr= timeSteppingScaling*0.5*densityExpr*divt(u)*trans(idv(beta_u))*id(v),
                                    _geomap=this->geomap() );
                 }
 
@@ -274,10 +276,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 if ( this->doStabConvectionEnergy() )
                 {
                     auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
-                    auto const& betaU = *fieldVelocityPressureExtrapolated;
+                    //auto const& betaU = *fieldVelocityPressureExtrapolated;
                     myLinearFormV +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*0.5*densityExpr*idv(this->velocityDiv())*trans(idv(betaU))*id(v),
+                                   _expr= timeSteppingScaling*0.5*densityExpr*idv(this->velocityDiv())*trans(idv(beta_u))*id(v),
                                    _geomap=this->geomap() );
                 }
             }
@@ -285,7 +287,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             //--------------------------------------------------------------------------------------------------//
             if ( M_stabilizationGLS && M_stabilizationGLSDoAssembly )
             {
-                this->updateLinearPDEStabilizationGLS( data, mctx, *physicFluidData, matProps, range, fieldVelocityPressureExtrapolated );
+                this->updateLinearPDEStabilizationGLS( data, mctx, *physicFluidData, matProps, range );
             }
 
 

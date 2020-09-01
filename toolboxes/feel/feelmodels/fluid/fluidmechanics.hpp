@@ -119,6 +119,7 @@ public:
     typedef typename space_velocity_type::element_type element_velocity_type;
     typedef std::shared_ptr<element_velocity_type> element_velocity_ptrtype;
     typedef typename space_velocity_type::element_external_storage_type element_velocity_external_storage_type;
+    typedef std::shared_ptr<element_velocity_external_storage_type> element_velocity_external_storage_ptrtype;
     // function space component of velocity
     typedef typename space_velocity_type::component_functionspace_type component_space_velocity_type;
     typedef std::shared_ptr<component_space_velocity_type> component_space_velocity_ptrtype;
@@ -289,6 +290,7 @@ public:
         //static auto body_translational_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::translational_velocity( t ); }
         //static auto body_angular_velocity( BodyBoundaryCondition const* t ) { return BodyBoundaryCondition::FieldTag::angular_velocity( t ); }
         static auto dist2wall( self_type const* t ) { return ModelFieldTag<self_type,3>( t ); }
+        static auto velocity_extrapolated( self_type const* t ) { return ModelFieldTag<self_type,4>( t ); }
     };
 
 
@@ -791,7 +793,7 @@ public :
     element_pressure_type const& fieldPressure() const { return *M_fieldPressure; }
     element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
-    element_velocity_ptrtype const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
+    element_velocity_external_storage_ptrtype/*element_velocity_ptrtype*/ const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
 
     // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
@@ -1040,17 +1042,41 @@ public :
 
     auto modelFields( std::string const& prefix = "" ) const
         {
-            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), prefix );
+            return this->modelFields( this->fieldVelocityPtr(), this->fieldPressurePtr(), M_bodySetBC.modelFields( *this, prefix ), element_velocity_external_storage_ptrtype{}, prefix );
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
+#if 0
             auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
             auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
             auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
             return this->modelFields( field_u, field_p, mfields_body, prefix );
+#endif
+            std::map<std::string,std::tuple<vector_ptrtype,size_type> > vectorData;
+            vectorData["solution"] = std::make_tuple( sol,rowStartInVector );
+            if ( M_vectorConvectionVelocityExtrapolated )
+                vectorData["velocity_extrapolated"] = std::make_tuple( M_vectorConvectionVelocityExtrapolated, 0 );
+            return this->modelFields( vectorData, prefix );
         }
-    template <typename VelocityFieldType,typename PressureFieldType,typename ModelFieldsBodyType>
-    auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, std::string const& prefix = "" ) const
+    auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
+        {
+            auto itFindSolution = vectorData.find( "solution" );
+            CHECK( itFindSolution != vectorData.end() ) << "require solution data";
+            vector_ptrtype sol = std::get<0>( itFindSolution->second );
+            size_type rowStartInVector =  std::get<1>( itFindSolution->second );
+            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
+            auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
+            auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
+
+            element_velocity_external_storage_ptrtype field_beta_u;
+            auto itFindVelocityExtrapolated = vectorData.find( "velocity_extrapolated" );
+            if ( itFindVelocityExtrapolated != vectorData.end() && std::get<0>( itFindVelocityExtrapolated->second ) )
+                field_beta_u = this->fieldVelocity().functionSpace()->elementPtr( *std::get<0>( itFindVelocityExtrapolated->second ), std::get<1>( itFindVelocityExtrapolated->second ) );
+
+            return this->modelFields( field_u, field_p, mfields_body, field_beta_u, prefix );
+        }
+    template <typename VelocityFieldType,typename PressureFieldType,typename ModelFieldsBodyType,typename VelocityExtrapolatedFieldType>
+    auto modelFields( VelocityFieldType const& field_u, PressureFieldType const& field_p, ModelFieldsBodyType const& mfields_body, VelocityExtrapolatedFieldType const& field_beta_u, std::string const& prefix = "" ) const
         {
             auto mfields_ale = this->modelFieldsMeshALE( prefix );
 
@@ -1061,6 +1087,7 @@ public :
 
             return Feel::FeelModels::modelFields( modelField<FieldCtx::ID|FieldCtx::MAGNITUDE|FieldCtx::CURL_MAGNITUDE/*FieldCtx::CURL|FieldCtx::GRAD|FieldCtx::GRAD_NORMAL*/>( FieldTag::velocity(this), prefix, "velocity", field_u, "U", this->keyword() ),
                                                   modelField<FieldCtx::ID>( FieldTag::pressure(this), prefix, "pressure", field_p, "P", this->keyword() ),
+                                                  modelField<FieldCtx::ID>( FieldTag::velocity_extrapolated(this), prefix, "velocity_extrapolated", field_beta_u, "beta_u", this->keyword() ),
                                                   mfields_body, mfields_ale, mfields_turbulence,
                                                   modelField<FieldCtx::ID>( FieldTag::dist2wall(this), prefix, "dist2wall", M_fieldDist2Wall, "dist2wall", this->keyword() )
                                                   );
@@ -1127,6 +1154,11 @@ public :
     auto modelContext( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
             auto mfields = this->modelFields( sol, rowStartInVector, prefix );
+            return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
+        }
+    auto modelContext( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( vectorData, prefix );
             return Feel::FeelModels::modelContext( std::move( mfields ), this->symbolsExpr( mfields ) );
         }
 
@@ -1494,7 +1526,6 @@ public :
     void updateLinearPDEStabilizationGLS( DataUpdateLinear & data, ModelContextType const& mctx,
                                           ModelPhysicFluid<nDim> const& physicFluidData,
                                           MaterialProperties const& matProps, RangeType const& range,
-                                          element_velocity_ptrtype beta_u,
                                           ExprAddedRhsType const& exprsAddedInResidualRhsTuple = hana::make_tuple(),
                                           ExprAddedLhsType const& exprsAddedInResidualLhsTuple = hana::make_tuple() ) const;
     //___________________________________________________________________________________//
@@ -1542,7 +1573,9 @@ private :
     space_pressure_ptrtype M_XhPressure;
     element_velocity_ptrtype M_fieldVelocity;
     element_pressure_ptrtype M_fieldPressure;
-    element_velocity_ptrtype M_fieldConvectionVelocityExtrapolated; // with Oseen solver
+
+    vector_ptrtype M_vectorConvectionVelocityExtrapolated;
+    element_velocity_external_storage_ptrtype M_fieldConvectionVelocityExtrapolated; // with Oseen solver
     // lagrange multiplier space for mean pressure
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
@@ -1560,6 +1593,7 @@ private :
     savets_pressure_ptrtype M_savetsPressure;
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
+    std::map<std::string,double> M_currentParameterValues;
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_normalstress_ptrtype M_XhNormalBoundaryStress;

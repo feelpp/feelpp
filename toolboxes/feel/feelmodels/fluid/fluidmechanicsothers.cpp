@@ -716,6 +716,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
 {
+    for ( auto const& [param,val] : paramValues )
+        M_currentParameterValues[param] = val;
+
     if ( this->manageParameterValuesOfModelProperties() )
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
@@ -1166,7 +1169,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateConvectionVelocityExtrapolated()
         return;
 
     if ( !M_fieldConvectionVelocityExtrapolated )
-        M_fieldConvectionVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr();
+    {
+        M_vectorConvectionVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+        M_fieldConvectionVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorConvectionVelocityExtrapolated, 0 );
+    }
     else
         M_fieldConvectionVelocityExtrapolated->zero();
 
@@ -1347,7 +1353,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
     {
         M_timeStepThetaSchemePreviousContrib->zero();
         M_blockVectorSolution.updateVectorFromSubVectors();
-        //this->updateBlockVectorSolution();
         ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
         dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
 
@@ -1358,13 +1363,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         if ( M_stabilizationGLS )
         {
             auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
             if ( this->solverName() == "Oseen" )
             {
-                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-field-extrapolated" );
-                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
-                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( M_fieldConvectionVelocityExtrapolated->mapPtr() ) );
-                *dataInfos.vectorInfo( convectionOseenEntry ) = *M_fieldConvectionVelocityExtrapolated;
+                std::string previousVelocityExtrapolatedEntry = prefixvm( this->prefix(),"time-stepping.previous-velocity-extrapolated" );
+                if ( !dataInfos.hasVectorInfo( previousVelocityExtrapolatedEntry ) )
+                    dataInfos.addVectorInfo( previousVelocityExtrapolatedEntry, this->backend()->newVector( M_fieldConvectionVelocityExtrapolated->mapPtr() ) );
+                *dataInfos.vectorInfo( previousVelocityExtrapolatedEntry ) = *M_fieldConvectionVelocityExtrapolated;
             }
         }
     }

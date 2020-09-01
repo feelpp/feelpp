@@ -282,7 +282,7 @@ public :
     void setEquation( std::string const& eq );
 
     bool gravityForceEnabled() const { return M_gravityForceEnabled; }
-    auto const& gravityForceExpr() { return M_gravityForceExpr.template expr<Dim,1>(); }
+    auto const& gravityForceExpr() const { return M_gravityForceExpr.template expr<Dim,1>(); }
 
     DynamicViscosity const& dynamicViscosity() const { return M_dynamicViscosity; }
     Turbulence const& turbulence() const { return M_turbulence; }

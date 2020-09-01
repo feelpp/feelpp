@@ -317,9 +317,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
                 {
                     auto vecPreviousSolution =  this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-                    M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), vecPreviousSolution );
-                    M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( M_fluidModel->prefix(),"time-stepping.previous-solution"), vecPreviousSolution );
-                    M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( M_heatModel->prefix(),"time-stepping.previous-solution"), vecPreviousSolution );
+                    M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", vecPreviousSolution );
                 }
             }
         }
@@ -468,7 +466,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
         {
             auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
         }
     }
 }

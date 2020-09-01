@@ -15,14 +15,16 @@ namespace FeelModels
 namespace FluidMechanics_detail
 {
 
-template<typename FluidMechanicsType,typename FieldVelocityType, typename FieldPressureType, typename SymbolsExprType>
+template<typename FluidMechanicsType,typename ModelContextType, typename ... ExprAddedType>
 auto
-exprResidual( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType::nDim> const& physicFluidData, MaterialProperties const& matProps,
-              FieldVelocityType const& u, FieldPressureType const& p,
-              SymbolsExprType const& se, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
+exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType::nDim> const& physicFluidData, MaterialProperties const& matProps,
+                  ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
 {
-    auto const& beta_u = u; // TODO
-    
+    auto const& u = mctx.field( FluidMechanicsType::FieldTag::velocity(&fm), "velocity" );
+    auto const& p = mctx.field( FluidMechanicsType::FieldTag::pressure(&fm), "pressure" );
+    auto const& beta_u = fm.solverName() == "Oseen"? mctx.field( FluidMechanicsType::FieldTag::velocity_extrapolated(&fm), "velocity_extrapolated" ) : u;
+    auto const& se = mctx.symbolsExpr();
+
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
 
     auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
@@ -31,26 +33,54 @@ exprResidual( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType:
     using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*muExpr*laplacianv(u) )>;
     using expr_pressure_stress_redisual_type = std::decay_t<decltype( trans(gradv(p)) )>;
     using expr_time_derivative_residual_type = std::decay_t<decltype( expr_density_type{}*(fm.timeStepBDF()->polyDerivCoefficient(0)*idv(u)-idv(fm.timeStepBDF()->polyDeriv())) )>;
+    using expr_gravity_force_type = std::decay_t<decltype( -timeSteppingScaling*expr_density_type{}*physicFluidData.gravityForceExpr() )>;
 
-    auto residual_full = exprOptionalConcat<expr_convection_residual_type,expr_viscous_stress_residual_type,expr_pressure_stress_redisual_type,expr_time_derivative_residual_type>();
+    auto residual_full = exprOptionalConcat<expr_convection_residual_type,expr_viscous_stress_residual_type,expr_pressure_stress_redisual_type,expr_time_derivative_residual_type,expr_gravity_force_type, ExprAddedType...>();
 
     if ( physicFluidData.equation() == "Navier-Stokes")
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         residual_full.expression().add( timeSteppingScaling*densityExpr*gradv(u)*idv(beta_u) );
     }
-    if (!fm.isStationaryModel())
+    if (!fm.isStationaryModel() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         residual_full.expression().add( densityExpr*(fm.timeStepBDF()->polyDerivCoefficient(0)*idv(u)-idv(fm.timeStepBDF()->polyDeriv())) );
     }
-    residual_full.expression().add( trans(gradv(p)) );
+
+    // important detail, the pressure term is not include in theta scheme
+    if ( !timeSteppingEvaluateResidualWithoutTimeDerivative )
+        residual_full.expression().add( trans(gradv(p)) );
+
     if constexpr( FluidMechanicsType::nOrderVelocity>1 )
     {
         residual_full.expression().add( -timeSteppingScaling*muExpr*laplacianv(u) );
     }
 
+    if ( physicFluidData.gravityForceEnabled() )
+    {
+        auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+        auto const& gravityForce = physicFluidData.gravityForceExpr();
+        residual_full.expression().add( -timeSteppingScaling*densityExpr*gravityForce );
+    }
+
     return residual_full;
+}
+
+template<typename FluidMechanicsType,typename ModelContextType>
+auto
+exprResidual( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType::nDim> const& physicFluidData, MaterialProperties const& matProps,
+              ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
+{
+    return exprResidualImpl( fm,physicFluidData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
+}
+
+template<typename ExprAddedType,typename FluidMechanicsType,typename ModelContextType>
+auto
+exprResidual( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsType::nDim> const& physicFluidData, MaterialProperties const& matProps,
+              ModelContextType const& mctx, double timeSteppingScaling, bool timeSteppingEvaluateResidualWithoutTimeDerivative = false )
+{
+    return exprResidualImpl<FluidMechanicsType,ModelContextType,ExprAddedType>( fm,physicFluidData,matProps,mctx,timeSteppingScaling,timeSteppingEvaluateResidualWithoutTimeDerivative );
 }
 
 } // FluidMechanics_detail
@@ -61,7 +91,6 @@ void
 FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDEStabilizationGLS( DataUpdateLinear & data, ModelContextType const& mctx,
                                                                                                  ModelPhysicFluid<nDim> const& physicFluidData,
                                                                                                  MaterialProperties const& matProps, RangeType const& range,
-                                                                                                 element_velocity_ptrtype beta_u,
                                                                                                  ExprAddedRhsType const& exprsAddedInResidualRhsTuple,
                                                                                                  ExprAddedLhsType const& exprsAddedInResidualLhsTuple ) const
 {
@@ -81,10 +110,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
     auto XhV = this->functionSpaceVelocity();
     auto XhP = this->functionSpacePressure();
 
-    auto const& u = this->fieldVelocity();
+    auto const& u = mctx.field( FieldTag::velocity(this), "velocity" );
     auto const& v = this->fieldVelocity();
-    auto const& p = this->fieldPressure();
+    auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& q = this->fieldPressure();
+    auto const& beta_u = this->solverName() == "Oseen"? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
     auto const& se = mctx.symbolsExpr();
 
     auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
@@ -136,7 +166,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
 
     // residual rhs
     using expr_time_derivative_residual_rhs_type = std::decay_t<decltype( expr_density_type{}*idv(this->timeStepBDF()->polyDeriv()))>;
-    auto residual_rhs = exprOptionalConcat<expr_time_derivative_residual_rhs_type>();
+    using expr_previous_residual_type = std::decay_t<decltype( -FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
+    auto residual_rhs = exprOptionalConcat<expr_time_derivative_residual_rhs_type,expr_previous_residual_type>();
 
 
     if ( physicFluidData.equation() == "Navier-Stokes")
@@ -157,6 +188,16 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
     if constexpr( nOrderVelocity>1 )
     {
         residual_lhs.expression().add( -timeSteppingScaling*muExpr*laplaciant(u) );
+    }
+
+
+    if ( !this->isStationaryModel() && this->timeStepping() == "Theta" )
+    {
+        auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
+        auto previousResidualExpr = -FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
+        if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
+            previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
+        residual_rhs.expression().add( previousResidualExpr );
     }
 
     auto residual_rhs_full = Feel::FeelModels::vfdetail::addExpr( hana::append( exprsAddedInResidualRhsTuple, residual_rhs ) );
@@ -471,8 +512,19 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
     if ( this->stabilizationGLSType() == "pspg" || this->stabilizationGLSType() == "supg-pspg" || this->stabilizationGLSType() == "gls" )
         tauExprPSPG.emplace( Feel::FeelModels::stabilizationGLSParameterExpr<expr_density_uconv_type,expr_viscosity_type,expr_coeff_null_type>( *this->stabilizationGLSParameterPressure() ) );
 
-    auto residual_full = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, u, p, se, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative ),
-                                                                                exprsAddedInResidual... ) );
+
+    using expr_previous_residual_type = std::decay_t<decltype( FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, mctx, 1.0-timeSteppingScaling, true ) )>;
+    auto residual_base = FluidMechanics_detail::exprResidual<expr_previous_residual_type>( *this, physicFluidData, matProps, mctx, timeSteppingScaling, timeSteppingEvaluateResidualWithoutTimeDerivative );
+    if ( !this->isStationaryModel() && this->timeStepping() == "Theta" )
+    {
+        auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
+        auto previousResidualExpr = FluidMechanics_detail::exprResidual( *this, physicFluidData, matProps, mctxPrevious, 1.0-timeSteppingScaling, true );
+        if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
+            previousResidualExpr.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
+        residual_base.expression().add( previousResidualExpr );
+    }
+
+    auto residual_full = Feel::FeelModels::vfdetail::addExpr( hana::make_tuple( residual_base, exprsAddedInResidual... ) );
 
     if ( physicFluidData.equation() == "Navier-Stokes")
     {

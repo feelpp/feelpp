@@ -13,7 +13,14 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& XVec = data.currentSolution();
-    this->updateResidual( data, this->modelContext( XVec, this->rowStartInVector() ) );
+    auto mctx = this->modelContext( XVec, this->rowStartInVector() );
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mctxPrevious = this->modelContext/*NoTrialSymbolsExpr*/( previousSol, this->rowStartInVector() );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+    this->updateResidual( data, mctx );
 } // updateResidual
 
 
