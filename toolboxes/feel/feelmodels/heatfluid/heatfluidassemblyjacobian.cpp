@@ -140,17 +140,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                     auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
                     M_fluidModel->updateJacobianStabilizationGLS( data, mctx, *physicFluidData, matProps, range, std::make_tuple(XhT,blockIndexTemperature,exprAddedInGLSResidual) );
-
-#if 0 // TODO VINCENT
-                    auto rhoF = idv(M_fluidModel->materialProperties()->fieldRho());
-                    //auto mu = Feel::FeelModels::fluidMecViscosity<2*FluidMechanicsType::nOrderVelocity>(u,p,*fluidmec.materialProperties());
-                    auto mu = idv(M_fluidModel->materialProperties()->fieldMu());
-                    auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
-
-                    auto XhP = M_fluidModel->functionSpacePressure();
-                    //auto const p = XhP->element(XVec, M_fluidModel->rowStartInVector()+1 );
-                    M_fluidModel->updateJacobianStabilisationGLS( data, *u, *p, rhoF, mu, matName, std::make_pair(bfVT, exprAddedInGLSResidual) );
-#endif
                 }
             } // matName
         } // physic
