@@ -31,7 +31,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     if (this->useFSISemiImplicitScheme())
     {
         build_StressTensorNonNewtonian = BuildCstPart;
-        if ( this->solverName() == "Oseen" )
+        if ( this->useSemiImplicitTimeScheme() )
             build_ConvectiveTerm=BuildCstPart;
         build_Form2TransientTerm=BuildCstPart;
         build_Form1TransientTerm=BuildCstPart;
@@ -97,7 +97,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& q = this->fieldPressure();
 
-    auto const& beta_u = this->solverName() == "Oseen"? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
+    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
 
     auto const& se = mctx.symbolsExpr();
 
@@ -162,9 +162,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             {
                 this->timerTool("Solve").start();
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
-
-                CHECK( this->solverName() == "Oseen" || this->solverName() == "Picard" ) << "invalid solver name " << this->solverName();
-                //auto const& betaU = *fieldVelocityPressureExtrapolated;
 #if 0
                 //velocityExprFromFields
                 double myvelX=0;

@@ -120,10 +120,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
 
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
-#if 0
-    if ( Environment::vm().count(prefixvm(this->prefix(),"model").c_str()) )
-        this->setModelName( soption(_name="model",_prefix=this->prefix()) );
-#endif
+    M_useSemiImplicitTimeScheme = boption(_name="use-semi-implicit-time-scheme",_prefix=this->prefix());
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
 
@@ -1107,8 +1104,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    M_blockVectorSolution.buildVector( this->backend() );
-
     M_algebraicFactory.reset( new model_algebraic_factory_type(this->shared_from_this(),this->backend()) );
 
     if ( !M_bodySetBC.empty() )
@@ -1818,7 +1813,7 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
-    //M_blockVectorSolution.buildVector( this->backend() );
+    M_blockVectorSolution.buildVector( this->backend() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

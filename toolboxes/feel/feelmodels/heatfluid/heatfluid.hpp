@@ -137,13 +137,19 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVectorHeat, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
         {
-            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( sol, rowStartInVectorHeat, this->heatModel()->keyword() ),
-                                                  this->fluidModel()->modelFields( sol, rowStartInVectorFluid, this->fluidModel()->keyword() ) );
+            return this->modelFields( sol, rowStartInVectorHeat, sol, rowStartInVectorFluid, prefix );
         }
     auto modelFields( vector_ptrtype solHeat, size_type rowStartInVectorHeat, vector_ptrtype solFluid, size_type rowStartInVectorFluid, std::string const& prefix = "" ) const
         {
             return Feel::FeelModels::modelFields( this->heatModel()->modelFields( solHeat, rowStartInVectorHeat, this->heatModel()->keyword() ),
                                                   this->fluidModel()->modelFields( solFluid, rowStartInVectorFluid, this->fluidModel()->keyword() ) );
+        }
+    auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                      std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                      std::string const& prefix = "" ) const
+        {
+            return Feel::FeelModels::modelFields( this->heatModel()->modelFields( vectorDataHeat, this->heatModel()->keyword() ),
+                                                  this->fluidModel()->modelFields( vectorDataFluid, this->fluidModel()->keyword() ) );
         }
     template <typename ModelFieldsHeatType,typename ModelFieldsFluidType>
     auto modelFields( ModelFieldsHeatType const& mfieldsHeat, ModelFieldsFluidType const& mfieldsFluid, std::string const& prefix = "" ) const
@@ -211,7 +217,18 @@ public :
         }
     auto modelContextNoTrialSymbolsExpr( vector_ptrtype solHeat, size_type startBlockSpaceIndexHeat, vector_ptrtype solFluid, size_type startBlockSpaceIndexFluid, std::string const& prefix = "" ) const
         {
-            auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+            // auto mfields = this->modelFields( solHeat, startBlockSpaceIndexHeat, solFluid, startBlockSpaceIndexFluid, prefix );
+            // auto se = this->symbolsExpr( mfields );
+            // return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
+            return this->modelContextNoTrialSymbolsExpr( { { "solution", std::make_tuple( solHeat, startBlockSpaceIndexHeat ) } },
+                                                         { { "solution", std::make_tuple( solFluid, startBlockSpaceIndexFluid ) } },
+                                                         prefix );
+        }
+    auto modelContextNoTrialSymbolsExpr( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataHeat,
+                                         std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorDataFluid,
+                                         std::string const& prefix = "" ) const
+        {
+            auto mfields = this->modelFields( vectorDataHeat, vectorDataFluid, prefix );
             auto se = this->symbolsExpr( mfields );
             return Feel::FeelModels::modelContext( std::move( mfields ), std::move( se ) );
         }

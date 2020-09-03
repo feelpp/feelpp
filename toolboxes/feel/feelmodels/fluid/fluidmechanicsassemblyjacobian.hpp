@@ -285,29 +285,42 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
                 if ( BuildNonCstPart )
                 {
-                    if (this->doStabConvectionEnergy())
+                    if ( this->useSemiImplicitTimeScheme() )
                     {
-                        // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
-                        // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
-                        // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
-
-                        auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u);
+                        auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
                         bilinearFormVV +=
-                            //bilinearForm_PatternDefault +=
                             integrate ( _range=range,
-                                        _expr=timeSteppingScaling*convecTerm,
+                                        _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(beta_u) )*id(v),
                                         _geomap=this->geomap() );
+                        if ( this->doStabConvectionEnergy() )
+                            CHECK( false ) << "TODO";
                     }
                     else
                     {
-                        //auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
-                        auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobian(u);
+                        if (this->doStabConvectionEnergy())
+                        {
+                            // convection term + stabilisation energy of convection with neumann bc (until outflow bc) ( see Nobile thesis)
+                            // auto const convecTerm = (trans(val(gradv(u)*idv(*M_P0Rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(*M_P0Rho)) ) )*id(v);
+                            // stabTerm = trans(divt(u)*val(0.5*idv(*M_P0Rho)*idv(u))+val(0.5*idv(*M_P0Rho)*divv(u))*idt(u))*id(v)
 
-                        bilinearFormVV +=
-                            //bilinearForm_PatternDefault +=
-                            integrate ( _range=range,
-                                        _expr=timeSteppingScaling*convecTerm,
-                                        _geomap=this->geomap() );
+                            auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobianWithEnergyStab(u);
+                            bilinearFormVV +=
+                                //bilinearForm_PatternDefault +=
+                                integrate ( _range=range,
+                                            _expr=timeSteppingScaling*convecTerm,
+                                            _geomap=this->geomap() );
+                        }
+                        else
+                        {
+                            //auto const convecTerm = (trans(val(gradv(u)*idv(rho))*idt(u)) + trans(gradt(u)*val(idv(u)*idv(rho)) ) )*id(v);
+                            auto const convecTerm = densityExpr*Feel::FeelModels::fluidMecConvectionJacobian(u);
+
+                            bilinearFormVV +=
+                                //bilinearForm_PatternDefault +=
+                                integrate ( _range=range,
+                                            _expr=timeSteppingScaling*convecTerm,
+                                            _geomap=this->geomap() );
+                        }
                     }
                 }
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -329,7 +342,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
                                     _expr= timeSteppingScaling*densityExpr*trans( gradt(u)*idv(uExplicitPartOfSolution) + gradv(uExplicitPartOfSolution )*idt(u) )*id(v),
                                     _geomap=this->geomap() );
                 }
-            }
+            } // Navier-Stokes
 
             //transients terms
             if ( !this->isStationaryModel() && Build_TransientTerm )

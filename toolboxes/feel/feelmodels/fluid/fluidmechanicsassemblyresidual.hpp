@@ -120,12 +120,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidual( 
             if ( BuildNonCstPart && physicFluidData->equation() == "Navier-Stokes" )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
-                if ( this->solverName() == "Oseen" ) // call when evaluate residual for time-stepping
+                if ( this->useSemiImplicitTimeScheme() )
                 {
-                    auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
+                    //auto const& betaU = *M_fieldConvectionVelocityExtrapolated;
+                    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
                     linearFormV +=
                         integrate( _range=range,
-                                   _expr= timeSteppingScaling*densityExpr*trans( gradv(u)*idv(betaU) )*id(v),
+                                   _expr= timeSteppingScaling*densityExpr*trans( gradv(u)*idv(beta_u) )*id(v),
                                    _geomap=this->geomap() );
                     if ( this->doStabConvectionEnergy() )
                         CHECK( false ) << "TODO";

@@ -198,6 +198,9 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = this->fieldTemperaturePtr();
 
+    // init petsc vector associated to the block
+    M_blockVectorSolution.buildVector( this->backend() );
+
     // algebraic solver
     if ( buildModelAlgebraicFactory )
         this->initAlgebraicFactory();
@@ -324,9 +327,6 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
 HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 {
-    // init petsc vector associated to the block
-    M_blockVectorSolution.buildVector( this->backend() );
-
     M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
 
     if ( M_timeStepping == "Theta" )
