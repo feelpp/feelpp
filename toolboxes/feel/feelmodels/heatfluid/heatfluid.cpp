@@ -225,50 +225,14 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     else
         M_useSemiImplicitTimeScheme = false;
 
-    if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
-    {
-        // init velocity convection (TODO : the initial velocity from the fluid)
-        //M_heatModel->setFieldVelocityConvectionIsUsed( true );
-        //M_heatModel->updateForUseFunctionSpacesVelocityConvection();
-        M_heatModel->initAlgebraicFactory();
-        M_fluidModel->initAlgebraicFactory();
-        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
-                                                                                 boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
-        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Heat,
-                                                                                   boost::ref( *this ), _1 ) );
-
-        if ( M_useSemiImplicitTimeScheme )
-        {
-            M_fluidModel->setSolverName("Oseen");
-            M_fluidModel->setStabilizationGLSDoAssembly( false );
-            M_fluidModel->algebraicFactory()->addFunctionLinearAssembly( boost::bind( &self_type::updateLinearFluidSolver,
-                                                                                      boost::ref( *this ), _1 ) );
-            M_fluidModel->algebraicFactory()->addFunctionResidualAssembly( boost::bind( &self_type::updateResidualFluidSolver,
-                                                                                        boost::ref( *this ), _1 ) );
-
-            if ( M_fluidModel->timeStepping() == "Theta" && M_fluidModel->stabilizationGLS() )
-            {
-                CHECK( M_heatModel->timeStepping() == "Theta" ) << "not implemented";
-                std::string timeSteppingPreviousSolutionDataKey_heat = prefixvm( this->heatModel()->prefix(),"time-stepping.previous-solution");
-                this->fluidModel()->algebraicFactory()->dataInfos().addVectorInfo( timeSteppingPreviousSolutionDataKey_heat,
-                                                                                  this->heatModel()->algebraicFactory()->dataInfos().vectorInfo( timeSteppingPreviousSolutionDataKey_heat ) );
-            }
-        }
-    }
-    else
-    {
-        M_fluidModel->setStabilizationGLSDoAssembly( false );
-        // if ( M_useSemiImplicitTimeScheme )
-        //     M_fluidModel->setSolverName("Oseen");
-    }
-
     // post-process
     this->initPostProcess();
 
     // update constant parameters
     this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
 
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
@@ -297,14 +261,18 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     currentStartBlockSpaceIndex += numberOfBlockSpaceFluid;
     this->setStartSubBlockSpaceIndex( "heat", currentStartBlockSpaceIndex );
 
+    // init monolithic vector associated to the block vector
+    M_blockVectorSolution.buildVector( this->backend() );
+
+    if ( ( M_fluidModel->timeStepping() == "Theta" || M_heatModel->timeStepping() == "Theta" ) &&
+         ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() ) )
+        M_timeStepThetaSchemePreviousSolution = this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
+
     // algebraic solver
     if ( buildModelAlgebraicFactory )
     {
         if ( M_useNaturalConvection && !M_useSemiImplicitTimeScheme )
         {
-            // init monolithic vector associated to the block vector
-            M_blockVectorSolution.buildVector( this->backend() );
-
             M_algebraicFactory.reset( new model_algebraic_factory_type( this->shared_from_this(),this->backend() ) );
             if ( M_fluidModel->hasOperatorPCD() )
                 M_algebraicFactory->preconditionerTool()->attachOperatorPCD( "pcd", M_fluidModel->operatorPCD() );
@@ -316,12 +284,49 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                 M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
                 if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
                 {
-                    auto vecPreviousSolution =  this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
-                    M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", vecPreviousSolution );
+                    M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_timeStepThetaSchemePreviousSolution );
                 }
             }
         }
     }
+
+    if ( M_useNaturalConvection )
+        M_fluidModel->setStabilizationGLSDoAssembly( false );
+
+    if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
+    {
+        // init velocity convection (TODO : the initial velocity from the fluid)
+        //M_heatModel->setFieldVelocityConvectionIsUsed( true );
+        //M_heatModel->updateForUseFunctionSpacesVelocityConvection();
+        M_heatModel->initAlgebraicFactory();
+        M_fluidModel->initAlgebraicFactory();
+        M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
+                                                                                 boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Heat,
+                                                                                   boost::ref( *this ), _1 ) );
+        M_heatModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Heat,
+                                                                                   boost::ref( *this ), _1 ) );
+
+        M_fluidModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Fluid,
+                                                                                  boost::ref( *this ), _1 ) );
+        M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
+                                                                                    boost::ref( *this ), _1 ) );
+
+
+        if ( M_useSemiImplicitTimeScheme )
+        {
+            M_fluidModel->setSolverName("Oseen");
+            // M_fluidModel->setStabilizationGLSDoAssembly( false );
+        }
+    }
+    else
+    {
+        M_fluidModel->setStabilizationGLSDoAssembly( false );
+        // if ( M_useSemiImplicitTimeScheme )
+        //     M_fluidModel->setSolverName("Oseen");
+    }
+
+
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();
@@ -446,29 +451,38 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
 {
     if ( M_heatModel->isStationary() && M_fluidModel->isStationaryModel() )
         return;
-    if ( !M_algebraicFactory )
-        return;
+
     if ( ( M_fluidModel->timeStepping() == "Theta" ) || ( M_heatModel->timeStepping() == "Theta" ) )
     {
-        M_timeStepThetaSchemePreviousContrib->zero();
         M_blockVectorSolution.updateVectorFromSubVectors();
-        ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
-        dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
-        if ( M_fluidModel->timeStepping() == "Theta" )
-            dataResidual.addInfo( prefixvm( M_fluidModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
-        if ( M_heatModel->timeStepping() == "Theta" )
-            dataResidual.addInfo( prefixvm( M_heatModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
+        if ( M_algebraicFactory )
+        {
+            M_timeStepThetaSchemePreviousContrib->zero();
+            ModelAlgebraic::DataUpdateResidual dataResidual( M_blockVectorSolution.vectorMonolithic(), M_timeStepThetaSchemePreviousContrib, true, false );
+            dataResidual.addInfo( prefixvm( this->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
+            if ( M_fluidModel->timeStepping() == "Theta" )
+                dataResidual.addInfo( prefixvm( M_fluidModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
+            if ( M_heatModel->timeStepping() == "Theta" )
+                dataResidual.addInfo( prefixvm( M_heatModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
 
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
-        M_algebraicFactory->evaluateResidual( dataResidual );
-        M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
+            M_algebraicFactory->evaluateResidual( dataResidual );
+            M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
+        }
 
         if ( M_fluidModel->stabilizationGLS() || M_heatModel->stabilizationGLS() )
         {
-            auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            *M_timeStepThetaSchemePreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+
+            if ( M_algebraicFactory )
+            {
+                auto & dataInfos = M_algebraicFactory->dataInfos();
+                *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+                dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
+            }
         }
     }
+
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -509,26 +523,32 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
-
-    // M_heatModel->updateParameterValues();
-    // M_fluidModel->updateParameterValues();
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
 {
+    for ( auto const& [param,val] : paramValues )
+        M_currentParameterValues[param] = val;
+
     if ( this->manageParameterValuesOfModelProperties() )
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
     M_heatModel->setParameterValues( paramValues );
     M_fluidModel->setParameterValues( paramValues );
-    //M_fluidModel->updateParameterValues();
 }
 
 HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
@@ -538,24 +558,28 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->log("HeatFluid","solve", "start");
     this->timerTool("Solve").start();
 
+    M_blockVectorSolution.updateVectorFromSubVectors();
+
     if ( !M_useNaturalConvection )
     {
         M_fluidModel->solve();
+        M_blockVectorSolution.updateVectorFromSubVectors(); // TODO update only fluid part
         M_heatModel->solve();
+        M_blockVectorSolution.updateVectorFromSubVectors(); // TODO idem
     }
     else
     {
         if ( M_useSemiImplicitTimeScheme )
         {
             M_heatModel->solve();
+            M_blockVectorSolution.updateVectorFromSubVectors(); // TODO update only fluid part
             M_fluidModel->solve();
+            M_blockVectorSolution.updateVectorFromSubVectors(); // TODO idem
         }
         else
         {
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
-
-            M_blockVectorSolution.updateVectorFromSubVectors();
 
             M_algebraicFactory->solve( "Newton", M_blockVectorSolution.vectorMonolithic() );
 
