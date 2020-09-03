@@ -795,6 +795,9 @@ public :
 
     element_velocity_external_storage_ptrtype/*element_velocity_ptrtype*/ const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
 
+    vector_ptrtype vectorConvectionVelocityExtrapolated() const { return M_vectorConvectionVelocityExtrapolated; }
+    vector_ptrtype vectorPreviousConvectionVelocityExtrapolated() const { return M_vectorPreviousConvectionVelocityExtrapolated; }
+
     // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
     // element_normalstress_type const& fieldNormalStress() const { return *M_fieldNormalStress; }
@@ -872,6 +875,9 @@ public :
     void initTimeStep();
     void startTimeStep();
     void updateTimeStep();
+
+    bool useSemiImplicitTimeScheme() const { return M_useSemiImplicitTimeScheme; }
+    void setUseSemiImplicitTimeScheme( bool b ) { M_useSemiImplicitTimeScheme = b; }
 
     //! update initial conditions with symbols expression \se
     template <typename SymbolsExprType>
@@ -1046,12 +1052,6 @@ public :
         }
     auto modelFields( vector_ptrtype sol, size_type rowStartInVector = 0, std::string const& prefix = "" ) const
         {
-#if 0
-            auto field_u = this->fieldVelocity().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("velocity") );
-            auto field_p = this->fieldPressure().functionSpace()->elementPtr( *sol, rowStartInVector+this->startSubBlockSpaceIndex("pressure") );
-            auto mfields_body = M_bodySetBC.modelFields( *this, sol, rowStartInVector, prefix );
-            return this->modelFields( field_u, field_p, mfields_body, prefix );
-#endif
             std::map<std::string,std::tuple<vector_ptrtype,size_type> > vectorData;
             vectorData["solution"] = std::make_tuple( sol,rowStartInVector );
             if ( M_vectorConvectionVelocityExtrapolated )
@@ -1574,8 +1574,8 @@ private :
     element_velocity_ptrtype M_fieldVelocity;
     element_pressure_ptrtype M_fieldPressure;
 
-    vector_ptrtype M_vectorConvectionVelocityExtrapolated;
-    element_velocity_external_storage_ptrtype M_fieldConvectionVelocityExtrapolated; // with Oseen solver
+    vector_ptrtype M_vectorConvectionVelocityExtrapolated, M_vectorPreviousConvectionVelocityExtrapolated;
+    element_velocity_external_storage_ptrtype M_fieldConvectionVelocityExtrapolated; // view on M_vectorConvectionVelocityExtrapolated
     // lagrange multiplier space for mean pressure
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
@@ -1594,6 +1594,7 @@ private :
     double M_timeStepThetaValue;
     vector_ptrtype M_timeStepThetaSchemePreviousContrib;
     std::map<std::string,double> M_currentParameterValues;
+    bool M_useSemiImplicitTimeScheme;
     //----------------------------------------------------
     // normak boundary stress ans WSS
     space_normalstress_ptrtype M_XhNormalBoundaryStress;

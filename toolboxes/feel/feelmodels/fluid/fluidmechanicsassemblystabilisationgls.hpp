@@ -22,7 +22,7 @@ exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsT
 {
     auto const& u = mctx.field( FluidMechanicsType::FieldTag::velocity(&fm), "velocity" );
     auto const& p = mctx.field( FluidMechanicsType::FieldTag::pressure(&fm), "pressure" );
-    auto const& beta_u = fm.solverName() == "Oseen"? mctx.field( FluidMechanicsType::FieldTag::velocity_extrapolated(&fm), "velocity_extrapolated" ) : u;
+    auto const& beta_u = fm.useSemiImplicitTimeScheme() ? mctx.field( FluidMechanicsType::FieldTag::velocity_extrapolated(&fm), "velocity_extrapolated" ) : u;
     auto const& se = mctx.symbolsExpr();
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
@@ -114,7 +114,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDES
     auto const& v = this->fieldVelocity();
     auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& q = this->fieldPressure();
-    auto const& beta_u = this->solverName() == "Oseen"? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
+    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
     auto const& se = mctx.symbolsExpr();
 
     auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=A,
@@ -328,6 +328,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
     auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& v = u;
     auto const& q = p;
+    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
     auto const& se = mctx.symbolsExpr();
 
     auto bilinearFormVV = form2( _test=XhV,_trial=XhV,_matrix=J,
@@ -353,9 +354,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
 
     // jacobian of residual
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*(gradt(u)*idv(u)+gradv(u)*idt(u)) )>;
+    using expr_convection_extrapolated_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*(gradt(u)*idv(beta_u)) )>;
     using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*muExpr*laplaciant(u) )>;
     using expr_time_derivative_residual_type = std::decay_t<decltype( expr_density_type{}*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) )>;
-    auto residual_jac = exprOptionalConcat<expr_convection_residual_type,
+    auto residual_jac = exprOptionalConcat<expr_convection_residual_type,expr_convection_extrapolated_residual_type,
                                            expr_viscous_stress_residual_type,
                                            expr_time_derivative_residual_type>();
 
@@ -364,7 +366,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
     if ( physicFluidData.equation() == "Navier-Stokes")
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
-        residual_jac.expression().add( timeSteppingScaling*densityExpr*(gradt(u)*idv(u)+gradv(u)*idt(u)) );
+        if ( this->useSemiImplicitTimeScheme() )
+            residual_jac.expression().add( timeSteppingScaling*densityExpr*(gradt(u)*idv(beta_u)) );
+        else
+            residual_jac.expression().add( timeSteppingScaling*densityExpr*(gradt(u)*idv(u)+gradv(u)*idt(u)) );
     }
     if (!this->isStationaryModel())
     {
@@ -490,6 +495,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
     auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );
     auto const& v = u;
     auto const& q = p;
+    auto const& beta_u = this->useSemiImplicitTimeScheme()? mctx.field( FieldTag::velocity_extrapolated(this), "velocity_extrapolated" ) : u;
     auto const& se = mctx.symbolsExpr();
 
     auto myLinearFormV = form1( _test=XhV, _vector=R,
@@ -498,7 +504,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
                                 _rowstart=this->rowStartInVector()+1 );
 
     using expr_density_type = std::decay_t<decltype( expr( matProps.property("density").template expr<1,1>(), se ) )>;
-    using expr_density_uconv_type = std::decay_t<decltype( expr_density_type{}*idv(u) )>;
+    using expr_density_uconv_type = std::decay_t<decltype( expr_density_type{}*idv(beta_u) )>;
 
     auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
     using expr_viscosity_type = std::decay_t<decltype( muExpr )>;
@@ -530,9 +536,9 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
     {
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         if ( tauExprSUPG )
-            tauExprSUPG->expression().setConvection( densityExpr*idv(u) );
+            tauExprSUPG->expression().setConvection( densityExpr*idv(beta_u) );
         if ( tauExprPSPG )
-            tauExprPSPG->expression().setConvection( densityExpr*idv(u) );
+            tauExprPSPG->expression().setConvection( densityExpr*idv(beta_u) );
     }
     if ( tauExprSUPG )
     {
@@ -577,7 +583,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
             integrate( _range=rangeEltPressure,
                        _expr=tau*inner(residual_full,stab_test ),
                        _geomap=this->geomap() );
-
     }
 
 }

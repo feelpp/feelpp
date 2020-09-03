@@ -315,7 +315,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
         if ( M_useSemiImplicitTimeScheme )
         {
-            M_fluidModel->setSolverName("Oseen");
+            M_fluidModel->setUseSemiImplicitTimeScheme(true);
             // M_fluidModel->setStabilizationGLSDoAssembly( false );
         }
     }

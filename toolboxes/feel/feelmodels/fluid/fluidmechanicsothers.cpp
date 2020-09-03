@@ -209,6 +209,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
         //  << "\n     -- rowstart : " << this->rowStartInMatrix()
         //  << "\n     -- colstart : " << this->colStartInMatrix()
            << "\n   Numerical Solver"
+           << "\n     -- scheme : " << (this->useSemiImplicitTimeScheme()? std::string("semi-implicit"):std::string("implicit"))
            << "\n     -- solver : " << M_solverName;
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
@@ -240,7 +241,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setSolverName( std::string const& type )
     if ( type == "LinearSystem" )
         M_solverName="LinearSystem";
     else if ( type == "Oseen" )
-        M_solverName="Oseen";
+    {
+        M_useSemiImplicitTimeScheme = true;
+        M_solverName="LinearSystem";
+    }
     else if ( type == "Picard" || type == "FixPoint" )
         M_solverName="Picard";
     else if ( type == "Newton" )
@@ -814,8 +818,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     //--------------------------------------------------
     // run solver
     std::string algebraicSolver = M_solverName;
-    if ( algebraicSolver == "Oseen" )
-        algebraicSolver = "LinearSystem";
     M_algebraicFactory->solve( algebraicSolver, this->blockVectorSolution().vectorMonolithic() );
     // update sub vector
     M_blockVectorSolution.localize();
@@ -1019,7 +1021,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
                     myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
                 }
             }
-            else if ( ( physicFluidData->equation() == "Navier-Stokes" && this->solverName() == "Oseen" ) /*|| this->modelName() == "Oseen"*/ )
+            else if ( physicFluidData->equation() == "Navier-Stokes" && this->useSemiImplicitTimeScheme() )
             {
                 auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
                 if (this->isMoveDomain() )
@@ -1170,7 +1172,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateConvectionVelocityExtrapolated()
 
     if ( !M_fieldConvectionVelocityExtrapolated )
     {
-        M_vectorConvectionVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+        CHECK( M_vectorConvectionVelocityExtrapolated ) << "should be init";
+        //M_vectorConvectionVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
         M_fieldConvectionVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr( *M_vectorConvectionVelocityExtrapolated, 0 );
     }
     else
@@ -1178,7 +1181,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateConvectionVelocityExtrapolated()
 
     if ( this->currentTime() == this->timeInitial() )
     {
-        if ( M_bdfVelocity->iteration() == 1 )
+        if ( M_bdfVelocity->iteration() == 0 )
+            M_fieldConvectionVelocityExtrapolated->add( 1, *M_fieldVelocity );
+        else if ( M_bdfVelocity->iteration() == 1 )
             M_fieldConvectionVelocityExtrapolated->add( 1, M_bdfVelocity->unknown(1) );
         else if ( M_bdfVelocity->iteration() > 1 )
         {
@@ -1213,8 +1218,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
     this->log("FluidMechanics","startTimeStep", "start" );
 
-    if ( this->solverName() == "Oseen" )
+    if ( this->useSemiImplicitTimeScheme() )
+    {
+        if ( !M_vectorPreviousConvectionVelocityExtrapolated )
+        {
+            M_vectorConvectionVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+            M_vectorPreviousConvectionVelocityExtrapolated = M_backend->newVector( this->functionSpaceVelocity() );
+        }
         this->updateConvectionVelocityExtrapolated();
+    }
     // some time stepping require to compute residual without time derivative
     this->updateTimeStepCurrentResidual();
 
@@ -1230,8 +1242,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
     // up current time
     this->updateTime( M_bdfVelocity->time() );
 
-    if ( this->solverName() == "Oseen" )
+    if ( this->useSemiImplicitTimeScheme() )
+    {
+        *M_vectorPreviousConvectionVelocityExtrapolated = *M_vectorConvectionVelocityExtrapolated;
         this->updateConvectionVelocityExtrapolated();
+    }
 
     // update all expressions in bc or in house prec
     this->updateParameterValues();
@@ -1326,8 +1341,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     if ( rebuildCstAssembly )
         this->setNeedToRebuildCstPart(true);
 
-    if ( this->solverName() == "Oseen" )
+    if ( this->useSemiImplicitTimeScheme() )
+    {
+        *M_vectorPreviousConvectionVelocityExtrapolated = *M_vectorConvectionVelocityExtrapolated;
         this->updateConvectionVelocityExtrapolated();
+    }
 
     // update user functions which depend of time only
     this->updateUserFunctions(true);
@@ -1365,13 +1383,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             auto & dataInfos = M_algebraicFactory->dataInfos();
             *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
             dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
-            if ( this->solverName() == "Oseen" )
-            {
-                std::string previousVelocityExtrapolatedEntry = prefixvm( this->prefix(),"time-stepping.previous-velocity-extrapolated" );
-                if ( !dataInfos.hasVectorInfo( previousVelocityExtrapolatedEntry ) )
-                    dataInfos.addVectorInfo( previousVelocityExtrapolatedEntry, this->backend()->newVector( M_fieldConvectionVelocityExtrapolated->mapPtr() ) );
-                *dataInfos.vectorInfo( previousVelocityExtrapolatedEntry ) = *M_fieldConvectionVelocityExtrapolated;
-            }
         }
     }
 }

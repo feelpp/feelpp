@@ -261,6 +261,15 @@ class Heat : public ModelNumerical,
                 auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
                 return this->modelFields( field_t, prefix );
             }
+        auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
+            {
+                auto itFindSolution = vectorData.find( "solution" );
+                CHECK( itFindSolution != vectorData.end() ) << "require solution data";
+                vector_ptrtype sol = std::get<0>( itFindSolution->second );
+                size_type rowStartInVector =  std::get<1>( itFindSolution->second );
+                auto field_t = this->spaceTemperature()->elementPtr( *sol, rowStartInVector + this->startSubBlockSpaceIndex( "temperature" ) );
+                return this->modelFields( field_t, prefix );
+            }
         template <typename TemperatureFieldType>
         auto modelFields( TemperatureFieldType const& field_t, std::string const& prefix = "" ) const
             {
