@@ -170,8 +170,6 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     if ( !this->isStationary() )
         this->initTimeStep();
 
-    this->initInitialConditions();
-
     // stabilization gls
     if ( M_stabilizationGLS )
     {
@@ -180,11 +178,14 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_stabilizationGLSParameter->init();
     }
 
-    // post-process
-    this->initPostProcess();
-
     // update constant parameters into
     this->updateParameterValues();
+
+    // update initial conditions
+    this->updateInitialConditions( this->symbolsExpr() );
+
+    // post-process
+    this->initPostProcess();
 
     // backend : use worldComm of Xh
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), M_Xh->worldCommPtr() );
@@ -243,37 +244,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initTimeStep()
 
     double tElapsed = this->timerTool("Constructor").stop("initTimeStep");
     this->log("Heat","initTimeStep", (boost::format("finish in %1% s") %tElapsed).str() );
-}
-
-HEAT_CLASS_TEMPLATE_DECLARATIONS
-void
-HEAT_CLASS_TEMPLATE_TYPE::initInitialConditions()
-{
-    if ( !this->doRestart() )
-    {
-        std::vector<element_temperature_ptrtype> icTemperatureFields;
-        if ( this->isStationary() )
-            icTemperatureFields = { this->fieldTemperaturePtr() };
-        else
-            icTemperatureFields = M_bdfTemperature->unknowns();
-
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().initialConditions().setParameterValues( paramValues );
-
-        this->updateInitialConditions( "temperature", M_rangeMeshElements, this->symbolsExpr(), icTemperatureFields );
-
-        if ( Environment::vm().count( prefixvm(this->prefix(),"initial-solution.temperature").c_str() ) )
-        {
-            auto myexpr = expr( soption(_prefix=this->prefix(),_name="initial-solution.temperature"),
-                                "",this->worldComm(),this->repository().expr() );
-            icTemperatureFields[0]->on(_range=M_rangeMeshElements,_expr=myexpr);
-            for ( int k=1;k<icTemperatureFields.size();++k )
-                *icTemperatureFields[k] = *icTemperatureFields[0];
-        }
-
-        if ( !this->isStationary() )
-            *this->fieldTemperaturePtr() = M_bdfTemperature->unknown(0);
-    }
 }
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
@@ -365,7 +335,7 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
         M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
         if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution"), this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
     }
 
 }
@@ -498,6 +468,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateParameterValues()
     this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     this->materialsProperties()->updateParameterValues( paramValues );
+    for ( auto [physicName,physicData] : this->physics/*FromCurrentType*/() )
+        physicData->updateParameterValues( paramValues );
 
     this->setParameterValues( paramValues );
 }
@@ -507,12 +479,19 @@ HEAT_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const
 {
     this->log("Heat","setParameterValues", "start");
 
+    for ( auto const& [param,val] : paramValues )
+        M_currentParameterValues[param] = val;
+
     if ( this->manageParameterValuesOfModelProperties() )
     {
         this->modelProperties().parameters().setParameterValues( paramValues );
         this->modelProperties().postProcess().setParameterValues( paramValues );
+        this->modelProperties().initialConditions().setParameterValues( paramValues );
         this->materialsProperties()->setParameterValues( paramValues );
     }
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
     M_bcDirichlet.setParameterValues( paramValues );
     M_bcNeumann.setParameterValues( paramValues );
     M_bcRobin.setParameterValues( paramValues );
@@ -688,16 +667,8 @@ HEAT_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         if ( M_stabilizationGLS )
         {
             auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( prefixvm( this->prefix(),"time-stepping.previous-solution") ) = *M_blockVectorSolution.vectorMonolithic();
-#if 0 // TODO VINCENT
-            if ( this->fieldVelocityConvectionIsUsedAndOperational() )
-            {
-                std::string convectionOseenEntry = prefixvm( this->prefix(),"time-stepping.previous-convection-velocity-field" );
-                if ( !dataInfos.hasVectorInfo( convectionOseenEntry ) )
-                    dataInfos.addVectorInfo( convectionOseenEntry, this->backend()->newVector( this->fieldVelocityConvection().mapPtr() ) );
-                *dataInfos.vectorInfo( convectionOseenEntry ) = this->fieldVelocityConvection();
-            }
-#endif
+            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
     }
 }
