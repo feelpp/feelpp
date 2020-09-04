@@ -289,7 +289,7 @@ static ex rectangle_eval( const ex & x, const ex & lo, const ex& hi )
 	return rectangle(x, lo, hi).hold();
 }
                                                                                 
-static void rectangle_print_latex(const ex & arg1, const ex&  arg2,const print_context & c)
+static void rectangle_print_latex(const ex & arg1, const ex&  arg2,const ex&  arg3,const print_context & c)
 {
     c.s << "{ rectangle("; arg1.print(c); c.s << ","; arg2.print(c); c.s << ")}";
 }
@@ -318,7 +318,7 @@ static ex triangle_eval( const ex & x, const ex & lo, const ex& hi )
 	return triangle(x, lo, hi).hold();
 }
                                                                                 
-static void triangle_print_latex(const ex & arg1, const ex&  arg2,const print_context & c)
+static void triangle_print_latex(const ex & arg1, const ex&  arg2, const ex&  arg3,const print_context & c)
 {
     c.s << "{ triangle("; arg1.print(c); c.s << ","; arg2.print(c); c.s << ")}";
 }
