@@ -79,19 +79,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     auto myLinearFormV =form1( _test=XhV, _vector=F,
                                _rowstart=rowStartInVector+0 );
 
-#if 0
-    //std::shared_ptr<element_fluid_external_storage_type> fieldVelocityPressureExtrapolated;
-    element_velocity_ptrtype fieldVelocityPressureExtrapolated;
-    if ( this->solverName() == "Picard" )
-    {
-        fieldVelocityPressureExtrapolated = XhV->elementPtr();
-        *fieldVelocityPressureExtrapolated = *XhV->elementPtr(*vecCurrentPicardSolution, rowStartInVector);
-    }
-    else if ( !this->isStationary() )
-    {
-        fieldVelocityPressureExtrapolated = M_fieldConvectionVelocityExtrapolated;
-    }
-#endif
     auto const& u = mctx.field( FieldTag::velocity(this), "velocity" );
     auto const& v = this->fieldVelocity();
     auto const& p = mctx.field( FieldTag::pressure(this), "pressure" );

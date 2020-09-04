@@ -143,12 +143,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Heat( DataUpdateLinear & data ) cons
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
     auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
-                                    M_blockVectorSolution.vectorMonolithic(), this->startSubBlockSpaceIndex("fluid") );
+                                    this->fluidModel()->blockVectorSolution().vectorMonolithic(), 0 );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolHeat = data.vectorInfo( "time-stepping.previous-solution");
-        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSolHeat, this->heatModel()->startBlockSpaceIndexVector(),
-                                                                  M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("fluid") );
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr(
+            { { "solution", std::make_tuple( previousSolHeat, this->heatModel()->startBlockSpaceIndexVector() ) } },
+            {
+                { "solution", std::make_tuple( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("fluid") ) },
+                { "velocity_extrapolated", std::make_tuple( this->fluidModel()->vectorPreviousVelocityExtrapolated(), 0 ) }
+            } );
+
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
 
@@ -171,21 +176,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Fluid( DataUpdateLinear & data ) con
     std::string sc=(buildCstPart)?" (cst)":" (non cst)";
     this->log("HeatFluid","updateLinear_Fluid", "start"+sc);
 
-    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0/*this->startSubBlockSpaceIndex("heat")*/,
+    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
                                     vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolFluid = data.vectorInfo( "time-stepping.previous-solution");
-        // auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("heat"),
-        //                                                           previousSolFluid, this->fluidModel()->startBlockSpaceIndexVector() );
-
         auto mctxPrevious = this->modelContextNoTrialSymbolsExpr(
             { { "solution", std::make_tuple( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("heat") ) } },
             {
-                { "solution", std::make_tuple( previousSolFluid, this->rowStartInVector()) },
-                { "velocity_extrapolated", std::make_tuple( M_fluidModel->vectorPreviousConvectionVelocityExtrapolated(), 0 ) }
+                { "solution", std::make_tuple( previousSolFluid, this->fluidModel()->startBlockSpaceIndexVector()) },
+                { "velocity_extrapolated", std::make_tuple( M_fluidModel->vectorPreviousVelocityExtrapolated(), 0 ) }
             } );
-
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
 
@@ -230,7 +231,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateLinear_Fluid( DataUpdateLinear & data ) con
                            _expr= -timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
                            _geomap=this->geomap() );
 
-            if ( M_fluidModel->stabilizationGLS() )
+            if ( this->fluidModel()->stabilizationGLS() )
             {
                 auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                 auto exprAdded = (-timeSteppingScaling)*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;

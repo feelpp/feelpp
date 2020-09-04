@@ -19,7 +19,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) 
         auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
         auto mctxPrevious = this->modelContext/*NoTrialSymbolsExpr*/( {
                 { "solution", std::make_tuple( previousSol, this->rowStartInVector()) },
-                { "velocity_extrapolated", std::make_tuple( M_vectorPreviousConvectionVelocityExtrapolated, 0 ) }
+                { "velocity_extrapolated", std::make_tuple( M_vectorPreviousVelocityExtrapolated, 0 ) }
             } );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
