@@ -28,6 +28,7 @@
 #include "operators.h"
 #include "inifcns.h"
 #include "function.h"
+#include "constant.h"
 #include <cstdint> // for uintptr_t
 
 namespace GiNaC
@@ -403,13 +404,46 @@ static void pulse_print_csrc_float(const ex & x, const ex & a, const ex & b, con
 	co.s << "("; b.print(co); co.s << " < ";  co.s << "( std::fmod("; x.print(co); co.s << ","; p.print(co); co.s << ")"; co.s << ") ? 0. : 1.))";	
 }
 
-                                                                                
+/**
+ * @brief rectangle pulse of period @p
+ * @return the ginac expression of the pulse
+ */                                                                                
 REGISTER_FUNCTION(pulse, eval_func(pulse_eval).
                        evalf_func(pulse_eval).
                        print_func<print_latex>(pulse_print_latex).
                        print_func<print_csrc_float>(pulse_print_csrc_float).
                        print_func<print_csrc_double>(pulse_print_csrc_float));
 
+DECLARE_FUNCTION_4P(sinewave);
+static ex sinewave_eval( const ex & x, const ex & A, const ex & f, const ex & phi ) 
+{ 
+	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(A) && is_exactly_a<numeric>(f)&& is_exactly_a<numeric>(phi) )
+	{
+		return A*sin( 2*Pi*ex_to<numeric>(f)*ex_to<numeric>(x) + ex_to<numeric>(phi) );
+	}
+	return sinewave( x, A, f, phi ).hold();
+}
+                                                                                
+static void sinewave_print_latex(const ex & x, const ex & A, const ex & f, const ex & phi,  const print_context & co)
+{
+    co.s << "{"; A.print(co); co.s << "*sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << ")}";
+}
+                                                                                
+static void sinewave_print_csrc_float(const ex & x, const ex & A, const ex & f, const ex & phi, const print_context & co)
+{
+	co.s << "("; A.print(co); co.s << "*sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << "))";
+}
+
+/**
+ * @brief rectangle sinewave of period @p
+ * @return the ginac expression of the sinewave
+ */                                                                                
+REGISTER_FUNCTION(sinewave, eval_func(sinewave_eval).
+                       evalf_func(sinewave_eval).
+                       print_func<print_latex>(sinewave_print_latex).
+                       print_func<print_csrc_float>(sinewave_print_csrc_float).
+                       print_func<print_csrc_double>(sinewave_print_csrc_float));
+					   
 static ex mod_reader(const exvector& ev)
 {
 	return GiNaC::mod(ev[0],ev[1]);
