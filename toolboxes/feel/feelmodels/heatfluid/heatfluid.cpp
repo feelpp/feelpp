@@ -199,10 +199,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
+#if 0
     std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_0,%1%_U_1}:%1%_U_0:%1%_U_1":"{%1%_U_0,%1%_U_1,%1%_U_2}:%1%_U_0:%1%_U_1:%1%_U_2" )%M_fluidModel->keyword() ).str();
     auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
     for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
         M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
+#endif
     M_heatModel->init( false );
 
     // init fluid toolbox
@@ -224,6 +226,22 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     else
         M_useSemiImplicitTimeScheme = false;
+
+    // defined the convection fluid velocity into heat toolbox
+    std::string fluidVelocitySymbolUsed = M_useSemiImplicitTimeScheme? "beta_u" : "U"; // TODO : get this info from fluid toolbox
+    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_%2%_0,%1%_%2%_1}:%1%_%2%_0:%1%_%2%_1":"{%1%_%2%_0,%1%_%2%_1,%1%_%2%_2}:%1%_%2%_0:%1%_%2%_1:%1%_%2%_2" )%M_fluidModel->keyword() %fluidVelocitySymbolUsed ).str();
+    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
+    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
+        M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
+
+    if ( M_useNaturalConvection )
+        M_fluidModel->setStabilizationGLSDoAssembly( false );
+
+    if ( M_useSemiImplicitTimeScheme )
+    {
+        M_fluidModel->setUseVelocityExtrapolated( true );
+        //M_fluidModel->setUseSemiImplicitTimeScheme(true);
+    }
 
     // post-process
     this->initPostProcess();
@@ -290,14 +308,8 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         }
     }
 
-    if ( M_useNaturalConvection )
-        M_fluidModel->setStabilizationGLSDoAssembly( false );
-
     if ( !M_useNaturalConvection || M_useSemiImplicitTimeScheme )
     {
-        // init velocity convection (TODO : the initial velocity from the fluid)
-        //M_heatModel->setFieldVelocityConvectionIsUsed( true );
-        //M_heatModel->updateForUseFunctionSpacesVelocityConvection();
         M_heatModel->initAlgebraicFactory();
         M_fluidModel->initAlgebraicFactory();
         M_heatModel->algebraicFactory()->setFunctionLinearAssembly( boost::bind( &self_type::updateLinear_Heat,
@@ -311,22 +323,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
                                                                                   boost::ref( *this ), _1 ) );
         M_fluidModel->algebraicFactory()->setFunctionResidualAssembly( boost::bind( &self_type::updateResidual_Fluid,
                                                                                     boost::ref( *this ), _1 ) );
-
-
-        if ( M_useSemiImplicitTimeScheme )
-        {
-            M_fluidModel->setUseSemiImplicitTimeScheme(true);
-            // M_fluidModel->setStabilizationGLSDoAssembly( false );
-        }
+        M_fluidModel->algebraicFactory()->setFunctionJacobianAssembly( boost::bind( &self_type::updateJacobian_Fluid,
+                                                                                    boost::ref( *this ), _1 ) );
     }
-    else
-    {
-        M_fluidModel->setStabilizationGLSDoAssembly( false );
-        // if ( M_useSemiImplicitTimeScheme )
-        //     M_fluidModel->setSolverName("Oseen");
-    }
-
-
 
     double tElapsedInit = this->timerTool("Constructor").stop("init");
     if ( this->scalabilitySave() ) this->timerTool("Constructor").save();

@@ -123,6 +123,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_useSemiImplicitTimeScheme = boption(_name="use-semi-implicit-time-scheme",_prefix=this->prefix());
     if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
         this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
+    M_useVelocityExtrapolated = M_useSemiImplicitTimeScheme;
 
     //--------------------------------------------------------------//
     // fsi options
@@ -224,8 +225,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMaterialProperties()
     this->log("FluidMechanics","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().materials().setParameterValues( paramValues );
+    // auto paramValues = this->modelProperties().parameters().toParameterValues();
+    // this->modelProperties().materials().setParameterValues( paramValues );
     if ( !M_materialsProperties )
     {
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
@@ -1064,6 +1065,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     //-------------------------------------------------//
     // bc body (call after meshALE->init() in case of restart)
     M_bodySetBC.updateForUse( *this );
+
+    if ( M_useSemiImplicitTimeScheme )
+        M_useVelocityExtrapolated = true;
 
     // update constant parameters
     this->updateParameterValues();

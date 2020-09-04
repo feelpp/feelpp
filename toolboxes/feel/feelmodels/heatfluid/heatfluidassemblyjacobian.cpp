@@ -164,13 +164,35 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Heat( DataUpdateJacobian & data ) const
 {
-    const vector_ptrtype& XVec = data.currentSolution();
-    auto mfields = this->modelFields( this->heatModel()->modelFields( XVec, this->heatModel()->rowStartInVector(), this->heatModel()->keyword() ),
-                                      this->fluidModel()->modelFields( this->fluidModel()->keyword() ) );
-    auto mctx = Feel::FeelModels::modelContext( std::move(mfields), this->symbolsExpr( mfields ) );
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( vecCurrentSolution, this->heatModel()->startBlockSpaceIndexVector(),
+                                    this->fluidModel()->blockVectorSolution().vectorMonolithic(), 0 );
+
     M_heatModel->updateJacobian( data,mctx );
 }
 
+
+HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
+void
+HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian_Fluid( DataUpdateJacobian & data ) const
+{
+    const vector_ptrtype& vecCurrentSolution = data.currentSolution();
+    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
+                                    vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
+
+    bool currentSabDoGLSDoAssembly = M_fluidModel->stabilizationGLSDoAssembly();
+    M_fluidModel->setStabilizationGLSDoAssembly( true );
+    M_fluidModel->updateJacobian( data, mctx );
+    M_fluidModel->setStabilizationGLSDoAssembly( currentSabDoGLSDoAssembly );
+    // for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    // {
+    //     for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+    //     {
+    //         auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
+    //         auto const& matProps = this->materialsProperties()->materialProperties( matName );
+    //     }
+    // }
+}
 
 } // namespace FeelModels
 } // namespace Feel

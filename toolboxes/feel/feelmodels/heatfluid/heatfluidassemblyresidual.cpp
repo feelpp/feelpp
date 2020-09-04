@@ -147,8 +147,12 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Heat( DataUpdateResidual & data ) 
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolHeat = data.vectorInfo( "time-stepping.previous-solution");
-        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSolHeat, this->heatModel()->startBlockSpaceIndexVector(),
-                                                                  M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("fluid") );
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr(
+            { { "solution", std::make_tuple( previousSolHeat, this->heatModel()->startBlockSpaceIndexVector() ) } },
+            {
+                { "solution", std::make_tuple( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("fluid") ) },
+                { "velocity_extrapolated", std::make_tuple( M_fluidModel->vectorPreviousVelocityExtrapolated(), 0 ) }
+            } );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
 
@@ -161,13 +165,17 @@ void
 HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Fluid( DataUpdateResidual & data ) const
 {
     const vector_ptrtype& vecCurrentSolution = data.currentSolution();
-    auto mctx = this->modelContext( M_blockVectorSolution.vectorMonolithic(), this->startSubBlockSpaceIndex("heat"),
+    auto mctx = this->modelContext( this->heatModel()->blockVectorSolution().vectorMonolithic(), 0,
                                     vecCurrentSolution, this->fluidModel()->startBlockSpaceIndexVector() );
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSolFluid = data.vectorInfo( "time-stepping.previous-solution");
-        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("heat"),
-                                                                  previousSolFluid, this->fluidModel()->startBlockSpaceIndexVector() );
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr(
+            { { "solution", std::make_tuple( M_timeStepThetaSchemePreviousSolution, this->startSubBlockSpaceIndex("heat") ) } },
+            {
+                { "solution", std::make_tuple( previousSolFluid, this->fluidModel()->startBlockSpaceIndexVector()) },
+                { "velocity_extrapolated", std::make_tuple( M_fluidModel->vectorPreviousVelocityExtrapolated(), 0 ) }
+            } );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
 
@@ -182,17 +190,17 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Fluid( DataUpdateResidual & data )
     bool UseJacobianLinearTerms = data.useJacobianLinearTerms();
     bool BuildNonCstPart = !buildCstPart;
 
-    if ( buildNonCstPart )
-        return;
-
     if ( !M_useNaturalConvection )
         return;
 
 
     double timeSteppingScaling = 1.;
+    bool timeSteppingEvaluateResidualWithoutTimeDerivative = false;
     if ( !M_fluidModel->isStationaryModel() )
+    {
         timeSteppingScaling = data.doubleInfo( prefixvm(M_fluidModel->prefix(),"time-stepping.scaling") );
-
+        timeSteppingEvaluateResidualWithoutTimeDerivative = data.hasInfo( prefixvm(M_fluidModel->prefix(),"time-stepping.evaluate-residual-without-time-derivative") );
+    }
 
     auto XhV = M_fluidModel->functionSpaceVelocity();
     auto XhT = M_heatModel->spaceTemperature();
@@ -209,14 +217,38 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual_Fluid( DataUpdateResidual & data )
         {
             auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(), matName );
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
-            auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
+            auto rhoExpr = expr( matProps.property("density").template expr<1,1>(), se );
             auto betaExpr = expr( matProps.property("thermal-expansion").template expr<1,1>(), se );
             double T0 = M_BoussinesqRefTemperature;
 
-            mylfV +=
-                integrate( _range=range,
-                           _expr= timeSteppingScaling*densityExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
-                           _geomap=this->geomap() );
+            if ( buildCstPart )
+            {
+                mylfV +=
+                    integrate( _range=range,
+                               _expr= timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*inner(M_gravityForce,id(u)),
+                               _geomap=this->geomap() );
+            }
+
+            if ( buildNonCstPart && this->fluidModel()->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
+                auto exprAdded = timeSteppingScaling*rhoExpr*betaExpr*(idv(t)-T0)*M_gravityForce;
+                auto exprAddedInGLSResidual = exprOptionalConcat< std::decay_t<decltype( exprAdded )> >();
+                exprAddedInGLSResidual.expression().add( exprAdded );
+                if ( !this->fluidModel()->isStationaryModel() && this->fluidModel()->timeStepping() ==  "Theta" )
+                {
+                    auto const& mctxPrevious = mctx.additionalContext( "time-stepping.previous-model-context" );
+                    auto const& sePrevious = mctxPrevious.symbolsExpr();
+                    auto const& tOld = mctxPrevious.field( heat_model_type::FieldTag::temperature(this->heatModel().get()), "temperature" );
+                    auto rhoExprPrevious = expr( matProps.property("density").template expr<1,1>(), sePrevious );
+                    auto betaExprPrevious = expr( matProps.property("thermal-expansion").template expr<1,1>(), sePrevious );
+                    auto exprAddedInRhsOld = (1.0-timeSteppingScaling)*rhoExprPrevious*betaExprPrevious*(idv(tOld)-T0)*M_gravityForce;
+                    if ( data.hasParameterValuesInfo( "time-stepping.previous-parameter-values" ) )
+                        exprAddedInRhsOld.setParameterValues( data.parameterValuesInfo( "time-stepping.previous-parameter-values" ) );
+                    exprAddedInGLSResidual.expression().add( exprAddedInRhsOld );
+                }
+                M_fluidModel->updateResidualStabilizationGLS( data, mctx, *physicFluidData, matProps, range, exprAddedInGLSResidual );
+            }
         }
     }
     this->log("HeatFluid","updateResidual_Fluid", "finish" );

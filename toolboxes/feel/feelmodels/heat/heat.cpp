@@ -81,8 +81,8 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        auto paramValues = this->modelProperties().parameters().toParameterValues();
-        this->modelProperties().materials().setParameterValues( paramValues );
+        // auto paramValues = this->modelProperties().parameters().toParameterValues();
+        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
@@ -420,7 +420,10 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n   Root Repository : " << this->rootRepository();
     *_ostr << "\n   Physical Model"
            << "\n     -- time mode           : " << std::string( (this->isStationary())?"Stationary":"Transient");
-        //<< "\n     -- velocity-convection : " << std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" );
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        for ( std::string const& matName : this->materialsProperties()->physicToMaterials( physicName ) )
+            if ( this->hasVelocityConvectionExpr( matName ) )
+                *_ostr << "\n     -- convection-velocity [" << matName << "] : " <<  str( this->velocityConvectionExpr( matName ).expression() );
     *_ostr << "\n   Boundary conditions"
            << M_bcDirichletMarkerManagement.getInfoDirichletBC()
            << M_bcNeumannMarkerManagement.getInfoNeumannBC()

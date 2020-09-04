@@ -265,6 +265,7 @@ private :
 
     void updateLinear_Fluid( DataUpdateLinear & data ) const;
     void updateResidual_Fluid( DataUpdateResidual & data ) const;
+    void updateJacobian_Fluid( DataUpdateJacobian & data ) const;
 
     void updateTimeStepCurrentResidual();
 

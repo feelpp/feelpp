@@ -793,10 +793,12 @@ public :
     element_pressure_type const& fieldPressure() const { return *M_fieldPressure; }
     element_pressure_ptrtype const& fieldPressurePtr() const { return M_fieldPressure; }
 
-    element_velocity_external_storage_ptrtype/*element_velocity_ptrtype*/ const& fieldConvectionVelocityExtrapolatedPtr() const { return M_fieldConvectionVelocityExtrapolated; }
+    element_velocity_external_storage_ptrtype const& fieldVelocityExtrapolatedPtr() const { return M_fieldVelocityExtrapolated; }
 
-    vector_ptrtype vectorConvectionVelocityExtrapolated() const { return M_vectorConvectionVelocityExtrapolated; }
-    vector_ptrtype vectorPreviousConvectionVelocityExtrapolated() const { return M_vectorPreviousConvectionVelocityExtrapolated; }
+    bool useVelocityExtrapolated() const { return M_useVelocityExtrapolated; }
+    void setUseVelocityExtrapolated( bool b ) { M_useVelocityExtrapolated = b; }
+    vector_ptrtype vectorVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
+    vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
 
     // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }
@@ -903,7 +905,7 @@ private :
     void executePostProcessMeasures( double time );
     template <typename TupleFieldsType,typename SymbolsExpr>
     void executePostProcessMeasures( double time, TupleFieldsType const& tupleFields, SymbolsExpr const& symbolsExpr );
-    void updateConvectionVelocityExtrapolated();
+    void updateVelocityExtrapolated();
     void updateTimeStepCurrentResidual();
     void exportResultsImplHO( double time );
 public :
@@ -987,6 +989,7 @@ public :
             return itFind->second;
         }
     void setStabilizationGLSDoAssembly( bool b) { M_stabilizationGLSDoAssembly = b; }
+    bool stabilizationGLSDoAssembly() const { return M_stabilizationGLSDoAssembly; }
 
     bool applyCIPStabOnlyOnBoundaryFaces() const { return M_applyCIPStabOnlyOnBoundaryFaces; }
     void applyCIPStabOnlyOnBoundaryFaces(bool b) { M_applyCIPStabOnlyOnBoundaryFaces=b; }
@@ -1054,8 +1057,8 @@ public :
         {
             std::map<std::string,std::tuple<vector_ptrtype,size_type> > vectorData;
             vectorData["solution"] = std::make_tuple( sol,rowStartInVector );
-            if ( M_vectorConvectionVelocityExtrapolated )
-                vectorData["velocity_extrapolated"] = std::make_tuple( M_vectorConvectionVelocityExtrapolated, 0 );
+            if ( M_vectorVelocityExtrapolated )
+                vectorData["velocity_extrapolated"] = std::make_tuple( M_vectorVelocityExtrapolated, 0 );
             return this->modelFields( vectorData, prefix );
         }
     auto modelFields( std::map<std::string,std::tuple<vector_ptrtype,size_type> > const& vectorData, std::string const& prefix = "" ) const
@@ -1574,8 +1577,9 @@ private :
     element_velocity_ptrtype M_fieldVelocity;
     element_pressure_ptrtype M_fieldPressure;
 
-    vector_ptrtype M_vectorConvectionVelocityExtrapolated, M_vectorPreviousConvectionVelocityExtrapolated;
-    element_velocity_external_storage_ptrtype M_fieldConvectionVelocityExtrapolated; // view on M_vectorConvectionVelocityExtrapolated
+    bool M_useVelocityExtrapolated;
+    vector_ptrtype M_vectorVelocityExtrapolated, M_vectorPreviousVelocityExtrapolated;
+    element_velocity_external_storage_ptrtype M_fieldVelocityExtrapolated; // view on M_vectorVelocityExtrapolated
     // lagrange multiplier space for mean pressure
     std::vector<space_meanpressurelm_ptrtype> M_XhMeanPressureLM;
     // trace mesh and space
