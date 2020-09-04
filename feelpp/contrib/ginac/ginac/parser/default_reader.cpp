@@ -414,24 +414,24 @@ REGISTER_FUNCTION(pulse, eval_func(pulse_eval).
                        print_func<print_csrc_float>(pulse_print_csrc_float).
                        print_func<print_csrc_double>(pulse_print_csrc_float));
 
-DECLARE_FUNCTION_4P(sinewave);
-static ex sinewave_eval( const ex & x, const ex & A, const ex & f, const ex & phi ) 
+DECLARE_FUNCTION_3P(sinewave);
+static ex sinewave_eval( const ex & x, const ex & f, const ex & phi ) 
 { 
-	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(A) && is_exactly_a<numeric>(f)&& is_exactly_a<numeric>(phi) )
+	if (is_exactly_a<numeric>(x) && is_exactly_a<numeric>(f)&& is_exactly_a<numeric>(phi) )
 	{
-		return A*sin( 2*Pi*ex_to<numeric>(f)*ex_to<numeric>(x) + ex_to<numeric>(phi) );
+		return sin( 2*Pi*ex_to<numeric>(f)*ex_to<numeric>(x) + ex_to<numeric>(phi) );
 	}
-	return sinewave( x, A, f, phi ).hold();
+	return sinewave( x, f, phi ).hold();
 }
                                                                                 
-static void sinewave_print_latex(const ex & x, const ex & A, const ex & f, const ex & phi,  const print_context & co)
+static void sinewave_print_latex(const ex & x, const ex & f, const ex & phi,  const print_context & co)
 {
-    co.s << "{"; A.print(co); co.s << "*sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << ")}";
+    co.s << "{sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << ")}";
 }
                                                                                 
-static void sinewave_print_csrc_float(const ex & x, const ex & A, const ex & f, const ex & phi, const print_context & co)
+static void sinewave_print_csrc_float(const ex & x, const ex & f, const ex & phi, const print_context & co)
 {
-	co.s << "("; A.print(co); co.s << "*sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << "))";
+	co.s << "("; co.s << "sin(2*pi*"; f.print(co); co.s << "*"; x.print(co); co.s << "+"; phi.print(co); co.s << "))";
 }
 
 /**
