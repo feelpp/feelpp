@@ -464,6 +464,9 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             if ( M_heatModel->timeStepping() == "Theta" )
                 dataResidual.addInfo( prefixvm( M_heatModel->prefix(), "time-stepping.evaluate-residual-without-time-derivative" ) );
 
+            M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
+            M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
+
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", false );
             M_algebraicFactory->evaluateResidual( dataResidual );
             M_algebraicFactory->setActivationAddVectorResidualAssembly( "Theta-Time-Stepping-Previous-Contrib", true );
@@ -476,7 +479,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
             if ( M_algebraicFactory )
             {
                 auto & dataInfos = M_algebraicFactory->dataInfos();
-                *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+                // *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
                 dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
             }
         }
