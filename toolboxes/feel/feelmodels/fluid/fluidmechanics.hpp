@@ -798,7 +798,7 @@ public :
     bool useVelocityExtrapolated() const { return M_useVelocityExtrapolated; }
     void setUseVelocityExtrapolated( bool b ) { M_useVelocityExtrapolated = b; }
     vector_ptrtype vectorVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
-    vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorVelocityExtrapolated; }
+    vector_ptrtype vectorPreviousVelocityExtrapolated() const { return M_vectorPreviousVelocityExtrapolated; }
 
     // element_normalstress_ptrtype & fieldNormalStressPtr() { return M_fieldNormalStress; }
     // element_normalstress_ptrtype const& fieldNormalStressPtr() const { return M_fieldNormalStress; }

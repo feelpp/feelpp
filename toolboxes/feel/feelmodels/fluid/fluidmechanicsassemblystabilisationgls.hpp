@@ -387,8 +387,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         static constexpr bool velocityOrderGreaterThan1 = nOrderVelocity>1;
         auto stab_test = hana::eval_if( hana::bool_c<velocityOrderGreaterThan1>,
-                                        [&u,&densityExpr] { return densityExpr*grad(u)*idv(u); },
-                                        [&u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(u) - muExpr*laplacian(u); } );
+                                        [&u,&beta_u,&densityExpr] { return densityExpr*grad(u)*idv(beta_u); },
+                                        [&u,&beta_u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(beta_u) - muExpr*laplacian(u); } );
 
         auto rangeEltConvectionDiffusion = this->stabilizationGLSEltRangeConvectionDiffusion( matName );
         auto tauFieldPtr = this->stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();
@@ -548,8 +548,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateResidualSt
 
         static constexpr bool velocityOrderGreaterThan1 = nOrderVelocity>1;
         auto stab_test = hana::eval_if( hana::bool_c<velocityOrderGreaterThan1>,
-                                        [&u,&densityExpr] { return densityExpr*grad(u)*idv(u); },
-                                        [&u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(u) - muExpr*laplacian(u); } );
+                                        [&u,&beta_u,&densityExpr] { return densityExpr*grad(u)*idv(beta_u); },
+                                        [&u,&beta_u,&densityExpr,&muExpr] { return densityExpr*grad(u)*idv(beta_u) - muExpr*laplacian(u); } );
 
         auto rangeEltConvectionDiffusion = this->stabilizationGLSEltRangeConvectionDiffusion( matName );
         auto tauFieldPtr = this->stabilizationGLSParameterConvectionDiffusion()->fieldTauPtr();

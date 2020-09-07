@@ -182,7 +182,7 @@ fluidMechanics_options(std::string const& prefix)
     Feel::po::options_description fluidOptions("Fluid Mechanics options");
     fluidOptions.add_options()
         (prefixvm(prefix,"model").c_str(), Feel::po::value< std::string >(), "fluid model : Navier-Stokes,Stokes")
-        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >(), "fluid solver")
+        (prefixvm(prefix,"solver").c_str(), Feel::po::value< std::string >()->default_value( "automatic" ), "fluid solver")
 
         (prefixvm(prefix,"time-stepping").c_str(), Feel::po::value< std::string >()->default_value("BDF"), "time integration schema : BDF, Theta")
         (prefixvm(prefix,"time-stepping.theta.value").c_str(), Feel::po::value< double >()->default_value(0.5), " Theta value")

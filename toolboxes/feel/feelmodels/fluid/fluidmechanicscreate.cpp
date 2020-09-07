@@ -121,8 +121,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_dirichletBCnitscheGamma = doption(_name="dirichletbc.nitsche.gamma",_prefix=this->prefix());
 
     M_useSemiImplicitTimeScheme = boption(_name="use-semi-implicit-time-scheme",_prefix=this->prefix());
-    if ( Environment::vm().count(prefixvm(this->prefix(),"solver").c_str()) )
-        this->setSolverName( soption(_name="solver",_prefix=this->prefix()) );
+    std::string _solver = soption(_name="solver",_prefix=this->prefix());
+    if ( _solver != "automatic" )
+        this->setSolverName( _solver );
+    else
+        M_solverName = _solver;
     M_useVelocityExtrapolated = M_useSemiImplicitTimeScheme;
 
     //--------------------------------------------------------------//
@@ -940,23 +943,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->materialsProperties()->addMesh( this->mesh() );
 
-
     // backend
     M_backend = backend_type::build( soption( _name="backend" ), this->prefix(), this->worldCommPtr() );
 
-    if ( M_solverName.empty() )
+    if ( M_solverName == "automatic" )
     {
         bool isLinear = true;
         for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
         {
             auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
-            if ( physicFluidData->equation() == "Navier-Stokes" )
+            if ( physicFluidData->equation() == "Navier-Stokes" || !physicFluidData->dynamicViscosity().isNewtonianLaw() )
             {
                 isLinear = false;
                 break;
             }
         }
-        if ( isLinear )
+        if ( isLinear || M_useSemiImplicitTimeScheme )
             M_solverName="LinearSystem";
         else
             M_solverName="Newton";
