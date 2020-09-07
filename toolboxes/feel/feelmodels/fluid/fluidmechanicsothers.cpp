@@ -758,6 +758,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
+    this->setStartBlockSpaceIndex( 0 );
+
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
