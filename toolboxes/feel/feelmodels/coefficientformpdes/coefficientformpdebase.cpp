@@ -127,6 +127,8 @@ CoefficientFormPDEBase<ConvexType>::initBasePostProcess()
 
 template class CoefficientFormPDEBase< Simplex<2,1> >;
 template class CoefficientFormPDEBase< Simplex<3,1> >;
+template class CoefficientFormPDEBase< Simplex<2,2> >;
+template class CoefficientFormPDEBase< Simplex<3,2> >;
 
 } // namespace Feel
 } // namespace FeelModels
