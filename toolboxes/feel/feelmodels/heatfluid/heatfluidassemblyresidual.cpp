@@ -40,7 +40,13 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
-        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+        //auto mctxPrevious = this->modelContextNoTrialSymbolsExpr( previousSol, this->heatModel()->rowStartInVector(), this->fluidModel()->rowStartInVector() );
+        auto mctxPrevious = this->modelContextNoTrialSymbolsExpr(
+            { { "solution", std::make_tuple( previousSol, this->heatModel()->startBlockSpaceIndexVector() ) } },
+            {
+                { "solution", std::make_tuple( previousSol, this->fluidModel()->startBlockSpaceIndexVector()) },
+                { "velocity_extrapolated", std::make_tuple( this->fluidModel()->vectorPreviousVelocityExtrapolated(), 0 ) }
+            } );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
 
@@ -92,7 +98,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                 auto rhoExpr = expr( rho.template expr<1,1>(), se );
                 auto beta = expr( thermalExpansion.template expr<1,1>(), se );
                 double T0 = M_BoussinesqRefTemperature;
-                if ( doAssemblyFluid )
+                if ( doAssemblyFluid && M_useNaturalConvection )
                 {
                     mylfV +=
                         integrate( _range=range,
@@ -100,7 +106,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateResidual( DataUpdateResidual & data ) const
                                    _geomap=this->geomap() );
                 }
 
-                if ( M_fluidModel->stabilizationGLS() && !timeSteppingEvaluateResidualWithoutTimeDerivative )
+                if ( M_fluidModel->stabilizationGLS() && M_useNaturalConvection && !timeSteppingEvaluateResidualWithoutTimeDerivative )
                 {
                     auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto exprAdded = timeSteppingScaling_fluid*rhoExpr*(beta*(idv(t)-T0))*M_gravityForce;

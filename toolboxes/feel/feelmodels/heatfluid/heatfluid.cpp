@@ -199,12 +199,6 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     }
     M_heatModel->setMesh( this->mesh() );
     M_heatModel->setMaterialsProperties( M_materialsProperties );
-#if 0
-    std::string velConvExprStr = (boost::format( nDim==2? "{%1%_U_0,%1%_U_1}:%1%_U_0:%1%_U_1":"{%1%_U_0,%1%_U_1,%1%_U_2}:%1%_U_0:%1%_U_1:%1%_U_2" )%M_fluidModel->keyword() ).str();
-    auto velConvExpr = expr<nDim,1>( velConvExprStr, "",this->worldComm(),this->repository().expr() );
-    for ( std::string const& matName : M_materialsProperties->physicToMaterials( this->physicsAvailableFromCurrentType() ) )
-        M_heatModel->setVelocityConvectionExpr( matName,velConvExpr );
-#endif
     M_heatModel->init( false );
 
     // init fluid toolbox
@@ -427,9 +421,10 @@ HEATFLUID_CLASS_TEMPLATE_DECLARATIONS
 void
 HEATFLUID_CLASS_TEMPLATE_TYPE::startTimeStep()
 {
+    this->fluidModel()->startTimeStepPreProcess();
     this->updateTimeStepCurrentResidual();
     this->heatModel()->startTimeStep();
-    this->fluidModel()->startTimeStep();
+    this->fluidModel()->startTimeStep( false );
     this->updateTime( this->fluidModel()->time() );
     this->updateParameterValues();
 }
@@ -560,26 +555,24 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::solve()
     this->log("HeatFluid","solve", "start");
     this->timerTool("Solve").start();
 
-    M_blockVectorSolution.updateVectorFromSubVectors();
-
     if ( !M_useNaturalConvection )
     {
         M_fluidModel->solve();
-        M_blockVectorSolution.updateVectorFromSubVectors(); // TODO update only fluid part
         M_heatModel->solve();
-        M_blockVectorSolution.updateVectorFromSubVectors(); // TODO idem
+        M_blockVectorSolution.updateVectorFromSubVectors();
     }
     else
     {
         if ( M_useSemiImplicitTimeScheme )
         {
             M_heatModel->solve();
-            M_blockVectorSolution.updateVectorFromSubVectors(); // TODO update only fluid part
             M_fluidModel->solve();
-            M_blockVectorSolution.updateVectorFromSubVectors(); // TODO idem
+            M_blockVectorSolution.updateVectorFromSubVectors();
         }
         else
         {
+            M_blockVectorSolution.updateVectorFromSubVectors();
+
             M_fluidModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("fluid") );
             M_heatModel->setStartBlockSpaceIndex( this->startSubBlockSpaceIndex("heat") );
 

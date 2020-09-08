@@ -1191,6 +1191,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocityExtrapolated()
         {
             M_fieldVelocityExtrapolated->add( 2, M_bdfVelocity->unknown(1) );
             M_fieldVelocityExtrapolated->add( -1, M_bdfVelocity->unknown(2) );
+            // TODO : BDF with order > 2
         }
     }
     else
@@ -1216,9 +1217,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateVelocityExtrapolated()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStepPreProcess()
 {
-    this->log("FluidMechanics","startTimeStep", "start" );
+    this->log("FluidMechanics","startTimeStepPreProcess", "start" );
 
     if ( M_useVelocityExtrapolated )
     {
@@ -1229,6 +1230,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
         }
         this->updateVelocityExtrapolated();
     }
+
+    this->log("FluidMechanics","startTimeStepPreProcess", "finish" );
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
+{
+    this->log("FluidMechanics","startTimeStep", "start" );
+
+    if ( applyPreProcess )
+        this->startTimeStepPreProcess();
+
     // some time stepping require to compute residual without time derivative
     this->updateTimeStepCurrentResidual();
 
