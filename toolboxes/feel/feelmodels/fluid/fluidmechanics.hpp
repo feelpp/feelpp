@@ -875,7 +875,8 @@ public :
     std::shared_ptr<TSBase> timeStepBase() { return this->timeStepBDF(); }
     std::shared_ptr<TSBase> timeStepBase() const { return this->timeStepBDF(); }
     void initTimeStep();
-    void startTimeStep();
+    void startTimeStepPreProcess();
+    void startTimeStep( bool applyPreProcess = true );
     void updateTimeStep();
 
     bool useSemiImplicitTimeScheme() const { return M_useSemiImplicitTimeScheme; }

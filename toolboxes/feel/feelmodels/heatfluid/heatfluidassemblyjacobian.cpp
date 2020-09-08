@@ -77,17 +77,23 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
                 auto rhoExpr = expr( rho.template expr<1,1>(), se );
                 auto beta = expr( thermalExpansion.template expr<1,1>(), se );
 
-                form2( _test=XhT,_trial=XhV,_matrix=J,
-                       _rowstart=M_heatModel->rowStartInMatrix(),
-                       _colstart=M_fluidModel->colStartInMatrix() ) +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
-                               _geomap=this->geomap() );
+                if ( !M_fluidModel->useSemiImplicitTimeScheme() )
+                {
+                    form2( _test=XhT,_trial=XhV,_matrix=J,
+                           _rowstart=M_heatModel->rowStartInMatrix(),
+                           _colstart=M_fluidModel->colStartInMatrix() ) +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_heat*rhoHeatCapacityExpr*(gradv(t)*idt(u))*id(t),
+                                   _geomap=this->geomap() );
+                }
 
-                bfVT +=
-                    integrate( _range=range,
-                               _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
-                               _geomap=this->geomap() );
+                if ( M_useNaturalConvection )
+                {
+                    bfVT +=
+                        integrate( _range=range,
+                                   _expr= timeSteppingScaling_fluid*rhoExpr*beta*idt(t)*inner(M_gravityForce,id(u)),
+                                   _geomap=this->geomap() );
+                }
 
                 if ( M_heatModel->stabilizationGLS() )
                 {
@@ -135,7 +141,7 @@ HEATFLUID_CLASS_TEMPLATE_TYPE::updateJacobian( DataUpdateJacobian & data ) const
 #endif
                 }
 
-                if ( M_fluidModel->stabilizationGLS() )
+                if ( M_fluidModel->stabilizationGLS() && M_useNaturalConvection )
                 {
                     auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>( physicData->subphysicFromType( M_fluidModel->physicType() ) );
                     auto exprAddedInGLSResidual = rhoExpr*beta*idt(t)*M_gravityForce;
