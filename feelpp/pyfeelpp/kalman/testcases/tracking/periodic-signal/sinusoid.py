@@ -1,8 +1,8 @@
 #from mpi4py import MPI
 import numpy as np
 
-import matplotlib.pyplot as plt
-from matplotlib2tikz import save as tikz_save
+#import matplotlib.pyplot as plt
+#from matplotlib2tikz import save as tikz_save
 
 from UKF import Filter
 import subprocess
@@ -59,10 +59,22 @@ if (1):
 #print(Signal)
 #print(F.X) 
 
-plt.plot(Time[0:-1],F.X[0], label="estimate")
-plt.plot(Time, Signal, label="signal")
-plt.plot(Time, Trajectory, label="trajectory")
-leg = plt.legend(loc='upper right')
-leg.get_frame().set_alpha(0.5)
-plt.show()
-tikz_save("sinusoid.tex")
+#plt.plot(Time[0:-1],F.X[0], label="estimate")
+#plt.plot(Time, Signal, label="signal")
+#plt.plot(Time, Trajectory, label="trajectory")
+#leg = plt.legend(loc='upper right')
+#leg.get_frame().set_alpha(0.5)
+#plt.show()
+#tikz_save("sinusoid.tex")
+
+
+export = open("export","w")
+for i in range(Niter-1):
+    export.write("("+str(Time[i])+", "+str(F.X[0,i])+")\n")
+export.write("\n")
+for i in range(Niter-1):
+    export.write("("+str(Time[i])+", "+str(Signal[i])+")\n")
+export.write("\n")
+for i in range(Niter-1):
+    export.write("("+str(Time[i])+", "+str(Trajectory[i])+")\n")
+export.close()

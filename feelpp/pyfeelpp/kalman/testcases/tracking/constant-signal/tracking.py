@@ -1,7 +1,7 @@
 import numpy as np
 
-import matplotlib.pyplot as plt
-from matplotlib2tikz import save as tikz_save
+#import matplotlib.pyplot as plt
+#from matplotlib2tikz import save as tikz_save
 
 from base import *
 from UKF import Filter
@@ -33,8 +33,15 @@ elapsedtime = time.time() - setuptime
 
 print("best estimation :",F.Mx,"performed in",elapsedtime,"seconds and",F.Time,"steps")
 
-plt.plot(Time,F.X[0,:], label="Thermal conductivity estimate")
-leg = plt.legend(loc='upper right')
-leg.get_frame().set_alpha(0.5)
+#plt.plot(Time,F.X[0,:], label="Thermal conductivity estimate")
+#leg = plt.legend(loc='upper right')
+#leg.get_frame().set_alpha(0.5)
 #plt.show()
-tikz_save("fig.tex")
+#tikz_save("fig.tex")
+
+export = open("export","w")
+for i in range(F.Time):
+    if i%60==0:
+        export.write("("+str(Time[i])+", "+str(F.X[0,i])+")\n")
+export.close()
+
