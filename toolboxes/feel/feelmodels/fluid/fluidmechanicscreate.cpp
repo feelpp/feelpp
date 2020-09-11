@@ -395,6 +395,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
         std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", name(d), "alemesh_bc" );
         std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
         this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d) );
+
+        std::pair<bool,std::string> bcTypeTurbulenceRead = this->modelProperties().boundaryConditions().sparam( "velocity", "Dirichlet", name(d), "turbulence_bc" );
+        if ( bcTypeTurbulenceRead.first )
+        {
+            if ( bcTypeTurbulenceRead.second == "inlet" )
+            {
+                typename TurbulenceModelBoundaryConditions::Inlet bcTurbInlet;
+                bcTurbInlet.addMarkers( markers(d) );
+                M_turbulenceModelBoundaryConditions.addInlet( name(d), bcTurbInlet );
+            }
+            else if ( bcTypeTurbulenceRead.second == "wall" )
+            {
+                typename TurbulenceModelBoundaryConditions::Wall bcTurbWall;
+                bcTurbWall.addMarkers( markers(d) );
+                M_turbulenceModelBoundaryConditions.addWall( name(d), bcTurbWall );
+            }
+        }
     }
     for ( ComponentType comp : std::vector<ComponentType>( { ComponentType::X, ComponentType::Y, ComponentType::Z } ) )
     {
@@ -527,6 +544,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
 
         this->M_fluidInletDesc.push_back(std::make_tuple(bcMarker,fullTypeInlet, expr<2>( exprFluidInlet,"",this->worldComm(),this->repository().expr() )) );
         this->addMarkerALEMeshBC(bcTypeMeshALE,bcMarker);
+
+        typename TurbulenceModelBoundaryConditions::Inlet bcTurbInlet;
+        bcTurbInlet.addMarkers( bcMarker/*markers(d)*/ );
+        M_turbulenceModelBoundaryConditions.addInlet( bcMarker/*name(d)*/, bcTurbInlet );
     }
 
     M_bcMovingBoundaryImposed = this->modelProperties().boundaryConditions().template getVectorFields<nDim>( "fluid", "moving_boundary_imposed" );
@@ -1186,7 +1207,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         M_algebraicFactory->addVectorResidualAssembly( M_timeStepThetaSchemePreviousContrib, 1.0, "Theta-Time-Stepping-Previous-Contrib", true );
         M_algebraicFactory->addVectorLinearRhsAssembly( M_timeStepThetaSchemePreviousContrib, -1.0, "Theta-Time-Stepping-Previous-Contrib", false );
         if ( M_stabilizationGLS )
-            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() ) );
+            M_algebraicFactory->dataInfos().addVectorInfo( "time-stepping.previous-solution", M_vectorPreviousSolution/*this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() )*/ );
     }
 
 
@@ -1820,6 +1841,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockVector()
 {
     this->initBlockVector();
     M_blockVectorSolution.buildVector( this->backend() );
+
+    M_usePreviousSolution = false;
+    if ( timeStepping() == "Theta" && this->stabilizationGLS() )
+        M_usePreviousSolution = true;
+    if  ( !M_usePreviousSolution && this->hasTurbulenceModel() )
+    {
+        for ( auto const& cfpde : M_turbulenceModelType->coefficientFormPDEs() )
+        {
+            if ( cfpde->timeStepping() == "Theta" && cfpde->applyStabilization() )
+            {
+                M_usePreviousSolution = true;
+                break;
+            }
+        }
+    }
+
+    if ( M_usePreviousSolution )
+        M_vectorPreviousSolution = this->backend()->newVector( M_blockVectorSolution.vectorMonolithic()->mapPtr() );
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1998,8 +2037,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
             ostr << "\""<<matName<<"\":{"
                  << "\"markers\":[";
+            bool isFirstMark = true;
             for ( std::string const& m : matProps.markers() )
+            {
+                if ( !isFirstMark )
+                    ostr << ",";
                 ostr << "\"" << m << "\"";
+                isFirstMark = false;
+            }
             ostr << "],";
 
             if ( physicFluidData->turbulence().model() == "Spalart-Allmaras" )
@@ -2054,8 +2099,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 // initials coondition
                 std::ostringstream ostr_ic;
                 ostr_ic << "\"markers\":[";
+                bool isFirstMark = true;
                 for ( std::string const& m : matProps.markers() )
+                {
+                    if ( !isFirstMark )
+                        ostr_ic << ",";
                     ostr_ic << "\"" << m << "\"";
+                    isFirstMark = false;
+                }
                 ostr_ic << "],"
                         << "\"expr\":\"" << (boost::format("%1%/%2%:%1%:%2%")%symbDynViscosity %symbDensity ).str() << "\"";
                 strInitialConditions.push_back( ostr_ic.str() );
@@ -2083,6 +2134,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
     ostr << "\"Dirichlet\":{";
 
+    bool writeFirstBc=true;
+    for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
+    {
+        std::string markerListStr;
+        for (  std::string const& mark : bcInlet.markers() )
+        {
+            if ( !markerListStr.empty() )
+                markerListStr += ",";
+            markerListStr += "\"" + mark + "\"";
+        }
+        if ( !writeFirstBc )
+            ostr << ",";
+        ostr << "\""<< bcName << "\":{"
+             << "\"markers\":[" << markerListStr << "],"
+             << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
+             << "}";
+        writeFirstBc = false;
+    }
+    for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
+    {
+        std::string markerListStr;
+        for (  std::string const& mark : bcWall.markers() )
+        {
+            if ( !markerListStr.empty() )
+                markerListStr += ",";
+            markerListStr += "\"" + mark + "\"";
+        }
+        if ( !writeFirstBc )
+            ostr << ",";
+        ostr << "\""<< bcName << "\":{"
+             << "\"markers\":[" << markerListStr << "],"
+             << "\"expr\":\"0\""
+             << "}";
+        writeFirstBc = false;
+    }
+
+#if 0
     ostr << "\"mybc\":{"
         //<< "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
          << "\"markers\":[\"Gamma1\",\"Gamma3\"],"
@@ -2097,7 +2185,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
          << "\"markers\":[\"Gamma4\"],"
          << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
          << "}";
-
+#endif
 
     ostr << "}"; // end Dirichlet
     ostr << "}"; // end eqkeyword

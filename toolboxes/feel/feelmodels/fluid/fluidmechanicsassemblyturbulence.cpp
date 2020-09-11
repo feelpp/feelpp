@@ -14,20 +14,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & 
 {
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
-    auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
+    auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence );
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
-#if 0
-    auto mfieldsPrevious_fluid = M_fm->modelFields( M_previousSolFluid );
+
+    std::optional<std::decay_t<decltype(mfields_fluid)>> mfieldsPrevious_fluid;
     if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
     {
         auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
-        auto mfieldsPrevious_cfpdes = M_cfpdes->template modelFields<cfpdess_filter_basis_type>( previousSol );
-        auto sePrevious = Feel::vf::symbolsExpr( M_cfpdes->symbolsExpr( mfieldsPrevious_cfpdes ), mfieldsPrevious_fluid.symbolsExpr() );
-        auto mctxPrevious = Feel::FeelModels::modelContext( std::move( mfieldsPrevious_cfpdes ), std::move( sePrevious ) );
+        auto mfieldsPrevious_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( previousSol );
+        CHECK( M_usePreviousSolution && M_vectorPreviousSolution ) << "M_vectorPreviousSolution not init";
+        mfieldsPrevious_fluid.emplace( this->modelFields( M_vectorPreviousSolution, 0 ).exclude( mfieldsPrevious_turbulence ) );
+        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) );
+        auto mctxPrevious = Feel::FeelModels::modelContext( std::move(mfieldsPrevious_turbulence), std::move( sePrevious ) );
         mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
     }
-#endif
 
     M_turbulenceModelType->template updateLinearPDE<FilterBasisUnknownTurbulenceModel>( data,mctx );
 }
@@ -62,9 +63,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual_Turbulence( DataUpdateResidua
 {
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
-    auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
+    auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence ); ;
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
+
+    std::optional<std::decay_t<decltype(mfields_fluid)>> mfieldsPrevious_fluid;
+    if ( data.hasVectorInfo( "time-stepping.previous-solution" ) )
+    {
+        auto previousSol = data.vectorInfo( "time-stepping.previous-solution");
+        auto mfieldsPrevious_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( previousSol );
+        CHECK( M_usePreviousSolution && M_vectorPreviousSolution ) << "M_vectorPreviousSolution not init";
+        mfieldsPrevious_fluid.emplace( this->modelFields( M_vectorPreviousSolution, 0 ).exclude( mfieldsPrevious_turbulence ) );
+        auto sePrevious = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfieldsPrevious_turbulence ), this->symbolsExpr( *mfieldsPrevious_fluid ) );
+        auto mctxPrevious = Feel::FeelModels::modelContext( std::move(mfieldsPrevious_turbulence), std::move( sePrevious ) );
+        mctx.setAdditionalContext( "time-stepping.previous-model-context", std::move( mctxPrevious ) );
+    }
+
     M_turbulenceModelType->template updateResidual<FilterBasisUnknownTurbulenceModel>( data, mctx );
 }
 
