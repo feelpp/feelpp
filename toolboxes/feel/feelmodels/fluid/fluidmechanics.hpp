@@ -653,6 +653,45 @@ public:
             }
     };
 
+    struct TurbulenceModelBoundaryConditions
+    {
+        struct Inlet
+        {
+            Inlet() = default;
+            Inlet( Inlet&& ) = default;
+            Inlet( Inlet const& ) = default;
+
+            void addMarkers( std::string const& m ) { M_markers.insert( m ); }
+            void addMarkers( std::set<std::string> const& m ) { M_markers.insert( m.begin(), m.end() ); }
+            std::set<std::string> markers() const { return M_markers; }
+        private :
+            std::set<std::string> M_markers;
+        };
+        struct Wall
+        {
+            Wall() = default;
+            Wall( Wall&& ) = default;
+            Wall( Wall const& ) = default;
+
+            void addMarkers( std::string const& m ) { M_markers.insert( m ); }
+            void addMarkers( std::set<std::string> const& m ) { M_markers.insert( m.begin(), m.end() ); }
+            std::set<std::string> markers() const { return M_markers; }
+        private :
+            std::set<std::string> M_markers;
+        };
+
+        TurbulenceModelBoundaryConditions() = default;
+        TurbulenceModelBoundaryConditions( TurbulenceModelBoundaryConditions && ) = default;
+        TurbulenceModelBoundaryConditions( TurbulenceModelBoundaryConditions const& ) = default;
+
+        void addInlet( std::string const& name, Inlet const& bcInlet ) { M_bcInlet.emplace( name, bcInlet ); }
+        void addWall( std::string const& name, Wall const& bcWall ) { M_bcWall.emplace( name, bcWall ); }
+        std::map<std::string,Inlet> const& inlet() const { return M_bcInlet; }
+        std::map<std::string,Wall> const& wall() const { return M_bcWall; }
+    private :
+        std::map<std::string,Inlet> M_bcInlet;
+        std::map<std::string,Wall> M_bcWall;
+    };
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -1698,6 +1737,7 @@ private :
     std::set<std::string> M_dist2WallMarkers;
 
     turbulence_model_ptrtype M_turbulenceModelType;
+    TurbulenceModelBoundaryConditions M_turbulenceModelBoundaryConditions;
     //----------------------------------------------------
     // exporter option
     bool M_isHOVisu;
@@ -1738,6 +1778,8 @@ private :
     backend_ptrtype M_backend;
     model_algebraic_factory_ptrtype M_algebraicFactory;
     BlocksBaseVector<double> M_blockVectorSolution;
+    bool M_usePreviousSolution;
+    vector_ptrtype M_vectorPreviousSolution;
     //----------------------------------------------------
     // overwrite assembly process : source terms
     typedef boost::function<void ( vector_ptrtype& F, bool buildCstPart )> updateSourceTermLinearPDE_function_type;

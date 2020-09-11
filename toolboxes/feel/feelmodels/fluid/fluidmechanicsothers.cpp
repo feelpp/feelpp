@@ -1231,6 +1231,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStepPreProcess()
         this->updateVelocityExtrapolated();
     }
 
+    if ( M_usePreviousSolution )
+        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+
     this->log("FluidMechanics","startTimeStepPreProcess", "finish" );
 }
 
@@ -1263,6 +1266,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep( bool applyPreProcess )
         *M_vectorPreviousVelocityExtrapolated = *M_vectorVelocityExtrapolated;
         this->updateVelocityExtrapolated();
     }
+
+    if ( M_usePreviousSolution )
+        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
 
     // update all expressions in bc or in house prec
     this->updateParameterValues();
@@ -1363,6 +1369,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         this->updateVelocityExtrapolated();
     }
 
+    if ( M_usePreviousSolution )
+        *M_vectorPreviousSolution = *M_blockVectorSolution.vectorMonolithic();
+
     // update user functions which depend of time only
     this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
@@ -1397,7 +1406,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStepCurrentResidual()
         if ( M_stabilizationGLS )
         {
             auto & dataInfos = M_algebraicFactory->dataInfos();
-            *dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
+            //*dataInfos.vectorInfo( "time-stepping.previous-solution" ) = *M_blockVectorSolution.vectorMonolithic();
             dataInfos.addParameterValuesInfo( "time-stepping.previous-parameter-values", M_currentParameterValues );
         }
     }
