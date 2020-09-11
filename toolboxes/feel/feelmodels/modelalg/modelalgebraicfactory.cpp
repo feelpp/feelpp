@@ -1164,6 +1164,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         bool useConvergenceAlgebraic = true;
 
         auto dataLinear = std::make_shared<ModelAlgebraic::DataUpdateLinear>(U,M_J,M_R,false);
+        dataLinear->copyInfos( this->dataInfos() );
         std::shared_ptr<ModelAlgebraic::DataUpdateLinear> dataLinearPtAP;
         if ( M_useSolverPtAP )
             dataLinearPtAP = std::make_shared<ModelAlgebraic::DataUpdateLinear>(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,true);
@@ -1178,6 +1179,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             M_CstJ->zero();
             M_CstR->zero();
             ModelAlgebraic::DataUpdateLinear dataLinearCst(U,M_CstJ,M_CstR,true);
+            dataLinearCst.copyInfos( this->dataInfos() );
             M_functionLinearAssembly( dataLinearCst );
             M_hasBuildLinearSystemCst = true;
 
