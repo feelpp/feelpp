@@ -177,7 +177,7 @@ public:
                                                                 {
                                                                     if ( !mparam.template hasExpression<ni,nj>() )
                                                                         continue;
-                                                                    LOG(INFO) << "add parameter symbolsexpr " << symbName;
+                                                                    VLOG(1) << "add parameter symbolsexpr " << symbName;
                                                                     auto const& theexpr = mparam.template expression<ni,nj>();
                                                                     seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
                                                                 }
