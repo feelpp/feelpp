@@ -452,8 +452,8 @@ public:
                     if ( !mparam.template hasExpr<ni,nj>() )
                         continue;
                     auto const& theexpr = mparam.template expr<ni,nj>();
-                    LOG(INFO) << "material " << cname << " has property " << symbName;
-                    seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
+                    VLOG(1) << "material " << cname << " has property " << symbName;
+                    seParamValue.add( cname+"_"+symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
                 }
             }
             return seParamValue;
