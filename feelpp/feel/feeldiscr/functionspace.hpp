@@ -5288,7 +5288,7 @@ public:
      * map of elements
      * \return a map of elements
      */
-    std::map<std::string,element_type>
+    static std::map<std::string,element_type>
     elementsMap()
     {
         return std::map<std::string,element_type>{};
