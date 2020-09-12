@@ -50,7 +50,7 @@
 # include <boost/preprocessor/facilities/empty.hpp>
 # include <boost/preprocessor/punctuation/comma.hpp>
 # include <boost/preprocessor/facilities/identity.hpp>
-
+# include <feel/feelvf/pow.hpp>
 
 # /* Information about C operators */
 #
