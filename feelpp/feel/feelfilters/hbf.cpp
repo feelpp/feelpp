@@ -229,7 +229,10 @@ Hbf2Feelpp::operator()( holo3_image<float> const& x )
  * Ny = number of lines
  */
 Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
-    :M_cols(nx), M_rows(ny), M_Xh( Yh )
+    :
+    M_rows(ny), 
+    M_cols(nx), 
+    M_Xh( Yh )
 {
     tic();
     LOG(INFO) << "Hbf2FeelppStruc relation creation \n";
