@@ -1587,6 +1587,21 @@ Environment::finalized()
     return mpi::environment::finalized();
 }
 
+mpi::threading::level 
+Environment::threadLevel()
+{
+    return mpi::environment::thread_level();
+}
+bool
+Environment::isMainThread()
+{
+    return mpi::environment::is_main_thread();
+}
+void
+Environment::abort( int error_code )
+{
+    return mpi::environment::abort( error_code );
+}
 
 std::string const&
 Environment::rootRepository()
@@ -2451,7 +2466,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-
+    boost::replace_all( res, "$np", std::to_string(Environment::numberOfProcessors()) );
 
     typedef std::vector< std::string > split_vector_type;
 

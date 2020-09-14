@@ -33,9 +33,9 @@ public :
     using element_t = typename space_t::element_type;
     using element_ptr_t = typename space_t::element_ptrtype;
 
-    StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix )
+    StabilizationGLSParameter( mesh_ptr_t const& mesh, std::string const& prefix, po::variables_map const& vm = Environment::vm() )
         :
-        super_type( mesh, prefix )
+        super_type( mesh, prefix, vm )
         {}
 
     virtual ~StabilizationGLSParameter() = default;

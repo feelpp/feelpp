@@ -2,7 +2,6 @@
 #define _CAUCHY_GREEN_INVARIANTS_EXPR_HPP 1
 
 namespace Feel {
-namespace vf {
 namespace FeelModels {
 
 template<typename CauchyGreenTensorExprType>
@@ -205,7 +204,6 @@ cauchyGreenInvariant1Expr( CauchyGreenTensorExprType const& tensorexpr )
     return Expr<expr_cauchygreeninvariant1_type>( expr_cauchygreeninvariant1_type( tensorexpr ) );
 }
 
-}
 }
 }
 

@@ -203,6 +203,45 @@ public:
     //@}
 };
 
+/**
+ * \class Shape
+ * \brief Shape class for vector functions
+ *
+ * @author Christophe Prud'homme
+ * @see
+ */
+template<uint16_type Dim, uint16_type _M=1, uint16_type _N=1, uint16_type _O=1>
+class ShapeGeneric
+{
+public:
+
+    /** @name Constants
+     */
+    //@{
+
+    static const uint16_type nDim = Dim;
+    static const uint16_type M = _M;
+    static const uint16_type N = _N;
+    static const uint16_type O = _O;
+
+    static const bool is_scalar = M==1 && N==1 && O==1;
+    static const bool is_vectorial = ((M>1 && N==1) || (M==1 && N>1)) && O == 1;
+    static const bool is_tensor2 = M>1 && N>1;
+    static const bool is_tensor3 = O > 1;
+
+    static const bool is_transposed = is_vectorial && N>1;
+    static const bool is_diagonalized = false;
+    static const uint16_type rank = is_scalar? 0 : is_vectorial? 1 : is_tensor2? 2 : 3;
+    //@}
+
+    /** @name Typedefs
+     */
+    //@{
+
+    typedef ShapeGeneric<Dim,_M,_N,_O> shape_type;
+    //@}
+};
+
 template<typename ShapeT>
 using shape_rankdown_t = typename mpl::if_<is_scalar_t<ShapeT>,
                                            mpl::identity<Shape<ShapeT::nDim,Scalar,ShapeT::is_transposed,ShapeT::is_diagonalized>>,
@@ -321,6 +360,7 @@ struct shape_op_id
 };
 
 struct INVALID_MULTIPLICATION {};
+#if 0
 template<int D, uint16_type M, uint16_type N>
 struct mn_to_shape
 {
@@ -337,7 +377,7 @@ struct mn_to_shape
 
 
 };
-
+#endif
 template<typename Left, typename Right>
 struct shape_op_mul
 {
@@ -348,11 +388,8 @@ struct shape_op_mul
             mpl::identity<Left>,
 
             // check that Left::N == Right::M
-            typename mpl::if_<mpl::equal_to<mpl::int_<Left::N>,
-            mpl::int_<Right::M> >,
-            mpl::identity<typename mn_to_shape<Left::nDim,
-            Left::M,
-            Right::N >::type >,
+            typename mpl::if_<mpl::equal_to<mpl::int_<Left::N>,mpl::int_<Right::M> >,
+                              mpl::identity<ShapeGeneric<Left::nDim,Left::M,Right::N > >,
             mpl::identity<typename shape_op_id<Left, Right>::type> >::type >::type>::type::type type;
 
     static const int op = mpl::if_<mpl::or_<mpl::bool_<Left::is_scalar>,
@@ -401,6 +438,11 @@ std::ostream& operator<<( std::ostream& os, Shape<Dim, Type, is_transposed, diag
     return os;
 }
 /// \endcond
+
+
+template<typename Shape1Type, typename Shape2Type>
+constexpr bool is_same_shape_v = Shape1Type::M == Shape2Type::M && Shape1Type::N == Shape2Type::N && Shape1Type::O == Shape2Type::O;
+
 } // vf
 } // Feel
 #endif /* __Shape_H */

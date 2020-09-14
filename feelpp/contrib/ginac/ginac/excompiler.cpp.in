@@ -400,7 +400,7 @@ void compile_ex(const lst& exprs, const lst& syms, FUNCP_CUBA& fp, const std::st
     {
         global_excompiler.create_src_file(unique_filename, ofs);
 
-        ofs << "void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
+        ofs << "extern \"C\" void compiled_ex(const int* an, const double a[], const int* fn, double f[])" << std::endl;
         ofs << "{" << std::endl;
         for (std::size_t count=0; count<exprs.nops(); ++count) {
             ofs << "f[" << count << "] = ";

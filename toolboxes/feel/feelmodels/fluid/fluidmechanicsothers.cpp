@@ -34,11 +34,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::useExtendedDofTable() const
 {
-    if ( this->worldComm().localSize() == 1 ) return false;
-    bool useExtendedDofTable=false;
-    for ( bool hasExt : M_Xh->extendedDofTableComposite() )
-        useExtendedDofTable = useExtendedDofTable || hasExt;
-    return useExtendedDofTable;
+    if ( this->worldComm().localSize() == 1 )
+        return false;
+    return ( M_XhVelocity->extendedDofTable() || M_XhPressure->extendedDofTable() );
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -89,10 +87,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     }
 
     std::string doExport_str;
-    for ( std::string const& fieldName : M_postProcessFieldExported )
+    for ( std::string const& fieldName : this->postProcessExportsFields() )
         doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
-    for ( std::string const& fieldName : M_postProcessUserFieldExported )
-        doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
+    // for ( std::string const& fieldName : M_postProcessUserFieldExported )
+    //     doExport_str=(doExport_str.empty())? fieldName : doExport_str + " - " + fieldName;
 
     std::shared_ptr<std::ostringstream> _ostr( new std::ostringstream() );
     *_ostr << "\n||==============================================||"
@@ -103,13 +101,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n   Prefix : " << this->prefix()
-           << "\n   Root Repository : " << this->rootRepository()
-           << "\n   Physical Model"
-           << "\n     -- pde name  : " << M_modelName
-        //<< "\n     -- stress tensor law  : " << this->materialProperties()->dynamicViscosityLaw()
-           << "\n     -- time mode : " << StateTemporal
-           << "\n     -- ale mode  : " << ALEmode
-           << "\n     -- gravity  : " << std::boolalpha << M_useGravityForce;
+           << "\n   Root Repository : " << this->rootRepository();
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+    {
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        *_ostr << "\n   Physical Model [" << physicName << "]"
+               << "\n     -- equation : " << physicFluidData->equation()
+               << "\n     -- time mode : " << StateTemporal
+               << "\n     -- ale mode  : " << ALEmode
+               << "\n     -- gravity force enabled  : " << physicFluidData->gravityForceEnabled();
+        if ( physicFluidData->gravityForceEnabled() )
+             *_ostr << "\n     -- gravity force expr  : " << str( physicFluidData->gravityForceExpr().expression() );
+    }
     *_ostr << this->materialProperties()->getInfo()->str();
     // *_ostr << "\n   Physical Parameters"
     //        << "\n     -- rho : " << this->materialProperties()->cstRho()
@@ -159,9 +162,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- geometry order  : " << nOrderGeo
            << "\n     -- velocity order  : " << nOrderVelocity
            << "\n     -- pressure order  : " << nOrderPressure
-           << "\n     -- nb dof (u+p)    : " << M_Xh->nDof() << " (" << M_Xh->nLocalDof() << ")"
-           << "\n     -- nb dof (u)      : " << M_Xh->template functionSpace<0>()->nDof()
-           << "\n     -- nb dof (p)      : " << M_Xh->template functionSpace<1>()->nDof()
+           << "\n     -- nb dof (u)      : " << M_XhVelocity->nDof() << " (" << M_XhVelocity->nLocalDof() << ")"
+           << "\n     -- nb dof (p)      : " << M_XhPressure->nDof() << " (" << M_XhPressure->nLocalDof() << ")"
            << "\n     -- stabilisation   : " << stabAll_str;
     if ( this->definePressureCst() )
     {
@@ -229,7 +231,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 }
 
 //---------------------------------------------------------------------------------------------------------//
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setModelName( std::string const& type )
@@ -261,6 +263,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::modelName() const
 {
     return M_modelName;
 }
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -298,10 +301,29 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::isStationaryModel() const
 {
+#if 0
     if( this->modelName() == "Stokes" )
         return true;
     else
         return this->isStationary();
+#else
+
+// TODO : should be detected in loop assembly (only works with one physic)
+bool isStokes = true;
+for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+ {
+      auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+      if ( physicFluidData->equation() != "Stokes" )
+      {
+          isStokes = false;
+          break;
+      }
+}
+if ( isStokes )
+    return true;
+ else
+     return this->isStationary();
+#endif
 }
 
 //---------------------------------------------------------------------------------------------------------//
@@ -343,9 +365,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 {
-    this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
-    this->timerTool("PostProcessing").start();
+    this->exportResults( time, this->symbolsExpr() );
 
+#if 0
     if ( this->isMoveDomain() && this->hasPostProcessFieldExported( "alemesh" ) )
     {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
@@ -386,19 +408,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
 
     this->exportMeasures( time );
 
-
-    this->timerTool("PostProcessing").stop("exportResults");
-    if ( this->scalabilitySave() )
-    {
-        if ( !this->isStationary() )
-            this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
-        this->timerTool("PostProcessing").save();
-    }
-    this->log("FluidMechanics","exportResults", "finish" );
+#endif
 
 } // FluidMechanics::exportResult
 
-
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportFields( double time )
@@ -455,14 +469,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"velocity"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity")),
-                                     M_Solution->template element<0>() );
+                                     this->fieldVelocity() );
         hasFieldToExport = true;
     }
     if ( fields.find( "pressure" ) != fields.end() )
     {
         exporter->step( time )->add( prefixvm(this->prefix(),"pressure"),
                                      prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure")),
-                                     M_Solution->template element<1>() );
+                                     this->fieldPressure() );
         hasFieldToExport = true;
     }
     if ( fields.find( "vorticity" ) != fields.end() )
@@ -483,8 +497,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     if ( fields.find( "viscosity" ) != fields.end() )
     {
         //if ( !M_XhNormalBoundaryStress ) this->createFunctionSpacesNormalStress();
-        auto uCur = M_Solution->template element<0>();
-        auto pCur = M_Solution->template element<1>();
+        auto const& uCur = this->fieldVelocity();
+        auto const& pCur = this->fieldPressure();
         auto viscosityField = this->materialProperties()->dynamicViscositySpace()->element();
         for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
@@ -560,6 +574,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFields( export_ptrtype exporte
     //----------------------//
     return hasFieldToExport;
 }
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -574,20 +589,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
     //    this->meshALE()->revertReferenceMesh();
     //M_exporter_ho->step( time )->setMesh( M_velocityVisuHO->mesh() );
     bool hasFieldToExport = false;
-    if ( this->hasPostProcessFieldExported( "pid" ) )
+    if ( this->hasPostProcessExportsField( "pid" ) )
     {
         M_exporter_ho->step( time )->addRegions( this->prefix(), this->subPrefix().empty()? this->prefix() : prefixvm(this->prefix(),this->subPrefix()) );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "velocity" ) )
+    if ( this->hasPostProcessExportsField( "velocity" ) )
     {
-        M_opIvelocity->apply(M_Solution->template element<0>(),*M_velocityVisuHO);
+        M_opIvelocity->apply( this->fieldVelocity(),*M_velocityVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"velocity_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"velocity_ho")), *M_velocityVisuHO );
         hasFieldToExport = true;
     }
-    if ( this->hasPostProcessFieldExported( "pressure" ) )
+    if ( this->hasPostProcessExportsField( "pressure" ) )
     {
-        M_opIpressure->apply(M_Solution->template element<1>(),*M_pressureVisuHO);
+        M_opIpressure->apply( this->fieldPressure(),*M_pressureVisuHO);
         M_exporter_ho->step( time )->add( prefixvm(this->prefix(),"pressure_ho"), prefixvm(this->prefix(),prefixvm(this->subPrefix(),"pressure_ho")), *M_pressureVisuHO );
         hasFieldToExport = true;
     }
@@ -608,7 +623,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif
         }
 #endif
-        if ( this->hasPostProcessFieldExported( "displacement" ) )
+        if ( this->hasPostProcessExportsField( "displacement" ) )
         {
             //M_opImeshdisp->apply( thedisp , *M_meshdispVisuHO);
             M_opImeshdisp->apply( *M_meshALE->displacement() , *M_meshdispVisuHO);
@@ -698,6 +713,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResultsImplHO( double time )
 #endif
 }
 
+#if 0
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 bool
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_ptrtype exporter, std::set<std::string> const& fields, double time )
@@ -725,150 +741,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateExportedFieldsOnTrace( export_trace_pt
 
     return hasFieldToExport;
 }
+#endif
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportMeasures( double time )
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::executePostProcessMeasures( double time )
 {
-    bool hasMeasure = false;
-
-    // forces (lift,drag) measures
-    for ( auto const& ppForces : M_postProcessMeasuresForces )
-    {
-        CHECK( ppForces.meshMarkers().size() == 1 ) << "TODO";
-        auto measuredForce = this->computeForce( ppForces.meshMarkers().front() );
-        std::string name = ppForces.name();
-        this->postProcessMeasuresIO().setMeasure( "drag_"+name, measuredForce(0,0) );
-        this->postProcessMeasuresIO().setMeasure( "lift_"+name, measuredForce(1,0) );
-        hasMeasure = true;
-    }
-    // flow rate measures
-    for ( auto const& ppFlowRate : M_postProcessMeasuresFlowRate )
-    {
-        double valFlowRate = this->computeFlowRate( ppFlowRate.meshMarkers(), ppFlowRate.useExteriorNormal() );
-        this->postProcessMeasuresIO().setMeasure("flowrate_"+ppFlowRate.name(),valFlowRate);
-        hasMeasure = true;
-    }
-
-    
-    if ( true )
-    {
-        bool hasMeasuresPressure = M_postProcessMeasuresFields.find("pressure") != M_postProcessMeasuresFields.end();
-        bool hasMeasuresVelocityDivergence = M_postProcessMeasuresFields.find( "velocity-divergence" ) != M_postProcessMeasuresFields.end();
-        double area = 0;
-        if ( hasMeasuresPressure || hasMeasuresVelocityDivergence )
-            area = this->computeMeshArea();
-        if ( hasMeasuresPressure )
-        {
-            double pressureSum = this->computePressureSum();
-            double pressureMean = pressureSum/area;
-            this->postProcessMeasuresIO().setMeasure("pressure_sum",pressureSum);
-            this->postProcessMeasuresIO().setMeasure("pressure_mean",pressureMean);
-            hasMeasure = true;
-        }
-        if ( hasMeasuresVelocityDivergence )
-        {
-            double velocityDivergenceSum = this->computeVelocityDivergenceSum();
-            double velocityDivergenceMean = velocityDivergenceSum/area;
-            double velocityDivergenceNormL2 = this->computeVelocityDivergenceNormL2();
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_sum",velocityDivergenceNormL2);
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_mean",velocityDivergenceMean);
-            this->postProcessMeasuresIO().setMeasure("velocity_divergence_normL2",velocityDivergenceNormL2);
-            hasMeasure = true;
-        }
-    }
-
-    // point measures
-    this->modelProperties().parameters().updateParameterValues();
-    auto paramValues = this->modelProperties().parameters().toParameterValues();
-    this->modelProperties().postProcess().setParameterValues( paramValues );
-    for ( auto const& evalPoints : this->modelProperties().postProcess().measuresPoint( this->keyword() ) )
-    {
-        auto const& ptPos = evalPoints.pointPosition();
-        if ( !ptPos.hasExpression() )
-            continue;
-        node_type ptCoord(3);
-        for ( int c=0;c<3;++c )
-            ptCoord[c]=ptPos.value()(c);
-
-        auto const& fields = evalPoints.fields();
-        for ( std::string const& field : fields )
-        {
-            if ( field == "velocity" )
-            {
-                std::string ptNameExport = (boost::format("velocity_%1%")%ptPos.name()).str();
-                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("velocity",ptNameExport);
-                if ( ptIdInCtx >= 0 )
-                    M_postProcessMeasuresContextVelocity->replace( ptIdInCtx, ptCoord );
-            }
-            else if ( field == "pressure" )
-            {
-                std::string ptNameExport = (boost::format("pressure_%1%")%ptPos.name()).str();
-                int ptIdInCtx = this->postProcessMeasuresEvaluatorContext().ctxId("pressure",ptNameExport);
-                if ( ptIdInCtx >= 0 )
-                    M_postProcessMeasuresContextPressure->replace( ptIdInCtx, ptCoord );
-            }
-        }
-    }
-    if ( M_postProcessMeasuresContextVelocity && this->postProcessMeasuresEvaluatorContext().has("velocity") )
-    {
-        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextVelocity,
-                                                _expr=idv(this->fieldVelocity()) );
-        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextVelocity->nPoints();++ctxId )
-        {
-            if ( !this->postProcessMeasuresEvaluatorContext().has( "velocity", ctxId ) ) continue;
-            std::string const& ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "velocity",ctxId );
-            std::vector<double> vecValues = { evalAtNodes( ctxId*nDim ) };
-            if ( nDim > 1 ) vecValues.push_back( evalAtNodes( ctxId*nDim+1 ) );
-            if ( nDim > 2 ) vecValues.push_back( evalAtNodes( ctxId*nDim+2 ) );
-            this->postProcessMeasuresIO().setMeasureComp( ptNameExport, vecValues );
-            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextVelocity->node( ctxId ) << "\n";
-            hasMeasure = true;
-        }
-    }
-    if ( M_postProcessMeasuresContextPressure && this->postProcessMeasuresEvaluatorContext().has("pressure") )
-    {
-        auto evalAtNodes = evaluateFromContext( _context=*M_postProcessMeasuresContextPressure,
-                                                _expr=idv(this->fieldPressure()) );
-        for ( int ctxId=0;ctxId<M_postProcessMeasuresContextPressure->nPoints();++ctxId )
-        {
-            if ( !this->postProcessMeasuresEvaluatorContext().has( "pressure", ctxId ) ) continue;
-            std::string ptNameExport = this->postProcessMeasuresEvaluatorContext().name( "pressure",ctxId );
-            this->postProcessMeasuresIO().setMeasure( ptNameExport, evalAtNodes( ctxId ) );
-            //std::cout << "export point " << ptNameExport << " with node " << M_postProcessMeasuresContextPressure->node( ctxId ) << "\n";
-            hasMeasure = true;
-        }
-    }
-
-    auto fieldTuple = hana::make_tuple( std::make_pair( "velocity",this->fieldVelocity() ), std::make_pair( "pressure",this->fieldPressure() ) );
-    for ( auto const& ppNorm : this->modelProperties().postProcess().measuresNorm( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpNorms;
-        measureNormEvaluation( this->mesh(), M_rangeMeshElements, ppNorm, resPpNorms, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpNorm : resPpNorms )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpNorm.first, resPpNorm.second );
-            hasMeasure = true;
-        }
-    }
-    for ( auto const& ppStat : this->modelProperties().postProcess().measuresStatistics( this->keyword() ) )
-    {
-        std::map<std::string,double> resPpStats;
-        measureStatisticsEvaluation( this->mesh(), M_rangeMeshElements, ppStat, resPpStats, this->symbolsExpr(), fieldTuple );
-        for ( auto const& resPpStat : resPpStats )
-        {
-            this->postProcessMeasuresIO().setMeasure( resPpStat.first, resPpStat.second );
-            hasMeasure = true;
-        }
-    }
-
-    if ( hasMeasure )
-    {
-        if ( !this->isStationary() )
-            this->postProcessMeasuresIO().setMeasure( "time", time );
-        this->postProcessMeasuresIO().exportMeasures();
-        this->upload( this->postProcessMeasuresIO().pathFile() );
-    }
+    auto mfields = this->modelFields();
+    this->executePostProcessMeasures( time, mfields, this->symbolsExpr( mfields ) );
 }
 
 
@@ -878,21 +758,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateParameterValues()
 {
-    this->modelProperties().parameters().updateParameterValues();
+    if ( !this->manageParameterValues() )
+        return;
 
+    this->modelProperties().parameters().updateParameterValues();
     auto paramValues = this->modelProperties().parameters().toParameterValues();
     //this->modelProperties().materials().setParameterValues( paramValues );
-    this->M_bcDirichlet.setParameterValues( paramValues );
-    for ( auto & bcDirComp : this->M_bcDirichletComponents )
-        bcDirComp.second.setParameterValues( paramValues );
-    this->M_bcNeumannScalar.setParameterValues( paramValues );
-    this->M_bcNeumannVectorial.setParameterValues( paramValues );
-    this->M_bcNeumannTensor2.setParameterValues( paramValues );
-    this->M_bcPressure.setParameterValues( paramValues );
-    M_bcMovingBoundaryImposed.setParameterValues( paramValues );
-    this->M_volumicForcesProperties.setParameterValues( paramValues );
-    this->updateFluidInletVelocity();
+
+    this->setParameterValues( paramValues );
 }
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::setParameterValues( std::map<std::string,double> const& paramValues )
+{
+    if ( this->manageParameterValuesOfModelProperties() )
+    {
+        this->modelProperties().parameters().setParameterValues( paramValues );
+        this->modelProperties().postProcess().setParameterValues( paramValues );
+        //this->materialsProperties()->setParameterValues( paramValues );
+    }
+
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+        physicData->setParameterValues( paramValues );
+
+    M_bcDirichlet.setParameterValues( paramValues );
+    for ( auto & bcDirComp : M_bcDirichletComponents )
+        bcDirComp.second.setParameterValues( paramValues );
+    M_bcNeumannScalar.setParameterValues( paramValues );
+    M_bcNeumannVectorial.setParameterValues( paramValues );
+    M_bcNeumannTensor2.setParameterValues( paramValues );
+    M_bcPressure.setParameterValues( paramValues );
+    M_bcMovingBoundaryImposed.setParameterValues( paramValues );
+    M_volumicForcesProperties.setParameterValues( paramValues );
+    this->updateFluidInletVelocity();
+    M_bodySetBC.setParameterValues( paramValues );
+
+}
+
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -901,14 +804,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->log("FluidMechanics","solve", "start" );
     this->timerTool("Solve").start();
 
-    this->updateParameterValues();
-
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
 
-    if ( M_applyMovingMeshBeforeSolve && !M_bcMovingBoundaryImposed.empty() )
+    if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
 
+    M_bodySetBC.updateForUse( *this );
+    M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
+#if 0 // TODO
     if ( this->startBySolveStokesStationary() &&
          !this->hasSolveStokesStationaryAtKickOff() && !this->doRestart() )
     {
@@ -939,6 +843,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         this->setSolverName( saveSolverName );
         this->setStationary( saveIsStationary );
     }
+#endif
 #if 0 // TODO
     if ( this->startBySolveNewtonian() && this->materialProperties()->dynamicViscosityLaw() != "newtonian" &&
          !this->hasSolveNewtonianAtKickOff() && !this->doRestart() )
@@ -1014,8 +919,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_
 {
     if ( this->definePressureCst() && this->definePressureCstMethod() == "algebraic" )
     {
-        auto upSol = this->functionSpace()->element( sol, this->rowStartInVector() );
-        auto pSol = upSol.template element<1>();
+        auto pSol = this->functionSpacePressure()->element( sol, this->rowStartInVector()+1 );
         CHECK( !M_definePressureCstAlgebraicOperatorMeanPressure.empty() ) << "mean pressure operator does not init";
         for ( int k=0;k<M_definePressureCstAlgebraicOperatorMeanPressure.size();++k )
         {
@@ -1084,16 +988,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPMM( sparse_matri
     if ( !this->algebraicFactory() )
         return; // TODO : should be use with multiphysics toolboxes as heat-fluid
 
-    bool hasAlreadyBuiltPMM = this->algebraicFactory()->preconditionerTool()->hasAuxiliarySparseMatrix( "pmm" );
+    bool hasAlreadyBuiltPMM = this->algebraicFactory()->hasAuxiliarySparseMatrix( "pmm" );
     if ( hasAlreadyBuiltPMM && !M_pmmNeedUpdate )
         return;
     sparse_matrix_ptrtype pmmMat;
     if ( hasAlreadyBuiltPMM )
-        pmmMat = this->algebraicFactory()->preconditionerTool()->auxiliarySparseMatrix( "pmm" );
+        pmmMat = this->algebraicFactory()->auxiliarySparseMatrix( "pmm" );
     else
     {
         pmmMat = M_backend->newMatrix(_trial=this->functionSpacePressure(), _test=this->functionSpacePressure());
-        this->algebraicFactory()->preconditionerTool()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
+        this->algebraicFactory()->attachAuxiliarySparseMatrix( "pmm", pmmMat );
     }
     CHECK( pmmMat ) << "pmmMat is not initialized";
 
@@ -1112,88 +1016,91 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInHousePreconditionerPCD( sparse_matri
 
     CHECK( this->hasOperatorPCD() ) << "operator PCD does not init";
 
-    typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
+    typedef Feel::Alternatives::OperatorPCD<space_velocity_type,space_pressure_type> op_pcd_type;
     std::shared_ptr<op_pcd_type> myOpPCD =
         std::dynamic_pointer_cast<op_pcd_type>( this->operatorPCD() );
 
-    auto U = this->functionSpace()->element( vecSol, this->rowStartInVector() );
-    auto u = U.template element<0>();
-    auto p = U.template element<1>();
+    auto u = this->functionSpaceVelocity()->element( vecSol, this->rowStartInVector() );
+    //auto p = this->functionSpacePressure()->element( vecSol, this->rowStartInVector()+1 );
 
     myOpPCD->updateStart();
 
-    for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
+    CHECK( this->physicsFromCurrentType().size() == 1 ) << "TODO";
+    for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
-        std::string const& matName = rangeData.first;
-        auto const& therange = rangeData.second;
-        auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
-        auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
-        //auto rhoExpr = this->materialProperties()->density( matName ).expr();
-        auto const& fieldRho = this->materialProperties()->fieldRho();
-        auto rhoExpr = idv( fieldRho );
-        if ( this->modelName() == "Stokes" || this->modelName() == "StokesTransient" )
+        auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+        for ( auto const& rangeData : this->materialProperties()->rangeMeshElementsByMaterial() )
         {
-            if (this->isMoveDomain() )
+            std::string const& matName = rangeData.first;
+            auto const& therange = rangeData.second;
+            auto const& dynamicViscosity = this->materialProperties()->dynamicViscosity(matName);
+            auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),*this->materialProperties(),matName);
+            //auto rhoExpr = this->materialProperties()->density( matName ).expr();
+            auto const& fieldRho = this->materialProperties()->fieldRho();
+            auto rhoExpr = idv( fieldRho );
+            if ( physicFluidData->equation() == "Stokes" || physicFluidData->equation() == "StokesTransient" )
             {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, -rhoExpr*idv(this->meshVelocity()), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
+                }
             }
-            else
+            else if ( ( physicFluidData->equation() == "Navier-Stokes" && this->solverName() == "Oseen" ) /*|| this->modelName() == "Oseen"*/ )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, vf::zero<nDim,1>(), false );
-            }
-        }
-        else if ( ( this->modelName() == "Navier-Stokes" && this->solverName() == "Oseen" ) || this->modelName() == "Oseen" )
-        {
-            auto BetaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
-            auto betaU = BetaU.template element<0>();
-            if (this->isMoveDomain() )
-            {
+                auto betaU = *M_fieldConvectionVelocityExtrapolated;//this->timeStepBDF()->poly();
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(betaU)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
+                }
             }
-            else
+            else if ( physicFluidData->equation() == "Navier-Stokes" )
             {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(betaU), true );
-            }
-        }
-        else if ( this->modelName() == "Navier-Stokes" )
-        {
-            if (this->isMoveDomain() )
-            {
+                if (this->isMoveDomain() )
+                {
 #if defined( FEELPP_MODELS_HAS_MESHALE )
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*( idv(u)-idv(this->meshVelocity()) ), true );
 #endif
+                }
+                else
+                {
+                    myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
+                }
             }
-            else
-            {
-                myOpPCD->updateFpDiffusionConvection( therange, muExpr, rhoExpr*idv(u), true );
-            }
-        }
 
-        if ( !this->isStationaryModel() )
-        {
-            myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
-        }
-        if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
-        {
-            //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
-            //Warning : it's a copy past, should be improve : TODO!
-            double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
-            auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
-            auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
-            auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
-            //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
-            //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
-            norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
+            if ( !this->isStationaryModel() )
+            {
+                myOpPCD->updateFpMass( therange, rhoExpr*this->timeStepBDF()->polyDerivCoefficient(0) );
+            }
+            if ( data.hasInfo( "use-pseudo-transient-continuation" ) )
+            {
+                //Feel::cout << "updsate PCD : use-pseudo-transient-continuation\n";
+                //Warning : it's a copy past, should be improve : TODO!
+                double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
+                auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
+                auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
+                auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
+                //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
+                //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
+                norm2_uu.on(_range=M_rangeMeshElements,_expr=idv(maxu)/h());
 
-            myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+                myOpPCD->updateFpMass( therange, (1./pseudoTimeStepDelta)*idv(norm2_uu) );
+            }
         }
-    }
+    } // foreach physic
 
     if ( !dynamic_cast<DataUpdateJacobian*>(&data) || !boption(_name="pcd.apply-homogeneous-dirichlet-in-newton",_prefix=this->prefix()) )
     {
@@ -1324,34 +1231,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateConvectionVelocityExtrapolated()
         return;
 
     if ( !M_fieldConvectionVelocityExtrapolated )
-        M_fieldConvectionVelocityExtrapolated = this->functionSpace()->elementPtr();
+        M_fieldConvectionVelocityExtrapolated = this->functionSpaceVelocity()->elementPtr();
     else
         M_fieldConvectionVelocityExtrapolated->zero();
 
     if ( this->currentTime() == this->timeInitial() )
     {
-        if ( M_bdf_fluid->iteration() == 1 )
-            M_fieldConvectionVelocityExtrapolated->add( 1, M_bdf_fluid->unknown(1) );
-        else if ( M_bdf_fluid->iteration() > 1 )
+        if ( M_bdfVelocity->iteration() == 1 )
+            M_fieldConvectionVelocityExtrapolated->add( 1, M_bdfVelocity->unknown(1) );
+        else if ( M_bdfVelocity->iteration() > 1 )
         {
-            M_fieldConvectionVelocityExtrapolated->add( 2, M_bdf_fluid->unknown(1) );
-            M_fieldConvectionVelocityExtrapolated->add( -1, M_bdf_fluid->unknown(2) );
+            M_fieldConvectionVelocityExtrapolated->add( 2, M_bdfVelocity->unknown(1) );
+            M_fieldConvectionVelocityExtrapolated->add( -1, M_bdfVelocity->unknown(2) );
         }
     }
     else
     {
         if ( M_timeStepping == "BDF" )
         {
-            *M_fieldConvectionVelocityExtrapolated = *M_bdf_fluid->polyPtr();
+            *M_fieldConvectionVelocityExtrapolated = *M_bdfVelocity->polyPtr();
         }
         else if ( M_timeStepping == "Theta" )
         {
-            if ( M_bdf_fluid->iteration() == 1 )
-                M_fieldConvectionVelocityExtrapolated->add( 1, M_bdf_fluid->unknown(0) );
-            else if ( M_bdf_fluid->iteration() > 1 )
+            if ( M_bdfVelocity->iteration() == 1 )
+                M_fieldConvectionVelocityExtrapolated->add( 1, M_bdfVelocity->unknown(0) );
+            else if ( M_bdfVelocity->iteration() > 1 )
             {
-                M_fieldConvectionVelocityExtrapolated->add( 2 /*3./2.*/, M_bdf_fluid->unknown(0) );
-                M_fieldConvectionVelocityExtrapolated->add( -1 /*-1./2.*/, M_bdf_fluid->unknown(1) );
+                M_fieldConvectionVelocityExtrapolated->add( 2 /*3./2.*/, M_bdfVelocity->unknown(0) );
+                M_fieldConvectionVelocityExtrapolated->add( -1 /*-1./2.*/, M_bdfVelocity->unknown(1) );
             }
         }
     }
@@ -1372,9 +1279,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::startTimeStep()
 
     // start time step
     if ( !this->doRestart() )
-        M_bdf_fluid->start(*M_Solution);
+    {
+        M_bdfVelocity->start( *M_fieldVelocity );
+        M_savetsPressure->start( *M_fieldPressure );
+        M_bodySetBC.startTimeStep();
+    }
     // up current time
-    this->updateTime( M_bdf_fluid->time() );
+    this->updateTime( M_bdfVelocity->time() );
 
     if ( this->solverName() == "Oseen" )
         this->updateConvectionVelocityExtrapolated();
@@ -1413,7 +1324,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
             file.setf( std::ios::scientific );
             file.width( 15 );
             file.setf( std::ios::left );
-            file << M_bdf_fluid->iteration();
+            file << M_bdfVelocity->iteration();
             file.width( 20 );
             file << this->time();
 
@@ -1447,20 +1358,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
         M_meshALE->updateTimeStep();
 #endif
 
+    M_bodySetBC.updateTimeStep();
+
     bool rebuildCstAssembly = false;
     if ( M_timeStepping == "BDF" )
     {
         int previousTimeOrder = this->timeStepBDF()->timeOrder();
-        M_bdf_fluid->next( *M_Solution );
+        M_bdfVelocity->next( *M_fieldVelocity );
+        M_savetsPressure->next( *M_fieldPressure );
         int currentTimeOrder = this->timeStepBDF()->timeOrder();
         rebuildCstAssembly = previousTimeOrder != currentTimeOrder && this->timeStepBase()->strategy() == TS_STRATEGY_DT_CONSTANT;
-        this->updateTime( M_bdf_fluid->time() );
+        this->updateTime( M_bdfVelocity->time() );
     }
     else if ( M_timeStepping == "Theta" )
     {
-        M_bdf_fluid->next( *M_Solution );
-        this->updateTime( M_bdf_fluid->time() );
+        M_bdfVelocity->next( *M_fieldVelocity );
+        M_savetsPressure->next( *M_fieldPressure );
+        this->updateTime( M_bdfVelocity->time() );
     }
+
+    if ( rebuildCstAssembly )
+        this->setNeedToRebuildCstPart(true);
 
     if ( this->solverName() == "Oseen" )
         this->updateConvectionVelocityExtrapolated();
@@ -1469,22 +1387,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateTimeStep()
     this->updateUserFunctions(true);
     // update all expressions in bc or in house prec
     this->updateParameterValues();
-
-    // maybe rebuild cst jacobian or linear
-    if ( M_algebraicFactory && rebuildCstAssembly )
-    {
-        if (this->solverName() == "Newton" && !this->rebuildLinearPartInJacobian() )
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstJacobian" );
-            M_algebraicFactory->rebuildCstJacobian(M_Solution);
-        }
-        else if (this->solverName() == "LinearSystem" && !this->rebuildCstPartInLinearSystem())
-        {
-            this->log("FluidMechanics","updateTimeStepBDF", "do rebuildCstLinearPDE" );
-            M_algebraicFactory->rebuildCstLinearPDE(M_Solution);
-        }
-    }
-
 
     this->timerTool("TimeStepping").stop("updateTimeStep");
     if ( this->scalabilitySave() ) this->timerTool("TimeStepping").save();
@@ -1638,6 +1540,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 double
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype const& Unew, vector_ptrtype const& Uold ) const
 {
+#if 0
     using namespace Feel::vf;
 
     auto U1 = this->functionSpace()->element();U1 = *Unew;
@@ -1658,9 +1561,49 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardConvergence( vector_ptrtype cons
                              _geomap=this->geomap() ).evaluate()(0,0);
 
     return std::sqrt(err_u+err_p);
+#endif
+    return 1.;
 }
 
 //---------------------------------------------------------------------------------------------------------//
+
+namespace FluidToolbox_detail
+{
+
+template <typename MeshType,typename RangeType>
+faces_reference_wrapper_t<MeshType>
+removeBadFace( std::shared_ptr<MeshSupport<MeshType>> const& ms, RangeType const& r )
+{
+    typename MeshTraits<MeshType>::faces_reference_wrapper_ptrtype myelts( new typename MeshTraits<MeshType>::faces_reference_wrapper_type );
+     if ( !ms->isPartialSupport() )
+        return r;
+    for ( auto const& faceWrap : r )
+    {
+        auto const& theface = unwrap_ref( faceWrap );
+        if ( theface.isConnectedTo0() && theface.isConnectedTo1() )
+        {
+            if ( theface.element0().isGhostCell() && !ms->hasElement(theface.element1().id() ) )
+            {
+                //std::cout << "removeBadFace case 0 : " << theface.processId() << " ; " << theface.id() << std::endl;
+                continue;
+            }
+            if ( theface.element1().isGhostCell() && !ms->hasElement(theface.element0().id() ) )
+            {
+                // std::cout << "removeBadFace case 1 : " << theface.processId() << " ; " << theface.id()
+                //           << " other p="<< theface.element1().processId()<< " ;" <<  theface.idInOthersPartitions( theface.element1().processId() ) << std::endl;
+                continue;
+            }
+
+        }
+        myelts->push_back( boost::cref( theface ) );
+    }
+    myelts->shrink_to_fit();
+    return boost::make_tuple( mpl::size_t<MESH_FACES>(),
+                              myelts->begin(),
+                              myelts->end(),
+                              myelts );
+}
+}
 
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
@@ -1670,7 +1613,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
 {
     this->log("FluidMechanics","updateALEmesh", "start");
 
-    if ( !M_bcMovingBoundaryImposed.empty() )
+    auto velocityMeshSupport = this->functionSpaceVelocity()->template meshSupport<0>();
+    std::set<size_type> dofToSync;
+    if ( !M_bcMovingBoundaryImposed.empty() || M_bodySetBC.hasElasticVelocityFromExpr() )
     {
         // Warning : evaluate expression on reference mesh (maybe it will better to change the API in order to avoid tjese meshmoves)
         bool meshIsOnRefAtBegin = this->meshALE()->isOnReferenceMesh();
@@ -1682,9 +1627,42 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
                                                _expr=expression(d,this->symbolsExpr()),
                                                _geomap=this->geomap() );
         }
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            if ( bpbc.hasElasticVelocityFromExpr() )
+                bpbc.updateElasticVelocityFromExpr(*this);
+        }
+
         if ( !meshIsOnRefAtBegin )
             this->meshALE()->revertMovingMesh( false );
     }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
+        // temporary fix of interpolation with meshale space
+        auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
+        if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
+        else if ( bpbc.hasElasticVelocityFromExpr() )
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
+        else
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
+#if 0
+        (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
+#endif
+
+        if ( velocityMeshSupport->isPartialSupport() )
+        {
+            auto _thedof = M_meshDisplacementOnInterface->functionSpace()->dofs(rangeMFOF,ComponentType::NO_COMPONENT,true);
+            dofToSync.insert(_thedof.begin(),_thedof.end());
+        }
+    }
+
+    if ( !M_bodySetBC.empty() && velocityMeshSupport->isPartialSupport() )
+        sync( *M_meshDisplacementOnInterface, "=", dofToSync );
+
+
     //-------------------------------------------------------------------//
     // compute ALE map
     //std::vector< mesh_ale_type::ale_map_element_type> polyBoundarySet = { *M_meshDisplacementOnInterface };
@@ -1703,11 +1681,47 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
     {
         this->log("FluidMechanics","updateALEmesh", "rebuild operatorPCD");
         CHECK( this->algebraicFactory()->preconditionerTool()->hasOperatorPCD("pcd") ) << "operator PCD does not init";
-        typedef Feel::Alternatives::OperatorPCD<space_fluid_velocity_type,space_fluid_pressure_type> op_pcd_type;
+        typedef Feel::Alternatives::OperatorPCD<space_velocity_type,space_pressure_type> op_pcd_type;
         std::shared_ptr<op_pcd_type> myOpPCD =
             std::dynamic_pointer_cast<op_pcd_type>( this->algebraicFactory()->preconditionerTool()->operatorPCD( "pcd" ) );
         myOpPCD->assemble();
     }
+
+#if 0
+    if ( this->algebraicFactory() && !M_bodySetBC.empty() )
+    {
+        this->functionSpaceVelocity()->rebuildDofPoints();
+        // not very nice, we need to update direclty P, not rebuild
+
+        int nBlock = this->nBlockMatrixGraph();
+        BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
+        for (int i=0;i<nBlock;++i)
+            myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
+
+        size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
+        for ( auto & [bpname,bpbc] : M_bodySetBC )
+        {
+            // rebuild matrixPTilde_angular
+            bpbc.updateForUse( *this );
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+            auto dofsBody = this->functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
+            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+            for ( auto dofid : dofsBody )
+                matFI_Id->set( dofid,dofid, 0.);
+            matFI_Id->close();
+        }
+
+        auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+        M_algebraicFactory->initSolverPtAP( matP );
+    }
+#endif
 
     this->log("FluidMechanics","updateALEmesh", "finish");
 }
@@ -1745,9 +1759,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeForce(std::string const& markerName) 
 {
     using namespace Feel::vf;
 
-    auto solFluid = this->fieldVelocityPressurePtr();
-    auto u = solFluid->template element<0>();
-    auto p = solFluid->template element<1>();
+    // current solution
+    auto const& u = this->fieldVelocity();
+    auto const& p = this->fieldPressure();
 #if 0
     //deformation tensor
     auto defv = sym(gradv(u));
@@ -1853,6 +1867,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeVelocityDivergenceNormL2() const
 
 //---------------------------------------------------------------------------------------------------------//
 
+#if 0
 #if defined( FEELPP_MODELS_HAS_MESHALE )
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -1997,7 +2012,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::computeFlowRate(std::vector<mesh_slice1d_ptr
 }
 
 #endif // HAS_MESHALE
-
+#endif
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2032,7 +2047,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 int
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
 {
-    int nBlock = 1;
+    int nBlock = 2;
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
         nBlock+=M_XhMeanPressureLM.size();
     if (this->hasMarkerDirichletBClm())
@@ -2045,6 +2060,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
+    nBlock += 2*M_bodySetBC.size();
     return nBlock;
 }
 
@@ -2055,30 +2071,44 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     this->log("FluidMechanics","buildBlockMatrixGraph", "start" );
     int nBlock = this->nBlockMatrixGraph();
 
+    auto XhV = this->functionSpaceVelocity();
+    auto XhP = this->functionSpacePressure();
+
     BlocksBaseGraphCSR myblockGraph(nBlock,nBlock);
     int indexBlock=0;
     // first field (velocity+pressure)
     auto ru = stencilRange<0,0>(marked3faces(this->mesh(),1));
     auto rp = stencilRange<1,1>(marked3faces(this->mesh(),1));
+#if 0
     myblockGraph(indexBlock,indexBlock) =stencil(_test=this->functionSpace(),_trial=this->functionSpace(),
                                                  _pattern_block=this->blockPattern(),
                                                  //_diag_is_nonzero=false,_close=false,
                                                  _diag_is_nonzero=(nBlock==1),_close=(nBlock==1),
                                                  _range_extended=stencilRangeMap(ru,rp) )->graph();
-    ++indexBlock;
+#endif
+    auto blockPat = blockPattern();
+    myblockGraph(indexBlock,indexBlock) = stencil(_test=XhV,_trial=XhV,
+                                                  _pattern=blockPat(0,0),
+                                                  _diag_is_nonzero=false,_close=false,
+                                                  _range_extended=stencilRangeMap(ru) )->graph();
+    myblockGraph(indexBlock+1,indexBlock+1) = stencil(_test=XhP,_trial=XhP,
+                                                      _pattern=blockPat(1,1),
+                                                      _diag_is_nonzero=false,_close=false,
+                                                      _range_extended=stencilRangeMap(ru) )->graph();
+    myblockGraph(indexBlock,indexBlock+1) = stencil(_test=XhV,_trial=XhP,
+                                                    _pattern=blockPat(0,1),
+                                                    _diag_is_nonzero=false,_close=false )->graph();
+    myblockGraph(indexBlock+1,indexBlock) =  myblockGraph(indexBlock,indexBlock+1)->transpose( false );
+
+    indexBlock+=2;
 
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
-        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingLM(0,1) = size_type(Pattern::COUPLED);
-
         for ( int k=0;k<M_XhMeanPressureLM.size();++k )
         {
-            myblockGraph(indexBlock,0) = stencil(_test=M_XhMeanPressureLM[k],_trial=this->functionSpace(),
-                                                 _pattern_block=patCouplingLM,
+            myblockGraph(indexBlock,1) = stencil(_test=M_XhMeanPressureLM[k],_trial=XhP,
                                                  _diag_is_nonzero=false,_close=false)->graph();
-            myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_XhMeanPressureLM[k],
-                                                 _pattern_block=patCouplingLM.transpose(),
+            myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=M_XhMeanPressureLM[k],
                                                  _diag_is_nonzero=false,_close=false)->graph();
             ++indexBlock;
         }
@@ -2086,26 +2116,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
     if (this->hasMarkerDirichletBClm())
     {
-        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
-
-        myblockGraph(indexBlock,0) = stencil(_test=this->XhDirichletLM(),_trial=this->functionSpace(),
-                                             _pattern_block=patCouplingLM,
+        myblockGraph(indexBlock,0) = stencil(_test=this->XhDirichletLM(),_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=this->XhDirichletLM(),
-                                             _pattern_block=patCouplingLM.transpose(),
+        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=this->XhDirichletLM(),
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
     if ( this->hasMarkerPressureBC() )
     {
-        BlocksStencilPattern patCouplingLM(1,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
-        patCouplingLM(0,0) = size_type(Pattern::COUPLED);
-        myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=this->functionSpace(),
-                                             _pattern_block=patCouplingLM,
+        myblockGraph(indexBlock,0) = stencil(_test=M_spaceLagrangeMultiplierPressureBC,_trial=XhV,
                                              _diag_is_nonzero=false,_close=false)->graph();
-        myblockGraph(0,indexBlock) = stencil(_test=this->functionSpace(),_trial=M_spaceLagrangeMultiplierPressureBC,
-                                             _pattern_block=patCouplingLM.transpose(),
+        myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=M_spaceLagrangeMultiplierPressureBC,
                                              _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
         if ( nDim == 3 )
@@ -2117,11 +2138,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     }
     if ( this->hasFluidOutletWindkesselImplicit() )
     {
-        BlocksStencilPattern patCouplingFirstCol(2,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        BlocksStencilPattern patCouplingFirstCol(space_fluidoutlet_windkessel_type::nSpaces,1,size_type(Pattern::ZERO));
         patCouplingFirstCol(0,0) = size_type(Pattern::COUPLED);
         patCouplingFirstCol(1,0) = size_type(Pattern::COUPLED);
 
-        BlocksStencilPattern patCouplingFirstRow(2,space_fluid_type::nSpaces,size_type(Pattern::ZERO));
+        BlocksStencilPattern patCouplingFirstRow(1,space_fluidoutlet_windkessel_type::nSpaces,size_type(Pattern::ZERO));
         patCouplingFirstRow(0,1) = size_type(Pattern::COUPLED);
 
         BlocksStencilPattern patCouplingDiag(2,2,size_type(Pattern::COUPLED));
@@ -2135,18 +2156,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
             // first column
             auto rangeFirstCol1 = stencilRange<0,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
             auto rangeFirstCol2 = stencilRange<1,0>( markedelements(this->fluidOutletWindkesselMesh(),markerOutlet) );
-            myblockGraph(indexBlock+k,0) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=this->functionSpace(),
+            myblockGraph(indexBlock+k,0) = stencil(_test=M_fluidOutletWindkesselSpace,_trial=XhV,
                                                    _pattern_block=patCouplingFirstCol,
                                                    _range=stencilRangeMap(rangeFirstCol1,rangeFirstCol2),
                                                    _diag_is_nonzero=false,_close=false)->graph();
 
             // first line
 #if 0
-            myblockGraph(0,indexBlock+k) = stencil(_test=this->functionSpace(),_trial=M_fluidOutletWindkesselSpace,
+            myblockGraph(0,indexBlock+k) = stencil(_test=XhV,_trial=M_fluidOutletWindkesselSpace,
                                                    _pattern_block=patCouplingFirstRow,
                                                    _diag_is_nonzero=false,_close=false)->graph();
 #else
-            myblockGraph(0,indexBlock+k) = myblockGraph(indexBlock+k,0)->transpose();
+            myblockGraph(0,indexBlock+k) = myblockGraph(indexBlock+k,0)->transpose( false );
 #endif
 
             // on diag
@@ -2156,6 +2177,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                               _diag_is_nonzero=false,_close=false)->graph();
         }
         indexBlock += this->nFluidOutletWindkesselImplicit();//this->nFluidOutlet();
+    }
+
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),_trial=bpbc.spaceTranslationalVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
+        myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+        ++indexBlock;
     }
 
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
@@ -2181,61 +2212,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildMatrixGraph() const
 //---------------------------------------------------------------------------------------------------------//
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
-typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::indexsplit_ptrtype
-FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildIndexSplit() const
-{
-    // WARNING : this function is not use now
-
-    //indexsplit_type theres(space_fluid_type::nSpaces+1);
-
-    indexsplit_ptrtype res = this->functionSpace()->dofIndexSplit();
-
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {
-        int procMasterWindkessel=0;bool findProc=false;
-        for (int proc=0;proc<this->worldComm().globalSize() && !findProc;++proc)
-            if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhostOnProc(proc) > 0 )
-            {
-                procMasterWindkessel=proc;
-                findProc=true;
-            }
-        CHECK(findProc)<< "not find the proc\n";
-
-        if (this->worldComm().globalRank() > procMasterWindkessel )
-        {
-            for ( int k=0;k<=1;++k)
-            {
-                const size_type splitSize = (*res)[k].size();
-                for ( size_type i=0; i<splitSize; ++i)
-                    (*res)[k][i]+=2*this->nFluidOutletWindkesselImplicit();//nFluidOutlet();
-            }
-        }
-
-        if ( M_fluidOutletWindkesselSpace->nLocalDofWithoutGhost() > 0 )
-        {
-            const size_type velocitySplitSize = (*res)[0].size();
-            (*res)[0].resize( velocitySplitSize + 2*this->nFluidOutletWindkesselImplicit/*nFluidOutlet*/(), 0 );
-            size_type cpt = velocitySplitSize;
-            const size_type startSplitW = (*res)[0][0]+this->functionSpace()->nLocalDofWithoutGhost();
-            for (int k=0;k<this->nFluidOutlet();++k)
-            {
-                (*res)[0][cpt]=startSplitW+2*k;// res[0][cpt-1]+1;
-                (*res)[0][cpt+1]=startSplitW+2*k+1;//res[0][cpt]+1;
-                cpt+=2;
-            }
-        }
-    }
-
-    return res;
-}
-
-//---------------------------------------------------------------------------------------------------------//
-
-FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 typename FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::size_type
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nLocalDof() const
 {
-    auto res = this->functionSpace()->nLocalDofWithGhost();
+    auto res = this->functionSpaceVelocity()->nLocalDofWithGhost() + this->functionSpacePressure()->nLocalDofWithGhost();
     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
     {
         for ( int k=0;k<M_XhMeanPressureLM.size();++k )
@@ -2252,24 +2232,25 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBlockVectorSolution()
 {
-    // copy velocity/pressure in block
-#if 0
-    auto & vecAlgebraic = M_blockVectorSolution.vector();
-    auto const& fieldVelPres = this->fieldVelocityPressure();
-    for (int k=0;k< this->functionSpace()->nLocalDofWithGhost() ;++k)
-        vecAlgebraic->set(k, fieldVelPres(k) );
-#else
-    //M_blockVectorSolution.vector()->close();
-    M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldVelocityPressure(), 0 );
-#endif
+    M_blockVectorSolution.updateVectorFromSubVectors();
+//     // copy velocity/pressure in block
+// #if 0
+//     auto & vecAlgebraic = M_blockVectorSolution.vector();
+//     auto const& fieldVelPres = this->fieldVelocityPressure();
+//     for (int k=0;k< this->functionSpace()->nLocalDofWithGhost() ;++k)
+//         vecAlgebraic->set(k, fieldVelPres(k) );
+// #else
+//     //M_blockVectorSolution.vector()->close();
+//     M_blockVectorSolution.setVector( *M_blockVectorSolution.vectorMonolithic(), this->fieldVelocityPressure(), 0 );
+// #endif
 
-    // do nothing for others block (fields define only in blockVectorSolution)
-    if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
-    {}
-    if (this->hasMarkerDirichletBClm())
-    {}
-    if ( this->hasFluidOutletWindkesselImplicit() )
-    {}
+//     // do nothing for others block (fields define only in blockVectorSolution)
+//     if ( this->definePressureCst() && this->definePressureCstMethod() == "lagrange-multiplier" )
+//     {}
+//     if (this->hasMarkerDirichletBClm())
+//     {}
+//     if ( this->hasFluidOutletWindkesselImplicit() )
+//     {}
 
 }
 
@@ -2330,36 +2311,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
     // on topological faces
     auto const& listMarkedFacesVelocity = std::get<0>( meshMarkersVelocityByEntities );
     if ( !listMarkedFacesVelocity.empty() )
-    {
-        auto therange = markedfaces( mesh,listMarkedFacesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces( mesh,listMarkedFacesVelocity ) );
     // on marked edges (only 3d)
-    auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
-    if ( !listMarkedEdgesVelocity.empty() )
+    if constexpr ( nDim == 3)
     {
-        auto therange = markededges(mesh,listMarkedEdgesVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        auto const& listMarkedEdgesVelocity = std::get<1>( meshMarkersVelocityByEntities );
+        if ( !listMarkedEdgesVelocity.empty() )
+            this->updateDofEliminationIds( "velocity", XhVelocity, markededges( mesh,listMarkedEdgesVelocity ) );
     }
     // on marked points
     auto const& listMarkedPointsVelocity = std::get<2>( meshMarkersVelocityByEntities );
     if ( !listMarkedPointsVelocity.empty() )
-    {
-        auto therange = markedpoints(mesh,listMarkedPointsVelocity );
-        auto dofsToAdd = XhVelocity->dofs( therange );
-        XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-    }
+        this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints( mesh,listMarkedPointsVelocity ) );
+
     //-------------------------------------//
     // on velocity components
     for ( auto const& meshMarkersPair : meshMarkersCompVelocityByEntities )
@@ -2367,46 +2331,43 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateBoundaryConditionsForUse()
         ComponentType comp = meshMarkersPair.first;
         auto const& listMarkedFacesCompVelocity = std::get<0>( meshMarkersPair.second );
         if ( !listMarkedFacesCompVelocity.empty() )
-        {
-            auto therange = markedfaces(mesh,listMarkedFacesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedfaces(mesh,listMarkedFacesCompVelocity ), comp );
         // edges (only 3d)
-        auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
-        if ( !listMarkedEdgesCompVelocity.empty() )
+        if constexpr ( nDim == 3)
         {
-            auto therange = markededges(mesh,listMarkedEdgesCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_EDGES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_EDGES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+            auto const& listMarkedEdgesCompVelocity = std::get<1>( meshMarkersPair.second );
+            if ( !listMarkedEdgesCompVelocity.empty() )
+                this->updateDofEliminationIds( "velocity", XhVelocity, markededges(mesh,listMarkedEdgesCompVelocity ), comp );
         }
         // points
         auto const& listMarkedPointsCompVelocity = std::get<2>( meshMarkersPair.second );
         if ( !listMarkedPointsCompVelocity.empty() )
-        {
-            auto therange = markedpoints(mesh,listMarkedPointsCompVelocity );
-            auto dofsToAdd = XhVelocity->dofs( therange, comp );
-            XhVelocity->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-            this->dofEliminationIdsAll("velocity",MESH_POINTS).insert( dofsToAdd.begin(), dofsToAdd.end() );
-            auto dofsMultiProcessToAdd = XhVelocity->dofs( therange, comp, true );
-            this->dofEliminationIdsMultiProcess("velocity",MESH_POINTS).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
-        }
+            this->updateDofEliminationIds( "velocity", XhVelocity, markedpoints(mesh,listMarkedPointsCompVelocity ), comp );
     }
 
     if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC )
     {
-        auto therange = boundaryfaces(M_meshLagrangeMultiplierPressureBC);
-        auto dofsToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange );
-        M_spaceLagrangeMultiplierPressureBC->dof()->updateIndexSetWithParallelMissingDof( dofsToAdd );
-        this->dofEliminationIdsAll("pressurebc-lm",MESH_FACES).insert( dofsToAdd.begin(), dofsToAdd.end() );
-        auto dofsMultiProcessToAdd = M_spaceLagrangeMultiplierPressureBC->dofs( therange, ComponentType::NO_COMPONENT, true );
-        this->dofEliminationIdsMultiProcess("pressurebc-lm",MESH_FACES).insert( dofsMultiProcessToAdd.begin(), dofsMultiProcessToAdd.end() );
+        this->updateDofEliminationIds( "pressurebc-lm", M_spaceLagrangeMultiplierPressureBC, boundaryfaces(M_meshLagrangeMultiplierPressureBC) );
+    }
+
+    // body bc
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasTranslationalVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.translational-velocity",  bpbc.spaceTranslationalVelocity(),  elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
+    }
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        if ( bpbc.hasAngularVelocityExpr() )
+        {
+            this->updateDofEliminationIds( "body-bc.angular-velocity",  bpbc.spaceAngularVelocity(), elements( bpbc.mesh() ) );
+            // only do for one, dof ids are the same for all
+            break;
+        }
     }
 }
 

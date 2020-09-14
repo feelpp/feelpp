@@ -57,10 +57,10 @@ public:
     typedef typename levelset_model_type::space_markers_ptrtype space_levelset_markers_ptrtype;
     typedef typename levelset_model_type::space_advection_velocity_type space_levelset_advection_velocity_type;
     typedef typename levelset_model_type::space_advection_velocity_ptrtype space_levelset_advection_velocity_ptrtype;
-    typedef typename fluid_model_type::component_space_fluid_velocity_type component_space_fluid_velocity_type;
+    typedef typename fluid_model_type::component_space_velocity_type component_space_fluid_velocity_type;
 
-    typedef typename fluid_model_type::space_fluid_velocity_type space_fluid_velocity_type;
-    typedef typename fluid_model_type::space_fluid_velocity_ptrtype space_fluid_velocity_ptrtype;
+    typedef typename fluid_model_type::space_velocity_type space_fluid_velocity_type;
+    typedef typename fluid_model_type::space_velocity_ptrtype space_fluid_velocity_ptrtype;
 
     typedef typename levelset_model_type::element_levelset_type element_levelset_type;
     typedef typename levelset_model_type::element_levelset_ptrtype element_levelset_ptrtype; 
@@ -174,7 +174,8 @@ public:
                 );
         return Feel::FeelModels::globalLevelsetExpr( levelsets );
     }
-    element_levelset_ptrtype const& globalLevelsetElt() const;
+    element_levelset_ptrtype const& globalLevelsetElt( bool up = true ) const;
+    void updateGlobalLevelsetElt( element_levelset_ptrtype & globalLevelsetElt, bool & doUpdateGlobalLevelset ) const;
 
     // Fluid density-viscosity model
     material_properties_ptrtype const& fluidMaterialProperties() const { return M_fluidMaterialProperties; }
@@ -182,14 +183,71 @@ public:
 
     //--------------------------------------------------------------------//
     // Accessors interfaces
-    decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
+    //decltype(auto) functionSpaceVelocityPressure() const { return this->fluidModel()->functionSpace(); }
     decltype(auto) functionSpaceVelocity() const { return this->fluidModel()->functionSpaceVelocity(); }
     decltype(auto) functionSpacePressure() const { return this->fluidModel()->functionSpacePressure(); }
-    decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
-    decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
+    //decltype(auto) fieldVelocityPressurePtr() const { return this->fluidModel()->fieldVelocityPressurePtr(); }
+    //decltype(auto) fieldVelocityPressure() const { return this->fluidModel()->fieldVelocityPressure(); }
     decltype(auto) fieldVelocity() const { return this->fluidModel()->fieldVelocity(); }
     decltype(auto) fieldPressure() const { return this->fluidModel()->fieldPressure(); }
 
+    //___________________________________________________________________________________//
+    // toolbox fields
+    //___________________________________________________________________________________//
+
+    struct FieldTag
+    {
+        static auto globalLevelsetElt( self_type const* t ) { return ModelFieldTag<self_type,0>( t ); }
+    };
+    auto modelFields( std::string const& prefix = "" ) const
+        {
+            auto mfieldsFluid = M_fluidModel->modelFields( prefixvm( prefix, M_fluidModel->keyword() ) );
+
+            using mfields_levelset_type = std::decay_t<decltype(M_levelsets.begin()->second->modelFields( "" ) )>;
+            mfields_levelset_type mfieldsLevelsets;
+            // for ( auto const& [lsName,lsObject] : M_levelsets )
+            //     mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, lsObject->modelFields(  prefixvm( prefix,  lsObject->keyword() ) ) );
+            for ( auto it = M_levelsets.begin() ; it != M_levelsets.end() ; ++it )
+                mfieldsLevelsets = Feel::FeelModels::modelFields( mfieldsLevelsets, it->second->modelFields(  prefixvm( prefix,  it->second->keyword() ) ) );
+
+            return Feel::FeelModels::modelFields( mfieldsFluid, mfieldsLevelsets,
+                                                  modelField<FieldCtx::ID>( FieldTag::globalLevelsetElt(this), prefixvm( prefix, "global-levelset"), "phi", this->globalLevelsetElt(false), "phi", this->keyword(),
+                                                                            std::bind( &self_type::updateGlobalLevelsetElt, this, std::placeholders::_1, std::ref(M_doUpdateGlobalLevelset) ) )
+                                                  );
+        }
+
+    //___________________________________________________________________________________//
+    // symbols expression
+    //___________________________________________________________________________________//
+
+    template <typename ModelFieldsType>
+    auto symbolsExpr( ModelFieldsType const& mfields ) const
+        {
+            auto seFluid = this->fluidModel()->symbolsExprToolbox( mfields );
+            auto seParam = this->symbolsExprParameter();
+            //auto seMat = this->materialsProperties()->symbolsExpr();
+            auto seFields = mfields.symbolsExpr();
+            return Feel::vf::symbolsExpr( seFluid,seParam,seFields );
+        }
+    auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
+
+#if 0
+    //--------------------------------------------------------------------//
+    // Symbols expr
+    auto symbolsExpr() const { 
+        return this->symbolsExpr( M_fluidModel->fieldVelocity(), M_fluidModel->fieldPressure() ); 
+        // TODO add levelsets symbols
+    }
+
+    template <typename FieldVelocityType, typename FieldPressureType>
+    auto symbolsExpr( FieldVelocityType const& u, FieldPressureType const& p ) const
+    {
+        auto seFluid = this->fluidModel()->symbolsExprToolbox( u,p );
+        auto seParam = this->symbolsExprParameter();
+        //auto symbolExprMaterial = Feel::vf::symbolsExpr( M_fluidModel->symbolsExprMaterial( Feel::vf::symbolsExpr( symbolExprField, symbolExprFit ) ) );
+        return Feel::vf::symbolsExpr( seFluid, seParam );
+    }
+#endif
     //--------------------------------------------------------------------//
     // Algebraic data
     int nBlockMatrixGraph() const;
@@ -218,6 +276,9 @@ public:
     //--------------------------------------------------------------------//
     // Solve
     void solve();
+    virtual void solveExplicitCoupling();
+    virtual void solveImplicitCoupling();
+    void solvePicard();
 
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     void updateLinearPDEInterfaceForces( DataUpdateLinear & data ) const;
@@ -247,8 +308,8 @@ public:
 
     //--------------------------------------------------------------------//
     // Export
-    void exportResults( double time ) { this->exportResultsImpl( time ); }
     void exportResults() { this->exportResults( this->currentTime() ); }
+    void exportResults( double time );
     void exportMeasures( double time );
     // Measures
     force_type computeLevelsetForce( std::string const& name ) const;
@@ -271,9 +332,6 @@ protected:
 
     void setRebuildMatrixVector( bool b = true ) { M_doRebuildMatrixVector = b; }
     bool rebuildMatrixVector() const { return M_doRebuildMatrixVector; }
-    //--------------------------------------------------------------------//
-    // Export
-    virtual void exportResultsImpl( double time );
 
     //--------------------------------------------------------------------//
     uint16_type M_nFluids;
@@ -334,8 +392,8 @@ private:
     // Penalty method gamma
     std::map<std::string, double> M_inextensibilityGamma;
     //--------------------------------------------------------------------//
-    // Reinitialization
-    std::map<std::string, int> M_levelsetReinitEvery;
+    // Redistanciation
+    std::map<std::string, int> M_levelsetRedistEvery;
 
     //--------------------------------------------------------------------//
     // Post-process

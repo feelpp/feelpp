@@ -10,9 +10,9 @@
 //extern const constant Euler;
 
 #if defined( USE_STANDARD_HEADERS_IN_GINAC_EXCOMPILER )
-#include <stddef.h>
-#include <stdlib.h>
-#include <math.h>
+#include <algorithm>
+#include <cstdlib>
+#include <cmath>
 #define Pi M_PI
 #define pi M_PI
 #else

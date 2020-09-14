@@ -78,10 +78,7 @@ public:
     typedef std::vector<double> time_values_map_type;
 
     TSBase();
-    FEELPP_DEPRECATED
-    TSBase( po::variables_map const& vm, std::string name, std::string const& prefix, WorldComm const& worldComm )
-        : TSBase( name,prefix,worldComm ) {}
-    TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm );
+    TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm = Environment::vm() );
     TSBase( std::string name, WorldComm const& worldComm );
     TSBase( TSBase const& b );
 
@@ -266,7 +263,7 @@ public:
             << " (TS_RUNNING) and it is " << state();
         M_real_time_per_iteration = M_timer.elapsed();
         M_timer.restart();
-        if ( boption(prefixvm(M_prefix,"ts.display-stats")) )
+        if ( M_displayStats )
             Environment::saveTimers( true );
         M_time += M_dt;
         ++M_iteration;
@@ -538,6 +535,9 @@ protected:
     WorldComm M_worldComm;
 
     std::string M_prefix;
+
+    //! indicates if display stat is enabled
+    bool M_displayStats;
 
 protected:
     void init();

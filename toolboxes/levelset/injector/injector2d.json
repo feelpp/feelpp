@@ -1,0 +1,54 @@
+{
+    "Name": "Square2d",
+    "ShortName": "Square2d",
+    "Models":
+    {
+        "equations":"Levelset"
+    },
+
+    "InitialConditions":
+    {
+        "levelset":
+        {
+            "shapes":
+            {
+                "drop1":
+                {
+                    "shape": "sphere",
+                    "xc": "1.2",
+                    "yc": "0",
+                    "radius": "0.1"
+                }
+            }
+        }
+    },
+    "BoundaryConditions":
+    {
+        "levelset":
+        {
+            "inflow":
+            {
+                "Left":
+                {
+                    "expr":"0"
+                }
+            },
+            "ParticleInjector":
+            {
+                "inject":
+                {
+                    "particles":
+                    {
+                        "part":
+                        {
+                            "shape":"sphere",
+                            "xc":"0",
+                            "yc":"0",
+                            "radius":"0.1"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
