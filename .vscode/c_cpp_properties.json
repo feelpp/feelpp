@@ -48,7 +48,7 @@
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}/compile_commands.json"
         },
         {
             "name": "Win32",
