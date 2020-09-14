@@ -158,14 +158,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a6d0d59f009af9b50e0f250fb556491e0"><td class="memItemLeft" align="right" valign="top"><a id="a6d0d59f009af9b50e0f250fb556491e0"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BlockBilinearForm</b> (product_space_t const &amp;ps, condensed_matrix_ptrtype &amp;m)</td></tr>
 <tr class="separator:a6d0d59f009af9b50e0f250fb556491e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4a49e741d7a282132c477e7a47e546d"><td class="memTemplParams" colspan="2"><a id="ab4a49e741d7a282132c477e7a47e546d"></a>
-template&lt;typename T , typename BackendT &gt; </td></tr>
-<tr class="memitem:ab4a49e741d7a282132c477e7a47e546d"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, BackendT &amp;&amp;b, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &amp;&amp;std::is_base_of&lt; BackendBase, decay_type&lt; BackendT &gt;&gt;::value &gt; *=nullptr)</td></tr>
-<tr class="separator:ab4a49e741d7a282132c477e7a47e546d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f39bb14d44d413f0cd6070dd0b3486f"><td class="memTemplParams" colspan="2"><a id="a9f39bb14d44d413f0cd6070dd0b3486f"></a>
-template&lt;typename T , typename BackendT &gt; </td></tr>
-<tr class="memitem:a9f39bb14d44d413f0cd6070dd0b3486f"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, size_type pattern=Pattern::COUPLED, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &amp;&amp;std::is_base_of&lt; BackendBase, decay_type&lt; BackendT &gt;&gt;::value &gt; *=nullptr)</td></tr>
-<tr class="separator:a9f39bb14d44d413f0cd6070dd0b3486f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a319cab18435ba34b5a3855e12dc1f16a"><td class="memTemplParams" colspan="2"><a id="a319cab18435ba34b5a3855e12dc1f16a"></a>
+template&lt;typename T , typename BackendT , typename RangeMapT &gt; </td></tr>
+<tr class="memitem:a319cab18435ba34b5a3855e12dc1f16a"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, BackendT &amp;&amp;b, RangeMapT r=stencilRangeMap(), std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &amp;&amp;std::is_base_of&lt; BackendBase, decay_type&lt; BackendT &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="separator:a319cab18435ba34b5a3855e12dc1f16a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a003f5e3ee83a6922f25cb447cc8cd772"><td class="memTemplParams" colspan="2"><a id="a003f5e3ee83a6922f25cb447cc8cd772"></a>
+template&lt;typename T , typename BackendT , typename RangeMapT &gt; </td></tr>
+<tr class="memitem:a003f5e3ee83a6922f25cb447cc8cd772"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, size_type pattern=Pattern::COUPLED, RangeMapT r=stencilRangeMap(), std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &amp;&amp;std::is_base_of&lt; BackendBase, decay_type&lt; BackendT &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="separator:a003f5e3ee83a6922f25cb447cc8cd772"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34525dc00e796935bee9e8e315d8acf1"><td class="memTemplParams" colspan="2"><a id="a34525dc00e796935bee9e8e315d8acf1"></a>
 template&lt;typename T , typename BackendT &gt; </td></tr>
 <tr class="memitem:a34525dc00e796935bee9e8e315d8acf1"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><b>BlockBilinearForm</b> (T &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; size_type &gt; const &amp;patterns, std::enable_if_t&lt; std::is_base_of&lt; ProductSpacesBase, decay_type&lt; T &gt;&gt;::value &amp;&amp;std::is_base_of&lt; BackendBase, decay_type&lt; BackendT &gt;&gt;::value &gt; *=nullptr)</td></tr>

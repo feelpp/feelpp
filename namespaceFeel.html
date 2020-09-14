@@ -668,13 +668,13 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilQuadSetBase.html">stencilQuadSetBase</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">define the quadrature order use with non standard stencil  <a href="structFeel_1_1stencilQuadSetBase.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilRangeMap0Type.html">stencilRangeMap0Type</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilRangeMap1Type.html">stencilRangeMap1Type</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1StencilRangeMap1Type.html">StencilRangeMap1Type</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilRangeMap2Type.html">stencilRangeMap2Type</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1StencilRangeMap2Type.html">StencilRangeMap2Type</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilRangeMapTypeBase.html">stencilRangeMapTypeBase</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1StencilRangeMapTypeBase.html">StencilRangeMapTypeBase</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1stencilrangetype.html">stencilrangetype</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1365,6 +1365,10 @@ template&lt;typename... SpaceList&gt; </td></tr>
 template&lt;typename... SpaceList&gt; </td></tr>
 <tr class="memitem:a90661b640ddd626fafd6a5ff10dc33de"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>product_spaces_element_t</b> = typename <a class="el" href="classFeel_1_1ProductSpaces.html">ProductSpaces</a>&lt; SpaceList... &gt;::element_type</td></tr>
 <tr class="separator:a90661b640ddd626fafd6a5ff10dc33de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a34c13615c24155cbe92f43cfb83079"><td class="memTemplParams" colspan="2"><a id="a6a34c13615c24155cbe92f43cfb83079"></a>
+template&lt;typename... SpaceList&gt; </td></tr>
+<tr class="memitem:a6a34c13615c24155cbe92f43cfb83079"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>product_spaces_ptr_t</b> = std::shared_ptr&lt; <a class="el" href="classFeel_1_1ProductSpaces.html">ProductSpaces</a>&lt; SpaceList... &gt; &gt;</td></tr>
+<tr class="separator:a6a34c13615c24155cbe92f43cfb83079"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:affd8fa28a0a566c15cee4a9c1e731656"><td class="memTemplParams" colspan="2"><a id="affd8fa28a0a566c15cee4a9c1e731656"></a>
 template&lt;typename... SpaceList&gt; </td></tr>
 <tr class="memitem:affd8fa28a0a566c15cee4a9c1e731656"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>product_spaces_t</b> = <a class="el" href="classFeel_1_1ProductSpaces.html">ProductSpaces</a>&lt; SpaceList... &gt;</td></tr>
@@ -1781,22 +1785,22 @@ template&lt;typename PS , typename BackendT &gt; </td></tr>
 template&lt;typename PS , typename T &gt; </td></tr>
 <tr class="memitem:a36b46b9fe1afed8916295f7c8f93efe9"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS &amp;&amp;ps, condensed_matrix_ptr_t&lt; T &gt; &amp;m)</td></tr>
 <tr class="separator:a36b46b9fe1afed8916295f7c8f93efe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0b6c44ed067d685020f3e0423178052"><td class="memTemplParams" colspan="2"><a id="aa0b6c44ed067d685020f3e0423178052"></a>
-template&lt;typename PS , typename BackendT &gt; </td></tr>
-<tr class="memitem:aa0b6c44ed067d685020f3e0423178052"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
-<tr class="separator:aa0b6c44ed067d685020f3e0423178052"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29538462655999c799c873765a9e934d"><td class="memTemplParams" colspan="2"><a id="a29538462655999c799c873765a9e934d"></a>
-template&lt;typename PS , typename BackendT &gt; </td></tr>
-<tr class="memitem:a29538462655999c799c873765a9e934d"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;patterns)</td></tr>
-<tr class="separator:a29538462655999c799c873765a9e934d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1a32570b81009b96e73741a403e73e7"><td class="memTemplParams" colspan="2"><a id="af1a32570b81009b96e73741a403e73e7"></a>
-template&lt;typename PS , typename BackendT &gt; </td></tr>
-<tr class="memitem:af1a32570b81009b96e73741a403e73e7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS const &amp;ps, solve::strategy s, BackendT &amp;&amp;b, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED)</td></tr>
-<tr class="separator:af1a32570b81009b96e73741a403e73e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3eb62d0b327ec8905d119375f211a6ee"><td class="memTemplParams" colspan="2"><a id="a3eb62d0b327ec8905d119375f211a6ee"></a>
-template&lt;typename PS , typename BackendT &gt; </td></tr>
-<tr class="memitem:a3eb62d0b327ec8905d119375f211a6ee"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS const &amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;patterns)</td></tr>
-<tr class="separator:a3eb62d0b327ec8905d119375f211a6ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39b6af0dba06efd121b30206e427209f"><td class="memTemplParams" colspan="2"><a id="a39b6af0dba06efd121b30206e427209f"></a>
+template&lt;typename PS , typename BackendT , typename RangeMapT  = StencilRangeMap0Type&gt; </td></tr>
+<tr class="memitem:a39b6af0dba06efd121b30206e427209f"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED, RangeMapT r=stencilRangeMap())</td></tr>
+<tr class="separator:a39b6af0dba06efd121b30206e427209f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a731cdcbfb8d5b030880f886ac75a95ac"><td class="memTemplParams" colspan="2"><a id="a731cdcbfb8d5b030880f886ac75a95ac"></a>
+template&lt;typename PS , typename BackendT , typename RangeMapT  = StencilRangeMap0Type&gt; </td></tr>
+<tr class="memitem:a731cdcbfb8d5b030880f886ac75a95ac"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS &amp;&amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;patterns, RangeMapT r=stencilRangeMap())</td></tr>
+<tr class="separator:a731cdcbfb8d5b030880f886ac75a95ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeec116677ac838dca16cfe426f274d75"><td class="memTemplParams" colspan="2"><a id="aeec116677ac838dca16cfe426f274d75"></a>
+template&lt;typename PS , typename BackendT , typename RangeMapT  = StencilRangeMap0Type&gt; </td></tr>
+<tr class="memitem:aeec116677ac838dca16cfe426f274d75"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS const &amp;ps, solve::strategy s, BackendT &amp;&amp;b, <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> pattern=Pattern::COUPLED, RangeMapT r=stencilRangeMap())</td></tr>
+<tr class="separator:aeec116677ac838dca16cfe426f274d75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a959b58220952b4b16b4d70b3745f0747"><td class="memTemplParams" colspan="2"><a id="a959b58220952b4b16b4d70b3745f0747"></a>
+template&lt;typename PS , typename BackendT , typename RangeMapT  = StencilRangeMap0Type&gt; </td></tr>
+<tr class="memitem:a959b58220952b4b16b4d70b3745f0747"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classFeel_1_1BlockBilinearForm.html">BlockBilinearForm</a>&lt; PS &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>blockform2</b> (PS const &amp;ps, solve::strategy s, BackendT &amp;&amp;b, std::vector&lt; <a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a> &gt; const &amp;patterns, RangeMapT r=stencilRangeMap())</td></tr>
+<tr class="separator:a959b58220952b4b16b4d70b3745f0747"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ac8af78cc9607c0f1df3d4c18e213bc"><td class="memItemLeft" align="right" valign="top"><a id="a9ac8af78cc9607c0f1df3d4c18e213bc"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_FUNCTION</b> ((<a class="el" href="classFeel_1_1AboutData.html">AboutData</a>), about, tag,(required(name, *))(optional(author, *, &quot;Feel++ Consortium&quot;)(task, *, &quot;developer&quot;)(email, *, &quot;feelpp-devel@feelpp.org&quot;)(desc, *, &quot;Feel++ application&quot;)(license,(<a class="el" href="classint.html">int</a>), AboutData::License_GPL_V3)(copyright, *, &quot;Copyright (C) Feel++ Consortium&quot;)(home, *, &quot;http://www.feelpp.org&quot;)(bugs, *, &quot;feelpp-devel@feelpp.org&quot;)(version, *, <a class="el" href="classFeel_1_1Info.html#aa812aaae349a57d978defb8e39fdbf58">Feel::Info::versionString</a>())))</td></tr>
 <tr class="separator:a9ac8af78cc9607c0f1df3d4c18e213bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1893,9 +1897,9 @@ template&lt;typename PS , typename BackendT &gt; </td></tr>
 <tr class="memitem:a797b7be558c28dc43bdf66d0e1534f28"><td class="memItemLeft" align="right" valign="top"><a id="a797b7be558c28dc43bdf66d0e1534f28"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_FUNCTION</b> ((typename <a class="el" href="structFeel_1_1detail_1_1compute__opLinearFree__return.html">Feel::detail::compute_opLinearFree_return</a>&lt; Args &gt;::ptrtype), opLinearFree, tag,(required(domainSpace, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;))(imageSpace, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;))(expr, *))(optional(backend, *, backend())(pattern, *,(<a class="el" href="namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58">size_type</a>) Pattern::COUPLED)))</td></tr>
 <tr class="separator:a797b7be558c28dc43bdf66d0e1534f28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a058b26e3586ffe23c8b68521dc8afe83"><td class="memItemLeft" align="right" valign="top"><a id="a058b26e3586ffe23c8b68521dc8afe83"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_FUNCTION</b> ((typename <a class="el" href="structFeel_1_1detail_1_1compute__stencil__type.html">Feel::detail::compute_stencil_type</a>&lt; Args &gt;::ptrtype), stencil, tag,(required(test, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;))(trial, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;)))(optional(pattern,(uint32_type), Pattern::COUPLED)(pattern_block, *, default_block_pattern)(diag_is_nonzero,(<a class="el" href="classbool.html">bool</a>), false)(collect_garbage,(<a class="el" href="classbool.html">bool</a>), true)(close,(<a class="el" href="classbool.html">bool</a>), true)(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1stencilRangeMapTypeBase.html">stencilRangeMapTypeBase</a> &gt;), <a class="el" href="structFeel_1_1stencilRangeMap0Type.html">stencilRangeMap0Type</a>())(range_extended, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1stencilRangeMapTypeBase.html">stencilRangeMapTypeBase</a> &gt;), <a class="el" href="structFeel_1_1stencilRangeMap0Type.html">stencilRangeMap0Type</a>())(quad, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1stencilQuadSetBase.html">stencilQuadSetBase</a> &gt;), <a class="el" href="structFeel_1_1stencilQuadSet.html">stencilQuadSet</a>&lt;&gt;())))</td></tr>
-<tr class="separator:a058b26e3586ffe23c8b68521dc8afe83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a972f60ff77841b87d8a782d6bddf45c3"><td class="memItemLeft" align="right" valign="top"><a id="a972f60ff77841b87d8a782d6bddf45c3"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_FUNCTION</b> ((typename <a class="el" href="structFeel_1_1detail_1_1compute__stencil__type.html">Feel::detail::compute_stencil_type</a>&lt; Args &gt;::ptrtype), stencil, tag,(required(test, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;))(trial, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;)))(optional(pattern,(uint32_type), Pattern::COUPLED)(pattern_block, *, default_block_pattern)(diag_is_nonzero,(<a class="el" href="classbool.html">bool</a>), false)(collect_garbage,(<a class="el" href="classbool.html">bool</a>), true)(close,(<a class="el" href="classbool.html">bool</a>), true)(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1StencilRangeMapTypeBase.html">StencilRangeMapTypeBase</a> &gt;), <a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a>())(range_extended, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1StencilRangeMapTypeBase.html">StencilRangeMapTypeBase</a> &gt;), <a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a>())(quad, *(boost::is_convertible&lt; mpl::_, <a class="el" href="structFeel_1_1stencilQuadSetBase.html">stencilQuadSetBase</a> &gt;), <a class="el" href="structFeel_1_1stencilQuadSet.html">stencilQuadSet</a>&lt;&gt;())))</td></tr>
+<tr class="separator:a972f60ff77841b87d8a782d6bddf45c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab24e596ea6dc25460ef9d4f5fc279e91"><td class="memItemLeft" align="right" valign="top"><a id="ab24e596ea6dc25460ef9d4f5fc279e91"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>BOOST_PARAMETER_FUNCTION</b> ((typename <a class="el" href="structFeel_1_1detail_1_1convolve__type.html">Feel::detail::convolve_type</a>&lt; Args &gt;::element_type), convolve, tag,(required(<a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>, *)(expr, *)(space, *(boost::is_convertible&lt; mpl::_, std::shared_ptr&lt; <a class="el" href="classFeel_1_1FunctionSpaceBase.html">FunctionSpaceBase</a> &gt; &gt;)))(optional(quad, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(geomap, *, GeomapStrategyType::GEOMAP_OPT)(quad1, *, <a class="el" href="namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8">quad_order_from_expression</a>)(use_tbb,(<a class="el" href="classbool.html">bool</a>), false)(use_harts,(<a class="el" href="classbool.html">bool</a>), false)(grainsize,(<a class="el" href="classint.html">int</a>), 100)(partitioner, *, &quot;auto&quot;)(verbose,(<a class="el" href="classbool.html">bool</a>), false)(quadptloc, *, typename vf::detail::integrate_type&lt; Args &gt;::_quadptloc_ptrtype())))</td></tr>
 <tr class="separator:ab24e596ea6dc25460ef9d4f5fc279e91"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1995,6 +1999,14 @@ template&lt;typename T , typename IndexT &gt; </td></tr>
 template&lt;typename E1 , typename E2 &gt; </td></tr>
 <tr class="memitem:a703b094178a719a2acbe543b4fa03fdd"><td class="memTemplItemLeft" align="right" valign="top">ublas::vector&lt; double &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>cross</b> (ublas::vector_expression&lt; E1 &gt; _p1, ublas::vector_expression&lt; E2 &gt; _p2)</td></tr>
 <tr class="separator:a703b094178a719a2acbe543b4fa03fdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05b4939fb96a9aeca7ab193cb521c3a5"><td class="memTemplParams" colspan="2">template&lt;typename PS , typename RangeMapT  = StencilRangeMap0Type, typename  = std::enable_if_t&lt;std::is_base_of_v&lt;ProductSpacesBase,std::remove_reference_t&lt;PS&gt;&gt;                                    &amp;&amp; std::is_base_of_v&lt;StencilRangeMapTypeBase,RangeMapT&gt;&gt;&gt; </td></tr>
+<tr class="memitem:a05b4939fb96a9aeca7ab193cb521c3a5"><td class="memTemplItemLeft" align="right" valign="top">BlocksBaseGraphCSR&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a05b4939fb96a9aeca7ab193cb521c3a5">csrGraphBlocks</a> (PS &amp;&amp;ps, uint32_type pattern=Pattern::COUPLED, RangeMapT <a class="el" href="group__Core.html#gaa93ce915ed0b3ba6de937b7fb78fceb8">range</a>=stencilRangeMap())</td></tr>
+<tr class="memdesc:a05b4939fb96a9aeca7ab193cb521c3a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build blocks of CSR graphs with function spaces <code></code>(args1,args2,argn).  <a href="namespaceFeel.html#a05b4939fb96a9aeca7ab193cb521c3a5">More...</a><br /></td></tr>
+<tr class="separator:a05b4939fb96a9aeca7ab193cb521c3a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b328a04604b877c507ac40a34cdf63e"><td class="memTemplParams" colspan="2"><a id="a7b328a04604b877c507ac40a34cdf63e"></a>
+template&lt;typename PS &gt; </td></tr>
+<tr class="memitem:a7b328a04604b877c507ac40a34cdf63e"><td class="memTemplItemLeft" align="right" valign="top">BlocksBaseGraphCSR&#160;</td><td class="memTemplItemRight" valign="bottom"><b>csrGraphBlocks</b> (PS &amp;&amp;ps, uint32_type pattern=Pattern::COUPLED, std::enable_if_t&lt; std::is_base_of&lt; <a class="el" href="classProductSpaceBase.html">ProductSpaceBase</a>, std::remove_reference_t&lt; PS &gt;&gt;::value &gt; *=nullptr)</td></tr>
+<tr class="separator:a7b328a04604b877c507ac40a34cdf63e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92dd2ae2494873c601a01d7ee8f0ae3d"><td class="memItemLeft" align="right" valign="top"><a id="a92dd2ae2494873c601a01d7ee8f0ae3d"></a>
 DebugStream&#160;</td><td class="memItemRight" valign="bottom"><b>Debug</b> (<a class="el" href="classbool.html">bool</a> cond, <a class="el" href="classint.html">int</a> area, DebugStream::stprintf)</td></tr>
 <tr class="separator:a92dd2ae2494873c601a01d7ee8f0ae3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3016,17 +3028,17 @@ void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="name
 template&lt;int I, int J, typename IteratorRange &gt; </td></tr>
 <tr class="memitem:a1a1e82fb99e368f01d7c5334444bf8d5"><td class="memTemplItemLeft" align="right" valign="top">fusion::pair&lt; fusion::pair&lt; mpl::int_&lt; I &gt;, mpl::int_&lt; J &gt; &gt;, typename <a class="el" href="structFeel_1_1stencilrangetype.html">stencilrangetype</a>&lt; IteratorRange &gt;::list_type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>stencilRange</b> (IteratorRange const &amp;r)</td></tr>
 <tr class="separator:a1a1e82fb99e368f01d7c5334444bf8d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24f7c82b5c58d99470d5735b9b3ec374"><td class="memItemLeft" align="right" valign="top"><a id="a24f7c82b5c58d99470d5735b9b3ec374"></a>
-<a class="el" href="structFeel_1_1stencilRangeMap0Type.html">stencilRangeMap0Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>stencilRangeMap</b> ()</td></tr>
-<tr class="separator:a24f7c82b5c58d99470d5735b9b3ec374"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a654ed4fcdaabcb9f1034729f7dcffbf7"><td class="memTemplParams" colspan="2"><a id="a654ed4fcdaabcb9f1034729f7dcffbf7"></a>
+<tr class="memitem:a980e2c762b1ee3439e4a44d01f7c356c"><td class="memItemLeft" align="right" valign="top"><a id="a980e2c762b1ee3439e4a44d01f7c356c"></a>
+<a class="el" href="structFeel_1_1StencilRangeMap0Type.html">StencilRangeMap0Type</a>&#160;</td><td class="memItemRight" valign="bottom"><b>stencilRangeMap</b> ()</td></tr>
+<tr class="separator:a980e2c762b1ee3439e4a44d01f7c356c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8a9840c67cc743b52521734cadd0c0e"><td class="memTemplParams" colspan="2"><a id="ab8a9840c67cc743b52521734cadd0c0e"></a>
 template&lt;typename ThePair1Type &gt; </td></tr>
-<tr class="memitem:a654ed4fcdaabcb9f1034729f7dcffbf7"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1stencilRangeMap1Type.html">stencilRangeMap1Type</a>&lt; ThePair1Type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>stencilRangeMap</b> (ThePair1Type const &amp;p)</td></tr>
-<tr class="separator:a654ed4fcdaabcb9f1034729f7dcffbf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14840d61ec89c6b17e9a5bd614a41dbb"><td class="memTemplParams" colspan="2"><a id="a14840d61ec89c6b17e9a5bd614a41dbb"></a>
+<tr class="memitem:ab8a9840c67cc743b52521734cadd0c0e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1StencilRangeMap1Type.html">StencilRangeMap1Type</a>&lt; ThePair1Type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>stencilRangeMap</b> (ThePair1Type const &amp;p)</td></tr>
+<tr class="separator:ab8a9840c67cc743b52521734cadd0c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70b6201ea69a16d1a6df692ac8bbadd"><td class="memTemplParams" colspan="2"><a id="ae70b6201ea69a16d1a6df692ac8bbadd"></a>
 template&lt;typename ThePair1Type , typename ThePair2Type &gt; </td></tr>
-<tr class="memitem:a14840d61ec89c6b17e9a5bd614a41dbb"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1stencilRangeMap2Type.html">stencilRangeMap2Type</a>&lt; ThePair1Type, ThePair2Type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>stencilRangeMap</b> (ThePair1Type const &amp;p1, ThePair2Type const &amp;p2)</td></tr>
-<tr class="separator:a14840d61ec89c6b17e9a5bd614a41dbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae70b6201ea69a16d1a6df692ac8bbadd"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="structFeel_1_1StencilRangeMap2Type.html">StencilRangeMap2Type</a>&lt; ThePair1Type, ThePair2Type &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><b>stencilRangeMap</b> (ThePair1Type const &amp;p1, ThePair2Type const &amp;p2)</td></tr>
+<tr class="separator:ae70b6201ea69a16d1a6df692ac8bbadd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2eb3bfe66231d4aa5a681365d5a5c64b"><td class="memTemplParams" colspan="2">template&lt;typename EltType &gt; </td></tr>
 <tr class="memitem:a2eb3bfe66231d4aa5a681365d5a5c64b"><td class="memTemplItemLeft" align="right" valign="top">fusion::result_of::accumulate&lt; typename EltType::functionspace_type::functionspace_vector_type, fusion::vector&lt;&gt;, <a class="el" href="structFeel_1_1detail_1_1CreateElementVector.html">Feel::detail::CreateElementVector</a>&lt; EltType &gt; &gt;::type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a2eb3bfe66231d4aa5a681365d5a5c64b">subelements</a> (EltType const &amp;e, std::vector&lt; std::string &gt; const &amp;n)</td></tr>
 <tr class="memdesc:a2eb3bfe66231d4aa5a681365d5a5c64b"><td class="mdescLeft">&#160;</td><td class="mdescRight">extract subelements from an element of a product of spaces  <a href="namespaceFeel.html#a2eb3bfe66231d4aa5a681365d5a5c64b">More...</a><br /></td></tr>
@@ -4148,6 +4160,45 @@ template&lt;typename IteratorType , typename... Args&gt; </div>
 <div class="line"><span class="comment">// it can then be used eg to create a submesh</span></div>
 <div class="line"><span class="keyword">auto</span> submesh = createSubmesh( mesh, subset );</div>
 </div><!-- fragment --> 
+</div>
+</div>
+<a id="a05b4939fb96a9aeca7ab193cb521c3a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05b4939fb96a9aeca7ab193cb521c3a5">&#9670;&nbsp;</a></span>csrGraphBlocks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename PS , typename RangeMapT  = StencilRangeMap0Type, typename  = std::enable_if_t&lt;std::is_base_of_v&lt;ProductSpacesBase,std::remove_reference_t&lt;PS&gt;&gt;                                    &amp;&amp; std::is_base_of_v&lt;StencilRangeMapTypeBase,RangeMapT&gt;&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">BlocksBaseGraphCSR Feel::csrGraphBlocks </td>
+          <td>(</td>
+          <td class="paramtype">PS &amp;&amp;&#160;</td>
+          <td class="paramname"><em>ps</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_type&#160;</td>
+          <td class="paramname"><em>pattern</em> = <code>Pattern::COUPLED</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">RangeMapT&#160;</td>
+          <td class="paramname"><em>range</em> = <code>stencilRangeMap()</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Build blocks of CSR graphs with function spaces <code></code>(args1,args2,argn). </p>
+<p>Variadic template is used to handle an arbitrary number of function spaces. The blocks are organized then matrix wise with the stencil associated of pairs of function spaces in <code></code>(arg1,...,argn) </p>
+
 </div>
 </div>
 <a id="a05577af4ba88012f004dc53ae5e2be5b"></a>

@@ -1,5 +1,7 @@
 var NAVTREEINDEX40 =
 {
+"structFeel_1_1tag_1_1author.html":[6,1,1,11,8],
+"structFeel_1_1tag_1_1author.html#a0a356482a568ec143960e61e7040e8cd":[6,1,1,11,8,2],
 "structFeel_1_1tag_1_1author.html#a1edf585e73173648b9831c4511e71e02":[6,1,1,11,8,0],
 "structFeel_1_1tag_1_1author.html#a2b9285e4ba14546b06dea87e0827b3c4":[6,1,1,11,8,1],
 "structFeel_1_1tag_1_1backend.html":[6,1,1,11,9],
@@ -247,7 +249,5 @@ var NAVTREEINDEX40 =
 "structFeel_1_1tag_1_1h.html#aab2d64c2ba97d1570235d9fe8cd56ddc":[6,1,1,11,69,0],
 "structFeel_1_1tag_1_1h.html#ab1ee733139d2633f2a1716e3ad6d4aba":[6,1,1,11,69,2],
 "structFeel_1_1tag_1_1hmax.html":[6,1,1,11,70],
-"structFeel_1_1tag_1_1hmax.html#a9518472d4666934d46fe0b787b5deb76":[6,1,1,11,70,0],
-"structFeel_1_1tag_1_1hmax.html#aa139e65c6ab069bb38d8a5d3a121f290":[6,1,1,11,70,1],
-"structFeel_1_1tag_1_1hmax.html#ae16ce41cb969a45a324652ad348c461e":[6,1,1,11,70,2]
+"structFeel_1_1tag_1_1hmax.html#a9518472d4666934d46fe0b787b5deb76":[6,1,1,11,70,0]
 };

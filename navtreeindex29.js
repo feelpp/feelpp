@@ -1,5 +1,6 @@
 var NAVTREEINDEX29 =
 {
+"classFeel_1_1vf_1_1Pow.html":[6,1,1,12,20],
 "classFeel_1_1vf_1_1Pow.html#a010ccc77bff0e4c81082fe5b286a4f54":[6,1,1,12,20,29],
 "classFeel_1_1vf_1_1Pow.html#a04999356c93c34df0f496a554f7802f7":[6,1,1,12,20,8],
 "classFeel_1_1vf_1_1Pow.html#a16cc0a7d90130e3364d06eaf81f31318":[6,1,1,12,20,32],
@@ -248,6 +249,5 @@ var NAVTREEINDEX29 =
 "classModelBase.html":[6,1,34],
 "classPoints.html":[6,1,38],
 "classProductSpaceBase.html":[6,1,39],
-"classVectorUblas.html":[6,1,42],
-"classboost_1_1fusion_1_1map.html":[6,1,5]
+"classVectorUblas.html":[6,1,42]
 };

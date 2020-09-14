@@ -44,8 +44,8 @@ var classFeel_1_1BlockBilinearForm =
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#adecbb1def5c212ef0d24860f82a59edb", null ],
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a4badefe6edc89679e1f912f9f1ca7197", null ],
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a331b75d1d7c5c624ea9bf7daf615f785", null ],
-    [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#ab4a49e741d7a282132c477e7a47e546d", null ],
-    [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a9f39bb14d44d413f0cd6070dd0b3486f", null ],
+    [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a319cab18435ba34b5a3855e12dc1f16a", null ],
+    [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a003f5e3ee83a6922f25cb447cc8cd772", null ],
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a34525dc00e796935bee9e8e315d8acf1", null ],
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a2780144b37191e780ed8b427bfd3023a", null ],
     [ "BlockBilinearForm", "classFeel_1_1BlockBilinearForm.html#a6d0d59f009af9b50e0f250fb556491e0", null ]

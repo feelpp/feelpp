@@ -1,5 +1,6 @@
 var NAVTREEINDEX30 =
 {
+"classboost_1_1fusion_1_1map.html":[6,1,5],
 "classboost_1_1fusion_1_1vector.html":[6,1,6],
 "classboost_1_1hana_1_1integral__constant.html":[6,1,7],
 "classboost_1_1mpi_1_1communicator.html":[6,1,8],
@@ -248,6 +249,5 @@ var NAVTREEINDEX30 =
 "feelpp_2feel_2feelmesh_2traits_8hpp.html#a4787f01c56ce123c8f9d5e16ed90ceb7":[6,2,0,0,2,35,27],
 "feelpp_2feel_2feelmesh_2traits_8hpp.html#a7f96cb7271c76b39e72addc8d166288a":[6,2,0,0,2,35,26],
 "feelpp_2feel_2feelmesh_2traits_8hpp.html#ab285e2d8ae968b62fb4d0e6431b0e808":[6,2,0,0,2,35,28],
-"feelpp_2feel_2feelmesh_2traits_8hpp.html#ac6f311053a7f7420f3f61c04f756f74d":[6,2,0,0,2,35,29],
-"feelpp_2feel_2feelmesh_2traits_8hpp.html#af5c2ee4c05c1dcd72e48264fe5bcff5e":[6,2,0,0,2,35,24]
+"feelpp_2feel_2feelmesh_2traits_8hpp.html#ac6f311053a7f7420f3f61c04f756f74d":[6,2,0,0,2,35,29]
 };

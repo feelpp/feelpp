@@ -1,5 +1,6 @@
 var NAVTREEINDEX33 =
 {
+"lambda_8hpp.html#aa4e9c21f108fc1087f0ea98878e645aa":[6,2,0,0,3,31,8],
 "lambda_8hpp.html#aca7c56ed722115bac063a40ca52478b0":[6,2,0,0,3,31,10],
 "lambda_8hpp.html#af0de9be1416a63dfcd78e7a535dac3f0":[6,2,0,0,3,31,13],
 "linearform_8hpp.html":[6,2,0,0,3,32],
@@ -248,6 +249,5 @@ var NAVTREEINDEX33 =
 "pdhv_8hpp.html#ae7af58fd90da17489daace913d3ccb99":[6,2,0,0,1,49,5],
 "periodic_8hpp.html":[6,2,0,0,1,50],
 "points_8hpp.html":[6,2,0,0,2,24],
-"pointset_8hpp.html":[6,2,0,0,2,25],
-"policy_8hpp.html":[6,2,0,0,0,29]
+"pointset_8hpp.html":[6,2,0,0,2,25]
 };

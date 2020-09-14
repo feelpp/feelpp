@@ -17,6 +17,7 @@ var product_8hpp =
     [ "dyn_product_spaces_t", "product_8hpp.html#a56e166aa658723fc58c7743d0a1f4382", null ],
     [ "product_spaces_element_ptr_t", "product_8hpp.html#a42a7712272967602c7e3b8c8bfd9ee53", null ],
     [ "product_spaces_element_t", "product_8hpp.html#a90661b640ddd626fafd6a5ff10dc33de", null ],
+    [ "product_spaces_ptr_t", "product_8hpp.html#a6a34c13615c24155cbe92f43cfb83079", null ],
     [ "product_spaces_t", "product_8hpp.html#affd8fa28a0a566c15cee4a9c1e731656", null ],
     [ "dynProduct", "product_8hpp.html#aef1efb8d9a8b49b12eb5b9bc79f306ff", null ],
     [ "dynProductPtr", "product_8hpp.html#a4099fa7a99f32bedf07806f83cbe40d7", null ],

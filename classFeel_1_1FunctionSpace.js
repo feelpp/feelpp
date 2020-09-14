@@ -50,6 +50,7 @@ var classFeel_1_1FunctionSpace =
     [ "elementPtr", "classFeel_1_1FunctionSpace.html#a97f81d244e85ae7884596760ef20881e", null ],
     [ "elementPtr", "classFeel_1_1FunctionSpace.html#a0cca5b7594b8bd70aecac6aad0d87f1a", null ],
     [ "elementPtr", "classFeel_1_1FunctionSpace.html#a7402dd116cc150d0dbb0b17f620897fa", null ],
+    [ "elementsMap", "classFeel_1_1FunctionSpace.html#a14ccea8571902d6c56f170a6f825c381", null ],
     [ "elementsPtr", "classFeel_1_1FunctionSpace.html#a3900eef7c6ce51ef0e445df242bd9b1e", null ],
     [ "extendedDofTable", "classFeel_1_1FunctionSpace.html#a5a7a30582766ebd6e1bca392b39c8c9b", null ],
     [ "extendedDofTableComposite", "classFeel_1_1FunctionSpace.html#a4bae986a75f3a5c174f3eb4989cca059", null ],

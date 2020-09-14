@@ -1,5 +1,6 @@
 var NAVTREEINDEX18 =
 {
+"classFeel_1_1Mesh0D.html#aa2b188f7f164f7c4c86a268fb6d99e21":[6,1,1,161,47],
 "classFeel_1_1Mesh0D.html#ab4e44c8d24e0de7b53a76e7908bc98b7":[6,1,1,161,61],
 "classFeel_1_1Mesh0D.html#ab837fa424bc223276032c8014ec56d99":[6,1,1,161,53],
 "classFeel_1_1Mesh0D.html#ab8a9336bf21b3b1a18b66882acdf04b6":[6,1,1,161,11],
@@ -248,6 +249,5 @@ var NAVTREEINDEX18 =
 "classFeel_1_1MeshAdaptation.html#a2a87d664c52b09a0ab68e14e6ffac333":[6,1,1,166,3],
 "classFeel_1_1MeshAdaptation.html#a403a7a78b837206cfadde41acabeee2d":[6,1,1,166,45],
 "classFeel_1_1MeshAdaptation.html#a42325d1754d66a25342847e588d19700":[6,1,1,166,32],
-"classFeel_1_1MeshAdaptation.html#a465a48ae4ffc82ce67714df851d7e5ca":[6,1,1,166,1],
-"classFeel_1_1MeshAdaptation.html#a57b8391420b4e558eb33d5d708a76dbb":[6,1,1,166,18]
+"classFeel_1_1MeshAdaptation.html#a465a48ae4ffc82ce67714df851d7e5ca":[6,1,1,166,1]
 };
