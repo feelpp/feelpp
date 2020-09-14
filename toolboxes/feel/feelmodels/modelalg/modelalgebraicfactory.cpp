@@ -1169,6 +1169,8 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         if ( M_useSolverPtAP )
             dataLinearPtAP = std::make_shared<ModelAlgebraic::DataUpdateLinear>(M_solverPtAP_solution,M_solverPtAP_matPtAP,M_solverPtAP_PtF,true);
 
+        this->updatePicardIteration( 0, U );
+
         // assembling cst part
         if ( !M_hasBuildLinearSystemCst ||
              this->model()->rebuildCstPartInLinearSystem() || this->model()->needToRebuildCstPart() ||
@@ -1205,6 +1207,9 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
         int cptIteration=0;
         for ( ; cptIteration < fixPointMaxIt ; ++cptIteration )
         {
+            if ( cptIteration > 0 )
+                this->updatePicardIteration( cptIteration, U );
+
             if ( !useConvergenceAlgebraic )
             {
                 *Uold = *U;
@@ -1364,22 +1369,6 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
                                       this->model()->worldComm(),this->model()->verboseSolverTimerAllProc());
 
 
-#if 0
-            if ( !useConvergenceAlgebraic )
-            {
-                convergenceRate = this->model()->updatePicardConvergence( U,Uold );
-                if (this->model()->verboseSolverTimer())
-                    Feel::FeelModels::Log( this->model()->prefix()+".ModelAlgebraicFactory","AlgoPicard",
-                                           (boost::format("fix point convergence : %1%")%convergenceRate ).str(),
-                                           this->model()->worldComm(),this->model()->verboseSolverTimerAllProc() );
-
-                if ( convergenceRate < rtol )
-                {
-                    hasConverged = true;
-                    break;
-                }
-            }
-#endif
             if ( useConvergenceAlgebraic )
             {
                 Uold->add( -1., U );
@@ -1469,7 +1458,11 @@ ModelAlgebraicFactory::updateNewtonIteration( int step, vector_ptrtype residual,
     }
 }
 
-
+void
+ModelAlgebraicFactory::updatePicardIteration( int step, vector_ptrtype sol )
+{
+    this->model()->updatePicardIteration( step, sol );
+}
 
 
 void

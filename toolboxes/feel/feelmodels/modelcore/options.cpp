@@ -257,6 +257,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"distance-to-wall.enabled").c_str(), Feel::po::value<bool>()->default_value(false), "enable distance-to-wall computation")
         (prefixvm(prefix,"distance-to-wall.markers").c_str(), po::value<std::vector<std::string> >()->multitoken(), "markers used for compute distance-to-wall" )
 
+        (prefixvm(prefix,"use-semi-implicit-turbulence-coupling").c_str(), Feel::po::value<bool>()->default_value( false ), "use-semi-implicit-turbulence-coupling")
+
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         ;
 
@@ -270,12 +272,6 @@ fluidMechanics_options(std::string const& prefix)
         .add( pcd_options( prefix ) )
         .add( coefficientformpdes_options( prefixvm(prefix,"turbulence") ) )
         ;
-
-
-    fluidOptions.add_options()
-        (prefixvm(prefix,"use-thermodyn").c_str(), Feel::po::value<bool>()->default_value( false ), "coupling with energy equation")
-        (prefixvm(prefix,"Boussinesq.ref-temperature").c_str(), Feel::po::value<double>()->default_value( 300. ), "Boussinesq ref-temperature T0");
-    fluidOptions.add( heat_options( prefixvm(prefix,"heat") ) );
 
     return fluidOptions;
 }

@@ -1556,6 +1556,10 @@ public :
     void updateJacobianDofElimination( DataUpdateJacobian & data ) const override;
     void updateResidualDofElimination( DataUpdateResidual & data ) const override;
 
+    void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const override;
+
+    void updatePicardIteration( int step, vector_ptrtype sol ) const override;
+
     // linear
     void updateLinearPDE( DataUpdateLinear & data ) const override;
     template <typename ModelContextType>
@@ -1738,6 +1742,7 @@ private :
 
     turbulence_model_ptrtype M_turbulenceModelType;
     TurbulenceModelBoundaryConditions M_turbulenceModelBoundaryConditions;
+    bool M_useSemiImplicitTurbulenceCoupling;
     //----------------------------------------------------
     // exporter option
     bool M_isHOVisu;

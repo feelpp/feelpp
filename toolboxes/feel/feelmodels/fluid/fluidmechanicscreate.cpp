@@ -197,6 +197,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
         M_dist2WallMarkers.insert( tmp.begin(), tmp.end() );
     }
 
+    M_useSemiImplicitTurbulenceCoupling = boption(_prefix=this->prefix(),_name="use-semi-implicit-turbulence-coupling");
+
     // prec
     M_preconditionerAttachPMM = boption(_prefix=this->prefix(),_name="preconditioner.attach-pmm");
     M_pmmNeedUpdate = false;

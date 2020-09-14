@@ -401,7 +401,7 @@ public :
     virtual void postSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const {}
     //----------------------------------------------------------------------------------//
     virtual void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const {}
-
+    virtual void updatePicardIteration( int step, vector_ptrtype sol ) const {}
 
     //! index start of (sub-)block
     size_type rowStartInMatrix() const { return this->startBlockSpaceIndexMatrixRow(); }
