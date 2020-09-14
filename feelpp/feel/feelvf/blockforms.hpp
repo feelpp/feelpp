@@ -28,6 +28,7 @@
 #include <feel/feelalg/vectorblock.hpp>
 #include <feel/feelalg/matrixcondensed.hpp>
 #include <feel/feelalg/vectorcondensed.hpp>
+#include <feel/feeldiscr/csrgraphblocks.hpp>
 #include <feel/feeldiscr/product.hpp>
 
 
@@ -48,25 +49,29 @@ template<typename PS, typename BackendT>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, BackendT&& b );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, solve::strategy s, BackendT&& b,
-            size_type pattern = Pattern::COUPLED );
+            size_type pattern = Pattern::COUPLED,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS&& ps, solve::strategy s, BackendT&& b,
-            std::vector<size_type> const& patterns );
+            std::vector<size_type> const& patterns,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
-            size_type pattern = Pattern::COUPLED );
+            size_type pattern = Pattern::COUPLED,
+            RangeMapT r = stencilRangeMap() );
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT = StencilRangeMap0Type>
 BlockBilinearForm<PS>
 blockform2( PS const& ps, solve::strategy s, BackendT&& b,
-            std::vector<size_type> const& patterns );
+            std::vector<size_type> const& patterns,
+            RangeMapT r = stencilRangeMap() );
 
 template<typename PS,typename T>
 BlockBilinearForm<PS>
@@ -127,21 +132,21 @@ public :
         M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), backend(), false ) )
         {}    
     
-    template<typename T,typename BackendT>
-    BlockBilinearForm( T&& ps, BackendT&& b,
+    template<typename T,typename BackendT, typename RangeMapT>
+    BlockBilinearForm( T&& ps, BackendT&& b, RangeMapT r = stencilRangeMap(),
                        std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
-        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED), std::forward<BackendT>(b), false ) )
+        M_matrix( std::make_shared<condensed_matrix_type>( csrGraphBlocks(M_ps, Pattern::COUPLED, r), std::forward<BackendT>(b), false ) )
         {}
 
-    template<typename T, typename BackendT>
-    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED,
+    template<typename T, typename BackendT, typename RangeMapT>
+    BlockBilinearForm( T&& ps, solve::strategy s, BackendT&& b, size_type pattern = Pattern::COUPLED, RangeMapT r = stencilRangeMap(),
                        std::enable_if_t<std::is_base_of<ProductSpacesBase,decay_type<T>>::value && std::is_base_of<BackendBase,decay_type<BackendT>>::value>* = nullptr )
         :
         M_ps(std::forward<T>(ps)),
         M_matrix( std::make_shared<condensed_matrix_type>( s,
-                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern),
+                                                             csrGraphBlocks(M_ps, (s>=solve::strategy::static_condensation)?Pattern::ZERO:pattern,r),
                                                              std::forward<BackendT>(b),
                                                              (s>=solve::strategy::static_condensation)?false:true )  )
         {}
@@ -650,32 +655,32 @@ blockform2( PS&& ps, BackendT&& b )
     return BlockBilinearForm<PS>( std::forward<PS>(ps), std::forward<BackendT>(b) );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern )
+blockform2( PS && ps, solve::strategy s, BackendT&& b, size_type pattern, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern );
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), pattern, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS && ps, solve::strategy s, BackendT&& b, std::vector<size_type>  const& patterns )
+blockform2( PS && ps, solve::strategy s, BackendT&& b, std::vector<size_type>  const& patterns, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), patterns );
+    return BlockBilinearForm<PS>( std::forward<PS>( ps ), s, std::forward<BackendT>(b), patterns, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern )
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, size_type pattern, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern );
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), pattern, r );
 }
 
-template<typename PS, typename BackendT>
+template<typename PS, typename BackendT, typename RangeMapT>
 BlockBilinearForm<PS>
-blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns )
+blockform2( PS const& ps, solve::strategy s, BackendT&& b, std::vector<size_type> const& patterns, RangeMapT r )
 {
-    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns );
+    return BlockBilinearForm<PS>( ps, s, std::forward<BackendT>(b), patterns, r );
 }
 
 template<typename PS,typename T>

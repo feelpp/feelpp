@@ -83,7 +83,18 @@ public:
     BoundaryConditions & boundaryConditions()  { return M_bc; }
     BoundaryConditions const& boundaryConditions() const { return M_bc; }
 
-    ModelBoundaryConditions & boundaryConditions2() { return M_bc2; }
+    /**
+     * enable BoundaryConditions2 class as a simplified BC class
+     * @return ModelProperties reference for chaining
+     */
+    ModelProperties& enableBoundaryConditions2();
+    
+    ModelBoundaryConditions & boundaryConditions2() 
+    { 
+      if ( !M_bc2_enabled ) 
+        throw std::logic_error("BoundaryConditions2 are not enabled, call enableBoundaryConditions2() first");   
+      return M_bc2; 
+    }
     ModelBoundaryConditions const& boundaryConditions2() const { return M_bc2; }
 
     ModelInitialConditions & initialConditions() { return M_ic; }
@@ -130,6 +141,7 @@ private:
     BoundaryConditions M_bc;
     ModelInitialConditions M_ic;
     BoundaryConditions M_icDeprecated; // DEPRECATED
+    bool M_bc2_enabled = false;
     ModelBoundaryConditions M_bc2;
     ModelPostprocess M_postproc;
     ModelFunctions M_functions;

@@ -124,10 +124,10 @@ stencilManagerPrint()
     std::cout << "********************************************************************************\n";
 }
 
-stencilRangeMap0Type
+StencilRangeMap0Type
 stencilRangeMap( )
 {
-    return stencilRangeMap0Type();
+    return StencilRangeMap0Type();
 }
 
 }
