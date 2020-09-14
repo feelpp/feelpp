@@ -1654,35 +1654,35 @@ public:
 
     face_type const& face( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) << "invalid edge (null pointer) elt " << this->id() << " face " << i;
         return *M_faces[i];
     }
 
     face_type& face( uint16_type i )
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid edge (null pointer)" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) << "invalid edge (null pointer) elt " << this->id() << " face " << i;
         return *M_faces[i];
     }
 
     face_type const* facePtr( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local edge index" );
+        DCHECK( i < numLocalFaces ) << "invalid local edge index elt " << this->id() << " face " << i;
         //FEELPP_ASSERT( M_faces[i] )( i ).error( "invalid edge (null pointer)" );
         return M_faces[i];
     }
 
     face_permutation_type facePermutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        DCHECK( i < numLocalFaces ) <<  "invalid local face index in elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) <<  "invalid face (null pointer in elt " << this->id() << " face " << i;
         return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i ) const
     {
-        FEELPP_ASSERT( i < numLocalFaces )( this->id() )( i ).error( "invalid local face index" );
-        FEELPP_ASSERT( M_faces[i] )( this->id() )( i ).error( "invalid face (null pointer)" );
+        DCHECK( i < numLocalFaces ) <<  "invalid local face index in elt " << this->id() << " face " << i;
+        DCHECK( M_faces[i] ) <<  "invalid face (null pointer in elt " << this->id() << " face " << i;
         return M_face_permutation[i];
     }
     face_permutation_type permutation( uint16_type i, mpl::int_<1> ) const
