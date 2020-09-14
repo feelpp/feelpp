@@ -168,9 +168,8 @@ public:
 
                                                             using _expr_type = std::decay_t< decltype( ModelExpression{}.template expr<ni,nj>() ) >;
                                                             symbol_expression_t<_expr_type> seParamValue;
-                                                            for( auto const& p : *this )
+                                                            for( auto const& [symbName, mparam] : *this )
                                                             {
-                                                                auto const& mparam = p.second;
                                                                 if ( mparam.isEvaluable() )
                                                                     continue;
 
@@ -178,9 +177,8 @@ public:
                                                                 {
                                                                     if ( !mparam.template hasExpression<ni,nj>() )
                                                                         continue;
-
+                                                                    VLOG(1) << "add parameter symbolsexpr " << symbName;
                                                                     auto const& theexpr = mparam.template expression<ni,nj>();
-                                                                    std::string symbName = p.first;
                                                                     seParamValue.add( symbName, theexpr, SymbolExprComponentSuffix( ni, nj ) );
                                                                 }
                                                             }

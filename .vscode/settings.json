@@ -103,10 +103,18 @@
         "hash_map": "cpp",
         "hash_set": "cpp",
         "slist": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "csignal": "cpp"
     },
     "C_Cpp.configurationWarnings": "Disabled",
+    "C_Cpp.loggingLevel": "Debug",
+    "C_Cpp.default.compilerPath" : "/usr/bin/clang++",
+    "C_Cpp.default.systemIncludePath" : ["${workspaceFolder}/feelpp","/usr/include","/usr/local/include"],
     "cmake.configureOnOpen": false,
-    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
+    "cmake.configureArgs": [
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+    
+    ],
+    "cmake.buildDirectory": "${workspaceFolder}/build-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}",
     "cmake.parallelJobs": 5
 }

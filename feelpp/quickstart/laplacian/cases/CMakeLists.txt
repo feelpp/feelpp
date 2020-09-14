@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 03 Nov 2019
+#       Date: 08 Apr 2017
 #
-#  Copyright (C) 2019 Feel++ Consortium
+#  Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -22,5 +22,3 @@
 #
 #
 
-install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/elasticity.py   DESTINATION share/feelpp/data/testcases/python )
-install(PROGRAMS  ${CMAKE_CURRENT_SOURCE_DIR}/stokes.py   DESTINATION share/feelpp/data/testcases/python )

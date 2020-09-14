@@ -203,7 +203,7 @@ BOOST_PARAMETER_FUNCTION( ( typename compute_form2_return<Args,mpl::bool_<boost:
                               ) // deduced
                         )
 {
-    DCHECK( test->worldCommPtr() == trial->worldCommPtr( )) << "test and trial spaces communicators should be the same" << std::endl;
+    //DCHECK( test->worldCommPtr() == trial->worldCommPtr( )) << "test and trial spaces communicators should be the same" << std::endl;
 #if BOOST_VERSION < 105900
     Feel::detail::ignore_unused_variable_warning( args );
 #endif
