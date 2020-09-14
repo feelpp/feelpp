@@ -814,7 +814,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     }
 #endif
 
-    if ( this->hasTurbulenceModel() )
+    if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
         M_turbulenceModelType->solve();
 
     //--------------------------------------------------
@@ -872,6 +872,23 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol,
+                                                           typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const
+{
+    if ( this->hasTurbulenceModel() && !M_useSemiImplicitTurbulenceCoupling )
+        M_turbulenceModelType->solve();
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updatePicardIteration( int step, vector_ptrtype sol ) const
+{
+    if ( this->hasTurbulenceModel() && !M_useSemiImplicitTurbulenceCoupling )
+        M_turbulenceModelType->solve();
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolveNewton( vector_ptrtype rhs, vector_ptrtype sol ) const
 {}
 
@@ -897,7 +914,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolveNewton( vector_ptrtype rhs, vector_
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolvePicard( vector_ptrtype rhs, vector_ptrtype sol ) const
-{}
+{
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
@@ -909,7 +927,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::postSolvePicard( vector_ptrtype rhs, vector_
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::preSolveLinear( vector_ptrtype rhs, vector_ptrtype sol ) const
-{}
+{
+
+}
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void

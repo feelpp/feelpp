@@ -254,7 +254,7 @@ namespace FeelModels
         void setActivationAddVectorResidualAssembly( std::string const& key, bool b );
 
         void updateNewtonIteration( int step, vector_ptrtype residual, vector_ptrtype sol, typename backend_type::solvernonlinear_type::UpdateIterationData const& data );
-
+        void updatePicardIteration( int step, vector_ptrtype sol );
     private :
 
         void
