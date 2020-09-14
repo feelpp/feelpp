@@ -99,6 +99,26 @@ private:
     ModelExpression M_modelExpr2;
 };
 
+struct FEELPP_EXPORT ModelBoundaryId : public std::tuple<std::string,std::string,std::string>
+{
+  using parent = std::tuple<std::string,std::string,std::string>;
+  ModelBoundaryId( parent const& t ) : parent( t ) {}
+  std::string const& type() const { return std::get<1>( *this ); }
+  // 
+  std::string const& field() const { return std::get<0>( *this ); }
+  // the name of the bc, can be also the name of the marker
+  std::string const& name() const { return std::get<2>( *this ); }
+
+};
+inline std::ostream&
+operator<<(std::ostream& os, ModelBoundaryId const& bcid )
+{
+  os << "(" << bcid.field() << "," << bcid.type() << "," << bcid.name() << ")";
+  return os;
+}
+/**
+ * a map of boundary conditions
+ */
 class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::map<std::string,std::map<std::string,ModelBoundaryCondition> > >, public CommObject
 {
   public:
@@ -106,6 +126,8 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     explicit ModelBoundaryConditions( worldcomm_ptr_t const& world = Environment::worldCommPtr() );
     virtual ~ModelBoundaryConditions() = default;
     void setPTree( pt::ptree const& p );
+    // flatten the boundary condition map so that we can easily iterate in a one level loop
+    std::map<ModelBoundaryId,ModelBoundaryCondition> flatten() const;
 private:
     void setup();
 

@@ -136,9 +136,6 @@ ModelProperties::setup()
         if ( !M_directoryLibExpr.empty() )
             M_bc.setDirectoryLibExpr( M_directoryLibExpr );
         M_bc.setPTree( *bc );
-#if 0 // TODO
-        M_bc2.setPTree( *bc );
-#endif
     }
     auto ic = M_p.get_child_optional("InitialConditions");
     if ( ic )
@@ -221,5 +218,18 @@ void ModelProperties::put(std::string const &key, std::string const &entry)
 void ModelProperties::write(std::string const &f)
 {
     pt::write_json(f,M_p);
+}
+
+ModelProperties&
+ModelProperties::enableBoundaryConditions2()
+{
+    M_bc2_enabled = true; 
+    auto bc = M_p.get_child_optional("BoundaryConditions");
+    if ( bc )
+    {
+        VLOG(1) << "Model with boundary conditions\n";
+        M_bc2.setPTree( *bc );
+    }
+    return *this; 
 }
 }

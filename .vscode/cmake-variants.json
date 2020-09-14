@@ -1,4 +1,24 @@
 {
+    "cpp": {
+        "default": "cpp17",
+        "description": "Select C++ standard 17 or 20",
+        "choices": {
+            "cpp17": {
+                "short": "Cpp17",
+                "long": "Select C++17 standard.",
+                "settings": {
+                    "FEELPP_STD_CPP": "17"
+                }
+            },
+            "cpp20": {
+                "short": "Cpp20",
+                "long": "Select C++20 standard.",
+                "settings": {
+                    "FEELPP_STD_CPP": "20"
+                }
+            }
+        }
+    },
     "toolboxes": {
         "default": "toolboxes",
         "description": "Enable/Disable Feel++ Toolboxes build",

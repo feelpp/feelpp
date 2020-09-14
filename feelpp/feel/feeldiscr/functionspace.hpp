@@ -5286,6 +5286,16 @@ public:
         return u;
     }
     /**
+     * map of elements
+     * \return a map of elements
+     */
+    static std::map<std::string,element_type>
+    elementsMap()
+    {
+        return std::map<std::string,element_type>{};
+    }
+
+    /**
      * \param e expression to initialize the element
      * \param u name of the element
      * \return a pointer to an element initialized with expression \p e

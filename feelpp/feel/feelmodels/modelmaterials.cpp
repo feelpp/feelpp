@@ -76,13 +76,17 @@ ModelMaterial::ModelMaterial( std::string const& name, pt::ptree const& p, world
     std::map<std::string,double> constantMaterialProperty;
     for( auto const& [k,v] : M_p )
     {
+        VLOG(1) << "key: " << k;
         if ( (k!= "markers") &&  (k!= "physics") && (k!= "name") && (k!= "filename")
              && v.empty() && !v.data().empty() )
         {
             this->setProperty( k,M_p );
 
             if ( this->hasPropertyConstant( k ) && this->hasPropertyExprScalar( k ) )
+            {
+                VLOG(1) << "key: " << k << " value: " << this->property( k ).value() << "  constant prop";
                 constantMaterialProperty[k] = this->property( k ).value();
+            }
         }
     }
     this->setParameterValues( constantMaterialProperty );

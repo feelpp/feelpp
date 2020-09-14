@@ -507,6 +507,8 @@ productPtr( SpaceList... spaces )
 template<typename... SpaceList>
 using product_spaces_t = ProductSpaces<SpaceList...>;
 template<typename... SpaceList>
+using product_spaces_ptr_t = std::shared_ptr<ProductSpaces<SpaceList...>>;
+template<typename... SpaceList>
 using product_spaces_element_t = typename ProductSpaces<SpaceList...>::element_type;
 template<typename... SpaceList>
 using product_spaces_element_ptr_t = typename ProductSpaces<SpaceList...>::element_ptrtype;

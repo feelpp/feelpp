@@ -1,4 +1,16 @@
 {
+    "env": {
+        "myDefaultIncludePath": [
+            "${workspaceFolder}/feelpp/contrib/eigen",
+            "${workspaceFolder}/feelpp/contrib/eigen/unsupported",
+            "${workspaceFolder}/feelpp/contrib/tabulate",
+            "${workspaceFolder}/feelpp/contrib/glog/src",
+            "${workspaceFolder}/feelpp/contrib/gflags/src",
+            "${workspaceFolder}/feelpp",
+            "${workspaceFolder}/toolboxes",
+            "${workspaceFolder}/mor"
+        ]
+    },
     "configurations": [
         {
             "name": "Mac",
@@ -48,7 +60,7 @@
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compileCommands": "${workspaceFolder}/build-${buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/build-${variant:cpp}-${variant:toolboxes}-${variant:mor}-${variant:buildType}-${variant:webserver}-${variant:doxygen}-${variant:matplot}/compile_commands.json"
         },
         {
             "name": "Win32",
