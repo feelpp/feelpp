@@ -12,6 +12,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & data ) const
 {
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
     auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence );
@@ -31,6 +32,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & 
     }
 
     M_turbulenceModelType->template updateLinearPDE<FilterBasisUnknownTurbulenceModel>( data,mctx );
+#endif
 }
 
 
@@ -38,29 +40,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinearDofElimination_Turbulence( DataUpdateLinear & data ) const
 {
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>();
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateLinearPDEDofElimination<FilterBasisUnknownTurbulenceModel>( data, mctx );
+#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonInitialGuess_Turbulence( DataNewtonInitialGuess & data ) const
 {
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     vector_ptrtype& U = data.initialGuess();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( U );
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateNewtonInitialGuess<FilterBasisUnknownTurbulenceModel>( data, mctx );
+#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual_Turbulence( DataUpdateResidual & data ) const
 {
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
     auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence ); ;
@@ -80,18 +87,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateResidual_Turbulence( DataUpdateResidua
     }
 
     M_turbulenceModelType->template updateResidual<FilterBasisUnknownTurbulenceModel>( data, mctx );
+#endif
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
 void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateJacobian_Turbulence( DataUpdateJacobian & data ) const
 {
+#ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
     auto mfields_fluid = this->modelFields().exclude( mfields_turbulence ); ;
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );
     M_turbulenceModelType->template updateJacobian<FilterBasisUnknownTurbulenceModel>( data, mctx );
+#endif
 }
 
 

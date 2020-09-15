@@ -381,12 +381,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobian( 
     // peusdo transient continuation
     if ( BuildNonCstPart && data.hasInfo( "use-pseudo-transient-continuation" ) )
     {
-#if 0
+#if 1
         double pseudoTimeStepDelta = data.doubleInfo("pseudo-transient-continuation.delta");
-        auto norm2_uu = this->materialProperties()->fieldRho().functionSpace()->element(); // TODO : improve this (maybe create an expression instead)
+        CHECK( M_stabilizationGLSParameterConvectionDiffusion ) << "aie";
+        auto XhP0d = M_stabilizationGLSParameterConvectionDiffusion->fieldTau().functionSpace();
+        auto norm2_uu = XhP0d->element(); // TODO : improve this (maybe create an expression instead)
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(idv(u))/h());
-        auto fieldNormu = u.functionSpace()->compSpace()->element( norm2(idv(u)) );
-        auto maxu = fieldNormu.max( this->materialProperties()->fieldRho().functionSpace() );
+        auto fieldNormu = u->functionSpace()->compSpace()->element( norm2(idv(u)) );
+        auto maxu = fieldNormu.max( XhP0d );
         //auto maxux = u[ComponentType::X].max( this->materialProperties()->fieldRho().functionSpace() );
         //auto maxuy = u[ComponentType::Y].max( this->materialProperties()->fieldRho().functionSpace() );
         //norm2_uu.on(_range=M_rangeMeshElements,_expr=norm2(vec(idv(maxux),idv(maxux)))/h());
