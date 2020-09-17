@@ -244,46 +244,46 @@ void BiotSavart<DimB>::compute(Expr j, bool computeB, bool computeA, std::set<st
 
     for( auto const& [rank,dofPoints] : M_dofMgn )
     {
-    int dofSize = dofPoints.size();
-    int pointSize = dofSize/3;
-    std::vector<Eigen::Matrix<double,3,1>> coords( pointSize );
-    for ( size_type d = 0; d < pointSize ; d++ )
-    {
-        auto dofCoord = dofPoints[d*3].template get<0>();
-        Eigen::Matrix<double,3,1> coord;
-        coord << dofCoord[0], dofCoord[1], dofCoord[2];
-        coords[d] = coord;
-    }
-
-    std::vector<Eigen::Matrix<double,3,1> > mgnFields, mgnPot;
-    auto dist = inner( _e1v-P(), _e1v-P(),
-                       mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
-
-    if( computeB )
-    {
-        mgnFields = integrate(_range=range,
-                              _expr=unit*cross(j, _e1v-P())/(dist*dist*dist),
-                              _quad=_Q<>(M_quad)
-                              ).template evaluate(coords);
-    }
-    if( computeA )
-    {
-        mgnPot = integrate(_range=range,
-                           _expr=unit*j/dist,
-                           _quad=_Q<>(M_quad)
-                           ).template evaluate(coords);
-    }
-    if( Environment::rank() == rank )
-    {
-        for( int d = 0; d < dofSize; ++d )
+        int dofSize = dofPoints.size();
+        int pointSize = dofSize/3;
+        std::vector<Eigen::Matrix<double,3,1>> coords( pointSize );
+        for ( size_type d = 0; d < pointSize ; d++ )
         {
-        auto dofComp = dofPoints[d].template get<2>();
-        if( computeB )
-            M_B.set(dofPoints[d].template get<1>(), mgnFields[d/3](dofComp,0));
-        if( computeA )
-            M_A.set(dofPoints[d].template get<1>(), mgnPot[d/3](dofComp,0));
+            auto dofCoord = dofPoints[d*3].template get<0>();
+            Eigen::Matrix<double,3,1> coord;
+            coord << dofCoord[0], dofCoord[1], dofCoord[2];
+            coords[d] = coord;
         }
-    }
+
+        std::vector<Eigen::Matrix<double,3,1> > mgnFields, mgnPot;
+        auto dist = inner( _e1v-P(), _e1v-P(),
+                           mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
+
+        if( computeB )
+        {
+            mgnFields = integrate(_range=range,
+                                  _expr=unit*cross(j, _e1v-P())/(dist*dist*dist),
+                                  _quad=_Q<>(M_quad)
+                                  ).template evaluate(coords);
+        }
+        if( computeA )
+        {
+            mgnPot = integrate(_range=range,
+                               _expr=unit*j/dist,
+                               _quad=_Q<>(M_quad)
+                               ).template evaluate(coords);
+        }
+        if( Environment::rank() == rank )
+        {
+            for( int d = 0; d < dofSize; ++d )
+            {
+                auto dofComp = dofPoints[d].template get<2>();
+                if( computeB )
+                    M_B.set(dofPoints[d].template get<1>(), mgnFields[d/3](dofComp,0));
+                if( computeA )
+                    M_A.set(dofPoints[d].template get<1>(), mgnPot[d/3](dofComp,0));
+            }
+        }
     }
     M_B.close();
     M_A.close();
