@@ -356,8 +356,70 @@ template <typename SpaceType>
 void
 TwoSpacesMap<SpaceType>::build( mpl::true_ )
 {
-    rangespace_type range;
-    boost::fusion::for_each( range, BuildForComposite( Xs, Xp, M_shift, M_s_to_p_comp, M_p_to_s_comp, M_s_to_p, M_p_to_s ) );
+    // rangespace_type range;
+    // boost::fusion::for_each( range, BuildForComposite( Xs, Xp, M_shift, M_s_to_p_comp, M_p_to_s_comp, M_s_to_p, M_p_to_s ) );
+    hana::for_each(hana::make_range(hana::int_c<0>, hana::int_c<n_spaces>),
+                   [this](auto q) {
+                       auto XsQ = Xs->template functionSpace<q>();
+                       auto XpQ = Xp->template functionSpace<q>();
+
+                       M_s_to_p_comp[q].clear();
+                       M_p_to_s_comp[q].clear();
+
+                       std::map<std::set<int>,int> elts_map_s;
+                       for ( auto const& eltWrap : elements(XsQ->mesh()) )
+                       {
+                           auto const& elt = unwrap_ref( eltWrap );
+                           std::set<int> pts_id;
+                           for ( int p=0; p<elt.nPoints(); p++ )
+                               pts_id.insert( elt.point(p).id() );
+                           elts_map_s[pts_id] = elt.id();
+                       }
+                       // loop on the elements of the full mesh splited between all procs
+                       for ( auto const& eltWrap : elements(XpQ->mesh()) )
+                       {
+                           auto const& elt = unwrap_ref( eltWrap );
+                           std::set<int> pts_id;
+                           for ( int p=0; p<elt.nPoints(); p++ )
+                               pts_id.insert( elt.point(p).id() + M_shift );
+
+                           // check if this elements is in the submesh of the sequential space
+                           auto map_it = elts_map_s.find( pts_id );
+                           if ( map_it!=elts_map_s.end() ) // the element exists in the seq mesh
+                           {
+                               int eid_s = map_it->second;
+
+                               // loop on each ldof of the element : get the globaldof id associated
+                               // and put it in the maps
+                               for ( auto const& ldof : XpQ->dof()->localDof(elt.id()) )
+                               {
+                                   int gdof_s = XsQ->dof()->localToGlobalId( eid_s, ldof.first.localDof() );
+                                   int gdof_p = ldof.second.index() ;
+
+                                   auto s_to_p_it = M_s_to_p_comp[q].find( gdof_s );
+                                   if ( s_to_p_it==M_s_to_p_comp[q].end() )
+                                   {
+                                       M_s_to_p_comp[q][gdof_s] = std::make_pair( XpQ->worldComm().globalRank(),
+                                                                                  gdof_p );
+                                       M_p_to_s_comp[q][gdof_p] = gdof_s;
+
+                                       int vec_gdof_s = Xs->dof()->dofIdToContainerId( q, gdof_s );
+                                       int vec_gdof_p = Xp->dof()->dofIdToContainerId( q, gdof_p );
+                                       M_s_to_p[vec_gdof_s] = std::make_pair( XpQ->worldComm().globalRank(),
+                                                                              vec_gdof_p );
+                                       M_p_to_s[vec_gdof_p] = vec_gdof_s;
+                                   }
+                                   //#if !defined( NDEBUG )
+                                   else
+                                   {
+                                       int old_gdof_p = M_s_to_p_comp[q][gdof_s].second;
+                                       CHECK( old_gdof_p==gdof_p ) <<"Error on proc "<< Environment::worldComm().globalRank() <<", the dof_s has the corrspondency to gdof_p :" << old_gdof_p <<", and the new one is "<< gdof_p <<std::endl;
+                                   }
+                                   //#endif
+                               }
+                           }
+                       }
+                   });
 }
 
 
