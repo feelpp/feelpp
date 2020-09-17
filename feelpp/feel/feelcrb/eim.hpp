@@ -2132,6 +2132,8 @@ public:
         return __beta;
     }
 
+    matrix_type const& matrixB() const { return M_B; }
+
 
     model_functionspace_ptrtype modelFunctionSpace() const override { return this->model()->functionSpace();}
     model_functionspace_ptrtype modelFunctionSpace() override { return this->model()->functionSpace();}
