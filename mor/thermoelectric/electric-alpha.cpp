@@ -211,7 +211,7 @@ AlphaElectric::parameter_type AlphaElectric::param0()
     return this->paramFromVec(x);
 }
 
-std::string AlphaElectric::alphaRef( parameter_type const& mu, ModelMaterial const& material )
+std::string AlphaElectric::alphaRef( ModelMaterial const& material )
 {
     using boost::math::binomial_coefficient;
 
@@ -238,7 +238,7 @@ std::string AlphaElectric::alphaRef( parameter_type const& mu, ModelMaterial con
     return alphaStream.str();
 }
 
-std::string AlphaElectric::alpha( ModelMaterial const& material )
+std::string AlphaElectric::alpha( parameter_type const& mu, ModelMaterial const& material )
 {
     using boost::math::binomial_coefficient;
 

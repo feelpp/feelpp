@@ -519,7 +519,9 @@ template<typename te_rb_model_type>
 void BiotSavartAlphaElectricCRB<te_rb_model_type>::computeFE( parameter_type const& mu )
 {
     tic();
+    tic();
     computeVFE(mu);
+    toc("compute V FE", M_verbose > 1);
     tic();
     M_BFe = computeB(mu, M_VFe);
     toc("compute B FE", M_verbose > 1);
@@ -737,12 +739,13 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::setEmpiricalQuadrature()
             auto coord = vec(cst(dofCoord[0]),cst(dofCoord[1]),cst(dofCoord[2]));
             auto dist = inner( coord-P(), coord-P(), mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
             auto ex = -mu0*coeff*sigma*cross(trans(gradv(M_V)), coord-P())/(dist*dist*dist);
-            using fn_t = std::function<void(parameter_type const&, cond_element_type&)>;
-            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable {
+            using fn_t = std::function<bool(parameter_type const&, cond_element_type&)>;
+            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable -> bool {
                               Feel::cout << "lambda" << std::endl;
                               this->computeVRB(mu);
                               this->expandV();
                               Feel::cout << "lambda end" << std::endl;
+                              return true;
                           };
             M_eqs.back()->addExpression(ex,mu,M_V,lambda, dofComp);
         }
@@ -766,7 +769,7 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::setEmpiricalQuadrature()
 
         auto alphaStr = M_teCrbModel->alphaRef(material);
         auto alphaExpr = expr(alphaStr, paramNames, paramRefs);
-        auto alphaPrimeStr = M_teCrbModel->alphaPrime(material);
+        auto alphaPrimeStr = M_teCrbModel->alphaPrimeRef(material);
         auto alphaPrimeExpr = expr(alphaPrimeStr, paramNames, paramRefs);
 
         auto Jinv = mat<3,3>( cos(alphaExpr), -sin(alphaExpr), -alphaPrimeExpr*Py(),
@@ -786,11 +789,12 @@ BiotSavartAlphaElectricCRB<te_rb_model_type>::setEmpiricalQuadrature()
                                mpl::int_<InnerProperties::IS_SAME|InnerProperties::SQRT>() );
             auto ex = -mu0*coeff*sigma*cross(trans(gradv(M_V)*Jinv), coord-psi)/(dist*dist*dist);
 
-            using fn_t = std::function<void(parameter_type const&, cond_element_type&)>;
-            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable {
-                               this->computeVRB(mu);
+            using fn_t = std::function<bool(parameter_type const&, cond_element_type&)>;
+            fn_t lambda = [this](parameter_type const& mu, cond_element_type& v) mutable -> bool {
+                              this->computeVRB(mu);
                               this->expandV();
                               v = this->potential();
+                              return true;
                           };
             M_eqs.back()->addExpression(ex,mu,M_V,lambda,dofComp);
         }

@@ -33,67 +33,67 @@
 
 int iter=0;
 
-std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> >
-computeStats(std::vector<std::vector<double> > const& err)
-{
-    int M = err.size();
-    std::vector<double> min(M), max(M), mean(M), stdev(M);
-    if( M > 0 )
-    {
-        int size = err[0].size();
-        for(int m = 0; m < M; ++m)
-        {
-            min[m] = *std::min_element(err[m].begin(), err[m].end());
-            max[m] = *std::max_element(err[m].begin(), err[m].end());
-            double s = std::accumulate(err[m].begin(), err[m].end(), 0.0);
-            mean[m] = s/size;
-            double accum = std::accumulate(err[m].begin(), err[m].end(), 0.0,
-                                           [s,size](double a, double b) {
-                                               return a + (b-s/size)*(b-s/size);
-                                       });
-            stdev[m] = accum/size;
-        }
-    }
-    return std::make_tuple(min,max,mean,stdev);
-}
+// std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> >
+// computeStats(std::vector<std::vector<double> > const& err)
+// {
+//     int M = err.size();
+//     std::vector<double> min(M), max(M), mean(M), stdev(M);
+//     if( M > 0 )
+//     {
+//         int size = err[0].size();
+//         for(int m = 0; m < M; ++m)
+//         {
+//             min[m] = *std::min_element(err[m].begin(), err[m].end());
+//             max[m] = *std::max_element(err[m].begin(), err[m].end());
+//             double s = std::accumulate(err[m].begin(), err[m].end(), 0.0);
+//             mean[m] = s/size;
+//             double accum = std::accumulate(err[m].begin(), err[m].end(), 0.0,
+//                                            [s,size](double a, double b) {
+//                                                return a + (b-s/size)*(b-s/size);
+//                                        });
+//             stdev[m] = accum/size;
+//         }
+//     }
+//     return std::make_tuple(min,max,mean,stdev);
+// }
 
-void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
-{
-    if( out && Environment::isMasterRank() )
-    {
-        int M = err.size();
-        int size = err[0].size();
-        out << std::setw(5) << "M";
-        for(int i = 0; i < size; ++i)
-            out << std::setw(24) << "mu_" << i;
-        out << std::endl;
-        for(int m = 0; m < M; ++m)
-        {
-            out << std::setw(5) << m+1;
-            for(int i = 0; i < size; ++i)
-                out << std::setw(25) << err[m][i];
-            out << std::endl;
-        }
-        out.close();
-    }
-}
+// void writeErrors(fs::ofstream& out, std::vector<std::vector<double> > const& err)
+// {
+//     if( out && Environment::isMasterRank() )
+//     {
+//         int M = err.size();
+//         int size = err[0].size();
+//         out << std::setw(5) << "M";
+//         for(int i = 0; i < size; ++i)
+//             out << std::setw(24) << "mu_" << i;
+//         out << std::endl;
+//         for(int m = 0; m < M; ++m)
+//         {
+//             out << std::setw(5) << m+1;
+//             for(int i = 0; i < size; ++i)
+//                 out << std::setw(25) << err[m][i];
+//             out << std::endl;
+//         }
+//         out.close();
+//     }
+// }
 
-void writeStats(std::ostream& out, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> > const& stat, std::string const& base = "M")
-{
-    auto min = std::get<0>(stat);
-    auto max = std::get<1>(stat);
-    auto mean = std::get<2>(stat);
-    auto stdev = std::get<3>(stat);
-    if( Environment::isMasterRank() )
-    {
-        int M = min.size();
-        out << std::setw(5) << base << std::setw(25) << "min" << std::setw(25) << "max"
-            << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
-        for(int m = 0; m < M; ++m)
-            out << std::setw(5) << m+1 << std::setw(25) << min[m] << std::setw(25) << max[m]
-                << std::setw(25) << mean[m] << std::setw(25) << stdev[m] << std::endl;
-    }
-}
+// void writeStats(std::ostream& out, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double> > const& stat, std::string const& base = "M")
+// {
+//     auto min = std::get<0>(stat);
+//     auto max = std::get<1>(stat);
+//     auto mean = std::get<2>(stat);
+//     auto stdev = std::get<3>(stat);
+//     if( Environment::isMasterRank() )
+//     {
+//         int M = min.size();
+//         out << std::setw(5) << base << std::setw(25) << "min" << std::setw(25) << "max"
+//             << std::setw(25) << "mean" << std::setw(25) << "stdev" << std::endl;
+//         for(int m = 0; m < M; ++m)
+//             out << std::setw(5) << m+1 << std::setw(25) << min[m] << std::setw(25) << max[m]
+//                 << std::setw(25) << mean[m] << std::setw(25) << stdev[m] << std::endl;
+//     }
+// }
 
 int main(int argc, char**argv )
 {
@@ -154,14 +154,26 @@ int main(int argc, char**argv )
         auto rangeB = Xh->dof()->meshSupport()->rangeElements();
         auto BFE = Xh->element();
         auto BRB = Xh->element();
-        auto BRBn = Xh->element();
+        // auto BRBn = Xh->element();
+        auto Vh = BS->spaceCond();
+        auto rangeV = Vh->dof()->meshSupport()->rangeElements();
+        auto VFE = Vh->element();
+        auto VRB = Vh->element();
 
         int M = BS->dimension();
-        std::vector<std::vector<double> > errs(M, std::vector<double>(size));
-        std::vector<std::vector<double> > errsRel(M, std::vector<double>(size));
-        int N = BS->crbDimension();
-        std::vector<std::vector<double> > errsV(N, std::vector<double>(size));
-        std::vector<std::vector<double> > errsRelV(N, std::vector<double>(size));
+        std::vector<double> errsV(size);
+        std::vector<double> errsVR(size);
+        std::vector<double> errsB(size);
+        std::vector<double> errsBR(size);
+        std::vector<double> errsH(size);
+        std::vector<double> errsHR(size);
+        // std::vector<std::vector<double> > errs(M, std::vector<double>(size));
+        // std::vector<std::vector<double> > errsRel(M, std::vector<double>(size));
+        // std::vector<std::vector<double> > errsH(M, std::vector<double>(size));
+        // std::vector<std::vector<double> > errsRelH(M, std::vector<double>(size));
+        // int N = BS->crbDimension();
+        // std::vector<std::vector<double> > errsV(N, std::vector<double>(size));
+        // std::vector<std::vector<double> > errsRelV(N, std::vector<double>(size));
 
         Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
         int i = 0;
@@ -174,62 +186,120 @@ int main(int argc, char**argv )
             else
             {
                 BS->computeFE(mu);
+                VFE = BS->potentialFE();
                 BFE = BS->magneticFluxFE();
             }
+            double normV = normL2( rangeV, idv(VFE) );
             double normB = normL2( rangeB, idv(BFE) );
-            for( int m = 0; m < M; ++m)
-            {
-                BS->online(mu, m+1);
-                BRB = BS->magneticFlux();
-                errs[m][i] = normL2( rangeB, idv(BRB)-idv(BFE) );
-                errsRel[m][i] = errs[m][i]/normB;
-            }
-            for( int n = 0; n < N; ++n)
-            {
-                BS->computeRB(mu, n+1);
-                BRBn = BS->magneticFlux();
-                errsV[n][i] = normL2( rangeB, idv(BRBn)-idv(BFE) );
-                errsRelV[n][i] = errsV[n][i]/normB;
-            }
+            double homoFE = BS->homogeneity(BFE);
+            BS->online(mu);
+            VRB = BS->potential();
+            BRB = BS->magneticFlux();
+            double homoRB = BS->homogeneity(BRB);
+            errsV[i] = normL2(rangeV, idv(VRB)-idv(VFE) );
+            errsVR[i] = errsV[i]/normV;
+            errsB[i] = normL2(rangeB, idv(BRB)-idv(BFE) );
+            errsBR[i] = errsB[i]/normB;
+            errsH[i] = std::abs(homoRB-homoFE);
+            errsHR[i] = errsH[i]/homoFE;
+            // for( int m = 0; m < M; ++m)
+            // {
+            //     BS->online(mu, m+1);
+            //     BRB = BS->magneticFlux();
+            //     double homoRB = BS->homogeneity(BRB);
+            //     errs[m][i] = normL2( rangeB, idv(BRB)-idv(BFE) );
+            //     errsRel[m][i] = errs[m][i]/normB;
+            //     errsH[m][i] = std::abs(homoRB-homoFE);
+            //     errsRelH[m][i] = errs[m][i]/homoFE;
+            // }
+            // for( int n = 0; n < N; ++n)
+            // {
+            //     BS->computeRB(mu, n+1);
+            //     BRBn = BS->magneticFlux();
+            //     errsV[n][i] = normL2( rangeB, idv(BRBn)-idv(BFE) );
+            //     errsRelV[n][i] = errsV[n][i]/normB;
+            // }
             ++i;
         }
 
-        auto stats = computeStats(errsRel);
+        double s;
+        double minV = *std::min_element(errsVR.begin(), errsVR.end());
+        double maxV = *std::max_element(errsVR.begin(), errsVR.end());
+        s = std::accumulate(errsVR.begin(), errsVR.end(), 0.0);
+        double meanV = s/size;
+        double minB = *std::min_element(errsBR.begin(), errsBR.end());
+        double maxB = *std::max_element(errsBR.begin(), errsBR.end());
+        s = std::accumulate(errsBR.begin(), errsBR.end(), 0.0);
+        double meanB = s/size;
+        double minH = *std::min_element(errsHR.begin(), errsHR.end());
+        double maxH = *std::max_element(errsHR.begin(), errsHR.end());
+        s = std::accumulate(errsHR.begin(), errsHR.end(), 0.0);
+        double meanH = s/size;
 
-        fs::ofstream cvgErr( "err.dat" );
-        fs::ofstream cvgErrR( "errR.dat" );
-        fs::ofstream cvgStat( "stat.dat" );
-        writeErrors(cvgErr, errs);
-        writeErrors(cvgErrR, errsRel);
-        if( cvgStat )
-        {
-            writeStats(cvgStat, stats);
-            cvgStat.close();
-        }
-        if( Environment::isMasterRank() )
-            writeStats(std::cout, stats);
+        Feel::cout << std::setw(5) << "V" << std::setw(24) << "min"
+                   << std::setw(24) << "max" << std::setw(24) << "mean" << std::endl;
+        Feel::cout << std::setw(5) << " " << std::setw(24) << minV
+                   << std::setw(24) << maxV << std::setw(24) << meanV << std::endl;
+        Feel::cout << std::setw(5) << "B" << std::setw(24) << "min"
+                   << std::setw(24) << "max" << std::setw(24) << "mean" << std::endl;
+        Feel::cout << std::setw(5) << " " << std::setw(24) << minB
+                   << std::setw(24) << maxB << std::setw(24) << meanB << std::endl;
+        Feel::cout << std::setw(5) << "H" << std::setw(24) << "min"
+                   << std::setw(24) << "max" << std::setw(24) << "mean" << std::endl;
+        Feel::cout << std::setw(5) << " " << std::setw(24) << minH
+                   << std::setw(24) << maxH << std::setw(24) << meanH << std::endl;
 
-        auto statsV = computeStats(errsRelV);
+        // auto stats = computeStats(errsRel);
 
-        fs::ofstream cvgErrV( "errV.dat" );
-        fs::ofstream cvgErrRV( "errRV.dat" );
-        fs::ofstream cvgStatV( "statV.dat" );
-        writeErrors(cvgErrV, errsV);
-        writeErrors(cvgErrRV, errsRelV);
-        if( cvgStatV )
-        {
-            writeStats(cvgStatV, statsV);
-            cvgStatV.close();
-        }
-        if( Environment::isMasterRank() )
-            writeStats(std::cout, statsV);
+        // fs::ofstream cvgErr( "err.dat" );
+        // fs::ofstream cvgErrR( "errR.dat" );
+        // fs::ofstream cvgStat( "stat.dat" );
+        // writeErrors(cvgErr, errs);
+        // writeErrors(cvgErrR, errsRel);
+        // if( cvgStat )
+        // {
+        //     writeStats(cvgStat, stats);
+        //     cvgStat.close();
+        // }
+        // if( Environment::isMasterRank() )
+        //     writeStats(std::cout, stats);
+
+        // auto statsH = computeStats(errsRelH);
+
+        // fs::ofstream cvgErrH( "errH.dat" );
+        // fs::ofstream cvgErrRH( "errRH.dat" );
+        // fs::ofstream cvgStatH( "statH.dat" );
+        // writeErrors(cvgErrH, errsH);
+        // writeErrors(cvgErrRH, errsRelH);
+        // if( cvgStatH )
+        // {
+        //     writeStats(cvgStatH, statsH);
+        //     cvgStatH.close();
+        // }
+        // if( Environment::isMasterRank() )
+        //     writeStats(std::cout, statsH);
+
+        // auto statsV = computeStats(errsRelV);
+
+        // fs::ofstream cvgErrV( "errV.dat" );
+        // fs::ofstream cvgErrRV( "errRV.dat" );
+        // fs::ofstream cvgStatV( "statV.dat" );
+        // writeErrors(cvgErrV, errsV);
+        // writeErrors(cvgErrRV, errsRelV);
+        // if( cvgStatV )
+        // {
+        //     writeStats(cvgStatV, statsV);
+        //     cvgStatV.close();
+        // }
+        // if( Environment::isMasterRank() )
+        //     writeStats(std::cout, statsV);
 
         auto mu = sampling.back();
         auto alpha = BS->alpha(mu);
-        BS->computeFE(mu);
-        BS->expandV();
-        auto VRB = BS->potential();
-        auto VFE = BS->potentialFE();
+        // BS->computeFE(mu);
+        // BS->expandV();
+        // auto VRB = BS->potential();
+        // auto VFE = BS->potentialFE();
         mu = BS->param0();
         BS->computeFE(mu);
         auto V0 = BS->potentialFE();
@@ -271,7 +341,7 @@ int main(int argc, char**argv )
         // lower and upper bounds
         auto muMin = BS->parameterSpace()->min();
         auto muMax = BS->parameterSpace()->max();
-        auto mu0 = BS->param0();
+        auto mu0 = BS->paramFromProperties();
 
         std::vector<double> lb(muMin.data(), muMin.data()+muMin.size());
         std::vector<double> ub(muMax.data(), muMax.data()+muMax.size());
@@ -322,6 +392,8 @@ int main(int argc, char**argv )
         std::vector<double> x(N);
         Eigen::VectorXd::Map(x.data(), N) = mu0;
 
+        Feel::cout << "start optimization with mu = " << x << std::endl;
+
         ::nlopt::result result = opt.optimize(x, minf);
 
         double optiTime = toc("optimization", false);
@@ -338,11 +410,15 @@ int main(int argc, char**argv )
         auto B = BS->magneticFlux();
         if( boption("biotsavart.use-bg-field") )
             B += bBg;
+        auto div = integrate(_range=elements(V.functionSpace()->mesh()),
+                             _expr= -58e6*laplacianv(V)).evaluate()(0,0);
         BS->computeFE(mu);
         auto VFE = BS->potentialFE();
         auto BFE = BS->magneticFluxFE();
         if( boption("biotsavart.use-bg-field") )
             BFE += bBg;
+        auto divFE = integrate(_range=elements(V.functionSpace()->mesh()),
+                               _expr= -58e6*laplacianv(V)).evaluate()(0,0);
         BS->computeFE(mu0);
         auto V0FE = BS->potentialFE();
         auto B0FE = BS->magneticFluxFE();
@@ -361,7 +437,9 @@ int main(int argc, char**argv )
                        << ") for parameter\n" << mu << "\n"
                        << "default homogeneity = " << homo0 << " (" << homo0FE << ")\n"
                        << "Evaluation number: " << iter << std::endl;
+            Feel::cout << "divergence = " << div << " (" << divFE << ")"<< std::endl;
         }
+
         // export
 
         auto eCM = exporter(_mesh=V.functionSpace()->mesh(), _name="biotsavart");
