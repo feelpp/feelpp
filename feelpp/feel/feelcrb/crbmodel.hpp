@@ -51,6 +51,8 @@
 
 #include <feel/feelcrb/crbmodelbase.hpp>
 
+#include <feel/feelfilters/exporter.hpp>
+
 namespace Feel
 {
 enum class CRBModelMode
@@ -2156,6 +2158,22 @@ public:
             for(int m=0; m<M_InitialGuessVector[q].size(); m++)
                 *M_InitialGuessV[q][m] = *M_InitialGuessVector[q][m];
         }
+#if 0
+        auto exporter = std::shared_ptr<Exporter<mesh_type>>( Exporter<mesh_type>::New( "compute_initial_guess" ) );
+        exporter->step( 0 )->setMesh( M_InitialGuessV[0][0]->functionSpace()->mesh() );
+        for(int q=0; q<M_InitialGuessVector.size(); q++)
+        {
+            for(int m=0; m<M_InitialGuessVector[q].size(); m++)
+            {
+                Feel::cout << "exporting initialguess[" << q << "][" << m << "]" << std::endl;
+                exporter->step( 0 )->add( "InitialGuess"+std::to_string(q)+std::to_string(m)+"_0",
+                                          M_InitialGuessV[q][m]->template element<0>() );
+                exporter->step( 0 )->add( "InitialGuess"+std::to_string(q)+std::to_string(m)+"_1",
+                                          M_InitialGuessV[q][m]->template element<1>() );
+            }
+        }
+        exporter->save();
+#endif
         return M_InitialGuessV;
     }
 
@@ -3026,119 +3044,119 @@ private :
 };
 
 
-template <typename ModelType>
-struct AssembleMassMatrixInCompositeCase
-{
+// template <typename ModelType>
+// struct AssembleMassMatrixInCompositeCase
+// {
 
-    //! mesh type
-    typedef typename ModelType::mesh_type mesh_type;
+//     //! mesh type
+//     typedef typename ModelType::mesh_type mesh_type;
 
-    //! mesh shared_ptr
-    typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
+//     //! mesh shared_ptr
+//     typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
 
-    //! space_type
-    typedef typename ModelType::space_type space_type;
+//     //! space_type
+//     typedef typename ModelType::space_type space_type;
 
-    //! function space type
-    typedef typename ModelType::functionspace_type functionspace_type;
-    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+//     //! function space type
+//     typedef typename ModelType::functionspace_type functionspace_type;
+//     typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
 
-    //! element of the functionspace type
-    typedef typename ModelType::element_type element_type;
-    typedef typename ModelType::element_ptrtype element_ptrtype;
+//     //! element of the functionspace type
+//     typedef typename ModelType::element_type element_type;
+//     typedef typename ModelType::element_ptrtype element_ptrtype;
 
 
-    AssembleMassMatrixInCompositeCase( element_type const& u ,
-                                       element_type const& v ,
-                                       CRBModel<ModelType>* crb_model)
-        :
-        M_composite_u ( u ),
-        M_composite_v ( v ),
-        M_crb_model( crb_model )
-    {}
+//     AssembleMassMatrixInCompositeCase( element_type const& u ,
+//                                        element_type const& v ,
+//                                        CRBModel<ModelType>* crb_model)
+//         :
+//         M_composite_u ( u ),
+//         M_composite_v ( v ),
+//         M_crb_model( crb_model )
+//     {}
 
-    template< typename T >
-    void
-    operator()( const T& t ) const
-    {
+//     template< typename T >
+//     void
+//     operator()( const T& t ) const
+//     {
 
-        using namespace Feel::vf;
+//         using namespace Feel::vf;
 
-        auto u = this->M_composite_u.template element< T::value >();
-        auto v = this->M_composite_v.template element< T::value >();
-        auto Xh = M_composite_u.functionSpace();
-        auto Vh = u.functionSpace();
+//         auto u = this->M_composite_u.template element< T::value >();
+//         auto v = this->M_composite_v.template element< T::value >();
+//         auto Xh = M_composite_u.functionSpace();
+//         auto Vh = u.functionSpace();
 
-        form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
-            integrate( _range=Vh->template rangeElements< 0 >(),
-                       _expr=trans( idt( u ) )*vf::id( v ) );
+//         form2( _test=Xh, _trial=Xh, _matrix=M_crb_model->Mqm(0,0) ) +=
+//             integrate( _range=Vh->template rangeElements< 0 >(),
+//                        _expr=trans( idt( u ) )*vf::id( v ) );
 
-    }
-private :
-    element_type const&  M_composite_u;
-    element_type const&  M_composite_v;
-    mutable CRBModel<ModelType>* M_crb_model;
-};
+//     }
+// private :
+//     element_type const&  M_composite_u;
+//     element_type const&  M_composite_v;
+//     mutable CRBModel<ModelType>* M_crb_model;
+// };
 
-template <typename ModelType>
-struct AssembleInitialGuessVInCompositeCase
-{
+// template <typename ModelType>
+// struct AssembleInitialGuessVInCompositeCase
+// {
 
-    //! mesh type
-    typedef typename ModelType::mesh_type mesh_type;
+//     //! mesh type
+//     typedef typename ModelType::mesh_type mesh_type;
 
-    //! mesh shared_ptr
-    typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
+//     //! mesh shared_ptr
+//     typedef typename ModelType::mesh_ptrtype mesh_ptrtype;
 
-    //! space_type
-    typedef typename ModelType::space_type space_type;
+//     //! space_type
+//     typedef typename ModelType::space_type space_type;
 
-    //! function space type
-    typedef typename ModelType::functionspace_type functionspace_type;
-    typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
+//     //! function space type
+//     typedef typename ModelType::functionspace_type functionspace_type;
+//     typedef typename ModelType::functionspace_ptrtype functionspace_ptrtype;
 
-    //! element of the functionspace type
-    typedef typename ModelType::element_type element_type;
-    typedef typename ModelType::element_ptrtype element_ptrtype;
+//     //! element of the functionspace type
+//     typedef typename ModelType::element_type element_type;
+//     typedef typename ModelType::element_ptrtype element_ptrtype;
 
-    typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
+//     typedef typename std::vector< std::vector < element_ptrtype > > initial_guess_type;
 
-    AssembleInitialGuessVInCompositeCase( element_type const& v ,
-                                          initial_guess_type const& initial_guess ,
-                                          std::shared_ptr<CRBModel<ModelType> > crb_model)
-        :
-        M_composite_v ( v ),
-        M_composite_initial_guess ( initial_guess ),
-        M_crb_model ( crb_model )
-    {}
+//     AssembleInitialGuessVInCompositeCase( element_type const& v ,
+//                                           initial_guess_type const& initial_guess ,
+//                                           std::shared_ptr<CRBModel<ModelType> > crb_model)
+//         :
+//         M_composite_v ( v ),
+//         M_composite_initial_guess ( initial_guess ),
+//         M_crb_model ( crb_model )
+//     {}
 
-    template< typename T >
-    void
-    operator()( const T& t ) const
-    {
-        using namespace Feel::vf;
+//     template< typename T >
+//     void
+//     operator()( const T& t ) const
+//     {
+//         using namespace Feel::vf;
 
-        auto v = M_composite_v.template element< T::value >();
-        auto Xh = M_composite_v.functionSpace();
-        auto Vh = v.functionSpace();
-        auto range = Vh->template rangeElements< 0 >();
-        int q_max = M_crb_model->QInitialGuess();
-        for(int q = 0; q < q_max; q++)
-        {
-            int m_max = M_crb_model->mMaxInitialGuess(q);
-            for( int m = 0; m < m_max ; m++)
-            {
-                auto view = M_composite_initial_guess[q][m]->template element< T::value >();
-                form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
-                    integrate ( _range=range, _expr=trans( idv( view ) )*vf::id( v ) );
-            }
-        }
-    }
-private :
-    element_type const&  M_composite_v;
-    initial_guess_type const&  M_composite_initial_guess;
-    mutable std::shared_ptr<CRBModel<ModelType> > M_crb_model;
-};
+//         auto v = M_composite_v.template element< T::value >();
+//         auto Xh = M_composite_v.functionSpace();
+//         auto Vh = v.functionSpace();
+//         auto range = Vh->template rangeElements< 0 >();
+//         int q_max = M_crb_model->QInitialGuess();
+//         for(int q = 0; q < q_max; q++)
+//         {
+//             int m_max = M_crb_model->mMaxInitialGuess(q);
+//             for( int m = 0; m < m_max ; m++)
+//             {
+//                 auto view = M_composite_initial_guess[q][m]->template element< T::value >();
+//                 form1( _test=Xh, _vector=M_crb_model->InitialGuessVector(q,m) ) +=
+//                     integrate ( _range=range, _expr=trans( idv( view ) )*vf::id( v ) );
+//             }
+//         }
+//     }
+// private :
+//     element_type const&  M_composite_v;
+//     initial_guess_type const&  M_composite_initial_guess;
+//     mutable std::shared_ptr<CRBModel<ModelType> > M_crb_model;
+// };
 
 
 
@@ -3224,14 +3242,26 @@ CRBModel<TruthModelType>::assembleMassMatrix( mpl::bool_<true> )
 {
     auto Xh = M_model->functionSpace();
 
-    index_vector_type index_vector;
-    int size = functionspace_type::nSpaces;
     M_Mqm.resize( 1 );
     M_Mqm[0].resize(1);
     M_Mqm[0][0]=M_backend->newMatrix( _test=Xh , _trial=Xh );
 
-    //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
-    fusion::for_each( index_vector, AssembleMassMatrixInCompositeCase<TruthModelType>( M_u , M_v , this ) );
+    boost::hana::for_each(boost::hana::make_range(hana::int_c<0>, hana::int_c<nb_spaces>),
+                          [&](auto i) {
+                              auto u = this->M_u.template element<i>();
+                              auto v = this->M_v.template element<i>();
+                              auto Xh = M_u.functionSpace();
+                              auto Vh = u.functionSpace();
+
+                              form2( _test=Xh, _trial=Xh, _matrix=this->Mqm(0,0) ) +=
+                                  integrate( _range=Vh->template rangeElements< 0 >(),
+                                             _expr=trans( idt( u ) )*vf::id( v ) );
+                          });
+//         index_vector_type index_vector;
+//     int size = functionspace_type::nSpaces;
+// arekofna
+//     //M_Mqm[0][0]->printMatlab("mass_matrix_before.m");
+//     fusion::for_each( index_vector, AssembleMassMatrixInCompositeCase<TruthModelType>( M_u , M_v , this ) );
 
     M_Mqm[0][0]->close();
 }
@@ -3268,8 +3298,26 @@ CRBModel<TruthModelType>::assembleInitialGuessV( initial_guess_type & initial_gu
         }
     }
 
-    index_vector_type index_vector;
-    fusion::for_each( index_vector, AssembleInitialGuessVInCompositeCase<TruthModelType>( M_v , initial_guess , this->shared_from_this() ) );
+    boost::hana::for_each(boost::hana::make_range(hana::int_c<0>, hana::int_c<nb_spaces>),
+                          [&](auto i) {
+                              auto v = M_v.template element<i>();
+                              auto Xh = M_v.functionSpace();
+                              auto Vh = v.functionSpace();
+                              auto range = Vh->template rangeElements<0>();
+                              int q_max = this->QInitialGuess();
+                              for(int q = 0; q < q_max; q++)
+                              {
+                                  int m_max = this->mMaxInitialGuess(q);
+                                  for( int m = 0; m < m_max ; m++)
+                                  {
+                                      auto view = initial_guess[q][m]->template element<i>();
+                                      form1( _test=Xh, _vector=this->InitialGuessVector(q,m) ) +=
+                                          integrate ( _range=range, _expr=trans( idv( view ) )*vf::id( v ) );
+                                  }
+                              }
+                          });
+    // index_vector_type index_vector;
+    // fusion::for_each( index_vector, AssembleInitialGuessVInCompositeCase<TruthModelType>( M_v , initial_guess , this->shared_from_this() ) );
 
     for(int q = 0; q < q_max; q++ )
     {
