@@ -24,9 +24,11 @@
 //!
 
 #include "thermoelectric-nl.hpp"
+#include "biotsavart-maxwell.hpp"
 #include <feel/feelcrb/ser.hpp>
 
 #define DO_CVG_TEST 0
+#define USE_BS 0
 
 using namespace Feel;
 
@@ -87,6 +89,8 @@ int main( int argc, char** argv)
         ( "online.dbid", po::value<std::string>()->default_value(""), "id of the db to load" )
         ( "online.sampling-size", po::value<int>()->default_value(1), "number of parameters" )
         ( "online.do-cvg", po::value<bool>()->default_value(true), "" )
+        ( "online.biotsavart.center", po::value<std::vector<double>>()->default_value({{0,0,0}}),"")
+        ( "online.biotsavart.radius", po::value<double>()->default_value(1), "")
         ;
     Environment env( _argc=argc, _argv=argv,
                      _desc=opt
@@ -94,6 +98,7 @@ int main( int argc, char** argv)
                      .add(crbSEROptions())
                      .add(eimOptions())
                      .add(podOptions())
+                     .add(biotsavart_options())
                      .add(backend_options("backend-primal"))
                      .add(backend_options("backend-dual"))
                      .add(backend_options("backend-l2"))
@@ -111,6 +116,7 @@ int main( int argc, char** argv)
     model->initOutputsPoints();
 
     int N = crb->dimension();
+    auto wn = crb->wn();
     int timeSteps = 1;
     std::vector<vectorN_type> uNs(timeSteps, vectorN_type(N)), uNolds(timeSteps, vectorN_type(N));
     std::vector<double> outputs(timeSteps, 0);
@@ -125,7 +131,33 @@ int main( int argc, char** argv)
     auto TRB = VTRB.template element<1>();
     double outFE=1, outRB=1;
 
-#if 0
+#if USE_BS
+    auto sigmaEim = model->scalarContinuousEim()[1];
+    int M = sigmaEim->mMax();
+    auto center = vdoption("online.biotsavart.center");
+    GeoTool::Node c(center[0],center[1],center[2]);
+    auto radius = doption("online.biotsavart.radius");
+    auto BS = BiotSavart<3>(model->mesh(), c, radius);
+    BS.init();
+    std::vector<decltype(BS)::magneticfield_element_type> bn;
+    Feel::cout << "computing " << N << " times " << M << " reduced basis for BS" << std::endl;
+    for(int i = 0; i< N; ++i )
+    {
+        for(int m = 0; m < M; ++m )
+        {
+            BS.compute(idv(sigmaEim->q(m))*trans(gradv(wn[i]->template element<0>())), true, false );
+            bn.push_back(BS.magneticField());
+        }
+    }
+
+    auto Bh = BS.mgnSpace();
+    auto rangeB = elements(Bh->mesh());
+    auto BFE = Bh->element();
+    auto BRB = Bh->element();
+
+#endif
+
+#if DO_CVG_TEST
     if( !boption("online.do-cvg") )
     {
         auto eim_k = model->scalarContinuousEim()[0];
@@ -228,6 +260,9 @@ int main( int argc, char** argv)
         }
 
         int nbErr = 2 + modelOutputs.size() + (ioption("crb.output-index") != 0 ? 1 : 0);
+#if USE_BS
+        nbErr += 1;
+#endif
         std::vector<std::vector<std::vector<double> > > errs(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
         std::vector<std::vector<std::vector<double> > > errsRel(nbErr, std::vector<std::vector<double> >(N, std::vector<double>(size)));
         Feel::cout << "start convergence study with " << size << " parameters" << std::endl;
@@ -242,32 +277,56 @@ int main( int argc, char** argv)
                 outFE = model->output(ioption("crb.output-index"), mu, VTFE);
             auto normV = normL2( rangeU, idv(VFE) );
             auto normT = normL2( rangeU, idv(TFE) );
+
+#if USE_BS
+            auto sigma0 = mu.parameterNamed("sigma");
+            auto alpha = mu.parameterNamed("alpha");
+            auto sigma = sigma0/(cst(1.)+alpha*(idv(TFE)-cst(293.)));
+            BS.compute(sigma*trans(gradv(VFE)),true, false);
+            BFE = BS.magneticField();
+            auto normB = normL2( _range=elements(BS.mesh()), _expr=idv(BFE));
+#endif
             for(int n = 0; n < N; ++n)
             {
+                int j = 0;
                 crb->fixedPointPrimal(n+1, mu, uNs, uNolds, outputs);
                 vectorN_type uN = uNs[0];
                 VTRB = crb->expansion( uN, n+1 );
-                errs[0][n][i] = normL2( rangeU, idv(VRB)-idv(VFE) );
-                errs[1][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
-                errsRel[0][n][i] = errs[0][n][i]/normV;
-                errsRel[1][n][i] = errs[1][n][i]/normT;
+                errs[j][n][i] = normL2( rangeU, idv(VRB)-idv(VFE) );
+                errsRel[j][n][i] = errs[j][n][i]/normV;
+                j++;
+                errs[j][n][i] = normL2( rangeU, idv(TRB)-idv(TFE) );
+                errsRel[j][n][i] = errs[j][n][i]/normT;
+                j++;
+#if USE_BS
+                auto sigmaE = sigmaEim->beta(mu, uN);
+                std::vector<double> betaB;
+                for(int ii = 0; ii < n+1; ++ii )
+                    for(int m = 0; m < M; ++m )
+                        betaB.push_back(50000*sigmaE[m]*uN[ii]);
+                BRB = Feel::expansion(bn, betaB, betaB.size());
+                errs[j][n][i] = normL2( _range=elements(BS.mesh()), _expr=idv(BRB)-idv(BFE) );
+                errsRel[j][n][i] = errs[j][n][i]/normB;
+                j++;
+#endif
+
                 auto evRbV = model->computeOutputsPointsElectro(uN);
                 auto evRbT = model->computeOutputsPointsThermo(uN);
-                for( int j = 0; j < evRbV.size(); ++j )
+                for( int k = 0; k < evRbV.size(); ++k,++j )
                 {
-                    errs[j+2][n][i] = std::abs(evV(j)-evRbV(j));
-                    errsRel[j+2][n][i] = errs[j+2][n][i]/std::abs(evV(j));
+                    errs[j][n][i] = std::abs(evV(k)-evRbV(k));
+                    errsRel[j][n][i] = errs[j][n][i]/std::abs(evV(k));
                 }
-                for( int j = 0; j < evRbT.size(); ++j )
+                for( int k = 0; k < evRbT.size(); ++k,++j )
                 {
-                    errs[j+2+evRbV.size()][n][i] = std::abs(evT(j)-evRbT(j));
-                    errsRel[j+2+evRbV.size()][n][i] = errs[j+2+evRbV.size()][n][i]/std::abs(evT(j));
+                    errs[j][n][i] = std::abs(evT(k)-evRbT(k));
+                    errsRel[j][n][i] = errs[j][n][i]/std::abs(evT(k));
                 }
                 if( ioption("crb.output-index") != 0 )
                 {
                     outRB = outputs[0];
-                    errs[2+modelOutputs.size()][n][i] = std::abs(outFE-outRB);
-                    errsRel[2+modelOutputs.size()][n][i] = errs[2+modelOutputs.size()][n][i]/std::abs(outFE);
+                    errs[j][n][i] = std::abs(outFE-outRB);
+                    errsRel[j][n][i] = errs[j][n][i]/std::abs(outFE);
                 }
             }
             ++i;
@@ -286,6 +345,9 @@ int main( int argc, char** argv)
         }
 
         std::vector<std::string> values({"V","T"});
+#if USE_BS
+        values.push_back("B");
+#endif
         for( auto const& [name,o] : modelOutputs )
             values.push_back("P_"+name);
         if( ioption("crb.output-index") != 0 )
@@ -311,6 +373,13 @@ int main( int argc, char** argv)
         e->add("TFE", TFE);
         e->add("TRB", TRB);
         e->save();
+
+#if USE_BS
+        auto e2 = exporter(_mesh=BS.mesh(),_name="bs");
+        e2->add("BFE",BFE);
+        e2->add("BRB",BRB);
+        e2->save();
+#endif
     }
 
     return 0;

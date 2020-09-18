@@ -87,6 +87,8 @@ public:
                                     NonLinear,
                                     EimDefinition<ParameterDefinition,
                                                   FunctionSpaceDefinition> >;
+    using self_type = ThermoElectricNL;
+
     using parameter_space_type = ParameterDefinition;
     using function_space_type = FunctionSpaceDefinition;
     using eim_definition_type = EimDefinition<ParameterDefinition, FunctionSpaceDefinition>;
@@ -111,6 +113,11 @@ public:
     using rb_space_type = typename super_type::rbfunctionspace_type;
     using ctx_electro_type = rb_space_type::template sub_rbfunctionspace<0>::type::ctxrbset_type;
     using ctx_thermo_type = rb_space_type::template sub_rbfunctionspace<1>::type::ctxrbset_type;
+
+    using mdeim_type = MDEIM<self_type>;
+    using mdeim_ptrtype = std::shared_ptr<mdeim_type>;
+    using deim_type = DEIM<self_type>;
+    using deim_ptrtype = std::shared_ptr<deim_type>;
 
 
 private:
@@ -143,13 +150,15 @@ private:
     int M_maxit;
     int M_trainsetEimSize;
     int M_verbose;
+    bool M_useDEIM;
 
 public:
     static po::options_description makeOptions();
     static AboutData makeAbout( std::string const& str = "poissonnlcrbmodel" );
-    ThermoElectricNL();
+    explicit ThermoElectricNL( std::string prefix = "" );
     prop_ptrtype modelProperties() const { return M_modelProps; }
-    int Qa();
+    parameter_type parameterProperties() const;
+    int Qa( bool isLinear = false );
     int mMaxA(int q );
     int Nl();
     int Ql( int l );
@@ -170,10 +179,15 @@ public:
     vectorN_type computeOutputsPointsThermo( vectorN_type const& urb );
 
     void assemble() override;
+    void assembleWithEIM();
+    void assembleWithDEIM();
+    sparse_matrix_ptrtype assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) override;
+    vector_ptrtype assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag ) override;
     betaqm_type computeBetaQm( parameter_type const& mu ) override;
     betaqm_type computeBetaQm( element_type const& u, parameter_type const& mu) override;
     betaqm_type computeBetaQm( vectorN_type const& urb, parameter_type const& mu) override;
     void fillBetaQm( parameter_type const& mu, vectorN_type const& betaGrad, std::vector<vectorN_type> const& betaK, std::vector<vectorN_type> const& betaSigma );
+    void fillBetaQmWithDEIM( parameter_type const& mu, vectorN_type const& betaDEIM, vectorN_type const& betaMDEIM );
     std::vector<std::vector<element_ptrtype> > computeInitialGuessAffineDecomposition() override;
     beta_vector_type computeBetaInitialGuess( parameter_type const& mu) override;
     std::vector< std::vector<sparse_matrix_ptrtype> > computeLinearDecompositionA() override;

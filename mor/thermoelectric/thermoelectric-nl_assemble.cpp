@@ -27,8 +27,16 @@
 
 namespace Feel {
 
+void ThermoElectricNL::assemble()
+{
+    if ( M_useDEIM )
+        this->assembleWithDEIM();
+    else
+        this->assembleWithEIM();
+}
+
 void
-ThermoElectricNL::assemble()
+ThermoElectricNL::assembleWithEIM()
 {
     this->resize();
 
@@ -178,14 +186,23 @@ ThermoElectricNL::assemble()
 ThermoElectricNL::betaqm_type
 ThermoElectricNL::computeBetaQm( parameter_type const& mu )
 {
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu);
-    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu);
-    this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    if( M_useDEIM )
+    {
+        auto betaDEIM = this->deim()->beta(mu);
+        auto betaMDEIM = this->mdeim()->beta(mu);
+        this->fillBetaQmWithDEIM(mu, betaDEIM, betaMDEIM);
+    }
+    else
+    {
+        std::vector<vectorN_type> betaEimK(M_nbTherMat);
+        for( int i = 0; i < M_nbTherMat; ++i )
+            betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu);
+        std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
+        for( int i = 0; i < M_nbElecMat; ++i )
+            betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu);
+        vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu);
+        this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    }
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
 }
@@ -193,15 +210,23 @@ ThermoElectricNL::computeBetaQm( parameter_type const& mu )
 ThermoElectricNL::betaqm_type
 ThermoElectricNL::computeBetaQm( element_type const& u, parameter_type const& mu)
 {
-    int i = 0;
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, u);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu, u);
-    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, u);
-    this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    if( M_useDEIM )
+    {
+        auto betaDEIM = this->deim()->beta(mu, u);
+        auto betaMDEIM = this->mdeim()->beta(mu, u);
+        this->fillBetaQmWithDEIM(mu, betaDEIM, betaMDEIM);
+    }
+    else
+    {
+        std::vector<vectorN_type> betaEimK(M_nbTherMat);
+        for( int i = 0; i < M_nbTherMat; ++i )
+            betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, u);
+        std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
+        for( int i = 0; i < M_nbElecMat; ++i )
+            betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu, u);
+        vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, u);
+        this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    }
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
 }
@@ -209,15 +234,23 @@ ThermoElectricNL::computeBetaQm( element_type const& u, parameter_type const& mu
 ThermoElectricNL::betaqm_type
 ThermoElectricNL::computeBetaQm( vectorN_type const& urb, parameter_type const& mu)
 {
-    int i = 0;
-    std::vector<vectorN_type> betaEimK(M_nbTherMat);
-    for( int i = 0; i < M_nbTherMat; ++i )
-        betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, urb);
-    std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
-    for( int i = 0; i < M_nbElecMat; ++i )
-        betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu, urb);
-    vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, urb);
-    this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    if( M_useDEIM )
+    {
+        auto betaDEIM = this->deim()->beta(mu, urb);
+        auto betaMDEIM = this->mdeim()->beta(mu, urb);
+        this->fillBetaQmWithDEIM(mu, betaDEIM, betaMDEIM);
+    }
+    else
+    {
+        std::vector<vectorN_type> betaEimK(M_nbTherMat);
+        for( int i = 0; i < M_nbTherMat; ++i )
+            betaEimK[i] = this->scalarContinuousEim()[i]->beta(mu, urb);
+        std::vector<vectorN_type> betaEimSigma(M_nbElecMat);
+        for( int i = 0; i < M_nbElecMat; ++i )
+            betaEimSigma[i] = this->scalarContinuousEim()[i+M_nbTherMat]->beta(mu, urb);
+        vectorN_type betaEimGrad = this->scalarDiscontinuousEim()[0]->beta(mu, urb);
+        this->fillBetaQm(mu, betaEimGrad, betaEimK, betaEimSigma);
+    }
 
     return boost::make_tuple( M_betaAqm, M_betaFqm );
 }
@@ -306,6 +339,18 @@ void ThermoElectricNL::fillBetaQm( parameter_type const& mu, vectorN_type const&
     }
 }
 
+void
+ThermoElectricNL::fillBetaQmWithDEIM( parameter_type const& mu, vectorN_type const& betaDEIM, vectorN_type const& betaMDEIM )
+{
+    int A = this->mdeim()->size();
+    for( int i = 0; i < A; ++i )
+        M_betaAqm[0][i] = betaMDEIM(i);
+
+    int F = this->deim()->size();
+    for( int i = 0; i < F; ++i )
+        M_betaFqm[0][0][i] = betaDEIM(i);
+
+}
 
 std::vector<std::vector<ThermoElectricNL::element_ptrtype> >
 ThermoElectricNL::computeInitialGuessAffineDecomposition()
@@ -332,7 +377,7 @@ ThermoElectricNL::computeLinearDecompositionA()
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
 
-    auto aqm = std::vector<std::vector<sparse_matrix_ptrtype> >(Qa(), std::vector<sparse_matrix_ptrtype>(1));
+    auto aqm = std::vector<std::vector<sparse_matrix_ptrtype> >(Qa(true), std::vector<sparse_matrix_ptrtype>(1));
 
     int i = 0;
     for( auto const& [name,mat] : M_therMaterials )
@@ -376,7 +421,7 @@ ThermoElectricNL::computeLinearDecompositionA()
 ThermoElectricNL::beta_vector_type
 ThermoElectricNL::computeBetaLinearDecompositionA( parameter_type const& mu, double time )
 {
-    beta_vector_type beta(Qa(), std::vector<double>(1));
+    beta_vector_type beta(Qa(true), std::vector<double>(1));
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -397,6 +442,61 @@ ThermoElectricNL::computeBetaLinearDecompositionA( parameter_type const& mu, dou
         beta[i++][0] = e.evaluate()(0,0);
     }
     return beta;
+}
+
+void ThermoElectricNL::assembleWithDEIM()
+{
+    this->resize();
+
+    int A = this->mdeim()->size();
+    auto qa = this->mdeim()->q();
+    for( int i = 0; i < A; ++i )
+        M_Aqm[0][i] = qa[i];
+
+    int F = this->deim()->size();
+    auto qf = this->deim()->q();
+    for( int i = 0; i < F; ++i )
+        M_Fqm[0][0][i] = qf[i];
+
+#if 0
+    /********* Outputs ********/
+    int i = 1;
+    auto outputs = M_modelProps->outputs();
+    for( auto const& [key, output] : outputs )
+    {
+        if( output.type() == "averageTemp" )
+        {
+            auto dim = output.dim();
+            auto fAvgT = form1(_test=Xh);
+            if( dim == 3 )
+            {
+                auto range = markedelements(M_mesh, output.markers());
+                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
+                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
+            }
+            else if( dim == 2 )
+            {
+                auto range = markedfaces(M_mesh, output.markers() );
+                double area = integrate(_range=range, _expr=cst(1.)).evaluate()(0,0);
+                fAvgT = integrate( _range=range, _expr=id(u2)/cst(area) );
+            }
+            M_Fqm[i++][0][0] = fAvgT.vectorPtr();
+        }
+        else if( output.type() == "intensity" )
+        {
+            auto mat = output.getString("material");
+            auto eimSigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
+            for( int m = 0; m < eimSigma->mMax(); ++m )
+            {
+                auto fI = form1(_test=Xh);
+                fI = integrate( markedfaces(M_mesh,output.markers() ),
+                                -idv(eimSigma->q(m))*grad(u1)*N() );
+                M_Fqm[i][0][m] = fI.vectorPtr();
+            }
+            ++i;
+        }
+    }
+#endif
 }
 
 }

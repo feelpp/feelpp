@@ -33,7 +33,7 @@
 #include <feel/feelmodels/modelproperties.hpp>
 #include <feel/feelcrb/crbplugin.hpp>
 
-#include "thermoelectric-nonlinear.hpp"
+#include "thermoelectric-nl.hpp"
 
 namespace Feel
 {

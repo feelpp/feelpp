@@ -39,10 +39,13 @@ ThermoElectricNL::makeOptions()
         ( "thermoelectric.maxit", po::value<int>()->default_value(50), "maximum number of iteration for picard" )
         ( "thermoelectric.trainset-eim-size", po::value<int>()->default_value(10), "size of the trainset" )
         ( "thermoelectric.verbose", po::value<int>()->default_value(0), "level of verbosity" )
+        ( "thermoelectric.use-deim", po::value<bool>()->default_value(false), "use deim and mdeim" )
+        ( "thermoelectric.test-deim", po::value<bool>()->default_value(false), "test deim" )
         ;
     options.add(backend_options("thermo-electro") );
     options.add(backend_options("electro") );
     options.add(backend_options("thermo") );
+    options.add(deimOptions("vec")).add(deimOptions("mat"));
     return options;
 }
 
@@ -55,18 +58,52 @@ ThermoElectricNL::makeAbout( std::string const& str )
 
 
 
-ThermoElectricNL::ThermoElectricNL() :
-    super_type(soption("thermoelectric.basename")),
+ThermoElectricNL::ThermoElectricNL( std::string prefix ) :
+    super_type(soption("thermoelectric.basename"), Environment::worldCommPtr(), prefix),
     M_propertyPath( Environment::expand( soption("thermoelectric.filename")) ),
     M_gamma(doption("thermoelectric.gamma")),
     M_tolerance(doption("thermoelectric.tolerance")),
     M_maxit(ioption("thermoelectric.maxit")),
     M_trainsetEimSize(ioption("thermoelectric.trainset-eim-size")),
-    M_verbose(ioption("thermoelectric.verbose"))
-{}
-
-int ThermoElectricNL::Qa()
+    M_verbose(ioption("thermoelectric.verbose")),
+    M_useDEIM(boption("thermoelectric.use-deim"))
 {
+    Feel::cout << "construct model" << std::endl;
+    this->addModelFile("property-file", M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
+
+    M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
+    M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
+    M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
+    M_nbElecMat = M_elecMaterials.size();
+    M_nbTherMat = M_therMaterials.size();
+    auto bdConditions = M_modelProps->boundaryConditions2();
+    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
+    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
+    M_nbPotDir = potentialDirichlet.size();
+    M_nbTempRobin = temperatureRobin.size();
+
+    auto parameters = M_modelProps->parameters();
+    M_sigmaMax = 0;
+    for( auto const& [name,mat] : M_elecMaterials )
+    {
+        auto sigmaP = parameters[mat.getString("misc.sigmaKey")];
+        if( sigmaP.hasMinMax() )
+        {
+            if( sigmaP.min() > M_sigmaMax )
+                M_sigmaMax = sigmaP.min();
+        }
+        else if( sigmaP.value() > M_sigmaMax )
+            M_sigmaMax = sigmaP.value();
+    }
+    Feel::cout << "sigmaMax=" << M_sigmaMax << std::endl;
+}
+
+int ThermoElectricNL::Qa( bool isLinear )
+{
+    if( M_useDEIM && !isLinear )
+        return 1;
+
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -76,6 +113,9 @@ int ThermoElectricNL::Qa()
 
 int ThermoElectricNL::mMaxA(int q)
 {
+    if( M_useDEIM )
+        return this->mdeim()->size();
+
     auto bdConditions = M_modelProps->boundaryConditions2();
     auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
     auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -97,6 +137,9 @@ int ThermoElectricNL::mMaxA(int q)
 
 int ThermoElectricNL::Nl()
 {
+    if( M_useDEIM )
+        return 1;
+
     auto outputs = M_modelProps->outputs().outputsOfType(std::vector<std::string>({"intensity","averageTemp"}));
     return 1 + outputs.size();
 }
@@ -105,6 +148,9 @@ int ThermoElectricNL::Ql( int l)
 {
     if( l == 0 )
     {
+        if( M_useDEIM )
+            return 1;
+
         auto bdConditions = M_modelProps->boundaryConditions2();
         auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
         auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -130,6 +176,9 @@ int ThermoElectricNL::mMaxF(int l, int q)
 {
     if( l == 0 )
     {
+        if( M_useDEIM )
+            return this->deim()->size();
+
         auto bdConditions = M_modelProps->boundaryConditions2();
         auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
         auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
@@ -185,7 +234,8 @@ int ThermoElectricNL::mMaxAverageTemp(int q, ModelOutput const& out ) const
 
 void ThermoElectricNL::resize()
 {
-    M_eimGradSize = this->scalarDiscontinuousEim()[0]->mMax();
+    if( !M_useDEIM )
+        M_eimGradSize = this->scalarDiscontinuousEim()[0]->mMax();
     M_Aqm.resize(Qa());
     M_betaAqm.resize(Qa());
     for( int q = 0; q < Qa(); ++q)
@@ -222,9 +272,6 @@ ThermoElectricNL::functionspaceMeshSupport( mesh_ptrtype const& mesh ) const
 void ThermoElectricNL::initModel()
 {
     Feel::cout << "init model" << std::endl;
-    this->addModelFile("property-file", M_propertyPath);
-    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
-
     auto parameters = M_modelProps->parameters();
     int nbCrbParameters = count_if(parameters.begin(), parameters.end(), [] (auto const& p)
                                    {
@@ -249,23 +296,6 @@ void ThermoElectricNL::initModel()
     Dmu->setMax(mu_max);
     M_mu = Dmu->element();
 
-    M_materials = M_modelProps->materials().materialWithPhysic(std::vector<std::string>({"electric","thermic"}));
-    M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
-    M_therMaterials = M_modelProps->materials().materialWithPhysic("thermic");
-    M_nbElecMat = M_elecMaterials.size();
-    M_nbTherMat = M_therMaterials.size();
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
-    M_nbPotDir = potentialDirichlet.size();
-    M_nbTempRobin = temperatureRobin.size();
-
-    M_sigmaMax = 0;
-    for( auto const& [name,mat] : M_elecMaterials )
-        if( mu_min.parameterNamed(mat.getString("misc.sigmaKey")) > M_sigmaMax )
-            M_sigmaMax = mu_min.parameterNamed(mat.getString("misc.sigmaKey"));
-    Feel::cout << "sigmaMax=" << M_sigmaMax << std::endl;
-
     if( !M_mesh )
         M_mesh = loadMesh( new mesh_type );
     this->setFunctionSpaces(functionspace_type::New( _mesh=M_mesh, _range=this->functionspaceMeshSupport( M_mesh ) ) );
@@ -285,7 +315,7 @@ void ThermoElectricNL::initModel()
     auto VTInit = this->solveLinear(mu);
     M_InitialGuess[0][0]->template element<0>() = VTInit.template element<0>();
     M_InitialGuess[1][0]->template element<1>() = VTInit.template element<1>();
-#if 0
+#if 1
     auto ex = exporter(_mesh=M_mesh, _name="initial-guess");
     ex->add("V_Init",VTInit.template element<0>() );
     ex->add("T_Init",VTInit.template element<1>() );
@@ -308,65 +338,142 @@ void ThermoElectricNL::initModel()
         Pset->readFromFile(supersamplingname);
     }
 
-    // eim
-    auto T0 = cst(293.0);
-    auto L = cst_ref(M_mu.parameterNamed("L"));
-    i = 0;
-    for( auto const& [key,mat] : M_therMaterials )
+    if( M_useDEIM )
     {
-        auto name = "eim_k_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto k = sigma*L*_e1;
-        auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
+        auto d = Feel::deim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=Pset, _prefix="vec");
+        this->addDeim(d);
+        this->deim()->run();
+        Feel::cout << tc::green << "DEIM construction finished!!" << tc::reset << std::endl;
 
-        auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
-                          _element=M_u.template element<1>(),
-                          _parameter=M_mu,
-                          _expr=k,
-                          _space=Eh,
-                          _name=name,
-                          _sampling=Pset );
-        this->addEim( eim_k );
-        M_therEimIndex[key] = i++;
-        Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
+        auto m = Feel::mdeim( _model=std::dynamic_pointer_cast<self_type>(this->shared_from_this()), _sampling=Pset, _prefix="mat");
+        this->addMdeim(m);
+        this->mdeim()->run();
+        Feel::cout << tc::green << "MDEIM construction finished!!" << tc::reset << std::endl;
+        if( boption("thermoelectric.test-deim") )
+        {
+            auto musV = deim()->mus();
+            auto musM = mdeim()->mus();
+            musV.insert(musV.end(), musM.begin(), musM.end());
+            auto qa = mdeim()->q();
+            auto qf = deim()->q();
+            for( auto const& mu : musV )
+            {
+                auto VTFE = this->solve(mu);
+                auto A = this->assembleForMDEIMnl(mu, VTFE, 0 );
+                auto F = this->assembleForDEIMnl(mu, VTFE, 0 );
+
+                auto betaA = this->mdeim()->beta(mu, VTFE);
+                auto betaF = deim()->beta(mu, VTFE);
+                auto Am = backend()->newMatrix(Xh,Xh);
+                Am->zero();
+                for( int m = 0; m < mdeim()->size(); ++m )
+                {
+                    Am->addMatrix( betaA(m), qa[m]);
+                    Feel::cout << "betaA(" << m << ") = " << betaA(m) << std::endl;
+                }
+                auto Fm = backend()->newVector(Xh);
+                Fm->zero();
+                for( int m = 0; m < deim()->size(); ++m )
+                {
+                    Fm->add( betaF(m), qf[m]);
+                    Feel::cout << "betaF(" << m << ") = " << betaF(m) << std::endl;
+                }
+
+                auto VTEIM = Xh->element();
+                backend()->solve( _matrix=Am, _rhs=Fm, _solution=VTEIM);
+
+                auto VEIM = VTEIM.template element<0>();
+                auto TEIM = VTEIM.template element<1>();
+                auto VFE = VTFE.template element<0>();
+                auto TFE = VTFE.template element<1>();
+
+                auto e = exporter(_mesh=M_mesh,_name="testdeim");
+                e->add("VFE", VFE);
+                e->add("VEIM", VEIM);
+                e->add("TFE", TFE);
+                e->add("TEIM", TEIM);
+                e->save();
+
+                auto errV = normL2(elements(M_mesh), idv(VFE)-idv(VEIM) );
+                auto normV = normL2(elements(M_mesh), idv(VFE) );
+                Feel::cout << "V: err = " << errV << " relative err = " << errV/normV << std::endl;
+                auto errT = normL2(elements(M_mesh), idv(TFE)-idv(TEIM) );
+                auto normT = normL2(elements(M_mesh), idv(TFE) );
+                Feel::cout << "T: err = " << errT << " relative err = " << errT/normT << std::endl;
+
+                Am->addMatrix(-1., A);
+                Fm->add(-1., F);
+                auto errA = Am->linftyNorm();
+                auto normA = A->linftyNorm();
+                auto errF = Fm->linftyNorm();
+                auto normF = F->linftyNorm();
+                Feel::cout << "A: err = " << errA << " relative err = " << errA/normA << std::endl
+                           << "F: err = " << errF << " relative err = " << errF/normF << std::endl;
+            }
+        }
     }
-
-    for( auto const& [key,mat] : M_elecMaterials )
+    else
     {
-        auto name = "eim_sigma_"+key;
-        auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
-        auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
-        auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
-        auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
-        auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
+        // eim
+        auto T0 = cst(293.0);
+        auto L = cst_ref(M_mu.parameterNamed("L"));
+        i = 0;
+        for( auto const& [key,mat] : M_therMaterials )
+        {
+            auto name = "eim_k_"+key;
+            auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
+            auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
+            auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+            auto k = sigma*L*_e1;
+            auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
+
+            auto eim_k = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
                               _element=M_u.template element<1>(),
                               _parameter=M_mu,
-                              _expr=sigma/M_sigmaMax,
+                              _expr=k,
                               _space=Eh,
                               _name=name,
                               _sampling=Pset );
-        this->addEim( eim_sigma );
-        M_elecEimIndex[key] = i++;
-        Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
-    }
+            this->addEim( eim_k );
+            M_therEimIndex[key] = i++;
+            Feel::cout << tc::green << name << " dimension: " << eim_k->mMax() << tc::reset << std::endl;
+        }
 
-    auto name = "eim_grad";
-    auto gradgrad = _e2v*trans(_e2v);
-    auto Jh = eimd_space_type::New( _mesh=M_mesh,
-                                    _range=elements(support(Xh->template functionSpace<0>())));
-    auto eim_grad = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
-                         _element=M_u.template element<1>(),
-                         _element2=M_u.template element<0>(),
-                         _parameter=M_mu,
-                         _expr=gradgrad,
-                         _space=Jh,
-                         _name=name,
-                         _sampling=Pset );
-    this->addEimDiscontinuous( eim_grad );
-    M_eimGradSize = eim_grad->mMax();
-    Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
+        for( auto const& [key,mat] : M_elecMaterials )
+        {
+            auto name = "eim_sigma_"+key;
+            auto sigma0 = cst_ref(M_mu.parameterNamed(mat.getString("misc.sigmaKey")));
+            auto alpha = cst_ref(M_mu.parameterNamed(mat.getString("misc.alphaKey")));
+            auto sigma = sigma0/(cst(1.) + alpha*(_e1-T0));
+            auto Eh = eim_space_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, mat.meshMarkers()) );
+            auto eim_sigma = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
+                                  _element=M_u.template element<1>(),
+                                  _parameter=M_mu,
+                                  _expr=sigma/M_sigmaMax,
+                                  _space=Eh,
+                                  _name=name,
+                                  _sampling=Pset );
+            this->addEim( eim_sigma );
+            M_elecEimIndex[key] = i++;
+            Feel::cout << tc::green << name << " dimension: " << eim_sigma->mMax() << tc::reset << std::endl;
+        }
+
+        auto name = "eim_grad";
+        auto gradgrad = _e2v*trans(_e2v);
+        auto Jh = eimd_space_type::New( _mesh=M_mesh,
+                                        _range=elements(support(Xh->template functionSpace<0>())));
+        auto eim_grad = eim( _model=std::dynamic_pointer_cast<ThermoElectricNL>(this->shared_from_this() ),
+                             _element=M_u.template element<1>(),
+                             _element2=M_u.template element<0>(),
+                             _parameter=M_mu,
+                             _expr=gradgrad,
+                             _space=Jh,
+                             _name=name,
+                             _sampling=Pset );
+        this->addEimDiscontinuous( eim_grad );
+        M_eimGradSize = eim_grad->mMax();
+        Feel::cout << tc::green << name << " dimension: " << eim_grad->mMax() << tc::reset << std::endl;
+    }
 
     auto U = Xh->element();
     auto u1 = U.template element<0>();

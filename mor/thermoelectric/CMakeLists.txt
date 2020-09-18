@@ -85,7 +85,8 @@ install( FILES thermoelectric-nl.hpp electric-alpha.hpp biotsavart.hpp biotsavar
 #                         DEFS THERMOELECTRIC_SADDLEPOINT
 #                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_LINEAR} INSTALL )
 feelpp_add_application( thermoelectric-nonlinear-app
-                        SRCS thermoelectric-nl.hpp thermoelectric-nl_main.cpp
+                        SRCS thermoelectric-nl.hpp thermoelectric-nl_main.cpp biotsavart-maxwell.hpp
+                        LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 feelpp_add_application( saddle-thermoelectric-nonlinear-app
                         SRCS thermoelectric-nl.hpp thermoelectric-nl_main.cpp

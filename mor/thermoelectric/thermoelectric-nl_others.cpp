@@ -27,6 +27,121 @@
 
 namespace Feel {
 
+ThermoElectricNL::sparse_matrix_ptrtype
+ThermoElectricNL::assembleForMDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+{
+    auto bdConditions = M_modelProps->boundaryConditions2();
+    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
+    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
+
+    auto mesh = Xh->mesh();
+    auto u1 = u.template element<0>();
+    auto u2 = u.template element<1>();
+    auto uOld1 = u.template element<0>();
+    auto uOld2 = u.template element<1>();
+
+    auto a = form2(_test=Xh, _trial=Xh);
+    for( auto const& [key,mat] : M_therMaterials )
+    {
+        auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
+        auto k = sigma*mu.parameterNamed("L")*idv(uOld2);
+        a += integrate( markedelements(mesh, mat.meshMarkers()),
+                        k*inner(gradt(u2),grad(u2)) );
+    }
+    for( auto const& [key,mat] : M_elecMaterials )
+    {
+        auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
+        a += integrate( markedelements(mesh, mat.meshMarkers()),
+                            sigma*inner(gradt(u1),grad(u1)) );
+    }
+
+    // Dirichlet condition
+    for( auto const&[bdName, bd] : potentialDirichlet )
+    {
+        auto mat = M_elecMaterials[bd.material()];
+        auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
+        a += integrate( markedfaces(mesh,bd.markers()),
+                        sigma*(M_gamma/hFace()*inner(idt(u1),id(u1))
+                               -inner(gradt(u1)*N(),id(u1))
+                               -inner(grad(u1)*N(),idt(u1)) ) );
+    }
+
+    for( auto const&[bdName, bd] : temperatureRobin )
+    {
+        auto e = bd.expr1();
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+        a += integrate( markedfaces(mesh,bd.markers()),
+                        e.evaluate()(0,0)*inner(idt(u2),id(u2)) );
+    }
+
+    auto am = a.matrixPtr();
+    am->close();
+
+    return am;
+}
+
+ThermoElectricNL::vector_ptrtype
+ThermoElectricNL::assembleForDEIMnl( parameter_type const& mu, element_type const& u, int const& tag )
+{
+    auto bdConditions = M_modelProps->boundaryConditions2();
+    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
+    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
+
+    auto mesh = Xh->mesh();
+    auto u1 = u.template element<0>();
+    auto u2 = u.template element<1>();
+    auto uOld1 = u.template element<0>();
+    auto uOld2 = u.template element<1>();
+
+    auto f = form1(_test=Xh);
+    for( auto const& [key,mat] : M_elecMaterials )
+    {
+        auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
+        f += integrate( markedelements(mesh,mat.meshMarkers()),
+                        sigma*inner(gradv(uOld1))*id(u2) );
+    }
+    // Dirichlet condition
+    for( auto const&[bdName, bd] : potentialDirichlet )
+    {
+        auto mat = M_elecMaterials[bd.material()];
+        auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
+        auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
+        auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
+
+        auto e = bd.expr();
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+
+        f += integrate( markedfaces(mesh, bd.markers()),
+                        e.evaluate()(0,0)*sigma*(M_gamma/hFace()*id(u1) - grad(u1)*N() ) );
+    }
+    for( auto const&[bdName, bd] : temperatureRobin )
+    {
+        auto e = bd.expr2();
+        for( auto const& param : M_modelProps->parameters() )
+            if( e.expression().hasSymbol(param.first) )
+                e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
+        f += integrate( markedfaces(mesh, bd.markers()),
+                        e.evaluate()(0,0)*id(u2) );
+    }
+
+    auto fv = f.vectorPtr();
+    fv->close();
+
+    return fv;
+}
+
 ThermoElectricNL::element_type
 ThermoElectricNL::solve(parameter_type const& mu)
 {
@@ -35,101 +150,30 @@ ThermoElectricNL::solve(parameter_type const& mu)
     auto U = Xh->element();
     auto u1 = U.template element<0>();
     auto u2 = U.template element<1>();
-    auto uOld1 = M_InitialGuess[0][0]->template element<0>();
-    auto uOld2 = M_InitialGuess[1][0]->template element<1>();
-
-    auto bdConditions = M_modelProps->boundaryConditions2();
-    auto potentialDirichlet = bdConditions.boundaryConditions("potential","Dirichlet");
-    auto temperatureRobin = bdConditions.boundaryConditions("temperature","Robin");
+    auto UOld = Xh->element();
+    auto uOld1 = UOld.template element<0>();
+    auto uOld2 = UOld.template element<1>();
+    uOld1 = M_InitialGuess[0][0]->template element<0>();
+    uOld2 = M_InitialGuess[1][0]->template element<1>();
 
     double increment = 0;
     int it = 0;
 
     do
     {
-        auto a = form2(_test=Xh, _trial=Xh);
-        for( auto const& [key,mat] : M_therMaterials )
-        {
-            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
-            auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
-            auto k = sigma*mu.parameterNamed("L")*idv(uOld2);
-            a += integrate( markedelements(M_mesh, mat.meshMarkers()),
-                            k*inner(gradt(u2),grad(u2)) );
-        }
-        for( auto const& [key,mat] : M_elecMaterials )
-        {
-            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
-            auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
-            a += integrate( markedelements(M_mesh, mat.meshMarkers()),
-                            sigma*inner(gradt(u1),grad(u1)) );
-        }
-
-        // Dirichlet condition
-        for( auto const&[bdName, bd] : potentialDirichlet )
-        {
-            auto mat = M_elecMaterials[bd.material()];
-            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
-            auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
-            a += integrate( markedfaces(M_mesh,bd.markers()),
-                            sigma*(M_gamma/hFace()*inner(idt(u1),id(u1))
-                                   -inner(gradt(u1)*N(),id(u1))
-                                   -inner(grad(u1)*N(),idt(u1)) ) );
-        }
-
-        for( auto const&[bdName, bd] : temperatureRobin )
-        {
-            auto e = bd.expr1();
-            for( auto const& param : M_modelProps->parameters() )
-                if( e.expression().hasSymbol(param.first) )
-                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-            a += integrate( markedfaces(M_mesh,bd.markers()),
-                            e.evaluate()(0,0)*inner(idt(u2),id(u2)) );
-        }
-
-        auto f = form1(_test=Xh);
-        for( auto const& [key,mat] : M_elecMaterials )
-        {
-            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
-            auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
-            f += integrate( markedelements(M_mesh,mat.meshMarkers()),
-                            sigma*inner(gradv(uOld1))*id(u2) );
-        }
-        // Dirichlet condition
-        for( auto const&[bdName, bd] : potentialDirichlet )
-        {
-            auto mat = M_elecMaterials[bd.material()];
-            auto sigma0 = mu.parameterNamed(mat.getString("misc.sigmaKey"));
-            auto alpha = mu.parameterNamed(mat.getString("misc.alphaKey"));
-            auto sigma = sigma0/(cst(1.)+alpha*(idv(uOld2)-cst(293.)));
-
-            auto e = bd.expr();
-            for( auto const& param : M_modelProps->parameters() )
-                if( e.expression().hasSymbol(param.first) )
-                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-
-            f += integrate( markedfaces(M_mesh, bd.markers()),
-                           e.evaluate()(0,0)*sigma*(M_gamma/hFace()*id(u1) - grad(u1)*N() ) );
-        }
-        for( auto const&[bdName, bd] : temperatureRobin )
-        {
-            auto e = bd.expr2();
-            for( auto const& param : M_modelProps->parameters() )
-                if( e.expression().hasSymbol(param.first) )
-                    e.setParameterValues( { param.first, mu.parameterNamed(param.first) } );
-            f += integrate( markedfaces(M_mesh, bd.markers()),
-                            e.evaluate()(0,0)*id(u2) );
-        }
-
+        auto am = this->assembleForMDEIMnl(mu, UOld, 0);
+        auto a = form2(_test=Xh, _trial=Xh, _matrix=am);
+        auto fv = this->assembleForDEIMnl(mu, UOld, 0);
+        auto f = form1(_test=Xh, _vector=fv);
         a.solve(_solution=U, _rhs=f, _name="thermo-electro");
 
-        increment = normL2(_range=elements(M_mesh), _expr=idv(u2)-idv(uOld2) + idv(u1) - idv(uOld1));
+        increment = normL2(_range=elements(M_mesh), _expr=idv(u2)-idv(uOld2)) / normL2(_range=elements(M_mesh), _expr=idv(uOld2));
+        increment += normL2(_range=elements(M_mesh), _expr=idv(u1) - idv(uOld1)) / normL2(_range=elements(M_mesh), _expr=idv(uOld1));
         if( M_verbose > 0 )
             Feel::cout << "iteration " << it << " increment = " << increment << std::endl;
 
+        UOld.template element<0>() = u1;
+        UOld.template element<1>() = u2;
         uOld1 = u1;
         uOld2 = u2;
         ++it;
@@ -256,6 +300,17 @@ double ThermoElectricNL::output( int output_index, parameter_type const& mu , el
     else
         throw std::logic_error( "[Heat2d::output] error with output_index : only 0 or 1 " );
     return output;
+}
+
+ThermoElectricNL::parameter_type ThermoElectricNL::parameterProperties() const
+{
+    auto parameters = M_modelProps->parameters();
+    auto mu = Dmu->element();
+    int i = 0;
+    for( auto const& [key,parameter] : parameters )
+        if( parameter.hasMinMax() )
+            mu(i++) = parameter.value();
+    return mu;
 }
 
 }

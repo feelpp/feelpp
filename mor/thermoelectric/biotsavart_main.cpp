@@ -26,13 +26,13 @@
 #include <feel/feelcrb/biotsavartrb.hpp>
 #include <feel/feelcrb/crbsaddlepoint.hpp>
 #include "biotsavart.hpp"
-#include "thermoelectric-nonlinear.hpp"
+#include "thermoelectric-nl.hpp"
 
 using namespace Feel;
 
 int main( int argc, char** argv )
 {
-    using te_type = ThermoElectric;
+    using te_type = ThermoElectricNL;
     using BSModel_type = BiotSavart<te_type>;
     using BSRB_type = BiotSavartRB<BSModel_type>;
     using BSRB_ptrtype = boost::shared_ptr<BSRB_type>;
