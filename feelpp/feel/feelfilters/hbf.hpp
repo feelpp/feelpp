@@ -116,7 +116,7 @@ readHBF( std::string const& s );
  */
 template <typename T>
 void
-writeHBF( std::string const& s, holo3_image<T> const& x );
+writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc = Environment::worldCommPtr() );
 
 holo3_image<float> cutHbf ( holo3_image<float> const& im, int n, int start );
 

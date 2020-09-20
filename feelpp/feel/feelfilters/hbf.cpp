@@ -103,9 +103,9 @@ readHBF( std::string const& s )
 
 template <typename T>
 void
-writeHBF( std::string const& s, holo3_image<T> const& x )
+writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc )
 {
-    if ( Environment::isMasterRank() )
+    if ( wc->localRank() == 0 )
     {
 #if 0  
         std::ofstream out( Environment::expand(s).c_str(), std::ios::binary );
@@ -155,7 +155,7 @@ writeHBF( std::string const& s, holo3_image<T> const& x )
             LOG(INFO) << x << std::endl;
         LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
     }
-    Environment::worldComm().barrier();
+    wc->barrier();
 }
 
 
@@ -564,15 +564,15 @@ template holo3_image<uint16_t> readHBF(std::string const&);
 template holo3_image<uint32_t> readHBF(std::string const&);
 template holo3_image<uint64_t> readHBF(std::string const&);
 
-template void writeHBF( std::string const& , holo3_image<double> const& );
-template void writeHBF( std::string const& , holo3_image<float> const& );
-template void writeHBF( std::string const& , holo3_image<int8_t> const& );
-template void writeHBF( std::string const& , holo3_image<int16_t> const& );
-template void writeHBF( std::string const& , holo3_image<int32_t> const& );
-template void writeHBF( std::string const& , holo3_image<int64_t> const& );
-template void writeHBF( std::string const& , holo3_image<uint8_t> const& );
-template void writeHBF( std::string const& , holo3_image<uint16_t> const& );
-template void writeHBF( std::string const& , holo3_image<uint32_t> const& );
-template void writeHBF( std::string const& , holo3_image<uint64_t> const& );
+template void writeHBF( std::string const& , holo3_image<double> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<float> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<int8_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<int16_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<int32_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<int64_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<uint8_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<uint16_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<uint32_t> const&, worldcomm_ptr_t wc );
+template void writeHBF( std::string const& , holo3_image<uint64_t> const&, worldcomm_ptr_t wc );
 
 }// Feel
