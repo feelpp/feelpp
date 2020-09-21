@@ -1140,8 +1140,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         int nBlock = this->nBlockMatrixGraph();
         BlocksBaseSparseMatrix<double> myblockMat(nBlock,nBlock);
         for (int i=0;i<nBlock;++i)
+        {
             myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
-
+            Feel::cout << "The "<< i << " diagonal matrix is " << myblockMat(i,i)->size1() << " x " << myblockMat(i,i)->size2() <<std::endl;
+        }
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
         std::set<size_type> dofsAllBodies;
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
@@ -1166,6 +1168,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         }
 
         auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+        Feel::cout << "Size mat A "<< M_algebraicFactory->matrix()->size1() << " x " << M_algebraicFactory->matrix()->size2() << std::endl;
+        Feel::cout << "Size matp: "<< matP->size1() << " x " << matP->size2() << std::endl;
         M_algebraicFactory->initSolverPtAP( matP );
 
         this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
@@ -1832,8 +1836,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
     }
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        // NEW : LUCA -> first all the speeds, and then the multipliers
+        Feel::cout << "Here is the name of the object "<< bpbc.name() << std::endl;
+            if (bpbc.name() =="SphereCenter")
+            {
+                this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1", currentStartIndex++ ); //left sphere
+                this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2", currentStartIndex++ ); // right sphere
+            }
+    }
 
-
+    Feel::cout << "This is the current start index in the matrix: " << currentStartIndex << std::endl;
     return currentStartIndex;
 }
 
@@ -1906,9 +1920,20 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
         {
             M_blockVectorSolution(cptBlock++) = bpbc.fieldTranslationalVelocityPtr();
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
-        }
+            
+        } 
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {      
+        // NEW : LUCA -> first all the speeds, and then the multipliers
+            Feel::cout << bpbc.name() << std::endl;
+            if (bpbc.name() =="SphereCenter")
+            {
+                M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
+                M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
+            }
+        }  
     }
-
+    Feel::cout << "there are this many blocks on the vector: " << cptBlock << std::endl;
     return cptBlock;
 }
 
@@ -2415,6 +2440,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
     M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
 
+    // NEW : LUCA -> definition of the multipliers
+    M_XhVelocityDifferenceMultiplier1 = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+    M_VelocityDifferenceMultiplier1 = M_XhVelocityDifferenceMultiplier1->elementPtr();
+
     if ( this->hasElasticVelocityFromExpr() )
     {
         M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
@@ -2603,8 +2632,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
     }
 
     auto matP = fluidToolbox.backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
+    //Feel::cout << "Size mat A "<< algebraicFactory->matrix()->size1() << " x " << algebraicFactory->matrix()->size2() << std::endl;
+    //Feel::cout << "Size matp: "<< matP->size1() << " x " << matP->size2() << std::endl;
     algebraicFactory->initSolverPtAP( matP );
-
 
     if ( this->hasElasticVelocity() )
     {

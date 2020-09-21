@@ -35,6 +35,13 @@ feelpp_add_application( fluid SRCS main_fm.cpp
   MAN fluid
 )
 
+feelpp_add_application( three_sphere SRCS three_sphere.cpp
+  LINK_LIBRARIES
+  feelpp_toolbox_fluid_lib_2dP2P1G1
+  feelpp_toolbox_fluid_lib_3dP2P1G1
+  INSTALL TESTS
+)
+
 foreach( _testcase IN ITEMS "lid-driven-cavity" "TurekHron" "TurekHronExt3d" "backwardfacingstep" "movingboundary" "sphere_testcase" )
   feelpp_add_testcase(${_testcase} PREFIX feelpp_toolbox_fluid CATEGORY toolboxes/fluid)
 endforeach()

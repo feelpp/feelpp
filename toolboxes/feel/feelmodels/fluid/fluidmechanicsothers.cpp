@@ -759,13 +759,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     this->setStartBlockSpaceIndex( 0 );
-
+    Feel::cout << " ok setStartBlockSpaceIndex" << std::endl;
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
-
+    Feel::cout << " ok updateBlockVectorSolution" << std::endl;
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
-
+    Feel::cout << " ok updateALEmesh" << std::endl;
     M_bodySetBC.updateForUse( *this );
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
 #if 0 // TODO
@@ -1882,6 +1882,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     if ( this->hasFluidOutletWindkesselImplicit() )
         nBlock += this->nFluidOutletWindkesselImplicit();
     nBlock += 2*M_bodySetBC.size();
+    // NEW : LUCA -> add the two blocks for the multipliers of speed difference in the matrix
+    for  ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        Feel::cout<< "Here is the body name in fmothers "<< bpbc.name() << std::endl;
+            if (bpbc.name() =="SphereCenter")
+            {
+                nBlock += 2;
+            }
+    }
+    Feel::cout << "here is the number of blocks of the matrix P " << nBlock << std::endl;
     return nBlock;
 }
 
@@ -2008,6 +2018,41 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         myblockGraph(indexBlock,indexBlock) = stencil(_test=bpbc.spaceAngularVelocity(),_trial=bpbc.spaceAngularVelocity(),
                                                       _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
+    }
+    // NEW : LUCA
+    int indexBlockUntilNow = indexBlock;
+    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    {
+        Feel::cout << bpbc.name() << std::endl;
+        int center_block = 0;
+        int other_block = 0;
+        for (auto const& [bpname2,bpbc2] : M_bodySetBC )
+        {
+            Feel::cout << bpbc2.name() << std::endl;
+            
+            if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft"))
+            {
+                int indexBlockOtherTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*other_block;
+                int indexBlockCenterTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*center_block;
+                Feel::cout << "indexBlockOtherTranslationalVelocity: " << indexBlockOtherTranslationalVelocity << std::endl;
+                myblockGraph(indexBlock,indexBlockOtherTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
+                                                    _trial=bpbc2.spaceTranslationalVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+                myblockGraph(indexBlockOtherTranslationalVelocity,indexBlock) = stencil(_test=bpbc2.spaceTranslationalVelocity(),
+                                                    _trial=bpbc.spaceMultiplierDifferencePtr(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+                myblockGraph(indexBlock,indexBlockCenterTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
+                                                    _trial=bpbc.spaceTranslationalVelocity(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+                myblockGraph(indexBlockCenterTranslationalVelocity,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),
+                                                    _trial=bpbc.spaceMultiplierDifferencePtr(),
+                                                      _diag_is_nonzero=false,_close=false)->graph();
+                ++indexBlock;
+            }
+            
+            other_block++;
+        }
+        center_block++;
     }
 
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );

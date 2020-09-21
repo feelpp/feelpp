@@ -37,7 +37,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         build_Form1TransientTerm=BuildCstPart;
         build_SourceTerm=BuildCstPart;
     }
-
+    Feel::cout << "OK1" << std::endl;
     std::string sc=(_BuildCstPart)?" (build cst part)":" (build non cst part)";
     this->log("FluidMechanics","updateLinearPDE", "start"+sc );
     this->timerTool("Solve").start();
@@ -95,7 +95,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
     // identity matrix
     auto const Id = eye<nDim,nDim>();
-
+    Feel::cout << "OK2" << std::endl;
     //--------------------------------------------------------------------------------------------------//
 
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
@@ -198,7 +198,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                _geomap=this->geomap() );
 #endif
             }
-
+            Feel::cout << "OK3" << std::endl;
             //--------------------------------------------------------------------------------------------------//
             //transients terms
             if ( !this->isStationary() && physicFluidData->equation() != "Stokes" )  //!this->isStationaryModel())
@@ -382,7 +382,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         } // if ( this->definePressureCstMethod() == "lagrange-multiplier" )
     } // if ( this->definePressureCst() )
 
-
+    Feel::cout << "OK4" << std::endl;
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
     //--------------------------------------------------------------------------------------------------//
@@ -483,7 +483,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             }
         }
     }
-
+    Feel::cout << "OK5" << std::endl;
     //--------------------------------------------------------------------------------------------------//
     // Neumann bc
     if ( build_BoundaryNeumannTerm )
@@ -578,7 +578,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         }
 
     }
-
+    Feel::cout << "OK6" << std::endl;
     //--------------------------------------------------------------------------------------------------//
 
     if ( this->hasFluidOutletWindkessel() )
@@ -731,7 +731,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
     }
 
     //--------------------------------------------------------------------------------------------------//
-
+    Feel::cout << "OK7" << std::endl;
     if ( !M_bodySetBC.empty() )
     {
         this->log("FluidMechanics","updateLinearPDE","assembly of body bc");
@@ -742,7 +742,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
             size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-
+            
             double massBody = bpbc.massExpr().evaluate()(0,0);
             auto momentOfInertiaExpr = bpbc.momentOfInertiaExpr();
             auto const& momentOfInertia = bpbc.body().momentOfInertia();
@@ -775,10 +775,61 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         }
                     }
                 }
-            }
+                // NEW : LUCA 
+                for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                {
+                    if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                    {
+                        // NEW : LUCA
 
+                        size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                        size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+
+                        size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                        auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
+                        size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                        auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
+                        auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow[d],
+                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow1[d], 
+                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow[d],
+                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow2[d], 
+                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                        }
+                    }
+                    else if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") 
+                    {
+                        size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                        size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+
+                        size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                        auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
+                        size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                        auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
+                        auto const& basisToContainerGpMultiplierRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
+                        for (int d=0;d<nDim;++d)
+                        {
+                            A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow2[d],
+                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow1[d], 
+                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow2[d],
+                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                            A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow2[d], 
+                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                        }
+                    }
+                }
+                
+            }
+        Feel::cout << "OK8" << std::endl;
             if ( BuildNonCstPart )
-            {
+            { 
                 if ( hasActiveDofTranslationalVelocity )
                 {
                     auto const& basisToContainerGpTranslationalVelocityVector = F->map().dofIdToContainerId( rowStartInVector+startBlockIndexTranslationalVelocity );
@@ -809,7 +860,6 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                 );
                     }
                 }
-
             }
         } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
 
@@ -829,7 +879,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 #endif
 
 
-
+    Feel::cout << "OK9" << std::endl;
     //--------------------------------------------------------------------------------------------------//
 
     this->updateLinearPDEStabilisation( data );

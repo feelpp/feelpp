@@ -59,7 +59,7 @@
 #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
-//#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
+#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
 
 namespace Feel
 {
@@ -444,6 +444,10 @@ public:
         element_trace_p0c_vectorial_ptrtype fieldTranslationalVelocityPtr() const { return M_fieldTranslationalVelocity; }
         element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
 
+        // NEW : LUCA -> accessor to multipliers
+        space_trace_p0c_vectorial_ptrtype spaceMultiplierDifferencePtr() const { return M_XhVelocityDifferenceMultiplier1; }
+        element_trace_p0c_vectorial_ptrtype fieldMultiplierDifferencePtr() const { return M_VelocityDifferenceMultiplier1; }
+
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
 
@@ -534,6 +538,16 @@ public:
         bdf_trace_angular_velocity_ptrtype M_bdfAngularVelocity;
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
+
+        // NEW : LUCA -> definition of the 4 new multipliers
+        space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier1; // just this one is defined
+        space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier2;
+        space_trace_p0c_vectorial_ptrtype M_XhMultiplierSelfPropulsionForce;
+        space_trace_angular_velocity_ptrtype M_XhMultiplierSelfPropulsionTorque;
+        element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier1; // just this one is defined
+        element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier2;
+        element_trace_p0c_vectorial_ptrtype M_MultiplierSelfPropulsionForce;
+        element_trace_angular_velocity_ptrtype M_MultiplierSelfPropulsionTorque;
 
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
