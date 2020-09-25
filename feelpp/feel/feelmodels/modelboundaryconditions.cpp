@@ -129,4 +129,29 @@ ModelBoundaryConditions::flatten() const
     }
     return f_;
 }
+
+std::map<std::string,std::map<std::string,ModelBoundaryCondition> >
+ModelBoundaryConditions::boundaryConditions( std::string const& field ) const
+{
+    auto it = this->find(field);
+    if( it != this->end() )
+        return it->second;
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > res;
+    return res;
+}
+
+std::map<std::string,ModelBoundaryCondition>
+ModelBoundaryConditions::boundaryConditions( std::string const& field, std::string const& type ) const
+{
+    auto it = this->find(field);
+    if( it != this->end() )
+    {
+        auto it2 = it->second.find(type);
+        if( it2 != it->second.end() )
+            return it2->second;
+    }
+    std::map<std::string,ModelBoundaryCondition> res;
+    return res;
+}
+
 } // namespace Feel

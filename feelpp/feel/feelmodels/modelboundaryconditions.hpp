@@ -128,7 +128,10 @@ class FEELPP_EXPORT ModelBoundaryConditions : public std::map<std::string,std::m
     void setPTree( pt::ptree const& p );
     // flatten the boundary condition map so that we can easily iterate in a one level loop
     std::map<ModelBoundaryId,ModelBoundaryCondition> flatten() const;
-private:
+    std::map<std::string,std::map<std::string,ModelBoundaryCondition> > boundaryConditions( std::string const& field ) const;
+    std::map<std::string,ModelBoundaryCondition> boundaryConditions( std::string const& field, std::string const& type ) const;
+
+  private:
     void setup();
 
     pt::ptree M_pt;
