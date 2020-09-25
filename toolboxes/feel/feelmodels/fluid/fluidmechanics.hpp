@@ -1812,6 +1812,35 @@ private :
     std::shared_ptr<operatorpcdbase_type> M_operatorPCD;
     std::map<std::string,std::pair<std::function<void(operatorpcdbase_type &)>,std::function<void(operatorpcdbase_type &, DataUpdateBase &)> > > M_addUpdateInHousePreconditionerPCD;
 
+    // NEW : Luca
+    double W_cl(double  time, double dt) const
+    {
+        if ((time>=0) && (time<1))
+        {return -4;}
+        else if ((time>=1) && (time<2+dt))
+        {return 0;}
+        else if ((time>=2) && (time<3+dt))
+        {return 4;}
+        else if ((time>=3) && (time<4+dt))
+        {return 0;}
+        else
+        {return 0;}
+    }
+
+
+     double W_cr(double  time, double dt) const
+    {
+        if ((time>=0) && (time<1))
+        {return 0;}
+        else if ((time>=1) && (time<2+dt))
+        {return 4;}
+        else if ((time>=2) && (time<3+dt))
+        {return 0;}
+        else if ((time>=3) && (time<4+dt))
+        {return -4;}
+        else
+        {return 0;}
+    }
 }; // FluidMechanics
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>

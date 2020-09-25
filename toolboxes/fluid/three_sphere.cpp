@@ -153,6 +153,7 @@ main( int argc, char** argv )
     fluidmecoptions.add_options()
         ("case.dimension", Feel::po::value<int>()->default_value( 3 ), "dimension")
         ("case.discretization", Feel::po::value<std::string>()->default_value( "P2P1G1" ), "discretization : P2P1G1,P2P1G2")
+        ( "export.matlab", po::value<bool>()->default_value( true ), "export matrix and vector to matlab" )
         ;
 
 	Environment env( _argc=argc, _argv=argv,

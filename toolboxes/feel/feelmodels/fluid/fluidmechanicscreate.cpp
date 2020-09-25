@@ -1144,6 +1144,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
             Feel::cout << "The "<< i << " diagonal matrix is " << myblockMat(i,i)->size1() << " x " << myblockMat(i,i)->size2() <<std::endl;
         }
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            // NEW : Luca -> matrix P modification
+            for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                {
+                if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") )
+                    {
+                        size_type TranslationalVelocityCenter = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                        size_type TranslationalVelocityOther = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                        myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) = \
+                        this->backend()->newIdentityMatrix( M_blockVectorSolution(TranslationalVelocityOther)->mapPtr(),M_blockVectorSolution(TranslationalVelocityCenter)->mapPtr() );
+                        auto vecDiag = this->backend()->newVector( M_blockVectorSolution(TranslationalVelocityCenter)->mapPtr()  );
+                        vecDiag->setConstant( -1. );
+                        myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) ->setDiagonal( vecDiag );
+                        Feel::cout << "The diagonal matrix is in position" << TranslationalVelocityOther << " x " << TranslationalVelocityCenter <<std::endl;
+                    }
+                }
+        }
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
         std::set<size_type> dofsAllBodies;
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
@@ -1171,7 +1189,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         Feel::cout << "Size mat A "<< M_algebraicFactory->matrix()->size1() << " x " << M_algebraicFactory->matrix()->size2() << std::endl;
         Feel::cout << "Size matp: "<< matP->size1() << " x " << matP->size2() << std::endl;
         M_algebraicFactory->initSolverPtAP( matP );
-
+        if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
+        {
+        matP->printMatlab("P.m");
+        }
         this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
         std::set<size_type> dofEliminationIdsPtAP;
         matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
@@ -1836,6 +1857,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
     }
+    // LUCA : MULTIPLIERS FOR RELATIVE VELOCITIES
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         // NEW : LUCA -> first all the speeds, and then the multipliers
@@ -1922,6 +1944,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
             
         } 
+        // LUCA : MULTIPLIERS FOR RELATIVE VELOCITIES
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {      
         // NEW : LUCA -> first all the speeds, and then the multipliers

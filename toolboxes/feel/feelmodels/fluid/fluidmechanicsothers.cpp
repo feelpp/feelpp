@@ -1637,12 +1637,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
         // temporary fix of interpolation with meshale space
         auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
+        // NEW : Luca -> meshale not working?
+        //auto is_rangeMFOF_empty = integrate(_range=rangeMFOF,_expr=cst(1.0)).evaluate(0,0);
+        //Feel::cout << "is_rangeMFOF_empty " << is_rangeMFOF_empty << std::endl;
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
         else if ( bpbc.hasElasticVelocityFromExpr() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExprFromFields() + bpbc.elasticVelocityExpr(), rangeMFOF );
-        else
-            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, idv(this->fieldVelocity())/*bpbc.rigidVelocityExprFromFields()*/, rangeMFOF );
+        else // NEW : LUCA
+            this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, /*idv(this->fieldVelocity())*/bpbc.rigidVelocityExprFromFields(), rangeMFOF );
 #if 0
         (*M_meshDisplacementOnInterface)[Component::X].on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=cst(0.) );
 #endif
@@ -1883,6 +1886,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
         nBlock += this->nFluidOutletWindkesselImplicit();
     nBlock += 2*M_bodySetBC.size();
     // NEW : LUCA -> add the two blocks for the multipliers of speed difference in the matrix
+    // MULTIPLIERS FOR RELATIVE VELOCITIES
     for  ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
         Feel::cout<< "Here is the body name in fmothers "<< bpbc.name() << std::endl;
@@ -2019,7 +2023,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
                                                       _diag_is_nonzero=false,_close=false)->graph();
         ++indexBlock;
     }
-    // NEW : LUCA
+    // NEW : LUCA -> MULTIPLIERS FOR RELATIVE VELOCITIES
     int indexBlockUntilNow = indexBlock;
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {

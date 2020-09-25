@@ -1,6 +1,8 @@
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_LINEAR_HPP
 #define FEELPP_TOOLBOXES_FLUIDMECHANICS_ASSEMBLY_LINEAR_HPP 1
 
+
+
 namespace Feel
 {
 namespace FeelModels
@@ -776,12 +778,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     }
                 }
                 // NEW : LUCA 
+                // MULTIPLIERS FOR RELATIVE VELOCITIES
                 for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
                 {
                     if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
                     {
                         // NEW : LUCA
-
+                        if ( hasActiveDofTranslationalVelocity )
+                        {
                         size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
                         size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
 
@@ -793,17 +797,20 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         for (int d=0;d<nDim;++d)
                         {
                             A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow[d],
-                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    1.0);
                             A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow1[d], 
-                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    1.0 );
                             A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow[d],
-                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    -1.0 );
                             A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow2[d], 
-                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    -1.0 );
+                        }
                         }
                     }
                     else if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") 
                     {
+                        if ( hasActiveDofTranslationalVelocity )
+                        {
                         size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
                         size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
 
@@ -815,13 +822,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         for (int d=0;d<nDim;++d)
                         {
                             A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow2[d],
-                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    1.0 );
                             A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow1[d], 
-                                    bpbc.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    1.0 );
                             A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow2[d],
-                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    -1.0 );
                             A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow2[d], 
-                                    -bpbc2.bdfTranslationalVelocity()->polyCoefficient(0) );
+                                    -1.0);
+                        }
                         }
                     }
                 }
@@ -845,7 +853,25 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                     bpbc.gravityForceWithMass()(d) );
                         }
                     }
+                    for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                    {
+                        if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                        {
+                            size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                            auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
+                            
+                            F->add( basisToContainerGpMultiplierRow[0],
+                                        this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                        }
+                        if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight")
+                        {
+                            size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+                            auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
 
+                            F->add( basisToContainerGpMultiplierRow[0],
+                                        this->W_cr(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                        }
+                    }
                 }
                 if ( hasActiveDofAngularVelocity )
                 {
@@ -854,6 +880,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     auto contribRhsAngularVelocity = (momentOfInertiaExpr*idv(angularVelocityPolyDeriv)).evaluate(false);
                     for (int i=0;i<nLocalDofAngularVelocity;++i)
                     {
+                        
                         F->add( basisToContainerGpAngularVelocityVector[i],
                                 //momentOfInertia(0,0)*angularVelocityPolyDeriv(i)
                                 contribRhsAngularVelocity(i,0)
@@ -865,7 +892,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
 
     }
     //--------------------------------------------------------------------------------------------------//
-
+    if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
+    {   
+        A->printMatlab("A.m");
+        F->printMatlab("F.m");
+    }
 #if 0
     if ( UsePeriodicity && BuildNonCstPart )
     {
@@ -1023,6 +1054,13 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
 
     for ( auto const& [bpname,bpbc] : M_bodySetBC )
     {
+        // NEW : Luca -> impose BC on u_\Gamma
+        /*size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+            form2( _test= this->functionSpaceVelocity(),_trial=bpbc.spaceTranslationalVelocity(),_matrix=A,
+                   _rowstart=this->rowStartInMatrix(),
+                   _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
+                on( _range=bpbc.rangeMarkedFacesOnFluid(), _rhs=F, _element=*M_fieldVelocity, _expr=bpbc.translationalVelocityExpr() );*/
+
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
