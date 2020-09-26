@@ -130,7 +130,7 @@ public:
     using model_prop_type = ModelProperties;
     using model_prop_ptrtype = std::shared_ptr<model_prop_type>;
 
-    using product2_space_type = ProductSpaces2<Ch_ptr_t,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
+    using product2_space_type = ProductSpaces2<Ch_ptr_t, true,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
 
     typedef Exporter<mesh_type,G_Order> exporter_type;

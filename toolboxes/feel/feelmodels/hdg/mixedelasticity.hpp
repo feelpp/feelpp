@@ -169,7 +169,7 @@ public:
      using bilinear_block_std = BlockBilinearForm<product_space_std>;
      */
 
-    using product2_space_type = ProductSpaces2<Ch_ptr_t,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
+    using product2_space_type = ProductSpaces2<Ch_ptr_t, true,Vh_ptr_t,Wh_ptr_t,Mh_ptr_t>;
     using product2_space_ptrtype = std::shared_ptr<product2_space_type>;
     using integral_boundary_list_type = std::vector<ExpressionStringAtMarker>;
 

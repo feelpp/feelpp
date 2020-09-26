@@ -344,24 +344,24 @@ bool operator!= (ProductSpaces<SList1...> const&x, ProductSpaces<SList2...> cons
 //!
 //! class mixing dynamic and compile-time space product
 //!
-template<typename T,typename... SpaceList>
+template<typename T, bool same_mesh, typename... SpaceList>
 class ProductSpaces2 : public ProductSpacesBase
 {
 public:
 
     using tuple_spaces_type = typename mpl::if_<mpl::is_void_<T>,
                                                 mpl::identity<hana::tuple<SpaceList...>>,
-                                                mpl::identity<hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,true>>>>
+                                                mpl::identity<hana::tuple<SpaceList...,std::shared_ptr<ProductSpace<T,same_mesh>>>>
                                                 >::type::type ;//hana::if_(is_void(T),,>);
 
     //using value_type = typename decay_type<decltype(super[0_c])>::value_type;
     using value_type = double;
-    using functionspace_type = ProductSpaces2<T,SpaceList...>;
+    using functionspace_type = ProductSpaces2<T, same_mesh, SpaceList...>;
     using mesh_type = typename decay_type<T>::mesh_type;
     using mesh_ptrtype = typename decay_type<T>::mesh_ptrtype;
 
     ProductSpaces2() = default;
-    ProductSpaces2( std::shared_ptr<ProductSpace<T,true>> const& p, SpaceList... l ) : M_tupleSpaces( l..., p) {}
+    ProductSpaces2( std::shared_ptr<ProductSpace<T, same_mesh>> const& p, SpaceList... l ) : M_tupleSpaces( l..., p) {}
     
     int numberOfSpaces() const { return int(hana::size( M_tupleSpaces ))+hana::back( M_tupleSpaces )->numberOfSpaces()-1; }
 
@@ -482,13 +482,13 @@ private :
     tuple_spaces_type M_tupleSpaces;
 };
 
-template<typename T, typename... SList1, typename... SList2>
-bool operator== (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2...> const&y)
+template<typename T, bool same_mesh, typename... SList1, typename... SList2>
+bool operator== (ProductSpaces2<T, same_mesh, SList1...> const&x, ProductSpaces2<T, same_mesh, SList2...> const&y)
 {
     return x.tupleSpaces() == y.tupleSpaces();
 }
-template<typename T, typename... SList1, typename... SList2>
-bool operator!= (ProductSpaces2<T,SList1...> const&x, ProductSpaces2<T, SList2...> const&y)
+template<typename T, bool same_mesh, typename... SList1, typename... SList2>
+bool operator!= (ProductSpaces2<T,same_mesh, SList1...> const&x, ProductSpaces2<T, same_mesh, SList2...> const&y)
 {
     return !(x == y);
 }
@@ -525,14 +525,14 @@ product( SpaceList... spaces )
     return ProductSpaces<SpaceList...>( spaces... );
 }
 
-template<typename SpaceT, typename... SpaceList>
-using dyn_product_spaces_t = ProductSpaces2<SpaceT, SpaceList...>;
-template<typename SpaceT, typename... SpaceList>
-using dyn_product_spaces_ptr_t = std::shared_ptr<ProductSpaces2<SpaceT, SpaceList...>>;
-template<typename SpaceT, typename... SpaceList>
-using dyn_product_spaces_element_t = typename ProductSpaces2<SpaceT,SpaceList...>::element_type;
-template<typename SpaceT, typename... SpaceList>
-using dyn_product_spaces_element_ptr_t = typename ProductSpaces2<SpaceT,SpaceList...>::element_ptrtype;
+template<typename SpaceT, bool same_mesh, typename... SpaceList>
+using dyn_product_spaces_t = ProductSpaces2<SpaceT, same_mesh, SpaceList...>;
+template<typename SpaceT, bool same_mesh, typename... SpaceList>
+using dyn_product_spaces_ptr_t = std::shared_ptr<ProductSpaces2<SpaceT, same_mesh, SpaceList...>>;
+template<typename SpaceT, bool same_mesh, typename... SpaceList>
+using dyn_product_spaces_element_t = typename ProductSpaces2<SpaceT, same_mesh, SpaceList...>::element_type;
+template<typename SpaceT, bool same_mesh, typename... SpaceList>
+using dyn_product_spaces_element_ptr_t = typename ProductSpaces2<SpaceT, same_mesh,SpaceList...>::element_ptrtype;
 
 /**
  * mixed compile time and runtime product of function space
@@ -540,11 +540,11 @@ using dyn_product_spaces_element_ptr_t = typename ProductSpaces2<SpaceT,SpaceLis
  * \param ps dynamic product of function spaces of the same type
  * \return the space product
  */
-template<typename T, typename... SpaceList>
-ProductSpaces2<T,SpaceList...>
-product2( std::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
+template<typename T, bool same_mesh, typename... SpaceList>
+ProductSpaces2<T, same_mesh, SpaceList...>
+product2( std::shared_ptr<ProductSpace<T,same_mesh>> const& ps, SpaceList... spaces )
 {
-    return ProductSpaces2<T,SpaceList...>( ps, spaces... );
+    return ProductSpaces2<T, same_mesh, SpaceList...>( ps, spaces... );
 }
 
 /**
@@ -553,9 +553,9 @@ product2( std::shared_ptr<ProductSpace<T,true>> const& ps, SpaceList... spaces )
  * \param ps dynamic product of function spaces of the same type
  * \return the space product
  */
-template<typename T, typename... SpaceList>
-ProductSpaces2<T,SpaceList...>
-product2( SpaceList... spaces, std::shared_ptr<ProductSpace<T,true>> const& ps )
+template<typename T, bool same_mesh, typename... SpaceList>
+ProductSpaces2<T, same_mesh, SpaceList...>
+product2( SpaceList... spaces, std::shared_ptr<ProductSpace<T,same_mesh>> const& ps )
 {
     return product2( ps, spaces... );
 }
