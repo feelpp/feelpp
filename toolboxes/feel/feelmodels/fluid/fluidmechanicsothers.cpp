@@ -1895,6 +1895,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
                 nBlock += 2;
             }
     }
+    // NEW : Luca -> self propulsion addition
+    nBlock +=2;
     Feel::cout << "here is the number of blocks of the matrix P " << nBlock << std::endl;
     return nBlock;
 }
@@ -2058,7 +2060,34 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         }
         center_block++;
     }
+    // NEW : Luca -> self propulsion
 
+    myblockGraph(indexBlock,1) = stencil(_test=this->spaceMultiplierSelfPropForcePtr(),_trial=XhP,
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=this->spaceMultiplierSelfPropForcePtr(),
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(indexBlock,0) = stencil(_test=this->spaceMultiplierSelfPropForcePtr(),_trial=XhV,
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=this->spaceMultiplierSelfPropForcePtr(),
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(indexBlock,indexBlock) = stencil(_test=this->spaceMultiplierSelfPropForcePtr(),_trial=this->spaceMultiplierSelfPropForcePtr(),
+                                            _diag_is_nonzero=false,_close=false)->graph();       
+
+    ++indexBlock;
+
+    myblockGraph(indexBlock,1) = stencil(_test=this->spaceMultiplierSelfPropTorquePtr(),_trial=XhP,
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(1,indexBlock) = stencil(_test=XhP,_trial=this->spaceMultiplierSelfPropTorquePtr(),
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(indexBlock,0) = stencil(_test=this->spaceMultiplierSelfPropTorquePtr(),_trial=XhV,
+                                                _diag_is_nonzero=false,_close=false)->graph();
+    myblockGraph(0,indexBlock) = stencil(_test=XhV,_trial=this->spaceMultiplierSelfPropTorquePtr(),
+                                                _diag_is_nonzero=false,_close=false)->graph();    
+    myblockGraph(indexBlock,indexBlock) = stencil(_test=this->spaceMultiplierSelfPropTorquePtr(),_trial=this->spaceMultiplierSelfPropTorquePtr(),
+                                            _diag_is_nonzero=false,_close=false)->graph();                                       
+    ++indexBlock;
+
+    
     this->log("FluidMechanics","buildBlockMatrixGraph", "finish" );
 
     return myblockGraph;

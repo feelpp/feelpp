@@ -891,6 +891,71 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
         } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
 
     }
+    // NEW : Luca -> self propulsion
+    if (BuildCstPart)
+        {
+            auto uPtr = this->fieldVelocityPtr();
+            auto pPtr = this->fieldPressurePtr();
+
+            auto rangeSelfPropulsionBC = elements(M_meshSelfPropulsionMultiplier);
+            size_type startBlockIndexSelfPropMultiplierForce = this->startSubBlockSpaceIndex("self-prop-multiplier-force");
+            auto deftPtr = sym(gradt(uPtr));
+            auto deff = sym(grad(uPtr));
+            auto myViscosity = cst(1.0);
+            auto is_empty_mesh= integrate(_range=rangeSelfPropulsionBC,
+                    _expr = cst(1.0)   ).evaluate(0,0);
+            Feel::cout << "is empty mesh " << is_empty_mesh <<std::endl;
+            auto lambda = this->fieldMultiplierSelfPropForcePtr();
+            auto XhF = this->spaceMultiplierSelfPropForcePtr();
+            Feel::cout << "startBlockIndexSelfPropMultiplierForce " << startBlockIndexSelfPropMultiplierForce << std::endl;
+            Feel::cout << "rowStartInMatrix+startBlockIndexSelfPropMultiplierForce " << rowStartInMatrix+startBlockIndexSelfPropMultiplierForce << std::endl;
+            Feel::cout << "colStartInMatrix+1 " << colStartInMatrix+1 << std::endl;
+            auto XhV = this->functionSpaceVelocity();
+            auto XhP = this->functionSpacePressure();
+            // \lambda .\int_{ bdry SPHERE} \sigma N()
+            form2( _trial=XhP, _test=XhF ,_matrix=A,
+                _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+1) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=inner(-idt(pPtr)*Id*N(),id(lambda)),
+                        _geomap=this->geomap());
+            //auto form_try = integrate(_range=rangeSelfPropulsionBC,_expr=inner(-idt(pPtr)*Id*N(),id(lambda)),_geomap=this->geomap());
+            Feel::cout << "OK7.12" << std::endl;
+            form2( _trial=XhV, _test=XhF ,_matrix=A,
+                _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=inner(2*myViscosity*deftPtr*N(),id(lambda)),
+                        _geomap=this->geomap() );
+                        
+            Feel::cout << "OK7.2" << std::endl;
+            form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhV ,_matrix=A,
+                _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=-inner(2*myViscosity*deff*N(),idt(lambda)),
+                        _geomap=this->geomap() );
+            form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhP ,_matrix=A,
+                _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=-inner(-id(pPtr)*Id*N(),idt(lambda)),
+                        _geomap=this->geomap() );
+            Feel::cout << "OK7.3" << std::endl;
+            // \lambda .\int_{ bdry SPHERE} \sigma N()
+            auto lambda_torque = this->fieldMultiplierSelfPropTorquePtr();
+            size_type startBlockIndexSelfPropMultiplierTorque = this->startSubBlockSpaceIndex("self-prop-multiplier-torque");
+            form2( _trial=XhV, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(cross(2*myViscosity*deftPtr*N(),P()),id(lambda_torque)),
+                        _geomap=this->geomap() );   
+            form2( _trial=XhP, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+1 ) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(cross(-idt(pPtr)*Id*N(),P()),id(lambda_torque)),
+                        _geomap=this->geomap() );    
+                        Feel::cout << "OK7.4" << std::endl; 
+            form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhV ,_matrix=A,
+                    _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque ) += integrate(_range=rangeSelfPropulsionBC,
+                    _expr=-inner(cross(2*myViscosity*deff*N(),P()),idt(lambda_torque)),
+                        _geomap=this->geomap() );
+            form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhP ,_matrix=A,
+                    _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque) += integrate(_range=rangeSelfPropulsionBC,
+                    _expr=-inner(cross(-id(pPtr)*Id*N(),P()),idt(lambda_torque)),
+                        _geomap=this->geomap() ); 
+                        Feel::cout << "OK7.5" << std::endl;
+        }
     //--------------------------------------------------------------------------------------------------//
     if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
     {   

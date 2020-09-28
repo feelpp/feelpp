@@ -153,6 +153,33 @@ public:
     // function space P0 continuous scalar on trace
     typedef FunctionSpace<trace_mesh_type, bases<Lagrange<0, Scalar,Continuous>>> space_trace_p0c_scalar_type;
     typedef std::shared_ptr<space_trace_p0c_scalar_type> space_trace_p0c_scalar_ptrtype;
+    // NEW : LUCA -> SELF PROPULSION
+    typedef Lagrange<0, Vectorial,Continuous> basis_force_self_propulsion_multiplier_type;
+    typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
+                                   Lagrange<0, Scalar,Continuous>,
+                                   Lagrange<0, Vectorial,Continuous>>::type basis_torque_self_propulsion_multiplier_type;
+                                   
+    typedef FunctionSpace<trace_mesh_type, bases<basis_force_self_propulsion_multiplier_type>> space_force_self_propulsion_multiplier_type;
+    typedef std::shared_ptr<space_force_self_propulsion_multiplier_type> space_force_self_propulsion_multiplier_ptrtype;
+    typedef FunctionSpace<trace_mesh_type, bases<basis_torque_self_propulsion_multiplier_type>> space_torque_self_propulsion_multiplier_type;
+    typedef std::shared_ptr<space_torque_self_propulsion_multiplier_type> space_torque_self_propulsion_multiplier_ptrtype;
+    typedef typename space_force_self_propulsion_multiplier_type::element_type force_self_propulsion_multiplier_element_type;
+    typedef std::shared_ptr<force_self_propulsion_multiplier_element_type> force_self_propulsion_multiplier_element_ptrtype;
+    typedef typename space_torque_self_propulsion_multiplier_type::element_type torque_self_propulsion_multiplier_element_type;
+    typedef std::shared_ptr<torque_self_propulsion_multiplier_element_type> torque_self_propulsion_multiplier_element_ptrtype;
+    trace_mesh_ptrtype M_meshSelfPropulsionMultiplier;
+private:
+    space_force_self_propulsion_multiplier_ptrtype M_XhMultiplierSelfPropulsionForce;
+    space_torque_self_propulsion_multiplier_ptrtype M_XhMultiplierSelfPropulsionTorque;
+    force_self_propulsion_multiplier_element_ptrtype M_MultiplierSelfPropulsionForce;
+    torque_self_propulsion_multiplier_element_ptrtype M_MultiplierSelfPropulsionTorque;
+public:
+    space_force_self_propulsion_multiplier_ptrtype const& spaceMultiplierSelfPropForcePtr() const { return M_XhMultiplierSelfPropulsionForce; }
+    force_self_propulsion_multiplier_element_ptrtype const& fieldMultiplierSelfPropForcePtr() const { return M_MultiplierSelfPropulsionForce; }
+    force_self_propulsion_multiplier_element_ptrtype & fieldMultiplierSelfPropForcePtr() { return M_MultiplierSelfPropulsionForce; }
+    space_torque_self_propulsion_multiplier_ptrtype const& spaceMultiplierSelfPropTorquePtr() const { return M_XhMultiplierSelfPropulsionTorque; }
+    torque_self_propulsion_multiplier_element_ptrtype const& fieldMultiplierSelfPropTorquePtr() const { return M_MultiplierSelfPropulsionTorque; }
+    torque_self_propulsion_multiplier_element_ptrtype & fieldMultiplierSelfPropTorquePtr() { return M_MultiplierSelfPropulsionTorque; }
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -447,6 +474,7 @@ public:
         // NEW : LUCA -> accessor to multipliers
         space_trace_p0c_vectorial_ptrtype spaceMultiplierDifferencePtr() const { return M_XhVelocityDifferenceMultiplier1; }
         element_trace_p0c_vectorial_ptrtype fieldMultiplierDifferencePtr() const { return M_VelocityDifferenceMultiplier1; }
+        
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
@@ -541,13 +569,8 @@ public:
 
         // NEW : LUCA -> definition of the 4 new multipliers
         space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier1; // just this one is defined
-        space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier2;
-        space_trace_p0c_vectorial_ptrtype M_XhMultiplierSelfPropulsionForce;
-        space_trace_angular_velocity_ptrtype M_XhMultiplierSelfPropulsionTorque;
         element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier1; // just this one is defined
-        element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier2;
-        element_trace_p0c_vectorial_ptrtype M_MultiplierSelfPropulsionForce;
-        element_trace_angular_velocity_ptrtype M_MultiplierSelfPropulsionTorque;
+        
 
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;

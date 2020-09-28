@@ -21,7 +21,7 @@
 	    "mu":"1"     // I use also micrograms -> density [micrograms/(micrometer)^3; mu [micrograms/(micrometers*second)]
 	},
 	"Solid1":{
-	    "markers":"Body",
+	    "markers":["Body"],
 	    "physics":"body",
 	    "rho":"1e-3"
 	}
@@ -51,9 +51,9 @@
 		            {
 			            "names":["Solid1"]
 			            //"markers":["beam"] // optinal
-		            },
+		            }/*,
 					"translational-velocity":"{0,0,2}",
-					"angular-velocity":"{0,0,0}"
+					"angular-velocity":"{0,0,0}"*/
 				},
 				"SphereRight":
 		        {
@@ -63,9 +63,9 @@
 		            {
 			            "names":["Solid1"]
 			            //"markers":["beam"] // optinal
-		            },
+		            }/*,
 			        "translational-velocity":"{0,0,2}",
-					"angular-velocity":"{0,0,0}"
+					"angular-velocity":"{0,0,0}"*/
 				},
 				"SphereLeft":
 		        {
@@ -75,9 +75,9 @@
 		            {
 			            "names":["Solid1"]
 			            //"markers":["beam"] // optinal
-		            },
+		            }/*,
 			        "translational-velocity":"{0,0,2}",
-					"angular-velocity":"{0,0,0}"
+					"angular-velocity":"{0,0,0}"*/
 		        }
 	        }
         }
@@ -86,7 +86,7 @@
     {
 	    "Exports":
 	    {
-	        "fields":["velocity","pressure","pid","displacement"] // the parameter bdrydisp is a customfield to be imposed on
+	        "fields":["velocity","pressure","pid","displacement","meshale.velocity"] // the parameter bdrydisp is a customfield to be imposed on
             // the boundary of the swimmer to project the displacement from ODE 
 	    },
 	    "Measures":

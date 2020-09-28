@@ -626,6 +626,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     // init fluid inlet
     this->initFluidInlet();
 
+    // NEW : Luca -> selfpropulsion
+    M_meshSelfPropulsionMultiplier = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"SphereLeft","SphereRight","SphereCenter"}),_view=true);
+    M_XhMultiplierSelfPropulsionForce = space_force_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier);
+    M_MultiplierSelfPropulsionForce = M_XhMultiplierSelfPropulsionForce->elementPtr();
+    M_XhMultiplierSelfPropulsionTorque = space_torque_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier );
+    M_MultiplierSelfPropulsionTorque = M_XhMultiplierSelfPropulsionTorque->elementPtr();
+    
     // init bc body
     M_bodySetBC.init( *this );
 
@@ -1146,8 +1153,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         }
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
-            // NEW : Luca -> matrix P modification
-            for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+            // NEW : Luca -> matrix P modification, in place of Lagrange multipliers
+            /*for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
                 {
                 if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") )
                     {
@@ -1160,7 +1167,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
                         myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) ->setDiagonal( vecDiag );
                         Feel::cout << "The diagonal matrix is in position" << TranslationalVelocityOther << " x " << TranslationalVelocityCenter <<std::endl;
                     }
-                }
+                }*/
         }
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
         std::set<size_type> dofsAllBodies;
@@ -1868,7 +1875,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
                 this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2", currentStartIndex++ ); // right sphere
             }
     }
-
+    // NEW : self propulsion multipliers
+    this->setStartSubBlockSpaceIndex( "self-prop-multiplier-force", currentStartIndex++ ); 
+    this->setStartSubBlockSpaceIndex( "self-prop-multiplier-torque", currentStartIndex++ );
     Feel::cout << "This is the current start index in the matrix: " << currentStartIndex << std::endl;
     return currentStartIndex;
 }
@@ -1953,8 +1962,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             {
                 M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
                 M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
+                
             }
         }  
+    }
+    {
+        // NEW : Luca -> self propulsion constraints
+        M_blockVectorSolution(cptBlock++) = this->fieldMultiplierSelfPropForcePtr();
+        M_blockVectorSolution(cptBlock++) = this->fieldMultiplierSelfPropTorquePtr();
     }
     Feel::cout << "there are this many blocks on the vector: " << cptBlock << std::endl;
     return cptBlock;
@@ -2463,7 +2478,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     M_fieldTranslationalVelocity = M_XhTranslationalVelocity->elementPtr();
     M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
 
-    // NEW : LUCA -> definition of the multipliers
+    // NEW : LUCA -> definition of the multipliers - NB: the mesh is not important, as they are 3D vectors, not really fields
     M_XhVelocityDifferenceMultiplier1 = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
     M_VelocityDifferenceMultiplier1 = M_XhVelocityDifferenceMultiplier1->elementPtr();
 
