@@ -95,6 +95,7 @@ public:
 
     using eim_space_type = typename eim_definition_type::space1_type;
     using eim_space_ptrtype = std::shared_ptr<eim_space_type>;
+    using q_sigma_element_type = typename eim_space_type::element_type;
     using eimd_space_type = typename eim_definition_type::spaced_type;
     using eimd_space_ptrtype = std::shared_ptr<eimd_space_type>;
     using map_eim_type = std::map<std::string, int>;
@@ -197,6 +198,10 @@ public:
     element_type solveLinear(parameter_type const& mu);
     value_type
     output( int output_index, parameter_type const& mu , element_type& u, bool need_to_solve=false) override;
+
+    int mMaxSigma( std::string mat);
+    q_sigma_element_type eimSigmaQ(std::string mat, int m);
+    vectorN_type eimSigmaBeta(std::string mat, parameter_type const& mu, vectorN_type const& vtN);
 
 }; // ThermoElectricNL class
 
