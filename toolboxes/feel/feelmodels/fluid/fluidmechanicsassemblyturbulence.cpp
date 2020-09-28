@@ -15,6 +15,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateLinear_Turbulence( DataUpdateLinear & 
 #ifndef FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
     const vector_ptrtype& sol = data.currentSolution();
     auto mfields_turbulence = M_turbulenceModelType->template modelFields<FilterBasisUnknownTurbulenceModel>( sol );
+    if ( data.hasVectorInfo( prefixvm(this->prefix(), "current-solution") ) && this->worldComm().isMasterRank() ) std::cout <<" updateLinear_Turbulence has fluid current-solution" << std::endl;;
+    auto solFluid = data.hasVectorInfo( prefixvm(this->prefix(), "current-solution") )? data.vectorInfo( prefixvm(this->prefix(), "current-solution") ) : this->blockVectorSolution().vectorMonolithic();
     auto mfields_fluid = this->modelFields( this->blockVectorSolution().vectorMonolithic(), 0 ).exclude( mfields_turbulence );
     auto se = Feel::vf::symbolsExpr( M_turbulenceModelType->symbolsExpr( mfields_turbulence ), this->symbolsExpr( mfields_fluid ) );
     auto mctx = Feel::FeelModels::modelContext( std::move(mfields_turbulence), std::move( se ) );

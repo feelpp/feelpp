@@ -2016,6 +2016,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
     std::string symb_dist2wall = prefixvm( this->keyword(),"dist2wall","_" );
     std::string symb_curl_magintude = prefixvm( this->keyword(), "curl_U_magnitude", "_");
+    std::string symb_strain_rate_magnitude = prefixvm( this->keyword(), "strain_rate_magnitude", "_");
     std::string symb_velocity_x =  prefixvm( this->keyword(),"U","_") +"_0";
     std::string symb_velocity_y =  prefixvm( this->keyword(),"U","_") +"_1";
     std::string symb_velocity_z =  prefixvm( this->keyword(),"U","_") +"_2";
@@ -2069,7 +2070,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string symb_c_v3 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_v3", "_" ), 0.9 );
                 std::string symb_c_t3 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_t3", "_" ), 1.2 );
                 std::string symb_c_t4 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_t4", "_" ), 0.5 );
-                std::string symb_c_w2 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w2", "_" ), 0.2 );
+                std::string symb_c_w2 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w2", "_" ), 0.3 );
                 std::string symb_c_w3 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_w3", "_" ), 2 );
                 std::string symb_c_kappa = physicFluidData->addParameter( prefixvm( eqkeyword, "c_kappa", "_" ), 0.41 );
                 std::string symb_c_sigma = physicFluidData->addParameter( prefixvm( eqkeyword, "c_sigma", "_" ), 2./3. );
@@ -2085,21 +2086,42 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
                 std::string symb_S_bar =  physicFluidData->addParameter( prefixvm( eqkeyword, "S_bar", "_" ), (boost::format( "(%1%/(%2%^2*%3%^2))*%4% :%1%:%2%:%3%:%4%" )%symb_sol_SA  %symb_c_kappa %symb_dist2wall % symb_f_v2 ).str(),
                                                                          this->worldComm(), this->repository().expr() );
-#if 1
-                std::string symb_S = physicFluidData->addParameter( prefixvm( eqkeyword, "S", "_" ), (boost::format("%1% + (%2%/(%3%^2*%4%^2))*%5% :%1%:%2%:%3%:%4%:%5%")%symb_curl_magintude %symb_sol_SA  %symb_c_kappa %symb_dist2wall %symb_f_v2 ).str(), this->worldComm(), this->repository().expr() );
-#else
+#if 0
+                // classic
+                std::string symb_S = physicFluidData->addParameter( prefixvm( eqkeyword, "S", "_" ),
+                                                                    (boost::format("%1% + (%2%/(%3%^2*%4%^2))*%5% :%1%:%2%:%3%:%4%:%5%")%symb_curl_magintude %symb_sol_SA  %symb_c_kappa %symb_dist2wall %symb_f_v2 ).str(),
+                                                                    this->worldComm(), this->repository().expr() );
+#elif 0
+                // variant note(c)
                 std::string symb_S = physicFluidData->addParameter( prefixvm( eqkeyword, "S", "_" ), (boost::format("%1% + (1-(%2% < (-%3%*%1%)))*%2% + (%2% < (-%3%*%1%))*( %1%*(%3%^2*%1%+%4%*%2%)/((%4%-2*%3%)*%1% - %2%) ):%1%:%2%:%3%:%4%")%symb_curl_magintude %symb_S_bar %symb_c_v2 %symb_c_v3 ).str(), this->worldComm(), this->repository().expr() );
+#else
+                // variant note1b +
+                std::string symb_c_rot = physicFluidData->addParameter( prefixvm( eqkeyword, "c_rot", "_" ), 2.0 );
+                std::string symb_S = physicFluidData->addParameter( prefixvm( eqkeyword, "S", "_" ),
+                                                                    (boost::format("max( %1% + %2%*min(0,%3%-%1%) + %4%, 0.3*%1% ):%1%:%2%:%3%:%4%")%symb_curl_magintude %symb_c_rot %symb_strain_rate_magnitude %symb_S_bar  ).str(),
+                                                                    this->worldComm(), this->repository().expr() );
 #endif
 
-                std::string symb_r = physicFluidData->addParameter( prefixvm( eqkeyword, "r", "_" ), (boost::format("min(%1%/(%2%*%3%^2*%4%^2),10):%1%:%2%:%3%:%4%")%symb_sol_SA %symb_S %symb_c_kappa %symb_dist2wall ).str(),
+                std::string symb_r = physicFluidData->addParameter( prefixvm( eqkeyword, "r", "_" ),
+                                                                    //(boost::format("(%2%>0)*min(%1%/(%2%*%3%^2*%4%^2),10) + (1-(%2%>0))*10:%1%:%2%:%3%:%4%")%symb_sol_SA %symb_S %symb_c_kappa %symb_dist2wall ).str(),
+                                                                    //(boost::format("min(%1%/(%2%*%3%^2*%4%^2 + (1-(%2%>0))*1e-5 ),10):%1%:%2%:%3%:%4%")%symb_sol_SA %symb_S %symb_c_kappa %symb_dist2wall ).str(),
+                                                                    (boost::format("min(%1%/(%2%*%3%^2*%4%^2 + (1-(%2%>1e-7))*1e-5 ),10):%1%:%2%:%3%:%4%")%symb_sol_SA %symb_S %symb_c_kappa %symb_dist2wall ).str(),
                                                                     this->worldComm(), this->repository().expr() );
                 std::string symb_g = physicFluidData->addParameter( prefixvm( eqkeyword, "g", "_" ), (boost::format("%1% + %2%*(%1%^6 - %1%):%1%:%2%")%symb_r %symb_c_w2 ).str(), this->worldComm(), this->repository().expr() );
                 std::string symb_f_w = physicFluidData->addParameter( prefixvm( eqkeyword, "f_w", "_" ), (boost::format("%1%*( (1+%2%^6)/(%1%^6+%2%^6) )^(1/6):%1%:%2%")%symb_g %symb_c_w3 ).str(), this->worldComm(), this->repository().expr() );
 
                 std::string exprstr_diffusion = (boost::format("(1/%1%)*(%2%/%3%+%4%):%1%:%2%:%3%:%4%:") %symb_c_sigma %symbDynViscosity %symbDensity %symb_sol_SA ).str();
+#if 1
                 std::string exprstr_reaction = (boost::format("-%1%*(1-%2%)*%3% + (%4%*%5% - %1%*%2%/(%6%^2))*(%7%/(%8%^2)) :%1%:%2%:%3%:%4%:%5%:%6%:%7%:%8%")%symb_c_b1 %symb_f_t2 %symb_S %symb_c_w1 %symb_f_w %symb_c_kappa %symb_sol_SA %symb_dist2wall ).str();
                 std::string exprstr_source = (boost::format("(1/%1%)*%2%*%3%:%1%:%2%:%4%") %symb_c_sigma %symb_c_b2 %exprstrnosymb_inner_grad_sol_SA %depsymb_inner_grad_sol_SA ).str();
-                ostr << "\""<<eqkeyword << "_beta\":\"" << exprstr_velocity << "\","
+#else
+                std::string exprstr_source = (boost::format("(1/%1%)*%2%*%3% -%11%*( -%5%*(1-%6%)*%7% + (%8%*%9% - %5%*%6%/(%10%^2))*(%11%/(%12%^2))  )  :%1%:%2%:%4%:%5%:%6%:%7%:%8%:%9%:%10%:%11%:%12%") %symb_c_sigma %symb_c_b2 %exprstrnosymb_inner_grad_sol_SA %depsymb_inner_grad_sol_SA      %symb_c_b1 %symb_f_t2 %symb_S %symb_c_w1 %symb_f_w %symb_c_kappa %symb_sol_SA %symb_dist2wall).str();
+#endif
+                std::string exprstr_convection = nDim==2? (boost::format("{%1% -(%3%/%4%)*%5%_0 ,%2% -(%3%/%4%)*%5%_1  }:%1%:%2%:%3%:%4%:%5%_0:%5%_1")%symb_velocity_x %symb_velocity_y %symb_c_b2 %symb_c_sigma %symbbase_grad_sol_SA).str() :
+                    (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
+
+                
+                ostr << "\""<<eqkeyword << "_beta\":\"" << /*exprstr_convection*/exprstr_velocity << "\","
                      << "\""<<eqkeyword << "_c\":\"" << exprstr_diffusion << "\","
                      << "\""<<eqkeyword << "_a\":\"" << exprstr_reaction << "\","
                      << "\""<<eqkeyword << "_f\":\"" << exprstr_source << "\"";
@@ -2212,13 +2234,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     if ( this->worldComm().isMasterRank() )
         std::cout << "\n" << ostr.str()  << "\n\n";
 
-    std::istringstream istr( ostr.str() );
-    pt::ptree pt;
-    pt::read_json(istr, pt);
-    if ( this->worldComm().isMasterRank() )
-        pt::write_json( (fs::path( M_turbulenceModelType->repository().root() )/"turbulence.json").string(), pt);
-    auto myModelProp = std::make_shared<ModelProperties>( pt, M_turbulenceModelType->repository().expr(), M_turbulenceModelType->worldCommPtr() );
-    M_turbulenceModelType->setModelProperties( myModelProp );
+
+    if ( !M_turbulenceModelType->hasModelProperties() )
+    {
+        pt::ptree pt;
+        std::istringstream istr( ostr.str() );
+        pt::read_json(istr, pt);
+        if ( this->worldComm().isMasterRank() )
+            pt::write_json( (fs::path( M_turbulenceModelType->repository().root() )/"turbulence.json").string(), pt);
+        auto myModelProp = std::make_shared<ModelProperties>( pt, M_turbulenceModelType->repository().expr(), M_turbulenceModelType->worldCommPtr() );
+        M_turbulenceModelType->setModelProperties( myModelProp );
+    }
     M_turbulenceModelType->setMesh( this->mesh() );
     M_turbulenceModelType->setManageParameterValues( false );
     M_turbulenceModelType->init();
