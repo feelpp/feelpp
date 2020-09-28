@@ -1,0 +1,66 @@
+{
+    "Name": "gravity",
+    "ShortName":"gravity",
+    "Models":
+    {
+        "equations":"Navier-Stokes",
+        "viscosity_law":"carreau-yasuda_law" //"newtonian, power_law, carreau_law, carreau-yasuda_law
+    },
+    "Materials":
+    {
+        "Omega":{
+            "rho":"1056",
+            "mu":"0.056",
+            "mu_k":0.0115,
+            "mu_power_law_n":0.8,
+            "mu_min":0.00345,
+            "mu_max":0.056,
+            "mu_0":0.056,
+            "mu_inf":0.00345,
+            "mu_carreau_law_lambda":3.133,
+            "mu_carreau_law_n":0.3568,
+            "mu_carreau_yasuda_law_lambda":1.902,
+            "mu_carreau_yasuda_law_n":0.22,
+            "mu_carreau_yasuda_law_a":1.25
+        }
+    },
+    "BoundaryConditions":
+    {
+        "velocity":
+        {
+            "Dirichlet":
+            {
+                "left":
+                {
+                    "expr":"{0,0}"
+                },
+                "right":
+                {
+                    "expr":"{0,0}"
+                }
+            }
+        },
+        "pressure":
+        {
+            "Dirichlet":
+            {
+                "top":
+                {
+                    "expr":1
+                },
+                "bottom":
+                {
+                    "expr":0
+                }
+            }
+        }
+    },
+    "PostProcess":
+    {
+        "Exports":
+        {
+            "fields":["velocity","pressure","pid", "materials.dynamic-viscosity"]
+        }
+    }
+
+}
