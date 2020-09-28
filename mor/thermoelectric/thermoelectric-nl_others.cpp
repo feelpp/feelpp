@@ -313,5 +313,26 @@ ThermoElectricNL::parameter_type ThermoElectricNL::parameterProperties() const
     return mu;
 }
 
+int ThermoElectricNL::mMaxSigma( std::string mat)
+{
+    auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
+    return eim_sigma->mMax();
+}
+
+ThermoElectricNL::q_sigma_element_type
+ThermoElectricNL::eimSigmaQ(std::string mat, int m)
+{
+    auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
+    return eim_sigma->q(m);
+}
+
+ThermoElectricNL::vectorN_type
+ThermoElectricNL::eimSigmaBeta(std::string mat, parameter_type const& mu, vectorN_type const& vtN)
+{
+    auto eim_sigma = this->scalarContinuousEim()[M_elecEimIndex[mat]];
+    return eim_sigma->beta(mu, vtN);
+}
+
+
 }
 

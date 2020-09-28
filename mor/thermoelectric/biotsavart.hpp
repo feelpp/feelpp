@@ -39,51 +39,51 @@ namespace Feel
 {
 template <typename ThermoElectricModelT>
 class BiotSavart : public CRBModelBase,
-                   public boost::enable_shared_from_this<BiotSavart<ThermoElectricModelT> >
+                   public std::enable_shared_from_this<BiotSavart<ThermoElectricModelT> >
 {
 public:
     using self_type = BiotSavart;
-    using self_ptrtype = boost::shared_ptr<self_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
 
     using parameterspace_type = ParameterSpaceX;
-    using parameterspace_ptrtype = boost::shared_ptr<parameterspace_type>;
+    using parameterspace_ptrtype = std::shared_ptr<parameterspace_type>;
     using parameter_type = parameterspace_type::element_type;
 
     using thermoelectric_model_type = ThermoElectricModelT;
-    using thermoelectric_model_ptrtype = boost::shared_ptr<thermoelectric_model_type>;
+    using thermoelectric_model_ptrtype = std::shared_ptr<thermoelectric_model_type>;
     using crbmodel_type = CRBModelSaddlePoint<thermoelectric_model_type>;
-    using crbmodel_ptrtype = boost::shared_ptr<crbmodel_type>;
+    using crbmodel_ptrtype = std::shared_ptr<crbmodel_type>;
     using crb_type = CRBSaddlePoint<crbmodel_type>;
-    using crb_ptrtype = boost::shared_ptr<crb_type>;
+    using crb_ptrtype = std::shared_ptr<crb_type>;
     using ser_type = SER<crb_type>;
-    using ser_ptrtype = boost::shared_ptr<ser_type>;
+    using ser_ptrtype = std::shared_ptr<ser_type>;
 
     using prop_type = ModelProperties;
-    using prop_ptrtype = boost::shared_ptr<prop_type>;
+    using prop_ptrtype = std::shared_ptr<prop_type>;
     using mat_type = ModelMaterial;
     using map_mat_type = std::map<std::string, mat_type>;
 
     /* needed for CRBPlugin */
     using mesh_type = typename thermoelectric_model_type::mesh_type;
-    using mesh_ptrtype = boost::shared_ptr<mesh_type>;
+    using mesh_ptrtype = std::shared_ptr<mesh_type>;
     using vec_fct_type = Lagrange<1, Vectorial>;
     using vec_basis_type = bases<vec_fct_type>;
     using functionspace_type = FunctionSpace<mesh_type, vec_basis_type>;
     using space_type = functionspace_type;
-    using functionspace_ptrtype = boost::shared_ptr<functionspace_type>;
+    using functionspace_ptrtype = std::shared_ptr<functionspace_type>;
     using element_type = typename functionspace_type::element_type;
-    using element_ptrtype = boost::shared_ptr<element_type>;
+    using element_ptrtype = std::shared_ptr<element_type>;
 
-    using rbfunctionspace_type = ReducedBasisSpace<self_type>;
-    using rbfunctionspace_ptrtype = boost::shared_ptr<rbfunctionspace_type>;
+    using rbfunctionspace_type = ReducedBasisSpace<space_type>;
+    using rbfunctionspace_ptrtype = std::shared_ptr<rbfunctionspace_type>;
     /* end needed  for CRBPlugin */
 
     using vt_space_type = typename thermoelectric_model_type::space_type;
-    using vt_space_ptrtype = boost::shared_ptr<vt_space_type>;
+    using vt_space_ptrtype = std::shared_ptr<vt_space_type>;
     using vt_element_type = typename vt_space_type::element_type;
-    using vt_element_ptrtype = boost::shared_ptr<vt_element_type>;
+    using vt_element_ptrtype = std::shared_ptr<vt_element_type>;
     using vt_rbfunctionspace_type = typename thermoelectric_model_type::rbfunctionspace_type;
-    using vt_rbfunctionspace_ptrtype = boost::shared_ptr<vt_rbfunctionspace_type>;
+    using vt_rbfunctionspace_ptrtype = std::shared_ptr<vt_rbfunctionspace_type>;
 
     using dof_point_type = boost::tuple<node_type, size_type, uint16_type >;
     using dof_points_type = typename std::vector<dof_point_type>;
@@ -126,7 +126,7 @@ public:
     rbfunctionspace_ptrtype const& rBFunctionSpace() const { return M_XN; } /* needed for CRBPlugin */
     typename functionspace_type::mesh_support_vector_type functionspaceMeshSupport( mesh_ptrtype const& mesh ) const; /* needed for CRBPlugin */
     parameterspace_ptrtype parameterSpace() const { return M_Dmu; } /* needed for CRBPlugin */
-    parameter_type paramFromProperties() const { return M_teModel->paramFromProperties(); }
+    parameter_type paramFromProperties() const { return M_teModel->parameterProperties(); }
 
     /* needed for CRBModelBase */
     bool isSteady() const override { return true; }
@@ -163,7 +163,7 @@ BiotSavart<ThermoElectricModelT>::makeOptions( std::string const& prefix )
         ( "biotsavart.rebuild-database", po::value<bool>()->default_value(false), "rebuild the database" )
     //     ( prefixvm( prefix, "filename").c_str(), po::value<std::string>()->default_value("biotsavart.json"), "model file for biotsavart" )
         ;
-    po::options_description teOptions = thermoelectric_model_type::makeOptions(prefix);
+    po::options_description teOptions = thermoelectric_model_type::makeOptions();
     bsOptions.add( teOptions );
     return bsOptions;
 }
@@ -172,7 +172,7 @@ template <typename ThermoElectricModelT>
 typename BiotSavart<ThermoElectricModelT>::self_ptrtype
 BiotSavart<ThermoElectricModelT>::New( crb::stage stage, std::string const& prefix )
 {
-    auto bs = boost::shared_ptr<self_type>(new self_type(stage, prefix));
+    auto bs = std::shared_ptr<self_type>(new self_type(stage, prefix));
     if( stage == crb::stage::offline )
         bs->init( prefix );
     return bs;
@@ -180,13 +180,13 @@ BiotSavart<ThermoElectricModelT>::New( crb::stage stage, std::string const& pref
 
 template <typename ThermoElectricModelT>
 BiotSavart<ThermoElectricModelT>::BiotSavart( crb::stage stage, std::string const& prefix )
-    : M_XN( new rbfunctionspace_type(Environment::worldComm()) )
+    : M_XN( new rbfunctionspace_type(Environment::worldCommPtr()) )
 {
     tic();
-    M_teModel = boost::make_shared<thermoelectric_model_type>(prefix);
-    M_crbModel = boost::make_shared<crbmodel_type>( M_teModel, stage);
+    M_teModel = std::make_shared<thermoelectric_model_type>(prefix);
+    M_crbModel = std::make_shared<crbmodel_type>( M_teModel, stage);
     M_crb = crb_type::New( M_teModel->modelName(), M_crbModel, stage);
-    M_ser = boost::make_shared<ser_type>( M_crb, M_crbModel );
+    M_ser = std::make_shared<ser_type>( M_crb, M_crbModel );
     M_Dmu = M_crb->Dmu();
     M_N = 0;
     toc("constructor + eim");
@@ -197,7 +197,7 @@ void
 BiotSavart<ThermoElectricModelT>::init(std::string const& prefix)
 {
     M_propertyPath = Environment::expand( soption(prefixvm( prefix,"filename").c_str()) );
-    M_modelProps = boost::make_shared<prop_type>(M_propertyPath);
+    M_modelProps = std::make_shared<prop_type>(M_propertyPath);
     M_elecMaterials = M_modelProps->materials().materialWithPhysic("electric");
     M_magnMaterials = M_modelProps->materials().materialWithPhysic("magneto");
     M_mesh = M_teModel->mesh();
@@ -206,7 +206,7 @@ BiotSavart<ThermoElectricModelT>::init(std::string const& prefix)
     for( auto const& mat : M_magnMaterials )
         magnRange.push_back( mat.first );
     M_Xh = functionspace_type::New( _mesh=M_mesh, _range=markedelements(M_mesh, magnRange) );
-    M_XN->setModel( this->shared_from_this() );
+    M_XN->setFunctionSpace( M_Xh );
     this->setupCommunicators();
 }
 
@@ -443,7 +443,7 @@ BiotSavart<ThermoElectricModelT>::expansionVT( vectorN_type const& vtN, int N )
     return M_crb->expansion(vtN, N);
 }
 
-FEELPP_BIOTSAVART_PLUGIN( ThermoElectric, BiotSavart, biotsavart )
+// FEELPP_BIOTSAVART_PLUGIN( ThermoElectric, BiotSavart, biotsavart )
 
 } // namespace
 #endif

@@ -80,7 +80,7 @@ public:
     using model_type = BiotSavartModelT;
     using model_ptrtype = std::shared_ptr<model_type>;
     using super = CRBPluginBase<model_type>;
-    using self_type = BiotSavartRB;
+    using self_type = BiotSavartRB<model_type>;
     using self_ptrtype = std::shared_ptr<self_type>;
 
     using parameterspace_type = ParameterSpaceX;
@@ -147,7 +147,7 @@ template <typename BiotSavartModelT>
 typename BiotSavartRB<BiotSavartModelT>::self_ptrtype
 BiotSavartRB<BiotSavartModelT>::New( std::string const& name, crb::stage stage, std::string const& prefix )
 {
-    return New( name, model_type::New(stage, prefix), stage );
+    return self_type::New( name, model_type::New(stage, prefix), stage );
 }
 
 template <typename BiotSavartModelT>
@@ -211,7 +211,7 @@ template <typename BiotSavartModelT>
 void
 BiotSavartRB<BiotSavartModelT>::saveRB()
 {
-    M_elements_db.setWn( std::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
+    M_elements_db.setWn( boost::make_tuple( M_model->rBFunctionSpace()->primalRB() , M_model->rBFunctionSpace()->dualRB() ) );
 
     M_elements_db.saveDB();
 }
