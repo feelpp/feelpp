@@ -351,7 +351,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                 /*const*/ value_type muEval = M_muExprTensor.evalq(0,0,q);
                 
                 if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
-                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
+                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN || true )
                                  if ( M_mutExprTensor )
                                      muEval += M_mutExprTensor->evalq(0,0,q);
                 
@@ -388,7 +388,7 @@ enum FMSTExprApplyType { FM_ST_EVAL=0,FM_ST_JACOBIAN=1,FM_VISCOSITY_EVAL=2 };
                 /*const*/ value_type muEval = M_muExprTensor.evalq(0,0,q);
                 
                 if constexpr ( expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
-                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN )
+                               expr_type::specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN || true )
                                  if ( M_mutExprTensor )
                                      muEval += M_mutExprTensor->evalq(0,0,q);
                 
@@ -1486,10 +1486,13 @@ public:
 
     size_type dynamicContext() const
         {
+            size_type res = 0;
             if ( this->dynamicViscosity().isNewtonianLaw() )
-                return Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("dynamic-viscosity") );
-            else
-                return size_type( 0 ); // TODO for others law
+                res = res | Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("dynamic-viscosity") );
+            if ( this->turbulence().isEnabled() && ( specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
+                                                     specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN || true ) )
+                res= res | Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+            return res;
         }
 
     //! polynomial order
@@ -1498,17 +1501,22 @@ public:
             if ( M_polynomialOrder != invalid_uint16_type_value )
                 return M_polynomialOrder;
             uint16_type orderGradVelocity = M_exprGradVelocity.polynomialOrder();
+
+            uint16_type res = 2*(orderGradVelocity+1); // default value for non newtonian
             if ( this->dynamicViscosity().isNewtonianLaw() )
             {
                 if ( SpecificExprType::value == FMSTExprApplyType::FM_VISCOSITY_EVAL )
-                    return this->materialPropertyExpr<1,1>("dynamic-viscosity").polynomialOrder();
+                    res = this->materialPropertyExpr<1,1>("dynamic-viscosity").polynomialOrder();
                 else if ( SpecificExprType::value == FMSTExprApplyType::FM_ST_EVAL )
-                    return std::max( orderGradVelocity, M_exprIdPressure.polynomialOrder() );
+                    res = std::max( orderGradVelocity, M_exprIdPressure.polynomialOrder() );
                 else
-                    return orderGradVelocity;
+                    res = orderGradVelocity;
             }
-            else
-                return 2*(orderGradVelocity+1);
+            if ( this->turbulence().isEnabled() && ( specific_expr_type::value == FMSTExprApplyType::FM_ST_EVAL ||
+                                                     specific_expr_type::value == FMSTExprApplyType::FM_ST_JACOBIAN || true ) )
+                res = std::max( res, this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity").polynomialOrder() );
+
+            return res;
         }
 
     //! expression is polynomial?
