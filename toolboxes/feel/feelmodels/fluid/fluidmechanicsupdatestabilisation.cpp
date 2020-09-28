@@ -2,7 +2,7 @@
 #include <feel/feelmodels/fluid/fluidmechanics.hpp>
 
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+// #include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 
 namespace Feel
 {

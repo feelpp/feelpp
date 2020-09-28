@@ -876,7 +876,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNewtonIteration( int step, vector_ptrt
                                                            typename backend_type::solvernonlinear_type::UpdateIterationData const& data ) const
 {
     if ( this->hasTurbulenceModel() && !M_useSemiImplicitTurbulenceCoupling )
+    {
+        M_turbulenceModelType->algebraicFactory()->dataInfos().addVectorInfo( prefixvm(this->prefix(), "current-solution"), sol );
         M_turbulenceModelType->solve();
+    }
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS

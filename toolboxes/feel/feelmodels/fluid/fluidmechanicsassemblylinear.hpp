@@ -113,8 +113,8 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
             {
                 if ( physicFluidData->equation() == "Navier-Stokes" )
                 {
-                    //auto const& betaU = *fieldVelocityPressureExtrapolated;
-                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(beta_u),*physicFluidData,matProps);
+                    // TODO : not good with turbulence!!
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity(gradv(beta_u),*physicFluidData,matProps,se);
                     bilinearFormVV +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),
@@ -125,7 +125,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     // case with steady Stokes
                     CHECK( physicFluidData->dynamicViscosity().isNewtonianLaw() ) << "not allow with non newtonian law";
 
-                    auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*physicFluidData,matProps);
+                    auto myViscosity = Feel::FeelModels::fluidMecViscosity( vf::zero<nDim,nDim>(),*physicFluidData,matProps,se);
                     bilinearFormVV +=
                         integrate( _range=range,
                                    _expr= timeSteppingScaling*2*myViscosity*inner(deft,grad(v)),

@@ -56,7 +56,8 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
-#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
+#include <feel/feelmodels/modelvf/fluidmecdynamicviscosity.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
 //#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
@@ -1178,7 +1179,12 @@ public :
                 se_viscosity.add( _viscositySymbol, _viscosityExpr );
             }
 
-            return Feel::vf::symbolsExpr( se_viscosity );
+
+            using _expr_strain_rate_magnitude_type = std::decay_t<decltype( sqrt(2*inner(sym(gradv(u)))) )>;
+            symbol_expression_t<_expr_strain_rate_magnitude_type> se_strainRateMagnitude;
+            se_strainRateMagnitude.add( (boost::format("%1%_strain_rate_magnitude")%this->keyword()).str(), sqrt(2*inner(sym(gradv(u)))) );
+
+            return Feel::vf::symbolsExpr( se_viscosity, se_strainRateMagnitude );
         }
 
     //___________________________________________________________________________________//
