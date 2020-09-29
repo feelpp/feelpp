@@ -30,8 +30,16 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
   if (NOT FEELPP_TOOLBOXES_FOUND)
     message(FATAL_ERROR "Feel++ was not installed with toolboxes")
   endif()
+endif()
+
+# how to FEELPP_INCLUDE_DIR
+if (EXISTS ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
+  MESSAGE(STATUS "Loading toolboxes headers from ${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes")
+  include_directories(${FEELPP_INSTALL_DIR}/include/feelpp/toolboxes)
 else()
-  include_directories(${CMAKE_SOURCE_DIR}/toolboxes ${CMAKE_BINARY_DIR}/toolboxes)
+  MESSAGE(STATUS "Loading toolboxes headers from ${CMAKE_SOURCE_DIR}/toolboxes and ${CMAKE_BINARY_DIR}/toolboxes")
+  include_directories(${CMAKE_SOURCE_DIR}/toolboxes)
+  include_directories(${CMAKE_BINARY_DIR}/toolboxes)
 endif()
 
 # crb_add_library( electric SRCS electric.cpp EXEC CRB_LIB_ELECTRIC)
@@ -101,7 +109,7 @@ feelpp_add_application( biotsavart-app
                         LINK_LIBRARIES ${CRB_LIB_THERMOELECTRIC_NONLINEAR} INSTALL )
 feelpp_add_application( biotsavart-electric-alpha-app
                         SRCS electric-alpha.hpp biotsavart-electric-alpha.hpp biotsavart-electric-alpha_main.cpp
-                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} feelpp_toolbox_electric_lib feelpp_modelcore )
+                        LINK_LIBRARIES ${CRB_LIB_BIOTSAVART_ELECTRIC_ALPHA} feelpp_toolbox_electric_lib_3dP1G1 feelpp_modelcore )
 
 # feelpp_add_application( test SRCS test.cpp )
 
