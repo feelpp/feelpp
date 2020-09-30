@@ -1,0 +1,284 @@
+/* -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t -*-
+
+  This file is part of the Feel library
+
+  Author(s): Romain Hild <romain.hild@cemosis.fr>
+       Date: 2020-09-30
+
+  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+#ifndef _FEELPP_GEIM_HPP
+#define _FEELPP_GEIM_HPP 1
+
+#include <feel/feelalg/backend.hpp>
+#include <feel/feelcrb/crbdb.hpp>
+#include <feel/feelcrb/parameterspace.hpp>
+#include <feel/feelcore/unwrapptr.hpp>
+
+#include <limits>
+
+namespace Feel
+{
+
+template<typename FunctionSpace>
+class GEIM
+{
+public:
+    using functionspace_type = FunctionSpace;
+    using element_type = typename functionspace_type::element_type;
+
+    using self_type = GEIM<functionspace_type>;
+    using self_ptrtype = std::shared_ptr<self_type>;
+
+    using parameterspace_type = ParameterSpaceX;
+    using parameterspace_ptrtype = std::shared_ptr<parameterspace_type>;
+    using parameter_type = typename parameterspace_type::element_type;
+    using sampling_type = typename parameterspace_type::sampling_type;
+    using sampling_ptrtype = typename parameterspace_type::sampling_ptrtype;
+
+    using backend_type = Backend<double>;
+    using vector_type = typename backend_type::vector_type;
+    using vector_ptrtype = typename backend_type::vector_ptrtype;
+
+    using solver_type = std::function<element_type (parameter_type const& mu)>;
+
+    using vectorN_type = Eigen::VectorXd;
+    using matrixN_type = Eigen::MatrixXd;
+
+    using index_type = size_type;
+
+public:
+    GEIM(std::vector<vector_ptrtype> sigma, sampling_ptrtype sampling, solver_type solver);
+    int size() const { return M_M; }
+    vectorN_type beta( parameter_type const& mu );
+    vectorN_type beta( vectorN_type const& vn );
+    vectorN_type beta( element_type const& v);
+    element_type interpolant( parameter_type const& mu );
+    element_type interpolant( element_type const& u );
+    void interpolant( vectorN_type const& vn, element_type& I );
+    matrixN_type matrixB() const { return M_B; }
+    std::vector<element_type> q() const { return M_q; }
+    element_type q( int i ) const { return M_q[i]; }
+    std::vector<parameter_type> mus() const { return M_mus; }
+    std::vector<vector_ptrtype> sigmas() const { return M_sigmas; }
+    std::vector<index_type> indices() const { return M_indices; }
+    void setSolver( solver_type f ) { M_solver = f; }
+    void setMaxM( int M ) { M_MaxM = M; }
+    void offline();
+
+protected:
+    virtual index_type maxError();
+    virtual double applyForm(index_type i, element_type const& u);
+    virtual element_type getElement(parameter_type const& mu) { return M_solver(mu); }
+
+private:
+    std::vector<vector_ptrtype> M_sigmas;
+    std::vector<index_type> M_indices;
+    sampling_ptrtype M_sampling;
+    std::vector<parameter_type> M_mus;
+    std::vector<element_type> M_q;
+    matrixN_type M_B;
+    int M_MaxM;
+    int M_M;
+    solver_type M_solver;
+    double M_tol;
+
+    element_type M_currentQ;
+};
+
+template<typename FunctionSpace>
+GEIM<FunctionSpace>::GEIM(std::vector<vector_ptrtype> sigma, sampling_ptrtype sampling,
+                          solver_type solver):
+    M_sigmas(sigma),
+    M_sampling(sampling),
+    M_solver(solver),
+    M_MaxM(ioption("geim.max-dimension")),
+    M_M(0),
+    M_tol(doption("geim.tolerance"))
+{
+    M_B = matrixN_type(0,0);
+    if( M_sigmas.size() == 0 )
+        Feel::cout << "You need to give a set linear forms" << std::endl;
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::vectorN_type
+GEIM<FunctionSpace>::beta( parameter_type const& mu )
+{
+    vectorN_type rhs(M_M);
+    if( M_M == 0 )
+        return rhs;
+
+    auto phi = this->getElement(mu);
+    return this->beta(phi);
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::vectorN_type
+GEIM<FunctionSpace>::beta( vectorN_type const& vn )
+{
+    vectorN_type b(M_M);
+    if( M_M == 0 )
+        return b;
+
+    b = M_B.colPivHouseholderQr().solve(vn);
+    return b;
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::vectorN_type
+GEIM<FunctionSpace>::beta( element_type const& v )
+{
+    vectorN_type rhs(M_M);
+    if( M_M == 0 )
+        return rhs;
+
+    for(int i = 0; i < M_M; ++i )
+        rhs(i) = this->applyForm(M_indices[i], v);
+    vectorN_type b = M_B.colPivHouseholderQr().solve(rhs);
+    return b;
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::element_type
+GEIM<FunctionSpace>::interpolant(parameter_type const& mu)
+{
+    auto u = this->getElement(mu);
+    return this->interpolant(u);
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::element_type
+GEIM<FunctionSpace>::interpolant(element_type const& u)
+{
+    auto I = u.functionSpace()->element();
+    I.zero();
+    auto b = this->beta(u);
+    for(int i = 0; i < M_M; ++i)
+        I.add(b(i), M_q[i]);
+    return I;
+}
+
+template<typename FunctionSpace>
+void
+GEIM<FunctionSpace>::interpolant(vectorN_type const& vn, element_type& I)
+{
+    I.zero();
+    auto b = this->beta(vn);
+    for(int i = 0; i < M_M; ++i)
+        I.add(b(i), M_q[i]);
+    return I;
+}
+
+template<typename FunctionSpace>
+typename GEIM<FunctionSpace>::index_type
+GEIM<FunctionSpace>::maxError()
+{
+    int maxI = 0;
+    double max = std::numeric_limits<double>::lowest();
+    for( int i = 0; i < this->M_sigmas.size(); ++i )
+    {
+        // skip existing forms
+        if( std::count(M_indices.begin(), M_indices.end(), i) )
+            continue;
+        double c = std::abs(this->applyForm(i, M_currentQ));
+        if( c > max )
+        {
+            max = c;
+            maxI = i;
+        }
+    }
+    return maxI;
+}
+
+template<typename FunctionSpace>
+double
+GEIM<FunctionSpace>::applyForm(index_type i, element_type const& u)
+{
+    return inner_product(unwrap_ptr(M_sigmas[i]), u);
+}
+
+template<typename FunctionSpace>
+void
+GEIM<FunctionSpace>::offline()
+{
+    Feel::cout << "offline phase starts" << std::endl;
+    if(!M_solver)
+    {
+        Feel::cout << "You need to set a solver before the offline phase!" << std::endl;
+        return;
+    }
+
+    if( M_sigmas.size() > 0 )
+    {
+        if( M_MaxM > M_sampling->size() || M_MaxM > M_sigmas.size() )
+            M_MaxM = M_sampling->size() > M_sigmas.size() ? M_sigmas.size() : M_sampling->size();
+    }
+    else
+    {
+        if( M_MaxM > M_sampling->size() )
+            M_MaxM = M_sampling->size();
+    }
+
+    parameter_type mu;
+    double error = std::numeric_limits<double>::max();
+
+    auto qq = M_solver(get<0>(M_sampling->max()));
+    while( M_M < M_MaxM )
+    {
+        double nMax = std::numeric_limits<double>::lowest();
+        for( auto const& m : *M_sampling )
+        {
+            auto phi = this->getElement(m);
+            auto I = this->interpolant(phi);
+            phi -= I;
+            auto n = phi.l2Norm();
+            if( n > nMax )
+            {
+                nMax = n;
+                mu = m;
+            }
+        }
+
+        M_currentQ = this->getElement(mu);
+        auto I = this->interpolant(M_currentQ);
+        M_currentQ -= I;
+        error = M_currentQ.l2Norm();
+        Feel::cout << "error with " << M_M << " basis = " << error << std::endl;
+        if( error < M_tol )
+            break;
+        auto index = this->maxError();
+        M_currentQ.scale(1./this->applyForm(index, M_currentQ));
+
+        M_mus.push_back(mu);
+        M_indices.push_back(index);
+        M_q.push_back(M_currentQ);
+
+        M_B.conservativeResize(M_M+1, M_M+1);
+        for( int i = 0; i < M_M; ++i )
+        {
+            M_B(M_M, i) = this->applyForm(index, M_q[i]);
+            M_B(i, M_M) = this->applyForm(M_indices[i], M_currentQ); // should be 0
+        }
+        M_B(M_M, M_M) = 1.;
+        M_M++;
+    }
+}
+
+} // namespace Feel
+
+#endif
