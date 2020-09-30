@@ -1457,7 +1457,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnCurrentMesh( std::string
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
         auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
+        auto const sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*N(),
                           _geomap=this->geomap() );
@@ -1487,7 +1487,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateWallShearStress( std::string const& na
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
         auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
+        auto const sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*vf::N() - (trans(sigmav*vf::N())*vf::N())*vf::N(),
                           _geomap=this->geomap() );
@@ -1529,7 +1529,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
         auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
         // stress tensor : -p*Id + 2*mu*D(u)
-        auto const sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u)*inv(Fa),idv(p),*physicFluidData,matProps,true);
+        auto const sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u)*inv(Fa),idv(p),*physicFluidData,matProps,true);
         fieldToUpdate->on(_range=rangeFaces,
                           _expr=sigmav*det(Fa)*trans(inv(Fa))*N(),
                           _geomap=this->geomap() );
@@ -1546,7 +1546,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateNormalStressOnReferenceMesh( std::stri
         // deformation tensor
         auto Fa = Id+gradv(*M_meshALE->displacement());
         auto InvFa = det(Fa)*inv(Fa);
-        auto const Sigmav = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
+        auto const Sigmav = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*this->materialProperties(),matName,true);
         auto resMove = integrate(_range=rangeFaces,_expr=Sigmav*N() ).evaluate();
         this->meshALE()->revertReferenceMesh( false );
         if ( this->worldComm().isMasterRank() )

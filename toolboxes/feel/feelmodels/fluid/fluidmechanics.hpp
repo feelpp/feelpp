@@ -56,8 +56,7 @@
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
-//#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
-#include <feel/feelmodels/modelvf/fluidmecdynamicviscosity.hpp>
+#include <feel/feelmodels/modelvf/fluidmecstresstensor.hpp>
 #include <feel/feelmodels/modelvf/fluidmecconvection.hpp>
 
 //#define FEELPP_TOOLBOXES_FLUIDMECHANICS_REDUCE_COMPILATION_TIME
@@ -1252,7 +1251,7 @@ public :
     template <typename VelocityFieldType, typename PressureFieldType, typename SymbolsExprType = symbols_expression_empty_t>
     auto stressTensorExpr( VelocityFieldType const& u, PressureFieldType const& p, SymbolsExprType const& se = symbols_expression_empty_t{} ) const
         {
-            using _stesstensor_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),
+            using _stesstensor_expr_type = std::decay_t<decltype(Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),
                                                                                                                  *std::static_pointer_cast<ModelPhysicFluid<nDim>>( this->physicsFromCurrentType().begin()->second ),
                                                                                                                  MaterialProperties{""},true,se))>;
             std::vector<std::pair<std::string,_stesstensor_expr_type>> theExprs;
@@ -1264,7 +1263,7 @@ public :
                     auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
                     auto const& matProps = this->materialsProperties()->materialProperties( matName );
 
-                    auto const stressTensorExpr = Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
+                    auto const stressTensorExpr = Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
                     theExprs.push_back( std::make_pair( matName, stressTensorExpr ) );
                 }
             }
@@ -1285,7 +1284,7 @@ public :
             CHECK( mphysics.size() == 1 ) << "something wrong";
             auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(mphysics.begin()->second);
             auto const& matProps = this->materialsProperties()->materialProperties( matName );
-            return Feel::FeelModels::fluidMecNewtonianStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
+            return Feel::FeelModels::fluidMecStressTensor(gradv(u),idv(p),*physicFluidData,matProps,true,se);
         }
 
     template <typename VelocityFieldType, typename SymbolsExprType = symbols_expression_empty_t>

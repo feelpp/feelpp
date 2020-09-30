@@ -4,6 +4,7 @@
 #include <feel/feelmodels/modelvf/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 #include <feel/feelmodels/modelvf/exproptionalconcat.hpp>
+#include <feel/feelmodels/modelvf/fluidmecdivstresstensor.hpp>
 
 #include <feel/feelmodels/modelvf/exproperations.hpp>
 
@@ -30,16 +31,16 @@ exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsT
     auto muExpr = Feel::FeelModels::fluidMecViscosity(gradv(u),physicFluidData,matProps,se);
 
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*gradv(u)*idv(beta_u) )>;
-    using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*muExpr*laplacianv(u) )>;
-
-    using expr_viscous_stress_turbulence_residual_type = std::decay_t<decltype( -timeSteppingScaling*2*sym(gradv(u))*trans(expr( expr<FluidMechanicsType::nDim,1>(""),se)) )>;
+    using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*fluidMecDivViscousStressTensor(u,physicFluidData,matProps,fm.worldComm(),fm.repository().expr(),se) )>;
 
 
     using expr_pressure_stress_redisual_type = std::decay_t<decltype( trans(gradv(p)) )>;
     using expr_time_derivative_residual_type = std::decay_t<decltype( expr_density_type{}*(fm.timeStepBDF()->polyDerivCoefficient(0)*idv(u)-idv(fm.timeStepBDF()->polyDeriv())) )>;
     using expr_gravity_force_type = std::decay_t<decltype( -timeSteppingScaling*expr_density_type{}*physicFluidData.gravityForceExpr() )>;
 
-    auto residual_full = exprOptionalConcat<expr_convection_residual_type,expr_viscous_stress_residual_type,expr_viscous_stress_turbulence_residual_type,expr_pressure_stress_redisual_type,expr_time_derivative_residual_type,expr_gravity_force_type, ExprAddedType...>();
+    auto residual_full = exprOptionalConcat<expr_convection_residual_type,
+                                            expr_viscous_stress_residual_type,
+                                            expr_pressure_stress_redisual_type,expr_time_derivative_residual_type,expr_gravity_force_type, ExprAddedType...>();
 
     if ( physicFluidData.equation() == "Navier-Stokes")
     {
@@ -56,12 +57,11 @@ exprResidualImpl( FluidMechanicsType const& fm, ModelPhysicFluid<FluidMechanicsT
     if ( !timeSteppingEvaluateResidualWithoutTimeDerivative )
         residual_full.expression().add( trans(gradv(p)) );
 
-    if constexpr( FluidMechanicsType::nOrderVelocity>1 )
+    auto divSigmaViscous = fluidMecDivViscousStressTensor(u,physicFluidData,matProps,fm.worldComm(),fm.repository().expr(),se);
+    if ( !divSigmaViscous.expression().isZero() )
     {
-        residual_full.expression().add( -timeSteppingScaling*muExpr*laplacianv(u) );
+        residual_full.expression().add( -timeSteppingScaling*divSigmaViscous );
     }
-    if ( physicFluidData.turbulence().isEnabled() )
-        residual_full.expression().add( -timeSteppingScaling*2*sym(gradv(u))*trans(expr( expr<FluidMechanicsType::nDim,1>("{fluid_turbulence_SA_grad_nu_0*physics_fluid_fluid_fluid_turbulence_SA_f_v1,fluid_turbulence_SA_grad_nu_0*physics_fluid_fluid_fluid_turbulence_SA_f_v1}:physics_fluid_fluid_fluid_turbulence_SA_f_v1:fluid_turbulence_SA_grad_nu_0:fluid_turbulence_SA_grad_nu_1"),se)) );
 
     if ( physicFluidData.gravityForceEnabled() )
     {
@@ -361,12 +361,11 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
     // jacobian of residual
     using expr_convection_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*(gradt(u)*idv(u)+gradv(u)*idt(u)) )>;
     using expr_convection_extrapolated_residual_type = std::decay_t<decltype( timeSteppingScaling*expr_density_type{}*(gradt(u)*idv(beta_u)) )>;
-    using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*muExpr*laplaciant(u) )>;
-    using expr_viscous_stress_turbulence_residual_type = std::decay_t<decltype( -timeSteppingScaling*2*sym(gradt(u))*trans(expr( expr<nDim,1>(""),se)) )>;
+    using expr_viscous_stress_residual_type = std::decay_t<decltype( -timeSteppingScaling*fluidMecDivViscousStressTensorJacobian(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se) )>;
 
     using expr_time_derivative_residual_type = std::decay_t<decltype( expr_density_type{}*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) )>;
     auto residual_jac = exprOptionalConcat<expr_convection_residual_type,expr_convection_extrapolated_residual_type,
-                                           expr_viscous_stress_residual_type,expr_viscous_stress_turbulence_residual_type,
+                                           expr_viscous_stress_residual_type,
                                            expr_time_derivative_residual_type>();
 
     auto additionTermsTuple = hana::make_tuple(exprsAddedInResidual...);
@@ -384,13 +383,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateJacobianSt
         auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
         residual_jac.expression().add( densityExpr*this->timeStepBDF()->polyDerivCoefficient(0)*idt(u) );
     }
-    if constexpr( nOrderVelocity>1 )
-    {
-        residual_jac.expression().add( -timeSteppingScaling*muExpr*laplaciant(u) );
-    }
-    if ( physicFluidData.turbulence().isEnabled() )
-        residual_jac.expression().add( -timeSteppingScaling*2*sym(gradt(u))*trans(expr( expr<nDim,1>("{fluid_turbulence_SA_grad_nu_0*physics_fluid_fluid_fluid_turbulence_SA_f_v1,fluid_turbulence_SA_grad_nu_0*physics_fluid_fluid_fluid_turbulence_SA_f_v1}:physics_fluid_fluid_fluid_turbulence_SA_f_v1:fluid_turbulence_SA_grad_nu_0:fluid_turbulence_SA_grad_nu_1"),se)) );
 
+    auto divSigmaViscous = fluidMecDivViscousStressTensorJacobian(u,physicFluidData,matProps,this->worldComm(),this->repository().expr(),se);
+    if ( !divSigmaViscous.expression().isZero() )
+        residual_jac.expression().add( -timeSteppingScaling*divSigmaViscous );
 
     if ( this->stabilizationGLSType() != "pspg" )
     {
