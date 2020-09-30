@@ -8,24 +8,218 @@ namespace Feel
 namespace FeelModels
 {
 
-// only grad currently
-template<typename ExprGradType>
+template<typename FieldType>
 class ExprEvaluateFieldOperators
 {
 public :
-    using this_type = ExprEvaluateFieldOperators<ExprGradType>;
-    using expr_grad_type = ExprGradType;
-    using value_type = typename ExprGradType::value_type;
-    ExprEvaluateFieldOperators( expr_grad_type const& exprGrad )
+    using this_type = ExprEvaluateFieldOperators<FieldType>;
+    using field_type = FieldType;
+    using field_clean_type = unwrap_ptr_t<field_type>;
+    using expr_grad_type = std::decay_t<decltype(gradv(field_type{}))>;
+    using expr_laplacian_type = std::decay_t<decltype(laplacianv(field_type{}))>;
+    using value_type = typename field_clean_type::value_type;
+
+    static const bool laplacian_is_zero = field_clean_type::fe_type::nOrder < 2;
+
+    ExprEvaluateFieldOperators( field_type const& field )
         :
-        M_enableGrad( false ),
-        M_exprGrad( exprGrad )
+        M_field( field  ),
+        M_enableGrad( false ), M_enableLaplacian( false )
         {}
 
     ExprEvaluateFieldOperators( ExprEvaluateFieldOperators const& ) = default;
     ExprEvaluateFieldOperators( ExprEvaluateFieldOperators && ) = default;
 
-    bool enableGrad() const { return M_enableGrad; }
+    bool isEnabledGrad() const { return M_enableGrad; }
+    void setEnableGrad( bool b )
+        {
+            M_enableGrad = b;
+            if ( b && !M_exprGrad )
+                M_exprGrad.emplace( gradv( M_field ) );
+        }
+    bool isEnabledLaplacian() const { return M_enableLaplacian; }
+    void setEnableLaplacian( bool b )
+        {
+            M_enableLaplacian = b;
+            if ( b && !M_exprLaplacian )
+                M_exprLaplacian.emplace( laplacianv( M_field ) );
+        }
+
+    expr_grad_type const& exprGrad() const { return *M_exprGrad; }
+    expr_laplacian_type const& exprLaplacian() const { return *M_exprLaplacian; }
+
+    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
+    struct tensor
+    {
+        using tensor_expr_grad_type = typename expr_grad_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using tensor_expr_laplacian_type = typename expr_laplacian_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+
+        using shape_grad_type = typename tensor_expr_grad_type::shape;
+        using tensor_base_grad_type = tensorBase<Geo_t,Basis_i_t,Basis_j_t, shape_grad_type, typename this_type::value_type>;
+        using matrix_shape_grad_type = typename tensor_base_grad_type::matrix_shape_type;
+        using array_shape_grad_type = typename tensor_base_grad_type::new_array_shape_type;
+
+        using shape_laplacian_type = typename tensor_expr_laplacian_type::shape;
+        using tensor_base_laplacian_type = tensorBase<Geo_t,Basis_i_t,Basis_j_t, shape_laplacian_type, typename this_type::value_type>;
+        using matrix_shape_laplacian_type = typename tensor_base_laplacian_type::matrix_shape_type;
+        using array_shape_laplacian_type = typename tensor_base_laplacian_type::new_array_shape_type;
+
+        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
+            :
+            M_expr( expr )
+            {
+                this->initTensor( expr, geom, fev, feu );
+            }
+        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
+            :
+            M_expr( expr )
+            {
+                this->initTensor( expr, geom, fev );
+            }
+        tensor( this_type const& expr, Geo_t const& geom )
+            :
+            M_expr( expr )
+            {
+                this->initTensor( expr, geom );
+            }
+
+        array_shape_grad_type const& localEvalGrad() const { return M_localEvalGrad; }
+        matrix_shape_grad_type const& localEvalGrad(  uint16_type q ) const { return M_localEvalGrad[q]; }
+
+        array_shape_laplacian_type const& localEvalLaplacian() const { return M_localEvalLaplacian; }
+        matrix_shape_laplacian_type const& localEvalLaplacian(  uint16_type q ) const { return M_localEvalLaplacian[q]; }
+
+        void update( Geo_t const& geom )
+            {
+                bool hasGrad = false, hasLaplacian = false;
+                if ( M_tensorExprGrad )
+                {
+                    M_tensorExprGrad->update( geom );
+                    hasGrad = true;
+                }
+                if constexpr ( !laplacian_is_zero )
+                {
+                    if ( M_tensorExprLaplacian )
+                    {
+                        M_tensorExprLaplacian->update( geom );
+                        hasLaplacian = true;
+                    }
+                }
+                this->updateImpl( geom, hasGrad, hasLaplacian );
+            }
+        void update( Geo_t const& geom, uint16_type face )
+            {
+                bool hasGrad = false, hasLaplacian = false;
+                if ( M_tensorExprGrad )
+                {
+                    M_tensorExprGrad->update( geom, face );
+                    hasGrad = true;
+                }
+                if constexpr ( !laplacian_is_zero )
+                {
+                    if ( M_tensorExprLaplacian )
+                    {
+                        M_tensorExprLaplacian->update( geom, face );
+                        hasLaplacian = true;
+                    }
+                }
+                this->updateImpl( geom, hasGrad, hasLaplacian );
+            }
+    private :
+        template<typename... TheArgsType>
+        void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
+            {
+                if ( expr.isEnabledGrad() )
+                    M_tensorExprGrad.emplace( expr.exprGrad(), theInitArgs... );
+                if constexpr ( !laplacian_is_zero )
+                {
+                    if ( expr.isEnabledLaplacian() )
+                        M_tensorExprLaplacian.emplace( expr.exprLaplacian(), theInitArgs... );
+                }
+            }
+        void updateImpl(  Geo_t const& geom, bool hasGrad, bool hasLaplacian )
+            {
+                if ( !hasGrad && !hasLaplacian )
+                    return;
+
+                auto gmc = fusion::at_key<typename tensor_base_grad_type::key_type>( geom );
+
+                uint16_type nPoints = gmc->nPoints();
+                if ( hasGrad && M_localEvalGrad.size() != nPoints )
+                {
+                    M_localEvalGrad.resize( nPoints );
+                    //M_localEvalGrad.setConstant( nPoints, this->M_zeroLocTensor2 );
+                }
+                if constexpr ( !laplacian_is_zero )
+                {
+                    if ( hasLaplacian && M_localEvalLaplacian.size() != nPoints )
+                        M_localEvalLaplacian.resize( nPoints );
+                }
+
+                for ( uint16_type q=0;q< nPoints;++q )
+                {
+                    if ( hasGrad )
+                    {
+                        if constexpr ( false /*expr_grad_type::is_terminal*/ )
+                                     {
+                                         M_localEvalGrad[q] = M_tensorExprGrad->evalq( q ); //not compile, need to investigate
+                                     }
+                        else
+                        {
+                            matrix_shape_grad_type& locData = M_localEvalGrad[q];
+                            for (uint16_type c1=0;c1<shape_grad_type::M;++c1 )
+                                for (uint16_type c2=0;c2<shape_grad_type::N;++c2 )
+                                    locData(c1,c2) = M_tensorExprGrad->evalq( c1,c2,q );
+                        }
+                    }
+
+                    if constexpr ( !laplacian_is_zero )
+                    {
+                        if ( hasLaplacian )
+                        {
+                            matrix_shape_laplacian_type& locData = M_localEvalLaplacian[q];
+                            for (uint16_type c1=0;c1<shape_laplacian_type::M;++c1 )
+                                for (uint16_type c2=0;c2<shape_laplacian_type::N;++c2 )
+                                    locData(c1,c2) = M_tensorExprLaplacian->evalq( c1,c2,q );
+                        }
+                    }
+                }
+            }
+
+
+
+    private :
+        this_type const& M_expr;
+        std::optional<tensor_expr_grad_type> M_tensorExprGrad;
+        std::optional<tensor_expr_laplacian_type> M_tensorExprLaplacian;
+        array_shape_grad_type M_localEvalGrad;
+        array_shape_laplacian_type M_localEvalLaplacian;
+    };
+private :
+    field_type const& M_field;
+    bool M_enableGrad, M_enableLaplacian;
+    std::optional<expr_grad_type> M_exprGrad;
+    std::optional<expr_laplacian_type> M_exprLaplacian;
+};
+
+// only grad currently
+template<typename ExprGradType>
+class ExprEvaluateFieldOperatorGradFromExpr
+{
+public :
+    using this_type = ExprEvaluateFieldOperatorGradFromExpr<ExprGradType>;
+    using expr_grad_type = ExprGradType;
+    using value_type = typename ExprGradType::value_type;
+    ExprEvaluateFieldOperatorGradFromExpr( expr_grad_type const& exprGrad )
+        :
+        M_enableGrad( false ),
+        M_exprGrad( exprGrad )
+        {}
+
+    ExprEvaluateFieldOperatorGradFromExpr( ExprEvaluateFieldOperatorGradFromExpr const& ) = default;
+    ExprEvaluateFieldOperatorGradFromExpr( ExprEvaluateFieldOperatorGradFromExpr && ) = default;
+
+    bool isEnabledGrad() const { return M_enableGrad; }
     void setEnableGrad( bool b ) { M_enableGrad = b; }
 
     expr_grad_type const& exprGrad() const { return M_exprGrad; }
@@ -64,14 +258,14 @@ public :
 
         void update( Geo_t const& geom )
             {
-                if ( !M_expr.enableGrad() )
+                if ( !M_expr.isEnabledGrad() )
                     return;
                 M_tensorExprGrad.update( geom );
                 this->updateImpl( geom );
             }
         void update( Geo_t const& geom, uint16_type face )
             {
-                if ( !M_expr.enableGrad() )
+                if ( !M_expr.isEnabledGrad() )
                     return;
                 M_tensorExprGrad.update( geom, face );
                 this->updateImpl( geom );
@@ -1444,501 +1638,11 @@ fluidMecViscosity( Expr<ExprGradVelocityType> const& grad_u,
                    SymbolsExprType const& se = symbols_expression_empty_t{},
                    uint16_type polyOrder = invalid_uint16_type_value )
 {
-    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<Expr<ExprGradVelocityType>>;
+    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorGradFromExpr<Expr<ExprGradVelocityType>>;
     typedef FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL> > fmstresstensor_t;
     auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
     return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,physicFluid,matProps,polyOrder,se ) );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-template<typename ExprEvaluateFieldOperatorsType, typename FiniteElementVelocityType, typename ExprIdPressureType, typename ModelPhysicFluidType, typename SymbolsExprType, typename SpecificExprType>
-class FluidMecStressTensorImpl : public Feel::vf::ExprDynamicBase
-{
-public:
-
-    typedef FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,SymbolsExprType,SpecificExprType> this_type;
-
-    static const size_type context_velocity = vm::JACOBIAN|vm::KB|vm::GRAD;
-    static const size_type context_pressure = vm::JACOBIAN;
-    static const size_type context = context_velocity|vm::DYNAMIC;
-
-    typedef ExprIdPressureType expr_id_pressure_type;
-    using model_physic_fluid_type = ModelPhysicFluidType;
-    using symbols_expr_type = SymbolsExprType;
-    using specific_expr_type = SpecificExprType;
-    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperatorsType;
-    using value_type = typename expr_evaluate_velocity_opertors_type::value_type;
-
-    static const bool is_terminal = true;
-
-
-    template<typename Func>
-    struct HasTestFunction
-    {
-        static const bool result = false;
-    };
-
-    template<typename Func>
-    struct HasTrialFunction
-    {
-        static const bool result = mpl::if_<boost::is_same<SpecificExprType,mpl::int_<ExprApplyType::JACOBIAN> >,
-                                            typename mpl::if_<boost::is_same<Func,FiniteElementVelocityType>,
-                                                              mpl::bool_<true>,
-                                                              mpl::bool_<false> >::type,
-                                            mpl::bool_<false> >::type::value;
-    };
-
-    using test_basis = std::nullptr_t;
-    using trial_basis = std::nullptr_t;
-
-    template <int M,int N>
-    using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
-
-    using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
-                                                                     mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN> >;
-
-    FluidMecStressTensorImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvalVelocityOperators,
-                              expr_id_pressure_type const& exprIdPressure,
-                              model_physic_fluid_type const& physicFluid,
-                              MaterialProperties const& matProps,
-                              uint16_type polyOrder,
-                              bool withPressure,
-                              SymbolsExprType const& se)
-        :
-        M_exprEvaluateVelocityOperators( exprEvalVelocityOperators ),
-        M_exprIdPressure( exprIdPressure ),
-        M_physicFluid( physicFluid ),
-        M_matProps( matProps ),
-        M_polynomialOrder( polyOrder ),
-        M_withPressureTerm( withPressure ),
-        M_se( se )
-    {
-        M_exprEvaluateVelocityOperators->setEnableGrad( true );
-        M_exprDynamicVisocity.emplace( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se );
-        if ( this->turbulence().isEnabled() )
-            M_exprTurbulentDynamicVisocity.emplace( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
-    }
-
-    FluidMecStressTensorImpl( FluidMecStressTensorImpl const & op ) = default;
-    FluidMecStressTensorImpl( FluidMecStressTensorImpl && op ) = default;
-
-    ~FluidMecStressTensorImpl()
-    {}
-
-    size_type dynamicContext() const
-        {
-            size_type res = M_exprDynamicVisocity->dynamicContext();
-            if ( this->turbulence().isEnabled() )
-                res= res | Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
-            return res;
-        }
-
-    //! polynomial order
-    uint16_type polynomialOrder() const
-        {
-            if ( M_polynomialOrder != invalid_uint16_type_value )
-                return M_polynomialOrder;
-
-            uint16_type orderGradVelocity = M_exprEvaluateVelocityOperators->exprGrad().polynomialOrder();
-
-            uint16_type res = M_exprDynamicVisocity->polynomialOrder() + orderGradVelocity; // TODO Jacobian case
-
-            if ( this->turbulence().isEnabled() )
-                res = std::max( res, (uint16_type) (this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity").polynomialOrder() + orderGradVelocity) );
-
-            if ( this->withPressureTerm() )
-                res = std::max( res, M_exprIdPressure.polynomialOrder() );
-
-            return res;
-        }
-
-    //! expression is polynomial?
-    bool isPolynomial() const { return true; }
-
-
-    template <typename OtherSymbolsExprType>
-    auto applySymbolsExpr( OtherSymbolsExprType const& se ) const
-        {
-            auto newse = Feel::vf::symbolsExpr( M_se, se );
-            using new_se_type = std::decay_t<decltype(newse)>;
-            using new_this_type = FluidMecStressTensorImpl<ExprEvaluateFieldOperatorsType,FiniteElementVelocityType,ExprIdPressureType,ModelPhysicFluidType,new_se_type,SpecificExprType>;
-            return new_this_type( M_exprEvaluateVelocityOperators,M_exprIdPressure,M_physicFluid,M_matProps,M_polynomialOrder,M_withPressureTerm,newse );
-        }
-
-    template <int diffOrder, typename TheSymbolExprType>
-    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
-               TheSymbolExprType const& se ) const
-        {
-            CHECK( false ) << "not implemented";
-            return *this;
-        }
-
-    std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperatorsPtr() const { return M_exprEvaluateVelocityOperators; }
-
-    expr_id_pressure_type const& expressionIdPressure() const { return M_exprIdPressure; }
-    expr_dynamic_viscosity_type const& exprDynamicVisocity() const { return *M_exprDynamicVisocity; }
-    material_property_expr_type<1,1> const& exprTurbulentDynamicVisocity() const { return *M_exprTurbulentDynamicVisocity; }
-
-    auto const& turbulence() const { return M_physicFluid.turbulence(); }
-    MaterialProperties const& materialProperties() const { return M_matProps; }
-    bool withPressureTerm() const { return M_withPressureTerm; }
-
-
-    template <int M,int N>
-    material_property_expr_type<M,N> materialPropertyExpr( std::string const& prop ) const { return expr( this->materialProperties().property( prop ).template expr<M,N>(), M_se ); }
-
-
-    template<typename Geo_t, typename Basis_i_t, typename Basis_j_t>
-    struct tensor : public tensorBase<Geo_t,Basis_i_t,Basis_j_t,
-                                      Shape<expr_evaluate_velocity_opertors_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>::shape_grad_type::nDim,Tensor2, false, false>,
-                                      typename this_type::value_type>
-    {
-        using super_type = tensorBase<Geo_t,Basis_i_t,Basis_j_t,
-                                      Shape<expr_evaluate_velocity_opertors_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>::shape_grad_type::nDim,Tensor2, false, false>,
-                                      typename this_type::value_type>;
-        typedef typename this_type::value_type value_type;
-
-        using key_type = typename super_type::key_type;
-        using gmc_type = typename super_type::gmc_type;
-        using gm_type = typename super_type::gm_type;
-
-        using shape = typename super_type::shape_type;
-        using matrix_shape_type = typename super_type::matrix_shape_type;
-        using array_shape_type = typename super_type::new_array_shape_type;
-        using ret_type = typename super_type::ret_type;
-
-        using tensor_expr_evaluate_velocity_opertors_type = typename expr_evaluate_velocity_opertors_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
-        using tensor_expr_dynamic_viscosity_type = typename expr_dynamic_viscosity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
-        using tensor_expr_id_pressure_type = typename expr_id_pressure_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
-
-        //----------------------------------------------------------------------------------------------------//
-        struct is_zero
-        {
-            static const bool value = false;
-        };
-
-        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev, Basis_j_t const& feu )
-            :
-            super_type( geom,fev,feu ),
-            M_expr( expr ),
-            M_dynamicViscosityDependsOnVelocityField( false )
-        {
-            this->initTensor( expr, geom, fev, feu );
-        }
-
-        tensor( this_type const& expr, Geo_t const& geom, Basis_i_t const& fev )
-            :
-            super_type( geom,fev ),
-            M_expr( expr ),
-            M_dynamicViscosityDependsOnVelocityField( false )
-        {
-            this->initTensor( expr, geom, fev );
-        }
-        tensor( this_type const& expr, Geo_t const& geom )
-            :
-            super_type( geom ),
-            M_expr( expr ),
-            M_dynamicViscosityDependsOnVelocityField( false )
-        {
-            this->initTensor( expr, geom );
-        }
-
-        template<typename IM>
-        void init( IM const& im ) {}
-
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/, Basis_j_t const& /*feu*/ ) override
-        {
-            this->update(geom);
-        }
-        void update( Geo_t const& geom, Basis_i_t const& /*fev*/ ) override
-        {
-            this->update(geom);
-        }
-        void update( Geo_t const& geom ) override
-        {
-            this->setGmc( geom );
-            M_tensorExprEvaluateVelocityOperators->update( geom );
-            M_tensorDynamicViscosity->update( geom, false );
-            if ( M_tensorExprTurbulentDynamicVisocity )
-                M_tensorExprTurbulentDynamicVisocity->update( geom );
-            if ( M_tensorExprIdPressure )
-                M_tensorExprIdPressure->update( geom );
-            this->updateImpl();
-        }
-        void update( Geo_t const& geom, uint16_type face ) override
-        {
-            this->setGmc( geom );
-            M_tensorExprEvaluateVelocityOperators->update( geom, face );
-            M_tensorDynamicViscosity->update( geom, face, false );
-            if ( M_tensorExprTurbulentDynamicVisocity )
-                M_tensorExprTurbulentDynamicVisocity->update( geom, face );
-            if ( M_tensorExprIdPressure )
-                M_tensorExprIdPressure->update( geom, face );
-            this->updateImpl();
-        }
-
-        void updateImpl()
-            {
-                uint16_type nPoints = this->gmc()->nPoints();
-                if ( M_localEval.size() != nPoints )
-                    M_localEval.resize( nPoints );
-
-                bool withPressure = M_expr.withPressureTerm();
-                bool hasTurbulentDynamicViscosity = ( M_tensorExprTurbulentDynamicVisocity )? true : false;
-
-                for ( uint16_type q=0;q< nPoints;++q )
-                {
-                    value_type muEval = M_tensorDynamicViscosity->evalq(0,0,q);
-                    if ( hasTurbulentDynamicViscosity )
-                        muEval += M_tensorExprTurbulentDynamicVisocity->evalq(0,0,q);
-                    matrix_shape_type & locMat = M_localEval[q];
-                    auto const& gradVelocityEval = M_tensorExprEvaluateVelocityOperators->localEvalGrad( q );
-
-                    if constexpr ( gmc_type::nDim == 2 )
-                    {
-                        const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
-                        const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1);
-                        locMat(0,0) = /*-pres +*/ 2*muEval*du1vdx;
-                        locMat(1,0) = muEval*( du2vdx + du1vdy );
-                        locMat(0,1) = locMat(1,0);
-                        locMat(1,1) = /*-pres +*/ 2*muEval*du2vdy;
-                    }
-                    else
-                    {
-                        const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
-                        const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1), du2vdz = gradVelocityEval(1,2);
-                        const value_type du3vdx = gradVelocityEval(2,0), du3vdy = gradVelocityEval(2,1), du3vdz = gradVelocityEval(2,2);
-                        locMat(0,0) = /*-pres +*/ 2*muEval*du1vdx;
-                        locMat(1,0) = muEval*( du2vdx + du1vdy );
-                        locMat(2,0) = muEval*( du3vdx + du1vdz );
-                        locMat(0,1) = locMat(1,0);
-                        locMat(1,1) = /*-pres +*/ 2*muEval*du2vdy;
-                        locMat(1,2) = muEval*( du2vdz + du3vdy );
-                        locMat(2,1) = locMat(1,2);
-                        locMat(0,2) = locMat(2,0);
-                        locMat(2,2) = /*-pres +*/ 2*muEval*du3vdz;
-                    }
-
-                    if ( withPressure )
-                    {
-                        const value_type pres = M_tensorExprIdPressure->evalq( 0,0,q );
-                        locMat(0,0) -= pres;
-                        locMat(1,1) -= pres;
-                        if constexpr ( gmc_type::nDim == 3 )
-                        {
-                             locMat(2,2) -= pres;
-                        }
-                    }
-
-                }
-            }
-
-        ret_type
-        evalijq( uint16_type i, uint16_type j, uint16_type q ) const override
-        {
-            if constexpr ( this_type::specific_expr_type::value == ExprApplyType::EVAL )
-                return this->evalq( q );
-            else
-            {
-                value_type muEval = M_tensorDynamicViscosity->evalq(0,0,q);
-                if ( M_tensorExprTurbulentDynamicVisocity )
-                    muEval += M_tensorExprTurbulentDynamicVisocity->evalq(0,0,q);
-
-                auto const& gradTrial = this->fecTrial()->grad( j, q );
-                matrix_shape_type & locMat = this->locMatrixShape();
-                if constexpr ( gmc_type::nDim == 2 )
-                {
-                    const value_type du1tdx = gradTrial(0,0,0), du1tdy = gradTrial(0,1,0);
-                    const value_type du2tdx = gradTrial(1,0,0), du2tdy = gradTrial(1,1,0);
-                    locMat(0,0) = 2*muEval*du1tdx;
-                    locMat(1,0) = muEval*( du2tdx + du1tdy );
-                    locMat(1,1) = 2*muEval*du2tdy;
-                    if ( M_dynamicViscosityDependsOnVelocityField )
-                    {
-                        auto const& gradVelocityEval = M_tensorExprEvaluateVelocityOperators->localEvalGrad( q );
-                        const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1);
-                        const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1);
-                        value_type mut = M_tensorDynamicViscosity->evalijq(i,j,q)(0,0);
-                        locMat(0,0) += 2*mut*du1vdx;
-                        locMat(1,0) += mut*( du2vdx + du1vdy );
-                        locMat(1,1) += 2*mut*du2vdy;
-                    }
-                    locMat(0,1) = locMat(1,0);
-                }
-                else
-                {
-                    const value_type du1tdx = gradTrial(0,0,0), du1tdy = gradTrial(0,1,0), du1tdz = gradTrial(0,2,0);
-                    const value_type du2tdx = gradTrial(1,0,0), du2tdy = gradTrial(1,1,0), du2tdz = gradTrial(1,2,0);
-                    const value_type du3tdx = gradTrial(2,0,0), du3tdy = gradTrial(2,1,0), du3tdz = gradTrial(2,2,0);
-                    locMat(0,0) = 2*muEval*du1tdx;
-                    locMat(1,0) = muEval*( du2tdx + du1tdy );
-                    locMat(2,0) = muEval*( du3tdx + du1tdz );
-                    locMat(1,1) = 2*muEval*du2tdy;
-                    locMat(2,1) = muEval*( du2tdz + du3tdy );
-                    locMat(2,2) = 2*muEval*du3tdz;
-                    if ( M_dynamicViscosityDependsOnVelocityField )
-                    {
-                        auto const& gradVelocityEval = M_tensorExprEvaluateVelocityOperators->localEvalGrad( q );
-                        const value_type du1vdx = gradVelocityEval(0,0), du1vdy = gradVelocityEval(0,1), du1vdz = gradVelocityEval(0,2);
-                        const value_type du2vdx = gradVelocityEval(1,0), du2vdy = gradVelocityEval(1,1), du2vdz = gradVelocityEval(1,2);
-                        const value_type du3vdx = gradVelocityEval(2,0), du3vdy = gradVelocityEval(2,1), du3vdz = gradVelocityEval(2,2);
-                        value_type mut = M_tensorDynamicViscosity->evalijq(i,j,q)(0,0);
-                        locMat(0,0) += 2*mut*du1vdx;
-                        locMat(1,0) += mut*( du2vdx + du1vdy );
-                        locMat(2,0) += mut*( du3vdx + du1vdz );
-                        locMat(1,1) += 2*mut*du2vdy;
-                        locMat(2,1) += mut*( du2vdz + du3vdy );
-                        locMat(2,2) += 2*mut*du3vdz;
-                    }
-                    locMat(0,1) = locMat(1,0);
-                    locMat(0,2) = locMat(2,0);
-                    locMat(1,2) = locMat(2,1);
-                }
-                return ret_type(this->locMatrixShape().data());
-            }
-        }
-        value_type
-        evalijq( uint16_type i, uint16_type j, uint16_type c1, uint16_type c2, uint16_type q ) const override
-        {
-            if constexpr ( this_type::specific_expr_type::value == ExprApplyType::EVAL )
-                return this->evalq( c1,c2,q );
-            else
-            {
-                CHECK( false) << "TODO";
-                return value_type(0);
-            }
-        }
-
-        value_type
-        evaliq( uint16_type i, uint16_type c1, uint16_type c2, uint16_type q ) const override
-        {
-            if constexpr ( this_type::specific_expr_type::value != ExprApplyType::EVAL )
-                 CHECK( false ) << "not allow";
-            return this->evalq( c1,c2,q );
-        }
-        ret_type
-        evaliq( uint16_type i, uint16_type q ) const override
-        {
-            if constexpr ( this_type::specific_expr_type::value != ExprApplyType::EVAL )
-                 CHECK( false ) << "not allow";
-            return this->evalq( q );
-        }
-
-        value_type
-        evalq( uint16_type c1, uint16_type c2, uint16_type q ) const override
-        {
-            return M_localEval[q](c1,c2);
-        }
-        ret_type
-        evalq( uint16_type q ) const override
-        {
-            return ret_type(M_localEval[q].data());
-        }
-
-    private :
-        template<typename... TheArgsType>
-        void initTensor( this_type const& expr, const TheArgsType&... theInitArgs )
-            {
-                M_tensorExprEvaluateVelocityOperators = std::make_shared<tensor_expr_evaluate_velocity_opertors_type>( *(expr.exprEvaluateVelocityOperatorsPtr()), theInitArgs... );
-                M_tensorDynamicViscosity.emplace( expr.exprDynamicVisocity(), M_tensorExprEvaluateVelocityOperators, theInitArgs... );
-                M_dynamicViscosityDependsOnVelocityField = expr.exprDynamicVisocity().dependsOnVelocityField();
-                if ( expr.turbulence().isEnabled() )
-                    M_tensorExprTurbulentDynamicVisocity.emplace( expr.exprTurbulentDynamicVisocity(), theInitArgs... );
-                if ( expr.withPressureTerm() )
-                    M_tensorExprIdPressure.emplace( expr.expressionIdPressure(),theInitArgs... );
-            }
-    private:
-        this_type const& M_expr;
-
-        std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> M_tensorExprEvaluateVelocityOperators;
-        std::optional<tensor_expr_dynamic_viscosity_type> M_tensorDynamicViscosity;
-        std::optional<tensor_expr_id_pressure_type> M_tensorExprIdPressure;
-
-        std::optional<typename this_type::template material_property_expr_type<1,1>::template tensor<Geo_t, Basis_i_t, Basis_j_t> > M_tensorExprTurbulentDynamicVisocity;
-
-        array_shape_type M_localEvalStrainTensor;
-        array_shape_type M_localEval;
-
-        bool M_dynamicViscosityDependsOnVelocityField;
-    };
-
-private:
-    std::shared_ptr<expr_evaluate_velocity_opertors_type> M_exprEvaluateVelocityOperators;
-    expr_id_pressure_type M_exprIdPressure;
-
-
-    model_physic_fluid_type const& M_physicFluid;
-    MaterialProperties const& M_matProps;
-    uint16_type M_polynomialOrder;
-    bool M_withPressureTerm;
-    SymbolsExprType M_se;
-
-    std::optional<expr_dynamic_viscosity_type> M_exprDynamicVisocity;
-    std::optional<material_property_expr_type<1,1>> M_exprTurbulentDynamicVisocity;
-};
-
-
-template<class ExprGradVelocityType,class ExprIdPressureType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
-inline
-auto
-fluidMecNewtonianStressTensor( Expr<ExprGradVelocityType> const& grad_u, Expr<ExprIdPressureType> const& p,
-                               ModelPhysicFluidType const& physicFluid,
-                               MaterialProperties const& matProps,
-                               bool withPressure,
-                               SymbolsExprType const& se = symbols_expression_empty_t{},
-                               uint16_type polyOrder = invalid_uint16_type_value )
-{
-    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<Expr<ExprGradVelocityType>>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,std::nullptr_t,Expr<ExprIdPressureType>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::EVAL> > fmstresstensor_t;
-    auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,p,physicFluid,matProps,polyOrder,withPressure,se ) );
-}
-
-template<class ExprGradVelocityType,class ElementVelocityType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
-inline
-auto
-fluidMecNewtonianViscousStressTensorJacobian( Expr<ExprGradVelocityType> const& grad_u, ElementVelocityType const& /*u*/,
-                                              ModelPhysicFluidType const& physicFluid,
-                                              MaterialProperties const& matProps,
-                                              SymbolsExprType const& se = symbols_expression_empty_t{},
-                                              uint16_type polyOrder = invalid_uint16_type_value )
-{
-    using expr_evaluate_velocity_opertors_type = ExprEvaluateFieldOperators<Expr<ExprGradVelocityType>>;
-    typedef FluidMecStressTensorImpl<expr_evaluate_velocity_opertors_type,typename unwrap_ptr_t<ElementVelocityType>::functionspace_type::reference_element_type,Expr<Cst<double>>,ModelPhysicFluidType,SymbolsExprType,mpl::int_<ExprApplyType::JACOBIAN> > fmstresstensor_t;
-    auto exprEvaluateVelocityOperators = std::make_shared<expr_evaluate_velocity_opertors_type>( grad_u );
-    return Expr< fmstresstensor_t >(  fmstresstensor_t( exprEvaluateVelocityOperators,/*p*/cst(0.),physicFluid,matProps,polyOrder,false,se ) );
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 } // namespace FeelModels
 } // namespace Feel
