@@ -2011,8 +2011,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                             "cfpdes",
                                                             this->worldCommPtr(), "", this->repository() ) );
 
-    std::string eqkeyword = prefixvm( this->keyword(), "turbulence_SA", "_" );
-    M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
+    std::string eqkeyword;
+    if ( this->hasTurbulenceModel( "Spalart-Allmaras" ) )
+    {
+        /*std::string*/ eqkeyword = prefixvm( this->keyword(), "turbulence_SA", "_" );
+        M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
+    }
+    else
+    {
+        std::string eqkeyword_k = prefixvm( this->keyword(), "turbulence_k", "_" );
+        std::string eqkeyword_epsilon = prefixvm( this->keyword(), "turbulence_epsilon", "_" );
+        M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword_k, "solution_k", "k", "Pch1" ) );
+        M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword_epsilon, "solution_epsilon", "epsilon", "Pch1" ) );
+    }
 
     std::string symb_dist2wall = prefixvm( this->keyword(),"dist2wall","_" );
     std::string symb_curl_magintude = prefixvm( this->keyword(), "curl_U_magnitude", "_");
@@ -2028,6 +2039,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     ostr << "{";
 
     ostr << "\"Materials\":{";
+    bool isFirstMaterial = true;
     for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
     {
         auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
@@ -2038,6 +2050,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
             //auto const& range = this->materialsProperties()->rangeMeshElementsByMaterial( this->mesh(),matName );
             auto & matProps = this->materialsProperties()->materialProperties( matName );
 
+            std::string symbDensity = "materials_" + matName + "_rho";
+            std::string symbDynViscosity = "materials_" + matName + "_mu";
+            std::string symbTurbulentDynViscosity = "materials_" + matName + "_mut";
+
+            if ( !isFirstMaterial )
+            {
+                ostr  << ",";
+                isFirstMaterial = false;
+            }
             ostr << "\""<<matName<<"\":{"
                  << "\"markers\":[";
             bool isFirstMark = true;
@@ -2052,15 +2073,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
             if ( physicFluidData->turbulence().model() == "Spalart-Allmaras" )
             {
-                //std::string prefix_symbol = "turbulence_SA";
+                // std::cout << "HOLA eqname : " << std::get<0>( M_turbulenceModelType->pdes()[0] ).equationName() <<  " versus " << eqkeyword << " and "
+                //           << std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownSymbol() << std::endl;
+                std::string eqkeyword = std::get<0>( M_turbulenceModelType->pdes()[0] ).equationName();
+
                 std::string symb_sol_SA = prefixvm( eqkeyword, "nu" , "_" );
                 std::string symbbase_grad_sol_SA = prefixvm( eqkeyword, "grad_nu", "_" );
                 std::string exprstrnosymb_inner_grad_sol_SA = nDim==2? (boost::format("%1%_0^2+%1%_1^2")%symbbase_grad_sol_SA ).str() :
                     (boost::format("(%1%_0^2+%1%_1^2+%1%_2^2)")%symbbase_grad_sol_SA ).str();
                 std::string depsymb_inner_grad_sol_SA = nDim==2? (boost::format("%1%_0:%1%_1")%symbbase_grad_sol_SA ).str() :
                     (boost::format("%1%_0:%1%_1:%1%_2")%symbbase_grad_sol_SA ).str();
-                std::string symbDensity = "materials_" + matName + "_rho";
-                std::string symbDynViscosity = "materials_" + matName + "_mu";
 
 
                 std::string symb_c_b1 = physicFluidData->addParameter( prefixvm( eqkeyword, "c_b1", "_" ), 0.1355 );
@@ -2118,16 +2140,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string exprstr_source = (boost::format("(1/%1%)*%2%*%3% -%11%*( -%5%*(1-%6%)*%7% + (%8%*%9% - %5%*%6%/(%10%^2))*(%11%/(%12%^2))  )  :%1%:%2%:%4%:%5%:%6%:%7%:%8%:%9%:%10%:%11%:%12%") %symb_c_sigma %symb_c_b2 %exprstrnosymb_inner_grad_sol_SA %depsymb_inner_grad_sol_SA      %symb_c_b1 %symb_f_t2 %symb_S %symb_c_w1 %symb_f_w %symb_c_kappa %symb_sol_SA %symb_dist2wall).str();
 #endif
                 std::string exprstr_convection = nDim==2? (boost::format("{%1% -(%3%/%4%)*%5%_0 ,%2% -(%3%/%4%)*%5%_1  }:%1%:%2%:%3%:%4%:%5%_0:%5%_1")%symb_velocity_x %symb_velocity_y %symb_c_b2 %symb_c_sigma %symbbase_grad_sol_SA).str() :
-                    (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
+                    (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ; // NOT FINISH IN 3D
 
-                
                 ostr << "\""<<eqkeyword << "_beta\":\"" << /*exprstr_convection*/exprstr_velocity << "\","
                      << "\""<<eqkeyword << "_c\":\"" << exprstr_diffusion << "\","
                      << "\""<<eqkeyword << "_a\":\"" << exprstr_reaction << "\","
                      << "\""<<eqkeyword << "_f\":\"" << exprstr_source << "\"";
                 if ( !this->isStationaryModel() )
                     ostr << ",\""<<eqkeyword << "_d\":\"1\"";
-                ostr << "}"; // end mymat1
+                //ostr << "}"; // end mymat1
 
                 std::string mutExprStr = (boost::format("(%2%>0)*%1%*%2%*%3%:%1%:%2%:%3%")%symbDensity %symb_sol_SA %symb_f_v1 ).str();
                 ModelExpression mutExpr;
@@ -2149,7 +2170,59 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                         << "\"expr\":\"" << (boost::format("%1%/%2%:%1%:%2%")%symbDynViscosity %symbDensity ).str() << "\"";
                 strInitialConditions.push_back( ostr_ic.str() );
             }
-        }
+            else if ( physicFluidData->turbulence().model() == "k-epsilon" )
+            {
+                std::string eqkeyword_k = std::get<0>( M_turbulenceModelType->pdes()[0] ).equationName();
+                std::string symb_sol_k_base = std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownSymbol();
+                std::string symb_sol_k = prefixvm( eqkeyword_k, symb_sol_k_base , "_" );
+                std::string eqkeyword_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).equationName();
+                std::string symb_sol_epsilon_base = std::get<0>( M_turbulenceModelType->pdes()[1] ).unknownSymbol();
+                std::string symb_sol_epsilon = prefixvm( eqkeyword_epsilon, symb_sol_epsilon_base , "_" );
+
+                std::string prefix_symbol_physic_nomat = prefixvm( this->keyword(), "turbulence_k_epsilon", "_" );
+                std::string prefix_symbol_physic_mat = prefixvm( this->keyword(), prefixvm( matName, "turbulence_k_epsilon" , "_" ), "_" );
+
+                std::string symb_c_1epsilon = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "c_1epsilon", "_" ), 1.44 );
+                std::string symb_c_2epsilon = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "c_2epsilon", "_" ), 1.92 );
+                std::string symb_c_mu = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "c_mu", "_" ), 0.09 );
+                std::string symb_sigma_k = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "sigma_k", "_" ), 1. );
+                std::string symb_sigma_epsilon = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "sigma_epsilon", "_" ), 1.3 );
+
+                std::string exprstr_convection = nDim==2? (boost::format("{%1%*%2%,%1%*%3%}:%1%:%2%:%3%")%symbDensity %symb_velocity_x %symb_velocity_y).str() :
+                    (boost::format("{%1%*%2%,%1%*%3%,%1%*%4%}:%1%:%2%:%3%:%4%")%symbDensity %symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
+                std::string exprstr_diffusion_k = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosity %symb_sigma_k ).str() ;
+                std::string exprstr_source_k =  (boost::format("%1%*%2%^2-%3%*%4%:%1%:%2%:%3%:%4%")%symbTurbulentDynViscosity%symb_strain_rate_magnitude %symbDensity %symb_sol_epsilon).str();
+                ostr << "\""<<eqkeyword_k << "_beta\":\"" << exprstr_convection << "\","
+                     << "\""<<eqkeyword_k << "_c\":\"" << exprstr_diffusion_k << "\","
+                    //<< "\""<<eqkeyword_k << "_a\":\"" << exprstr_reaction << "\","
+                    << "\""<<eqkeyword_k << "_f\":\"" << exprstr_source_k << "\"";
+                if ( !this->isStationaryModel() )
+                    ostr << ",\""<<eqkeyword_k << "_d\":\"" << (boost::format("%1%:%1%")%symbDensity).str() << "\"";
+
+                std::string exprstr_diffusion_epsilon = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosity %symb_sigma_epsilon ).str() ;
+                std::string exprstr_reaction_epsilon = (boost::format("-(%1%/%2%)*( %3%*%4%^2 + %5%*%6%*%7%/%2% ):%1%:%2%:%3%:%4%:%5%:%6%:%7%") %symb_c_1epsilon %symb_sol_k %symbTurbulentDynViscosity %symb_strain_rate_magnitude %symb_c_2epsilon %symbDensity %symb_sol_epsilon ).str();
+                ostr << ",";
+                ostr << "\""<<eqkeyword_epsilon << "_beta\":\"" << exprstr_convection << "\","
+                     << "\""<<eqkeyword_epsilon << "_c\":\"" << exprstr_diffusion_epsilon << "\","
+                     << "\""<<eqkeyword_epsilon << "_a\":\"" << exprstr_reaction_epsilon << "\"";
+                    //<< "\""<<eqkeyword_epsilon << "_f\":\"" << exprstr_source_epsilon << "\"";
+                if ( !this->isStationaryModel() )
+                    ostr << ",\""<<eqkeyword_epsilon << "_d\":\"" << (boost::format("%1%:%1%")%symbDensity).str() << "\"";
+
+                std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/%4%:%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                ModelExpression mutExpr;
+                mutExpr.setExpr( mutExprStr, this->worldComm(), this->repository().expr() );
+                this->materialsProperties()->addProperty( matProps, "turbulent-dynamic-viscosity", mutExpr, true );
+
+                std::string tkeStr = (boost::format("%1%:%1%")%symb_sol_k).str();
+                ModelExpression tkeExpr;
+                tkeExpr.setExpr( tkeStr, this->worldComm(), this->repository().expr() );
+                this->materialsProperties()->addProperty( matProps, "turbulent-kinetic-energy", tkeExpr, true );
+
+            } // k-epsilon
+            ostr << "}"; // end mymat1
+
+        } // foreach mat
     }
     ostr << "}"; //end Materials
 
