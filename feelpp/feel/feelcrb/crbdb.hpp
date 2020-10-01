@@ -278,11 +278,25 @@ public:
     //! @return path to file \p f and check json extension
     //!
     fs::path db( std::string const& ) const;
-        
+
+    /**
+     * check existence of db file
+     * @param[in] filename The path of the db file
+     * @return The uuid of the corresponding db
+     */
+    uuids::uuid idFromDBFilename( std::string const& filename ) const;
+
     //!
-    //! 
+    //!
     //!
     virtual void loadDBFromId( std::string const& id, crb::load l = crb::load::rb, std::string const& root = Environment::rootRepository() ) ;
+
+    /**
+     * check existence of db file
+     * @param[in] id The uuid of the db
+     * @return The uuid of the corresponding db
+     */
+    uuids::uuid idFromId( std::string const& id ) const;
 
     //!
     //! @return fs::path from DB \p id
@@ -292,6 +306,13 @@ public:
     //!
     fs::path dbFromId( std::string const& id, std::string const& root = Environment::rootRepository() ) const;
     
+    /**
+     * check existence of db file
+     * @param[in] last What last file type
+     * @return The uuid of the corresponding db
+     */
+    uuids::uuid idFromDBLast( crb::last last = crb::last::modified ) const;
+
     //!
     //! 
     //!

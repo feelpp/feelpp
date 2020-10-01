@@ -35,10 +35,12 @@ namespace Feel
 {
 
 template<typename FunctionSpace>
-class GEIM
+class GEIM : public CRBDB
 {
 public:
+    using super_type = CRBDB;
     using functionspace_type = FunctionSpace;
+    using functionspace_ptrtype = std::shared_ptr<functionspace_type>;
     using element_type = typename functionspace_type::element_type;
 
     using self_type = GEIM<functionspace_type>;
@@ -62,14 +64,20 @@ public:
     using index_type = size_type;
 
 public:
-    GEIM(std::vector<vector_ptrtype> sigma, sampling_ptrtype sampling, solver_type solver);
-    int size() const { return M_M; }
+    GEIM(std::string name, functionspace_ptrtype const& Xh = nullptr,
+         uuids::uuid const& uuid = uuids::nil_uuid());
+    GEIM(std::string name,
+         std::vector<vector_ptrtype> sigma,
+         sampling_ptrtype sampling,
+         solver_type solver,
+         uuids::uuid const& uuid = uuids::nil_uuid());
+    int dimension() const { return M_M; }
     vectorN_type beta( parameter_type const& mu );
     vectorN_type beta( vectorN_type const& vn );
     vectorN_type beta( element_type const& v);
     element_type interpolant( parameter_type const& mu );
     element_type interpolant( element_type const& u );
-    void interpolant( vectorN_type const& vn, element_type& I );
+    element_type interpolant( vectorN_type const& vn );
     matrixN_type matrixB() const { return M_B; }
     std::vector<element_type> q() const { return M_q; }
     element_type q( int i ) const { return M_q[i]; }
@@ -84,8 +92,13 @@ protected:
     virtual index_type maxError();
     virtual double applyForm(index_type i, element_type const& u);
     virtual element_type getElement(parameter_type const& mu) { return M_solver(mu); }
+    void loadDB( std::string const& filename, crb::load l ) override;
+    void saveDB() override;
+    void findDBUuid();
 
 private:
+    std::string M_name;
+    functionspace_ptrtype M_Xh;
     std::vector<vector_ptrtype> M_sigmas;
     std::vector<index_type> M_indices;
     sampling_ptrtype M_sampling;
@@ -98,21 +111,98 @@ private:
     double M_tol;
 
     element_type M_currentQ;
+
+    bool M_rebuildDb;
+    int M_dbLoad;
+    std::string M_dbFilename;
+    std::string M_dbId;
+    crb::stage M_stage;
 };
 
 template<typename FunctionSpace>
-GEIM<FunctionSpace>::GEIM(std::vector<vector_ptrtype> sigma, sampling_ptrtype sampling,
-                          solver_type solver):
+GEIM<FunctionSpace>::GEIM(std::string name, functionspace_ptrtype const& Xh,
+                          uuids::uuid const& uuid):
+    super_type(name, "geim", uuid),
+    M_name(name),
+    M_Xh(Xh),
+    M_rebuildDb(boption("geim.rebuild-database")),
+    M_dbLoad(ioption("geim.db.load")),
+    M_dbFilename(soption("geim.db.filename")),
+    M_dbId(soption("geim.db.id")),
+    M_stage(crb::stage::online)
+{
+    if( this->id().is_nil() )
+        this->findDBUuid();
+
+    crb::load l = Xh ? crb::load::fe : crb::load::rb;
+    this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), l );
+}
+
+template<typename FunctionSpace>
+GEIM<FunctionSpace>::GEIM(std::string name,
+                          std::vector<vector_ptrtype> sigma,
+                          sampling_ptrtype sampling,
+                          solver_type solver,
+                          uuids::uuid const& uuid):
+    super_type( name, "geim", uuid ),
+    M_name(name),
     M_sigmas(sigma),
     M_sampling(sampling),
     M_solver(solver),
-    M_MaxM(ioption("geim.max-dimension")),
+    M_MaxM(ioption("geim.dimension-max")),
     M_M(0),
-    M_tol(doption("geim.tolerance"))
+    M_tol(doption("geim.tolerance")),
+    M_rebuildDb(boption("geim.rebuild-database")),
+    M_dbLoad(ioption("geim.db.load")),
+    M_dbFilename(soption("geim.db.filename")),
+    M_dbId(soption("geim.db.id")),
+    M_stage(crb::stage::offline)
 {
-    M_B = matrixN_type(0,0);
     if( M_sigmas.size() == 0 )
-        Feel::cout << "You need to give a set linear forms" << std::endl;
+        Feel::cout << tc::red << "You need to give a set linear forms !!" << tc::reset << std::endl;
+
+    if( this->id().is_nil() )
+        this->findDBUuid();
+
+    M_B = matrixN_type(0,0);
+    M_currentQ = M_solver(get<0>(M_sampling->max()));
+    M_Xh = M_currentQ.functionSpace();
+
+    this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), crb::load::all );
+}
+
+template<typename FunctionSpace>
+void
+GEIM<FunctionSpace>::findDBUuid()
+{
+    // if stage online, need to load db
+    uuids::uuid id = uuids::nil_uuid();
+    switch( M_dbLoad )
+    {
+    case 0:
+        id = this->id(M_dbFilename);
+        break;
+    case 1:
+        id = this->idFromDBLast( crb::last::created );
+        break;
+    case 2:
+        id = this->idFromDBLast( crb::last::modified );
+        break;
+    case 3:
+        id = this->idFromId( M_dbId );
+        break;
+    default:
+        break;
+    }
+    if( !id.is_nil() )
+        this->setDBDirectory(id);
+    else
+    {
+        if( M_stage == crb::stage::offline )
+            this->setDBDirectory(Environment::randomUUID(true));
+        else
+            Feel::cout << tc::red << "No DB found during online phase !!" << tc::reset << std::endl;
+    }
 }
 
 template<typename FunctionSpace>
@@ -165,7 +255,7 @@ template<typename FunctionSpace>
 typename GEIM<FunctionSpace>::element_type
 GEIM<FunctionSpace>::interpolant(element_type const& u)
 {
-    auto I = u.functionSpace()->element();
+    auto I = M_Xh->element();
     I.zero();
     auto b = this->beta(u);
     for(int i = 0; i < M_M; ++i)
@@ -174,9 +264,10 @@ GEIM<FunctionSpace>::interpolant(element_type const& u)
 }
 
 template<typename FunctionSpace>
-void
-GEIM<FunctionSpace>::interpolant(vectorN_type const& vn, element_type& I)
+typename GEIM<FunctionSpace>::element_type
+GEIM<FunctionSpace>::interpolant(vectorN_type const& vn)
 {
+    auto I = M_Xh->element();
     I.zero();
     auto b = this->beta(vn);
     for(int i = 0; i < M_M; ++i)
@@ -237,7 +328,15 @@ GEIM<FunctionSpace>::offline()
     parameter_type mu;
     double error = std::numeric_limits<double>::max();
 
-    auto qq = M_solver(get<0>(M_sampling->max()));
+    if( M_rebuildDb )
+    {
+        M_M = 0;
+        M_q.clear();
+        M_indices.clear();
+        M_mus.clear();
+        M_B = matrixN_type(0,0);
+    }
+
     while( M_M < M_MaxM )
     {
         double nMax = std::numeric_limits<double>::lowest();
@@ -276,6 +375,86 @@ GEIM<FunctionSpace>::offline()
         }
         M_B(M_M, M_M) = 1.;
         M_M++;
+
+        this->saveDB();
+    }
+}
+
+template<typename FunctionSpace>
+void
+GEIM<FunctionSpace>::saveDB()
+{
+    if ( this->worldComm().isMasterRank() )
+    {
+        if( fs::exists(this->dbLocalPath()) )
+        {
+            if( !fs::is_directory(this->dbLocalPath()) )
+                throw std::exception();
+        }
+        else
+            fs::create_directories(this->dbLocalPath());
+        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+        if ( ofs )
+        {
+            Feel::cout << "saving DB at " << this->dbLocalPath() / this->dbFilename() << std::endl;
+            //boost::archive::text_oarchive oa( ofs );
+            boost::archive::binary_oarchive oa( ofs );
+            // write class instance to archive
+            oa << M_M;
+            oa << M_indices;
+            oa << M_B;
+            oa << M_q;
+            oa << M_mus;
+            // oa << M_sigmas.size();
+            // oa << M_sampling;
+            // oa << M_sigmas;
+            // archive and stream closed when destructors are called
+        }
+    }
+}
+
+template<typename FunctionSpace>
+void
+GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
+{
+    if( !fs::exists(filename) )
+        return;
+
+    if ( this->worldComm().isMasterRank() )
+    {
+        fs::ifstream ifs( filename );
+        if ( ifs )
+        {
+            Feel::cout << "loading DB at " << filename << std::endl;
+            //boost::archive::text_oarchive oa( ofs );
+            boost::archive::binary_iarchive ia( ifs );
+            if( l > crb::load::none )
+            {
+                ia >> M_M;
+                M_indices.resize(M_M);
+                ia >> M_indices;
+                M_B.resize(M_M,M_M);
+                ia >> M_B;
+            }
+            if( l > crb::load::rb )
+            {
+                M_q.resize(M_M);
+                for(int i = 0; i < M_M; ++i )
+                    M_q[i] = M_Xh->element();
+                ia >> M_q;
+            }
+            if( l > crb::load::fe )
+            {
+                M_mus.resize(M_M);
+                ia >> M_mus;
+                // int sigmaSize;
+                // ia >> sigmaSize;
+                // M_sigmas.resize(sigmaSize);
+                // ia >> M_sampling;
+                // ia >> M_sigmas;
+            }
+            // archive and stream closed when destructors are called
+        }
     }
 }
 

@@ -128,6 +128,34 @@ CRBDB::db( std::string const& f )  const
         throw std::invalid_argument("Database file " + f + " not found" );
     return p;
 }
+
+uuids::uuid
+CRBDB::idFromId( std::string const& id ) const
+{
+    auto dir = ( boost::format( "%1%/crbdb/%2%" )
+                 % Feel::Environment::rootRepository()
+                 % M_name ).str();
+    if( !fs::exists(dir)  && !fs::is_directory(dir) )
+        throw std::invalid_argument(std::string("db directory ") + dir + " does not exist");
+
+    std::vector<fs::path> d;
+
+    std::copy(fs::directory_iterator(dir), fs::directory_iterator(), std::back_inserter(d));
+    std::sort(d.begin(), d.end());
+
+    for( auto const& dbdir : d )
+    {
+        if( boost::ends_with( dbdir.string(), id) )
+        {
+            fs::path dbfilename = dbdir / fs::path(this->dbFilename());
+            if( !exists(dbfilename) )
+                continue;
+            return this->id(dbfilename);
+        }
+    }
+    throw std::invalid_argument(std::string("Database for ") + name() + " with id " + id + " not found");
+}
+
 fs::path
 CRBDB::dbFromId( std::string const& id, std::string const& root )  const
 {
@@ -170,6 +198,42 @@ CRBDB::loadDBFromId( std::string const& id, crb::load l, std::string const& root
     loadDB( dbFromId( id, root ).string(), l );
 }
 
+uuids::uuid
+CRBDB::idFromDBLast( crb::last last ) const
+{
+    auto dir = ( boost::format( "%1%/crbdb/%2%" )
+                 % Feel::Environment::rootRepository()
+                 % M_name ).str();
+    if( !fs::exists(dir)  && !fs::is_directory(dir) )
+        throw std::invalid_argument(std::string("db directory ") + dir + " does not exist");
+
+    std::vector<fs::path> d;
+    typedef std::multimap<std::time_t, fs::path> result_set_t;
+    result_set_t result_set;
+
+    for( auto const& dd: boost::make_iterator_range( fs::directory_iterator(dir),{} ) )
+    {
+        fs::path dbfilename = dd.path() / fs::path(this->dbFilename());
+        if (fs::exists( dbfilename ) )
+        {
+            if ( last == crb::last::created )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dd.path()), dbfilename));
+            }
+            else if ( last == crb::last::modified )
+            {
+                result_set.insert(result_set_t::value_type(fs::last_write_time(dbfilename), dbfilename));
+            }
+        }
+    }
+    if ( result_set.size() )
+    {
+        fs::path dbfname =  result_set.rbegin()->second;
+        std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db: " << dbfname.string() << std::endl;
+        return this->id(dbfname);
+    }
+    throw std::invalid_argument(std::string("Last database for ") + name() + " not found");
+}
 fs::path
 CRBDB::dbLast( crb::last last, std::string const& root ) const
 {
