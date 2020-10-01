@@ -34,6 +34,9 @@
 namespace Feel
 {
 
+/**
+ * Class to support Generalized Empirical Interpolation Method.
+ */
 template<typename FunctionSpace>
 class GEIM : public CRBDB
 {
@@ -64,29 +67,73 @@ public:
     using index_type = size_type;
 
 public:
+    /**
+     * Constructor for online phase.
+     * @param name Name of geim
+     * @param Xh Function space to use for basis function, can be nullptr
+     * @param uuid Uuid to use for db
+     */
     GEIM(std::string name, functionspace_ptrtype const& Xh = nullptr,
          uuids::uuid const& uuid = uuids::nil_uuid());
+    /**
+     * Constructor for offline phase.
+     * @param name Name of geim
+     * @param sigma Linear forms
+     * @param sampling Training set
+     * @param solver Function to use to get an element from a parameter
+     * @param uuid Uuid to use for db
+     */
     GEIM(std::string name,
          std::vector<vector_ptrtype> sigma,
          sampling_ptrtype sampling,
          solver_type solver,
          uuids::uuid const& uuid = uuids::nil_uuid());
-    int dimension() const { return M_M; }
+    int dimension() const { return M_M; } /**< dimension of the geim */
+    /**
+     * Beta coefficients.
+     * @param mu Parameter to use
+     * @return Beta coefficients for interpolation
+     */
     vectorN_type beta( parameter_type const& mu );
+    /**
+     * Beta coefficients.
+     * @param vn Values of linear forms for interpolation
+     * @return Beta coefficients for interpolation
+     */
     vectorN_type beta( vectorN_type const& vn );
+    /**
+     * Beta coefficients.
+     * @param v Element to use
+     * @return Beta coefficients for interpolation
+     */
     vectorN_type beta( element_type const& v);
+    /**
+     * Interpolation of solver(mu)
+     * @param mu Parameter to use
+     * @return Interpolation
+     */
     element_type interpolant( parameter_type const& mu );
+    /**
+     * Interpolation for u
+     * @param u Element to use
+     * @return Interpolation
+     */
     element_type interpolant( element_type const& u );
+    /**
+     * Interpolation for element corresponding to evaluations
+     * @param vn Evaluations of linear forms
+     * @return Beta coefficients for interpolation
+     */
     element_type interpolant( vectorN_type const& vn );
-    matrixN_type matrixB() const { return M_B; }
-    std::vector<element_type> q() const { return M_q; }
-    element_type q( int i ) const { return M_q[i]; }
-    std::vector<parameter_type> mus() const { return M_mus; }
-    std::vector<vector_ptrtype> sigmas() const { return M_sigmas; }
-    std::vector<index_type> indices() const { return M_indices; }
-    void setSolver( solver_type f ) { M_solver = f; }
-    void setMaxM( int M ) { M_MaxM = M; }
-    void offline();
+    matrixN_type matrixB() const { return M_B; } /**< Interpolation matrix */
+    std::vector<element_type> q() const { return M_q; } /**< Interpolation basis */
+    element_type q( int i ) const { return M_q[i]; } /**< i-th interpolation basis */
+    std::vector<parameter_type> mus() const { return M_mus; } /**< Parameters used */
+    std::vector<vector_ptrtype> sigmas() const { return M_sigmas; } /**< Set of linear forms */
+    std::vector<index_type> indices() const { return M_indices; } /**< Set of indices of linear forms used */
+    void setSolver( solver_type f ) { M_solver = f; } /**< Set solver to use */
+    void setMaxM( int M ) { M_MaxM = M; } /**< Set maximum number of basis */
+    void offline(); /**< Do offline phase */
 
 protected:
     virtual index_type maxError();
