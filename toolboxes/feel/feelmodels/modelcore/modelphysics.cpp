@@ -54,6 +54,7 @@ ModelPhysic<Dim>::ModelPhysic( std::string const& type, std::string const& name,
     {
         this->addMaterialPropertyDescription( "dynamic-viscosity", "mu", { scalarShape } );
         this->addMaterialPropertyDescription( "turbulent-dynamic-viscosity", "mu_t", { scalarShape } );
+        this->addMaterialPropertyDescription( "turbulent-kinetic-energy", "tke", { scalarShape } );
         this->addMaterialPropertyDescription( "consistency-index", "mu_k", { scalarShape } );
         this->addMaterialPropertyDescription( "power-law-index", "mu_power_law_n", { scalarShape } );
         this->addMaterialPropertyDescription( "viscosity-min", "mu_min", { scalarShape } );
@@ -135,6 +136,19 @@ ModelPhysicFluid<Dim>::setEquation( std::string const& eq )
 }
 
 template <uint16_type Dim>
+bool
+ModelPhysicFluid<Dim>::Turbulence::useBoussinesqApproximation() const
+{
+    return (M_model == "Spalart-Allmaras") || (M_model == "k-epsilon");
+}
+template <uint16_type Dim>
+bool
+ModelPhysicFluid<Dim>::Turbulence::hasTurbulentKineticEnergy() const
+{
+    return (M_model == "k-epsilon");
+}
+
+template <uint16_type Dim>
 void
 ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
 {
@@ -144,7 +158,10 @@ ModelPhysicFluid<Dim>::Turbulence::setup( pt::ptree const& pt )
     if ( !M_isEnabled )
         return;
     if ( auto ptModel = pt.template get_optional<std::string>("model") )
+    {
         M_model = *ptModel;
+        CHECK( M_model == "Spalart-Allmaras" || M_model == "k-epsilon" ) << "invalid turubulence model " << M_model;
+    }
 }
 
 template <uint16_type Dim>
@@ -345,6 +362,8 @@ template class ModelPhysic<2>;
 template class ModelPhysic<3>;
 template class ModelPhysics<2>;
 template class ModelPhysics<3>;
+template class ModelPhysicFluid<2>;
+template class ModelPhysicFluid<3>;
 
 } // namespace FeelModels
 } // namespace Feel

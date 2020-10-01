@@ -267,6 +267,9 @@ public :
         bool isEnabled() const { return M_isEnabled; }
         std::string const& model() const { return M_model; }
 
+        bool useBoussinesqApproximation() const;
+        bool hasTurbulentKineticEnergy() const;
+
         void setup( pt::ptree const& p );
 
     private :
