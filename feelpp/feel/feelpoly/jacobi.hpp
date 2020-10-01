@@ -566,24 +566,6 @@ JacobiBatchEvaluation( T a, T b, ublas::vector<T> const& __pts )
 }
 
 template<uint16_type N, typename T>
-void
-JacobiBatchDerivation( ublas::matrix<T>& res, T a, T b, ublas::vector<T> const& __pts, mpl::bool_<true> )
-{
-    typedef T value_type;
-    ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
-
-    for ( uint16_type i = 1; i < N+1; ++i )
-        ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
-}
-
-template<uint16_type N, typename T>
-void
-JacobiBatchDerivation( ublas::matrix<T>& /*res*/, T /*a*/, T /*b*/,
-                       ublas::vector<T> const& /*__pts*/, mpl::bool_<false> )
-{
-}
-
-template<uint16_type N, typename T>
 ublas::matrix<T>
 JacobiBatchDerivation( T a, T b, ublas::vector<T> const& __pts )
 {
@@ -591,7 +573,14 @@ JacobiBatchDerivation( T a, T b, ublas::vector<T> const& __pts )
     ublas::matrix<T> res( N+1, __pts.size() );
     ublas::row( res, 0 ) = ublas::scalar_vector<value_type>( res.size2(), 0.0 );
     static const bool cond = N>0;
-    JacobiBatchDerivation<N,T>( res, a, b, __pts, mpl::bool_<cond>() );
+    if constexpr ( N > 0 )
+    {
+        typedef T value_type;
+        ublas::subrange( res, 1, N+1, 0, __pts.size() ) = JacobiBatchEvaluation<N-1, T>( a+1.0, b+1.0, __pts );
+
+        for ( uint16_type i = 1; i < N+1; ++i )
+            ublas::row( res, i ) *= 0.5*( a+b+value_type( i )+1.0 );
+    }
     return res;
 }
 
