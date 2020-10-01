@@ -79,6 +79,8 @@ public:
     template <int M,int N>
     using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
 
+    using material_property_scalar_expr_type = material_property_expr_type<1,1>;
+
     using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
                                                                      mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN> >;
 
@@ -101,7 +103,14 @@ public:
         M_exprEvaluateVelocityOperators->setEnableGrad( true );
         M_exprDynamicVisocity.emplace( M_exprEvaluateVelocityOperators,physicFluid,matProps,invalid_uint16_type_value,se );
         if ( this->turbulence().isEnabled() )
+        {
             M_exprTurbulentDynamicVisocity.emplace( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+            if ( this->turbulence().hasTurbulentKineticEnergy() )
+            {
+                M_exprTurbulentKineticEnergy.emplace( this->materialPropertyExpr<1,1>("turbulent-kinetic-energy") );
+                M_exprDensity.emplace( this->materialPropertyExpr<1,1>("density") );
+            }
+        }
     }
 
     FluidMecStressTensorImpl( FluidMecStressTensorImpl const & op ) = default;
@@ -113,7 +122,11 @@ public:
         {
             size_type res = M_exprDynamicVisocity->dynamicContext();
             if ( this->turbulence().isEnabled() )
-                res= res | Feel::vf::dynamicContext( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
+            {
+                res= res | Feel::vf::dynamicContext( *M_exprTurbulentDynamicVisocity );
+                if ( M_exprTurbulentKineticEnergy )
+                    res= res | Feel::vf::dynamicContext( *M_exprTurbulentKineticEnergy ) |  Feel::vf::dynamicContext( *M_exprDensity );
+            }
             return res;
         }
 
@@ -128,7 +141,11 @@ public:
             uint16_type res = M_exprDynamicVisocity->polynomialOrder() + orderGradVelocity; // TODO Jacobian case
 
             if ( this->turbulence().isEnabled() )
-                res = std::max( res, (uint16_type) (this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity").polynomialOrder() + orderGradVelocity) );
+            {
+                res = std::max( res, (uint16_type) (M_exprTurbulentDynamicVisocity->polynomialOrder() + orderGradVelocity) );
+                //if ( M_exprTurbulentKineticEnergy )
+                //TODO
+            }
 
             if ( this->withPressureTerm() )
                 res = std::max( res, M_exprIdPressure.polynomialOrder() );
@@ -161,7 +178,10 @@ public:
 
     expr_id_pressure_type const& expressionIdPressure() const { return M_exprIdPressure; }
     expr_dynamic_viscosity_type const& exprDynamicVisocity() const { return *M_exprDynamicVisocity; }
-    material_property_expr_type<1,1> const& exprTurbulentDynamicVisocity() const { return *M_exprTurbulentDynamicVisocity; }
+    material_property_scalar_expr_type const& exprTurbulentDynamicVisocity() const { return *M_exprTurbulentDynamicVisocity; }
+    material_property_scalar_expr_type const& exprTurbulentKineticEnergy() const { return *M_exprTurbulentKineticEnergy; }
+    material_property_scalar_expr_type const& exprDensity() const { return *M_exprDensity; }
+
 
     auto const& turbulence() const { return M_physicFluid.turbulence(); }
     MaterialProperties const& materialProperties() const { return M_matProps; }
@@ -191,6 +211,7 @@ public:
         using array_shape_type = typename super_type::new_array_shape_type;
         using ret_type = typename super_type::ret_type;
 
+        using tensor_expr_material_property_scalar_type = typename this_type::material_property_scalar_expr_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using tensor_expr_evaluate_velocity_opertors_type = typename expr_evaluate_velocity_opertors_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using tensor_expr_dynamic_viscosity_type = typename expr_dynamic_viscosity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using tensor_expr_id_pressure_type = typename expr_id_pressure_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
@@ -245,6 +266,11 @@ public:
             M_tensorDynamicViscosity->update( geom, false );
             if ( M_tensorExprTurbulentDynamicVisocity )
                 M_tensorExprTurbulentDynamicVisocity->update( geom );
+            if ( M_tensorExprTurbulentKineticEnergy)
+            {
+                M_tensorExprTurbulentKineticEnergy->update( geom );
+                M_tensorExprDensity->update( geom );
+            }
             if ( M_tensorExprIdPressure )
                 M_tensorExprIdPressure->update( geom );
             this->updateImpl();
@@ -256,6 +282,11 @@ public:
             M_tensorDynamicViscosity->update( geom, face, false );
             if ( M_tensorExprTurbulentDynamicVisocity )
                 M_tensorExprTurbulentDynamicVisocity->update( geom, face );
+            if ( M_tensorExprTurbulentKineticEnergy)
+            {
+                M_tensorExprTurbulentKineticEnergy->update( geom, face );
+                M_tensorExprDensity->update( geom, face );
+            }
             if ( M_tensorExprIdPressure )
                 M_tensorExprIdPressure->update( geom, face );
             this->updateImpl();
@@ -371,7 +402,14 @@ public:
                 M_tensorDynamicViscosity.emplace( expr.exprDynamicVisocity(), M_tensorExprEvaluateVelocityOperators, theInitArgs... );
                 M_dynamicViscosityDependsOnVelocityField = expr.exprDynamicVisocity().dependsOnVelocityField();
                 if ( expr.turbulence().isEnabled() )
+                {
                     M_tensorExprTurbulentDynamicVisocity.emplace( expr.exprTurbulentDynamicVisocity(), theInitArgs... );
+                    if ( expr.turbulence().hasTurbulentKineticEnergy() )
+                    {
+                        M_tensorExprTurbulentKineticEnergy.emplace( expr.exprTurbulentKineticEnergy(), theInitArgs... );
+                        M_tensorExprDensity.emplace( expr.exprDensity(), theInitArgs... );
+                    }
+                }
                 if ( expr.withPressureTerm() )
                     M_tensorExprIdPressure.emplace( expr.expressionIdPressure(),theInitArgs... );
             }
@@ -387,6 +425,7 @@ public:
 
                 bool withPressure = M_expr.withPressureTerm();
                 bool hasTurbulentDynamicViscosity = ( M_tensorExprTurbulentDynamicVisocity )? true : false;
+                bool hasTurbulentKineticEnergy = ( M_tensorExprTurbulentKineticEnergy)? true : false;
 
                 for ( uint16_type q=0;q< nPoints;++q )
                 {
@@ -421,6 +460,19 @@ public:
                         locMat(2,2) = /*-pres +*/ 2*muEval*du3vdz;
                     }
 
+                    if ( hasTurbulentKineticEnergy )
+                    {
+                        const value_type tke = M_tensorExprTurbulentKineticEnergy->evalq(0,0,q);
+                        const value_type rho = M_tensorExprDensity->evalq(0,0,q);
+                        const value_type tkeContrib = (2./3.)*rho*tke;
+                        locMat(0,0) -= tkeContrib;
+                        locMat(1,1) -= tkeContrib;
+                        if constexpr ( gmc_type::nDim == 3 )
+                        {
+                             locMat(2,2) -= tkeContrib;
+                        }
+                    }
+
                     if ( withPressure )
                     {
                         const value_type pres = M_tensorExprIdPressure->evalq( 0,0,q );
@@ -442,8 +494,7 @@ public:
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> M_tensorExprEvaluateVelocityOperators;
         std::optional<tensor_expr_dynamic_viscosity_type> M_tensorDynamicViscosity;
         std::optional<tensor_expr_id_pressure_type> M_tensorExprIdPressure;
-
-        std::optional<typename this_type::template material_property_expr_type<1,1>::template tensor<Geo_t, Basis_i_t, Basis_j_t> > M_tensorExprTurbulentDynamicVisocity;
+        std::optional<tensor_expr_material_property_scalar_type> M_tensorExprTurbulentDynamicVisocity, M_tensorExprTurbulentKineticEnergy, M_tensorExprDensity;
 
         array_shape_type M_localEvalStrainTensor;
         array_shape_type M_localEval;
@@ -463,7 +514,7 @@ private:
     SymbolsExprType M_se;
 
     std::optional<expr_dynamic_viscosity_type> M_exprDynamicVisocity;
-    std::optional<material_property_expr_type<1,1>> M_exprTurbulentDynamicVisocity;
+    std::optional<material_property_scalar_expr_type> M_exprTurbulentDynamicVisocity, M_exprTurbulentKineticEnergy, M_exprDensity;
 };
 
 

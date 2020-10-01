@@ -49,10 +49,13 @@ public:
     template <int M,int N>
     using material_property_expr_type = std::decay_t<decltype( expr( ModelExpression{}.template expr<M,N>(),symbols_expr_type{} ) )>;
 
+    using material_property_scalar_expr_type = material_property_expr_type<1,1>;
+
     using expr_dynamic_viscosity_type = FluidMecDynamicViscosityImpl<expr_evaluate_velocity_opertors_type,FiniteElementVelocityType,ModelPhysicFluidType,SymbolsExprType,
                                                                      mpl::int_< this_type::specific_expr_type::value == ExprApplyType::EVAL? ExprApplyType::EVAL : ExprApplyType::JACOBIAN> >;
 
-    using expr_grad_turbulent_dynamic_viscosity_type = std::decay_t<decltype( grad<expr_evaluate_velocity_opertors_type::field_clean_type::nDim>( material_property_expr_type<1,1>{} ) )>;
+    using expr_grad_material_property_scalar_type = std::decay_t<decltype( grad<expr_evaluate_velocity_opertors_type::field_clean_type::nDim>( material_property_scalar_expr_type{} ) )>;
+    // using expr_grad_turbulent_dynamic_viscosity_type = expr_grad_material_property_scalar_type;
 
 
     FluidMecDivStressTensorImpl( std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvalVelocityOperators,
@@ -76,6 +79,12 @@ public:
             M_exprEvaluateVelocityOperators->setEnableGrad( true );
             M_exprTurbulentDynamicVisocity.emplace( this->materialPropertyExpr<1,1>("turbulent-dynamic-viscosity") );
             M_exprGradTurbulentDynamicVisocity.emplace( grad<expr_evaluate_velocity_opertors_type::field_clean_type::nDim>( *M_exprTurbulentDynamicVisocity, "", world, dirLibExpr ) );
+            if ( this->turbulence().hasTurbulentKineticEnergy() )
+            {
+                M_exprTurbulentKineticEnergy.emplace( this->materialPropertyExpr<1,1>("turbulent-kinetic-energy") );
+                M_exprDensity.emplace( this->materialPropertyExpr<1,1>("density") );
+                M_exprGradTurbulentKineticEnergy.emplace( grad<expr_evaluate_velocity_opertors_type::field_clean_type::nDim>( *M_exprTurbulentKineticEnergy, "", world, dirLibExpr ) );
+            }
         }
     }
 
@@ -86,7 +95,11 @@ public:
         {
             size_type res = M_exprDynamicVisocity->dynamicContext();
             if ( this->turbulence().isEnabled() )
+            {
                 res= res | Feel::vf::dynamicContext( *M_exprTurbulentDynamicVisocity ) | Feel::vf::dynamicContext( *M_exprGradTurbulentDynamicVisocity );
+                if (  M_exprGradTurbulentKineticEnergy )
+                    res= res | Feel::vf::dynamicContext( *M_exprGradTurbulentKineticEnergy ) |  Feel::vf::dynamicContext( *M_exprDensity );
+            }
             return res;
         }
 
@@ -107,6 +120,7 @@ public:
                 uint16_type orderGradVelocity = M_exprEvaluateVelocityOperators->exprGrad().polynomialOrder();
                 res = std::max( res, (uint16_type) (M_exprTurbulentDynamicVisocity->polynomialOrder() + orderLaplacianVelocity) );
                 res = std::max( res, (uint16_type) (M_exprGradTurbulentDynamicVisocity->polynomialOrder() + orderGradVelocity) );
+                // TODO turbument kinematic energy
             }
 
             return res;
@@ -146,8 +160,10 @@ public:
 
     std::shared_ptr<expr_evaluate_velocity_opertors_type> exprEvaluateVelocityOperatorsPtr() const { return M_exprEvaluateVelocityOperators; }
     expr_dynamic_viscosity_type const& exprDynamicVisocity() const { return *M_exprDynamicVisocity; }
-    material_property_expr_type<1,1> const& exprTurbulentDynamicVisocity() const { return *M_exprTurbulentDynamicVisocity; }
-    expr_grad_turbulent_dynamic_viscosity_type const& exprGradTurbulentDynamicVisocity() const { return *M_exprGradTurbulentDynamicVisocity; }
+    material_property_scalar_expr_type const& exprTurbulentDynamicVisocity() const { return *M_exprTurbulentDynamicVisocity; }
+    expr_grad_material_property_scalar_type const& exprGradTurbulentDynamicVisocity() const { return *M_exprGradTurbulentDynamicVisocity; }
+    expr_grad_material_property_scalar_type const& exprGradTurbulentKineticEnergy() const { return *M_exprGradTurbulentKineticEnergy; }
+    material_property_scalar_expr_type const& exprDensity() const { return *M_exprDensity; }
     //bool withPressureTerm() const { return M_withPressureTerm; }
 
     auto const& turbulence() const { return M_physicFluid.turbulence(); }
@@ -172,9 +188,11 @@ public:
         using array_shape_type = typename super_type::new_array_shape_type;
         using ret_type = typename super_type::ret_type;
 
+        using tensor_expr_material_property_scalar_type = typename this_type::material_property_scalar_expr_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using tensor_expr_evaluate_velocity_opertors_type = typename expr_evaluate_velocity_opertors_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
         using tensor_expr_dynamic_viscosity_type = typename expr_dynamic_viscosity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
-        using tensor_expr_grad_turbulent_dynamic_viscosity_type = typename expr_grad_turbulent_dynamic_viscosity_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using tensor_expr_grad_material_property_scalar_type = typename expr_grad_material_property_scalar_type::template tensor<Geo_t, Basis_i_t, Basis_j_t>;
+        using tensor_expr_grad_turbulent_dynamic_viscosity_type = tensor_expr_grad_material_property_scalar_type;
 
         //----------------------------------------------------------------------------------------------------//
         struct is_zero
@@ -232,6 +250,11 @@ public:
                 if constexpr ( !expr_evaluate_velocity_opertors_type::laplacian_is_zero )
                     M_tensorExprTurbulentDynamicVisocity->update( geom );
                 M_tensorExprGradTurbulentDynamicVisocity->update( geom );
+                if ( M_tensorGradTurbulentKineticEnergy )
+                {
+                    M_tensorGradTurbulentKineticEnergy->update( geom );
+                    M_tensorExprDensity->update( geom );
+                }
             }
             this->updateImpl();
         }
@@ -246,6 +269,11 @@ public:
                 if constexpr ( !expr_evaluate_velocity_opertors_type::laplacian_is_zero )
                     M_tensorExprTurbulentDynamicVisocity->update( geom, face );
                 M_tensorExprGradTurbulentDynamicVisocity->update( geom, face );
+                if ( M_tensorGradTurbulentKineticEnergy )
+                {
+                    M_tensorGradTurbulentKineticEnergy->update( geom, face );
+                    M_tensorExprDensity->update( geom, face );
+                }
             }
             this->updateImpl();
         }
@@ -351,6 +379,11 @@ public:
                     if constexpr ( !expr_evaluate_velocity_opertors_type::laplacian_is_zero )
                         M_tensorExprTurbulentDynamicVisocity.emplace( expr.exprTurbulentDynamicVisocity(), theInitArgs... );
                     M_tensorExprGradTurbulentDynamicVisocity.emplace( expr.exprGradTurbulentDynamicVisocity(), theInitArgs... );
+                    if ( expr.turbulence().hasTurbulentKineticEnergy() )
+                    {
+                        M_tensorGradTurbulentKineticEnergy.emplace( expr.exprGradTurbulentKineticEnergy(), theInitArgs... );
+                        M_tensorExprDensity.emplace( expr.exprDensity(), theInitArgs... );
+                    }
                 }
             }
         void updateImpl()
@@ -361,6 +394,8 @@ public:
                 uint16_type nPoints = this->gmc()->nPoints();
                 if ( M_localEval.size() != nPoints )
                     M_localEval.resize( nPoints );
+
+                bool hasTurbulentKineticEnergy = ( M_tensorGradTurbulentKineticEnergy )? true : false;
 
                 for ( uint16_type q=0;q< nPoints;++q )
                 {
@@ -401,6 +436,21 @@ public:
                             locMat(1,0) += ( du2vdx + du1vdy )*gradMuTurb_0 + 2*du2vdy*gradMuTurb_1 + ( du2vdz + du3vdy )*gradMuTurb_2;
                             locMat(2,0) += ( du3vdx + du1vdz )*gradMuTurb_0 + ( du2vdz + du3vdy )*gradMuTurb_1 + 2*du3vdz*gradMuTurb_2;
                         }
+
+                        if ( hasTurbulentKineticEnergy )
+                        {
+                            const value_type rho = M_tensorExprDensity->evalq(0,0,q);
+                            const value_type gradTKE_0 = M_tensorExprGradTurbulentDynamicVisocity->evalq(0,0,q);
+                            const value_type gradTKE_1 = M_tensorExprGradTurbulentDynamicVisocity->evalq(0,1,q);
+                            const value_type rhoWithFactor = (2./3.)*rho;
+                            locMat(0,0) -= rhoWithFactor*gradTKE_0;
+                            locMat(1,0) -= rhoWithFactor*gradTKE_1;
+                            if constexpr ( gmc_type::nDim == 3 )
+                            {
+                                const value_type gradTKE_2 = M_tensorExprGradTurbulentDynamicVisocity->evalq(0,2,q);
+                                locMat(2,0) -= rhoWithFactor*gradTKE_2;
+                            }
+                        }
                     }
                 }
 
@@ -411,8 +461,8 @@ public:
 
         std::shared_ptr<tensor_expr_evaluate_velocity_opertors_type> M_tensorExprEvaluateVelocityOperators;
         std::optional<tensor_expr_dynamic_viscosity_type> M_tensorDynamicViscosity;
-        std::optional<typename this_type::template material_property_expr_type<1,1>::template tensor<Geo_t, Basis_i_t, Basis_j_t> > M_tensorExprTurbulentDynamicVisocity;
-        std::optional<tensor_expr_grad_turbulent_dynamic_viscosity_type> M_tensorExprGradTurbulentDynamicVisocity;
+        std::optional<tensor_expr_material_property_scalar_type> M_tensorExprTurbulentDynamicVisocity, M_tensorExprDensity;
+        std::optional<tensor_expr_grad_turbulent_dynamic_viscosity_type> M_tensorExprGradTurbulentDynamicVisocity, M_tensorGradTurbulentKineticEnergy;
 
         array_shape_type M_localEval;
 
@@ -430,8 +480,8 @@ private :
     SymbolsExprType M_se;
 
     std::optional<expr_dynamic_viscosity_type> M_exprDynamicVisocity;
-    std::optional<material_property_expr_type<1,1>> M_exprTurbulentDynamicVisocity;
-    std::optional<expr_grad_turbulent_dynamic_viscosity_type> M_exprGradTurbulentDynamicVisocity;
+    std::optional<material_property_scalar_expr_type> M_exprTurbulentDynamicVisocity, M_exprTurbulentKineticEnergy, M_exprDensity;
+    std::optional<expr_grad_material_property_scalar_type> M_exprGradTurbulentDynamicVisocity, M_exprGradTurbulentKineticEnergy;
 };
 
 template<class VelocityFieldType, class ModelPhysicFluidType,typename SymbolsExprType = symbols_expression_empty_t >
