@@ -991,6 +991,18 @@ public :
             }
             return false;
         }
+    bool hasTurbulenceModel( std::string const& name ) const
+        {
+            for ( auto const& [physicName,physicData] : this->physicsFromCurrentType() )
+            {
+                auto physicFluidData = std::static_pointer_cast<ModelPhysicFluid<nDim>>(physicData);
+                if ( !physicFluidData->turbulence().isEnabled() )
+                    continue;
+                if ( physicFluidData->turbulence().model() == name )
+                    return true;
+            }
+            return false;
+        }
 
     bool startBySolveNewtonian() const { return M_startBySolveNewtonian; }
     void startBySolveNewtonian( bool b ) { M_startBySolveNewtonian=b; }
