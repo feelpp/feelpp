@@ -120,6 +120,8 @@ public:
         return M_mat( i, j );
     }
 
+    using clone_ptrtype = typename super::clone_ptrtype;
+    clone_ptrtype clone() const override { return std::make_shared<MatrixEigenDense<T>>( *this ); }
     //@}
 
     /** @name Accessors
