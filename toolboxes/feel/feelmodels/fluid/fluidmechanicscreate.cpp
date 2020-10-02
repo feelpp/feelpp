@@ -204,6 +204,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_pmmNeedUpdate = false;
     M_preconditionerAttachPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
 
+    // NEW : Luca -> 
+    M_selfPropulsion = boption(_name="self-propulsion",_prefix=this->prefix());
+
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
 
@@ -627,12 +630,15 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
     this->initFluidInlet();
 
     // NEW : Luca -> selfpropulsion
-    M_meshSelfPropulsionMultiplier = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"SphereLeft","SphereRight","SphereCenter"}),_view=true);
-    M_XhMultiplierSelfPropulsionForce = space_force_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier);
-    M_MultiplierSelfPropulsionForce = M_XhMultiplierSelfPropulsionForce->elementPtr();
-    M_XhMultiplierSelfPropulsionTorque = space_torque_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier );
-    M_MultiplierSelfPropulsionTorque = M_XhMultiplierSelfPropulsionTorque->elementPtr();
-    
+    if (defineSelfPropulsion())
+    {
+        Feel::cout << "self propulsion defined" << std::endl;
+        M_meshSelfPropulsionMultiplier = createSubmesh(_mesh=this->mesh(),_range=markedfaces(this->mesh(),{"SphereLeft","SphereRight","SphereCenter"}),_view=true);
+        M_XhMultiplierSelfPropulsionForce = space_force_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier);
+        M_MultiplierSelfPropulsionForce = M_XhMultiplierSelfPropulsionForce->elementPtr();
+        M_XhMultiplierSelfPropulsionTorque = space_torque_self_propulsion_multiplier_type::New(_mesh=M_meshSelfPropulsionMultiplier );
+        M_MultiplierSelfPropulsionTorque = M_XhMultiplierSelfPropulsionTorque->elementPtr();
+    }
     // init bc body
     M_bodySetBC.init( *this );
 
@@ -1876,8 +1882,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
             }
     }
     // NEW : self propulsion multipliers
-    this->setStartSubBlockSpaceIndex( "self-prop-multiplier-force", currentStartIndex++ ); 
-    this->setStartSubBlockSpaceIndex( "self-prop-multiplier-torque", currentStartIndex++ );
+    if (defineSelfPropulsion())
+    {
+        this->setStartSubBlockSpaceIndex( "self-prop-multiplier-force", currentStartIndex++ ); 
+        this->setStartSubBlockSpaceIndex( "self-prop-multiplier-torque", currentStartIndex++ );
+    }
     Feel::cout << "This is the current start index in the matrix: " << currentStartIndex << std::endl;
     return currentStartIndex;
 }
@@ -1966,6 +1975,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             }
         }  
     }
+    if (defineSelfPropulsion())
     {
         // NEW : Luca -> self propulsion constraints
         M_blockVectorSolution(cptBlock++) = this->fieldMultiplierSelfPropForcePtr();

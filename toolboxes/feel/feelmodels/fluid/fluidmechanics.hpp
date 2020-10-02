@@ -168,6 +168,7 @@ public:
     typedef typename space_torque_self_propulsion_multiplier_type::element_type torque_self_propulsion_multiplier_element_type;
     typedef std::shared_ptr<torque_self_propulsion_multiplier_element_type> torque_self_propulsion_multiplier_element_ptrtype;
     trace_mesh_ptrtype M_meshSelfPropulsionMultiplier;
+    bool M_selfPropulsion;
 private:
     space_force_self_propulsion_multiplier_ptrtype M_XhMultiplierSelfPropulsionForce;
     space_torque_self_propulsion_multiplier_ptrtype M_XhMultiplierSelfPropulsionTorque;
@@ -180,6 +181,8 @@ public:
     space_torque_self_propulsion_multiplier_ptrtype const& spaceMultiplierSelfPropTorquePtr() const { return M_XhMultiplierSelfPropulsionTorque; }
     torque_self_propulsion_multiplier_element_ptrtype const& fieldMultiplierSelfPropTorquePtr() const { return M_MultiplierSelfPropulsionTorque; }
     torque_self_propulsion_multiplier_element_ptrtype & fieldMultiplierSelfPropTorquePtr() { return M_MultiplierSelfPropulsionTorque; }
+    bool defineSelfPropulsion() const { return M_selfPropulsion; }
+
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -1630,6 +1633,9 @@ public :
     void updateJacobian_Turbulence( DataUpdateJacobian & data ) const;
     template <typename ModelContextType>
     void updateJacobian_Turbulence( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
+    // NEW LUCA
+    BodySetBoundaryCondition const& bodySet() const {return M_bodySetBC; }
+    BodySetBoundaryCondition & bodySet() {return M_bodySetBC; }
 private :
     void updateBoundaryConditionsForUse();
 
@@ -1838,6 +1844,8 @@ private :
     // NEW : Luca
     double W_cl(double  time, double dt) const
     {
+        if (time>=4+dt)
+            time = time - (4);
         if ((time>=0) && (time<1))
         {return -4;}
         else if ((time>=1) && (time<2+dt))
@@ -1849,10 +1857,54 @@ private :
         else
         {return 0;}
     }
-
-
+    /*
+    double W_cl(double  time, double dt) const
+    {
+        if (time>=4+7*dt)
+            time = time -(4+7*dt);
+        if ((time>=0) && (time<1))
+        {return -4;}
+        else if ((time>=1) && (time<1+dt))
+        {return 0;}
+        else if ((time>=1+dt) && (time<2+2*dt))
+        {return 0;}
+        else if ((time>=2+2*dt) && (time<2+3*dt))
+        {return 0;}
+        else if ((time>=2+3*dt) && (time<3+4*dt))
+        {return 4;}
+        else if ((time>=3+4*dt) && (time<3+5*dt))
+        {return 0;}
+        else if ((time>=3+5*dt) && (time<4+6*dt))
+        {return 0;}
+        else
+        {return 0;}
+    }
+    double W_cr(double  time, double dt) const
+    {
+        if (time>=4+7*dt)
+            time = time -(4+7*dt);
+        if ((time>=0) && (time<1))
+        {return 0;}
+        else if ((time>=1) && (time<1+dt))
+        {return 0;}
+        else if ((time>=1+dt) && (time<2+2*dt))
+        {return 4;}
+        else if ((time>=2+2*dt) && (time<2+3*dt))
+        {return 0;}
+        else if ((time>=2+3*dt) && (time<3+4*dt))
+        {return 0;}
+        else if ((time>=3+4*dt) && (time<3+5*dt))
+        {return 0;}
+        else if ((time>=3+5*dt) && (time<4+6*dt))
+        {return -4;}
+        else
+        {return 0;}
+    }
+    */
      double W_cr(double  time, double dt) const
     {
+        if (time>=4+dt)
+            time = time - (4);
         if ((time>=0) && (time<1))
         {return 0;}
         else if ((time>=1) && (time<2+dt))

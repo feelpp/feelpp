@@ -1,12 +1,12 @@
 // Gmsh project created on Thu Sep 24 09:40:14 2020
 // Mesh where the three sphere are filled as a unique Body entity; VERY COARSE
 RSphere = 1.;
-lcSphere = 3;
+lcSphere = 0.3;
 
 RDom = 10;
-lcDom = 50.;
+lcDom = 5.;
 
-Center = 0;
+Center = 0.0;
 
 Point(1) = {Center,0,0,lcSphere};
 Point(2) = {Center+RSphere,0,0,lcSphere};

@@ -189,11 +189,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                 double timeElapsedConvection = this->timerTool("Solve").stop();
                 this->log("FluidMechanics","updateLinearPDE","assembly convection in "+(boost::format("%1% s") %timeElapsedConvection).str() );
             }
-            else if ( (  physicFluidData->equation() == "Stokes" ||  physicFluidData->equation() == "StokesTransient")
+            else if ( (  /* NEW LUCA physicFluidData->equation() == "Stokes" || */ physicFluidData->equation() == "StokesTransient")
                       && build_ConvectiveTerm && this->isMoveDomain() )
             {
                 auto densityExpr = expr( matProps.property("density").template expr<1,1>(), se );
 #if defined( FEELPP_MODELS_HAS_MESHALE )
+                // NEW Luca -> modifs
                 bilinearFormVV_PatternDefault +=
                     integrate( _range=range,
                                _expr= -timeSteppingScaling*densityExpr*trans( gradt(u)*(idv( this->meshVelocity() )))*id(v),
@@ -777,6 +778,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         }
                     }
                 }
+                
                 // NEW : LUCA 
                 // MULTIPLIERS FOR RELATIVE VELOCITIES
                 for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
@@ -784,7 +786,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                     if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
                     {
                         // NEW : LUCA
-                        if ( hasActiveDofTranslationalVelocity )
+                        bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                        int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
+                        bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
+                        if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
                         {
                         size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
                         size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
@@ -806,10 +811,14 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                     -1.0 );
                         }
                         }
+                    
                     }
                     else if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") 
                     {
-                        if ( hasActiveDofTranslationalVelocity )
+                        bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                        int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
+                        bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
+                        if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
                         {
                         size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
                         size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
@@ -847,6 +856,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         F->add( basisToContainerGpTranslationalVelocityVector[d],
                                 massBody*translationalVelocityPolyDeriv(d) );
 
+                        // NEW -> LUCA -> TENTATIVE modifications
+                        /*F->set( basisToContainerGpTranslationalVelocityVector[d],
+                                0.0 );*/
+
                         if ( bpbc.gravityForceEnabled() )
                         {
                             F->add( basisToContainerGpTranslationalVelocityVector[d],
@@ -859,16 +872,23 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         {
                             size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
                             auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
-                            
+                            auto Wcl = expr("4*pulse(t,0,1,6)-4*pulse(t,3,4,6):t");
+                            Wcl.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
                             F->add( basisToContainerGpMultiplierRow[0],
-                                        this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                                      //  -Wcl.evaluate()(0,0));
+                            //Feel::cout << "Wcl " <<  Wcl.evaluate()(0,0) << std::endl;
+                                    this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
                         }
                         if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight")
                         {
                             size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
                             auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
-
+                            
+                            auto Wcr = expr("-4*pulse(t,3,4,6)+4*pulse(t,5,6,6):t");
+                            Wcr.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
                             F->add( basisToContainerGpMultiplierRow[0],
+                                        //-Wcr.evaluate()(0,0));
+                            //Feel::cout << "Wcr " <<  Wcr.evaluate()(0,0) << std::endl;
                                         this->W_cr(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
                         }
                     }
@@ -885,77 +905,103 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                 //momentOfInertia(0,0)*angularVelocityPolyDeriv(i)
                                 contribRhsAngularVelocity(i,0)
                                 );
+                         // NEW -> LUCA -> TENTATIVE modifications
+                         /*F->set( basisToContainerGpAngularVelocityVector[i],
+                                //momentOfInertia(0,0)*angularVelocityPolyDeriv(i)
+                                0.0
+                                );*/
                     }
                 }
             }
         } //  for ( auto const& [bpname,bpbc] : M_bodySetBC )
 
     }
-    // NEW : Luca -> self propulsion
-    if (BuildCstPart)
-        {
-            auto uPtr = this->fieldVelocityPtr();
-            auto pPtr = this->fieldPressurePtr();
+    if (defineSelfPropulsion())
+    {
+        // NEW : Luca -> self propulsion
+        if (BuildCstPart)
+            {
+                auto uPtr = this->fieldVelocityPtr();
+                auto pPtr = this->fieldPressurePtr();
 
-            auto rangeSelfPropulsionBC = elements(M_meshSelfPropulsionMultiplier);
-            size_type startBlockIndexSelfPropMultiplierForce = this->startSubBlockSpaceIndex("self-prop-multiplier-force");
-            auto deftPtr = sym(gradt(uPtr));
-            auto deff = sym(grad(uPtr));
-            auto myViscosity = cst(1.0);
-            auto is_empty_mesh= integrate(_range=rangeSelfPropulsionBC,
-                    _expr = cst(1.0)   ).evaluate(0,0);
-            Feel::cout << "is empty mesh " << is_empty_mesh <<std::endl;
-            auto lambda = this->fieldMultiplierSelfPropForcePtr();
-            auto XhF = this->spaceMultiplierSelfPropForcePtr();
-            Feel::cout << "startBlockIndexSelfPropMultiplierForce " << startBlockIndexSelfPropMultiplierForce << std::endl;
-            Feel::cout << "rowStartInMatrix+startBlockIndexSelfPropMultiplierForce " << rowStartInMatrix+startBlockIndexSelfPropMultiplierForce << std::endl;
-            Feel::cout << "colStartInMatrix+1 " << colStartInMatrix+1 << std::endl;
-            auto XhV = this->functionSpaceVelocity();
-            auto XhP = this->functionSpacePressure();
-            // \lambda .\int_{ bdry SPHERE} \sigma N()
-            form2( _trial=XhP, _test=XhF ,_matrix=A,
-                _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+1) += integrate(_range=rangeSelfPropulsionBC,
-                        _expr=inner(-idt(pPtr)*Id*N(),id(lambda)),
-                        _geomap=this->geomap());
-            //auto form_try = integrate(_range=rangeSelfPropulsionBC,_expr=inner(-idt(pPtr)*Id*N(),id(lambda)),_geomap=this->geomap());
-            Feel::cout << "OK7.12" << std::endl;
-            form2( _trial=XhV, _test=XhF ,_matrix=A,
-                _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
-                        _expr=inner(2*myViscosity*deftPtr*N(),id(lambda)),
-                        _geomap=this->geomap() );
-                        
-            Feel::cout << "OK7.2" << std::endl;
-            form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhV ,_matrix=A,
-                _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
-                        _expr=-inner(2*myViscosity*deff*N(),idt(lambda)),
-                        _geomap=this->geomap() );
-            form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhP ,_matrix=A,
-                _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
-                        _expr=-inner(-id(pPtr)*Id*N(),idt(lambda)),
-                        _geomap=this->geomap() );
-            Feel::cout << "OK7.3" << std::endl;
-            // \lambda .\int_{ bdry SPHERE} \sigma N()
-            auto lambda_torque = this->fieldMultiplierSelfPropTorquePtr();
-            size_type startBlockIndexSelfPropMultiplierTorque = this->startSubBlockSpaceIndex("self-prop-multiplier-torque");
-            form2( _trial=XhV, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
-                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
-                            _expr=inner(cross(2*myViscosity*deftPtr*N(),P()),id(lambda_torque)),
-                        _geomap=this->geomap() );   
-            form2( _trial=XhP, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
-                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+1 ) += integrate(_range=rangeSelfPropulsionBC,
-                            _expr=inner(cross(-idt(pPtr)*Id*N(),P()),id(lambda_torque)),
-                        _geomap=this->geomap() );    
-                        Feel::cout << "OK7.4" << std::endl; 
-            form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhV ,_matrix=A,
-                    _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque ) += integrate(_range=rangeSelfPropulsionBC,
-                    _expr=-inner(cross(2*myViscosity*deff*N(),P()),idt(lambda_torque)),
-                        _geomap=this->geomap() );
-            form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhP ,_matrix=A,
-                    _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque) += integrate(_range=rangeSelfPropulsionBC,
-                    _expr=-inner(cross(-id(pPtr)*Id*N(),P()),idt(lambda_torque)),
-                        _geomap=this->geomap() ); 
-                        Feel::cout << "OK7.5" << std::endl;
-        }
+                auto rangeSelfPropulsionBC = markedfaces(this->mesh(),{"SphereLeft","SphereRight","SphereCenter"});
+                size_type startBlockIndexSelfPropMultiplierForce = this->startSubBlockSpaceIndex("self-prop-multiplier-force");
+                auto deftPtr = sym(gradt(uPtr));
+                auto deff = sym(grad(uPtr));
+                auto myViscosity = cst(1.0);
+                auto is_empty_mesh= integrate(_range=rangeSelfPropulsionBC,
+                        _expr = cst(1.0)   ).evaluate(0,0);
+                Feel::cout << "is empty mesh " << is_empty_mesh <<std::endl;
+                auto lambda = this->fieldMultiplierSelfPropForcePtr();
+                auto XhF = this->spaceMultiplierSelfPropForcePtr();
+                Feel::cout << "startBlockIndexSelfPropMultiplierForce " << startBlockIndexSelfPropMultiplierForce << std::endl;
+                Feel::cout << "rowStartInMatrix+startBlockIndexSelfPropMultiplierForce " << rowStartInMatrix+startBlockIndexSelfPropMultiplierForce << std::endl;
+                Feel::cout << "colStartInMatrix+1 " << colStartInMatrix+1 << std::endl;
+                auto XhV = this->functionSpaceVelocity();
+                auto XhP = this->functionSpacePressure();
+                // \lambda .\int_{ bdry SPHERE} \sigma N()
+                form2( _trial=XhP, _test=XhF ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+1) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(-idt(pPtr)*Id*N(),id(lambda)),
+                            _geomap=this->geomap());
+                //auto form_try = integrate(_range=rangeSelfPropulsionBC,_expr=inner(-idt(pPtr)*Id*N(),id(lambda)),_geomap=this->geomap());
+                Feel::cout << "OK7.12" << std::endl;
+                /*form2( _trial=XhF, _test=XhF ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce) += 
+                            integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(-idt(lambda),id(lambda)),
+                            _geomap=this->geomap());
+                Feel::cout << "OK7.12" << std::endl;
+                auto bilinearFormPF = form2( _trial=XhP, _test=XhF ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+1);
+                bilinearFormPF += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(-idt(pPtr)*Id*N(),id(lambda)),
+                            _geomap=this->geomap());
+                form2( _trial=XhP, _test=XhP ,_matrix=A,
+                    _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+1) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(-idt(pPtr),id(pPtr)),
+                            _geomap=this->geomap());*/
+                Feel::cout << "OK7.12" << std::endl;
+                //------ end tests
+            
+                form2( _trial=XhV, _test=XhF ,_matrix=A,
+                    _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierForce, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=inner(2*myViscosity*deftPtr*N(),id(lambda)),
+                            _geomap=this->geomap() );
+                            
+                Feel::cout << "OK7.2" << std::endl;
+                form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhV ,_matrix=A,
+                    _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=-inner(2*myViscosity*deff*N(),idt(lambda)),
+                            _geomap=this->geomap() );
+                form2( _trial=this->spaceMultiplierSelfPropForcePtr(), _test=XhP ,_matrix=A,
+                    _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierForce  ) += integrate(_range=rangeSelfPropulsionBC,
+                            _expr=-inner(-id(pPtr)*Id*N(),idt(lambda)),
+                            _geomap=this->geomap() );
+                Feel::cout << "OK7.3" << std::endl;
+                // \lambda .\int_{ bdry SPHERE} \sigma N()
+                auto lambda_torque = this->fieldMultiplierSelfPropTorquePtr();
+                size_type startBlockIndexSelfPropMultiplierTorque = this->startSubBlockSpaceIndex("self-prop-multiplier-torque");
+                form2( _trial=XhV, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
+                        _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+0 ) += integrate(_range=rangeSelfPropulsionBC,
+                                _expr=inner(cross(2*myViscosity*deftPtr*N(),P()),id(lambda_torque)),
+                            _geomap=this->geomap() );   
+                form2( _trial=XhP, _test=this->spaceMultiplierSelfPropTorquePtr() ,_matrix=A,
+                        _rowstart=rowStartInMatrix+startBlockIndexSelfPropMultiplierTorque, _colstart=colStartInMatrix+1 ) += integrate(_range=rangeSelfPropulsionBC,
+                                _expr=inner(cross(-idt(pPtr)*Id*N(),P()),id(lambda_torque)),
+                            _geomap=this->geomap() );    
+                            Feel::cout << "OK7.4" << std::endl; 
+                form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhV ,_matrix=A,
+                        _rowstart=rowStartInMatrix+0, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque ) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=-inner(cross(2*myViscosity*deff*N(),P()),idt(lambda_torque)),
+                            _geomap=this->geomap() );
+                form2( _trial=this->spaceMultiplierSelfPropTorquePtr(), _test=XhP ,_matrix=A,
+                        _rowstart=rowStartInMatrix+1, _colstart=colStartInMatrix+startBlockIndexSelfPropMultiplierTorque) += integrate(_range=rangeSelfPropulsionBC,
+                        _expr=-inner(cross(-id(pPtr)*Id*N(),P()),idt(lambda_torque)),
+                            _geomap=this->geomap() ); 
+                            Feel::cout << "OK7.5" << std::endl;
+            }
+    }
     //--------------------------------------------------------------------------------------------------//
     if ( Environment::numberOfProcessors() == 1 && boption("export.matlab") )
     {   
@@ -1090,11 +1136,12 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
 
     for( auto const& d : M_bcMovingBoundaryImposed )
     {
+        // NEW LUCA -> modification
         auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
-        bilinearFormVV +=
+        /*bilinearFormVV +=
             on( _range=markedfaces(this->mesh(),listMarkerFaces),
                 _element=u, _rhs=F,
-                _expr=idv(M_meshALE->velocity()) );
+                _expr=idv(M_meshALE->velocity()) );*/
     }
 
     if ( this->hasMarkerPressureBC() )
@@ -1126,6 +1173,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
                    _colstart=this->colStartInMatrix()+startBlockIndexTranslationalVelocity ) +=
                 on( _range=bpbc.rangeMarkedFacesOnFluid(), _rhs=F, _element=*M_fieldVelocity, _expr=bpbc.translationalVelocityExpr() );*/
 
+        
         if ( bpbc.hasTranslationalVelocityExpr() )
         {
             size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
