@@ -2011,8 +2011,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                                                             "cfpdes",
                                                             this->worldCommPtr(), "", this->repository() ) );
 
+    bool isSpalartAllmarasTurbulenceModel = this->hasTurbulenceModel( "Spalart-Allmaras" );
+    
     std::string eqkeyword;
-    if ( this->hasTurbulenceModel( "Spalart-Allmaras" ) )
+    if ( isSpalartAllmarasTurbulenceModel )
     {
         /*std::string*/ eqkeyword = prefixvm( this->keyword(), "turbulence_SA", "_" );
         M_turbulenceModelType->addGenericPDE( typename FeelModels::ModelGenericPDE<nDim>::infos_type( eqkeyword, "solution", "nu", "Pch1" ) );
@@ -2034,8 +2036,21 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
     std::string exprstr_velocity = nDim==2? (boost::format("{%1%,%2%}:%1%:%2%")%symb_velocity_x %symb_velocity_y).str() :
         (boost::format("{%1%,%2%,%3%}:%1%:%2%:%3%")%symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
 
+    auto myCvrtSeqToStr = []( auto const& cont ) {
+        std::string markerListStr;
+        for ( std::string const& mark : cont )
+        {
+            if ( !markerListStr.empty() )
+                markerListStr += ",";
+            markerListStr += "\"" + mark + "\"";
+        }
+        return markerListStr;
+    };
+
+
     std::ostringstream ostr;
-    std::vector<std::string> strInitialConditions;
+    //std::vector<std::string> strInitialConditions;
+    std::map<std::string,std::vector<std::string>> strInitialConditions;
     ostr << "{";
 
     ostr << "\"Materials\":{";
@@ -2157,25 +2172,27 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
                 // initials coondition
                 std::ostringstream ostr_ic;
-                ostr_ic << "\"markers\":[";
-                bool isFirstMark = true;
-                for ( std::string const& m : matProps.markers() )
-                {
-                    if ( !isFirstMark )
-                        ostr_ic << ",";
-                    ostr_ic << "\"" << m << "\"";
-                    isFirstMark = false;
-                }
-                ostr_ic << "],"
+                ostr_ic << "\"markers\":[" << myCvrtSeqToStr( matProps.markers() ) <<  "],"
+                // bool isFirstMark = true;
+                // for ( std::string const& m : matProps.markers() )
+                // {
+                //     if ( !isFirstMark )
+                //         ostr_ic << ",";
+                //     ostr_ic << "\"" << m << "\"";
+                //     isFirstMark = false;
+                // }
+                // ostr_ic << "],"
                         << "\"expr\":\"" << (boost::format("%1%/%2%:%1%:%2%")%symbDynViscosity %symbDensity ).str() << "\"";
-                strInitialConditions.push_back( ostr_ic.str() );
+                strInitialConditions["solution"].push_back( ostr_ic.str() );
             }
             else if ( physicFluidData->turbulence().model() == "k-epsilon" )
             {
                 std::string eqkeyword_k = std::get<0>( M_turbulenceModelType->pdes()[0] ).equationName();
+                std::string unknownName_k = std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownName();
                 std::string symb_sol_k_base = std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownSymbol();
                 std::string symb_sol_k = prefixvm( eqkeyword_k, symb_sol_k_base , "_" );
                 std::string eqkeyword_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).equationName();
+                std::string unknownName_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).unknownName();
                 std::string symb_sol_epsilon_base = std::get<0>( M_turbulenceModelType->pdes()[1] ).unknownSymbol();
                 std::string symb_sol_epsilon = prefixvm( eqkeyword_epsilon, symb_sol_epsilon_base , "_" );
 
@@ -2200,7 +2217,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                     ostr << ",\""<<eqkeyword_k << "_d\":\"" << (boost::format("%1%:%1%")%symbDensity).str() << "\"";
 
                 std::string exprstr_diffusion_epsilon = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosity %symb_sigma_epsilon ).str() ;
-                std::string exprstr_reaction_epsilon = (boost::format("-(%1%/%2%)*( %3%*%4%^2 + %5%*%6%*%7%/%2% ):%1%:%2%:%3%:%4%:%5%:%6%:%7%") %symb_c_1epsilon %symb_sol_k %symbTurbulentDynViscosity %symb_strain_rate_magnitude %symb_c_2epsilon %symbDensity %symb_sol_epsilon ).str();
+                std::string exprstr_reaction_epsilon = (boost::format("-(%1%/%2%)*( %3%*%4%^2 ) + %5%*%6%*%7%/%2% :%1%:%2%:%3%:%4%:%5%:%6%:%7%") %symb_c_1epsilon %symb_sol_k %symbTurbulentDynViscosity %symb_strain_rate_magnitude %symb_c_2epsilon %symbDensity %symb_sol_epsilon ).str();
                 ostr << ",";
                 ostr << "\""<<eqkeyword_epsilon << "_beta\":\"" << exprstr_convection << "\","
                      << "\""<<eqkeyword_epsilon << "_c\":\"" << exprstr_diffusion_epsilon << "\","
@@ -2219,6 +2236,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 tkeExpr.setExpr( tkeStr, this->worldComm(), this->repository().expr() );
                 this->materialsProperties()->addProperty( matProps, "turbulent-kinetic-energy", tkeExpr, true );
 
+                // initials coondition
+                double mixing_length_limit = 0.035*0.0635/2.; //???
+                std::ostringstream ostr_ic_k;
+                ostr_ic_k << "\"markers\":[" << myCvrtSeqToStr( matProps.markers() ) <<  "],"
+                          << "\"expr\":\"" << (boost::format(" (1*%1%/( %2%*0.1*%3% ) )^2 :%1%:%2%")%symbDynViscosity %symbDensity %mixing_length_limit ).str() << "\"";
+                strInitialConditions[unknownName_k].push_back( ostr_ic_k.str() );
+                std::ostringstream ostr_ic_epsilon;
+                ostr_ic_epsilon << "\"markers\":[" << myCvrtSeqToStr( matProps.markers() ) <<  "],"
+                                << "\"expr\":\"" << (boost::format("( (1*%1%/( %2%*0.1*%3% ) )^3 )*%4%/( %2%*0.1*%3% ) :%1%:%2%:%4%")%symbDynViscosity %symbDensity %mixing_length_limit %symb_c_mu ).str() << "\"";
+                strInitialConditions[unknownName_epsilon].push_back( ostr_ic_epsilon.str() );
+
+
             } // k-epsilon
             ostr << "}"; // end mymat1
 
@@ -2229,77 +2258,97 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
     ostr << ",";
     ostr << "\"InitialConditions\":{";
-    ostr << "\"solution\":{";
-    ostr << "\"Expression\":{";
-    for ( int k=0;k<strInitialConditions.size();++k )
-        ostr << "\"" << (boost::format("myic_%1%")%k ).str() << "\":{" << strInitialConditions[k] << "}";
-    ostr << "}"; // end Expression
-    ostr << "}"; // end solution
+    bool writeFirstField = true;
+    for ( auto const& [ nameField, icExprSubSections ] : strInitialConditions )
+    {
+        if ( !writeFirstField )
+            ostr << ",";
+        ostr << "\""<< nameField << "\":{";
+        ostr << "\"Expression\":{";
+        for ( int k=0;k<icExprSubSections.size();++k )
+            ostr << "\"" << (boost::format("myic_%1%")%k ).str() << "\":{" << icExprSubSections[k] << "}";
+        ostr << "}"; // end Expression
+        ostr << "}"; // end solution
+        writeFirstField = false;
+    }
     ostr << "}"; //end InitialConditions
 
 
     ostr << ",";
     ostr << "\"BoundaryConditions\":{";
-
-    ostr << "\"" << eqkeyword << "\":{";
-
-    ostr << "\"Dirichlet\":{";
-
-    bool writeFirstBc=true;
-    for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
+    if ( isSpalartAllmarasTurbulenceModel )
     {
-        std::string markerListStr;
-        for (  std::string const& mark : bcInlet.markers() )
+        ostr << "\"" << eqkeyword << "\":{";
+        ostr << "\"Dirichlet\":{";
+        bool writeFirstBc=true;
+        for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
         {
-            if ( !markerListStr.empty() )
-                markerListStr += ",";
-            markerListStr += "\"" + mark + "\"";
+            if ( !writeFirstBc )
+                ostr << ",";
+            ostr << "\""<< bcName << "\":{"
+                 << "\"markers\":[" << myCvrtSeqToStr( bcInlet.markers() ) << "],"
+                 << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
+                 << "}";
+            writeFirstBc = false;
         }
-        if ( !writeFirstBc )
-            ostr << ",";
-        ostr << "\""<< bcName << "\":{"
-             << "\"markers\":[" << markerListStr << "],"
-             << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
-             << "}";
-        writeFirstBc = false;
+        for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
+        {
+            if ( !writeFirstBc )
+                ostr << ",";
+            ostr << "\""<< bcName << "\":{"
+                 << "\"markers\":[" << myCvrtSeqToStr( bcWall.markers() ) << "],"
+                 << "\"expr\":\"0\""
+                 << "}";
+            writeFirstBc = false;
+        }
+        ostr << "}"; // end Dirichlet
+        ostr << "}"; // end eqkeyword
     }
-    for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
+    else // k-epsilon
     {
-        std::string markerListStr;
-        for (  std::string const& mark : bcWall.markers() )
+        std::string eqkeyword_k = std::get<0>( M_turbulenceModelType->pdes()[0] ).equationName();
+        ostr << "\"" << eqkeyword_k << "\":{";
+        ostr << "\"Dirichlet\":{";
+        bool writeFirstBc=true;
+        for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
         {
-            if ( !markerListStr.empty() )
-                markerListStr += ",";
-            markerListStr += "\"" + mark + "\"";
+            double turbulenceIntensity = 0.05;
+            double umax = 15.6;
+            double L = 0.0635/2.;
+            double c_mu = 0.09;
+            if ( !writeFirstBc )
+                ostr << ",";
+            ostr << "\""<< bcName << "\":{"
+                 << "\"markers\":[" << myCvrtSeqToStr( bcInlet.markers() ) << "],"
+                 << "\"expr\":\""<<(boost::format("(3/2)*(%1%*%2%)^2") %umax %turbulenceIntensity).str() << "\""
+                 << "}";
+            writeFirstBc = false;
         }
-        if ( !writeFirstBc )
-            ostr << ",";
-        ostr << "\""<< bcName << "\":{"
-             << "\"markers\":[" << markerListStr << "],"
-             << "\"expr\":\"0\""
-             << "}";
-        writeFirstBc = false;
+        ostr << "}"; // end Dirichlet
+        ostr << "}"; // end eqkeyword_k
+        ostr << ",";
+        std::string eqkeyword_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).equationName();
+        ostr << "\"" << eqkeyword_epsilon << "\":{";
+        ostr << "\"Dirichlet\":{";
+        writeFirstBc=true;
+        for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
+        {
+            double turbulenceIntensity = 0.05;
+            double umax = 15.6;
+            double L = 0.0635/2.;
+            double c_mu = 0.09;
+            if ( !writeFirstBc )
+                ostr << ",";
+            ostr << "\""<< bcName << "\":{"
+                 << "\"markers\":[" << myCvrtSeqToStr( bcInlet.markers() ) << "],"
+                 << "\"expr\":\""<<(boost::format("%1%^(3/4)* ( ( (3/2)*(%2%*%3%)^2 )^(3/2) )/(0.035*%4% ) ")%c_mu %umax %turbulenceIntensity %L).str() << "\""
+                 << "}";
+            writeFirstBc = false;
+        }
+        ostr << "}"; // end Dirichlet
+        ostr << "}"; // end eqkeyword_epsilon
+
     }
-
-#if 0
-    ostr << "\"mybc\":{"
-        //<< "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
-         << "\"markers\":[\"Gamma1\",\"Gamma3\"],"
-         << "\"expr\":\"0\""
-         << "}";
-
-    //inlet gamma4
-    //outlet gamma2
-    ostr << ",";
-    ostr << "\"mybc2\":{"
-        //<< "\"markers\":[\"Gamma1\",\"Gamma2\",\"Gamma3\",\"Gamma4\"],"
-         << "\"markers\":[\"Gamma4\"],"
-         << "\"expr\":\"3*materials_mu/materials_rho:materials_mu:materials_rho\""
-         << "}";
-#endif
-
-    ostr << "}"; // end Dirichlet
-    ostr << "}"; // end eqkeyword
     ostr << "}"; //end BoundaryConditions
 
     ostr << "}";
