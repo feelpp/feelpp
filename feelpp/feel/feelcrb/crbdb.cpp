@@ -205,7 +205,7 @@ CRBDB::idFromDBLast( crb::last last ) const
                  % Feel::Environment::rootRepository()
                  % M_name ).str();
     if( !fs::exists(dir)  && !fs::is_directory(dir) )
-        throw std::invalid_argument(std::string("db directory ") + dir + " does not exist");
+        return uuids::nil_uuid();
 
     std::vector<fs::path> d;
     typedef std::multimap<std::time_t, fs::path> result_set_t;
@@ -232,8 +232,9 @@ CRBDB::idFromDBLast( crb::last last ) const
         std::cout << "Last " << ((last==crb::last::modified)?"modified":"created") << " db: " << dbfname.string() << std::endl;
         return this->id(dbfname);
     }
-    throw std::invalid_argument(std::string("Last database for ") + name() + " not found");
+    return uuids::nil_uuid();
 }
+
 fs::path
 CRBDB::dbLast( crb::last last, std::string const& root ) const
 {

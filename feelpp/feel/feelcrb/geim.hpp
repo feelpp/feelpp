@@ -206,7 +206,7 @@ GEIM<FunctionSpace>::GEIM(std::string name,
     M_stage(crb::stage::offline)
 {
     if( M_sigmas.size() == 0 )
-        Feel::cout << tc::red << "You need to give a set linear forms !!" << tc::reset << std::endl;
+        throw std::invalid_argument("No linear forms provided");
 
     if( this->id().is_nil() )
         this->findDBUuid();
@@ -216,6 +216,16 @@ GEIM<FunctionSpace>::GEIM(std::string name,
     M_Xh = M_currentQ.functionSpace();
 
     this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), crb::load::all );
+
+    if( M_rebuildDb )
+    {
+        M_M = 0;
+        M_q.clear();
+        M_indices.clear();
+        M_mus.clear();
+        M_B = matrixN_type(0,0);
+    }
+
 }
 
 template<typename FunctionSpace>
@@ -248,7 +258,7 @@ GEIM<FunctionSpace>::findDBUuid()
         if( M_stage == crb::stage::offline )
             this->setDBDirectory(Environment::randomUUID(true));
         else
-            Feel::cout << tc::red << "No DB found during online phase !!" << tc::reset << std::endl;
+            throw std::invalid_argument("Database not found during online phase");
     }
 }
 
@@ -375,15 +385,6 @@ GEIM<FunctionSpace>::offline()
     parameter_type mu;
     double error = std::numeric_limits<double>::max();
 
-    if( M_rebuildDb )
-    {
-        M_M = 0;
-        M_q.clear();
-        M_indices.clear();
-        M_mus.clear();
-        M_B = matrixN_type(0,0);
-    }
-
     while( M_M < M_MaxM )
     {
         double nMax = std::numeric_limits<double>::lowest();
@@ -473,7 +474,6 @@ GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
         if ( ifs )
         {
             Feel::cout << "loading DB at " << filename << std::endl;
-            //boost::archive::text_oarchive oa( ofs );
             boost::archive::binary_iarchive ia( ifs );
             if( l > crb::load::none )
             {

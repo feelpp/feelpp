@@ -7,6 +7,7 @@
 #include <feel/feelcrb/geim.hpp>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/unitsquare.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <feel/feelvf/vf.hpp>
 
 using namespace Feel;
@@ -20,7 +21,7 @@ po::options_description makeOptions()
     options.add_options()
         ("nb-sensors", po::value<int>()->default_value(5), "nb of sensors in x direction")
         ("radius", po::value<double>()->default_value(0.2), "radius of sensors")
-        ("trainset-size", po::value<int>()->default_value(100), "number of parameter in the trainset")
+        ("trainset-size", po::value<int>()->default_value(7), "number of parameter in the trainset")
         ( "geim.dimension-max", po::value<int>()->default_value(10), "maximum number of basis" )
         ( "geim.tolerance", po::value<double>()->default_value(1e-10), "tolerance" )
         ( "geim.rebuild-database", po::value<bool>()->default_value(true), "rebuild the database" )
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     double r = doption("radius");
     int trainsetSize = ioption("trainset-size");
 
-    auto mesh = unitSquare();
+    auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_geim.geo" );
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
 
@@ -82,12 +83,12 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
         }
     }
 
-    auto Dmu = parameterspace_type::New(2);
+    auto Dmu = parameterspace_type::New(4);
     auto muMin = Dmu->element();
-    muMin << -2, -2;
+    muMin << 0.1, -2, -2, -2;
     Dmu->setMin(muMin);
     auto muMax = Dmu->element();
-    muMax << 2, 2;
+    muMax << 3, 2, 2, 2;
     Dmu->setMax(muMax);
     auto Pset = Dmu->sampling();
     Pset->randomize(trainsetSize);
@@ -96,9 +97,14 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
                       auto u = Xh->element();
                       auto a = form2(_test=Xh, _trial=Xh);
                       auto f = form1(_test=Xh);
-                      a = integrate(_range=elements(mesh), _expr=inner(gradt(u),grad(u)) );
-                      a += on(_range=boundaryfaces(mesh), _rhs=f, _element=u,
-                              _expr=mu(0)*Px()*Px()*Py()+mu(1)*Py()*Py()*Px());
+                      a = integrate(_range=markedelements(mesh, "Omega1"),
+                                    _expr=inner(gradt(u),grad(u)) );
+                      a += integrate(_range=markedelements(mesh, "Omega2"),
+                                     _expr=mu(0)*inner(gradt(u),grad(u)) );
+                      f = integrate(_range=markedfaces(mesh, "left"), _expr=mu(1)*id(u));
+                      f += integrate(_range=markedfaces(mesh, "right"), _expr=mu(2)*id(u));
+                      a += on(_range=markedfaces(mesh, std::list<std::string>({"bottom","top"})),
+                              _rhs=f, _element=u, _expr=cst(mu(3)));
                       a.solve(_rhs=f, _solution=u, _name="geim");
                       return u;
                   };
@@ -112,8 +118,8 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     for(int i = 0; i < M; ++i )
     {
         for(int j = 0; j < i; ++j )
-            BOOST_CHECK_SMALL(B(j,i), 1e-12);
-        BOOST_CHECK_SMALL(B(i,i)-1, 1e-12);
+            BOOST_CHECK_SMALL(B(j,i), 1e-10);
+        BOOST_CHECK_SMALL(B(i,i)-1, 1e-10);
     }
     Feel::cout << B << std::endl;
 
@@ -129,7 +135,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     }
     double max = *max_element(errors.begin(), errors.end());
     Feel::cout << "maximum error = " << max << std::endl;
-    BOOST_CHECK_SMALL( max , 1e-8 );
+    BOOST_CHECK_SMALL( max , 1e-5 );
 }
 
 BOOST_AUTO_TEST_CASE( test_eim_online )
@@ -146,19 +152,9 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     int nbSensors = ioption("nb-sensors");
     double r = doption("radius");
 
-    auto mesh = unitSquare();
+    auto mesh = loadMesh(_mesh=new mesh_type, _filename="test_geim.geo");
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
-
-    auto Dmu = parameterspace_type::New(2);
-    auto muMin = Dmu->element();
-    muMin << -2, -2;
-    Dmu->setMin(muMin);
-    auto muMax = Dmu->element();
-    muMax << 2, 2;
-    Dmu->setMax(muMax);
-    auto Pset = Dmu->sampling();
-    Pset->randomize(20);
 
     std::vector<vector_ptrtype> sigmas;
     for( double x = 0; x < 1; x += 1./nbSensors )
@@ -173,13 +169,28 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
         }
     }
 
+    auto Dmu = parameterspace_type::New(4);
+    auto muMin = Dmu->element();
+    muMin << 0.1, -2, -2, -2;
+    Dmu->setMin(muMin);
+    auto muMax = Dmu->element();
+    muMax << 3, 2, 2, 2;
+    Dmu->setMax(muMax);
+    auto Pset = Dmu->sampling();
+    Pset->randomize(20);
+
     auto solver = [mesh,Xh](parameter_type const& mu) -> element_type {
                       auto u = Xh->element();
                       auto a = form2(_test=Xh, _trial=Xh);
                       auto f = form1(_test=Xh);
-                      a = integrate(_range=elements(mesh), _expr=inner(gradt(u),grad(u)) );
-                      a += on(_range=boundaryfaces(mesh), _rhs=f, _element=u,
-                              _expr=mu(0)*Px()*Px()*Py()+mu(1)*Py()*Py()*Px());
+                      a = integrate(_range=markedelements(mesh, "Omega1"),
+                                    _expr=inner(gradt(u),grad(u)) );
+                      a += integrate(_range=markedelements(mesh, "Omega2"),
+                                     _expr=mu(0)*inner(gradt(u),grad(u)) );
+                      f = integrate(_range=markedfaces(mesh, "left"), _expr=mu(1)*id(u));
+                      f += integrate(_range=markedfaces(mesh, "right"), _expr=mu(2)*id(u));
+                      a += on(_range=markedfaces(mesh, std::list<std::string>({"bottom","top"})),
+                              _rhs=f, _element=u, _expr=cst(mu(3)));
                       a.solve(_rhs=f, _solution=u, _name="geim");
                       return u;
                   };
@@ -202,6 +213,6 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     }
     double max = *max_element(errors.begin(), errors.end());
     Feel::cout << "maximum error = " << max << std::endl;
-    BOOST_CHECK_SMALL( max , 1e-8 );
+    BOOST_CHECK_SMALL( max , 1e-5 );
 }
 BOOST_AUTO_TEST_SUITE_END()

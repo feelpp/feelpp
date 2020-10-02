@@ -309,7 +309,7 @@ public:
     /**
      * check existence of db file
      * @param[in] last What last file type
-     * @return The uuid of the corresponding db
+     * @return The uuid of the corresponding db or uuid_nil if nothing found
      */
     uuids::uuid idFromDBLast( crb::last last = crb::last::modified ) const;
 
