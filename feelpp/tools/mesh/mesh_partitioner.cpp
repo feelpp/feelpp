@@ -106,7 +106,7 @@ int main( int argc, char** argv )
             std::cout << "do nothing because --ifile : " << pathInputMesh.string() << " does not exist\n";
         return 0;
     }
-#if 0
+
     if ( dim == 1 )
     {
         partition<Simplex<1>>( nParts, partconfig );
@@ -150,10 +150,6 @@ int main( int argc, char** argv )
             }
         }
     }
-#else
-    partition<Simplex<3>>( nParts, partconfig );
-#endif
-
     return 0;
 
 }
