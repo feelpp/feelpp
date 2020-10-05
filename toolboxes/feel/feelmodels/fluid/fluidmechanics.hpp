@@ -153,7 +153,7 @@ public:
     // function space P0 continuous scalar on trace
     typedef FunctionSpace<trace_mesh_type, bases<Lagrange<0, Scalar,Continuous>>> space_trace_p0c_scalar_type;
     typedef std::shared_ptr<space_trace_p0c_scalar_type> space_trace_p0c_scalar_ptrtype;
-    // NEW : LUCA -> SELF PROPULSION
+    // NEW Luca : function spaces P0 for self-propulsion multipliers
     typedef Lagrange<0, Vectorial,Continuous> basis_force_self_propulsion_multiplier_type;
     typedef typename mpl::if_< mpl::equal_to<mpl::int_<nDim>,mpl::int_<2> >,
                                    Lagrange<0, Scalar,Continuous>,
@@ -181,7 +181,7 @@ public:
     space_torque_self_propulsion_multiplier_ptrtype const& spaceMultiplierSelfPropTorquePtr() const { return M_XhMultiplierSelfPropulsionTorque; }
     torque_self_propulsion_multiplier_element_ptrtype const& fieldMultiplierSelfPropTorquePtr() const { return M_MultiplierSelfPropulsionTorque; }
     torque_self_propulsion_multiplier_element_ptrtype & fieldMultiplierSelfPropTorquePtr() { return M_MultiplierSelfPropulsionTorque; }
-    bool defineSelfPropulsion() const { return M_selfPropulsion; }
+    bool defineSelfPropulsion() const { return M_selfPropulsion; }    
 
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -474,7 +474,7 @@ public:
         element_trace_p0c_vectorial_ptrtype fieldTranslationalVelocityPtr() const { return M_fieldTranslationalVelocity; }
         element_trace_angular_velocity_ptrtype fieldAngularVelocityPtr() const { return M_fieldAngularVelocity; }
 
-        // NEW : LUCA -> accessor to multipliers
+        // NEW : LUCA -> accessor to multipliers for relative speed difference
         space_trace_p0c_vectorial_ptrtype spaceMultiplierDifferencePtr() const { return M_XhVelocityDifferenceMultiplier1; }
         element_trace_p0c_vectorial_ptrtype fieldMultiplierDifferencePtr() const { return M_VelocityDifferenceMultiplier1; }
         
@@ -570,10 +570,13 @@ public:
         sparse_matrix_ptrtype M_matrixPTilde_translational, M_matrixPTilde_angular;
         ModelExpression M_translationalVelocityExpr, M_angularVelocityExpr;
 
-        // NEW : LUCA -> definition of the 4 new multipliers
-        space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier1; // just this one is defined
-        element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier1; // just this one is defined
-        
+        // NEW : LUCA -> definition of the multiplier for relative speed difference
+        space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier1; 
+        element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier1;
+        bool M_hasArticulatedBody;
+        bool hasArticulatedBody() const {return M_hasArticulatedBody;}
+        std::string M_ArticulationTreatment;
+        std::string ArticulationTreatment() const {return M_ArticulationTreatment; }
 
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;
@@ -1633,7 +1636,7 @@ public :
     void updateJacobian_Turbulence( DataUpdateJacobian & data ) const;
     template <typename ModelContextType>
     void updateJacobian_Turbulence( DataUpdateJacobian & data, ModelContextType const& mfields ) const;
-    // NEW LUCA
+    // NEW LUCA -> make the bodies accessible at the toolbox level
     BodySetBoundaryCondition const& bodySet() const {return M_bodySetBC; }
     BodySetBoundaryCondition & bodySet() {return M_bodySetBC; }
 private :

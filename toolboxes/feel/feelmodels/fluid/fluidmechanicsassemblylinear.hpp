@@ -778,67 +778,69 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                         }
                     }
                 }
-                
-                // NEW : LUCA 
-                // MULTIPLIERS FOR RELATIVE VELOCITIES
-                for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
                 {
-                    if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                    // NEW : LUCA 
+                    // MULTIPLIERS FOR RELATIVE VELOCITIES
+                    for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
                     {
-                        // NEW : LUCA
-                        bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
-                        int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
-                        bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
-                        if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
+                        if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
                         {
-                        size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
-                        size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+                            // NEW : LUCA
+                            bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                            int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
+                            bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
+                            if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
+                            {
+                            size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                            size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
 
-                        size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-                        auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
-                        size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
-                        auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
-                        auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
-                        for (int d=0;d<nDim;++d)
-                        {
-                            A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow[d],
-                                    1.0);
-                            A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow1[d], 
-                                    1.0 );
-                            A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow[d],
-                                    -1.0 );
-                            A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow2[d], 
-                                    -1.0 );
+                            size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                            auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
+                            size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                            auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
+                            auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
+                            for (int d=0;d<nDim;++d)
+                            {
+                                A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow[d],
+                                        1.0);
+                                A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow1[d], 
+                                        1.0 );
+                                A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow[d],
+                                        -1.0 );
+                                A->add( basisToContainerGpMultiplierRow[d], basisToContainerGpTranslationalVelocityRow2[d], 
+                                        -1.0 );
+                            }
+                            }
+                        
                         }
-                        }
-                    
-                    }
-                    else if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") 
-                    {
-                        bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
-                        int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
-                        bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
-                        if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
+                        else if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") 
                         {
-                        size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
-                        size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+                            bool hasActiveDofTranslationalVelocity2 = bpbc2.spaceTranslationalVelocity()->nLocalDofWithoutGhost() > 0;
+                            int nLocalDofAngularVelocity2 = bpbc2.spaceAngularVelocity()->nLocalDofWithoutGhost();
+                            bool hasActiveDofAngularVelocity2 = nLocalDofAngularVelocity > 0;
+                            if ( hasActiveDofTranslationalVelocity && hasActiveDofTranslationalVelocity2 )
+                            {
+                            size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                            size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
 
-                        size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-                        auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
-                        size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
-                        auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
-                        auto const& basisToContainerGpMultiplierRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
-                        for (int d=0;d<nDim;++d)
-                        {
-                            A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow2[d],
-                                    1.0 );
-                            A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow1[d], 
-                                    1.0 );
-                            A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow2[d],
-                                    -1.0 );
-                            A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow2[d], 
-                                    -1.0);
-                        }
+                            size_type startBlockIndexTranslationalVelocity1 = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                            auto const& basisToContainerGpTranslationalVelocityRow1 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity1 );
+                            size_type startBlockIndexTranslationalVelocity2 = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                            auto const& basisToContainerGpTranslationalVelocityRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexTranslationalVelocity2 );
+                            auto const& basisToContainerGpMultiplierRow2 = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
+                            for (int d=0;d<nDim;++d)
+                            {
+                                A->add( basisToContainerGpTranslationalVelocityRow1[d], basisToContainerGpMultiplierRow2[d],
+                                        1.0 );
+                                A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow1[d], 
+                                        1.0 );
+                                A->add( basisToContainerGpTranslationalVelocityRow2[d], basisToContainerGpMultiplierRow2[d],
+                                        -1.0 );
+                                A->add( basisToContainerGpMultiplierRow2[d], basisToContainerGpTranslationalVelocityRow2[d], 
+                                        -1.0);
+                            }
+                            }
                         }
                     }
                 }
@@ -1138,10 +1140,10 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDED
     {
         // NEW LUCA -> modification
         auto listMarkerFaces = M_bcMarkersMovingBoundaryImposed.markerDirichletBCByNameId( "elimination",name(d) );
-        /*bilinearFormVV +=
+        bilinearFormVV +=
             on( _range=markedfaces(this->mesh(),listMarkerFaces),
                 _element=u, _rhs=F,
-                _expr=idv(M_meshALE->velocity()) );*/
+                _expr=idv(M_meshALE->velocity()) );
     }
 
     if ( this->hasMarkerPressureBC() )

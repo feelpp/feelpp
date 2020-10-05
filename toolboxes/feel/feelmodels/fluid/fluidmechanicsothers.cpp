@@ -1637,9 +1637,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateALEmesh()
         //auto rangeMFOF = bpbc.rangeMarkedFacesOnFluid();
         // temporary fix of interpolation with meshale space
         auto rangeMFOF = FluidToolbox_detail::removeBadFace( velocityMeshSupport,bpbc.rangeMarkedFacesOnFluid() );
-        // NEW : Luca -> meshale not working?
-        //auto is_rangeMFOF_empty = integrate(_range=rangeMFOF,_expr=cst(1.0)).evaluate(0,0);
-        //Feel::cout << "is_rangeMFOF_empty " << is_rangeMFOF_empty << std::endl;
         if ( bpbc.hasTranslationalVelocityExpr() && bpbc.hasAngularVelocityExpr() && !bpbc.hasElasticVelocity() )
             this->meshALE()->updateDisplacementFieldFromVelocity( M_meshDisplacementOnInterface, bpbc.rigidVelocityExpr(), rangeMFOF );
         else if ( bpbc.hasElasticVelocityFromExpr() )
@@ -1887,13 +1884,16 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::nBlockMatrixGraph() const
     nBlock += 2*M_bodySetBC.size();
     // NEW : LUCA -> add the two blocks for the multipliers of speed difference in the matrix
     // MULTIPLIERS FOR RELATIVE VELOCITIES
-    for  ( auto const& [bpname,bpbc] : M_bodySetBC )
+    if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
     {
-        Feel::cout<< "Here is the body name in fmothers "<< bpbc.name() << std::endl;
-            if (bpbc.name() =="SphereCenter")
-            {
-                nBlock += 2;
-            }
+        for  ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            Feel::cout<< "Here is the body name in fmothers "<< bpbc.name() << std::endl;
+                if (bpbc.name() =="SphereCenter")
+                {
+                    nBlock += 2;
+                }
+        }
     }
     if (defineSelfPropulsion())
     {
@@ -2029,39 +2029,42 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
         ++indexBlock;
     }
     // NEW : LUCA -> MULTIPLIERS FOR RELATIVE VELOCITIES
-    int indexBlockUntilNow = indexBlock;
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
     {
-        Feel::cout << bpbc.name() << std::endl;
-        int center_block = 0;
-        int other_block = 0;
-        for (auto const& [bpname2,bpbc2] : M_bodySetBC )
+        int indexBlockUntilNow = indexBlock;
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
-            Feel::cout << bpbc2.name() << std::endl;
-            
-            if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft"))
+            Feel::cout << bpbc.name() << std::endl;
+            int center_block = 0;
+            int other_block = 0;
+            for (auto const& [bpname2,bpbc2] : M_bodySetBC )
             {
-                int indexBlockOtherTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*other_block;
-                int indexBlockCenterTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*center_block;
-                Feel::cout << "indexBlockOtherTranslationalVelocity: " << indexBlockOtherTranslationalVelocity << std::endl;
-                myblockGraph(indexBlock,indexBlockOtherTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
-                                                    _trial=bpbc2.spaceTranslationalVelocity(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-                myblockGraph(indexBlockOtherTranslationalVelocity,indexBlock) = stencil(_test=bpbc2.spaceTranslationalVelocity(),
-                                                    _trial=bpbc.spaceMultiplierDifferencePtr(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-                myblockGraph(indexBlock,indexBlockCenterTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
-                                                    _trial=bpbc.spaceTranslationalVelocity(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-                myblockGraph(indexBlockCenterTranslationalVelocity,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),
-                                                    _trial=bpbc.spaceMultiplierDifferencePtr(),
-                                                      _diag_is_nonzero=false,_close=false)->graph();
-                ++indexBlock;
+                Feel::cout << bpbc2.name() << std::endl;
+                
+                if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft"))
+                {
+                    int indexBlockOtherTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*other_block;
+                    int indexBlockCenterTranslationalVelocity = indexBlockUntilNow-2*M_bodySetBC.size()+2*center_block;
+                    Feel::cout << "indexBlockOtherTranslationalVelocity: " << indexBlockOtherTranslationalVelocity << std::endl;
+                    myblockGraph(indexBlock,indexBlockOtherTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
+                                                        _trial=bpbc2.spaceTranslationalVelocity(),
+                                                        _diag_is_nonzero=false,_close=false)->graph();
+                    myblockGraph(indexBlockOtherTranslationalVelocity,indexBlock) = stencil(_test=bpbc2.spaceTranslationalVelocity(),
+                                                        _trial=bpbc.spaceMultiplierDifferencePtr(),
+                                                        _diag_is_nonzero=false,_close=false)->graph();
+                    myblockGraph(indexBlock,indexBlockCenterTranslationalVelocity) = stencil(_test=bpbc.spaceMultiplierDifferencePtr(),
+                                                        _trial=bpbc.spaceTranslationalVelocity(),
+                                                        _diag_is_nonzero=false,_close=false)->graph();
+                    myblockGraph(indexBlockCenterTranslationalVelocity,indexBlock) = stencil(_test=bpbc.spaceTranslationalVelocity(),
+                                                        _trial=bpbc.spaceMultiplierDifferencePtr(),
+                                                        _diag_is_nonzero=false,_close=false)->graph();
+                    ++indexBlock;
+                }
+                
+                other_block++;
             }
-            
-            other_block++;
+            center_block++;
         }
-        center_block++;
     }
     // NEW : Luca -> self propulsion
     if (defineSelfPropulsion())

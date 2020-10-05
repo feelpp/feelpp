@@ -262,7 +262,8 @@ fluidMechanics_options(std::string const& prefix)
         (prefixvm(prefix,"pcd.apply-homogeneous-dirichlet-in-newton").c_str(), Feel::po::value<bool>()->default_value(false), "use-gravity-force")
         // NEW : Luca
         (prefixvm(prefix,"self-propulsion").c_str(), Feel::po::value<bool>()->default_value( false ), "impose the self-propulsion constraints")
-        
+        (prefixvm(prefix,"has-articulated-body").c_str(), Feel::po::value<bool>()->default_value( false ), "is the body articulated")
+        (prefixvm(prefix,"articulation-treatment").c_str(), Feel::po::value<std::string>()->default_value("lm"), "use Lagrange multipliers to impose relative velocities on the articulations") 
         ;
 
     fluidOptions

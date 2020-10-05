@@ -204,8 +204,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadParameterFromOptionsVm()
     M_pmmNeedUpdate = false;
     M_preconditionerAttachPCD = boption(_prefix=this->prefix(),_name="preconditioner.attach-pcd");
 
-    // NEW : Luca -> 
+    // NEW : Luca -> boolean determining whether self-propulsion is imposed or not
     M_selfPropulsion = boption(_name="self-propulsion",_prefix=this->prefix());
+    M_hasArticulatedBody = boption(_name="has-articulated-body",_prefix=this->prefix());
+    M_ArticulationTreatment = soption(_name="articulation-treatment",_prefix=this->prefix());
 
     this->log("FluidMechanics","loadParameterFromOptionsVm", "finish");
 }
@@ -1870,16 +1872,19 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initStartBlockIndexFieldsInMatrix()
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".translational-velocity", currentStartIndex++ );
         this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".angular-velocity", currentStartIndex++ );
     }
-    // LUCA : MULTIPLIERS FOR RELATIVE VELOCITIES
-    for ( auto const& [bpname,bpbc] : M_bodySetBC )
+    if(this->hasArticulatedBody() && this->ArticulationTreatment() == "lm")
     {
-        // NEW : LUCA -> first all the speeds, and then the multipliers
-        Feel::cout << "Here is the name of the object "<< bpbc.name() << std::endl;
-            if (bpbc.name() =="SphereCenter")
-            {
-                this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1", currentStartIndex++ ); //left sphere
-                this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2", currentStartIndex++ ); // right sphere
-            }
+        // LUCA : MULTIPLIERS FOR RELATIVE VELOCITIES
+        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        {
+            // NEW : LUCA -> first all the speeds, and then the multipliers
+            Feel::cout << "Here is the name of the object "<< bpbc.name() << std::endl;
+                if (bpbc.name() =="SphereCenter")
+                {
+                    this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1", currentStartIndex++ ); //left sphere
+                    this->setStartSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2", currentStartIndex++ ); // right sphere
+                }
+        }
     }
     // NEW : self propulsion multipliers
     if (defineSelfPropulsion())
@@ -1962,18 +1967,22 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBlockVector()
             M_blockVectorSolution(cptBlock++) = bpbc.fieldAngularVelocityPtr();
             
         } 
+        if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
+        {   
+            Feel::cout << "Articulation treatment is " << this->ArticulationTreatment() << std::endl;
         // LUCA : MULTIPLIERS FOR RELATIVE VELOCITIES
-        for ( auto const& [bpname,bpbc] : M_bodySetBC )
-        {      
-        // NEW : LUCA -> first all the speeds, and then the multipliers
-            Feel::cout << bpbc.name() << std::endl;
-            if (bpbc.name() =="SphereCenter")
-            {
-                M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
-                M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
-                
-            }
-        }  
+            for ( auto const& [bpname,bpbc] : M_bodySetBC )
+            {      
+            // NEW : LUCA -> first all the speeds, and then the multipliers
+                Feel::cout << bpbc.name() << std::endl;
+                if (bpbc.name() =="SphereCenter")
+                {
+                    M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
+                    M_blockVectorSolution(cptBlock++) = bpbc.fieldMultiplierDifferencePtr();
+                    
+                }
+          }  
+        }
     }
     if (defineSelfPropulsion())
     {
@@ -2489,9 +2498,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
 
     // NEW : LUCA -> definition of the multipliers - NB: the mesh is not important, as they are 3D vectors, not really fields
-    M_XhVelocityDifferenceMultiplier1 = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
-    M_VelocityDifferenceMultiplier1 = M_XhVelocityDifferenceMultiplier1->elementPtr();
-
+    if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
+    {
+        M_XhVelocityDifferenceMultiplier1 = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
+        M_VelocityDifferenceMultiplier1 = M_XhVelocityDifferenceMultiplier1->elementPtr();
+    }
     if ( this->hasElasticVelocityFromExpr() )
     {
         M_XhElasticVelocity = space_trace_velocity_type::New( _mesh=M_mesh );
