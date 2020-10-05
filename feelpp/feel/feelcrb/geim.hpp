@@ -28,6 +28,7 @@
 #include <feel/feelcrb/crbdb.hpp>
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 
 #include <limits>
 
@@ -45,6 +46,8 @@ public:
     using functionspace_type = FunctionSpace;
     using functionspace_ptrtype = std::shared_ptr<functionspace_type>;
     using element_type = typename functionspace_type::element_type;
+    using linearform_type = FsFunctionalLinear<functionspace_type>;
+    using linearform_ptrtype = std::shared_ptr<linearform_type>;
 
     using self_type = GEIM<functionspace_type>;
     using self_ptrtype = std::shared_ptr<self_type>;
@@ -84,7 +87,7 @@ public:
      * @param uuid Uuid to use for db
      */
     GEIM(std::string name,
-         std::vector<vector_ptrtype> sigma,
+         std::vector<linearform_ptrtype> sigma,
          sampling_ptrtype sampling,
          solver_type solver,
          uuids::uuid const& uuid = uuids::nil_uuid());
@@ -129,7 +132,7 @@ public:
     std::vector<element_type> q() const { return M_q; } /**< Interpolation basis */
     element_type q( int i ) const { return M_q[i]; } /**< i-th interpolation basis */
     std::vector<parameter_type> mus() const { return M_mus; } /**< Parameters used */
-    std::vector<vector_ptrtype> sigmas() const { return M_sigmas; } /**< Set of linear forms */
+    std::vector<linearform_ptrtype> sigmas() const { return M_sigmas; } /**< Set of linear forms */
     std::vector<index_type> indices() const { return M_indices; } /**< Set of indices of linear forms used */
     void setSolver( solver_type f ) { M_solver = f; } /**< Set solver to use */
     void setMaxM( int M ) { M_MaxM = M; } /**< Set maximum number of basis */
@@ -146,7 +149,7 @@ protected:
 private:
     std::string M_name;
     functionspace_ptrtype M_Xh;
-    std::vector<vector_ptrtype> M_sigmas;
+    std::vector<linearform_ptrtype> M_sigmas;
     std::vector<index_type> M_indices;
     sampling_ptrtype M_sampling;
     std::vector<parameter_type> M_mus;
@@ -187,7 +190,7 @@ GEIM<FunctionSpace>::GEIM(std::string name, functionspace_ptrtype const& Xh,
 
 template<typename FunctionSpace>
 GEIM<FunctionSpace>::GEIM(std::string name,
-                          std::vector<vector_ptrtype> sigma,
+                          std::vector<linearform_ptrtype> sigma,
                           sampling_ptrtype sampling,
                           solver_type solver,
                           uuids::uuid const& uuid):
@@ -357,7 +360,7 @@ template<typename FunctionSpace>
 double
 GEIM<FunctionSpace>::applyForm(index_type i, element_type const& u)
 {
-    return inner_product(unwrap_ptr(M_sigmas[i]), u);
+    return inner_product(M_sigmas[i]->container(), u);
 }
 
 template<typename FunctionSpace>
@@ -451,13 +454,18 @@ GEIM<FunctionSpace>::saveDB()
             oa << M_M;
             oa << M_indices;
             oa << M_B;
-            oa << M_q;
             oa << M_mus;
-            // oa << M_sigmas.size();
-            // oa << M_sampling;
-            // oa << M_sigmas;
-            // archive and stream closed when destructors are called
         }
+    }
+    fs::ofstream ofsp( this->dbLocalPath() / this->dbFilenameProc() );
+    if( ofsp )
+    {
+        boost::archive::binary_oarchive oa( ofsp );
+        oa << M_q;
+        // oa << M_sigmas.size();
+        // oa << M_sampling;
+        // oa << M_sigmas;
+        // archive and stream closed when destructors are called
     }
 }
 
@@ -468,39 +476,41 @@ GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
     if( !fs::exists(filename) )
         return;
 
-    if ( this->worldComm().isMasterRank() )
+    fs::ifstream ifs( filename );
+    if ( ifs )
     {
-        fs::ifstream ifs( filename );
-        if ( ifs )
+        Feel::cout << "loading DB at " << filename << std::endl;
+        boost::archive::binary_iarchive ia( ifs );
+        if( l > crb::load::none )
         {
-            Feel::cout << "loading DB at " << filename << std::endl;
-            boost::archive::binary_iarchive ia( ifs );
-            if( l > crb::load::none )
-            {
-                ia >> M_M;
-                M_indices.resize(M_M);
-                ia >> M_indices;
-                M_B.resize(M_M,M_M);
-                ia >> M_B;
-            }
-            if( l > crb::load::rb )
-            {
-                M_q.resize(M_M);
-                for(int i = 0; i < M_M; ++i )
-                    M_q[i] = M_Xh->element();
-                ia >> M_q;
-            }
-            if( l > crb::load::fe )
-            {
-                M_mus.resize(M_M);
-                ia >> M_mus;
-                // int sigmaSize;
-                // ia >> sigmaSize;
-                // M_sigmas.resize(sigmaSize);
-                // ia >> M_sampling;
-                // ia >> M_sigmas;
-            }
-            // archive and stream closed when destructors are called
+            ia >> M_M;
+            M_indices.resize(M_M);
+            ia >> M_indices;
+            M_B.resize(M_M,M_M);
+            ia >> M_B;
+        }
+        if( l > crb::load::fe )
+        {
+            M_mus.resize(M_M);
+            ia >> M_mus;
+            // int sigmaSize;
+            // ia >> sigmaSize;
+            // M_sigmas.resize(sigmaSize);
+            // ia >> M_sampling;
+            // ia >> M_sigmas;
+        }
+        // archive and stream closed when destructors are called
+    }
+    if( l > crb::load::rb )
+    {
+        fs::ifstream ifsp( this->dbLocalPath() / this->dbFilenameProc() );
+        if( ifsp )
+        {
+            boost::archive::binary_iarchive ia( ifsp );
+            M_q.resize(M_M);
+            for(int i = 0; i < M_M; ++i )
+                M_q[i] = M_Xh->element();
+            ia >> M_q;
         }
     }
 }

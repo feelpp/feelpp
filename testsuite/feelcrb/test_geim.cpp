@@ -61,25 +61,27 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     using parameterspace_type = typename geim_type::parameterspace_type;
     using parameter_type = typename geim_type::parameter_type;
     using element_type = typename geim_type::element_type;
+    using linearform_type = FsFunctionalLinear<space_type>;
+    using linearform_ptrtype = std::shared_ptr<linearform_type>;
 
     int nbSensors = ioption("nb-sensors");
     double r = doption("radius");
     int trainsetSize = ioption("trainset-size");
 
-    auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_geim.geo" );
+    auto mesh = loadMesh( _mesh=new mesh_type/*, _filename="test_geim.geo"*/ );
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
 
-    std::vector<vector_ptrtype> sigmas;
+    std::vector<linearform_ptrtype> sigmas;
     for( double x = 0; x < 1; x += 1./nbSensors )
     {
         for( double y = 0; y < 1; y += 1./nbSensors )
         {
-            auto f = form1( _test=Xh );
-            f += integrate( _range=elements(mesh),
+            auto f = functionalLinear(_space=Xh);
+            *f = integrate( _range=elements(mesh),
                             _expr=id(u)*exp(-trans(P()-vec(cst(x),cst(y)))*(P()-vec(cst(x),cst(y)))
                                             /(2*r*r)) );
-            sigmas.push_back(f.vectorPtr());
+            sigmas.push_back(f);
         }
     }
 
@@ -152,7 +154,7 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     int nbSensors = ioption("nb-sensors");
     double r = doption("radius");
 
-    auto mesh = loadMesh(_mesh=new mesh_type, _filename="test_geim.geo");
+    auto mesh = loadMesh(_mesh=new mesh_type/*, _filename="test_geim.json"*/);
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
 

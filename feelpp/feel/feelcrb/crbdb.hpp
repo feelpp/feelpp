@@ -154,6 +154,16 @@ public:
         return M_dbfilename;
     }
 
+    //! \return the DB filename with the proc number
+    std::string dbFilenameProc() const
+    {
+        auto dbf = fs::path(M_dbfilename);
+        return (boost::format("%1%_p%2%%3%")
+                % dbf.stem()
+                % this->worldCommPtr()->globalRank()
+                % dbf.extension() ).str();
+    }
+
     //! \return prefix directory
     std::string dbDirectory( bool withSubDir = true ) const
     {
