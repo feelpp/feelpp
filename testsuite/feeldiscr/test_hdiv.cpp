@@ -113,7 +113,9 @@ public:
     typedef bases<RaviartThomas<Order> > basis_type;
     typedef bases<Lagrange<Order+1,Vectorial> > lagrange_basis_v_type; //P1 vectorial space
     typedef bases<Lagrange<Order+1,Scalar> > lagrange_basis_s_type; //P1 scalar space
+    //typedef bases< RaviartThomas<Order>, Lagrange<Order+1,Scalar> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
     typedef bases< RaviartThomas<Order>, Lagrange<Order,Scalar,Discontinuous> > prod_basis_type; //For Darcy : (u,p) (\in H_div x L2)
+
     //! the approximation function space type
     typedef FunctionSpace<mesh_type, basis_type> space_type;
     typedef FunctionSpace<mesh_type, lagrange_basis_s_type> lagrange_space_s_type;

@@ -66,17 +66,16 @@ public:
      */
     //@{
 
+    DualBasis() = default;
+    
+    DualBasis( DualBasis const& b ) = default;
+    DualBasis( DualBasis && b ) = default;
+    ~DualBasis() = default;
 
     DualBasis( primal_space_type const& primal )
         :
         M_primal( primal )
-    {}
-    DualBasis( DualBasis const & b )
-        :
-        M_primal( b.M_primal )
-    {}
-    ~DualBasis()
-    {}
+        {}
 
     //@}
 
@@ -84,15 +83,8 @@ public:
      */
     //@{
 
-    self_type const& operator=( self_type const& dual )
-    {
-        if ( this != &dual )
-        {
-            M_primal = dual.M_primal;
-        }
-
-        return *this;
-    }
+    self_type& operator=( self_type const& dual ) = default;
+    self_type& operator=( self_type && dual ) = default;
 
     basis_type const& operator()() const
     {
@@ -139,6 +131,7 @@ protected:
 private:
 
     primal_space_type M_primal;
+    
 };
 } // Feel
 

@@ -360,6 +360,7 @@ enum OperatorType { __TEST, __TRIAL, __VALUE };
                 typename Lambda<TheExpr...>::type                       \
                 operator()( TheExpr... e) { return *this; }             \
                                                                         \
+            fe_ptrtype  fe() const { return M_v.fe(); }                 \
             uint16_type polynomialOrder() const {                       \
                 int imorder_test = element_type::functionspace_type::basis_type::nOrder + VF_OPERATOR_DIFFORDERIM(O); \
                 return (imorder_test<0)?0:imorder_test; \

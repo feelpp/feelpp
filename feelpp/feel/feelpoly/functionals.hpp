@@ -6,6 +6,7 @@
        Date: 2006-01-22
 
   Copyright (C) 2006 EPFL
+  Copyright (C) 2010-2015 Feel++ Consortium
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -506,6 +507,20 @@ public:
 }; // SecondDirectionalComponentPointEvaluation
 
 } // functional
+
+template<typename SpaceType>
+decltype(auto)
+componentPointEvaluation( SpaceType const& s, int c, node_t<typename SpaceType::value_type> const& pt )
+{
+    return functional::ComponentPointEvaluation<SpaceType>( s, c, pt );
+}
+
+template<typename SpaceType>
+decltype(auto)
+componentsPointsEvaluation( SpaceType const& s, typename SpaceType::points_type const& pts )
+{
+    return functional::ComponentsPointsEvaluation<SpaceType>( s, pts );
+}
 
 } // Feel
 
