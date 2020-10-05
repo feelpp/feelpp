@@ -31,13 +31,17 @@
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feelfilters/partitionio.hpp>
 #include <feel/feelmesh/remesh.hpp>
+#include <feel/feelcore/json.hpp>
+
 //#include <feel/feelfilters/savegmshmesh.hpp>
+#include "dump.hpp"
 
 namespace Feel {
 
+namespace nl = nlohmann;
 
 template <typename ShapeType>
-void partition( std::vector<int> const& nParts)
+void partition( std::vector<int> const& nParts, nl::json const& partconfig )
 {
     typedef Mesh<ShapeType> mesh_type;
 
@@ -49,7 +53,7 @@ void partition( std::vector<int> const& nParts)
 
         tic();
         size_type update_ = MESH_UPDATE_ELEMENTS_ADJACENCY|MESH_NO_UPDATE_MEASURES|MESH_GEOMAP_NOT_CACHED;
-        if ( boption( "sc.ibc_partitioning" ) )
+        if ( partconfig["partitioner"].contains( "aggregates" ) ) //boption( "sc.ibc_partitioning" ) )
             update_ |= MESH_UPDATE_FACES_MINIMAL;
         auto mesh = loadMesh(_mesh=new mesh_type(Environment::worldCommSeqPtr()), _savehdf5=0,
                              _filename=inputPathMesh.string(),
@@ -158,7 +162,7 @@ void partition( std::vector<int> const& nParts)
             tic();
             using io_t = PartitionIO<mesh_t<decltype(mesh)>>;
             io_t io( outputPathMesh );
-            io.write( partitionMesh( mesh, nPartition, partitionByRange ) );
+            io.write( partitionMesh( mesh, nPartition, partitionByRange, partconfig ) );
             toc("paritioning and save on disk done",FLAGS_v>0);
         }
     }

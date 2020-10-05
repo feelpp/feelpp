@@ -79,7 +79,7 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
     // std::vector<Metis::idx_t> options(5);
     std::vector<Metis::idx_t> vwgt(n_elems);
     Metis::idx_t nibc = 0;
-    std::vector<Metis::idx_t> vibc;
+    std::map<std::string,std::vector<Metis::idx_t>> vibc;
 
     std::vector<Metis::idx_t> part(n_elems);
 
@@ -118,19 +118,21 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 #ifndef NDEBUG
             std::size_t graph_size=0;
 #endif
-            if( boption("sc.ibc_partitioning") )
+            for ( auto const& [name, agg] : this->aggregates() )
             {
-                for( auto const& eltWrap : rangeMeshElt )
+                LOG(INFO) << " -- aggregate " << name << " markers:" << agg.markers() << std::endl;
+                for ( auto const& eltWrap : rangeMeshElt )
                 {
                     auto const& elt = unwrap_ref( eltWrap );
                     // (1) first pass - get the row sizes for each element by counting the number
                     // of face neighbors.  Also populate the vwght array if necessary
                     const dof_id_type gid = global_index_map[elt.id()].first;
-                    if ( hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
+                    if ( hasFaceWithAnyOfTheMarkers( elt, agg.markers() ) )
                     {
-                        vibc.push_back( gid );
+                        vibc[name].push_back( gid );
                     }
                 }
+                LOG(INFO) << " -- aggregate " << name << " size:" << vibc[name].size() << std::endl;
             }
             // build the graph in CSR format.  Note that
             // the edges in the graph will correspond to
@@ -167,9 +169,12 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
                         num_neighbors++;
                     }
                 }
-                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker( elt, soption("sc.ibc_partitioning.marker") ) )
+                for ( auto const& [name, agg] : this->aggregates() )
                 {
-                    num_neighbors += vibc.size()-1;
+                    if ( hasFaceWithAnyOfTheMarkers( elt, agg.markers() ) )
+                    {
+                        num_neighbors += vibc[name].size()-1;
+                    }
                 }
 #if 0
                 std::cout << "element id " << elt.id() << " gid: " << gid << " w: " << vwgt[gid] 
@@ -205,13 +210,16 @@ PartitionerMetis<MeshType>::partitionImpl( mesh_ptrtype mesh, rank_type np, Iter
 
                     }
                 }
-                if ( boption("sc.ibc_partitioning") && hasFaceWithMarker(elt, soption("sc.ibc_partitioning.marker")) )
+                for ( auto const& [name, agg] : this->aggregates() )
                 {
-                    if ( usePartitionByRange )
-                        continue;
-                    for( Metis::idx_t ngid: vibc )
-                        if ( gid != ngid )
-                            csr_graph(gid, connection++) = ngid;
+                    if ( hasFaceWithAnyOfTheMarkers( elt, agg.markers() ) )
+                    {
+                        if ( usePartitionByRange )
+                            continue;
+                        for ( Metis::idx_t ngid : vibc[name] )
+                            if ( gid != ngid )
+                                csr_graph( gid, connection++ ) = ngid; 
+                    }
                 }
             }
 #ifndef NDEBUG
