@@ -63,7 +63,10 @@ public:
      * 
      * @param j json configuration data
      */
-    Partitioner (json const& j ): M_weights(), M_config(j), M_agg( j["partitioner"]["aggregates"] ) {}
+    Partitioner (json const& j )
+        : M_weights(), M_config(j), 
+          M_agg( (j.contains("partitioner") && j["partitioner"].contains("aggregates"))?j["partitioner"]["aggregates"]:json() )
+    {}
     
     struct Aggregate : public std::tuple<std::string, std::vector<std::string>>
     {
