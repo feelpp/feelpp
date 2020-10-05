@@ -84,21 +84,7 @@ void partition( std::vector<int> const& nParts)
                 mesh = out;
             }
         }
-        std::cout << "      number of elements in memory : " << mesh->numGlobalElements() << std::endl;
-        std::cout << "      number of faces in memory : " << mesh->numGlobalFaces() << std::endl;
-        if ( mesh_type::nDim == 3 )
-            std::cout << "      number of edges in memory : " << mesh->numGlobalEdges() << std::endl;
-        std::cout << "      number of points  in memory : " << mesh->numGlobalPoints() << std::endl;
-        for( auto marker: mesh->markerNames() )
-        {
-            auto name = marker.first;
-            auto data = marker.second;
-            if ( data[1] == mesh->dimension()-1 )
-            {
-                size_type nelts = nelements( markedfaces(mesh, name ), true );
-                std::cout << "      number of marked faces " << name << " with tag " << data[0] << " : " << nelts << std::endl;
-            }
-        }
+        dump(mesh);
 
         //saveGMSHMesh(_mesh=mesh,_filename="tototi.msh");
 
