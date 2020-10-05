@@ -56,7 +56,7 @@ MeshStructured::MeshStructured( int nx, int ny, double pixelsize,
 
     rank_type nProc = wc->localSize();
     rank_type partId = wc->localRank();
-    std::cout << "nProc : " << nProc <<  " partId : " << partId << std::endl;
+    //std::cout << "nProc : " << nProc <<  " partId : " << partId << std::endl;
     // compute parallel distribution with column scheme partitioning
     size_type nTotalPointsByCol = M_nx + ( nProc - 1 );
     size_type nPtByColByProc = ( M_nx + ( nProc - 1 ) ) / nProc;

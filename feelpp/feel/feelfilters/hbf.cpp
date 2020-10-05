@@ -238,7 +238,7 @@ Hbf2FeelppStruc::Hbf2FeelppStruc( int nx, int ny, q1_space_ptrtype Yh )
     LOG(INFO) << "Hbf2FeelppStruc relation creation \n";
     LOG(INFO) << nx << " : " << ny <<std::endl;
     
-    int procSize = Yh->worldComm().godSize();
+    int procSize = Yh->worldComm().localSize();
     rank_type partId = Yh->worldComm().localRank(); 
     int cx[procSize+1];
     for (int tmpProc=0;tmpProc<=procSize;tmpProc++)

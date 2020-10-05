@@ -184,6 +184,14 @@ public:
      */
     MatrixPetsc& operator=( MatrixSparse<value_type> const& M );
 
+    using clone_ptrtype = typename super::clone_ptrtype;
+    /**
+     * @brief clone the petsc matrix
+     * 
+     * @return clone_ptrtype 
+     */
+    clone_ptrtype clone() const override;
+
     //@}
 
     /** @name Accessors
