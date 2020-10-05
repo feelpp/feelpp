@@ -1,0 +1,38 @@
+{
+    "Name":"Zalesak Slotted Disk 2D Redisanciation Benchmark",
+    "ShortName":"ZalesakRedistanciationBenchmark2D",
+    "Models":
+    {
+	"equations":"Levelset"
+    },
+    "Parameters":
+    {
+	"centerx":"0.5",
+	"centery":"0.75",
+	"radius":"0.15",
+	"slotwidth":"0.05",
+	"slotlength":"0.25"
+	
+    },
+    "InitialConditions":
+    {
+	"levelset":
+	{
+	    "Dirichlet":
+	    {
+		"Omega":
+		{
+            "expr":" max( min( x-(centerx-slotwidth/2), min( -(x-(centerx+slotwidth/2)), -(y-(centery-radius+slotlength) ) ) ), sqrt(pow(x-centerx,2)+pow(y-centery,2)) - radius ) :x:y:centerx:centery:radius:slotwidth:slotlength"
+		}
+	    }
+	}
+    },
+    "PostProcess":
+    {
+	    "PhysicalQuantities": ["volume, perimeter, velocity_com"],
+        "Exports":
+        {
+            "fields":[""]
+        }
+    }  
+}

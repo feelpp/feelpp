@@ -1,0 +1,165 @@
+#!/bin/bash
+module purge
+module load feelpp.profile
+LS_TOOLBOX_BIN=/ssd/derhovsepian/feelpp/Release_build_benchmark_zalesak_march2020/toolboxes/levelset/feelpp_toolbox_levelset_2d
+
+NARGS=3
+CFG_DIR=/home/u2/derhovsepian/git/feelpp/toolboxes/levelset/cases/benchmark/zalesak/2d
+MESH_ROOT_DIR=/home/u2/derhovsepian/feel/toolboxes/levelset/cases/benchmark/zalesak/2d/meshes
+#EXPERIMENT_PREFIX=""
+#EXPERIMENT_PREFIX="check_freq_"
+EXPERIMENT_PREFIX="auto_freq_"
+
+MINMODGRADPHI="0.0001"
+MAXMODGRADPHI="1.55"
+MODGRADPHIOPTIONS=""
+MODGRADPHIOPTIONS="--redist-triggering-minmodgradphi=${MINMODGRADPHI} --redist-triggering-maxmodgradphi=${MAXMODGRADPHI}"
+
+#EXPERIMENT_PREFIX="full_export_fast_curv_and_dist_methods_"
+LOGPATH=logs/${EXPERIMENT_PREFIX}space_convergence
+TIME_FINAL=628.0
+#TIME_FINAL=157.0
+#TIME_FINAL=10.0
+#TIME_FINAL=0.5
+#TIME_FINAL=1.0
+
+TIME_SCHEME=BDF2
+LS_REDIST_EVERY="-1"
+#LS_REDIST_EVERY="30"
+#LS_REDIST_EVERY="1"
+QUAD_ORDER=1
+QUAD_ORDER=2
+#HN=${hostname 2>&1}
+RESTART=""
+#RESTART="--ts.restart=true --ts.restart.at-last-save=true"
+
+#EXPORTER_EXPORT_FREQ=17
+# for h=0.0032
+EXPORTER_EXPORT_FREQ=24
+# for h=0.0016
+#EXPORTER_EXPORT_FREQ=24
+# for h=0.0008
+#EXPORTER_EXPORT_FREQ=229
+
+EXPORTER_EXPORT=""
+#EXPORTER_EXPORT="--exporter.export=false"
+FAST_METHOD_FOR_UNUSED_FIELDS=""
+FAST_METHOD_FOR_UNUSED_FIELDS="--levelset.curvature-method=nodal-projection --levelset.distance-method=none"
+#FAST_METHOD_FOR_UNUSED_FIELDS="--levelset.curvature-method=nodal-projection --levelset.distance-method=renormalisation"
+
+mkdir -p ${LOGPATH} 
+
+usage(){
+    echo "Usage: $0 sm h np"
+    echo "sm : stabilization method, either \"GALS\", \"SUPG\", \"SGS\" or \"CIP\""
+    echo "h : the mesh size"
+    echo "np : number of mpi processes to use"
+}
+
+if [ $# -lt ${NARGS} ]; then
+    echo "Too few arguments ($# instead of ${NARGS})"
+    usage
+    exit 1
+fi
+if [ $# -gt ${NARGS} ]; then
+    echo "Too many arguments ($# instead of ${NARGS})"
+    usage
+    exit 1
+fi
+
+STABILIZATION_METHOD=$1
+HSIZE=$2
+NCORE=$3
+
+#DELTA_T=0.0
+# We use dt = C*h/Umax
+# with C=0.8 and Umax=0.007
+# Umax is the maximum of
+# the velocity field imposed
+case ${HSIZE} in
+    0.32 )
+        DELTA_T=36.57
+        ;;
+    0.16 )
+        DELTA_T=18.29
+        ;;
+    0.1 )
+        DELTA_T=11.43
+        ;;
+    0.08 )
+        DELTA_T=9.14
+        ;;
+    0.04 )
+        DELTA_T=4.57
+        ;;
+    0.032 )
+        DELTA_T=3.657
+        ;;
+    0.016 )
+        DELTA_T=1.829
+        ;;
+    0.008 )
+        DELTA_T=0.914
+        ;;
+    0.0064 )
+        DELTA_T=0.7314285714285714
+        ;;
+    0.004 )
+        DELTA_T=0.457
+        ;;
+    0.01 )
+        DELTA_T=1.143
+        ;;
+    0.0032 )
+        DELTA_T=0.3657
+        ;;
+    0.0016 )
+        DELTA_T=0.1829
+        ;;
+    0.0008 )
+        DELTA_T=0.0914
+        ;;
+    0.0004 )
+        DELTA_T=0.0457
+        ;;
+esac
+
+if [ ${TIME_SCHEME} = Euler ];
+then
+    ORDER=1
+else
+    if [ ${TIME_SCHEME} = BDF2 ];
+    then
+        ORDER=2
+    else
+        echo "Invalid time scheme (Euler or BDF2)"
+        usage
+        exit 1
+    fi
+fi
+
+printf "h = $HSIZE, dt = ${DELTA_T}\n"
+CMD="(time mpirun -np ${NCORE} ${LS_TOOLBOX_BIN} \
+    --config-file=${CFG_DIR}/slotteddisk.cfg \
+    --levelset.mesh.filename=${MESH_ROOT_DIR}/h_${HSIZE}/domain_0_p${NCORE}.json \
+    --directory=toolboxes/levelset/cases/benchmark/zalesak/2d/${EXPERIMENT_PREFIX}space_convergence/${STABILIZATION_METHOD}_redistevery_${LS_REDIST_EVERY}/h_${HSIZE}/minmodgradphi_${MINMODGRADPHI}_maxmodgradphi_${MAXMODGRADPHI}/quadorder_${QUAD_ORDER} \
+    --ts.time-step=${DELTA_T} \
+    --ts.time-final=${TIME_FINAL} \
+    --levelset.redist-every=${LS_REDIST_EVERY} \
+    --levelset.ts.order=${ORDER} \
+    --levelset.gmsh.hsize=${HSIZE} \
+    --levelset.stabilization.method=${STABILIZATION_METHOD} \
+    --levelset.quad.order=$QUAD_ORDER \
+    --exporter.freq=${EXPORTER_EXPORT_FREQ} \
+    ${FAST_METHOD_FOR_UNUSED_FIELDS} \
+    ${MODGRADPHIOPTIONS} \
+    ${EXPORTER_EXPORT} \
+    ${RESTART} \
+    ) 2>&1 | tee ${LOGPATH}/${TIME_SCHEME}_redistevery_${LS_REDIST_EVERY}_${STABILIZATION_METHOD}_h_${HSIZE}_deltat_${DELTA_T}_quadorder_${QUAD_ORDER}_np_${NCORE}_minmodgradphi_${MINMODGRADPHI}_maxmodgradphi_${MAXMODGRADPHI}.log"
+
+printf "${CMD} \n"
+printf "${CMD} \n\n" >> sc_cmd.txt
+eval "${CMD}"
+
+
+
