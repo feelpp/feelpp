@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['backend_5fptrtype_4125',['backend_ptrtype',['../classFeel_1_1MeshAdaptation.html#a773cd16e4345fe69c832aa7093022cbf',1,'Feel::MeshAdaptation']]],
-  ['backend_5ftype_4126',['backend_type',['../classFeel_1_1MeshAdaptation.html#a57b8391420b4e558eb33d5d708a76dbb',1,'Feel::MeshAdaptation']]]
+  ['allocator_5ftype_4762',['allocator_type',['../classnlohmann_1_1basic__json.html#ad38ae80f1e99d4b1f33c99fea4611457',1,'nlohmann::basic_json']]],
+  ['array_5ft_4763',['array_t',['../classnlohmann_1_1basic__json.html#a858c1cf8407bc06494e3a1114a3b73e7',1,'nlohmann::basic_json']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['second_8550',['second',['../structFeel_1_1BareEdge.html#abde024a4e7ad597d6a83e44d51b8ce8c',1,'Feel::BareEdge::second()'],['../structFeel_1_1BareFace.html#a1b2987500ffe80fff52fa2c7611fa45d',1,'Feel::BareFace::second()']]]
+  ['quad_5forder_5ffrom_5fexpression_4758',['quad_order_from_expression',['../namespaceFeel.html#a1d9f0d87bd325ffed641f92f6d12c3c8',1,'Feel']]]
 ];

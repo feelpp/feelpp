@@ -1,12 +1,8 @@
 var searchData=
 [
-  ['id_5ftype_4152',['id_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a4a3ba7730aff8cf8d15592dd9ca639fc',1,'Feel::FunctionSpace::Element']]],
-  ['index_5ftype_4153',['index_type',['../classFeel_1_1MeshBase.html#a390da92c55ab75b3615cd8635bc03ffb',1,'Feel::MeshBase']]],
-  ['is_5ffunctionspace_4154',['is_functionspace',['../group__Traits.html#ga283c8056137c1283d5f79a3c45f5b20b',1,'Feel']]],
-  ['is_5ffunctionspace_5felement_4155',['is_functionspace_element',['../group__Traits.html#ga20ff4a86edc970a5cc884036d5752f8d',1,'Feel']]],
-  ['is_5fmesh_4156',['is_mesh',['../group__Traits.html#gad88b60e8e99ab7724f8e508d3c018bb1',1,'Feel']]],
-  ['is_5fscalar_5ffield_4157',['is_scalar_field',['../group__Traits.html#gafea6d06eb930e7f148d8bb47ece9de37',1,'Feel']]],
-  ['is_5ftensor2_5ffield_4158',['is_tensor2_field',['../group__Traits.html#ga9f6edf1a63e867a9e9e9b6d2e12d0fa4',1,'Feel']]],
-  ['is_5ftensor2symm_5ffield_4159',['is_tensor2symm_field',['../group__Traits.html#gacdd864e3800acd6fb8b0294800a0168c',1,'Feel']]],
-  ['is_5fvector_5ffield_4160',['is_vector_field',['../group__Traits.html#ga8834f2140b5f2f5f6a7cd15d7b56e104',1,'Feel']]]
+  ['geoelement_5ftype_4798',['geoelement_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5',1,'Feel::FunctionSpace::Element::geoelement_type()'],['../classFeel_1_1ReducedBasisSpace_1_1Element.html#a0630a8db2c36982b8dcef7f015143061',1,'Feel::ReducedBasisSpace::Element::geoelement_type()']]],
+  ['global_5fdof_5ffromface_5ftype_4799',['global_dof_fromface_type',['../classFeel_1_1DofTable.html#a11cbee9f798673970784ad9c1c22a6dd',1,'Feel::DofTable']]],
+  ['global_5fdof_5ftype_4800',['global_dof_type',['../classFeel_1_1DofTable.html#aa4a8e824246aa45176f59b95ff6dcd66',1,'Feel::DofTable']]],
+  ['gm_5finverse_5ftype_4801',['gm_inverse_type',['../classFeel_1_1Localization.html#a7fbed6858e1fcaaa03be6cc734d8c652',1,'Feel::Localization']]],
+  ['grad_5ftype_4802',['grad_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8',1,'Feel::FunctionSpace::Element']]]
 ];

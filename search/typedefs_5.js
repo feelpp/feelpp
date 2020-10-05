@@ -1,8 +1,10 @@
 var searchData=
 [
-  ['geoelement_5ftype_4147',['geoelement_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a0503cd364cfb9418c74f8ab0e4afc3a5',1,'Feel::FunctionSpace::Element::geoelement_type()'],['../classFeel_1_1ReducedBasisSpace_1_1Element.html#a0630a8db2c36982b8dcef7f015143061',1,'Feel::ReducedBasisSpace::Element::geoelement_type()']]],
-  ['global_5fdof_5ffromface_5ftype_4148',['global_dof_fromface_type',['../classFeel_1_1DofTable.html#a11cbee9f798673970784ad9c1c22a6dd',1,'Feel::DofTable']]],
-  ['global_5fdof_5ftype_4149',['global_dof_type',['../classFeel_1_1DofTable.html#aa4a8e824246aa45176f59b95ff6dcd66',1,'Feel::DofTable']]],
-  ['gm_5finverse_5ftype_4150',['gm_inverse_type',['../classFeel_1_1Localization.html#a7fbed6858e1fcaaa03be6cc734d8c652',1,'Feel::Localization']]],
-  ['grad_5ftype_4151',['grad_type',['../classFeel_1_1FunctionSpace_1_1Element.html#a998e3beeedf6136a17610a0d1344c1f8',1,'Feel::FunctionSpace::Element']]]
+  ['face_5fprocessor_5ftype_4791',['face_processor_type',['../classFeel_1_1MeshBase.html#a91247ada5746df1ef0edd9af84f014a0',1,'Feel::MeshBase::face_processor_type()'],['../classFeel_1_1Mesh.html#aa012daf8007499bdeed2908e60a654b2',1,'Feel::Mesh::face_processor_type()']]],
+  ['face_5fsign_5finfo_5ftype_4792',['face_sign_info_type',['../classFeel_1_1DofTable.html#ae91cf4610eff93e238e2412129542fd2',1,'Feel::DofTable']]],
+  ['form1_5fspace_5ft_4793',['form1_space_t',['../namespaceFeel.html#a6e6d5b52fe05c721d3fc64af64bc818c',1,'Feel']]],
+  ['form1_5ft_4794',['form1_t',['../namespaceFeel.html#ad4a59195d00415d9e309cfe6bd139267',1,'Feel']]],
+  ['form1_5ftype_4795',['form1_type',['../namespaceFeel.html#ad37d9e382554de2b0edff9411b3c0b51',1,'Feel']]],
+  ['functionspace_5felement_5ftype_4796',['functionspace_element_type',['../group__Traits.html#ga309eaea5e6ae8eed34e171c103915dac',1,'Feel']]],
+  ['functionspace_5ftype_4797',['functionspace_type',['../group__Traits.html#gaa0890ffe8d4236f488e086c81562c49d',1,'Feel']]]
 ];

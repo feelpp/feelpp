@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['numlocaledges_4119',['numLocalEdges',['../classFeel_1_1GeoElement2D.html#a5aec88da04f9fd51c4d83178461e6bae',1,'Feel::GeoElement2D::numLocalEdges()'],['../classFeel_1_1GeoElement3D.html#a341e430dd2336619670d36cb5b0c88a5',1,'Feel::GeoElement3D::numLocalEdges()']]],
-  ['numlocalfaces_4120',['numLocalFaces',['../classFeel_1_1GeoElement3D.html#ae2db1d66562a346024c207e6cd88852b',1,'Feel::GeoElement3D']]],
-  ['numlocalvertices_4121',['numLocalVertices',['../classFeel_1_1GeoElement3D.html#ac160d4d1b04512468b263637542314b5',1,'Feel::GeoElement3D']]]
+  ['first_4712',['first',['../structFeel_1_1BarePoint.html#adebe6cdf4aafa72621e1b7d4d97b6890',1,'Feel::BarePoint::first()'],['../structFeel_1_1BareEdge.html#a304c019a2d74d5f1ceed86bab4973d78',1,'Feel::BareEdge::first()'],['../structFeel_1_1BareFace.html#aadb55c2e6517586dd24a3ad1b46d77d5',1,'Feel::BareFace::first()']]]
 ];

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['elimination_8700',['ELIMINATION',['../structFeel_1_1ContextOn.html#a0ea8253a14b321258a7ee76b1ad48588aaf90288c1ae971014f09faea37f41a23',1,'Feel::ContextOn']]],
-  ['equalities_8701',['EQUALITIES',['../namespaceFeel.html#a33e11c22370583e6a4d8fc4a1486af72a1bbc9f343f78b454c9b4a2ab47472d35',1,'Feel']]]
+  ['discarded_4888',['discarded',['../namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a94708897ec9db8647dfe695714c98e46',1,'nlohmann::detail']]]
 ];

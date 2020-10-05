@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['lambda_2ehpp_3066',['lambda.hpp',['../lambda_8hpp.html',1,'']]],
-  ['linearform_2ehpp_3067',['linearform.hpp',['../linearform_8hpp.html',1,'']]],
-  ['linearformcontext_2ehpp_3068',['linearformcontext.hpp',['../linearformcontext_8hpp.html',1,'']]],
-  ['lineordering_2ehpp_3069',['lineordering.hpp',['../lineordering_8hpp.html',1,'']]],
-  ['localization_2ehpp_3070',['localization.hpp',['../localization_8hpp.html',1,'']]]
+  ['kdtree_2ecpp_3553',['kdtree.cpp',['../kdtree_8cpp.html',1,'']]],
+  ['kdtree_2ehpp_3554',['kdtree.hpp',['../kdtree_8hpp.html',1,'']]]
 ];

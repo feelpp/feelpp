@@ -4,11 +4,18 @@ var annotated =
       [ "Env", "classdetail_1_1Env.html", "classdetail_1_1Env" ]
     ] ],
     [ "Feel", "namespaceFeel.html", "namespaceFeel" ],
+    [ "nlohmann", "namespacenlohmann.html", "namespacenlohmann" ],
     [ "std", null, [
-      [ "hash< std::tuple< TT... > >", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4" ]
+      [ "hash< nlohmann::json >", "structstd_1_1hash_3_01nlohmann_1_1json_01_4.html", "structstd_1_1hash_3_01nlohmann_1_1json_01_4" ],
+      [ "hash< std::tuple< TT... > >", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4" ],
+      [ "less<::nlohmann::detail::value_t >", "structstd_1_1less_3_1_1nlohmann_1_1detail_1_1value__t_01_4.html", "structstd_1_1less_3_1_1nlohmann_1_1detail_1_1value__t_01_4" ],
+      [ "tuple_element< N, ::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__element_3_01N_00_01_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", "classstd_1_1tuple__element_3_01N_00_01_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4" ],
+      [ "tuple_size<::nlohmann::detail::iteration_proxy_value< IteratorType > >", "classstd_1_1tuple__size_3_1_1nlohmann_1_1detail_1_1iteration__proxy__value_3_01IteratorType_01_4_01_4.html", null ]
     ] ],
     [ "termcolor", "namespacetermcolor.html", null ],
+    [ "B1", "classB1.html", null ],
     [ "bases", "structbases.html", "structbases" ],
+    [ "BinaryType", "classBinaryType.html", null ],
     [ "map", "classboost_1_1fusion_1_1map.html", null ],
     [ "vector", "classboost_1_1fusion_1_1vector.html", null ],
     [ "integral_constant", "classboost_1_1hana_1_1integral__constant.html", null ],
@@ -44,6 +51,7 @@ var annotated =
     [ "mpfr_size_limb_t", "unionmpfr__size__limb__t.html", "unionmpfr__size__limb__t" ],
     [ "Points", "classPoints.html", null ],
     [ "ProductSpaceBase", "classProductSpaceBase.html", null ],
+    [ "type", "classstd_1_1conditional_1_1type.html", null ],
     [ "type", "classstd_1_1is__base__of_1_1type.html", null ],
     [ "type", "classstd_1_1is__convertible_1_1type.html", null ],
     [ "VectorUblas", "classVectorUblas.html", null ]

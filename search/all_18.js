@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['ymax_2024',['ymax',['../structFeel_1_1tag_1_1ymax.html',1,'Feel::tag']]],
-  ['ymin_2025',['ymin',['../structFeel_1_1tag_1_1ymin.html',1,'Feel::tag']]]
+  ['xmax_2361',['xmax',['../structFeel_1_1tag_1_1xmax.html',1,'Feel::tag']]],
+  ['xmin_2362',['xmin',['../structFeel_1_1tag_1_1xmin.html',1,'Feel::tag']]],
+  ['xmlparser_2363',['xmlParser',['../classFeel_1_1xmlParser.html',1,'Feel']]]
 ];

@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['_5finternal_2968',['_internal',['../namespacetermcolor_1_1__internal.html',1,'termcolor']]],
-  ['termcolor_2969',['termcolor',['../namespacetermcolor.html',1,'']]]
+  ['detail_3453',['detail',['../namespacenlohmann_1_1detail.html',1,'nlohmann']]],
+  ['dtoa_5fimpl_3454',['dtoa_impl',['../namespacenlohmann_1_1detail_1_1dtoa__impl.html',1,'nlohmann::detail']]],
+  ['nlohmann_3455',['nlohmann',['../namespacenlohmann.html',1,'']]]
 ];

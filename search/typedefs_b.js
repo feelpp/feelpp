@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['p0_5fspace_5ftype_4170',['p0_space_type',['../classFeel_1_1MeshAdaptation.html#a159f2b5a094ff79fb0d58234a813daab',1,'Feel::MeshAdaptation']]],
-  ['p1vec_5fbasis_5ftype_4171',['p1vec_basis_type',['../classFeel_1_1MeshAdaptation.html#a6975689f48fe98fde1191191711a1bcc',1,'Feel::MeshAdaptation']]],
-  ['permutation_5fvector_5ftype_4172',['permutation_vector_type',['../classFeel_1_1DofTable.html#adbe592edfeab055b96434942490bc0d8',1,'Feel::DofTable']]],
-  ['pidtodofid_5ftype_4173',['pidtodofid_type',['../classFeel_1_1DofTable.html#ace90bef4efe0e877bd06e332f02dd8f8',1,'Feel::DofTable']]]
+  ['node_5felem_5ftype_4826',['node_elem_type',['../classFeel_1_1Localization.html#a92fb12ada0ef90d4a206111c768a19df',1,'Feel::Localization']]],
+  ['number_5ffloat_5ft_4827',['number_float_t',['../classnlohmann_1_1basic__json.html#a5b8abaebd922d82d69756327c0c347e6',1,'nlohmann::basic_json']]],
+  ['number_5finteger_5ft_4828',['number_integer_t',['../classnlohmann_1_1basic__json.html#a11e390944da90db83089eb2426a749d3',1,'nlohmann::basic_json']]],
+  ['number_5funsigned_5ft_4829',['number_unsigned_t',['../classnlohmann_1_1basic__json.html#ae09af9c23351b7245d9be4d1b2035fef',1,'nlohmann::basic_json']]]
 ];

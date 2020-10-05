@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['first_4084',['first',['../structFeel_1_1BarePoint.html#adebe6cdf4aafa72621e1b7d4d97b6890',1,'Feel::BarePoint::first()'],['../structFeel_1_1BareEdge.html#a304c019a2d74d5f1ceed86bab4973d78',1,'Feel::BareEdge::first()'],['../structFeel_1_1BareFace.html#aadb55c2e6517586dd24a3ad1b46d77d5',1,'Feel::BareFace::first()']]]
+  ['allow_5fexceptions_4705',['allow_exceptions',['../classnlohmann_1_1detail_1_1parser.html#ab0dbaeaa6df00631072f902068c57750',1,'nlohmann::detail::parser']]],
+  ['array_5fiterator_4706',['array_iterator',['../structnlohmann_1_1detail_1_1internal__iterator.html#a8294a6e6f01b58e1cce8fbae66a50b5d',1,'nlohmann::detail::internal_iterator']]]
 ];

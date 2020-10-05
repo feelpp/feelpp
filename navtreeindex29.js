@@ -1,5 +1,7 @@
 var NAVTREEINDEX29 =
 {
+"classFeel_1_1vf_1_1OpMin.html#ae548f94f1b7826bb3dabb0482e56da5b":[6,1,1,12,19,4],
+"classFeel_1_1vf_1_1OpMin.html#af2dd3ef10d0a4484d03cc44c312b4df8":[6,1,1,12,19,14],
 "classFeel_1_1vf_1_1Pow.html":[6,1,1,12,20],
 "classFeel_1_1vf_1_1Pow.html#a010ccc77bff0e4c81082fe5b286a4f54":[6,1,1,12,20,29],
 "classFeel_1_1vf_1_1Pow.html#a04999356c93c34df0f496a554f7802f7":[6,1,1,12,20,8],
@@ -246,8 +248,6 @@ var NAVTREEINDEX29 =
 "classFeel_1_1xmlParser.html":[6,1,1,284],
 "classFeel_1_1xmlParser.html#a256533b59ce362269152eebca56c67d3":[6,1,1,284,0],
 "classFeel_1_1xmlParser.html#a44e5de26e98f8f90696bdb539a18f1a1":[6,1,1,284,1],
-"classModelBase.html":[6,1,34],
-"classPoints.html":[6,1,38],
-"classProductSpaceBase.html":[6,1,39],
-"classVectorUblas.html":[6,1,42]
+"classModelBase.html":[6,1,37],
+"classPoints.html":[6,1,41]
 };

@@ -1,6 +1,12 @@
 var searchData=
 [
-  ['worldcomm_5fptr_5ft_4190',['worldcomm_ptr_t',['../group__Core.html#gad8f8196f0b8ff9495dd4119eda223772',1,'Feel']]],
-  ['worldcomm_5ft_4191',['worldcomm_t',['../group__Core.html#ga092633e7720ec4d42cf92197b9c35c3a',1,'Feel']]],
-  ['worldscomm_5fptr_5ft_4192',['worldscomm_ptr_t',['../group__Core.html#ga56d5cf37fceae464425abf8d94524b7e',1,'Feel']]]
+  ['self_5fptrtype_4852',['self_ptrtype',['../classFeel_1_1WorldComm.html#a17b8bdedce7012a7f111b2b7b0d33953',1,'Feel::WorldComm']]],
+  ['self_5ftype_4853',['self_type',['../classFeel_1_1WorldComm.html#adb513020a43d11dfca57d8bcb4883956',1,'Feel::WorldComm']]],
+  ['simget_5fiterator_4854',['simget_iterator',['../classFeel_1_1Application.html#abf27535f4318a03d55a2607626981418',1,'Feel::Application']]],
+  ['simgetfactory_4855',['SimgetFactory',['../namespaceFeel.html#ac9648381161062499cc054fa4b0de17e',1,'Feel']]],
+  ['simgets_5ftype_4856',['simgets_type',['../classFeel_1_1Application.html#af693db51ca874953a72fee81cd13ed4e',1,'Feel::Application']]],
+  ['size_5ftype_4857',['size_type',['../classnlohmann_1_1basic__json.html#a3ada29bca70b4965f6fd37ec1c8f85f7',1,'nlohmann::basic_json::size_type()'],['../namespaceFeel.html#a9ad3b63ce6d74e6aefa510dc01b7ff58',1,'Feel::size_type()']]],
+  ['sparse_5fmatrix_5fptrtype_4858',['sparse_matrix_ptrtype',['../classFeel_1_1MeshAdaptation.html#a12fabb2a6bfacb59e027517daa5ecab8',1,'Feel::MeshAdaptation']]],
+  ['sparse_5fmatrix_5ftype_4859',['sparse_matrix_type',['../classFeel_1_1MeshAdaptation.html#acd80f5384a3caf3f77511971516698a9',1,'Feel::MeshAdaptation']]],
+  ['string_5ft_4860',['string_t',['../classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8',1,'nlohmann::basic_json']]]
 ];

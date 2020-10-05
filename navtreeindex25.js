@@ -1,5 +1,7 @@
 var NAVTREEINDEX25 =
 {
+"classFeel_1_1Simplex.html#a6aa846b5edb3e90291763fec79cb3516":[6,1,1,233,45],
+"classFeel_1_1Simplex.html#a723d9604a95336cf3b7ab2e138de63da":[6,1,1,233,48],
 "classFeel_1_1Simplex.html#a7e42b46320f3c655285452491b7a1342":[6,1,1,233,51],
 "classFeel_1_1Simplex.html#a87a026e3a9955900903d45caf936baea":[6,1,1,233,1],
 "classFeel_1_1Simplex.html#a90347f4dd07ea7110d6a4b9e48e63c89":[6,1,1,233,30],
@@ -247,7 +249,5 @@ var NAVTREEINDEX25 =
 "classFeel_1_1TimerTool.html#a4201b2a3feb0b27c9937d88a2536fe3d":[6,1,1,262,11],
 "classFeel_1_1TimerTool.html#a870f8222d743b6d59e0a7a0a0096afb8":[6,1,1,262,14],
 "classFeel_1_1TimerTool.html#a8b14631ccf52344c2e01d06d31f814da":[6,1,1,262,18],
-"classFeel_1_1TimerTool.html#a93cd910a76c19a2c6d6f10a39d9c35ca":[6,1,1,262,1],
-"classFeel_1_1TimerTool.html#a98596091903030da6281e67bc4158350":[6,1,1,262,3],
-"classFeel_1_1TimerTool.html#a9fafa2e01c8ac138b2edc5797bf0f722":[6,1,1,262,8]
+"classFeel_1_1TimerTool.html#a93cd910a76c19a2c6d6f10a39d9c35ca":[6,1,1,262,1]
 };
