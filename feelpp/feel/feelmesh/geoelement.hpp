@@ -1793,9 +1793,11 @@ template<uint16_type Dim,
 struct is_geoelement<GeoElement3D<Dim,GEOSHAPE,T,IndexT,UseMeasuresStorage>>: std::true_type {};
 
 
-
 /**
- * \return true if the element \p e has a face with \p flag, false otherwise
+ * @brief get if a face of an element has the marker @p flag
+ * 
+ * @tparam EltType type of mesh element
+ * @return true if the element \p e has a face with \p flag, false otherwise
  */
 template<typename EltType>
 bool
@@ -1811,6 +1813,35 @@ hasFaceWithMarker( EltType const& e, boost::any const& flag,
         {
             if ( (*f)->marker().value() == theflag )
                 return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief check if a element as faces with any of the string markers
+ * 
+ * @tparam EltType element type to be checked
+ * @param e element to be checked
+ * @param flags vector of strings cotnaining the markers
+ * @return bool true if has face with at least one of the markers, false otherwise
+ */
+template<typename EltType>
+bool
+hasFaceWithAnyOfTheMarkers( EltType const& e, std::vector<std::string> const& flags,
+                            std::enable_if_t<(dimension_v<EltType> > 0) && is_geoelement_v<EltType>>* = nullptr )
+{
+    //flag_type theflag = e.mesh()->markerId( flag );
+    // for( auto const& f : e.faces() )
+    auto [ fbegin, fend ] = e.faces();
+    for( auto f = fbegin; f != fend; ++f )
+    {
+        if ( *f && (*f)->hasMarker() )
+        {
+            if ( auto it = std::find( flags.begin(), flags.end(), e.mesh()->markerName( (*f)->marker().value() ) ); it !=  flags.end() )
+            {
+                return true;
+            }
         }
     }
     return false;
