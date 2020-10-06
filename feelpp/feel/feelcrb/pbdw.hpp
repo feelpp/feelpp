@@ -29,12 +29,16 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/reducedbasisspace.hpp>
+#include <feel/feeldiscr/sensors.hpp>
 
 #include <limits>
 
 namespace Feel
 {
 
+/**
+ * Class to support Parameterized Background Data-Weak method
+ */
 template<typename RBSpace>
 class PBDW
 {
@@ -45,29 +49,47 @@ public:
     using element_type = typename space_type::element_type;
     using vectorN_type = Eigen::VectorXd;
     using matrixN_type = Eigen::MatrixXd;
+    using sensorbase_type = SensorBase<space_type>;
+    using sensorbase_ptrtype = std::shared_ptr<sensorbase_type>;
 
+    /**
+     * Constructor
+     * @param name Name of pbdw
+     * @param XR Reduced Basis
+     * @param sigmas Sensors to use
+     */
     PBDW(std::string const& name,
          reducedspace_ptrtype const& XR,
-         std::vector<vector_ptrtype> sigmas);
-    int dimensionN() const { return M_XR->size(); }
-    int dimensionM() const { return M_sigmas.size(); }
-    int dimension() const { return this->dimensionN()+this->dimensionM(); }
-    matrixN_type matrix() const { return M_matrix; }
-    void offline();
-    vectorN_type online(vectorN_type const& yobs) const;
-    element_type solution(vectorN_type const& yobs) const;
+         std::vector<sensorbase_ptrtype> sigmas);
+    int dimensionN() const { return M_XR->size(); } /**< Dimension of Reduced Basis */
+    int dimensionM() const { return M_sigmas.size(); } /**< Number of sensors */
+    int dimension() const { return this->dimensionN()+this->dimensionM(); } /**< Dimension of PBDW */
+    matrixN_type matrix() const { return M_matrix; } /**< Matrix of PBDW */
+    void offline(); /** Do offline phase */
+    /**
+     * Do online phase
+     * @param yobs Observation of sensors
+     * @return Coefficients of solution
+     */
+    vectorN_type online(vectorN_type const& yobs) const; /**< Do online phase */
+    /**
+     * Retrieve solution
+     * @param yobs Observation of sensors
+     * @return Solution
+     */
+    element_type solution(vectorN_type const& yobs) const; /**< Retrieve solution */
 
 private:
     std::string M_name;
     reducedspace_ptrtype M_XR;
-    std::vector<vector_ptrtype> M_sigmas;
+    std::vector<sensorbase_ptrtype> M_sigmas;
     matrixN_type M_matrix;
 };
 
 template<typename RBSpace>
 PBDW<RBSpace>::PBDW(std::string const& name,
                     reducedspace_ptrtype const& XR,
-                    std::vector<vector_ptrtype> sigmas):
+                    std::vector<sensorbase_ptrtype> sigmas):
     M_name(name),
     M_XR(XR),
     M_sigmas(sigmas)
@@ -81,17 +103,16 @@ PBDW<RBSpace>::offline()
     int M = this->dimensionM();
     int N = this->dimensionN();
     M_matrix = matrixN_type::Zero(MN, MN);
-    auto Xh = M_XR->functionSpace();
-    auto u = Xh->element();
-    auto mf = form2(_test=Xh, _trial=Xh);
-    mf = integrate(elements(M_XR->mesh()), inner(id(u),idt(u)));
-    auto m = mf.matrixPtr();
     for(int i = 0; i < M; ++i )
     {
-        for(int j = 0; j < M; ++j )
-            M_matrix(i, j) = m->energy(M_sigmas[i],M_sigmas[j]);
+        for(int j = 0; j < i; ++j )
+        {
+            M_matrix(i, j) = inner_product(M_sigmas[i]->containerPtr(), M_sigmas[j]->containerPtr());
+            M_matrix(j, i) = M_matrix(i, j);
+        }
+        M_matrix(i, i) = inner_product(M_sigmas[i]->containerPtr(), M_sigmas[i]->containerPtr());
         for(int j = 0; j < N; ++j )
-            M_matrix(i, M+j) = m->energy(unwrap_ptr(M_sigmas[i]), M_XR->primalBasisElement(j));
+            M_matrix(i, M+j) = (*M_sigmas[i])(M_XR->primalBasisElement(j));
     }
     M_matrix.bottomLeftCorner(N, M) = M_matrix.topRightCorner(M, N).transpose();
 }
@@ -118,7 +139,7 @@ PBDW<RBSpace>::solution(vectorN_type const& yobs) const
     auto I = Xh->element();
     I.zero();
     for(int i = 0; i < M; ++i )
-        I.add(vn(i), Xh->element(M_sigmas[i]));
+        I.add(vn(i), Xh->element(M_sigmas[i]->containerPtr()));
     for(int i = 0; i < N; ++i )
         I.add(vn(M+i), unwrap_ptr(wn[i]));
     return I;
