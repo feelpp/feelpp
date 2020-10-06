@@ -29,6 +29,7 @@
 #include <feel/feelcrb/parameterspace.hpp>
 #include <feel/feelcore/unwrapptr.hpp>
 #include <feel/feeldiscr/fsfunctionallinear.hpp>
+#include <feel/feelcore/json.hpp>
 
 #include <limits>
 
@@ -45,6 +46,7 @@ public:
     using super_type = CRBDB;
     using functionspace_type = FunctionSpace;
     using functionspace_ptrtype = std::shared_ptr<functionspace_type>;
+    using mesh_type = typename functionspace_type::mesh_type;
     using element_type = typename functionspace_type::element_type;
     using linearform_type = FsFunctionalLinear<functionspace_type>;
     using linearform_ptrtype = std::shared_ptr<linearform_type>;
@@ -73,10 +75,10 @@ public:
     /**
      * Constructor for online phase.
      * @param name Name of geim
-     * @param Xh Function space to use for basis function, can be nullptr
+     * @param l Loading type (rb,fe,all)
      * @param uuid Uuid to use for db
      */
-    GEIM(std::string name, functionspace_ptrtype const& Xh = nullptr,
+    GEIM(std::string name, crb::load l = crb::load::rb,
          uuids::uuid const& uuid = uuids::nil_uuid());
     /**
      * Constructor for offline phase.
@@ -134,6 +136,7 @@ public:
     std::vector<parameter_type> mus() const { return M_mus; } /**< Parameters used */
     std::vector<linearform_ptrtype> sigmas() const { return M_sigmas; } /**< Set of linear forms */
     std::vector<index_type> indices() const { return M_indices; } /**< Set of indices of linear forms used */
+    functionspace_ptrtype space() const { return M_Xh; }
     void setSolver( solver_type f ) { M_solver = f; } /**< Set solver to use */
     void setMaxM( int M ) { M_MaxM = M; } /**< Set maximum number of basis */
     void offline(); /**< Do offline phase */
@@ -170,11 +173,10 @@ private:
 };
 
 template<typename FunctionSpace>
-GEIM<FunctionSpace>::GEIM(std::string name, functionspace_ptrtype const& Xh,
+GEIM<FunctionSpace>::GEIM(std::string name, crb::load l,
                           uuids::uuid const& uuid):
     super_type(name, "geim", uuid),
     M_name(name),
-    M_Xh(Xh),
     M_rebuildDb(boption("geim.rebuild-database")),
     M_dbLoad(ioption("geim.db.load")),
     M_dbFilename(soption("geim.db.filename")),
@@ -184,8 +186,7 @@ GEIM<FunctionSpace>::GEIM(std::string name, functionspace_ptrtype const& Xh,
     if( this->id().is_nil() )
         this->findDBUuid();
 
-    crb::load l = Xh ? crb::load::fe : crb::load::rb;
-    this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), l );
+    this->loadDB(this->absoluteDbFilename(), l );
 }
 
 template<typename FunctionSpace>
@@ -214,21 +215,16 @@ GEIM<FunctionSpace>::GEIM(std::string name,
     if( this->id().is_nil() )
         this->findDBUuid();
 
-    M_B = matrixN_type(0,0);
     M_currentQ = M_solver(get<0>(M_sampling->max()));
     M_Xh = M_currentQ.functionSpace();
-
-    this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), crb::load::all );
 
     if( M_rebuildDb )
     {
         M_M = 0;
-        M_q.clear();
-        M_indices.clear();
-        M_mus.clear();
         M_B = matrixN_type(0,0);
     }
-
+    else
+        this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), crb::load::all );
 }
 
 template<typename FunctionSpace>
@@ -367,7 +363,6 @@ template<typename FunctionSpace>
 void
 GEIM<FunctionSpace>::offline()
 {
-    Feel::cout << "offline phase starts" << std::endl;
     if(!M_solver)
     {
         Feel::cout << "You need to set a solver before the offline phase!" << std::endl;
@@ -388,6 +383,7 @@ GEIM<FunctionSpace>::offline()
     parameter_type mu;
     double error = std::numeric_limits<double>::max();
 
+    Feel::cout << "offline phase starts" << std::endl;
     while( M_M < M_MaxM )
     {
         double nMax = std::numeric_limits<double>::lowest();
@@ -444,10 +440,20 @@ GEIM<FunctionSpace>::saveDB()
         }
         else
             fs::create_directories(this->dbLocalPath());
-        fs::ofstream ofs( this->dbLocalPath() / this->dbFilename() );
+
+        json j;
+        j["name"] = this->name();
+        std::time_t t = std::time(nullptr);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&t), "%c %Z");
+        j["date"] = ss.str();
+        j["mesh"] = this->absoluteMeshFilename();
+        std::ofstream o(this->absoluteJsonFilename());
+        o << j << std::endl;
+        fs::ofstream ofs( this->absoluteDbFilename() );
         if ( ofs )
         {
-            Feel::cout << "saving DB at " << this->dbLocalPath() / this->dbFilename() << std::endl;
+            Feel::cout << "saving DB at " << this->absoluteDbFilename() << std::endl;
             //boost::archive::text_oarchive oa( ofs );
             boost::archive::binary_oarchive oa( ofs );
             // write class instance to archive
@@ -457,7 +463,12 @@ GEIM<FunctionSpace>::saveDB()
             oa << M_mus;
         }
     }
-    fs::ofstream ofsp( this->dbLocalPath() / this->dbFilenameProc() );
+    if( ! fs::exists(this->absoluteMeshFilename()) )
+    {
+        Feel::cout << "Saving mesh to " << this->absoluteMeshFilename() << std::endl;
+        M_Xh->mesh()->saveHDF5( this->absoluteMeshFilename() );
+    }
+    fs::ofstream ofsp( this->absoluteDbFilenameProc() );
     if( ofsp )
     {
         boost::archive::binary_oarchive oa( ofsp );
@@ -503,7 +514,15 @@ GEIM<FunctionSpace>::loadDB( std::string const& filename, crb::load l )
     }
     if( l > crb::load::rb )
     {
-        fs::ifstream ifsp( this->dbLocalPath() / this->dbFilenameProc() );
+        if( ! M_Xh )
+        {
+            std::ifstream i(this->absoluteJsonFilename());
+            json j = json::parse(i);
+            auto meshfilename = j["mesh"].get<std::string>();
+            auto mesh = loadMesh(_mesh=new mesh_type, _filename=meshfilename);
+            M_Xh = functionspace_type::New(mesh);
+        }
+        fs::ifstream ifsp( this->absoluteDbFilenameProc() );
         if( ifsp )
         {
             boost::archive::binary_iarchive ia( ifsp );

@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( test_eim_offline )
     double r = doption("radius");
     int trainsetSize = ioption("trainset-size");
 
-    auto mesh = loadMesh( _mesh=new mesh_type/*, _filename="test_geim.geo"*/ );
+    auto mesh = loadMesh( _mesh=new mesh_type, _filename="test_geim.geo" );
     auto Xh = Pch<1>(mesh);
     auto u = Xh->element();
 
@@ -154,8 +154,9 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
     int nbSensors = ioption("nb-sensors");
     double r = doption("radius");
 
-    auto mesh = loadMesh(_mesh=new mesh_type/*, _filename="test_geim.json"*/);
-    auto Xh = Pch<1>(mesh);
+    geim_type geim = geim_type("test_geim", crb::load::fe);
+    auto Xh = geim.space();
+    auto mesh = Xh->mesh();
     auto u = Xh->element();
 
     std::vector<vector_ptrtype> sigmas;
@@ -198,7 +199,6 @@ BOOST_AUTO_TEST_CASE( test_eim_online )
                   };
 
 
-    geim_type geim = geim_type("test_geim", Xh);
     auto indices = geim.indices();
     auto M = geim.dimension();
     vectorN_type vn(M);
