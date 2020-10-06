@@ -25,32 +25,9 @@
 #ifndef FEELPP_CRB_SENSORS_HPP
 #define FEELPP_CRB_SENSORS_HPP 1
 
-#include <limits>
-#include <numeric>
-#include <string>
-#include <iostream>
-#include <fstream>
-
-#include <boost/ref.hpp>
-#include <boost/next_prior.hpp>
-#include <boost/type_traits.hpp>
-#include <boost/tuple/tuple.hpp>
-#if BOOST_VERSION >= 104700
-#include <boost/math/special_functions/nonfinite_num_facets.hpp>
-#endif
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/string.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/serialization/base_object.hpp>
-
 #include <feel/feelvf/vf.hpp>
-#include <feel/feelvf/print.hpp>
+#include <feel/feeldiscr/fsfunctionallinear.hpp>
 
-#include <feel/feeldiscr/geometricspace.hpp>
-#include <feel/feeldiscr/pdh.hpp>
-
-#include <Eigen/Core>
-#include <feel/feelcrb/sensordesc.hpp>
 namespace Feel
 {
 
@@ -70,37 +47,32 @@ public:
     using space_ptrtype = typename super_type::space_ptrtype;
     using node_t = typename space_type::mesh_type::node_type;
     using mesh_type = typename space_type::mesh_type;
-    using p0_space_ptrtype = Pdh_ptrtype<mesh_type,0>;
-    using p0_element_type = Pdh_element_type<mesh_type,0>;
 
 
-    SensorBase( space_ptrtype const& space, p0_space_ptrtype const& p0_space, std::string const& n = "sensor" ):
+    SensorBase( space_ptrtype const& space, node_t const& p, std::string const& name = "sensor" ):
         super_type( space ),
-        M_name( n ),
-        M_p0_space( p0_space ),
-        M_c( M_p0_space->element() )
+        M_name( name ),
+        M_position( p )
     {}
 
     virtual ~SensorBase() = default;
 
+    virtual void init() = 0;
+
     void setName( std::string const& n ) { M_name = n; }
     std::string const& name() const { return M_name; }
 
-    p0_space_ptrtype spaceP0() { return M_p0_space; }
+    void setPosition( node_t const& p ) { M_position = p; }
+    node_t const& position() const { return M_position; }
 
-    p0_element_type& marker() { return M_c; }
-    p0_element_type const& marker() const { return M_c; }
-    
     //!
     //! other interface may include:
     //!  - DB storage for past measurements
     //!  - DB storage for future measurements
     //!
-private:
+protected:
     std::string M_name;
-    p0_space_ptrtype M_p0_space;
-    //! characteristic function to localize the sensor
-    p0_element_type M_c;
+    node_t M_position;
 };
 
 //!
@@ -117,39 +89,23 @@ public:
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
-    using node_t = typename space_type::mesh_type::node_type;
-    using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
-    using p0_element_type = typename super_type::p0_element_type;
+    using node_t = typename super_type::node_t;
 
-    SensorPointwise( space_ptrtype const& space, p0_space_ptrtype const& p0_space, node_t const& p, std::string const& n = "pointwise"):
-        super_type( space, p0_space, n ),
-        M_point(p)
+    SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
+        super_type( space, p, n )
     {
-        init();
-        
+        this->init();
     }
 
     virtual ~SensorPointwise(){}
 
-    void setPoint( node_t const& p )
-    {
-        M_point = p;
-    }
-
-    node_t const& point() const
-    {
-        return M_point;
-    }
-
-    void init()
+    void init() override
     {
         auto v=this->space()->element();
         //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
         //super_type::operator=( expr );
         this->close();
     }
-private:
-    node_t M_point;
 };
 
 
@@ -167,82 +123,51 @@ public:
 
     using space_type = typename super_type::space_type;
     using space_ptrtype = typename super_type::space_ptrtype;
-    using node_t = typename space_type::mesh_type::node_type;
-    using mesh_type = typename space_type::mesh_type;
-    using p0_space_ptrtype = typename super_type::p0_space_ptrtype;
-    using p0_element_type = typename super_type::p0_element_type;
+    using mesh_type = typename super_type::mesh_type;
+    using node_t = typename super_type::node_t;
+    static const int nDim = space_type::mesh_type::nDim;
 
-    SensorGaussian( space_ptrtype const& space, p0_space_ptrtype const& p0_space,
-                    node_t const& center, double radius = 0., std::string const& n = "gaussian"):
-        super_type( space, p0_space, n ),
-        M_center( center ),
+    SensorGaussian( space_ptrtype const& space, node_t const& center,
+                    double radius = 0., std::string const& n = "gaussian"):
+        super_type( space, center, n ),
         M_radius( radius )
     {
-        init();
-        this->marker().on( _range=elements(space->mesh()), _expr=cst(1.0));
+        this->init();
     }
 
     virtual ~SensorGaussian(){}
 
-    void setCenter( node_t const& center )
-    {
-        M_center = center;
-    }
+    void setRadius( double radius ) { M_radius = radius; }
+    double radius() { return M_radius; }
 
-    void setRadius( double radius )
-    {
-        M_radius = radius;
-    }
-
-    std::vector<double> const& center()
-    {
-        return M_center;
-    }
-
-    double radius()
-    {
-        return M_radius;
-    }
-
-    void init()
+    void init() override
     {
         auto v = this->space()->element();
         auto phi = this->phiExpr( mpl::int_< space_type::nDim >() );
-        this->operator=( integrate(_range=elements(this->space()->mesh()),
-                                   _expr=id(v)*this->phiExpr()) );
-        // if constexpr ( space_type::nDim == 1 )
-        //     form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( -inner(P()-vec(cst(M_center[0])))/(2*std::pow(M_radius,2))) );
-        // if constexpr ( space_type::nDim == 2 )
-        //     form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp( -inner(P()-vec(cst(M_center[0]),cst(M_center[1])))/(2*std::pow(M_radius,2))) );
-        // if constexpr ( space_type::nDim == 3 )
-        // {
-        //     Feel::cout << "center: { " << M_center[0] << "," << M_center[1] << "," << M_center[2] << "}" << std::endl;
-        //     Feel::cout << "radius: " << M_radius << std::endl;
-        //     form1( _test=this->space(), _vector=this->containerPtr() ) = integrate(_range=elements(this->space()->mesh()), _expr=id(v)*exp(-inner(P()-vec(cst(M_center[0]),cst(M_center[1]),cst(M_center[2])))/(2*std::pow(M_radius,2)) ) );
-        //     if ( Environment::isSequential() )
-        //         this->containerPtr()->printMatlab(this->name()+".m");
-        // }
-        //super_type::operator= ( expr );
+        auto n = integrate(_range=elements(this->space()->mesh()), _expr=phi).evaluate()(0,0);
+        form1( _test=this->space(), _vector=this->containerPtr() ) =
+            integrate(_range=elements(this->space()->mesh()), _expr=id(v)*phi/n );
         this->close();
     }
 
 private:
     auto phiExpr( mpl::int_<1> /**/ )
     {
-        return exp( inner(P()-vec(cst(M_center[0])))/(2*std::pow(M_radius,2)));
+        return exp( -inner(P()-vec(cst(this->M_position[0])))/(2*std::pow(M_radius,2)));
     }
     auto phiExpr( mpl::int_<2> /**/ )
     {
-        return exp( inner(P()-vec(cst(M_center[0]),cst(M_center[1])))/(2*std::pow(M_radius,2)));
+        return exp( -inner(P()-vec(cst(this->M_position[0]),cst(this->M_position[1])))/(2*std::pow(M_radius,2)));
     }
     auto phiExpr( mpl::int_<3> /**/ )
     {
-        return exp( inner(P()-vec(cst(M_center[0]),cst(M_center[1]),cst(M_center[2])))/(2*std::pow(M_radius,2)));
+        return exp( -inner(P()-vec(cst(this->M_position[0]),cst(this->M_position[1]),cst(this->M_position[2])))/(2*std::pow(M_radius,2)));
     }
-    node_t M_center;
+
     double M_radius;
 };
 
+#if 0
 template<typename Space>
 class SensorMap : public std::map<std::string,std::shared_ptr<SensorBase<Space>>>
 {
@@ -339,7 +264,7 @@ private:
     space_ptrtype M_space;
     p0_space_ptrtype M_space_p0;
 };
-
+#endif
 
 }
 #endif /* _FEELPP_CRB_SENSORS_HPP */
