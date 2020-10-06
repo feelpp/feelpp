@@ -143,15 +143,25 @@ public:
             this->setDBDirectory( M_uuid );
         } 
         
-    //! \return the DB filename
+    //! \return the DB json filename
     std::string jsonFilename() const
         {
             return fs::path( M_dbfilename ).stem().string()+".json";
         }
+    //! \return the abslute DB json filename
+    std::string absoluteJsonFilename() const
+    {
+        return (this->dbLocalPath() / fs::path(this->jsonFilename()) ).string();
+    }
     //! \return the DB filename
     std::string const& dbFilename() const
     {
         return M_dbfilename;
+    }
+    //! \return the abslute DB filename
+    std::string absoluteDbFilename() const
+    {
+        return (this->dbLocalPath() / fs::path(this->dbFilename()) ).string();
     }
 
     //! \return the DB filename with the proc number
@@ -159,9 +169,27 @@ public:
     {
         auto dbf = fs::path(M_dbfilename);
         return (boost::format("%1%_p%2%%3%")
-                % dbf.stem()
+                % dbf.stem().string()
                 % this->worldCommPtr()->globalRank()
-                % dbf.extension() ).str();
+                % dbf.extension().string() ).str();
+    }
+
+    //! \return the abslute DB filename with the proc number
+    std::string absoluteDbFilenameProc() const
+    {
+        return (this->dbLocalPath() / fs::path(this->dbFilenameProc()) ).string();
+    }
+    //! \return the mesh filename
+    std::string meshFilename() const
+    {
+        return (boost::format("%1%_mesh_p%2%.json")
+                % fs::path( M_dbfilename ).stem().string()
+                % this->worldCommPtr()->size()).str();
+    }
+    //! \return the abslute mesh filename
+    std::string absoluteMeshFilename() const
+    {
+        return (this->dbLocalPath() / fs::path(this->meshFilename()) ).string();
     }
 
     //! \return prefix directory
