@@ -24,7 +24,7 @@ po::options_description makeOptions()
         ( "do-ortho", po::value<bool>()->default_value(false), "")
         ;
     options.add(backend_options("pbdw"));
-    options.add(pbdw_optiosn());
+    options.add(pbdw_options());
 
     return options;
 }
