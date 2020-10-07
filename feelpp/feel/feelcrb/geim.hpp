@@ -78,8 +78,8 @@ public:
      * @param l Loading type (rb,fe,all)
      * @param uuid Uuid to use for db
      */
-    GEIM(std::string name, crb::load l = crb::load::rb,
-         uuids::uuid const& uuid = uuids::nil_uuid());
+    explicit GEIM(std::string const& name, crb::load l = crb::load::rb,
+                  uuids::uuid const& uuid = uuids::nil_uuid());
     /**
      * Constructor for offline phase.
      * @param name Name of geim
@@ -88,8 +88,8 @@ public:
      * @param solver Function to use to get an element from a parameter
      * @param uuid Uuid to use for db
      */
-    GEIM(std::string name,
-         std::vector<linearform_ptrtype> sigma,
+    GEIM(std::string const& name,
+         std::vector<linearform_ptrtype> const& sigma,
          sampling_ptrtype sampling,
          solver_type solver,
          uuids::uuid const& uuid = uuids::nil_uuid());
@@ -172,7 +172,7 @@ private:
 };
 
 template<typename FunctionSpace>
-GEIM<FunctionSpace>::GEIM(std::string name, crb::load l,
+GEIM<FunctionSpace>::GEIM(std::string const& name, crb::load l,
                           uuids::uuid const& uuid):
     super_type(name, "geim", uuid),
     M_name(name),
@@ -189,8 +189,8 @@ GEIM<FunctionSpace>::GEIM(std::string name, crb::load l,
 }
 
 template<typename FunctionSpace>
-GEIM<FunctionSpace>::GEIM(std::string name,
-                          std::vector<linearform_ptrtype> sigma,
+GEIM<FunctionSpace>::GEIM(std::string const& name,
+                          std::vector<linearform_ptrtype> const& sigma,
                           sampling_ptrtype sampling,
                           solver_type solver,
                           uuids::uuid const& uuid):
@@ -346,7 +346,7 @@ GEIM<FunctionSpace>::offline()
     }
 
     parameter_type mu;
-    double error = std::numeric_limits<double>::max();
+    double error;
 
     Feel::cout << "offline phase starts" << std::endl;
     while( M_M < M_MaxM )

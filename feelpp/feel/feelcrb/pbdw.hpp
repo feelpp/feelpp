@@ -64,9 +64,9 @@ public:
      * @param l Loading type (rb,fe,all)
      * @param uuid Uuid to use for the db
      */
-    PBDW(std::string const& name,
-         crb::load l = crb::load::rb,
-         uuids::uuid const& uuid = uuids::nil_uuid());
+    explicit PBDW(std::string const& name,
+                  crb::load l = crb::load::rb,
+                  uuids::uuid const& uuid = uuids::nil_uuid());
     /**
      * Constructor for the offline phase
      * @param name Name of pbdw
@@ -76,7 +76,7 @@ public:
      */
     PBDW(std::string const& name,
          reducedspace_ptrtype const& XR,
-         std::vector<sensorbase_ptrtype> sigmas,
+         std::vector<sensorbase_ptrtype> const& sigmas,
          uuids::uuid const& uuid = uuids::nil_uuid());
     int dimensionN() const { return M_N; } /**< Dimension of Reduced Basis */
     int dimensionM() const { return M_M; } /**< Number of sensors */

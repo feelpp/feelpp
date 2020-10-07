@@ -105,10 +105,10 @@ public:
 
     void init() override
     {
-        auto v=this->space()->element();
+        // auto v=this->space()->element();
         //auto expr=integrate(_range=elements(M_space->mesh()), _expr=id(v)*phi);
         //super_type::operator=( expr );
-        this->close();
+        // this->close();
     }
 };
 
