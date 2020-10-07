@@ -49,10 +49,11 @@ public:
     using mesh_type = typename space_type::mesh_type;
 
 
-    SensorBase( space_ptrtype const& space, node_t const& p, std::string const& name = "sensor" ):
+    SensorBase( space_ptrtype const& space, node_t const& p, std::string const& name = "sensor" , std::string const& t = ""):
         super_type( space ),
         M_name( name ),
-        M_position( p )
+        M_position( p ),
+        M_type( t )
     {}
 
     virtual ~SensorBase() = default;
@@ -62,8 +63,10 @@ public:
     void setName( std::string const& n ) { M_name = n; }
     std::string const& name() const { return M_name; }
 
-    void setPosition( node_t const& p ) { M_position = p; }
+    void setPosition( node_t const& p ) { M_position = p; this->init(); }
     node_t const& position() const { return M_position; }
+
+    std::string const& type() const { return M_type; }
 
     //!
     //! other interface may include:
@@ -73,6 +76,7 @@ public:
 protected:
     std::string M_name;
     node_t M_position;
+    std::string M_type;
 };
 
 //!
@@ -92,7 +96,7 @@ public:
     using node_t = typename super_type::node_t;
 
     SensorPointwise( space_ptrtype const& space, node_t const& p, std::string const& n = "pointwise"):
-        super_type( space, p, n )
+        super_type( space, p, n, "pointwise" )
     {
         this->init();
     }
@@ -128,8 +132,8 @@ public:
     static const int nDim = space_type::mesh_type::nDim;
 
     SensorGaussian( space_ptrtype const& space, node_t const& center,
-                    double radius = 0., std::string const& n = "gaussian"):
-        super_type( space, center, n ),
+                    double radius = 1., std::string const& n = "gaussian"):
+        super_type( space, center, n, "gaussian" ),
         M_radius( radius )
     {
         this->init();
@@ -137,7 +141,7 @@ public:
 
     virtual ~SensorGaussian(){}
 
-    void setRadius( double radius ) { M_radius = radius; }
+    void setRadius( double radius ) { M_radius = radius; this->init(); }
     double radius() { return M_radius; }
 
     void init() override
