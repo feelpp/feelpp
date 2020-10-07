@@ -138,7 +138,7 @@ PBDW<RBSpace>::PBDW(std::string const& name,
 template<typename RBSpace>
 PBDW<RBSpace>::PBDW(std::string const& name,
                     reducedspace_ptrtype const& XR,
-                    std::vector<sensorbase_ptrtype> sigmas,
+                    std::vector<sensorbase_ptrtype> const& sigmas,
                     uuids::uuid const& uuid):
     super_type(name, "pbdw", uuid),
     M_name(name),
