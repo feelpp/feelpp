@@ -229,6 +229,9 @@ public:
     //! \return path to database, empty path if not found
     virtual fs::path lookForDB() const;
 
+    //! \return true if DB found for load type l, false otherwise
+    bool findDBUuid(int l, std::string const& uid = "");
+
     //! \return \c variables_map
     po::variables_map const& vm() const
     {

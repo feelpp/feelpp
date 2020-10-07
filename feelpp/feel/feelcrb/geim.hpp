@@ -147,7 +147,6 @@ protected:
     virtual element_type getElement(parameter_type const& mu) { return M_solver(mu); }
     void loadDB( std::string const& filename, crb::load l ) override;
     void saveDB() override;
-    void findDBUuid();
 
 private:
     std::string M_name;
@@ -183,8 +182,8 @@ GEIM<FunctionSpace>::GEIM(std::string name, crb::load l,
     M_dbId(soption("geim.db.id")),
     M_stage(crb::stage::online)
 {
-    if( this->id().is_nil() )
-        this->findDBUuid();
+    if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
+        throw std::invalid_argument("Database not found during online phase");
 
     this->loadDB(this->absoluteDbFilename(), l );
 }
@@ -212,8 +211,8 @@ GEIM<FunctionSpace>::GEIM(std::string name,
     if( M_sigmas.size() == 0 )
         throw std::invalid_argument("No linear forms provided");
 
-    if( this->id().is_nil() )
-        this->findDBUuid();
+    if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
+        this->setDBDirectory(Environment::randomUUID(true));
 
     M_currentQ = M_solver(get<0>(M_sampling->max()));
     M_Xh = M_currentQ.functionSpace();
@@ -224,41 +223,7 @@ GEIM<FunctionSpace>::GEIM(std::string name,
         M_B = matrixN_type(0,0);
     }
     else
-        this->loadDB((this->dbLocalPath() / this->dbFilename()).string(), crb::load::all );
-}
-
-template<typename FunctionSpace>
-void
-GEIM<FunctionSpace>::findDBUuid()
-{
-    // if stage online, need to load db
-    uuids::uuid id = uuids::nil_uuid();
-    switch( M_dbLoad )
-    {
-    case 0:
-        id = this->id(M_dbFilename);
-        break;
-    case 1:
-        id = this->idFromDBLast( crb::last::created );
-        break;
-    case 2:
-        id = this->idFromDBLast( crb::last::modified );
-        break;
-    case 3:
-        id = this->idFromId( M_dbId );
-        break;
-    default:
-        break;
-    }
-    if( !id.is_nil() )
-        this->setDBDirectory(id);
-    else
-    {
-        if( M_stage == crb::stage::offline )
-            this->setDBDirectory(Environment::randomUUID(true));
-        else
-            throw std::invalid_argument("Database not found during online phase");
-    }
+        this->loadDB(this->absoluteDbFilename(), crb::load::all );
 }
 
 template<typename FunctionSpace>

@@ -110,6 +110,37 @@ CRBDB::lookForDB() const
 
     return fs::path();
 }
+
+bool
+CRBDB::findDBUuid(int l, std::string const& uid_file)
+{
+    uuids::uuid id = uuids::nil_uuid();
+    switch( l )
+    {
+    case 0:
+        id = this->id( uid_file );
+        break;
+    case 1:
+        id = this->idFromDBLast( crb::last::created );
+        break;
+    case 2:
+        id = this->idFromDBLast( crb::last::modified );
+        break;
+    case 3:
+        id = this->idFromId( uid_file );
+        break;
+    default:
+        break;
+    }
+    if( !id.is_nil() )
+    {
+        this->setDBDirectory(id);
+        return true;
+    }
+    else
+        return false;
+}
+
 void
 CRBDB::saveDB()
 {
