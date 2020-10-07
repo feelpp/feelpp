@@ -481,6 +481,21 @@ po::options_description sc_options( std::string const& prefix )
 
 
 Feel::po::options_description
+geim_options( std::string const& prefix )
+{
+    Feel::po::options_description geimoptions( "GEIM Options" );
+    geimoptions.add_options()
+        ( "geim.dimension-max", po::value<int>()->default_value(10), "maximum number of basis" )
+        ( "geim.tolerance", po::value<double>()->default_value(1e-10), "tolerance" )
+        ( "geim.rebuild-database", po::value<bool>()->default_value(false), "rebuild the database" )
+        ( "geim.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
+        ( "geim.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
+        ( "geim.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
+        ;
+    return geimoptions;
+}
+
+Feel::po::options_description
 eimOptions( std::string const& prefix )
 {
     Feel::po::options_description eimoptions( "EIM Options" );
@@ -534,6 +549,19 @@ deimOptions( std::string const& prefix )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
+}
+
+Feel::po::options_description
+pbdw_options( std::string const& prefix )
+{
+    Feel::po::options_description pbdwoptions( "PBDW Options" );
+    pbdwoptions.add_options()
+        ( "pbdw.rebuild-database", po::value<bool>()->default_value(false), "rebuild the database" )
+        ( "pbdw.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
+        ( "pbdw.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
+        ( "pbdw.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
+        ;
+    return pbdwoptions;
 }
 
 Feel::po::options_description

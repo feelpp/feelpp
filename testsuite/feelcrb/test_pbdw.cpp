@@ -20,14 +20,11 @@ po::options_description makeOptions()
     options.add_options()
         ("nb-sensors", po::value<int>()->default_value(4), "nb of sensors in x direction")
         ("radius", po::value<double>()->default_value(0.025), "radius of sensors")
-        ("trainset-size", po::value<int>()->default_value(7), "number of parameter in the trainset")
+        ("trainset-size", po::value<int>()->default_value(10), "number of parameter in the trainset")
         ( "do-ortho", po::value<bool>()->default_value(false), "")
-        ( "pbdw.rebuild-database", po::value<bool>()->default_value(true), "rebuild the database" )
-        ( "pbdw.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
-        ( "pbdw.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
-        ( "pbdw.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
         ;
     options.add(backend_options("pbdw"));
+    options.add(pbdw_optiosn());
 
     return options;
 }

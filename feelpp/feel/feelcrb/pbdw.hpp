@@ -163,11 +163,9 @@ template<typename RBSpace>
 void
 PBDW<RBSpace>::offline()
 {
-    int MN = this->dimension();
-    int M = this->dimensionM();
-    int N = this->dimensionN();
-    M_matrix = matrixN_type::Zero(MN, MN);
-    for(int i = 0; i < M; ++i )
+    Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
+    M_matrix = matrixN_type::Zero(M_M+M_N, M_M+M_N);
+    for(int i = 0; i < M_M; ++i )
     {
         for(int j = 0; j < i; ++j )
         {
@@ -175,10 +173,10 @@ PBDW<RBSpace>::offline()
             M_matrix(j, i) = M_matrix(i, j);
         }
         M_matrix(i, i) = inner_product(M_sigmas[i]->containerPtr(), M_sigmas[i]->containerPtr());
-        for(int j = 0; j < N; ++j )
-            M_matrix(i, M+j) = (*M_sigmas[i])(M_XR->primalBasisElement(j));
+        for(int j = 0; j < M_N; ++j )
+            M_matrix(i, M_M+j) = (*M_sigmas[i])(M_XR->primalBasisElement(j));
     }
-    M_matrix.bottomLeftCorner(N, M) = M_matrix.topRightCorner(M, N).transpose();
+    M_matrix.bottomLeftCorner(M_N, M_M) = M_matrix.topRightCorner(M_M, M_N).transpose();
 
     this->saveDB();
 }

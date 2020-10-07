@@ -22,14 +22,9 @@ po::options_description makeOptions()
         ("nb-sensors", po::value<int>()->default_value(5), "nb of sensors in x direction")
         ("radius", po::value<double>()->default_value(0.2), "radius of sensors")
         ("trainset-size", po::value<int>()->default_value(7), "number of parameter in the trainset")
-        ( "geim.dimension-max", po::value<int>()->default_value(10), "maximum number of basis" )
-        ( "geim.tolerance", po::value<double>()->default_value(1e-10), "tolerance" )
-        ( "geim.rebuild-database", po::value<bool>()->default_value(true), "rebuild the database" )
-        ( "geim.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
-        ( "geim.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
-        ( "geim.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
         ;
     options.add(backend_options("geim"));
+    options.add(geim_options());
 
     return options;
 }
