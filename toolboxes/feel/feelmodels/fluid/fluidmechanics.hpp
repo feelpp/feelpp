@@ -182,7 +182,10 @@ public:
     torque_self_propulsion_multiplier_element_ptrtype const& fieldMultiplierSelfPropTorquePtr() const { return M_MultiplierSelfPropulsionTorque; }
     torque_self_propulsion_multiplier_element_ptrtype & fieldMultiplierSelfPropTorquePtr() { return M_MultiplierSelfPropulsionTorque; }
     bool defineSelfPropulsion() const { return M_selfPropulsion; }    
-
+    bool M_hasArticulatedBody;
+    bool hasArticulatedBody() const {return M_hasArticulatedBody;}
+    std::string M_ArticulationTreatment;
+    std::string ArticulationTreatment() const {return M_ArticulationTreatment; }
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
     //___________________________________________________________________________________//
@@ -477,7 +480,10 @@ public:
         // NEW : LUCA -> accessor to multipliers for relative speed difference
         space_trace_p0c_vectorial_ptrtype spaceMultiplierDifferencePtr() const { return M_XhVelocityDifferenceMultiplier1; }
         element_trace_p0c_vectorial_ptrtype fieldMultiplierDifferencePtr() const { return M_VelocityDifferenceMultiplier1; }
-        
+        /*bool M_hasArticulatedBody;
+        bool hasArticulatedBody() const {return M_hasArticulatedBody;}
+        std::string M_ArticulationTreatment;
+        std::string ArticulationTreatment() const {return M_ArticulationTreatment; }*/
 
         bdf_trace_p0c_vectorial_ptrtype bdfTranslationalVelocity() const { return M_bdfTranslationalVelocity; }
         bdf_trace_angular_velocity_ptrtype bdfAngularVelocity() const { return M_bdfAngularVelocity; }
@@ -573,10 +579,6 @@ public:
         // NEW : LUCA -> definition of the multiplier for relative speed difference
         space_trace_p0c_vectorial_ptrtype M_XhVelocityDifferenceMultiplier1; 
         element_trace_p0c_vectorial_ptrtype M_VelocityDifferenceMultiplier1;
-        bool M_hasArticulatedBody;
-        bool hasArticulatedBody() const {return M_hasArticulatedBody;}
-        std::string M_ArticulationTreatment;
-        std::string ArticulationTreatment() const {return M_ArticulationTreatment; }
 
         std::shared_ptr<Body> M_body;
         eigen_vector_type<nRealDim> M_massCenterRef;

@@ -868,32 +868,64 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateLinearPDE(
                                     bpbc.gravityForceWithMass()(d) );
                         }
                     }
-                    for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                    if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
                     {
-                        if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                        for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
                         {
-                            size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
-                            auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
-                            auto Wcl = expr("4*pulse(t,0,1,6)-4*pulse(t,3,4,6):t");
-                            Wcl.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
-                            F->add( basisToContainerGpMultiplierRow[0],
-                                      //  -Wcl.evaluate()(0,0));
-                            //Feel::cout << "Wcl " <<  Wcl.evaluate()(0,0) << std::endl;
-                                    this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
-                        }
-                        if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight")
-                        {
-                            size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
-                            auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
-                            
-                            auto Wcr = expr("-4*pulse(t,3,4,6)+4*pulse(t,5,6,6):t");
-                            Wcr.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
-                            F->add( basisToContainerGpMultiplierRow[0],
-                                        //-Wcr.evaluate()(0,0));
-                            //Feel::cout << "Wcr " <<  Wcr.evaluate()(0,0) << std::endl;
-                                        this->W_cr(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                            if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                            {
+                                size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity1");
+                                auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
+                                auto Wcl = expr("4*pulse(t,0,1,6)-4*pulse(t,3,4,6):t");
+                                Wcl.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
+                                F->add( basisToContainerGpMultiplierRow[0],
+                                            //  -Wcl.evaluate()(0,0));
+                                //Feel::cout << "Wcl " <<  Wcl.evaluate()(0,0) << std::endl;
+                                        this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                            }
+                            if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight")
+                            {
+                                size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc.name()+".multiplier-velocity2");
+                                auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
+                                
+                                auto Wcr = expr("-4*pulse(t,3,4,6)+4*pulse(t,5,6,6):t");
+                                Wcr.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
+                                F->add( basisToContainerGpMultiplierRow[0],
+                                            //-Wcr.evaluate()(0,0));
+                                //Feel::cout << "Wcr " <<  Wcr.evaluate()(0,0) << std::endl;
+                                            this->W_cr(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                            }
                         }
                     }
+                    /*else if (this->hasArticulatedBody() && this->ArticulationTreatment()=="Pmatrix")
+                    {
+                        for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                        {
+                            if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft")
+                            {
+                                size_type startBlockIndexMultiplier1 = this->startSubBlockSpaceIndex( "body-bc."+bpbc2.name()+".translational-velocity");
+                                auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier1 );
+                                auto Wcl = expr("4*pulse(t,0,1,6)-4*pulse(t,3,4,6):t");
+                                Wcl.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
+                                F->add( basisToContainerGpMultiplierRow[0],
+                                            //  -Wcl.evaluate()(0,0));
+                                //Feel::cout << "Wcl " <<  Wcl.evaluate()(0,0) << std::endl;
+                                        this->W_cl(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                            }
+                            if (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight")
+                            {
+                                size_type startBlockIndexMultiplier2 = this->startSubBlockSpaceIndex( "body-bc."+bpbc2.name()+".translational-velocity");
+                                auto const& basisToContainerGpMultiplierRow = A->mapRow().dofIdToContainerId( rowStartInMatrix+startBlockIndexMultiplier2 );
+                                
+                                auto Wcr = expr("-4*pulse(t,3,4,6)+4*pulse(t,5,6,6):t");
+                                Wcr.setParameterValues({ { "t", this->timeStepBDF()->time() } } );
+                                F->add( basisToContainerGpMultiplierRow[0],
+                                            //-Wcr.evaluate()(0,0));
+                                //Feel::cout << "Wcr " <<  Wcr.evaluate()(0,0) << std::endl;
+                                            this->W_cr(this->timeStepBDF()->time(),this->timeStepBDF()->timeStep()) );    
+                            }
+                        }
+                    }*/
                 }
                 if ( hasActiveDofAngularVelocity )
                 {

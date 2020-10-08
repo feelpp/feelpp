@@ -1159,47 +1159,93 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
             myblockMat(i,i) = this->backend()->newIdentityMatrix( M_blockVectorSolution(i)->mapPtr(),M_blockVectorSolution(i)->mapPtr() );
             Feel::cout << "The "<< i << " diagonal matrix is " << myblockMat(i,i)->size1() << " x " << myblockMat(i,i)->size2() <<std::endl;
         }
+        // PMATRIX
+        if (this->hasArticulatedBody() && this->ArticulationTreatment()=="Pmatrix")
+        {
         for ( auto const& [bpname,bpbc] : M_bodySetBC )
         {
             // NEW : Luca -> matrix P modification, in place of Lagrange multipliers
-            /*for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+            for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
                 {
                 if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") )
                     {
                         size_type TranslationalVelocityCenter = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
                         size_type TranslationalVelocityOther = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                        // Put identity matrices in the Sphere Center column
                         myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) = \
                         this->backend()->newIdentityMatrix( M_blockVectorSolution(TranslationalVelocityOther)->mapPtr(),M_blockVectorSolution(TranslationalVelocityCenter)->mapPtr() );
                         auto vecDiag = this->backend()->newVector( M_blockVectorSolution(TranslationalVelocityCenter)->mapPtr()  );
-                        vecDiag->setConstant( -1. );
-                        myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) ->setDiagonal( vecDiag );
+                        // vecDiag->setConstant( 1. );
+                        // myblockMat(TranslationalVelocityOther,TranslationalVelocityCenter) ->setDiagonal( vecDiag );
+                        // Delete identity matrix in diagonal for side velocities
+                        //vecDiag->setConstant( -1 );
+                        vecDiag->setConstant( 0 );
+                        myblockMat(TranslationalVelocityOther,TranslationalVelocityOther) -> setDiagonal( vecDiag );
                         Feel::cout << "The diagonal matrix is in position" << TranslationalVelocityOther << " x " << TranslationalVelocityCenter <<std::endl;
                     }
-                }*/
+                }
+        }
         }
         size_type startBlockIndexVelocity = this->startSubBlockSpaceIndex("velocity");
         std::set<size_type> dofsAllBodies;
-        for ( auto const& [bpname,bpbc] : M_bodySetBC )
+        if (this->hasArticulatedBody() && this->ArticulationTreatment()=="Pmatrix")
         {
-            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
-            //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
-            size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
-            size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
-
-            myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
-            myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
-
-            auto rangeBody = bpbc.rangeMarkedFacesOnFluid();
-            auto dofsBody = this->functionSpaceVelocity()->dofs( rangeBody );
-            auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
-            for ( auto dofid : dofsBody )
+            for ( auto const& [bpname,bpbc] : M_bodySetBC )
             {
-                matFI_Id->set( dofid,dofid, 0.);
-                dofsAllBodies.insert( dofid );
-            }
-            matFI_Id->close();
-        }
+                //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+                //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+                size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+                // PMATRIX WITH U_D
+                if ((bpbc.name() =="SphereCenter"))
+                {
+                    myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+                }
+                myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
 
+                auto rangeBody = bpbc.rangeMarkedFacesOnFluid();
+                auto dofsBody = this->functionSpaceVelocity()->dofs( rangeBody );
+                auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+                for ( auto dofid : dofsBody )
+                {
+                    matFI_Id->set( dofid,dofid, 0.);
+                    dofsAllBodies.insert( dofid );
+                }
+                matFI_Id->close();
+
+               // PMATRIX WITH U_D
+               for ( auto const& [bpname2,bpbc2] : M_bodySetBC )
+                {
+                    if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft") || (bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") )
+                    {
+                        size_type startBlockIndexTranslationalVelocityOther = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                        myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc2.matrixPTilde_translational();
+                    }
+                }
+            }
+        }
+        else{
+            for ( auto const& [bpname,bpbc] : M_bodySetBC )
+            {
+                //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.translational-velocity") ) << " start dof index for body-bc.translational-velocity is not present\n";
+                //CHECK( this->hasStartSubBlockSpaceIndex("body-bc.angular-velocity") ) << " start dof index for body-bc.angular-velocity is not present\n";
+                size_type startBlockIndexTranslationalVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                size_type startBlockIndexAngularVelocity = this->startSubBlockSpaceIndex("body-bc."+bpbc.name()+".angular-velocity");
+
+                myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
+                myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
+
+                auto rangeBody = bpbc.rangeMarkedFacesOnFluid();
+                auto dofsBody = this->functionSpaceVelocity()->dofs( rangeBody );
+                auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
+                for ( auto dofid : dofsBody )
+                {
+                    matFI_Id->set( dofid,dofid, 0.);
+                    dofsAllBodies.insert( dofid );
+                }
+                matFI_Id->close();
+            }
+        }
         auto matP = backend()->newBlockMatrix(_block=myblockMat, _copy_values=true);
         Feel::cout << "Size mat A "<< M_algebraicFactory->matrix()->size1() << " x " << M_algebraicFactory->matrix()->size2() << std::endl;
         Feel::cout << "Size matp: "<< matP->size1() << " x " << matP->size2() << std::endl;
@@ -1211,9 +1257,26 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
         this->functionSpaceVelocity()->dof()->updateIndexSetWithParallelMissingDof( dofsAllBodies );
         std::set<size_type> dofEliminationIdsPtAP;
         matP->mapRow().dofIdToContainerId(startBlockIndexVelocity, dofsAllBodies, dofEliminationIdsPtAP );
+
+        // PMATRIX WITH U_D 
+        for(auto const& [bpname2,bpbc2] : M_bodySetBC )
+        {
+            if( (bpbc2.name() =="SphereLeft") || ( bpbc2.name() =="SphereRight") )
+            {
+                size_type startBlockIndexTranslationalVelocityOther = this->startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                for(int i=0;i<nDim;i++)
+                {
+                    // Eliminate the dofs of the other translational speeds
+                    auto const& basisToContainerGpRow = matP->mapRow().dofIdToContainerId( startBlockIndexVelocity+startBlockIndexTranslationalVelocityOther );
+                    dofEliminationIdsPtAP.insert(basisToContainerGpRow[i]);
+                }
+            }
+        }
+        
+        
         M_algebraicFactory->solverPtAP_setDofEliminationIds( dofEliminationIdsPtAP );
 
-        if ( M_bodySetBC.hasElasticVelocity() )
+        if ( M_bodySetBC.hasElasticVelocity() || (this->hasArticulatedBody() && this->ArticulationTreatment()=="Pmatrix"))
             M_algebraicFactory->initExplictPartOfSolution();
     }
 
@@ -2498,7 +2561,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodyBoundaryCondition::init( self_type const
     M_fieldAngularVelocity = M_XhAngularVelocity->elementPtr();
 
     // NEW : LUCA -> definition of the multipliers - NB: the mesh is not important, as they are 3D vectors, not really fields
-    if(this->hasArticulatedBody() && this->ArticulationTreatment()=="lm")
+    if(fluidToolbox.hasArticulatedBody() && fluidToolbox.ArticulationTreatment()=="lm")
     {
         M_XhVelocityDifferenceMultiplier1 = space_trace_p0c_vectorial_type::New( _mesh=M_mesh );
         M_VelocityDifferenceMultiplier1 = M_XhVelocityDifferenceMultiplier1->elementPtr();
@@ -2701,7 +2764,39 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
         for ( auto const& [bpname,bpbc] : *this )
             uExplictiPart.on(_range=bpbc.rangeMarkedFacesOnFluid(),_expr=idv(bpbc.fieldElasticVelocityPtr()),_close=true ); // TODO sync all body in one call
     }
-
+    // PMATRIX WITH U_D
+    if(fluidToolbox.hasArticulatedBody() && fluidToolbox.ArticulationTreatment()=="Pmatrix")
+    {
+        auto RelativeSpeeds = algebraicFactory->explictPartOfSolution();
+        auto uExplictiPart = fluidToolbox.functionSpaceVelocity()->element( algebraicFactory->explictPartOfSolution(), fluidToolbox.rowStartInVector()+0);
+        for ( auto & [bpname,bpbc] : *this )
+        {
+            for ( auto & [bpname2,bpbc2] : *this )
+            {
+                if ((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereLeft"))
+                {
+                    size_type TranslationalVelocityCenter = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc.name()+".translational-velocity");
+                    size_type TranslationalVelocityOther = fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                    //Feel::cout << "TranslationalVelocityOther left " << TranslationalVelocityOther <<std::endl;
+                    auto const& basisToContainerGpRow = matP->mapRow().dofIdToContainerId( fluidToolbox.rowStartInVector()+TranslationalVelocityOther );
+                    //Feel::cout << "basisToContainerGpRow left " << basisToContainerGpRow << std::endl;
+                    //Feel::cout << "Relative speeds " << *RelativeSpeeds << std::endl;
+                    uExplictiPart.on(_range=bpbc2.rangeMarkedFacesOnFluid(),_expr=cst(-fluidToolbox.W_cl(fluidToolbox.timeStepBDF()->time(),fluidToolbox.timeStepBDF()->timeStep()))*oneX(),_close=true );
+                    RelativeSpeeds->set(basisToContainerGpRow[0],-fluidToolbox.W_cl(fluidToolbox.timeStepBDF()->time(),fluidToolbox.timeStepBDF()->timeStep()));
+                }
+                else if((bpbc.name() =="SphereCenter" && bpbc2.name() =="SphereRight") )
+                {
+                    size_type TranslationalVelocityOther =fluidToolbox.startSubBlockSpaceIndex("body-bc."+bpbc2.name()+".translational-velocity");
+                    auto const& basisToContainerGpRow = matP->mapRow().dofIdToContainerId( fluidToolbox.rowStartInVector()+TranslationalVelocityOther );
+                    //Feel::cout << "TranslationalVelocityOther right " << TranslationalVelocityOther <<std::endl;
+                    //Feel::cout << "basisToContainerGpRow right " << basisToContainerGpRow << std::endl;
+                    //Feel::cout << "Relative speeds " << *RelativeSpeeds << std::endl;
+                    uExplictiPart.on(_range=bpbc2.rangeMarkedFacesOnFluid(),_expr=cst(-fluidToolbox.W_cr(fluidToolbox.timeStepBDF()->time(),fluidToolbox.timeStepBDF()->timeStep()))*oneX(),_close=true );
+                    RelativeSpeeds->set(basisToContainerGpRow[0],-fluidToolbox.W_cr(fluidToolbox.timeStepBDF()->time(),fluidToolbox.timeStepBDF()->timeStep()));
+                }  
+            }
+        }
+    }
 }
 
 
