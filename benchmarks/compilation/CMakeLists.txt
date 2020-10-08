@@ -21,9 +21,10 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-
-feelpp_add_application( compile_feel1 SRCS  feel1.cpp )
-feelpp_add_application( compile_feelcore SRCS  feelcore.cpp )
-feelpp_add_application( compile_feelpoly SRCS  feelpoly.cpp )
-feelpp_add_application( compile_feeldiscr SRCS  feeldiscr.cpp )
-feelpp_add_application( compile_feelvf SRCS  feelvf.cpp )
+add_custom_target(bench_compilation)
+feelpp_add_application( compile_feel1 SRCS  feel1.cpp EXEC B_C1)
+feelpp_add_application( compile_feelcore SRCS  feelcore.cpp EXEC B_C2 )
+feelpp_add_application( compile_feelpoly SRCS  feelpoly.cpp EXEC B_C3 )
+feelpp_add_application( compile_feeldiscr SRCS  feeldiscr.cpp EXEC B_C4 )
+feelpp_add_application( compile_feelvf SRCS  feelvf.cpp EXEC B_C5 )
+add_dependencies(bench_compilation ${B_C1} ${B_C2} ${B_C3} ${B_C4} ${B_C5})
