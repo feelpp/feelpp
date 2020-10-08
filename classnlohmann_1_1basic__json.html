@@ -2657,6 +2657,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section since"><dt>Since</dt><dd>version 2.0.0</dd></dl>
 <p>@liveexample{The behavior is shown in the example.,at_json_pointer_const} </p>
 
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
+
 </div>
 </div>
 <a id="a239e942da82f2597d0cf5ec806f5bc0d"></a>
@@ -2786,6 +2788,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0</dd></dl>
 <p>@liveexample{The example below shows how array elements can be read and written using <code><a class="el" href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e" title="access specified array element with bounds checking">at()</a></code>. It also demonstrates the different exceptions that can be thrown.,at__size_type} </p>
 
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#abb5856c2b1af00eccdb79cb968709729">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::binary()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::value()</a>.</p>
+
 </div>
 </div>
 <a id="aeb18fe2b8a5dbff4ccf2848de854c3ac"></a>
@@ -2900,6 +2904,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The following code shows an example for <code><a class="el" href="classnlohmann_1_1basic__json.html#a30914ad0767ccdc3633f88a906ed7dfa" title="access the last element">back()</a></code>.,back}</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a5417ca43ae5e7a3a2f82eee2d915c6ed">front()</a> &ndash; access the first element</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
+
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">nlohmann::detail::array</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::basic_json()</a>.</p>
 
 </div>
 </div>
@@ -3035,6 +3041,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@complexity Linear in the size of <em>init</em>.</p>
 <p>@exceptionsafety Strong guarantee: if an exception is thrown, there are no changes to any JSON value.</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.8.0 </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::at()</a>.</p>
 
 </div>
 </div>
@@ -3183,6 +3191,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@complexity Linear in the size of <em>init</em>.</p>
 <p>@exceptionsafety Strong guarantee: if an exception is thrown, there are no changes to any JSON value.</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.8.0 </dd></dl>
+
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa567bc1d268f135496de3d5b946b691f3">nlohmann::detail::ignore</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa9dde360102c103867bd2f45872f1129c">nlohmann::detail::replace</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a5a76b60b26dc8c47256a996d18d967dfa2133fd717402a7966ee88d06f9e0b792">nlohmann::detail::strict</a>.</p>
 
 </div>
 </div>
@@ -3836,8 +3846,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a33c7c8638bb0b12e6d1b69d8106dd2e0">size()</a> &ndash; returns the number of elements</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#ac4b4acf2c0ad075c0dc125a65c102362">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_number_integer()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
-
 </div>
 </div>
 <a id="a82b5b96f86879a3bac0c713d33178551"></a>
@@ -3976,8 +3984,6 @@ is out of range"</code></td></tr>
 <a class="el" href="classnlohmann_1_1basic__json.html#af72b1c9d1502b02a49a0cb9db9f980ea">erase(const typename object_t::key_type&amp;)</a> &ndash; removes the element from an <a class="el" href="classnlohmann_1_1basic__json.html#a2bf25c54e3fef2abc5c5dab3b16cd837" title="explicitly create an object from an initializer list">object</a> <a class="el" href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e" title="access specified array element with bounds checking">at</a> the given key</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
-
 </div>
 </div>
 <a id="af72b1c9d1502b02a49a0cb9db9f980ea"></a>
@@ -4098,7 +4104,7 @@ erase() with null"</code> </td></tr>
 <a class="el" href="classnlohmann_1_1basic__json.html#a221b943d3228488c14225e55f726cc26">erase(const size_type)</a> &ndash; removes the element from an <a class="el" href="classnlohmann_1_1basic__json.html#abcaf8758bf3864405cd2a61b00cb671f" title="explicitly create an array from an initializer list">array</a> <a class="el" href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e" title="access specified array element with bounds checking">at</a> the given index</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
+<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985af1f713c9e000f5d3f280adbd124df4f5">nlohmann::detail::array</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a9d7183f16acce70658f686ae7f1a4d20">nlohmann::detail::binary</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a84e2c64f38f78ba3ea5c905ab5a2da27">nlohmann::detail::boolean</a>, <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985ad9966ecb59667235a57b4b999a649eef">nlohmann::detail::number_float</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a5763da164f8659d94a56e29df64b4bcc">nlohmann::detail::number_integer</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985adce7cc8ec29055c4158828921f2f265e">nlohmann::detail::number_unsigned</a>, <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985aa8cfde6331bd59eb2ac96f8911c4b666">nlohmann::detail::object</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985ab45cffe084dd3d20d928bee85e7b0f21">nlohmann::detail::string</a>.</p>
 
 </div>
 </div>
@@ -4201,8 +4207,6 @@ template&lt;typename KeyT &gt; </div>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">contains(KeyT&amp;&amp;) const</a> &ndash; checks whether a key exists</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a37a6259cc0c1dae299a7866489dff0bd">nlohmann::detail::null</a>.</p>
-
 </div>
 </div>
 <a id="a17a516671c29a69bb2e11ca12030316b"></a>
@@ -4267,8 +4271,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The following code shows how a JSON object is flattened to an object whose keys consist of JSON pointers.,flatten}</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#adea158bff8642202420898f6322da479">unflatten()</a> for the reverse function</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 2.0.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a9576224f7b3ff812a308e7c1e784ea80">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_binary()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -4623,8 +4625,6 @@ from_msgpack(detail::input_adapter&amp;&amp;, const bool, const bool) for the re
 <dd>
 from_ubjson(detail::input_adapter&amp;&amp;, const bool, const bool) for the related UBJSON format</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 2.0.9; parameter <em>start_index</em> since 2.1.1; changed to consume input adapters, removed start_index parameter, and added <em>strict</em> parameter since 3.0.0; added <em>allow_exceptions</em> parameter since 3.2.0; added <em>tag_handler</em> parameter since 3.9.0. </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#ab9e0253c92736db021840105d374c4c4">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::push_back()</a>, and <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val()</a>.</p>
 
 </div>
 </div>
@@ -5066,8 +5066,6 @@ template&lt;typename IteratorType &gt; </div>
 
 <p></p>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#ab5c8034e997c5b852b92bdc6a3f70994">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::insert_iterator()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#ab5b70d60a636b9c5e10f6c8caac60b9e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_array()</a>.</p>
-
 </div>
 </div>
 <a id="a5417ca43ae5e7a3a2f82eee2d915c6ed"></a>
@@ -5138,6 +5136,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a30914ad0767ccdc3633f88a906ed7dfa">back()</a> &ndash; access the last element</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::basic_json()</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985a9d7183f16acce70658f686ae7f1a4d20">nlohmann::detail::binary</a>.</p>
+
 </div>
 </div>
 <a id="a0c42bdda2432e4027f4b63ef20ae74e6"></a>
@@ -5170,6 +5170,8 @@ template&lt;typename BasicJsonType , detail::enable_if_t&lt; std::is_same&lt; ty
 <dl class="section return"><dt>Returns</dt><dd>a copy of *this</dd></dl>
 <p>@complexity Constant.</p>
 <dl class="section since"><dt>Since</dt><dd>version 2.1.0 </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#ab5b70d60a636b9c5e10f6c8caac60b9e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_array()</a>.</p>
 
 </div>
 </div>
@@ -5436,8 +5438,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a9576224f7b3ff812a308e7c1e784ea80">is_binary()</a> to check if the <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659" title="access specified object element with default value">value</a> is <a class="el" href="classnlohmann_1_1basic__json.html#abb5856c2b1af00eccdb79cb968709729" title="explicitly create a binary array (without subtype)">binary</a></dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.8.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::value()</a>.</p>
-
 </div>
 </div>
 <a id="abbfa5532931abd2d9040cbf4d18a2ca7"></a>
@@ -5467,6 +5467,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 </dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a9576224f7b3ff812a308e7c1e784ea80">is_binary()</a> to check if the <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659" title="access specified object element with default value">value</a> is <a class="el" href="classnlohmann_1_1basic__json.html#abb5856c2b1af00eccdb79cb968709729" title="explicitly create a binary array (without subtype)">binary</a></dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 3.8.0 </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::value()</a>.</p>
 
 </div>
 </div>
@@ -5744,7 +5746,7 @@ objects"</code> </td></tr>
 <p>@liveexample{The example shows how <code><a class="el" href="classnlohmann_1_1basic__json.html#aeb86e8478e20d95970a8b61ff01dce3b" title="inserts element">insert()</a></code> is used.,insert__range_object}</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#ab5b70d60a636b9c5e10f6c8caac60b9e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_array()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -5911,8 +5913,6 @@ belong to container"</code></td></tr>
 <p>@liveexample{The example shows how <code><a class="el" href="classnlohmann_1_1basic__json.html#aeb86e8478e20d95970a8b61ff01dce3b" title="inserts element">insert()</a></code> is used.,insert__range}</p>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a57e8411a770a6263d6d8f2116c37f3aa">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_object()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
-
 </div>
 </div>
 <a id="a856b8764efd21dac4205a00fec82e09a"></a>
@@ -6059,8 +6059,6 @@ template&lt;typename... Args&gt; </div>
 <p>Helper for insertion of an iterator. </p>
 <dl class="section note"><dt>Note</dt><dd>: This uses std::distance to support GCC 4.8, see <a href="https://github.com/nlohmann/json/pull/1257">https://github.com/nlohmann/json/pull/1257</a> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a026ed8aeabf7d15b826861640c74fcd8">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::from_ubjson()</a>.</p>
-
 </div>
 </div>
 <a id="ab5b70d60a636b9c5e10f6c8caac60b9e"></a>
@@ -6096,7 +6094,9 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The following code exemplifies <code><a class="el" href="classnlohmann_1_1basic__json.html#ab5b70d60a636b9c5e10f6c8caac60b9e" title="return whether value is an array">is_array()</a></code> for all JSON types.,is_array}</p>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a026ed8aeabf7d15b826861640c74fcd8">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::from_ubjson()</a>.</p>
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a0c42bdda2432e4027f4b63ef20ae74e6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a2bf25c54e3fef2abc5c5dab3b16cd837">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::object()</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a0181d03c6314bedcbad2e92d3676223c">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::insert()</a>.</p>
 
 </div>
 </div>
@@ -6133,8 +6133,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The following code exemplifies <code><a class="el" href="classnlohmann_1_1basic__json.html#a9576224f7b3ff812a308e7c1e784ea80" title="return whether value is a binary array">is_binary()</a></code> for all JSON types.,is_binary}</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.8.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#ab7aa6e048e659481a036f2d872c7cba6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::flatten()</a>.</p>
-
 </div>
 </div>
 <a id="a911b11e855e685fa59ea1d111490b36b"></a>
@@ -6169,6 +6167,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@exceptionsafety No-throw guarantee: this member function never throws exceptions.</p>
 <p>@liveexample{The following code exemplifies <code><a class="el" href="classnlohmann_1_1basic__json.html#a911b11e855e685fa59ea1d111490b36b" title="return whether value is a boolean">is_boolean()</a></code> for all JSON types.,is_boolean}</p>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a4faaed730a81347f2f01e93f37c73823">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::items()</a>.</p>
 
 </div>
 </div>
@@ -6361,8 +6361,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <a class="el" href="classnlohmann_1_1basic__json.html#a116cdb9300b56519fc9cf756609296cb">is_number_float()</a> &ndash; check if <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659" title="access specified object element with default value">value</a> is a floating-point number</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a5c99855f3e35ff35558cb46139b785f8">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::empty()</a>.</p>
-
 </div>
 </div>
 <a id="a5493f2ed1e07b0ece428bd5a47e2fb95"></a>
@@ -6438,7 +6436,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The following code exemplifies <code><a class="el" href="classnlohmann_1_1basic__json.html#a57e8411a770a6263d6d8f2116c37f3aa" title="return whether value is an object">is_object()</a></code> for all JSON types.,is_object}</p>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a8137d5471edcd71606e42155ed9c23e2">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::insert()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a749a1f5091a5e63ccfe919e0aef986af">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::swap()</a>.</p>
 
 </div>
 </div>
@@ -6619,7 +6617,7 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@complexity Constant.</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.1.0, structured bindings support since 3.5.0. </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a911b11e855e685fa59ea1d111490b36b">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_boolean()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -7008,6 +7006,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dd>
 <a class="el" href="classnlohmann_1_1basic__json.html#abcaf8758bf3864405cd2a61b00cb671f">array(initializer_list_t)</a> &ndash; create a JSON <a class="el" href="classnlohmann_1_1basic__json.html#abcaf8758bf3864405cd2a61b00cb671f" title="explicitly create an array from an initializer list">array</a> <a class="el" href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659" title="access specified object element with default value">value</a> from an initializer list</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#ab5b70d60a636b9c5e10f6c8caac60b9e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_array()</a>.</p>
 
 </div>
 </div>
@@ -7799,8 +7799,6 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <p>@liveexample{The example shows how <code><a class="el" href="classnlohmann_1_1basic__json.html#ab9e0253c92736db021840105d374c4c4" title="add an object to an array">push_back()</a></code> and <code>+=</code> can be used to add elements to a JSON array. Note how the <code>null</code> value was silently converted to a JSON array.,push_back}</p>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#ae46bc5ea053874a8378cc21395d3ca70">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::from_cbor()</a>.</p>
-
 </div>
 </div>
 <a id="a3405d38087e13994a5a4556065b0be6d"></a>
@@ -8378,6 +8376,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 
 <p></p>
 
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a57e8411a770a6263d6d8f2116c37f3aa">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::is_object()</a>.</p>
+
 </div>
 </div>
 <a id="aa62d64781b217372225a0652047d8cf3"></a>
@@ -8468,6 +8468,8 @@ from_bson(detail::input_adapter&amp;&amp;, const bool strict) for the analogous 
 <a class="el" href="classnlohmann_1_1basic__json.html#adabcf74c9c868da3e04a5546b7705af4">to_cbor(const basic_json&amp;)</a> for the related CBOR format </dd>
 <dd>
 <a class="el" href="classnlohmann_1_1basic__json.html#a99b15bcaee410426b937eacc6e47d771">to_msgpack(const basic_json&amp;)</a> for the related MessagePack format </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -8851,8 +8853,6 @@ If NaN or Infinity are stored inside a JSON number, they are serialized properly
 <dd>
 <a class="el" href="classnlohmann_1_1basic__json.html#a25355b9719db23b189fb5f6a8f4f16c4">to_ubjson(const basic_json&amp;, const bool, const bool)</a> for the related UBJSON format</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 2.0.9 </dd></dl>
-
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>.</p>
 
 </div>
 </div>
@@ -9314,8 +9314,6 @@ Unlike <a class="el" href="classnlohmann_1_1basic__json.html#a3f45f3820c456ad2e3
 <a class="el" href="classnlohmann_1_1basic__json.html#a3f45f3820c456ad2e3f3df2926564151">operator[](const typename object_t::key_type&amp;)</a> for unchecked access by <a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a" title="the type of an element reference">reference</a></dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a72f1c0ede41f166429ce3fe7c2ffefc0">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::m_value</a>, and <a class="el" href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985aa8cfde6331bd59eb2ac96f8911c4b666">nlohmann::detail::object</a>.</p>
-
 </div>
 </div>
 <a id="a11641b35219676b225d9bd15c7677659"></a>
@@ -9386,7 +9384,7 @@ Unlike <a class="el" href="classnlohmann_1_1basic__json.html#a3f45f3820c456ad2e3
 <a class="el" href="classnlohmann_1_1basic__json.html#a3f45f3820c456ad2e3f3df2926564151">operator[](const typename object_t::key_type&amp;)</a> for unchecked access by <a class="el" href="classnlohmann_1_1basic__json.html#a220ae98554a76205fb7f8822d36b2d5a" title="the type of an element reference">reference</a></dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#aab19a246f6bcd27c195bed376cf5e138">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get_binary()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::at()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#abbfa5532931abd2d9040cbf4d18a2ca7">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get_binary()</a>.</p>
 
 </div>
 </div>
@@ -10271,6 +10269,8 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="classnlohmann_1_1basic__json.html#a946cc8f30d8b1d6609b57387b647fe53">clear()</a> &ndash; restores the postcondition of this constructor</dd></dl>
 <dl class="section since"><dt>Since</dt><dd>version 1.0.0 </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="classnlohmann_1_1basic__json.html#aac965b84ea43ccd8aef9caefef02794a">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::back()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a5ac8f974c178cf9326b6765e22f50eb6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::front()</a>.</p>
+
 </div>
 </div>
 <a id="ace6fbaf6c64f60b61922b5c9d3e61aa6"></a>
@@ -10416,8 +10416,6 @@ template&lt;typename BasicJsonType , detail::enable_if_t&lt; detail::is_basic_js
 <p>@complexity Usually linear in the size of the passed <em>val</em>, also depending on the implementation of the called <code>to_json()</code> method.</p>
 <p>@exceptionsafety Depends on the called constructor. For types directly supported by the library (i.e., all types for which no <code>to_json()</code> function was provided), strong guarantee holds: if an exception is thrown, there are no changes to any JSON value.</p>
 <dl class="section since"><dt>Since</dt><dd>version 3.2.0 </dd></dl>
-
-<p class="reference">References <a class="el" href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val()</a>.</p>
 
 </div>
 </div>
@@ -10733,16 +10731,16 @@ template&lt;template&lt; typename, typename, typename... &gt; class ObjectType, 
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespacenlohmann_1_1detail_html_a1ed8fc6239da25abcaf681d30ace4985ad9966ecb59667235a57b4b999a649eef"><div class="ttname"><a href="namespacenlohmann_1_1detail.html#a1ed8fc6239da25abcaf681d30ace4985ad9966ecb59667235a57b4b999a649eef">nlohmann::detail::value_t::number_float</a></div><div class="ttdeci">@ number_float</div><div class="ttdoc">number value (floating-point)</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a5b7c4b35a0ad9f97474912a08965d7ad"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a5b7c4b35a0ad9f97474912a08965d7ad">nlohmann::basic_json::type</a></div><div class="ttdeci">constexpr value_t type() const noexcept</div><div class="ttdoc">return the type of the JSON value (explicit)</div><div class="ttdef"><b>Definition:</b> _json.hpp:16626</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a5b7c4b35a0ad9f97474912a08965d7ad"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a5b7c4b35a0ad9f97474912a08965d7ad">nlohmann::basic_json::type</a></div><div class="ttdeci">constexpr value_t type() const noexcept</div><div class="ttdoc">return the type of the JSON value (explicit)</div><div class="ttdef"><b>Definition:</b> _json.hpp:16624</div></div>
 <div class="ttc" id="agroup__DSEL-Variational-Formulation_html_gaeac7fe8c4b52a6f9c1320275ad39f01e"><div class="ttname"><a href="group__DSEL-Variational-Formulation.html#gaeac7fe8c4b52a6f9c1320275ad39f01e">val</a></div><div class="ttdeci">Expr&lt; Val&lt; typename mpl::if_&lt; boost::is_arithmetic&lt; ExprT1 &gt;, mpl::identity&lt; Cst&lt; ExprT1 &gt; &gt;, mpl::identity&lt; ExprT1 &gt; &gt;::type::type &gt; &gt; val(ExprT1 const &amp;__e1)</div><div class="ttdoc">precompute expression tensor</div><div class="ttdef"><b>Definition:</b> val.hpp:275</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a2251d8523fa6d16c0fba6388ffa2ef8c"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a2251d8523fa6d16c0fba6388ffa2ef8c">nlohmann::basic_json::out_of_range</a></div><div class="ttdeci">detail::out_of_range out_of_range</div><div class="ttdoc">exception indicating access out of the defined range</div><div class="ttdef"><b>Definition:</b> _json.hpp:14561</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a52b18a5b7e68652c65b070900c438c6e"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e">nlohmann::basic_json::at</a></div><div class="ttdeci">reference at(size_type idx)</div><div class="ttdoc">access specified array element with bounds checking</div><div class="ttdef"><b>Definition:</b> _json.hpp:17607</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a11641b35219676b225d9bd15c7677659"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json::value</a></div><div class="ttdeci">ValueType value(const typename object_t::key_type &amp;key, const ValueType &amp;default_value) const</div><div class="ttdoc">access specified object element with default value</div><div class="ttdef"><b>Definition:</b> _json.hpp:18093</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_ac0874ee07ec4f21540f8745b90c61139"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#ac0874ee07ec4f21540f8745b90c61139">nlohmann::basic_json::diff</a></div><div class="ttdeci">static basic_json diff(const basic_json &amp;source, const basic_json &amp;target, const std::string &amp;path=&quot;&quot;)</div><div class="ttdoc">creates a diff as a JSON patch</div><div class="ttdef"><b>Definition:</b> _json.hpp:22916</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a22e2e5b0e68d9d7c63be2cada5187259"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a22e2e5b0e68d9d7c63be2cada5187259">nlohmann::basic_json::iterator_wrapper</a></div><div class="ttdeci">static iteration_proxy&lt; iterator &gt; iterator_wrapper(reference ref) noexcept</div><div class="ttdoc">wrapper to access iterator member functions in range-based for</div><div class="ttdef"><b>Definition:</b> _json.hpp:19092</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a19734fbc9c97d536832892ddacd6b62a"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json::basic_json</a></div><div class="ttdeci">basic_json(const value_t v)</div><div class="ttdoc">create an empty value with a given type</div><div class="ttdef"><b>Definition:</b> _json.hpp:15620</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a33593865ffb1860323dcbd52425b90c8"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8">nlohmann::basic_json::string_t</a></div><div class="ttdeci">StringType string_t</div><div class="ttdoc">a type for a string</div><div class="ttdef"><b>Definition:</b> _json.hpp:14880</div></div>
-<div class="ttc" id="aclassnlohmann_1_1basic__json_html_ab8a1c33ee7b154fc41ca2545aa9724e6"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">nlohmann::basic_json::const_reference</a></div><div class="ttdeci">const value_type &amp; const_reference</div><div class="ttdoc">the type of an element const reference</div><div class="ttdef"><b>Definition:</b> _json.hpp:14583</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a2251d8523fa6d16c0fba6388ffa2ef8c"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a2251d8523fa6d16c0fba6388ffa2ef8c">nlohmann::basic_json::out_of_range</a></div><div class="ttdeci">detail::out_of_range out_of_range</div><div class="ttdoc">exception indicating access out of the defined range</div><div class="ttdef"><b>Definition:</b> _json.hpp:14559</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a52b18a5b7e68652c65b070900c438c6e"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a52b18a5b7e68652c65b070900c438c6e">nlohmann::basic_json::at</a></div><div class="ttdeci">reference at(size_type idx)</div><div class="ttdoc">access specified array element with bounds checking</div><div class="ttdef"><b>Definition:</b> _json.hpp:17605</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a11641b35219676b225d9bd15c7677659"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a11641b35219676b225d9bd15c7677659">nlohmann::basic_json::value</a></div><div class="ttdeci">ValueType value(const typename object_t::key_type &amp;key, const ValueType &amp;default_value) const</div><div class="ttdoc">access specified object element with default value</div><div class="ttdef"><b>Definition:</b> _json.hpp:18091</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_ac0874ee07ec4f21540f8745b90c61139"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#ac0874ee07ec4f21540f8745b90c61139">nlohmann::basic_json::diff</a></div><div class="ttdeci">static basic_json diff(const basic_json &amp;source, const basic_json &amp;target, const std::string &amp;path=&quot;&quot;)</div><div class="ttdoc">creates a diff as a JSON patch</div><div class="ttdef"><b>Definition:</b> _json.hpp:22914</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a22e2e5b0e68d9d7c63be2cada5187259"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a22e2e5b0e68d9d7c63be2cada5187259">nlohmann::basic_json::iterator_wrapper</a></div><div class="ttdeci">static iteration_proxy&lt; iterator &gt; iterator_wrapper(reference ref) noexcept</div><div class="ttdoc">wrapper to access iterator member functions in range-based for</div><div class="ttdef"><b>Definition:</b> _json.hpp:19090</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a19734fbc9c97d536832892ddacd6b62a"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a19734fbc9c97d536832892ddacd6b62a">nlohmann::basic_json::basic_json</a></div><div class="ttdeci">basic_json(const value_t v)</div><div class="ttdoc">create an empty value with a given type</div><div class="ttdef"><b>Definition:</b> _json.hpp:15618</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_a33593865ffb1860323dcbd52425b90c8"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#a33593865ffb1860323dcbd52425b90c8">nlohmann::basic_json::string_t</a></div><div class="ttdeci">StringType string_t</div><div class="ttdoc">a type for a string</div><div class="ttdef"><b>Definition:</b> _json.hpp:14878</div></div>
+<div class="ttc" id="aclassnlohmann_1_1basic__json_html_ab8a1c33ee7b154fc41ca2545aa9724e6"><div class="ttname"><a href="classnlohmann_1_1basic__json.html#ab8a1c33ee7b154fc41ca2545aa9724e6">nlohmann::basic_json::const_reference</a></div><div class="ttdeci">const value_type &amp; const_reference</div><div class="ttdoc">the type of an element const reference</div><div class="ttdef"><b>Definition:</b> _json.hpp:14581</div></div>
 <div class="ttc" id="anamespacenlohmann_1_1detail_html_a2fb6dae6578e06ae73ca0d7cc8512b1aa3c6e0b8a9c15224a8228b9a98ca1531d"><div class="ttname"><a href="namespacenlohmann_1_1detail.html#a2fb6dae6578e06ae73ca0d7cc8512b1aa3c6e0b8a9c15224a8228b9a98ca1531d">nlohmann::detail::parse_event_t::key</a></div><div class="ttdeci">@ key</div><div class="ttdoc">the parser read a key of a value in an object</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
