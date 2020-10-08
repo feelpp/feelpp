@@ -23,7 +23,6 @@ po::options_description makeOptions()
         ("trainset-size", po::value<int>()->default_value(10), "number of parameter in the trainset")
         ( "do-ortho", po::value<bool>()->default_value(false), "")
         ;
-    options.add(backend_options("pbdw"));
     options.add(pbdw_options());
 
     return options;
@@ -150,7 +149,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_offline )
                       f += integrate(_range=markedfaces(mesh, "right"), _expr=mu(2)*id(u));
                       a += on(_range=markedfaces(mesh, std::list<std::string>({"bottom","top"})),
                               _rhs=f, _element=u, _expr=cst(mu(3)));
-                      a.solve(_rhs=f, _solution=u, _name="pbdw");
+                      a.solve(_rhs=f, _solution=u);
                       return u;
                   };
 
@@ -232,7 +231,7 @@ BOOST_AUTO_TEST_CASE( test_pbdw_online )
                       f += integrate(_range=markedfaces(mesh, "right"), _expr=mu(2)*id(u));
                       a += on(_range=markedfaces(mesh, std::list<std::string>({"bottom","top"})),
                               _rhs=f, _element=u, _expr=cst(mu(3)));
-                      a.solve(_rhs=f, _solution=u, _name="pbdw");
+                      a.solve(_rhs=f, _solution=u);
                       return u;
                   };
 

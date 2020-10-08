@@ -164,17 +164,27 @@ void
 PBDW<RBSpace>::offline()
 {
     Feel::cout << "offline phase start with M=" << M_M << " and N=" << M_N << std::endl;
+    auto u = M_XR->functionSpace()->element();
+    std::vector<element_type> qs(M_M, M_XR->functionSpace()->element());
+    auto a = form2(_test=M_XR->functionSpace(), _trial=M_XR->functionSpace());
+    a = integrate(_range=elements(M_XR->mesh()), _expr=inner(vf::id(u),vf::idt(u)) + inner(grad(u),gradt(u)) );
+    auto am = a.matrixPtr();
+    for( int m = 0; m < M_M; ++m )
+    {
+        auto f = form1(_test=M_XR->functionSpace(), _vector=M_sigmas[m]->containerPtr());
+        a.solve(_solution=qs[m], _rhs=f, _name="pbdw");
+    }
     M_matrix = matrixN_type::Zero(M_M+M_N, M_M+M_N);
     for(int i = 0; i < M_M; ++i )
     {
         for(int j = 0; j < i; ++j )
         {
-            M_matrix(i, j) = inner_product(M_sigmas[i]->containerPtr(), M_sigmas[j]->containerPtr());
+            M_matrix(i, j) = am->energy(qs[i], qs[j]);
             M_matrix(j, i) = M_matrix(i, j);
         }
-        M_matrix(i, i) = inner_product(M_sigmas[i]->containerPtr(), M_sigmas[i]->containerPtr());
+        M_matrix(i, i) = am->energy(qs[i], qs[i]);
         for(int j = 0; j < M_N; ++j )
-            M_matrix(i, M_M+j) = (*M_sigmas[i])(M_XR->primalBasisElement(j));
+            M_matrix(i, M_M+j) = am->energy(qs[i], M_XR->primalBasisElement(j));
     }
     M_matrix.bottomLeftCorner(M_N, M_M) = M_matrix.topRightCorner(M_M, M_N).transpose();
 

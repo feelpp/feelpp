@@ -23,7 +23,6 @@ po::options_description makeOptions()
         ("radius", po::value<double>()->default_value(0.2), "radius of sensors")
         ("trainset-size", po::value<int>()->default_value(7), "number of parameter in the trainset")
         ;
-    options.add(backend_options("geim"));
     options.add(geim_options());
 
     return options;

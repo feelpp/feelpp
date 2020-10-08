@@ -561,7 +561,7 @@ pbdw_options( std::string const& prefix )
         ( "pbdw.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
         ( "pbdw.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
         ;
-    return pbdwoptions;
+    return pbdwoptions.add( backend_options("pbdw"));
 }
 
 Feel::po::options_description
