@@ -31,6 +31,7 @@
 #include <feel/feeldiscr/reducedbasisspace.hpp>
 #include <feel/feeldiscr/sensors.hpp>
 #include <feel/feelcore/json.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 
 #include <limits>
 
