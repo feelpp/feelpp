@@ -1,11 +1,6 @@
-//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*-
+//! -*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-whitespace: t  -*- vim:fenc=utf-8:ft=cpp:et:sw=4:ts=4:sts=4
 //!
 //! This file is part of the Feel++ library
-//!
-//! Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-//! Date: 07 Jan 2017
-//!
-//! Copyright (C) 2017 Feel++ Consortium
 //!
 //! This library is free software; you can redistribute it and/or
 //! modify it under the terms of the GNU Lesser General Public
@@ -21,14 +16,17 @@
 //! License along with this library; if not, write to the Free Software
 //! Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 //!
-#include <mesh_partitioner.hpp>
+//! @file
+//! @author Christophe Prud'homme <christophe.prudhomme@feelpp.org>
+//! @date 05 Oct 2020
+//! @copyright 2020 Feel++ Consortium
+//!
+#pragma once
 
-namespace Feel {
+#include <feel/feelcore/_json.hpp>
 
-template void partition<Hypercube<2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Hypercube<2,2>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Hypercube<3>>( std::vector<int> const& nParts, nl::json const& );
-template void partition<Hypercube<3,2>>( std::vector<int> const& nParts, nl::json const& );
-
-
+namespace Feel
+{
+    namespace nl = nlohmann;
+    using json = nl::json;
 }
