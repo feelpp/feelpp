@@ -48,6 +48,8 @@ CoefficientFormPDEBase<ConvexType>::loadParameterFromOptionsVm()
     M_stabilizationType = soption(_name="stabilization.type",_prefix=this->prefix(),_vm=this->clovm());
     M_stabilizationGLS_applyShockCapturing = boption(_name="stabilization.gls.shock-capturing",_prefix=this->prefix(),_vm=this->clovm());
 
+    M_stabilizationDoAssemblyWithGradDiffusionCoeff = boption(_name="stabilization.do-assembly-with-grad-diffusion-coeff",_prefix=this->prefix(),_vm=this->clovm());
+
     // time stepping
     M_timeStepping = soption(_name="time-stepping",_prefix=this->prefix(),_vm=this->clovm());
     M_timeStepThetaValue = doption(_name="time-stepping.theta.value",_prefix=this->prefix(),_vm=this->clovm());

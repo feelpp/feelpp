@@ -115,6 +115,8 @@ coefficientformpde_options(std::string const& prefix)
         (prefixvm(prefix,"stabilization.gls.parameter.hsize.method").c_str(), Feel::po::value<std::string>()->default_value( "hmin" ), "hmin,h,meas")
         (prefixvm(prefix,"stabilization.gls.parameter.eigenvalue.penal-lambdaK").c_str(), Feel::po::value<double>()->default_value( 0. ), "apply stabilization method")
 
+        (prefixvm(prefix,"stabilization.do-assembly-with-grad-diffusion-coeff").c_str(), Feel::po::value<bool>()->default_value( true ), "apply stabilization method")
+
         (prefixvm(prefix,"stabilization.gls.shock-capturing").c_str(), Feel::po::value<bool>()->default_value( false ), "apply shock capturing in gls stabilization method")
         (prefixvm(prefix,"stabilization.gls.shock-capturing.quad").c_str(), Feel::po::value<int>()->default_value( -1 ), "apply shock capturing in gls stabilization method")
         ;
