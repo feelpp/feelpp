@@ -40,49 +40,95 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::updateNewtonInit
             }
         }
 
-        // strong Dirichlet bc with vectorial velocity
+        // strong Dirichlet bc with velocity field : on faces
         for( auto const& d : M_bcDirichlet )
         {
+            // all components
             auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
-            if ( itFindMarker == mapMarkerBCToEntitiesMeshMarker.end() )
-                continue;
-            auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
-            if ( !listMarkerFaces.empty() )
-                u.on(_range=markedfaces(mesh,listMarkerFaces ),
-                     _expr=expression(d,se) );
-            auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
-            if ( !listMarkerEdges.empty() )
-                u.on(_range=markededges(mesh,listMarkerEdges ),
-                     _expr=expression(d,se) );
-            auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
-            if ( !listMarkerPoints.empty() )
-                u.on(_range=markedpoints(mesh,listMarkerPoints ),
-                     _expr=expression(d,se) );
-        }
-        // strong Dirichlet bc with velocity components
-        for ( auto const& bcDirComp : M_bcDirichletComponents )
-        {
-            ComponentType comp = bcDirComp.first;
-            for( auto const& d : bcDirComp.second )
+            if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
             {
-                auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
-                if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
-                    continue;
                 auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
                 if ( !listMarkerFaces.empty() )
-                    u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
-                               _expr=expression(d,se) );
-                auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
-                if ( !listMarkerEdges.empty() )
-                    u[comp].on(_range=markededges(mesh,listMarkerEdges ),
-                               _expr=expression(d,se) );
-                auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
-                if ( !listMarkerPoints.empty() )
-                    u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
-                               _expr=expression(d,se) );
+                    u.on(_range=markedfaces(mesh,listMarkerFaces ),
+                         _expr=expression(d,se) );
+            }
+            // by component
+            for ( auto const& bcDirComp : M_bcDirichletComponents )
+            {
+                ComponentType comp = bcDirComp.first;
+                for( auto const& d : bcDirComp.second )
+                {
+                    auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
+                    if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                        continue;
+                    auto const& listMarkerFaces = std::get<0>( itFindMarker->second );
+                    if ( !listMarkerFaces.empty() )
+                        u[comp].on(_range=markedfaces(mesh,listMarkerFaces ),
+                                   _expr=expression(d,se) );
+                }
             }
         }
-    }
+        // strong Dirichlet bc with velocity field : on edges (overwrite faces)
+        if constexpr ( nDim == 3 )
+        {
+            for( auto const& d : M_bcDirichlet )
+            {
+                // all components
+                auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+                if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
+                {
+                    auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+                    if ( !listMarkerEdges.empty() )
+                        u.on(_range=markededges(mesh,listMarkerEdges ),
+                             _expr=expression(d,se) );
+                }
+                // by component
+                for ( auto const& bcDirComp : M_bcDirichletComponents )
+                {
+                    ComponentType comp = bcDirComp.first;
+                    for( auto const& d : bcDirComp.second )
+                    {
+                        auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
+                        if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                            continue;
+                        auto const& listMarkerEdges = std::get<1>( itFindMarker->second );
+                        if ( !listMarkerEdges.empty() )
+                            u[comp].on(_range=markededges(mesh,listMarkerEdges ),
+                                       _expr=expression(d,se) );
+                    }
+                }
+            }
+        }
+        // strong Dirichlet bc with velocity field : on points (overwrite faces/edges)
+        for( auto const& d : M_bcDirichlet )
+        {
+            // all components
+            auto itFindMarker = mapMarkerBCToEntitiesMeshMarker.find( name(d) );
+            if ( itFindMarker != mapMarkerBCToEntitiesMeshMarker.end() )
+            {
+                auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+                if ( !listMarkerPoints.empty() )
+                    u.on(_range=markedpoints(mesh,listMarkerPoints ),
+                         _expr=expression(d,se) );
+            }
+            // by component
+            for ( auto const& bcDirComp : M_bcDirichletComponents )
+            {
+                ComponentType comp = bcDirComp.first;
+                for( auto const& d : bcDirComp.second )
+                {
+                    auto itFindMarker = mapCompMarkerBCToEntitiesMeshMarker.find( std::make_pair(name(d),comp) );
+                    if ( itFindMarker == mapCompMarkerBCToEntitiesMeshMarker.end() )
+                        continue;
+                    auto const& listMarkerPoints = std::get<2>( itFindMarker->second );
+                    if ( !listMarkerPoints.empty() )
+                        u[comp].on(_range=markedpoints(mesh,listMarkerPoints ),
+                                   _expr=expression(d,se) );
+                }
+            }
+        }
+
+    } // hasMarkerDirichletBCelimination
 
     for ( auto const& inletbc : M_fluidInletDesc )
     {
