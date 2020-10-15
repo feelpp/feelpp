@@ -222,8 +222,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n||==============================================||"
            << "\n";
 
-    // if ( this->worldComm().isMasterRank() )
-    //     std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
+    if ( this->worldComm().isMasterRank() )
+        std::cout << "holalla \n "<<  this->symbolsExpr().names() << std::endl;
 
     return _ostr;
 }
@@ -814,9 +814,10 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     }
 #endif
 
+#if 0
     if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
         M_turbulenceModelType->solve();
-
+#endif
     //--------------------------------------------------
     // run solver
     std::string algebraicSolver = M_solverName;
@@ -853,6 +854,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
         }
     }
     //--------------------------------------------------
+
+    if ( this->hasTurbulenceModel() && M_useSemiImplicitTurbulenceCoupling )
+        M_turbulenceModelType->solve();
 
     // if ( this->hasTurbulenceModel() )
     //     M_turbulenceModelType->solve();
