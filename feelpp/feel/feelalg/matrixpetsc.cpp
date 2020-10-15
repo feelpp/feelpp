@@ -206,6 +206,26 @@ MatrixPetsc<T>::~MatrixPetsc()
 
 
 template <typename T>
+typename MatrixPetsc<T>::clone_ptrtype
+MatrixPetsc<T>::clone () const
+{
+    clone_ptrtype cloned_matrix;
+    if ( auto m = dynamic_cast<MatrixPetscMPI<T> const*>( this ); m )
+    {
+        Mat M;
+        MatDuplicate( m->mat(), MAT_COPY_VALUES, &M );
+        cloned_matrix.reset( new MatrixPetscMPI<T>( M, this->mapRowPtr(), this->mapColPtr(), false, true ) );
+    }  
+    else if ( auto m = dynamic_cast<MatrixPetsc<T> const*>( this ); m )
+    {
+        Mat M;
+        MatDuplicate( m->mat(), MAT_COPY_VALUES, &M );
+        cloned_matrix.reset( new MatrixPetsc<T>( M, this->mapRowPtr(), this->mapColPtr(), true ) );
+    }
+    return cloned_matrix;
+}
+
+template <typename T>
 void MatrixPetsc<T>::init ( const size_type m,
                             const size_type n,
                             const size_type m_l,

@@ -143,6 +143,9 @@ public:
      */
     virtual ~MatrixSparse ();
 
+    using clone_ptrtype = std::shared_ptr<MatrixSparse<T> >;
+    virtual clone_ptrtype clone() const  = 0;
+
     /**
      * Return datamap for rows
      */

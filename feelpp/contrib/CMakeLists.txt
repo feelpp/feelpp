@@ -148,7 +148,7 @@ if ( 0 ) #MKL_FOUND )
   target_include_directories(eigen INTERFACE ${MKL_INCLUDE_DIRS})
   target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_MKL )
 endif()
-target_compile_definitions(feelpp_contrib INTERFACE FEELP_HAS_EIGEN3 )
+target_compile_definitions(feelpp_contrib INTERFACE FEELPP_HAS_EIGEN3 )
 target_link_libraries(feelpp_contrib INTERFACE eigen )
 
 SET(FEELPP_HAS_EIGEN3 1)

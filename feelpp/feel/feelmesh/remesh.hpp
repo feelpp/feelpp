@@ -412,7 +412,7 @@ Remesh<MeshType>::mmg2Mesh( MMG5_pMesh const& mesh )
 
 
     std::shared_ptr<MeshType> out = std::make_shared<MeshType>();
-    int corner, required, tag;
+    int corner, required, tag = 0;
     node_type n( mesh_t::nRealDim );
     for (int k = 1; k <= nVertices; k++)
     {
