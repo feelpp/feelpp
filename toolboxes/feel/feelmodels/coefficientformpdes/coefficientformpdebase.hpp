@@ -98,6 +98,7 @@ public :
     std::string const& stabilizationType() const { return M_stabilizationType; }
     stab_gls_parameter_ptrtype const& stabilizationGLSParameter() const { return M_stabilizationGLSParameter; }
     bool stabilizationGLS_applyShockCapturing() const { return M_stabilizationGLS_applyShockCapturing; }
+    bool stabilizationDoAssemblyWithGradDiffusionCoeff() const { return M_stabilizationDoAssemblyWithGradDiffusionCoeff; }
 
     //___________________________________________________________________________________//
     // time discretisation
@@ -145,6 +146,7 @@ protected :
     std::string M_stabilizationType;
     stab_gls_parameter_ptrtype M_stabilizationGLSParameter;
     bool M_stabilizationGLS_applyShockCapturing;
+    bool M_stabilizationDoAssemblyWithGradDiffusionCoeff;
 
     // post-process
     export_ptrtype M_exporter;
