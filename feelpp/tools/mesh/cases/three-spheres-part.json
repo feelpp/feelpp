@@ -1,0 +1,13 @@
+{
+    "partitioner":
+    {
+        "size": 10,
+        "aggregates":
+        {
+            "spheres":{
+                "type": "faces",
+                "markers": ["CenterSphere","LeftSphere","RightSphere"]
+            }
+        }
+    }
+}

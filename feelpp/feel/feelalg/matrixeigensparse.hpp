@@ -120,7 +120,8 @@ public:
         //return M_mat.row(i).col(j);
         return 0.;
     }
-
+    using clone_ptrtype = typename super::clone_ptrtype;
+    clone_ptrtype clone() const override { return std::make_shared<MatrixEigenSparse<T>>( *this ); }
     //@}
 
     /** @name Accessors

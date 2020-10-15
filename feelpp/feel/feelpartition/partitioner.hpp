@@ -27,7 +27,7 @@
 #include <feel/feelcore/feel.hpp>
 #include <feel/feelcore/traits.hpp>
 #include <feel/feeldiscr/mesh.hpp>
-
+#include <feel/feelcore/json.hpp>
 
 namespace Feel
 {
@@ -58,6 +58,52 @@ public:
      */
     Partitioner (): M_weights() {}
     
+    /**
+     * @brief Construct a new Partitioner object
+     * 
+     * @param j json configuration data
+     */
+    Partitioner (json const& j )
+        : M_weights(), M_config(j), 
+          M_agg( (j.contains("partitioner") && j["partitioner"].contains("aggregates"))?j["partitioner"]["aggregates"]:json() )
+    {}
+    
+    struct Aggregate : public std::tuple<std::string, std::vector<std::string>>
+    {
+        using super = std::tuple<std::string, std::vector<std::string>>;
+
+        Aggregate( std::string const& name, json const& j ) : super( name, j["markers"].get<std::vector<std::string>>() )
+        {
+
+        }
+        std::string const& name() const { return std::get<0>(*this); }
+        std::vector<std::string> const& markers() const { return std::get<1>(*this); }
+    };
+
+    /**
+     * @brief map of Aggregate
+     * arbitrary number of aggregates can be created
+     */
+    struct Aggregates: public std::map<std::string, Aggregate>
+    {
+        Aggregates() = default;
+        Aggregates( json const& j ){
+            for ( auto a : j.items() )
+            {
+                LOG(INFO) << "adding Aggregate " << a.key() << ", json: " << a.value().dump(1) << std::endl;
+                this->insert( std::pair{ a.key(), Aggregate( a.key(), a.value() ) } );
+                
+            }
+        }
+    };
+
+    /**
+     * @brief get the Aggregate map
+     * 
+     * @return Aggregates const& the Aggregate map
+     */
+    Aggregates const& aggregates() const { return M_agg; }
+
     /**
      * Destructor. Virtual so that we can derive from this class.
      */
@@ -157,6 +203,18 @@ protected:
      * The weights that might be used for partitioning.
      */
     std::vector<double> M_weights;
+
+    /**
+     * @brief json configuration data
+     * 
+     */
+    json M_config;
+
+    /**
+     * @brief aggregates of faces that must be preserved on the same processor
+     * 
+     */
+    Aggregates M_agg;
 };
 
 
