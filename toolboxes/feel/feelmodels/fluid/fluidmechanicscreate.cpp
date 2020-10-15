@@ -432,6 +432,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initBoundaryConditions()
             std::pair<bool,std::string> bcTypeMeshALERead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, bcDirichletCompKeyword, name(d), "alemesh_bc" );
             std::string bcTypeMeshALE = ( bcTypeMeshALERead.first )? bcTypeMeshALERead.second : std::string("fixed");
             this->addMarkerALEMeshBC(bcTypeMeshALE,markers(d));
+
+            std::pair<bool,std::string> bcTypeTurbulenceRead = this->modelProperties().boundaryConditions().sparam( bcDirichletCompField, "Dirichlet", name(d), "turbulence_bc" );
+            if ( bcTypeTurbulenceRead.first )
+            {
+                if ( bcTypeTurbulenceRead.second == "inlet" )
+                {
+                    typename TurbulenceModelBoundaryConditions::Inlet bcTurbInlet;
+                    bcTurbInlet.addMarkers( markers(d) );
+                    M_turbulenceModelBoundaryConditions.addInlet( name(d), bcTurbInlet );
+                }
+                else if ( bcTypeTurbulenceRead.second == "wall" )
+                {
+                    typename TurbulenceModelBoundaryConditions::Wall bcTurbWall;
+                    bcTurbWall.addMarkers( markers(d) );
+                    M_turbulenceModelBoundaryConditions.addWall( name(d), bcTurbWall );
+                }
+            }
+
         }
     }
 
@@ -2001,6 +2019,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initDist2Wall()
                                       _range=rangeWall,
                                       _expr= -idv(M_fieldDist2Wall) - h()/100. );
     *M_fieldDist2Wall = thefms->march(*M_fieldDist2Wall);
+    M_fieldDist2Wall->on(_range=rangeWall,_expr=cst(0.),_close=true);
 }
 
 FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -2029,6 +2048,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
     std::string symb_dist2wall = prefixvm( this->keyword(),"dist2wall","_" );
     std::string symb_curl_magintude = prefixvm( this->keyword(), "curl_U_magnitude", "_");
+    std::string symb_velocity_magintude = prefixvm( this->keyword(), "U_magnitude", "_");
     std::string symb_strain_rate_magnitude = prefixvm( this->keyword(), "strain_rate_magnitude", "_");
     std::string symb_velocity_x =  prefixvm( this->keyword(),"U","_") +"_0";
     std::string symb_velocity_y =  prefixvm( this->keyword(),"U","_") +"_1";
@@ -2067,7 +2087,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
 
             std::string symbDensity = "materials_" + matName + "_rho";
             std::string symbDynViscosity = "materials_" + matName + "_mu";
-            std::string symbTurbulentDynViscosity = "materials_" + matName + "_mut";
+            std::string symbTurbulentDynViscosity = "materials_" + matName + "_mu_t";
 
             if ( !isFirstMaterial )
             {
@@ -2173,15 +2193,6 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 // initials coondition
                 std::ostringstream ostr_ic;
                 ostr_ic << "\"markers\":[" << myCvrtSeqToStr( matProps.markers() ) <<  "],"
-                // bool isFirstMark = true;
-                // for ( std::string const& m : matProps.markers() )
-                // {
-                //     if ( !isFirstMark )
-                //         ostr_ic << ",";
-                //     ostr_ic << "\"" << m << "\"";
-                //     isFirstMark = false;
-                // }
-                // ostr_ic << "],"
                         << "\"expr\":\"" << (boost::format("%1%/%2%:%1%:%2%")%symbDynViscosity %symbDensity ).str() << "\"";
                 strInitialConditions["solution"].push_back( ostr_ic.str() );
             }
@@ -2191,10 +2202,12 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string unknownName_k = std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownName();
                 std::string symb_sol_k_base = std::get<0>( M_turbulenceModelType->pdes()[0] ).unknownSymbol();
                 std::string symb_sol_k = prefixvm( eqkeyword_k, symb_sol_k_base , "_" );
+                std::string symb_sol_k_previous = prefixvm( eqkeyword_k, symb_sol_k_base + "_previous" , "_" );
                 std::string eqkeyword_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).equationName();
                 std::string unknownName_epsilon = std::get<0>( M_turbulenceModelType->pdes()[1] ).unknownName();
                 std::string symb_sol_epsilon_base = std::get<0>( M_turbulenceModelType->pdes()[1] ).unknownSymbol();
                 std::string symb_sol_epsilon = prefixvm( eqkeyword_epsilon, symb_sol_epsilon_base , "_" );
+                std::string symb_sol_epsilon_previous = prefixvm( eqkeyword_epsilon, symb_sol_epsilon_base + "_previous" , "_" );
 
                 std::string prefix_symbol_physic_nomat = prefixvm( this->keyword(), "turbulence_k_epsilon", "_" );
                 std::string prefix_symbol_physic_mat = prefixvm( this->keyword(), prefixvm( matName, "turbulence_k_epsilon" , "_" ), "_" );
@@ -2205,28 +2218,107 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 std::string symb_sigma_k = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "sigma_k", "_" ), 1. );
                 std::string symb_sigma_epsilon = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "sigma_epsilon", "_" ), 1.3 );
 
+                std::string symb_sol_k_positive = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "sol_k_positive", "_" ),
+                                                                        (boost::format("max(%1%,0):%1%") %symb_sol_k ).str(),
+                                                                        this->worldComm(), this->repository().expr() );
+                std::string symb_sol_epsilon_positive = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "sol_epsilon_positive", "_" ),
+                                                                        (boost::format("max(%1%,0):%1%") %symb_sol_epsilon ).str(),
+                                                                        this->worldComm(), this->repository().expr() );
+
+                std::string symb_sol_k_previous_positive = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "sol_k_previous_positive", "_" ),
+                                                                        (boost::format("max(%1%,0):%1%") %symb_sol_k_previous ).str(),
+                                                                        this->worldComm(), this->repository().expr() );
+                std::string symb_sol_epsilon_previous_positive = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "sol_epsilon_previous_positive", "_" ),
+                                                                                                (boost::format("max(%1%,0):%1%") %symb_sol_epsilon_previous ).str(),
+                                                                                                this->worldComm(), this->repository().expr() );
+
+
+                std::string symb_l_max = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "l_max", "_" ), 0.0635/2. );
+                std::string symb_l_star = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "l_star", "_" ),
+                                                                         //(boost::format("(%1%*%2%^(3/2) < %3%*%4%)*(%1%*%2%^(3/2))/%3% + (1-(%1%*%2%^(3/2) < %3%*%4%))*%4%  :%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_positive %symb_sol_epsilon_positive %symb_l_max ).str(),
+                                                                         //(boost::format("(%1%*%2%^(3/2) < %3%*%4%)*(%1%*%2%^(3/2))/(max(%3%,1e-16)) + (1-(%1%*%2%^(3/2) < %3%*%4%))*%4%  :%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_positive %symb_sol_epsilon_positive %symb_l_max ).str(),
+                                                   (boost::format("min( %1%*%2%^(3/2)/(max(%3%,1e-16)),%4% ):%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_positive %symb_sol_epsilon_positive %symb_l_max ).str(),
+                                                                         this->worldComm(), this->repository().expr() );
+
+
+                std::string symb_toto_chi = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "toto_chi", "_" ),
+                                                                           (boost::format("(0.09*%1%^(1.5) < %2%*0.0635) :%1%:%2%") %symb_sol_k_positive %symb_sol_epsilon_positive ).str(),
+                                                                           this->worldComm(), this->repository().expr() );
+
+                std::string symb_l_starBIS = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "l_starBIS", "_" ),
+                                             //(boost::format("(%1%*%2%^(3/2) < %3%*%4%)*(%1%*%2%^(3/2))/%3% + (1-(%1%*%2%^(3/2) < %3%*%4%))*%4%  :%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_previous_positive %symb_sol_epsilon_previous_positive %symb_l_max ).str(),
+                                                                            // (boost::format("(%1%*%2%^(3/2) < %3%*%4%)*(%1%*%2%^(3/2))/(max(%3%,1e-16)) + (1-(%1%*%2%^(3/2) < %3%*%4%))*%4%  :%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_previous_positive %symb_sol_epsilon_previous_positive %symb_l_max ).str(),
+                                     (boost::format("min( %1%*%2%^(3/2)/(max(%3%,1e-16)),%4% ):%1%:%2%:%3%:%4%")%symb_c_mu %symb_sol_k_previous_positive %symb_sol_epsilon_previous_positive %symb_l_max ).str(),
+                                                                         this->worldComm(), this->repository().expr() );
+
+                std::string symbTurbulentDynViscosityBIS =  physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "mu_tBIS", "_" ),
+                                                                                           //(boost::format("max( 1e-8, %1%*%2%*sqrt(%3%) ):%1%:%2%:%3%")%symbDensity %symb_l_starBIS %symb_sol_k_previous_positive ).str(),
+                                                                                           (boost::format("max( 1e-8, %1%*%2%*sqrt(max(1e-9,%3%)) ):%1%:%2%:%3%")%symbDensity %symb_l_starBIS %symb_sol_k_previous_positive ).str(),
+                                                                                           //(boost::format("max( 1e-8, %1%*%2% ):%1%:%2%")%symbDensity %symb_l_starBIS ).str(),
+                                                                                           //(boost::format("max( 1e-8, %1%*sqrt(max(1e-9,%2%)) ):%1%:%2%")%symbDensity  %symb_sol_k_previous_positive ).str(),
+                                                                                           this->worldComm(), this->repository().expr() );
+
+#if 0
+                std::string symbTurbulentDynViscosityBIS2 = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "mu_tBIS", "_" ),
+                                                                                           (boost::format("max( 1e-8, %1%*sqrt(max(1e-9,%2%)) ):%1%:%2%")%symbDensity  %symb_sol_k_previous_positive ).str(),
+                                                                                           this->worldComm(), this->repository().expr() );
+#endif
+                std::string symb_gamma = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "gamma", "_" ),
+                                                                        //(boost::format("max(%1%*%2%/%3%,0):%1%:%2%:%3%")%symb_c_mu %symb_sol_k_previous_positive %symbTurbulentDynViscosityBIS2 ).str(),
+                                                                        //(boost::format("max(%1%*%2%/%3%,1e-9):%1%:%2%:%3%")%symb_c_mu %symb_sol_k_previous_positive %symbTurbulentDynViscosityBIS ).str(),
+                                                                        //(boost::format("(%2%>0)*%1%*%2%/%3% :%1%:%2%:%3%")%symb_c_mu %symb_sol_k_previous_positive %symbTurbulentDynViscosityBIS ).str(),
+                                                                        (boost::format("(%2%>0)*%1%*%2%/%3% :%1%:%2%:%3%")%symb_c_mu %symb_sol_k_positive %symbTurbulentDynViscosityBIS ).str(), //AIE
+                                                                        //(boost::format("max(%1%*%2%/%3%,0):%1%:%2%:%3%")%symb_c_mu %symb_sol_k_positive %symbTurbulentDynViscosityBIS ).str(),
+                                                                        this->worldComm(), this->repository().expr() );
+
                 std::string exprstr_convection = nDim==2? (boost::format("{%1%*%2%,%1%*%3%}:%1%:%2%:%3%")%symbDensity %symb_velocity_x %symb_velocity_y).str() :
                     (boost::format("{%1%*%2%,%1%*%3%,%1%*%4%}:%1%:%2%:%3%:%4%")%symbDensity %symb_velocity_x %symb_velocity_y %symb_velocity_z).str() ;
-                std::string exprstr_diffusion_k = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosity %symb_sigma_k ).str() ;
-                std::string exprstr_source_k =  (boost::format("%1%*%2%^2-%3%*%4%:%1%:%2%:%3%:%4%")%symbTurbulentDynViscosity%symb_strain_rate_magnitude %symbDensity %symb_sol_epsilon).str();
+                std::string exprstr_diffusion_k = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosityBIS %symb_sigma_k ).str() ;//AIE
+#if 0
+                std::string exprstr_source_k = (boost::format("%1%*%2%^2-%3%*%4%:%1%:%2%:%3%:%4%")%symbTurbulentDynViscosity %symb_strain_rate_magnitude %symbDensity %symb_sol_epsilon).str();
+#else
+                std::string exprstr_source_k = (boost::format("%1%*%2%^2:%1%:%2%")%symbTurbulentDynViscosityBIS %symb_strain_rate_magnitude).str();
+                std::string exprstr_reaction_k = (boost::format("%1%*%2%:%1%:%2%") %symbDensity %symb_gamma).str();
+#endif
+
                 ostr << "\""<<eqkeyword_k << "_beta\":\"" << exprstr_convection << "\","
                      << "\""<<eqkeyword_k << "_c\":\"" << exprstr_diffusion_k << "\","
-                    //<< "\""<<eqkeyword_k << "_a\":\"" << exprstr_reaction << "\","
+                     << "\""<<eqkeyword_k << "_a\":\"" << exprstr_reaction_k << "\","
                     << "\""<<eqkeyword_k << "_f\":\"" << exprstr_source_k << "\"";
                 if ( !this->isStationaryModel() )
                     ostr << ",\""<<eqkeyword_k << "_d\":\"" << (boost::format("%1%:%1%")%symbDensity).str() << "\"";
 
-                std::string exprstr_diffusion_epsilon = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosity %symb_sigma_epsilon ).str() ;
+                std::string exprstr_diffusion_epsilon = (boost::format("%1%+%2%/%3%:%1%:%2%:%3%")%symbDynViscosity %symbTurbulentDynViscosityBIS %symb_sigma_epsilon ).str() ; //AIE
+#if 0
                 std::string exprstr_reaction_epsilon = (boost::format("-(%1%/%2%)*( %3%*%4%^2 ) + %5%*%6%*%7%/%2% :%1%:%2%:%3%:%4%:%5%:%6%:%7%") %symb_c_1epsilon %symb_sol_k %symbTurbulentDynViscosity %symb_strain_rate_magnitude %symb_c_2epsilon %symbDensity %symb_sol_epsilon ).str();
+#else
+                std::string exprstr_reaction_epsilon = (boost::format("%1%*%2%*%3%:%1%:%2%:%3%")%symb_c_2epsilon %symbDensity% symb_gamma ).str();
+
+
+                // WARNING!!!!!
+                std::string exprstr_source_epsilon = (boost::format("%1%*%2%*( %3%*%4%^2 ) :%1%:%2%:%3%:%4%")%symb_gamma %symb_c_1epsilon %symbTurbulentDynViscosityBIS %symb_strain_rate_magnitude ).str();
+                //std::string exprstr_source_epsilon = (boost::format("%1%*%2%*%3%:%1%:%2%:%3%")%symb_c_1epsilon %symb_sol_k_positive %symb_strain_rate_magnitude ).str();
+#endif
                 ostr << ",";
                 ostr << "\""<<eqkeyword_epsilon << "_beta\":\"" << exprstr_convection << "\","
                      << "\""<<eqkeyword_epsilon << "_c\":\"" << exprstr_diffusion_epsilon << "\","
-                     << "\""<<eqkeyword_epsilon << "_a\":\"" << exprstr_reaction_epsilon << "\"";
-                    //<< "\""<<eqkeyword_epsilon << "_f\":\"" << exprstr_source_epsilon << "\"";
+                     << "\""<<eqkeyword_epsilon << "_a\":\"" << exprstr_reaction_epsilon << "\","
+                     << "\""<<eqkeyword_epsilon << "_f\":\"" << exprstr_source_epsilon << "\"";
                 if ( !this->isStationaryModel() )
                     ostr << ",\""<<eqkeyword_epsilon << "_d\":\"" << (boost::format("%1%:%1%")%symbDensity).str() << "\"";
 
-                std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/%4%:%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+#if 1
+                //std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/%4%:%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                //std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/( %4%*%4%+1e-5 ) :%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                //std::string mutExprStr = (boost::format("max( 1e-8, %1%*%2%*%3%^2/( %4%*%4%+1e-5 ) ) :%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                //std::string mutExprStr = (boost::format("max( 1e-8, %1%*%2%*sqrt(%3%) ):%1%:%2%:%3%")%symbDensity %symb_c_mu %symb_sol_k_positive  ).str();
+                //std::string mutExprStr = (boost::format("max( 1e-8, %1%*%2%*%3% ):%1%:%2%:%3%")%symbDensity %symb_l_star %symb_sol_k/*_positive*/ ).str(); // TODO define 1e-8 as mut min
+                //std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/max(1e-8,%4%) :%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                //std::string mutExprStr = (boost::format("%1%*%2%*%3%^2/(%4%*(%4%>1e-8)+ 1e-8*(1-(%4%>1e-8))) :%1%:%2%:%3%:%4%")%symbDensity %symb_c_mu %symb_sol_k %symb_sol_epsilon ).str();
+                std::string mutExprStr = (boost::format("max( 1e-8, %1%*%2%*sqrt(max(1e-9,%3%) ) ):%1%:%2%:%3%")%symbDensity %symb_l_star %symb_sol_k_positive ).str(); // TODO define 1e-8 as mut min
+#else
+                std::string mutExprStr = (boost::format("max( 1e-8, %1%*%2%*sqrt(%3%) ):%1%:%2%:%3%")%symbDensity %symb_l_star %symb_sol_k_positive ).str(); // TODO define 1e-8 as mut min
+#endif
                 ModelExpression mutExpr;
                 mutExpr.setExpr( mutExprStr, this->worldComm(), this->repository().expr() );
                 this->materialsProperties()->addProperty( matProps, "turbulent-dynamic-viscosity", mutExpr, true );
@@ -2246,6 +2338,17 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 ostr_ic_epsilon << "\"markers\":[" << myCvrtSeqToStr( matProps.markers() ) <<  "],"
                                 << "\"expr\":\"" << (boost::format("( (1*%1%/( %2%*0.1*%3% ) )^3 )*%4%/( %2%*0.1*%3% ) :%1%:%2%:%4%")%symbDynViscosity %symbDensity %mixing_length_limit %symb_c_mu ).str() << "\"";
                 strInitialConditions[unknownName_epsilon].push_back( ostr_ic_epsilon.str() );
+
+                // wall function
+                std::string symb_y_plus_star = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_nomat, "y_plus_star", "_" ), 11.06 );
+                std::string symb_u_tau = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "u_tau", "_" ),
+                                                                        //(boost::format("%1%^(1/4)*sqrt(%2%):%1%:%2%") %symb_c_mu %symb_sol_k_previous_positive ).str(),
+                                                                        (boost::format("max(%1%^(1/4)*sqrt(%2%), %3%/%4%):%1%:%2%:%3%:%4%") %symb_c_mu %symb_sol_k_previous_positive %symb_velocity_magintude %symb_y_plus_star ).str(),
+                                                                        this->worldComm(), this->repository().expr() );
+
+                std::string symb_u_tauBC = physicFluidData->addParameter( prefixvm( prefix_symbol_physic_mat, "u_tauBC", "_" ),
+                                                                          (boost::format("%1%^(1/4)*sqrt(%2%):%1%:%2%") %symb_c_mu %symb_sol_k_previous_positive ).str(),
+                                                                          this->worldComm(), this->repository().expr() );
 
 
             } // k-epsilon
@@ -2313,14 +2416,14 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
         for ( auto const& [bcName,bcInlet] : M_turbulenceModelBoundaryConditions.inlet() )
         {
             double turbulenceIntensity = 0.05;
-            double umax = 15.6;
+            //double umax = 15.6;
             double L = 0.0635/2.;
             double c_mu = 0.09;
             if ( !writeFirstBc )
                 ostr << ",";
             ostr << "\""<< bcName << "\":{"
                  << "\"markers\":[" << myCvrtSeqToStr( bcInlet.markers() ) << "],"
-                 << "\"expr\":\""<<(boost::format("(3/2)*(%1%*%2%)^2") %umax %turbulenceIntensity).str() << "\""
+                 << "\"expr\":\""<<(boost::format("(3/2)*(%1%*%2%)^2:%1%") %symb_velocity_magintude %turbulenceIntensity).str() << "\""
                  << "}";
             writeFirstBc = false;
         }
@@ -2341,10 +2444,24 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initTurbulenceModel()
                 ostr << ",";
             ostr << "\""<< bcName << "\":{"
                  << "\"markers\":[" << myCvrtSeqToStr( bcInlet.markers() ) << "],"
-                 << "\"expr\":\""<<(boost::format("%1%^(3/4)* ( ( (3/2)*(%2%*%3%)^2 )^(3/2) )/(0.035*%4% ) ")%c_mu %umax %turbulenceIntensity %L).str() << "\""
+                 << "\"expr\":\""<<(boost::format("%1%^(3/4)* ( ( (3/2)*(%2%*%3%)^2 )^(3/2) )/(0.035*%4% ) :%2%")%c_mu %symb_velocity_magintude %turbulenceIntensity %L).str() << "\""
                  << "}";
             writeFirstBc = false;
         }
+        for ( auto const& [bcName,bcWall] : M_turbulenceModelBoundaryConditions.wall() )
+        {
+            // TODO get symbol from physics and mat
+            std::string symb_u_tau = "physics_fluid_fluid_fluid_Omega_turbulence_k_epsilon_u_tau";
+            std::string symbDynViscosity = "materials_Omega_mu";
+            std::string symb_y_plus_star = "physics_fluid_fluid_fluid_turbulence_k_epsilon_y_plus_star";
+            if ( !writeFirstBc )
+                ostr << ",";
+            ostr << "\""<< bcName << "\":{"
+                 << "\"markers\":[" << myCvrtSeqToStr( bcWall.markers() ) << "],"
+                 << "\"expr\":\""<<(boost::format("%1%^4/(0.41*%2%*%3%):%1%:%2%:%3%")%symb_u_tau %symb_y_plus_star %symbDynViscosity).str() << "\""
+                 << "}";
+        }
+
         ostr << "}"; // end Dirichlet
         ostr << "}"; // end eqkeyword_epsilon
 
