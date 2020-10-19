@@ -1,5 +1,9 @@
 add_custom_target(pyfeelpp)
 
+pybind11_add_module(_feelpp  feelpp.cpp  )
+target_include_directories(_feelpp PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
+target_link_libraries( _feelpp PUBLIC Feelpp::feelpp )
+
 pybind11_add_module(_core  core.cpp remotedata.cpp )
 target_include_directories(_core PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
 target_link_libraries( _core PUBLIC Feelpp::feelpp )
@@ -36,9 +40,9 @@ target_link_libraries( _models PRIVATE Feelpp::feelpp )
 # target_link_libraries(pyfeelpp PRIVATE pybind11::module)
 # set_target_properties(pyfeelpp PROPERTIES OUTPUT_NAME feelpp)
 
-add_dependencies(pyfeelpp _core _mesh _discr _exporter  _ts _vf _models )
+add_dependencies(pyfeelpp _feelpp _core _mesh _discr _exporter  _ts _vf _models )
 
-install(TARGETS _core _mesh _discr _exporter  _ts _vf _models DESTINATION ${PYTHON_SITE_PACKAGES})
+install(TARGETS _feelpp _core _mesh _discr _exporter  _ts _vf _models DESTINATION ${PYTHON_SITE_PACKAGES})
 
 set(PYFILES __init__.py )
 install(FILES ${PYFILES} DESTINATION ${PYTHON_SITE_PACKAGES})
