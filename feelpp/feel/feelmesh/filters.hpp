@@ -34,12 +34,7 @@
 #include <utility>
 #include <unordered_set>
 #include <any>
-#if BOOST_VERSION >= 105600
 #include <boost/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#else
-#include <boost/spirit/home/phoenix/stl/algorithm/detail/is_std_list.hpp>
-#endif
-
 #include <feel/feelcore/environment.hpp>
 #include <feel/feelcore/rank.hpp>
 #include <feel/feelcore/enums.hpp>
