@@ -907,6 +907,7 @@ private:
     static fs::path S_scratchdir;
     static fs::path S_cfgdir;
     static AboutData S_about;
+    static inline bool S_init_python = true;
     static pt::ptree S_summary;
     static std::shared_ptr<po::command_line_parser> S_commandLineParser;
     static std::vector<std::tuple<std::string,std::istringstream> > S_configFiles;
