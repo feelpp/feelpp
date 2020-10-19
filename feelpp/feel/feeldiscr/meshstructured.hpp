@@ -52,7 +52,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
     using face_type = super::face_type;
     using node_type = super::node_type;
 
-    MeshStructured(): super() { this->setStructureProperty( "00010" ); }
+    MeshStructured( worldcomm_ptr_t const& wc  = Environment::worldCommPtr() ): super( wc ) { this->setStructureProperty( "00010" ); }
     MeshStructured( MeshStructured const& ) = delete;
     MeshStructured( MeshStructured&& ) = delete;
     MeshStructured& operator=( MeshStructured const& ) = delete;
