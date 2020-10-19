@@ -22,6 +22,7 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
