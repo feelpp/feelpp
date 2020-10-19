@@ -23,8 +23,11 @@
 //!
 #include <pybind11/pybind11.h>
 
-#include <feel/feel.hpp>
+
 #include <feel/feelmesh/filters.hpp>
+#include <feel/feeldiscr/mesh.hpp>
+#include <feel/feeldiscr/meshstructured.hpp>
+#include <feel/feelfilters/loadmesh.hpp>
 #include <mpi4py/mpi4py.h>
 
 #include <boost/shared_ptr.hpp>
@@ -82,15 +85,15 @@ nFacesTuple( faces_reference_wrapper_t<MeshT> const& r, bool global )
     return nelements( r, global );
 }
 
-template<typename ConvexT>
+template<typename MeshT>
 void defMesh(py::module &m)
 {
     using namespace Feel;
-    using mesh_t = Mesh<ConvexT>;
+    using mesh_t = MeshT;
     using mesh_ptr_t = std::shared_ptr<mesh_t>;
-    int Dim = ConvexT::nDim;
-    int Order = ConvexT::nOrder;
-    int RealDim = ConvexT::nRealDim;
+    int Dim = MeshT::nDim;
+    int Order = MeshT::nOrder;
+    int RealDim = MeshT::nRealDim;
     std::string pyclass_name = std::string("Mesh_");
     std::string suffix = std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
@@ -158,18 +161,19 @@ PYBIND11_MODULE(_mesh, m )
         .export_values();
 
     // 1D
-    defMesh<Simplex<1,1,1>>(m);
-    defMesh<Simplex<1,2,1>>(m);
+    defMesh<Mesh<Simplex<1,1,1>>>(m);
+    defMesh<Mesh<Simplex<1,2,1>>>(m);
     // 2D
-    defMesh<Simplex<2,1,2>>(m);
-    defMesh<Simplex<2,2,2>>(m);
+    defMesh<Mesh<Simplex<2,1,2>>>(m);
+    defMesh<Mesh<Simplex<2,2,2>>>(m);
     //defMesh<Simplex<1,1,2>>(m);
     //defMesh<Simplex<1,2,2>>(m);
     // 3D
-    defMesh<Simplex<3,1,3>>(m);
-    defMesh<Simplex<3,2,3>>(m);
+    defMesh<Mesh<Simplex<3,1,3>>>(m);
+    defMesh<Mesh<Simplex<3,2,3>>>(m);
     //defMesh<Simplex<2,1,3>>(m);
     //defMesh<Simplex<2,2,3>>(m);
     //defMesh<Simplex<1,1,3>>(m);
     //defMesh<Simplex<1,2,3>>(m);
+    defMesh<MeshStructured>(m);
 }
