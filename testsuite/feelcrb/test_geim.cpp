@@ -1,7 +1,6 @@
 #define BOOST_TEST_MODULE geim testsuite
 
 #include <feel/feelcore/testsuite.hpp>
-#define USE_BOOST_TEST 1
 
 #include <feel/feelfilters/exporter.hpp>
 #include <feel/feelcrb/geim.hpp>

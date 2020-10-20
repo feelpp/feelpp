@@ -5,7 +5,8 @@
   Author(s): Romain Hild <romain.hild@cemosis.fr>
        Date: 2020-09-30
 
-  Copyright (C) 2012 Université Joseph Fourier (Grenoble I)
+  Copyright (C) 2020 Feel++ Consortium
+  Copyright (C) 2020 University of Strasbourg
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -39,7 +40,8 @@ namespace Feel
 {
 
 /**
- * Class to support Parameterized Background Data-Weak method
+ * Class that implements Parameterized Background Data-Weak method.
+ * @tparam Reduced basis space
  */
 template<typename RBSpace>
 class PBDW : CRBDB
@@ -64,21 +66,35 @@ public:
      * @param name Name of pbdw
      * @param l Loading type (rb,fe,all)
      * @param uuid Uuid to use for the db
+     * @param dbLoad Loading type for the DB
+     * @param dbFilename Filename of the DB for load type filename
+     * @param dbIf If of the DB for load type id
      */
     explicit PBDW(std::string const& name,
                   crb::load l = crb::load::rb,
-                  uuids::uuid const& uuid = uuids::nil_uuid());
+                  uuids::uuid const& uuid = uuids::nil_uuid(),
+                  int dbLoad = ioption("pbdw.db.load"),
+                  std::string const& dbFilename = soption("pbdw.db.filename"),
+                  std::string const& dbId = soption("pbdw.db.id"));
     /**
      * Constructor for the offline phase
      * @param name Name of pbdw
      * @param XR Reduced Basis
      * @param sigmas Sensors to use
      * @param uuid Uuid to use for the db
+     * @param rebuildDB Boolean to rebuild the database
+     * @param dbLoad Loading type for the DB
+     * @param dbFilename Filename of the DB for load type filename
+     * @param dbIf If of the DB for load type id
      */
     PBDW(std::string const& name,
          reducedspace_ptrtype const& XR,
          std::vector<sensorbase_ptrtype> const& sigmas,
-         uuids::uuid const& uuid = uuids::nil_uuid());
+         uuids::uuid const& uuid = uuids::nil_uuid(),
+         bool rebuildDB = boption("pbdw.rebuild-database"),
+         int dbLoad = ioption("pbdw.db.load"),
+         std::string const& dbFilename = soption("pbdw.db.filename"),
+         std::string const& dbId = soption("pbdw.db.id"));
     int dimensionN() const { return M_N; } /**< Dimension of Reduced Basis */
     int dimensionM() const { return M_M; } /**< Number of sensors */
     int dimension() const { return M_N+M_M; } /**< Dimension of PBDW */
@@ -121,13 +137,16 @@ private:
 template<typename RBSpace>
 PBDW<RBSpace>::PBDW(std::string const& name,
                     crb::load l,
-                    uuids::uuid const& uuid):
+                    uuids::uuid const& uuid,
+                    int dbLoad,
+                    std::string const& dbFilename,
+                    std::string const& dbId):
     super_type(name, "pbdw", uuid),
     M_name(name),
-    M_rebuildDb(boption("pbdw.rebuild-database")),
-    M_dbLoad(ioption("pbdw.db.load")),
-    M_dbFilename(soption("pbdw.db.filename")),
-    M_dbId(soption("pbdw.db.id")),
+    M_rebuildDb(false),
+    M_dbLoad(dbLoad),
+    M_dbFilename(dbFilename),
+    M_dbId(dbId),
     M_stage(crb::stage::online)
 {
     if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
@@ -140,17 +159,21 @@ template<typename RBSpace>
 PBDW<RBSpace>::PBDW(std::string const& name,
                     reducedspace_ptrtype const& XR,
                     std::vector<sensorbase_ptrtype> const& sigmas,
-                    uuids::uuid const& uuid):
+                    uuids::uuid const& uuid,
+                    bool rebuildDb,
+                    int dbLoad,
+                    std::string const& dbFilename,
+                    std::string const& dbId):
     super_type(name, "pbdw", uuid),
     M_name(name),
     M_XR(XR),
     M_sigmas(sigmas),
     M_M(M_sigmas.size()),
     M_N(M_XR->size()),
-    M_rebuildDb(boption("pbdw.rebuild-database")),
-    M_dbLoad(ioption("pbdw.db.load")),
-    M_dbFilename(soption("pbdw.db.filename")),
-    M_dbId(soption("pbdw.db.id")),
+    M_rebuildDb(rebuildDb),
+    M_dbLoad(dbLoad),
+    M_dbFilename(dbFilename),
+    M_dbId(dbId),
     M_stage(crb::stage::offline)
 {
     if( ! this->findDBUuid(M_dbLoad, M_dbLoad ? M_dbId : M_dbFilename) )
@@ -242,7 +265,7 @@ PBDW<RBSpace>::saveDB()
         j["date"] = ss.str();
         j["mesh"] = this->absoluteMeshFilename();
         std::ofstream o(this->absoluteJsonFilename());
-        o << j << std::endl;
+        o << j.dump(2) << std::endl;
 
         fs::ofstream ofs( this->absoluteDbFilename() );
         if ( ofs )
