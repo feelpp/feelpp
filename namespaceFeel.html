@@ -4027,8 +4027,6 @@ template&lt;typename MeshType &gt; </div>
 
 <p class="reference">References <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a56bb09412880ddad6dc721716c76a75b">nelements()</a>.</p>
-
 </div>
 </div>
 <a id="a11b2681b23e7462afe08f7a761e19d42"></a>
@@ -4096,6 +4094,8 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a mapping between a id and pair of iterators to iterate over elements of the mesh with marker <code>flag</code> </dd></dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
 
 </div>
 </div>
@@ -4345,7 +4345,7 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of edge iterators (begin,end) </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a2b5fed3968ca8777189f58f744062464">idelements()</a>, and <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
 
 </div>
 </div>
@@ -4365,7 +4365,7 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the elements container </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1TwoSpacesMap.html#acc802ee8303782b4ea6f45b1fdc4c003">Feel::TwoSpacesMap&lt; SpaceType &gt;::build()</a>, <a class="el" href="namespaceFeel.html#a16a66a1d33fb301a2f00a8c40a4388d8">elements()</a>, <a class="el" href="namespaceFeel.html#a812497ba637ebdb7ced2e0e9a780677d">etaQ()</a>, <a class="el" href="namespaceFeel.html#acbf2ff63d11fa104240d104873f76aa2">hMeasures()</a>, <a class="el" href="namespaceFeel.html#ad1e9993b2ca6f03126bdc7d013d0921e">nsrQ()</a>, <a class="el" href="classFeel_1_1Mesh0D.html#ae340fbdfd1511dbf168c251421a57dc3">Feel::Mesh0D&lt; Shape, T, IndexT &gt;::numLocalVertices()</a>, <a class="el" href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">Feel::vf::project()</a>, <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>, <a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum()</a>, and <a class="el" href="classFeel_1_1Mesh.html#a92509e683efab9ac2f1ebfabfbd9447a">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;::updateMarker3WithRange()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1TwoSpacesMap.html#acc802ee8303782b4ea6f45b1fdc4c003">Feel::TwoSpacesMap&lt; SpaceType &gt;::build()</a>, <a class="el" href="namespaceFeel.html#a812497ba637ebdb7ced2e0e9a780677d">etaQ()</a>, <a class="el" href="namespaceFeel.html#acbf2ff63d11fa104240d104873f76aa2">hMeasures()</a>, <a class="el" href="namespaceFeel.html#ad1e9993b2ca6f03126bdc7d013d0921e">nsrQ()</a>, <a class="el" href="classFeel_1_1Mesh0D.html#ae340fbdfd1511dbf168c251421a57dc3">Feel::Mesh0D&lt; Shape, T, IndexT &gt;::numLocalVertices()</a>, <a class="el" href="projectors_8hpp.html#a5da1b6c6f2cb14771f6c0edd6b496bc9">Feel::vf::project()</a>, <a class="el" href="classnlohmann_1_1detail_1_1lexer.html#a7cd7d55de2cd398660bc243c7229caf9">nlohmann::detail::lexer&lt; BasicJsonType, InputAdapterType &gt;::skip_bom()</a>, <a class="el" href="projectors_8hpp.html#a4d2b634b98a0f9b1ead94d0b27fe41a8">Feel::vf::sum()</a>, and <a class="el" href="classFeel_1_1Mesh.html#a92509e683efab9ac2f1ebfabfbd9447a">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;::updateMarker3WithRange()</a>.</p>
 
 </div>
 </div>
@@ -4387,8 +4387,6 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with pid <code>flag</code> </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#a55b180ac7bf9d1ebd55a0b79f97e131e">elements()</a>.</p>
 
 </div>
 </div>
@@ -4951,8 +4949,6 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of face iterators (begin,end) </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
-
 </div>
 </div>
 <a id="a81f9fd901bd7561bed7c8fc6b17b3d4d"></a>
@@ -5193,8 +5189,6 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with id <code>flag</code> </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
-
 </div>
 </div>
 <a id="a7f1d8bad099e05c773b93577644292d1"></a>
@@ -5226,7 +5220,7 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements with id <code>id</code> </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a99aac342902035d1427a6e77b4037a78">rank()</a>, and <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
 
 </div>
 </div>
@@ -5248,10 +5242,6 @@ template&lt;typename MeshType &gt; </div>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over all internal edges of the mesh </dd></dl>
-
-<p class="reference">References <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a962296e774b9dc10e15dc09dcb5eaac1">markedpoints()</a>.</p>
 
 </div>
 </div>
@@ -5681,6 +5671,8 @@ template&lt;typename MeshType , std::enable_if_t&lt; std::is_base_of_v&lt; MeshB
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh with <code>Marker3</code> string </dd></dl>
 
+<p class="reference">References <a class="el" href="namespaceFeel.html#a1f80717436f1b0141af08578915d9c61">markedelementsByType()</a>.</p>
+
 </div>
 </div>
 <a id="a1f7bb6a421f66fbfbb04d1fd260f89d4"></a>
@@ -5810,7 +5802,7 @@ template&lt;typename MeshType &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators to iterate over elements of the mesh with marker <code>flag</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a4865c9737b1e5b536a3886ec57f134ff">faces()</a>, and <a class="el" href="namespaceFeel.html#a33538f3c396236735baa001c539a0934">idedelements()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#ae2388a3da46e7abf91df2e1402f705dd">collectionOfMarkedelements()</a>, and <a class="el" href="namespaceFeel.html#a1e696d1270f3089946e13002d4e0ce2a">marked3elements()</a>.</p>
 
 </div>
 </div>
@@ -5983,7 +5975,7 @@ template&lt;typename MeshType &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>a pair of iterators (begin,end) for the set of marked points </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a7d43c0e7d1b2b9f29280658bb4bc9ee3">internaledges()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a0f1bc8adf2e8f6e6dc615dfd11059415">points()</a>.</p>
 
 </div>
 </div>
@@ -6139,8 +6131,6 @@ template&lt;typename MT , typename Iterator , typename Container &gt; </div>
 <p>The following code prints in the logfile the number of elements in the mesh that are marked with marker1 equal to 1:</p>
 <div class="fragment"><div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;number of elements = &quot;</span> &lt;&lt; <a class="code" href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">nelements</a>( myCustomRange ) &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
-
 </div>
 </div>
 <a id="a56bb09412880ddad6dc721716c76a75b"></a>
@@ -6187,8 +6177,6 @@ template&lt;typename MT , typename Iterator &gt; </div>
 <p>The following code prints in the logfile the number of elements in the mesh that are marked with marker1 equal to 1:</p>
 <div class="fragment"><div class="line">LOG(INFO) &lt;&lt; <span class="stringliteral">&quot;number of elements = &quot;</span> &lt;&lt; <a class="code" href="namespaceFeel.html#a229552e84736e331a5e2972379393aa0">nelements</a>( <a class="code" href="namespaceFeel.html#af464ea7e12b67aec0df1ea574a1653c4">markedelements</a>(mesh,{1,2,3}) ) &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
 </div><!-- fragment --> 
-<p class="reference">References <a class="el" href="namespaceFeel.html#aa86bef326f47d85434525962153a2523">boundarypoints()</a>.</p>
-
 </div>
 </div>
 <a id="a1d685fda2dab687e323c4f911d8a5b44"></a>
@@ -6559,6 +6547,8 @@ template&lt;typename MeshType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>the range of iterators [begin,end] over the points of the mesh </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>this filter is not parallelized </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#a962296e774b9dc10e15dc09dcb5eaac1">markedpoints()</a>.</p>
+
 </div>
 </div>
 <a id="a5af595f9efc2286043472b9bf6f1c2cc"></a>
@@ -6805,7 +6795,7 @@ template&lt;typename C &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the local MPI rank of the data structure <code>c</code> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1DofTable.html#ae4cb22d8e41e47eb01d6797d2bfcaff8">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;::buildGhostDofMap()</a>, and <a class="el" href="namespaceFeel.html#a7f1d8bad099e05c773b93577644292d1">idedfaces()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1DofTable.html#ae4cb22d8e41e47eb01d6797d2bfcaff8">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;::buildGhostDofMap()</a>.</p>
 
 </div>
 </div>
@@ -7048,7 +7038,7 @@ template&lt;typename C &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the c++ objet pointed by c++ pointer or shared_ptr or same object otherwise </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aa86bef326f47d85434525962153a2523">boundarypoints()</a>, <a class="el" href="namespaceFeel.html#affd58b7d24b04852404899355eb31f93">expansion()</a>, <a class="el" href="namespaceFeel.html#a7f1d8bad099e05c773b93577644292d1">idedfaces()</a>, <a class="el" href="namespaceFeel.html#a7d43c0e7d1b2b9f29280658bb4bc9ee3">internaledges()</a>, and <a class="el" href="namespaceFeel.html#aeb29bac2a3e332bb2282ce149f33bcc3">worldComm()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="namespaceFeel.html#aa86bef326f47d85434525962153a2523">boundarypoints()</a>, <a class="el" href="namespaceFeel.html#affd58b7d24b04852404899355eb31f93">expansion()</a>, and <a class="el" href="namespaceFeel.html#a7f1d8bad099e05c773b93577644292d1">idedfaces()</a>.</p>
 
 </div>
 </div>
@@ -7071,9 +7061,9 @@ template&lt;size_t S, class ITERATOR , class CONTAINER &gt; </div>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the worldcomm associated to the mesh stored in the range </dd></dl>
 
-<p class="reference">References <a class="el" href="namespaceFeel.html#a08ef32dc7bae1241b100e90dc7dd5d82">edges()</a>, <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>, and <a class="el" href="namespaceFeel.html#a6b69ad4292ceeb6b52d5090d7afe2ddb">unwrap_ptr()</a>.</p>
+<p class="reference">References <a class="el" href="namespaceFeel.html#a08ef32dc7bae1241b100e90dc7dd5d82">edges()</a>, and <a class="el" href="namespaceFeel.html#ab3a0f136b2980f14f6111a9daf2fa483">invalid_rank_type_value</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1DofTable.html#ae4cb22d8e41e47eb01d6797d2bfcaff8">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;::buildGhostDofMap()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; index_type &gt;::isPartitioned()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8">Feel::MeshBase&lt; index_type &gt;::MeshBase()</a>, <a class="el" href="namespaceFeel.html#a0d81632d3e5c907b80d120bb7b9f6b91">nelements()</a>, and <a class="el" href="classFeel_1_1Mesh.html#a01a52cf1a36fa217975b92c1f3023cb6">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;::numGlobalEdges()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="classFeel_1_1DofTable.html#ae4cb22d8e41e47eb01d6797d2bfcaff8">Feel::DofTable&lt; MeshType, FEType, PeriodicityType, MortarType &gt;::buildGhostDofMap()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a1ed60f60a82b72efd8624027150ccc45">Feel::MeshBase&lt; index_type &gt;::isPartitioned()</a>, <a class="el" href="classFeel_1_1MeshBase.html#a05251024eec7f7427d6cbe66f1a6fba8">Feel::MeshBase&lt; index_type &gt;::MeshBase()</a>, and <a class="el" href="classFeel_1_1Mesh.html#a01a52cf1a36fa217975b92c1f3023cb6">Feel::Mesh&lt; Hypercube&lt; 2 &gt; &gt;::numGlobalEdges()</a>.</p>
 
 </div>
 </div>

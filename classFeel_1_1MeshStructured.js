@@ -9,7 +9,7 @@ var classFeel_1_1MeshStructured =
     [ "node_type", "classFeel_1_1MeshStructured.html#a461243dc31a77407b12e2d80322b814a", null ],
     [ "point_type", "classFeel_1_1MeshStructured.html#a0d4e90c753b073b125277e470b6f6d06", null ],
     [ "super", "classFeel_1_1MeshStructured.html#a764659b12759e8b99f1afe9e27a19902", null ],
-    [ "MeshStructured", "classFeel_1_1MeshStructured.html#a52ea6fcaa78f91914e5b2b809c08b9a1", null ],
+    [ "MeshStructured", "classFeel_1_1MeshStructured.html#abef0c98ac8d7207dfa382fa50d5f3399", null ],
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#ac64f155a30ace5c4ae2b026cbdfa354c", null ],
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#ad9eb907f99e67b1aadee27a104b1d35a", null ],
     [ "MeshStructured", "classFeel_1_1MeshStructured.html#a153945a7d33504cb7f71242916e416e5", null ]
