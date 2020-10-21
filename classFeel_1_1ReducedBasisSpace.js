@@ -34,6 +34,7 @@ var classFeel_1_1ReducedBasisSpace =
     [ "isComposite", "classFeel_1_1ReducedBasisSpace.html#a33f7e2b4a2d2a30605b3ae3733dcda89", null ],
     [ "mesh", "classFeel_1_1ReducedBasisSpace.html#a88a4b370d2bd28d8a735567b3f5f125a", null ],
     [ "NewImpl", "classFeel_1_1ReducedBasisSpace.html#ac7e48aedd75d7371001a24112df06f9d", null ],
+    [ "orthonormalize", "classFeel_1_1ReducedBasisSpace.html#a1feaba47626d99cf27cf1423e2ac4aea", null ],
     [ "primalBasisElement", "classFeel_1_1ReducedBasisSpace.html#a63128a3f873afd01b40b7fff991e5ab6", null ],
     [ "primalRB", "classFeel_1_1ReducedBasisSpace.html#abd50f1b409cdeef35474a1e956a5db4c", null ],
     [ "primalRB", "classFeel_1_1ReducedBasisSpace.html#a38496a6163d19b011beb5011d66f3a00", null ],

@@ -342,6 +342,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> (mpl::true_)
 <tr class="memitem:a88a4b370d2bd28d8a735567b3f5f125a"><td class="memItemLeft" align="right" valign="top"><a id="a88a4b370d2bd28d8a735567b3f5f125a"></a>
 mesh_ptrtype const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>mesh</b> () const</td></tr>
 <tr class="separator:a88a4b370d2bd28d8a735567b3f5f125a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1feaba47626d99cf27cf1423e2ac4aea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1ReducedBasisSpace.html#a1feaba47626d99cf27cf1423e2ac4aea">orthonormalize</a> (std::string const &amp;norm=&quot;L2&quot;, bool dual=false, double tol=1000)</td></tr>
+<tr class="memdesc:a1feaba47626d99cf27cf1423e2ac4aea"><td class="mdescLeft">&#160;</td><td class="mdescRight">orthonormalize the reduced basis using Gram-Schmidt process.  <a href="classFeel_1_1ReducedBasisSpace.html#a1feaba47626d99cf27cf1423e2ac4aea">More...</a><br /></td></tr>
+<tr class="separator:a1feaba47626d99cf27cf1423e2ac4aea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63128a3f873afd01b40b7fff991e5ab6"><td class="memItemLeft" align="right" valign="top"><a id="a63128a3f873afd01b40b7fff991e5ab6"></a>
 space_element_type &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>primalBasisElement</b> (<a class="el" href="classint.html">int</a> index)</td></tr>
 <tr class="separator:a63128a3f873afd01b40b7fff991e5ab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -465,6 +468,52 @@ template&lt;typename SpaceType &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>function space context </dd></dl>
 
 <p class="reference">Referenced by <a class="el" href="classFeel_1_1ReducedBasisSpace_1_1Element.html#ab3ccab73d22114b6b42a3501ed2639c5">Feel::ReducedBasisSpace&lt; SpaceType &gt;::Element&lt; T, Cont &gt;::gradInterpolate()</a>.</p>
+
+</div>
+</div>
+<a id="a1feaba47626d99cf27cf1423e2ac4aea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1feaba47626d99cf27cf1423e2ac4aea">&#9670;&nbsp;</a></span>orthonormalize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename SpaceType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classFeel_1_1ReducedBasisSpace.html">Feel::ReducedBasisSpace</a>&lt; SpaceType &gt;::orthonormalize </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>norm</em> = <code>&quot;L2&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbool.html">bool</a>&#160;</td>
+          <td class="paramname"><em>dual</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>tol</em> = <code>1000</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>orthonormalize the reduced basis using Gram-Schmidt process. </p>
+<p>the tolerance is used to reiterate the process, by default we do not reiterate </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">norm</td><td>norm to use (L2, H1, dot) </td></tr>
+    <tr><td class="paramname">dual</td><td>orthonormalize dual basis </td></tr>
+    <tr><td class="paramname">tol</td><td>tolerance above which we reiterate the process </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

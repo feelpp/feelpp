@@ -101,6 +101,11 @@ var dir_201afb6b72871638822819f2c834f547 =
     [ "product.hpp", "product_8hpp.html", "product_8hpp" ],
     [ "quadptlocalization.hpp", "quadptlocalization_8hpp.html", "quadptlocalization_8hpp" ],
     [ "region.hpp", "region_8hpp.html", "region_8hpp" ],
+    [ "sensors.hpp", "sensors_8hpp.html", [
+      [ "SensorBase", "classFeel_1_1SensorBase.html", "classFeel_1_1SensorBase" ],
+      [ "SensorGaussian", "classFeel_1_1SensorGaussian.html", "classFeel_1_1SensorGaussian" ],
+      [ "SensorPointwise", "classFeel_1_1SensorPointwise.html", "classFeel_1_1SensorPointwise" ]
+    ] ],
     [ "stencil.cpp", "stencil_8cpp.html", "stencil_8cpp" ],
     [ "syncdofs.hpp", "syncdofs_8hpp.html", "syncdofs_8hpp" ],
     [ "thch.hpp", "thch_8hpp.html", [
