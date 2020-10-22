@@ -108,4 +108,7 @@ PYBIND11_MODULE(_core, m )
     
     bindRemoteData( m );
     
+    m.def( "feel_options", &Feel::feel_options, py::arg("prefix")="", "create feelpp options with optional prefix" );
+    m.def( "feel_nooptions", &Feel::feel_nooptions, "create feelpp options with optional prefix" );
+
 }
