@@ -1,6 +1,7 @@
 import sys,time
 from ._feelpp import  *
 from ._core import *
+from ._alg import *
 from ._mesh import *
 from ._discr import *
 from ._exporter import  *
