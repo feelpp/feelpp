@@ -28,6 +28,7 @@ var feelpp_2feel_2feelmesh_2traits_8hpp =
     [ "real_dimension", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a195b351a8f80c5359cb2227246ac4d07", null ],
     [ "dimension_v", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a7f96cb7271c76b39e72addc8d166288a", null ],
     [ "is_geoelement_v", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a4787f01c56ce123c8f9d5e16ed90ceb7", null ],
+    [ "is_hypercube_v", "feelpp_2feel_2feelmesh_2traits_8hpp.html#a4c6a3ccf734e6f3b9fedba482ff233a2", null ],
     [ "is_simplex_v", "feelpp_2feel_2feelmesh_2traits_8hpp.html#ab285e2d8ae968b62fb4d0e6431b0e808", null ],
     [ "real_dimension_v", "feelpp_2feel_2feelmesh_2traits_8hpp.html#ac6f311053a7f7420f3f61c04f756f74d", null ]
 ];

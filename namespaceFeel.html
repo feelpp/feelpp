@@ -410,6 +410,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html">is_iterable_of&lt; T, V, std::void_t&lt; decltype(std::declval&lt; T &gt;().begin()), decltype(std::declval&lt; T &gt;().end()), std::is_same&lt; decltype(*std::declval&lt; T &gt;().begin()), V &gt; &gt; &gt;</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__mesh__structured.html">is_mesh_structured</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">trait type to detect a <code><a class="el" href="classFeel_1_1MeshStructured.html" title="Structured mesh class.">MeshStructured</a></code> mesh  <a href="structFeel_1_1is__mesh__structured.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__point.html">is_point</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFeel_1_1is__ptr__or__shared__ptr.html">is_ptr_or_shared_ptr</a></td></tr>
@@ -3247,6 +3250,10 @@ template&lt;typename FuncSpaceType &gt; </td></tr>
 <tr class="memitem:a4787f01c56ce123c8f9d5e16ed90ceb7"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a4787f01c56ce123c8f9d5e16ed90ceb7">is_geoelement_v</a> = <a class="el" href="structFeel_1_1is__geoelement.html">is_geoelement</a>&lt;T...&gt;::value</td></tr>
 <tr class="memdesc:a4787f01c56ce123c8f9d5e16ed90ceb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper variable template.  <a href="namespaceFeel.html#a4787f01c56ce123c8f9d5e16ed90ceb7">More...</a><br /></td></tr>
 <tr class="separator:a4787f01c56ce123c8f9d5e16ed90ceb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4c6a3ccf734e6f3b9fedba482ff233a2"><td class="memTemplParams" colspan="2"><a id="a4c6a3ccf734e6f3b9fedba482ff233a2"></a>
+template&lt;typename T &gt; </td></tr>
+<tr class="memitem:a4c6a3ccf734e6f3b9fedba482ff233a2"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>is_hypercube_v</b> = <a class="el" href="structFeel_1_1is__hypercube.html">is_hypercube</a>&lt;T&gt;::value</td></tr>
+<tr class="separator:a4c6a3ccf734e6f3b9fedba482ff233a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73ac8b066e67602eaf7d62b0de2fccbf"><td class="memTemplParams" colspan="2"><a id="a73ac8b066e67602eaf7d62b0de2fccbf"></a>
 template&lt;typename T , typename V &gt; </td></tr>
 <tr class="memitem:a73ac8b066e67602eaf7d62b0de2fccbf"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><b>is_iterable_of_v</b> = <a class="el" href="structFeel_1_1is__iterable__of.html">is_iterable_of</a>&lt;T, V&gt;::value</td></tr>
@@ -3259,6 +3266,10 @@ template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ga90536bec69f2b3d99bbb96f64ca1eb7f"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#ga90536bec69f2b3d99bbb96f64ca1eb7f">is_matrix_field_v</a> = <a class="el" href="group__Traits.html#gab7be68dfa9321c6050614248a0ebe556">is_tensor2_field_v</a>&lt;T&gt; || <a class="el" href="group__Traits.html#ga469004fabfb04cc82b16409cbe1874f6">is_tensor2symm_field_v</a>&lt;T&gt;</td></tr>
 <tr class="memdesc:ga90536bec69f2b3d99bbb96f64ca1eb7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">helper variable template,  <a href="group__Traits.html#ga90536bec69f2b3d99bbb96f64ca1eb7f">More...</a><br /></td></tr>
 <tr class="separator:ga90536bec69f2b3d99bbb96f64ca1eb7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18dabe26594b7b6f02584f0dc508ed5d"><td class="memTemplParams" colspan="2">template&lt;typename MeshT &gt; </td></tr>
+<tr class="memitem:a18dabe26594b7b6f02584f0dc508ed5d"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceFeel.html#a18dabe26594b7b6f02584f0dc508ed5d">is_mesh_structured_v</a> = <a class="el" href="structFeel_1_1is__mesh__structured.html">is_mesh_structured</a>&lt;MeshT&gt;::value</td></tr>
+<tr class="memdesc:a18dabe26594b7b6f02584f0dc508ed5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">boolean to detect a <code><a class="el" href="classFeel_1_1MeshStructured.html" title="Structured mesh class.">MeshStructured</a></code> mesh  <a href="namespaceFeel.html#a18dabe26594b7b6f02584f0dc508ed5d">More...</a><br /></td></tr>
+<tr class="separator:a18dabe26594b7b6f02584f0dc508ed5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memTemplParams" colspan="2">
 template&lt;typename MeshType &gt; </td></tr>
 <tr class="memitem:gaaed46165ccfb4bc35eb78bfe25f89459"><td class="memTemplItemLeft" align="right" valign="top">constexpr <a class="el" href="classbool.html">bool</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="group__Traits.html#gaaed46165ccfb4bc35eb78bfe25f89459">is_mesh_v</a> = <a class="el" href="group__Traits.html#gad88b60e8e99ab7724f8e508d3c018bb1">is_mesh</a>&lt;MeshType&gt;::value</td></tr>
@@ -7119,6 +7130,38 @@ template&lt;typename... T&gt; </div>
 
 <p>Helper variable template. </p>
 <dl class="section return"><dt>Returns</dt><dd>true is T is a GeoElement&lt;n&gt;D at compilation time, false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a18dabe26594b7b6f02584f0dc508ed5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18dabe26594b7b6f02584f0dc508ed5d">&#9670;&nbsp;</a></span>is_mesh_structured_v</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MeshT &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classbool.html">bool</a> Feel::is_mesh_structured_v = <a class="el" href="structFeel_1_1is__mesh__structured.html">is_mesh_structured</a>&lt;MeshT&gt;::value</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>boolean to detect a <code><a class="el" href="classFeel_1_1MeshStructured.html" title="Structured mesh class.">MeshStructured</a></code> mesh </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">MeshT</td><td>mesh type </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

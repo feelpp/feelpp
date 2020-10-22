@@ -1,5 +1,7 @@
 var NAVTREEINDEX49 =
 {
+"structnlohmann_1_1detail_1_1internal__iterator.html#a8294a6e6f01b58e1cce8fbae66a50b5d":[6,1,2,0,28,0],
+"structnlohmann_1_1detail_1_1internal__iterator.html#a8cb0af3498061426c1d0a65ad6220408":[6,1,2,0,28,1],
 "structnlohmann_1_1detail_1_1is__basic__json.html":[6,1,2,0,30],
 "structnlohmann_1_1detail_1_1is__basic__json_3_01basic__json_3_01ObjectType_00_01ArrayType_00_01S22724cadd4c00141f83926df5e541441.html":[6,1,2,0,31],
 "structnlohmann_1_1detail_1_1is__compatible__array__type.html":[6,1,2,0,32],

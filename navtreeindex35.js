@@ -1,5 +1,6 @@
 var NAVTREEINDEX35 =
 {
+"ginac_8hpp.html#ab4cfb38f95f4ffa98262635e6e406cc3":[6,2,0,0,3,26,7],
 "ginac_8hpp.html#ab7b2c54bc04d83b1a85b77b1c699ef1b":[6,2,0,0,3,26,24],
 "ginac_8hpp.html#abc54c32e85d4cf5724a245135cd88c81":[6,2,0,0,3,26,89],
 "ginac_8hpp.html#abc975c105b3b06e25f84ea542ce8e756":[6,2,0,0,3,26,71],
@@ -248,6 +249,5 @@ var NAVTREEINDEX35 =
 "modelbase_8hpp.html#a139d2c813e90b0b7f28cbdf6b0301b8f":[6,2,1,0,0,1,4,0],
 "modelcore_8hpp.html":[6,2,1,0,0,1,5],
 "modelnumerical_8cpp.html":[6,2,1,0,0,1,6],
-"modelnumerical_8hpp.html":[6,2,1,0,0,1,7],
-"modules.html":[5]
+"modelnumerical_8hpp.html":[6,2,1,0,0,1,7]
 };

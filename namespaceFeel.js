@@ -592,6 +592,7 @@ var namespaceFeel =
     [ "is_iterable< T, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end())> >", "structFeel_1_1is__iterable_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01T_01_4_07e321607a6dd151c547f374e68b86fe92.html", null ],
     [ "is_iterable_of", "structFeel_1_1is__iterable__of.html", null ],
     [ "is_iterable_of< T, V, std::void_t< decltype(std::declval< T >().begin()), decltype(std::declval< T >().end()), std::is_same< decltype(*std::declval< T >().begin()), V > > >", "structFeel_1_1is__iterable__of_3_01T_00_01V_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_dfe806ee660b09a85b57435717287147.html", null ],
+    [ "is_mesh_structured", "structFeel_1_1is__mesh__structured.html", null ],
     [ "is_point", "structFeel_1_1is__point.html", null ],
     [ "is_ptr_or_shared_ptr", "structFeel_1_1is__ptr__or__shared__ptr.html", null ],
     [ "is_reference_convex", "structFeel_1_1is__reference__convex.html", null ],
