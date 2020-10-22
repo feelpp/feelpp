@@ -42,7 +42,7 @@ target_link_libraries( _models PRIVATE Feelpp::feelpp )
 
 add_dependencies(pyfeelpp _feelpp _core _mesh _discr _exporter  _ts _vf _models )
 
-install(TARGETS _feelpp _core _mesh _discr _exporter  _ts _vf _models DESTINATION ${PYTHON_SITE_PACKAGES})
+install(TARGETS _feelpp _core _mesh _discr _exporter  _ts _vf _models DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
 
 set(PYFILES __init__.py )
-install(FILES ${PYFILES} DESTINATION ${PYTHON_SITE_PACKAGES})
+install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)

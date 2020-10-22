@@ -109,6 +109,22 @@ class MeshStructured : public Mesh<Hypercube<2>>
 #endif    
 };
 
+/**
+ * @brief trait type to detect a @p MeshStructured mesh
+ * 
+ * @tparam MeshT mesh type
+ */
+template<typename MeshT>
+struct is_mesh_structured : std::conditional<std::is_base_of_v<MeshStructured, MeshT>, std::true_type, std::false_type>::type {};
+
+/**
+ * @brief boolean to detect a @p MeshStructured mesh
+ * 
+ * @tparam MeshT mesh type
+ */
+template<typename MeshT>
+inline constexpr bool is_mesh_structured_v = is_mesh_structured<MeshT>::value;
+
 } // namespace Feel
 
 #endif
