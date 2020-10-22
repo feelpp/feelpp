@@ -95,7 +95,10 @@ void defMesh(py::module &m)
     int Order = MeshT::nOrder;
     int RealDim = MeshT::nRealDim;
     std::string pyclass_name = std::string("Mesh_");
-    std::string suffix = std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
+    std::string suffix = "S";
+    if constexpr ( is_hypercube_v<typename MeshT::element_type> )
+        suffix = std::string("H");
+    suffix += std::to_string(Dim)+"DG"+ std::to_string(Order) + std::string("R") + std::to_string(RealDim);
     pyclass_name += suffix;
     py::class_<mesh_t,std::shared_ptr<mesh_t>>(m,pyclass_name.c_str())
         .def(py::init<worldcomm_ptr_t const&>(),py::arg("worldComm"),"Construct a new mesh")
@@ -117,7 +120,7 @@ void defMesh(py::module &m)
         .def("measure",&mesh_t::measure,py::arg("parallel") = true,"get the measure of the mesh")
         .def("measureBoundary",&mesh_t::measureBoundary,"get the measure of the boundary of the mesh");
 
-    pyclass_name = std::string("elements_reference_wrapper_")+suffix;
+    pyclass_name = std::string("simplex_elements_reference_wrapper_")+suffix;
     py::class_<elements_reference_wrapper_t<mesh_ptr_t>>(m,pyclass_name.c_str())
         .def(py::init<>());
     pyclass_name = std::string("faces_reference_wrapper_")+suffix;
@@ -144,7 +147,7 @@ void defMesh(py::module &m)
     m.def("nelements", &nElementsTuple<mesh_ptr_t>,"get the number of elements in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     m.def("nfaces", &nFacesTuple<mesh_ptr_t>,"get the number of faces in range, the local one if global is false", py::arg("range"),py::arg("global") = true );
     //m.def("markedfaces", &markedfaces<mesh_t>,"get iterator over the marked faces of the mesh");
-        
+    
 }
     
 
