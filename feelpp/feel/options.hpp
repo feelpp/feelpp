@@ -170,5 +170,11 @@ po::options_description ptree_options( std::string const& prefix="" );
 
 //! empirical quadrature options
 po::options_description eq_options( std::string const& prefix="" );
+
+//! geim options
+po::options_description geim_options( std::string const& prefix="" );
+
+//! pbdw options
+po::options_description pbdw_options( std::string const& prefix="" );
 }
 #endif // FEELPP_OPTIONS_HPP
