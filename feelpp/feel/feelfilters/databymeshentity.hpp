@@ -71,10 +71,20 @@ public :
     using index_type = typename mesh_type::index_type;
     using data_by_mesh_entity_type = DataByMeshEntity<MeshType>;
 
-    CollectionOfDataByMeshEntity( std::shared_ptr<mesh_type> const& mesh, std::string const& filename )
+    CollectionOfDataByMeshEntity( std::shared_ptr<mesh_type> const& mesh )
         :
         M_mesh( mesh )
         {}
+
+    void import( pt::ptree const& p );
+
+    std::set<std::string> dataNames() const
+    {
+        std::set<std::string> res;
+        for ( auto const& [name,data] : *this )
+            res.insert( name );
+        return res;
+    }
 
     data_by_mesh_entity_type const& get( std::string const& field ) const { return this->find( field )->second; }
 
@@ -82,8 +92,200 @@ public :
     {
         this->emplace( std::make_pair( field, data_by_mesh_entity_type( M_mesh, entityType, std::forward<typename data_by_mesh_entity_type::mapping_id2value_type>( data ) ) ) );
     }
+
+    bool hasMappingDataToMesh( std::string const& entity ) const { return M_mappingDataToMesh.find( this->elementsTypeMap( entity ) ) != M_mappingDataToMesh.end(); }
+
+  private :
+    std::vector<index_type> const& dataIdToMeshIdByMapping( std::string const& entity, index_type id ) const
+    {
+        auto itFindMapping = M_mappingDataToMesh.find( this->elementsTypeMap( entity ) );
+        CHECK( itFindMapping != M_mappingDataToMesh.end() ) << "mapping not found";
+        auto const& mappingOnEntity = itFindMapping->second;
+        auto itFindId = mappingOnEntity.find( id );
+        CHECK( itFindId != mappingOnEntity.end() ) << "id not found in mapping";
+        return itFindId->second;
+    }
+    static ElementsType elementsTypeMap( std::string const& entity )
+    {
+        if ( entity == "elements" )
+            return ElementsType::MESH_ELEMENTS;
+        else if ( entity == "faces" )
+            return ElementsType::MESH_FACES;
+        else if ( entity == "edges" )
+            return ElementsType::MESH_EDGES;
+        else if ( entity == "points" )
+            return ElementsType::MESH_POINTS;
+        else
+            CHECK( false ) << "invalid entity : " << entity ;
+    }
+
+    void updateMapping( std::string const& filename );
 private :
     std::shared_ptr<mesh_type> M_mesh;
+    std::map<ElementsType,std::map<index_type,std::vector<index_type> > > M_mappingDataToMesh;
 };
+
+template <typename MeshType>
+void
+CollectionOfDataByMeshEntity<MeshType>::import( pt::ptree const& p )
+{
+
+    std::set<std::string> fieldsRequired;
+    if ( auto pfields = p.get_child_optional("fields") )
+    {
+        if ( pfields->empty() ) // value case
+            fieldsRequired.insert( pfields->get_value<std::string>() );
+        else // array case
+        {
+            for ( auto const& item : *pfields )
+            {
+                CHECK( item.first.empty() ) << "should be an array, not a subtree";
+                std::string const& fieldName = item.second.template get_value<std::string>();
+                fieldsRequired.insert( fieldName );
+            }
+        }
+    }
+
+    for  ( std::string const& f: fieldsRequired )
+        std::cout << "FIELDS : "<< f << std::endl;
+
+   if ( auto mappingFilenameOpt = p.template get_optional<std::string>( "mapping_data_to_mesh_nodes" ) )
+   {
+       this->updateMapping( Environment::expand( *mappingFilenameOpt ) );
+   }
+
+   if ( auto filenameOpt = p.template get_optional<std::string>( "filename" ) )
+   {
+       std::string filename = Environment::expand( *filenameOpt );
+       fs::path filedir = fs::path(filename).parent_path();
+       //std::cout << "filename=" << filename << std::endl;
+       std::ifstream ifs( filename );
+       CHECK( ifs ) << "open file fails : " << filename;
+       nl::json jsonData = nl::json::parse( ifs );
+
+       std::string entityOfData;
+       if ( jsonData.contains("entity") )
+           entityOfData = jsonData.at( "entity" ).template get<std::string>();
+       else
+           CHECK( false ) << "entity not given";
+
+       std::string h5file = jsonData.at("filename").template get<std::string>();
+       //std::cout << "h5file=" << h5file << std::endl;
+
+       std::set<std::string> fieldsToLoad;
+       if ( jsonData.contains("fields") )
+           for ( auto const& el : jsonData.at("fields").items() )
+           {
+               std::string curField = el.value().template get<std::string>();
+               if ( fieldsRequired.empty() || fieldsRequired.find( curField ) != fieldsRequired.end() )
+                   fieldsToLoad.insert( curField );
+           }
+
+       for ( std::string const& field : fieldsToLoad )
+           std::cout << "field="<< field << std::endl;
+
+       HDF5 hdf5;
+       hdf5.openFile( (filedir/h5file).string(), Environment::worldCommSeq(), true );
+
+       std::string tableNameIds = entityOfData+"_ids";
+       hsize_t dimsTable[2];
+       hsize_t offsetElt[2] = { 0,0 };
+       hdf5.openTable( tableNameIds, dimsTable );
+       //std::cout << "dimsTable=" << dimsTable[0] << " and " << dimsTable[1] << std::endl;
+       std::vector<unsigned int> entityIds( dimsTable[0]*dimsTable[1] );
+       hdf5.read( tableNameIds, H5T_NATIVE_UINT, dimsTable, offsetElt, entityIds.data() );
+       hdf5.closeTable( tableNameIds );
+
+       bool hasMappingDataToMesh = this->hasMappingDataToMesh( entityOfData );
+       std::string groupName = "/data";
+       for ( std::string const& field : fieldsToLoad )
+       {
+           std::string tableNameField =  (boost::format("%1%/%2%")%groupName %field).str();
+           hdf5.openTable( tableNameField, dimsTable );
+           std::vector<double> fieldValues( dimsTable[0]*dimsTable[1] );
+           hdf5.read( tableNameField, H5T_NATIVE_DOUBLE, dimsTable, offsetElt, fieldValues.data() );
+           hdf5.closeTable( tableNameField );
+
+           std::map<index_type,double> entityIdToValue;
+           if ( hasMappingDataToMesh )
+           {
+               for (int k=0;k<entityIds.size();++k )
+               {
+                   for ( auto const& meshEntityId : dataIdToMeshIdByMapping( entityOfData,entityIds[k]) )
+                       entityIdToValue[meshEntityId] = fieldValues[k];
+               }
+           }
+           else
+           {
+               for (int k=0;k<entityIds.size();++k )
+                   entityIdToValue[entityIds[k]] = fieldValues[k];
+           }
+           this->add( field, this->elementsTypeMap( entityOfData ), std::move(entityIdToValue) );
+       }
+
+       hdf5.closeFile();
+
+   }
+}
+
+template <typename MeshType>
+void
+CollectionOfDataByMeshEntity<MeshType>::updateMapping( std::string const& mappingFilename )
+{
+    LOG(INFO) << "load mapping from : " << mappingFilename;
+    std::ifstream ifs( mappingFilename );
+    CHECK( ifs ) << "open file fails : " << mappingFilename;
+    nl::json mappingDataToMeshNodes = nl::json::parse( ifs );
+
+    std::set<std::string> entities;
+    if ( mappingDataToMeshNodes.contains("entities") )
+        for ( auto const& el : mappingDataToMeshNodes.at("entities").items() )
+            entities.insert( el.value().template get<std::string>() );
+
+    for ( std::string const& entity : entities )
+    {
+        LOG(INFO) << "get mapping on topological entity : " << entity;
+        std::set<std::string> markers;
+        if ( mappingDataToMeshNodes.contains( "markers_"+entity ) )
+            for ( auto const& el : mappingDataToMeshNodes.at( "markers_"+entity ).items() )
+                markers.insert( el.value().template get<std::string>() );
+
+        std::map<std::vector<index_type>,index_type> mapPointIdsToEdgeId;
+
+        if ( entity == "edges" )
+        {
+            auto markersEdge = std::set<std::string>( markers );
+            auto rangeEdge = markededges(M_mesh,markersEdge);
+            std::vector<index_type> pids(2);
+            for ( auto const& eWrap : rangeEdge )
+            {
+                auto const& e = unwrap_ref( eWrap );
+                pids[0] = e.point(0).id();
+                pids[1] = e.point(1).id();
+                std::sort( pids.begin(), pids.end() );
+                mapPointIdsToEdgeId[ pids ] = e.id();
+            }
+        }
+        else
+            CHECK( false ) << "TODO";
+
+        std::vector<index_type> key;
+        std::vector<index_type> pids;
+        CHECK( mappingDataToMeshNodes.contains( "mapping_"+entity ) )  << "missing mapping";
+        for (auto& [dataEntityId, pointIds] : mappingDataToMeshNodes[ "mapping_"+entity].items())
+        {
+            int nPointOnCurrentEntity = pointIds.size();
+            pids.resize( nPointOnCurrentEntity );
+            //CHECK( pointIds.size() == 2 ) << "must be a pair : " << pointIds.size();
+            for ( int p=0;p<nPointOnCurrentEntity;++p )
+                pids[p] = pointIds[p].get<index_type>();
+            std::sort( pids.begin(), pids.end() );
+            auto itFindEdgeInMesh = mapPointIdsToEdgeId.find( pids );
+            CHECK( itFindEdgeInMesh != mapPointIdsToEdgeId.end() ) <<  "entity not found : " << dataEntityId << " -> " <<  pids;
+
+            M_mappingDataToMesh[this->elementsTypeMap( entity )][ std::stoi( dataEntityId ) ].push_back(  itFindEdgeInMesh->second );
+        }
+    }
+}
 
 } // namespace Feel
