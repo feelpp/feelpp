@@ -23,8 +23,14 @@
  */
 #pragma once
 
+#include <feel/feelvf/expr.hpp>
+
 namespace Feel
 {
+
+template <typename MeshType> class DataByMeshEntity;
+template <typename MeshType> class CollectionOfDataByMeshEntity;
+
 namespace vf
 {
 
@@ -49,12 +55,25 @@ public :
     using data_by_mesh_entity_type = DataByMeshEntityType;
     using value_type = typename data_by_mesh_entity_type::value_type;
 
-    EvaluateDataByMeshEntity( DataByMeshEntityType const& dataOnMeshEntities )
+    EvaluateDataByMeshEntity( DataByMeshEntityType const& dataByMeshEntity )
         :
-        M_dataOnMeshEntities( dataOnMeshEntities )
+        M_dataByMeshEntity( dataByMeshEntity )
         {}
 
-    DataByMeshEntityType const& dataOnMeshEntities() const { return M_dataOnMeshEntities; }
+    DataByMeshEntityType const& dataByMeshEntity() const { return M_dataByMeshEntity; }
+
+    //! polynomial order
+    constexpr uint16_type polynomialOrder() const { return 0; }
+
+    //! expression is polynomial?
+    constexpr bool isPolynomial() const { return true; }
+
+    template <typename SymbolsExprType>
+    this_type applySymbolsExpr( SymbolsExprType const& se ) const
+        {
+            return *this;
+        }
+
 
     template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -101,16 +120,16 @@ public :
             if ( !gmc->isOnSubEntity() )
             {
                 auto const& elt = gmc->element();
-                bool isSameMesh = M_expr.dataOnMeshEntities().mesh()->isSameMesh( elt.mesh() );
-                bool gmcEltIsSubMesh = elt.mesh()->isSubMeshFrom( M_expr.dataOnMeshEntities().mesh() );
-                if ( M_expr.dataOnMeshEntities().entityType() == ElementsType::MESH_EDGES )
+                bool isSameMesh = M_expr.dataByMeshEntity().mesh()->isSameMesh( elt.mesh() );
+                bool gmcEltIsSubMesh = elt.mesh()->isSubMeshFrom( M_expr.dataByMeshEntity().mesh() );
+                if ( M_expr.dataByMeshEntity().entityType() == ElementsType::MESH_EDGES )
                 {
                     if ( isSameMesh )
                     {
                         for ( uint16_type p=0;p<elt.nEdges();++p )
                         {
                             index_type edgeId = elt.edge(p).id();
-                            if ( auto valOpt = M_expr.dataOnMeshEntities().valueAtEntityIdIfExists( edgeId ) )
+                            if ( auto valOpt = M_expr.dataByMeshEntity().valueAtEntityIdIfExists( edgeId ) )
                             {
                                 M_value = *valOpt;
                                 hasValue = true;
@@ -122,8 +141,8 @@ public :
                     {
                         if constexpr ( gmc_type::element_type::nDim == 1 )
                         {
-                            index_type edgeId = elt.mesh()->subMeshToMesh( M_expr.dataOnMeshEntities().mesh(),elt.id() );
-                            if ( auto valOpt = M_expr.dataOnMeshEntities().valueAtEntityIdIfExists( edgeId ) )
+                            index_type edgeId = elt.mesh()->subMeshToMesh( M_expr.dataByMeshEntity().mesh(),elt.id() );
+                            if ( auto valOpt = M_expr.dataByMeshEntity().valueAtEntityIdIfExists( edgeId ) )
                             {
                                 M_value = *valOpt;
                                 hasValue = true;
@@ -189,16 +208,23 @@ public :
     };
 
 private :
-    DataByMeshEntityType const& M_dataOnMeshEntities;
+    DataByMeshEntityType const& M_dataByMeshEntity;
 };
 
 
 
 template <typename MeshType>
-auto dataByMeshEntityExpr( std::shared_ptr<CollectionOfDataByMeshEntity<MeshType>> const& dcome, std::string const& field )
+auto dataByMeshEntityExpr( std::shared_ptr<CollectionOfDataByMeshEntity<MeshType>> const& codbme, std::string const& dataName )
 {
     using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<MeshType> >;
-    return  Expr<_expr_type>( _expr_type( dcome->get( field ) ) );
+    return Expr<_expr_type>( _expr_type( codbme->get( dataName ) ) );
+}
+
+template <typename MeshType>
+auto dataByMeshEntityExpr( DataByMeshEntity<MeshType> const& dbme )
+{
+    using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<MeshType> >;
+    return Expr<_expr_type>( _expr_type( dbme ) );
 }
 
 } // vf

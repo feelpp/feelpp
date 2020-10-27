@@ -23,6 +23,8 @@
  */
 #pragma once
 
+#include <feel/feelvf/databymeshentity.hpp>
+
 namespace Feel
 {
 
@@ -64,7 +66,7 @@ private :
 };
 
 template <typename MeshType>
-class CollectionOfDataByMeshEntity : public std::map<std::string,DataByMeshEntity<MeshType>>
+class CollectionOfDataByMeshEntity : protected std::map<std::string,DataByMeshEntity<MeshType>>
 {
 public :
     using mesh_type = MeshType;
@@ -76,8 +78,10 @@ public :
         M_mesh( mesh )
         {}
 
+    //! import data
     void import( pt::ptree const& p );
 
+    //! get all data names
     std::set<std::string> dataNames() const
     {
         std::set<std::string> res;
@@ -86,14 +90,33 @@ public :
         return res;
     }
 
-    data_by_mesh_entity_type const& get( std::string const& field ) const { return this->find( field )->second; }
-
-    void add( std::string const& field, ElementsType entityType, typename data_by_mesh_entity_type::mapping_id2value_type && data )
+    //! return data by mesh entity from a name
+    data_by_mesh_entity_type const& get( std::string const& dataName ) const
     {
-        this->emplace( std::make_pair( field, data_by_mesh_entity_type( M_mesh, entityType, std::forward<typename data_by_mesh_entity_type::mapping_id2value_type>( data ) ) ) );
+        auto itFindData = this->find( dataName );
+        CHECK( itFindData != this->end() ) << "data not found : " << dataName;
+        return itFindData->second;
     }
 
+    //! register data by mesh entity with a nam, entity type and values at entity
+    void add( std::string const& dataName, ElementsType entityType, typename data_by_mesh_entity_type::mapping_id2value_type && data )
+    {
+        this->emplace( std::make_pair( dataName, data_by_mesh_entity_type( M_mesh, entityType, std::forward<typename data_by_mesh_entity_type::mapping_id2value_type>( data ) ) ) );
+    }
+
+    //! return true if data and mesh entity are related by a mapping
     bool hasMappingDataToMesh( std::string const& entity ) const { return M_mappingDataToMesh.find( this->elementsTypeMap( entity ) ) != M_mappingDataToMesh.end(); }
+
+    //! return symbols expression
+    auto symbolsExpr( std::string const& prefix_symbol = "data_by_mesh_entity" ) const
+    {
+        using _expr_type = std::decay_t< decltype( Feel::vf::dataByMeshEntityExpr( this->begin()->second ) ) >;
+        symbol_expression_t<_expr_type> seData;
+        for ( auto const& [name,data] : *this )
+            seData.add( prefixvm( prefix_symbol, name , "_" ), Feel::vf::dataByMeshEntityExpr( data ) );
+        return Feel::vf::symbolsExpr( seData );
+    }
+
 
   private :
     std::vector<index_type> const& dataIdToMeshIdByMapping( std::string const& entity, index_type id ) const
