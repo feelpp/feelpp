@@ -1,6 +1,6 @@
-from pyfeelpp import core
-from pyfeelpptoolboxes.modelcore import *
-from _heat import *
+import feelpp
+from feelpp.toolboxes import *
+from ._heat import *
 
 _heats={
     'heat(2,1)':Heat_2DP1,
@@ -14,10 +14,10 @@ def heat( dim=2, order=1, worldComm=None ):
     Keyword arguments:
     dim -- the dimension (default: 2)
     order -- the polynomial order for the temperature (default: 1)
-    worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm = core.Environment.worldCommPtr()
+        worldComm = feelpp.Environment.worldCommPtr()
     key='heat('+str(dim)+','+str(order)+')'
     if worldComm.isMasterRank():
         print(key)

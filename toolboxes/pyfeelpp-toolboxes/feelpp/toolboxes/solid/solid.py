@@ -1,6 +1,6 @@
 import sys
-from pyfeelpptoolboxes.solid import *
-e=core.Environment(sys.argv,opts=toolboxes_options("solid"))
+from feelpp.toolboxes.solid import *
+e=feelpp.Environment(sys.argv,opts=toolboxes_options("solid"))
 
 
 f=solid(dim=2,orderDisp=1)

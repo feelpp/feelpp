@@ -1,6 +1,4 @@
-from pyfeelpp import core
-from pyfeelpptoolboxes.modelcore import *
-from _solid import *
+from ._solid import *
 
 _csms={
     'solid(2,1)':Solid_2DP1,

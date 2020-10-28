@@ -1,6 +1,4 @@
-from pyfeelpp import core
-from pyfeelpptoolboxes.modelcore import *
-from _fluid import *
+from ._fluid import *
 
 _cfds={
     'fluid(2,2,1,1)':Fluid_2DP2P1G1,
@@ -16,10 +14,10 @@ def fluid( dim=2, orderVelocity=2, orderPressure=1, orderGeometry=1, worldComm=N
     orderVelocity -- the polynomial order for the velocity (default: 2)
     orderPressure -- the polynomial order for the pressure (default: 1)
     orderGeometry -- the polynomial order for the geometry (default: 1)
-    worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
     """
     if worldComm is None:
-        worldComm=core.Environment.worldCommPtr()
+        worldComm=feelpp.Environment.worldCommPtr()
     key='fluid('+str(dim)+','+str(orderVelocity)+','+str(orderPressure)+','+str(orderGeometry)+')'
     if worldComm.isMasterRank():
         print(key)

@@ -22,15 +22,10 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(toolboxes-modelmesh)
+project(toolboxes-fluid)
 
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
 
-pybind11_add_module(_modelmesh  modelmesh.cpp)
-target_link_libraries( _modelmesh PRIVATE Feelpp::feelpp_modelmesh )
-
+pybind11_add_module(_fluid  fluid.cpp)
+target_link_libraries( _fluid PRIVATE Feelpp::feelpp_toolbox_fluid_lib)
+install(TARGETS _fluid DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)
+install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)

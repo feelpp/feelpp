@@ -1,6 +1,4 @@
-from pyfeelpp import core
-from pyfeelpptoolboxes.modelcore import *
-from _electric import *
+from ._electric import *
 
 _electrics={
     'electric(2,1)':Electric_2DP1,

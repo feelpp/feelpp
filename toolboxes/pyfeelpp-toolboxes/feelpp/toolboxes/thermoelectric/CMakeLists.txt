@@ -22,15 +22,12 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(toolboxes-heat)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
+project(toolboxes-thermoelectric)
 
 
-pybind11_add_module(_heat  heat.cpp)
-target_link_libraries( _heat PRIVATE Feelpp::feelpp_toolbox_heat_lib )
+
+pybind11_add_module(_thermoelectric  thermoelectric.cpp)
+target_link_libraries( _thermoelectric PRIVATE Feelpp::feelpp_toolbox_thermoelectric_lib )
+install(TARGETS _thermoelectric DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric)
+install(FILES  __init__.py thermoelectric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric)
+
