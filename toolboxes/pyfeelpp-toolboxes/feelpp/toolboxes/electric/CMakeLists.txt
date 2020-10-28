@@ -22,15 +22,13 @@
 #
 #
 cmake_minimum_required(VERSION 3.3)
-project(toolboxes-fluid)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ COMPONENTS Toolboxes PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
+project(toolboxes-electric)
 
 
-pybind11_add_module(_fluid  fluid.cpp)
-target_link_libraries( _fluid PRIVATE Feelpp::feelpp_toolbox_fluid_lib)
+pybind11_add_module(_electric  electric.cpp)
+target_link_libraries( _electric PRIVATE Feelpp::feelpp_toolbox_electric_lib )
+
+
+install(TARGETS _electric DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric)
+install(FILES  __init__.py electric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric)
+

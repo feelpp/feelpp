@@ -1,7 +1,7 @@
 import sys
-from pyfeelpptoolboxes.thermoelectric import *
+from feelpp.toolboxes.thermoelectric import *
 
-e=core.Environment(sys.argv,opts=toolboxes_options("thermo-electric"))
+e=feelpp.Environment(sys.argv,opts=toolboxes_options("thermo-electric"))
 
 
 f=thermoelectric(dim=2,orderPotential=1,worldComm=e.worldCommPtr())

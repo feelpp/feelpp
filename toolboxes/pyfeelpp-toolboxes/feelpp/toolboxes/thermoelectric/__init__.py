@@ -1,5 +1,3 @@
-from pyfeelpp import core
-from pyfeelpptoolboxes.modelcore import *
 from _thermoelectric import *
 
 _thermoelectrics={

@@ -1,6 +1,6 @@
 import sys
-from pyfeelpptoolboxes.fluid import *
-e=core.Environment(sys.argv,opts=toolboxes_options("fluid"))
+from feelpp.toolboxes.fluid import *
+e=feelpp.Environment(sys.argv,opts=toolboxes_options("fluid"))
 
 
 # 2D fluid solver using P2P1G1 approximation

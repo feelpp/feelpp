@@ -21,5 +21,12 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
+cmake_minimum_required(VERSION 3.3)
+project(toolboxes-solid)
 
+pybind11_add_module(_solid  solid.cpp)
+target_link_libraries( _solid PRIVATE Feelpp::feelpp_toolbox_solid_lib )
+
+install(TARGETS _solid DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/solid)
+install(FILES  __init__.py solid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/solid)
 
