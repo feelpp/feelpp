@@ -611,7 +611,7 @@ public:
                     bpbc.updateTimeStep();
             }
         void updateForUse( self_type const& fluidToolbox );
-        void updateAlgebraicFactoryForUse( self_type const& fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
+        void updateAlgebraicFactoryForUse( self_type & fluidToolbox, model_algebraic_factory_ptrtype algebraicFactory );
 
         void init( self_type const& fluidToolbox )
             {
@@ -1849,18 +1849,38 @@ private :
     // NEW : Luca
     double W_cl(double  time, double dt) const
     {
-        if (time>=4+dt)
+        double epsilon = 1e-10;
+        while (time>=4-epsilon)
+        {
             time = time - (4);
-        if ((time>=0) && (time<1))
+        }
+        //if (time>=(4-epsilon)*math::floor(time/4)&&time>=(4-epsilon))
+        //    time = time - (4)*math::floor(time/4);//-dt*(math::floor(time/4)-1);
+        Feel::cout << std::setprecision(9) << "time " << time << std::endl;   
+        if ((time>=-epsilon) && (time<1-epsilon))
         {return -4;}
-        else if ((time>=1) && (time<2+dt))
+        if ((time>=1-epsilon) && (time<2-epsilon))
         {return 0;}
-        else if ((time>=2) && (time<3+dt))
+        if ((time>=2-epsilon) && (time<3-epsilon))
         {return 4;}
-        else if ((time>=3) && (time<4+dt))
+        if ((time>=3-epsilon) && (time<4-epsilon))
         {return 0;}
-        else
-        {return 0;}
+        return -4;
+       /* else if (time>=(4+dt)*math::floor(time/4)&&time>=(4+dt))
+        {
+             time = time - (4)*math::floor(time/4)-dt*(math::floor(time/4)-1);
+             if ((time>=0) && (time<1))
+            {return -4;}
+            else if ((time>=1) && (time<2))
+            {return 0;}
+            else if ((time>=2) && (time<3))
+            {return 4;}
+            else if ((time>=3) && (time<4))
+            {return 0;}
+            else
+            {return 0;}
+        }*/
+
     }
     /*
     double W_cl(double  time, double dt) const
@@ -1908,19 +1928,43 @@ private :
     */
      double W_cr(double  time, double dt) const
     {
-        if (time>=4+dt)
+        double epsilon = 1e-10;
+        while (time>=4-epsilon)
+        {
             time = time - (4);
-        if ((time>=0) && (time<1))
+        }
+        //if (time>=(4-epsilon)*math::floor(time/4)&&time>=(4-epsilon))
+        //    time = time - (4)*math::floor(time/4);//-dt*(math::floor(time/4)-1);
+        Feel::cout << std::setprecision(9) << "time " << time << std::endl;
+
+        if ((time>=-epsilon) && (time<1-epsilon))
         {return 0;}
-        else if ((time>=1) && (time<2+dt))
+        if ((time>=1-epsilon) && (time<2-epsilon))
         {return 4;}
-        else if ((time>=2) && (time<3+dt))
+        if ((time>=2-epsilon) && (time<3-epsilon))
         {return 0;}
-        else if ((time>=3) && (time<4+dt))
+        if ((time>=3-epsilon) && (time<4-epsilon))
         {return -4;}
-        else
-        {return 0;}
+        return 0;
+        /*else if (time>=(4+dt)*math::floor(time/4)&&time>=(4+dt))
+        {
+             time = time - (4)*math::floor(time/4)-dt*(math::floor(time/4)-1);
+            if ((time>=0) && (time<1))
+            {return 0;}
+            else if ((time>=1) && (time<2))
+            {return 4;}
+            else if ((time>=2) && (time<3))
+            {return 0;}
+            else if ((time>=3) && (time<4))
+            {return -4;} 
+        }*/
     }
+    // PMATRIX
+    void fillPmatrix(BlocksBaseSparseMatrix<double>&  myblockMat,size_type startBlockIndexVelocity,std::set<size_type>& dofsAllBodies);
+public:
+    sparse_matrix_ptrtype M_matP;
+    sparse_matrix_ptrtype matP(){return M_matP;};
+
 }; // FluidMechanics
 
 template< typename ConvexType, typename BasisVelocityType, typename BasisPressureType>
