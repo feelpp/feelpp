@@ -213,17 +213,23 @@ private :
 
 
 
-template <typename MeshType>
-auto dataByMeshEntityExpr( std::shared_ptr<CollectionOfDataByMeshEntity<MeshType>> const& codbme, std::string const& dataName )
+template <typename IndexType>
+auto dataByMeshEntityExpr( CollectionOfDataByMeshEntity<IndexType> const& codbme, std::string const& dataName )
 {
-    using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<MeshType> >;
-    return Expr<_expr_type>( _expr_type( codbme->get( dataName ) ) );
+    using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<IndexType> >;
+    return Expr<_expr_type>( _expr_type( codbme.get( dataName ) ) );
 }
 
-template <typename MeshType>
-auto dataByMeshEntityExpr( DataByMeshEntity<MeshType> const& dbme )
+template <typename IndexType>
+auto dataByMeshEntityExpr( std::shared_ptr<CollectionOfDataByMeshEntity<IndexType>> const& codbme, std::string const& dataName )
 {
-    using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<MeshType> >;
+    return dataByMeshEntityExpr( *codbme, dataName );
+}
+
+template <typename IndexType>
+auto dataByMeshEntityExpr( DataByMeshEntity<IndexType> const& dbme )
+{
+    using _expr_type = EvaluateDataByMeshEntity< DataByMeshEntity<IndexType> >;
     return Expr<_expr_type>( _expr_type( dbme ) );
 }
 
