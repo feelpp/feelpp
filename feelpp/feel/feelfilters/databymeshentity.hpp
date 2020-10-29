@@ -28,16 +28,16 @@
 namespace Feel
 {
 
-template <typename MeshType>
+template <typename IndexType>
 class DataByMeshEntity
 {
 public :
-    using mesh_type = MeshType;
-    using index_type = typename mesh_type::index_type;
+    using index_type = IndexType;
+    using mesh_base_type = MeshBase<index_type>;
     using value_type = double;
     using mapping_id2value_type = std::map<index_type,value_type>;
 
-    DataByMeshEntity( std::shared_ptr<mesh_type> const& mesh, ElementsType entityType, mapping_id2value_type const& entityIdToValue )
+    DataByMeshEntity( std::shared_ptr<mesh_base_type> const& mesh, ElementsType entityType, mapping_id2value_type const& entityIdToValue )
         :
         M_mesh( mesh ),
         M_entityType( entityType ),
@@ -47,7 +47,7 @@ public :
     DataByMeshEntity( DataByMeshEntity const& ) = default;
     DataByMeshEntity( DataByMeshEntity && ) = default;
 
-    std::shared_ptr<mesh_type> const& mesh() const { return M_mesh; }
+    std::shared_ptr<mesh_base_type> mesh() const { return M_mesh; }
     ElementsType entityType() const { return M_entityType; }
     mapping_id2value_type const& entityIdToValue() const { return M_entityIdToValue; }
 
@@ -60,26 +60,43 @@ public :
                 return std::optional<value_type>{};
         }
 private :
-    std::shared_ptr<mesh_type> M_mesh;
+    std::shared_ptr<mesh_base_type> M_mesh;
     ElementsType M_entityType;
     mapping_id2value_type M_entityIdToValue;
 };
 
-template <typename MeshType>
-class CollectionOfDataByMeshEntity : protected std::map<std::string,DataByMeshEntity<MeshType>>
+template <typename IndexType>
+class CollectionOfDataByMeshEntity : protected std::map<std::string,DataByMeshEntity<IndexType>>
 {
 public :
-    using mesh_type = MeshType;
-    using index_type = typename mesh_type::index_type;
-    using data_by_mesh_entity_type = DataByMeshEntity<MeshType>;
+    using index_type = IndexType;
+    using data_by_mesh_entity_type = DataByMeshEntity<index_type>;
+    using mesh_base_type = typename data_by_mesh_entity_type::mesh_base_type;
 
-    CollectionOfDataByMeshEntity( std::shared_ptr<mesh_type> const& mesh )
+    CollectionOfDataByMeshEntity() = default;
+
+    template <typename MeshType>
+    CollectionOfDataByMeshEntity( std::shared_ptr<MeshType> const& mesh )
         :
         M_mesh( mesh )
         {}
 
+    CollectionOfDataByMeshEntity( CollectionOfDataByMeshEntity const& ) = default;
+    CollectionOfDataByMeshEntity( CollectionOfDataByMeshEntity && ) = default;
+
+    //! setup some infos from json
+    void setup( pt::ptree const& p );
+
+    template <typename MeshType>
+    void setMesh( std::shared_ptr<MeshType> const& mesh ) { M_mesh = mesh; }
+
+    //! update data if mesh has been setup
+    template <typename MeshType>
+    void updateForUse();
+
     //! import data
-    void import( pt::ptree const& p );
+    template <typename MeshType>
+        void import( pt::ptree const& p );
 
     //! get all data names
     std::set<std::string> dataNames() const
@@ -119,6 +136,7 @@ public :
 
 
   private :
+
     std::vector<index_type> const& dataIdToMeshIdByMapping( std::string const& entity, index_type id ) const
     {
         auto itFindMapping = M_mappingDataToMesh.find( this->elementsTypeMap( entity ) );
@@ -128,6 +146,7 @@ public :
         CHECK( itFindId != mappingOnEntity.end() ) << "id not found in mapping";
         return itFindId->second;
     }
+
     static ElementsType elementsTypeMap( std::string const& entity )
     {
         if ( entity == "elements" )
@@ -142,48 +161,73 @@ public :
             CHECK( false ) << "invalid entity : " << entity ;
     }
 
+    template <typename MeshType>
     void updateMapping( std::string const& filename );
 private :
-    std::shared_ptr<mesh_type> M_mesh;
+    std::string M_dataFilename, M_mappingFilename;
+    std::set<std::string> M_fieldsRequired;
+    std::shared_ptr<mesh_base_type> M_mesh;
     std::map<ElementsType,std::map<index_type,std::vector<index_type> > > M_mappingDataToMesh;
 };
 
-template <typename MeshType>
-void
-CollectionOfDataByMeshEntity<MeshType>::import( pt::ptree const& p )
-{
 
-    std::set<std::string> fieldsRequired;
+template <typename IndexType>
+void
+CollectionOfDataByMeshEntity<IndexType>::setup( pt::ptree const& p )
+{
     if ( auto pfields = p.get_child_optional("fields") )
     {
         if ( pfields->empty() ) // value case
-            fieldsRequired.insert( pfields->get_value<std::string>() );
+            M_fieldsRequired.insert( pfields->get_value<std::string>() );
         else // array case
         {
             for ( auto const& item : *pfields )
             {
                 CHECK( item.first.empty() ) << "should be an array, not a subtree";
                 std::string const& fieldName = item.second.template get_value<std::string>();
-                fieldsRequired.insert( fieldName );
+                M_fieldsRequired.insert( fieldName );
             }
         }
     }
 
-    for  ( std::string const& f: fieldsRequired )
-        std::cout << "FIELDS : "<< f << std::endl;
+    if ( auto mappingFilenameOpt = p.template get_optional<std::string>( "mapping_data_to_mesh_nodes" ) )
+        M_mappingFilename = Environment::expand( *mappingFilenameOpt );
 
-   if ( auto mappingFilenameOpt = p.template get_optional<std::string>( "mapping_data_to_mesh_nodes" ) )
-   {
-       this->updateMapping( Environment::expand( *mappingFilenameOpt ) );
-   }
+    if ( auto filenameOpt = p.template get_optional<std::string>( "filename" ) )
+       M_dataFilename = Environment::expand( *filenameOpt );
 
-   if ( auto filenameOpt = p.template get_optional<std::string>( "filename" ) )
+}
+
+template <typename IndexType>
+template <typename MeshType>
+void
+CollectionOfDataByMeshEntity<IndexType>::import( pt::ptree const& p )
+{
+    this->setup( p );
+    this->updateForUse<MeshType>();
+}
+
+template <typename IndexType>
+template <typename MeshType>
+void
+CollectionOfDataByMeshEntity<IndexType>::updateForUse()
+{
+    if ( !M_mesh || !std::dynamic_pointer_cast<MeshType>( M_mesh ) )
+        return;
+
+    if ( !M_mappingFilename.empty() )
+    {
+        this->updateMapping<MeshType>( M_mappingFilename );
+    }
+
+    CHECK( !M_dataFilename.empty() ) << "filename not given";
+    //if ( auto filenameOpt = p.template get_optional<std::string>( "filename" ) )
    {
-       std::string filename = Environment::expand( *filenameOpt );
-       fs::path filedir = fs::path(filename).parent_path();
-       //std::cout << "filename=" << filename << std::endl;
-       std::ifstream ifs( filename );
-       CHECK( ifs ) << "open file fails : " << filename;
+       //M_dataFilename = Environment::expand( *filenameOpt );
+       fs::path filedir = fs::path(M_dataFilename).parent_path();
+       //std::cout << "filename=" << M_dataFilename << std::endl;
+       std::ifstream ifs( M_dataFilename );
+       CHECK( ifs ) << "open file fails : " << M_dataFilename;
        nl::json jsonData = nl::json::parse( ifs );
 
        std::string entityOfData;
@@ -200,7 +244,7 @@ CollectionOfDataByMeshEntity<MeshType>::import( pt::ptree const& p )
            for ( auto const& el : jsonData.at("fields").items() )
            {
                std::string curField = el.value().template get<std::string>();
-               if ( fieldsRequired.empty() || fieldsRequired.find( curField ) != fieldsRequired.end() )
+               if ( M_fieldsRequired.empty() || M_fieldsRequired.find( curField ) != M_fieldsRequired.end() )
                    fieldsToLoad.insert( curField );
            }
 
@@ -251,9 +295,10 @@ CollectionOfDataByMeshEntity<MeshType>::import( pt::ptree const& p )
    }
 }
 
+template <typename IndexType>
 template <typename MeshType>
 void
-CollectionOfDataByMeshEntity<MeshType>::updateMapping( std::string const& mappingFilename )
+CollectionOfDataByMeshEntity<IndexType>::updateMapping( std::string const& mappingFilename )
 {
     LOG(INFO) << "load mapping from : " << mappingFilename;
     std::ifstream ifs( mappingFilename );
@@ -277,8 +322,10 @@ CollectionOfDataByMeshEntity<MeshType>::updateMapping( std::string const& mappin
 
         if ( entity == "edges" )
         {
-            auto markersEdge = std::set<std::string>( markers );
-            auto rangeEdge = markededges(M_mesh,markersEdge);
+            auto mesh = std::dynamic_pointer_cast<MeshType>( M_mesh );
+            CHECK( mesh ) << "invalid mesh_type";
+            //auto markersEdge = std::set<std::string>( markers );
+            auto rangeEdge = markers.empty()? edges(mesh) : markededges(mesh,markers);
             std::vector<index_type> pids(2);
             for ( auto const& eWrap : rangeEdge )
             {
