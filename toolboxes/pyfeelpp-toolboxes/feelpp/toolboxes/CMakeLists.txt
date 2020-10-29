@@ -43,7 +43,7 @@ endif ()
 set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
 message(Status "[feelpp-toolboxes] python module path: ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes")
 
-add_dependencies(pyfeelpptoolboxes pyfeelpp)
+#add_dependencies(pyfeelpptoolboxes pyfeelpp)
 
 pybind11_add_module(_modelcore  modelcore.cpp)
 target_link_libraries( _modelcore PRIVATE Feelpp::feelpp_modelcore )
