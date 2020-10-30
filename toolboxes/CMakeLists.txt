@@ -73,9 +73,9 @@ option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" ${FEELPP_T
 set(FEELPP_TOOLBOXES_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(FEELPP_TOOLBOXES_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-include_directories(${CMAKE_SOURCE_DIR}/feelpp)
-include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
-include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
+#include_directories(${CMAKE_SOURCE_DIR}/feelpp)
+#include_directories(${FEELPP_TOOLBOXES_SOURCE_DIR})
+#include_directories(${FEELPP_TOOLBOXES_BINARY_DIR})
 
 INCLUDE(CTest)
 ENABLE_TESTING()
