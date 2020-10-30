@@ -52,7 +52,7 @@ class MeshStructured : public Mesh<Hypercube<2>>
     using face_type = super::face_type;
     using node_type = super::node_type;
 
-    MeshStructured(): super() { this->setStructureProperty( "00010" ); }
+    MeshStructured( worldcomm_ptr_t const& wc  = Environment::worldCommPtr() ): super( wc ) { this->setStructureProperty( "00010" ); }
     MeshStructured( MeshStructured const& ) = delete;
     MeshStructured( MeshStructured&& ) = delete;
     MeshStructured& operator=( MeshStructured const& ) = delete;
@@ -108,6 +108,22 @@ class MeshStructured : public Mesh<Hypercube<2>>
     }
 #endif    
 };
+
+/**
+ * @brief trait type to detect a @p MeshStructured mesh
+ * 
+ * @tparam MeshT mesh type
+ */
+template<typename MeshT>
+struct is_mesh_structured : std::conditional<std::is_base_of_v<MeshStructured, MeshT>, std::true_type, std::false_type>::type {};
+
+/**
+ * @brief boolean to detect a @p MeshStructured mesh
+ * 
+ * @tparam MeshT mesh type
+ */
+template<typename MeshT>
+inline constexpr bool is_mesh_structured_v = is_mesh_structured<MeshT>::value;
 
 } // namespace Feel
 
