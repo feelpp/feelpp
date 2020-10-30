@@ -74,6 +74,15 @@ public :
             return *this;
         }
 
+    template <int diffOrder, typename TheSymbolExprType>
+    auto diff( std::string const& diffVariable, WorldComm const& world, std::string const& dirLibExpr,
+               TheSymbolExprType const& se ) const
+        {
+            CHECK( false ) << "TODO";
+            return *this;
+        }
+
+
 
     template <typename Geo_t, typename Basis_i_t, typename Basis_j_t>
     struct tensor
@@ -167,7 +176,21 @@ public :
             else if constexpr ( gmc_type::nDim == 3 && gmc_type::subEntityCoDim == 2 )
             {
                 auto const& elt = gmc->element();
-                CHECK( false ) << "TODO data on edges";
+                bool isSameMesh = M_expr.dataByMeshEntity().mesh()->isSameMesh( elt.mesh() );
+                if ( M_expr.dataByMeshEntity().entityType() == ElementsType::MESH_EDGES )
+                {
+                    if ( isSameMesh )
+                    {
+                        index_type edgeId = elt.edge( gmc->faceId() ).id();
+                        if ( auto valOpt = M_expr.dataByMeshEntity().valueAtEntityIdIfExists( edgeId ) )
+                        {
+                            M_value = *valOpt;
+                        }
+                        else CHECK( false ) << "data not found";
+                    }
+                    else CHECK( false ) << "TODO";
+                }
+                else CHECK( false ) << "TODO";
             }
             else
             {
