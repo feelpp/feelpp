@@ -96,7 +96,11 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         //-----------------------------------------------------------------------//
         std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
         if ( !modelPropFilename.empty() )
+        {
             M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldCommPtr(), this->prefix() );
+            if ( auto ptMeshes = M_modelProps->pTree().get_child_optional("Meshes"))
+                super_model_meshes_type::setup( *ptMeshes );
+        }
     }
 
    void
