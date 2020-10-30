@@ -23,7 +23,10 @@
  */
 #pragma once
 
+#include <feel/feelcore/json.hpp>
+#include <feel/feelcore/hdf5.hpp>
 #include <feel/feelvf/databymeshentity.hpp>
+
 
 namespace Feel
 {
@@ -248,8 +251,8 @@ CollectionOfDataByMeshEntity<IndexType>::updateForUse()
                    fieldsToLoad.insert( curField );
            }
 
-       for ( std::string const& field : fieldsToLoad )
-           std::cout << "field="<< field << std::endl;
+       // for ( std::string const& field : fieldsToLoad )
+       //     std::cout << "field="<< field << std::endl;
 
        HDF5 hdf5;
        hdf5.openFile( (filedir/h5file).string(), Environment::worldCommSeq(), true );
@@ -320,24 +323,29 @@ CollectionOfDataByMeshEntity<IndexType>::updateMapping( std::string const& mappi
 
         std::map<std::vector<index_type>,index_type> mapPointIdsToEdgeId;
 
+        auto mesh = std::dynamic_pointer_cast<MeshType>( M_mesh );
+        CHECK( mesh ) << "invalid mesh_type";
+
         if ( entity == "edges" )
         {
-            auto mesh = std::dynamic_pointer_cast<MeshType>( M_mesh );
-            CHECK( mesh ) << "invalid mesh_type";
-            //auto markersEdge = std::set<std::string>( markers );
-            auto rangeEdge = markers.empty()? edges(mesh) : markededges(mesh,markers);
-            std::vector<index_type> pids(2);
-            for ( auto const& eWrap : rangeEdge )
+            if constexpr ( MeshType::nDim == 3 )
             {
-                auto const& e = unwrap_ref( eWrap );
-                pids[0] = e.point(0).id();
-                pids[1] = e.point(1).id();
-                std::sort( pids.begin(), pids.end() );
-                mapPointIdsToEdgeId[ pids ] = e.id();
+                auto rangeEdge = markers.empty()? edges(mesh) : markededges(mesh,markers);
+                std::vector<index_type> pids(2);
+                for ( auto const& eWrap : rangeEdge )
+                {
+                    auto const& e = unwrap_ref( eWrap );
+                    pids[0] = e.point(0).id();
+                    pids[1] = e.point(1).id();
+                    std::sort( pids.begin(), pids.end() );
+                    mapPointIdsToEdgeId[ pids ] = e.id();
+                }
             }
+            else
+                CHECK( false ) << "edges entity only in 3d";
         }
         else
-            CHECK( false ) << "TODO";
+            CHECK( false ) << "TODO :" << entity;
 
         std::vector<index_type> key;
         std::vector<index_type> pids;
