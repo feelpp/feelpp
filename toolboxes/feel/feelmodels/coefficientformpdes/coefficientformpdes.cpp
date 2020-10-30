@@ -153,6 +153,10 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
     CHECK( M_mesh ) << "mesh generation fail";
 
+    super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("CoefficientFormPDEs","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
@@ -167,8 +171,6 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        // auto paramValues = this->modelProperties().parameters().toParameterValues();
-        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
