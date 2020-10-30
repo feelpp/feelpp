@@ -541,7 +541,13 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
-    py::initialize_interpreter();
+    if ( !Py_IsInitialized() )
+    {
+        py::initialize_interpreter();
+        S_init_python = true;
+    }
+    else
+        S_init_python = false;
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -790,7 +796,8 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
-    py::finalize_interpreter();
+    if ( S_init_python )
+        py::finalize_interpreter();
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
