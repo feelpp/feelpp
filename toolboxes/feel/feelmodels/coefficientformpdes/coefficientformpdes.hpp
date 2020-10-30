@@ -343,12 +343,11 @@ public :
     template <typename ModelFieldsType>
     auto symbolsExpr( ModelFieldsType const& mfields ) const
         {
-            //auto seHeat = this->heatModel()->symbolsExprToolbox( mfields );
-            //auto seElectric = this->electricModel()->symbolsExprToolbox( mfields );
             auto seParam = this->symbolsExprParameter();
+            auto seMeshes = this->symbolsExprMeshes();
             auto seMat = this->materialsProperties()->symbolsExpr();
             auto seFields = mfields.symbolsExpr();
-            return Feel::vf::symbolsExpr( /*seHeat,seElectric,*/seParam,seMat,seFields );
+            return Feel::vf::symbolsExpr( seParam,seMeshes,seMat,seFields );
         }
     auto symbolsExpr( std::string const& prefix = "" ) const { return this->symbolsExpr( this->modelFields( prefix ) ); }
 
