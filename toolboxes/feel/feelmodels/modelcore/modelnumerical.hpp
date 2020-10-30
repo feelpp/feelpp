@@ -34,12 +34,13 @@
 #define FEELPP_MODELNUMERICAL_HPP 1
 
 #include <feel/feelmodels/modelcore/modelalgebraic.hpp>
+#include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
 #include <feel/feelpoly/geomap.hpp>
 
-#include <boost/fusion/tuple.hpp>
-#include <boost/fusion/sequence.hpp>
-#include <boost/fusion/algorithm.hpp>
+// #include <boost/fusion/tuple.hpp>
+// #include <boost/fusion/sequence.hpp>
+// #include <boost/fusion/algorithm.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -62,8 +63,10 @@ namespace FeelModels
 /**
  * Handles some numerical model aspects: timestepping, mesh and properties
  */
-class ModelNumerical : public ModelAlgebraic
+class ModelNumerical : public ModelAlgebraic, public ModelMeshes<typename ModelAlgebraic::index_type>
     {
+    protected :
+        using super_model_meshes_type = ModelMeshes<typename ModelAlgebraic::index_type>;
     public:
         typedef ModelAlgebraic super_type;
 
@@ -100,9 +103,6 @@ class ModelNumerical : public ModelAlgebraic
         ModelNumerical( ModelNumerical const& app ) = default;
 
         virtual ~ModelNumerical() {};
-
-        //std::shared_ptr<PsLogger> psLogger()  { return M_PsLogger; }
-        //std::shared_ptr<PsLogger> const& psLogger() const { return M_PsLogger; }
 
         bool isStationary() const { return M_isStationary; }
         void setStationary(bool b);
@@ -265,6 +265,12 @@ class ModelNumerical : public ModelAlgebraic
                 else
                     return std::decay_t<decltype(this->modelProperties().parameters().symbolsExpr())>{};
             }
+
+        auto symbolsExprMeshes() const
+            {
+                return super_model_meshes_type::symbolsExpr();
+            }
+
 
         template <typename ElementType, typename RangeType, typename SymbolsExpr>
         void
