@@ -1,5 +1,5 @@
 steps:
- - name: ':$TARGET, ${CXX}'
+ - name: ':$TARGET, ${CXX} :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh feelpp
    agents:
      docker: true
@@ -10,11 +10,11 @@ steps:
      junit-annotate#v1.7.0:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
- - wait
- - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
-   name: ":docker: push images to the hub :rocket:"
-   agents:
-     docker: true
+# - wait
+# - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
+#   name: ":docker: push images to the hub :rocket:"
+#   agents:
+#     docker: true
  - wait
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
@@ -37,7 +37,7 @@ steps:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
     branch: "${BUILDKITE_BRANCH}"
- - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
    agents:
      docker: true
@@ -46,10 +46,10 @@ steps:
    label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
    if: pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )
- - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
-   name: ":docker: push images to the hub :rocket:"
-   agents:
-     docker: true
+# - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
+#   name: ":docker: push images to the hub :rocket:"
+#   agents:
+#     docker: true
  - wait
 # - trigger: "feelpp-singularity"
 #   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
@@ -59,15 +59,15 @@ steps:
 #       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
 #       PROJECT: "feelpp-toolboxes"
 #       TAG: ${BUILDKITE_BRANCH}
- - name: ':$TARGET, $CXX, feelpp-mor :hammer:'
+ - name: ':$TARGET, $CXX, feelpp-mor :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
    agents:
      docker: true
- - wait
- - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
-   name: ":docker: push images to the hub :rocket:"
-   agents:
-     docker: true
+# - wait
+# - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
+#   name: ":docker: push images to the hub :rocket:"
+#   agents:
+#     docker: true
 # - wait
 #- trigger: "feelpp-singularity"
 #  label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"

@@ -87,3 +87,4 @@ for tagalias in ${extratags[@]}; do
     echo "Tagging feelpp/${image}:$tag as feelpp/${image}:$tagalias"
     docker tag "feelpp/${image}:$tag" "feelpp/${image}:$tagalias"
 done
+source $(dirname $0)/release.sh  -- ${image}
