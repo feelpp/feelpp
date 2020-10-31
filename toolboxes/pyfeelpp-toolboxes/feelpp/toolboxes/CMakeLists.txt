@@ -41,7 +41,7 @@ else ()
   file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
 endif ()
 set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
-message(Status "[feelpp-toolboxes] python module path: ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes")
+message(STATUS "[feelpp-toolboxes] python module path: ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes")
 
 #add_dependencies(pyfeelpptoolboxes pyfeelpp)
 

@@ -96,7 +96,7 @@ else ()
   file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
 endif ()
 set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
-message(Status "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
+message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
 
 add_subdirectory(feelpp)
 add_subdirectory(tests)
