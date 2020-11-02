@@ -21,13 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-thermoelectric)
-
-
-
-pybind11_add_module(_thermoelectric  thermoelectric.cpp)
-target_link_libraries( _thermoelectric PRIVATE Feelpp::feelpp_toolbox_thermoelectric_lib )
-install(TARGETS _thermoelectric DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric)
+feelpp_add_pymodule(thermoelectric SRCS thermoelectric.cpp DESTINATION feelpp/toolboxes/thermoelectric LINK_LIBRARIES Feelpp::feelpp_toolbox_thermoelectric_lib)
 install(FILES  __init__.py thermoelectric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric)
 
