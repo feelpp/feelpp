@@ -73,11 +73,13 @@ steps:
 # # #       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
 # # #       PROJECT: "feelpp-toolboxes"
 # # #       TAG: ${BUILDKITE_BRANCH}
-#  - name: ':$TARGET, $CXX, feelpp-mor :hammer: :docker: :rocket:'
-#    command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
-#    if: (build.message !~ /skip mor/) && (build.message !~ /skip components/)
-#    agents:
-#      docker: true
+ - name: ':$TARGET, $CXX, feelpp-mor :hammer: :docker: :rocket:'
+   command: feelpp/tools/scripts/buildkite/install-feelpp.sh mor
+   if: |
+     (build.message !~ /skip mor/) &&
+     (build.message !~ /skip components/)
+   agents:
+     docker: true
 # # # - wait
 # # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
 # #   name: ":docker: push images to the hub :rocket:"
