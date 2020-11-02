@@ -25,7 +25,7 @@ steps:
    if: |
      ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
      build.message !~ /skip feelpp/
-#  - wait
+ - wait
 # # - trigger: "feelpp-singularity"
 # #   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
 # #   async: true
@@ -34,16 +34,16 @@ steps:
 # #       GIRDER_ID: "5a4fa90ab0e9571f842931e5"
 # #       PROJECT: "feelpp"
 # #       TAG: ${BUILDKITE_BRANCH}
-#  - trigger: "feelpp-testsuite"
-#    label: ":docker: compile and run the Feel++ testsuite :rocket:"
-#    async: true
-#    if: |
-#       build.message !~ /skip tests/ && build.message !~ /skip components/ && 
-#       ( build.branch == "master" || build.branch == "develop" )
-#    build:
-#     message: "${BUILDKITE_MESSAGE}"
-#     commit: "${BUILDKITE_COMMIT}"
-#     branch: "${BUILDKITE_BRANCH}"
+ - trigger: "feelpp-testsuite"
+   label: ":docker: compile and run the Feel++ testsuite :rocket:"
+   async: true
+   if: |
+      build.message !~ /skip tests/ && build.message !~ /skip components/ && 
+      ( build.branch == "master" || build.branch == "develop" )
+   build:
+    message: "${BUILDKITE_MESSAGE}"
+    commit: "${BUILDKITE_COMMIT}"
+    branch: "${BUILDKITE_BRANCH}"
 #  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
 #    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
 #    if: build.message !~ /skip toolboxes/ && build.message !~ /skip components/
