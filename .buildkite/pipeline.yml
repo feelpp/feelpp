@@ -18,13 +18,13 @@ steps:
 # #   name: ":docker: push images to the hub :rocket:"
 # #   agents:
 # #     docker: true
-#  - wait
-#  - trigger: "pkg-feelpp"
-#    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
-#    async: true
-#    if: |
-#     ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
-#     build.message !~ /skip feelpp/
+ - wait
+ - trigger: "pkg-feelpp"
+   label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
+   async: true
+   if: |
+     ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+     build.message !~ /skip feelpp/
 #  - wait
 # # - trigger: "feelpp-singularity"
 # #   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
