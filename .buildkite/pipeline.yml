@@ -6,11 +6,13 @@ steps:
      docker: true
    artifact_paths: Testing/junit-*.xml
  - wait: ~
+   if: build.message !~ /skip feelpp/
    continue_on_failure: false
  - plugins:
      junit-annotate#v1.7.0:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
+   if: build.message !~ /skip feelpp/
 # - wait
 # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
 #   name: ":docker: push images to the hub :rocket:"
