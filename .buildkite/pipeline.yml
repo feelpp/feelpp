@@ -71,6 +71,15 @@ steps:
      (build.message !~ /skip components/)
    agents:
      docker: true
+# - wait
+ - trigger: "pkg-feelpp-mor"
+   label: ":package: :debian: :ubuntu: Feel++ MOR ${BUILDKITE_BRANCH}"
+   async: true
+   if: |
+     ((build.message !~ /skip mor/) &&
+     (build.message !~ /skip components/)) &&
+     (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
+
 # # - wait
 # #- trigger: "feelpp-singularity"
 # #  label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
