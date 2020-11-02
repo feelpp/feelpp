@@ -25,37 +25,10 @@ cmake_minimum_required(VERSION 3.3)
 
 add_custom_target(pyfeelpptoolboxes)
 
-if (DEFINED PYTHON_SITE_PACKAGES)
-  set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
-else ()
-  execute_process (COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
-                    OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
-                    RESULT_VARIABLE _PYTHON_pythonlib_result
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+feelpp_add_pymodule(modelcore SRCS modelcore.cpp DESTINATION feelpp/toolboxes/ LINK_LIBRARIES Feelpp::feelpp_modelcore )
+feelpp_add_pymodule(modelmesh SRCS modelmesh.cpp DESTINATION feelpp/toolboxes/ LINK_LIBRARIES Feelpp::feelpp_modelmesh Feelpp::feelpp_modelmeshale)
 
-  if (_PYTHON_pythonlib_result)
-    message (SEND_ERROR "Could not run ${PYTHON_EXECUTABLE}")
-  endif ()
-
-  get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
-  file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
-endif ()
-set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
-message(STATUS "[feelpp-toolboxes] python module path: ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes")
-
-#add_dependencies(pyfeelpptoolboxes pyfeelpp)
-
-pybind11_add_module(_modelcore  modelcore.cpp)
-target_link_libraries( _modelcore PRIVATE Feelpp::feelpp_modelcore )
-
-pybind11_add_module(_modelmesh  modelmesh.cpp)
-target_link_libraries( _modelmesh PRIVATE Feelpp::feelpp_modelmesh Feelpp::feelpp_modelmeshale)
-
-
-install(TARGETS _modelcore _modelmesh DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/)
 install(FILES  __init__.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/)
-
-
 
 add_dependencies(pyfeelpptoolboxes _modelcore _modelmesh)
 

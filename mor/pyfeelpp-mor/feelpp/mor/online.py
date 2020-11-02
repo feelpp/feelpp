@@ -1,7 +1,4 @@
-import pyfeelpp
-import pyfeelpp.core
-import pyfeelpp.crb
-import pyfeelpp.online
+import feelpp.mor as mor
 import numpy
 import pymongo
 import pprint
@@ -19,12 +16,12 @@ class Timer(object):
             print('[%s]' % self.name)
         print('Elapsed: %s' % (time.time() - self.tstart))
 
-pyfeelpp.core.Environment(sys.argv,pyfeelpp.crb.makeCRBOptions())        
+feelpp.Environment(sys.argv,mor.makeCRBOptions())        
 def initOnline():
     global feelppenv
-    feelppenv=pyfeelpp.core.Environment(sys.argv,pyfeelpp.crb.makeCRBOptions())
+    feelppenv=feelpp.Environment(sys.argv,mor.makeCRBOptions())
     
-def listPlugins( plugindir=pyfeelpp.core.Info.libdir() ):
+def listPlugins( plugindir=feelpp.Info.libdir() ):
     feelppdb = pymongo.MongoClient()
     crbdb = feelppdb['feelpp']['crbdb']
 
@@ -33,7 +30,7 @@ def listPlugins( plugindir=pyfeelpp.core.Info.libdir() ):
         names.append(m['crbmodel']['name'])
     return names
 
-def loadAllPlugins( plugindir=pyfeelpp.core.Info.libdir() ):
+def loadAllPlugins( plugindir=feelpp.Info.libdir() ):
     feelppdb = pymongo.MongoClient()
     crbdb = feelppdb['feelpp']['crbdb']
 
@@ -45,7 +42,7 @@ def loadAllPlugins( plugindir=pyfeelpp.core.Info.libdir() ):
         plugins[pluginname] = loadPlugin(pluginname)
     return plugins
 
-def loadPlugin( pluginname, plugindir=pyfeelpp.core.Info.libdir(), dbid=None, load=pyfeelpp.crb.CRBLoad.rb ):
+def loadPlugin( pluginname, plugindir=feelpp.Info.libdir(), dbid=None, load=mor.CRBLoad.rb ):
     if dbid == None:
         feelppdb = pymongo.MongoClient()
         crbdb = feelppdb['feelpp']['crbdb']
@@ -58,7 +55,7 @@ def loadPlugin( pluginname, plugindir=pyfeelpp.core.Info.libdir(), dbid=None, lo
         dbid=model['uuid']
         
      
-    plugin=pyfeelpp.crb.factoryCRBPlugin(pluginname)
+    plugin=mor.factoryCRBPlugin(pluginname)
     print("Plugin name:",plugin.name(), " dbid:",dbid);
     plugin.loadDBFromId(id=dbid,load=load);
     return plugin
@@ -89,12 +86,12 @@ def main(args):
      parser.add_option('-i', '--id', dest='dbid', help='DB id to be used', type="string")
      parser.add_option('-l', '--load', dest='load', help='type of data to be loadedoaded', type="string",default="rb")
      (options, args) = parser.parse_args()
-     print("members:",pyfeelpp.crb.CRBLoad.__members__)
-     print("rb members:",pyfeelpp.crb.CRBLoad.__members__["rb"])
+     print("members:",mor.CRBLoad.__members__)
+     print("rb members:",mor.CRBLoad.__members__["rb"])
      
-     e=pyfeelpp.core.Environment(sys.argv,pyfeelpp.crb.makeCRBOptions())
+     e=feelpp.Environment(sys.argv,mor.makeCRBOptions())
     
-     model=loadPlugin(pluginname=options.name,plugindir=options.dir,load=pyfeelpp.crb.CRBLoad.__members__[options.load])
+     model=loadPlugin(pluginname=options.name,plugindir=options.dir,load=mor.CRBLoad.__members__[options.load])
      r=online(model,options.N)
      
 if __name__ == '__main__':

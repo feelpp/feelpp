@@ -21,11 +21,5 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-fluid)
-
-
-pybind11_add_module(_fluid  fluid.cpp)
-target_link_libraries( _fluid PRIVATE Feelpp::feelpp_toolbox_fluid_lib)
-install(TARGETS _fluid DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)
+feelpp_add_pymodule(fluid SRCS fluid.cpp DESTINATION feelpp/toolboxes/fluid LINK_LIBRARIES Feelpp::feelpp_toolbox_fluid_lib )
 install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fluid)

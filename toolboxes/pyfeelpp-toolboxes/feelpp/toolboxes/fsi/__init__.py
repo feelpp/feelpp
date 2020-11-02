@@ -1,6 +1,6 @@
-from pyfeelpp import core
-from pyfeelpp.toolboxes.modelcore import *
-from _fsi import *
+import feelpp
+import feelpp.toolboxes
+from ._fsi import *
 
 _fsis={
     'fsi(2,1)':Fsi_2DP1,
@@ -9,12 +9,12 @@ _fsis={
     'fsi(3,2)':Fsi_3DP2,
 }
 
-def fsi( dim=2, order=1, buildMesh=True, worldComm=core.Environment.worldCommPtr() ):
+def fsi( dim=2, order=1, buildMesh=True, worldComm=feelpp.Environment.worldCommPtr() ):
     """create a fsi toolbox solver
     Keyword arguments:
     dim -- the dimension (default: 2)
     orderPotential -- the polynomial order for the potential (default: 1)
-    worldComm -- the parallel communicator for the mesh (default: core.Environment::worldCommPtr())
+    worldComm -- the parallel communicator for the mesh (default: feelpp.Environment::worldCommPtr())
     """
     key='fsi('+str(dim)+','+str(orderPotential)+')'
     if worldComm.isMasterRank():
