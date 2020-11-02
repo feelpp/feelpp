@@ -13,11 +13,6 @@ steps:
        artifacts: Testing/junit-*.xml
        fail-build-on-error: true
    if: build.message !~ /skip feelpp/
-# # - wait
-# # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp
-# #   name: ":docker: push images to the hub :rocket:"
-# #   agents:
-# #     docker: true
  - wait
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
@@ -60,10 +55,6 @@ steps:
      ((build.message !~ /skip toolboxes/) &&
      (build.message !~ /skip components/)) &&
      (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
-# # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
-# # #   name: ":docker: push images to the hub :rocket:"
-# # #   agents:
-# # #     docker: true
 # #  - wait
 # # # - trigger: "feelpp-singularity"
 # # #   label: ":package: :singularity: Feel++ Toolboxes ${BUILDKITE_BRANCH} containers"
@@ -80,11 +71,6 @@ steps:
      (build.message !~ /skip components/)
    agents:
      docker: true
-# # # - wait
-# # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-mor
-# #   name: ":docker: push images to the hub :rocket:"
-# #   agents:
-# #     docker: true
 # # - wait
 # #- trigger: "feelpp-singularity"
 # #  label: ":package: :singularity: Feel++ MOR ${BUILDKITE_BRANCH} containers"
