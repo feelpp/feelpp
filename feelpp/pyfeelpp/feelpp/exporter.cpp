@@ -35,6 +35,9 @@
 #include <feel/feelfilters/hbf.hpp>
 
 namespace py = pybind11;
+
+void defHBF( py::module& m );
+
 using namespace Feel;
 
 template<typename MeshT, int Order = 1>
@@ -122,10 +125,6 @@ PYBIND11_MODULE(_exporter, m )
     
     defExporter<Mesh<Simplex<2>>,1>( m );
     defExporter<Mesh<Simplex<3>>,1>( m );
-
-    m.def( "readHBF",&readHBF<float>,"read a HBF file of float", pybind11::return_value_policy::copy, py::arg("filename") );
-    m.def( "writeHBF",&writeHBF<float>,"write a HBF file of float", py::arg("filename"), py::arg("hbf"), py::arg("worldComm") );
-    m.def( "readHBF",&readHBF<double>,"read a HBF file of double", pybind11::return_value_policy::copy, py::arg("filename") );
-    m.def( "readHBF",&readHBF<int>,"read a HBF file of int", pybind11::return_value_policy::copy, py::arg("filename") );
+    defHBF( m );
 }
 
