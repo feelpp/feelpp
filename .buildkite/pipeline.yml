@@ -38,8 +38,9 @@ steps:
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
    if: |
-      build.message !~ /skip tests/ && build.message !~ /skip components/ && 
-      ( build.branch == "master" || build.branch == "develop" )
+     build.message !~ /skip tests/ &&
+     build.message !~ /skip components/ &&
+     ( build.branch == "master" || build.branch == "develop" )
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
