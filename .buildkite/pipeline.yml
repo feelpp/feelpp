@@ -20,7 +20,9 @@ steps:
  - trigger: "pkg-feelpp"
    label: ":package: :debian: :ubuntu: Feel++ ${BUILDKITE_BRANCH}"
    async: true
-   if: ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && ( build.message !~ /skip feelpp/ )
+   if: |
+    ( pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" )) && 
+    build.message !~ /skip feelpp/
  - wait
 # - trigger: "feelpp-singularity"
 #   label: ":package: :singularity: Feel++ feelpp ${BUILDKITE_BRANCH} containers"
@@ -33,21 +35,25 @@ steps:
  - trigger: "feelpp-testsuite"
    label: ":docker: compile and run the Feel++ testsuite :rocket:"
    async: true
-   if: ((build.message !~ /\[skip tests\]/)&& (build.message !~ /skip components/)) && ( build.branch == "master" || build.branch == "develop" )
+   if: |
+      build.message !~ /skip tests/ && build.message !~ /skip components/ && 
+      ( build.branch == "master" || build.branch == "develop" )
    build:
     message: "${BUILDKITE_MESSAGE}"
     commit: "${BUILDKITE_COMMIT}"
     branch: "${BUILDKITE_BRANCH}"
  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
-   if: ((build.message !~ /skip toolboxes/)&& (build.message !~ /skip components/))
+   if: build.message !~ /skip toolboxes/ && build.message !~ /skip components/
    agents:
      docker: true
  - wait
  - trigger: "pkg-feelpp-toolboxes"
    label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
-   if:  ( (build.message !~ /skip toolboxes/)&& (build.message !~ /skip components/)) && (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
+   if: |
+    ((build.message !~ /skip toolboxes/) && (build.message !~ /skip components/)) && 
+    (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
 # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
 #   name: ":docker: push images to the hub :rocket:"
 #   agents:
