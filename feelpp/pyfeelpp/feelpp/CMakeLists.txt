@@ -1,18 +1,31 @@
 add_custom_target(pyfeelpp)
 
-pybind11_add_module(_core  core.cpp remotedata.cpp  )
-target_include_directories(_core PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
-target_link_libraries( _core PUBLIC Feelpp::feelpp )
-add_dependencies(pyfeelpp _core)
-install(TARGETS _core DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
+#foreach(MODULE IN ITEMS feelpp alg mesh discr exporter ts vf models )
 
-foreach(MODULE IN ITEMS feelpp alg mesh discr exporter ts vf models )
-    pybind11_add_module(_${MODULE}  ${MODULE}.cpp  )
-    target_include_directories(_${MODULE} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
-    target_link_libraries( _${MODULE} PUBLIC Feelpp::feelpp )
-    add_dependencies(pyfeelpp _${MODULE})
-    install(TARGETS _${MODULE} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
-endforeach()
+macro(feelpp_add_pymodule)
+ PARSE_ARGUMENTS(FEELPP_PYMODULE
+    "NAME;SRCS"
+    ""
+    ${ARGN}
+    )
+  CAR(FEELPP_PYMODULE_NAME ${FEELPP_PYMODULE_DEFAULT_ARGS})
+  message(STATUS "[pyfeelpp] add pymodule ${FEELPP_PYMODULE_NAME}")
+  pybind11_add_module(_${FEELPP_PYMODULE_NAME}  ${FEELPP_PYMODULE_SRCS}  )
+  target_include_directories(_${FEELPP_PYMODULE_NAME} PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR})
+  target_link_libraries( _${FEELPP_PYMODULE_NAME} PUBLIC Feelpp::feelpp )
+  add_dependencies(pyfeelpp _${FEELPP_PYMODULE_NAME})
+  install(TARGETS _${FEELPP_PYMODULE_NAME} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)
+endmacro(feelpp_add_pymodule)
+
+feelpp_add_pymodule(feelpp SRCS feelpp.cpp)
+feelpp_add_pymodule(core SRCS core.cpp remotedata.cpp )
+feelpp_add_pymodule(alg SRCS alg.cpp)
+feelpp_add_pymodule(mesh SRCS mesh.cpp)
+feelpp_add_pymodule(discr SRCS discr.cpp)
+feelpp_add_pymodule(exporter SRCS exporter.cpp hbf.cpp )
+feelpp_add_pymodule(ts SRCS ts.cpp)
+feelpp_add_pymodule(vf SRCS vf.cpp)
+feelpp_add_pymodule(models SRCS models.cpp)
 
 set(PYFILES __init__.py )
 install(FILES ${PYFILES} DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp)

@@ -44,7 +44,7 @@ readHBFHeaderAndSizes( std::string const& s )
     return readHBFHeaderAndSizes( in );
 }
 std::tuple<int32_t, int32_t, std::string>
-readHBFHeaderAndSizes( std::ifstream& in )
+readHBFHeaderAndSizes( std::istream& in )
 {
     LOG(INFO) << "Reading Header and sizes" << std::endl;
     std::string header;
@@ -79,16 +79,11 @@ readHBFHeaderAndSizes( std::ifstream& in )
     return {rows, cols, data_type};
 }
 
+
 template <typename T>
 holo3_image<T>
-readHBF( std::string const& s )
+readHBF( std::istream& in )
 {
-    std::ifstream in( s, std::ios::binary );
-    if ( !in )
-    {
-        using namespace std::string_literals;
-        throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
-    }
     auto [rows,cols, data_type] = readHBFHeaderAndSizes( in );
 
     holo3_image<T> x ( rows, cols );
@@ -100,7 +95,58 @@ readHBF( std::string const& s )
                 << ", data type: " << data_type << std::endl;
     return x;
 }
+template <typename T>
+holo3_image<T>
+readHBF( std::string const& s )
+{
+    std::ifstream in( s, std::ios::binary );
+    if ( !in )
+    {
+        using namespace std::string_literals;
+        throw std::invalid_argument ( "ReadHBF - Error opening file "s + s.c_str() );
+    }
+    return readHBF<T>( in );
+}
+template <typename T>
+void writeHBF( std::ostream& out, holo3_image<T> const& x )
+{
+    std::map<std::string, std::string> data_sizes;
+    data_sizes[typeid( int8_t ).name()] = "__int8";
+    data_sizes[typeid( int16_t ).name()] = "__int16";
+    data_sizes[typeid( int32_t ).name()] = "__int32";
+    data_sizes[typeid( int64_t ).name()] = "__int64";
+    data_sizes[typeid( long ).name()] = "long";
+    data_sizes[typeid( uint8_t ).name()] = "unsigned __int8";
+    data_sizes[typeid( uint16_t ).name()] = "unsigned __int16";
+    data_sizes[typeid( uint32_t ).name()] = "unsigned __int32";
+    data_sizes[typeid( uint64_t ).name()] = "unsigned __int64";
+    data_sizes[typeid( float ).name()] = "float";
+    data_sizes[typeid( double ).name()] = "double";
 
+    std::string data_type = data_sizes[typeid( T ).name()];
+    std::string header = "class CH3Array2D<" + data_type + "> *";
+
+    out.write( header.c_str(), header.size() );
+    out.write( "\0", sizeof( char ) );
+
+    LOG( INFO ) << "[writeHBF] write header " << header << "\n";
+
+    int32_t version = 100;
+    out.write( (char*)&version, sizeof( int32_t ) );
+    int32_t rows = x.rows(), cols = x.cols();
+    out.write( (char*)&rows, sizeof( int32_t ) );
+    out.write( (char*)&cols, sizeof( int32_t ) );
+    LOG( INFO ) << "[writeHBF] rows: " << rows << " , cols: " << cols << " , size: " << rows * cols << std::endl;
+    //holo3_image<T> y ( cols, rows );
+    //y = x.transpose();
+    out.write( (char*)x.data(), x.size() * sizeof( T ) );
+
+    LOG( INFO ) << "[writeHBF]: array written to disk" << std::endl;
+
+    if ( x.rows() <= 6 && x.cols() <= 6 )
+        LOG( INFO ) << x << std::endl;
+    LOG( INFO ) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
+}
 template <typename T>
 void
 writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc )
@@ -117,48 +163,10 @@ writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc )
             using namespace std::string_literals;
             throw std::invalid_argument ( "writeHBF - Error opening file "s + s.c_str() );
         }
-
-        std::map<std::string,std::string> data_sizes;
-        data_sizes[typeid(int8_t).name()]="__int8";
-        data_sizes[typeid(int16_t).name()]="__int16";
-        data_sizes[typeid(int32_t).name()]="__int32";
-        data_sizes[typeid(int64_t).name()]="__int64";
-        data_sizes[typeid(long).name()]="long";
-        data_sizes[typeid(uint8_t).name()]="unsigned __int8";
-        data_sizes[typeid(uint16_t).name()]="unsigned __int16";
-        data_sizes[typeid(uint32_t).name()]="unsigned __int32";
-        data_sizes[typeid(uint64_t).name()]="unsigned __int64";
-        data_sizes[typeid(float).name()]="float";
-        data_sizes[typeid(double).name()]="double";
-
-        std::string data_type = data_sizes[typeid(T).name()];
-        std::string header = "class CH3Array2D<"+data_type+"> *";
-
-        out.write( header.c_str(), header.size() );
-        out.write( "\0", sizeof(char) );
-        
-        LOG(INFO) << "[writeHBF] write header " << header << "\n";
-
-        int32_t version = 100;
-        out.write( (char*)&version, sizeof(int32_t) );
-        int32_t rows=x.rows(), cols=x.cols();
-        out.write( (char*)&rows, sizeof(int32_t) );
-        out.write( (char*)&cols, sizeof(int32_t) );
-        LOG(INFO) << "[writeHBF] rows: " << rows << " , cols: " << cols << " , size: " << rows*cols << std::endl;
-        //holo3_image<T> y ( cols, rows );
-        //y = x.transpose();
-        out.write( (char*)x.data(),x.size()*sizeof(T) );
-
-        LOG(INFO) << "[writeHBF]: array written to disk" << std::endl;
-
-        if(x.rows() <= 6 && x.cols() <= 6)
-            LOG(INFO) << x << std::endl;
-        LOG(INFO) << "[writehbf] x.rows: " << x.rows() << " , x.cols(): " << x.cols() << std::endl;
+        writeHBF( out, x );
     }
     wc->barrier();
 }
-
-
 
 holo3_image<float> cutHbf ( holo3_image<float> const& im, int n, int start )
 {
@@ -553,16 +561,27 @@ std::pair<int,int> ElemFineToCoarse::operator()( int num)
 }
 
 
-template holo3_image<double> readHBF(std::string const&);
-template holo3_image<float> readHBF(std::string const&);
-template holo3_image<int8_t> readHBF(std::string const&);
-template holo3_image<int16_t> readHBF(std::string const&);
-template holo3_image<int32_t> readHBF(std::string const&);
-template holo3_image<int64_t> readHBF(std::string const&);
-template holo3_image<uint8_t> readHBF(std::string const&);
+template holo3_image<double>   readHBF(std::string const&);
+template holo3_image<float>    readHBF(std::string const&);
+template holo3_image<int8_t>   readHBF(std::string const&);
+template holo3_image<int16_t>  readHBF(std::string const&);
+template holo3_image<int32_t>  readHBF(std::string const&);
+template holo3_image<int64_t>  readHBF(std::string const&);
+template holo3_image<uint8_t>  readHBF(std::string const&);
 template holo3_image<uint16_t> readHBF(std::string const&);
 template holo3_image<uint32_t> readHBF(std::string const&);
 template holo3_image<uint64_t> readHBF(std::string const&);
+
+template holo3_image<double>   readHBF(std::istream&);
+template holo3_image<float>    readHBF(std::istream&);
+template holo3_image<int8_t>   readHBF(std::istream&);
+template holo3_image<int16_t>  readHBF(std::istream&);
+template holo3_image<int32_t>  readHBF(std::istream&);
+template holo3_image<int64_t>  readHBF(std::istream&);
+template holo3_image<uint8_t>  readHBF(std::istream&);
+template holo3_image<uint16_t> readHBF(std::istream&);
+template holo3_image<uint32_t> readHBF(std::istream&);
+template holo3_image<uint64_t> readHBF(std::istream&);
 
 template void writeHBF( std::string const& , holo3_image<double> const&, worldcomm_ptr_t wc );
 template void writeHBF( std::string const& , holo3_image<float> const&, worldcomm_ptr_t wc );
@@ -574,5 +593,16 @@ template void writeHBF( std::string const& , holo3_image<uint8_t> const&, worldc
 template void writeHBF( std::string const& , holo3_image<uint16_t> const&, worldcomm_ptr_t wc );
 template void writeHBF( std::string const& , holo3_image<uint32_t> const&, worldcomm_ptr_t wc );
 template void writeHBF( std::string const& , holo3_image<uint64_t> const&, worldcomm_ptr_t wc );
+
+template void writeHBF( std::ostream& , holo3_image<double>   const& );
+template void writeHBF( std::ostream& , holo3_image<float>    const& );
+template void writeHBF( std::ostream& , holo3_image<int8_t>   const& );
+template void writeHBF( std::ostream& , holo3_image<int16_t>  const& );
+template void writeHBF( std::ostream& , holo3_image<int32_t>  const& );
+template void writeHBF( std::ostream& , holo3_image<int64_t>  const& );
+template void writeHBF( std::ostream& , holo3_image<uint8_t>  const& );
+template void writeHBF( std::ostream& , holo3_image<uint16_t> const& );
+template void writeHBF( std::ostream& , holo3_image<uint32_t> const& );
+template void writeHBF( std::ostream& , holo3_image<uint64_t> const& );
 
 }// Feel
