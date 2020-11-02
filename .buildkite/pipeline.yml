@@ -47,7 +47,7 @@ steps:
     branch: "${BUILDKITE_BRANCH}"
  - name: ':$TARGET, $CXX, feelpp-toolboxes :hammer: :docker: :rocket:'
    command: feelpp/tools/scripts/buildkite/install-feelpp.sh toolboxes
-   if: | 
+   if: |
      build.message !~ /skip toolboxes/ && 
      build.message !~ /skip components/
    agents:
@@ -57,7 +57,8 @@ steps:
    label: ":package: :debian: :ubuntu: Feel++ Toolboxes ${BUILDKITE_BRANCH}"
    async: true
    if: |
-     ((build.message !~ /skip toolboxes/) && (build.message !~ /skip components/)) && 
+     ((build.message !~ /skip toolboxes/) &&
+     (build.message !~ /skip components/)) && 
      (pipeline.slug=="feelpp" && ( build.branch == "develop" || build.branch == "master" ))
 # - command: feelpp/tools/scripts/buildkite/release.sh  -- feelpp-toolboxes
 # #   name: ":docker: push images to the hub :rocket:"
