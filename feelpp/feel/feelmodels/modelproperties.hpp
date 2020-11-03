@@ -26,7 +26,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
-
+#include <feel/feelcore/json.hpp>
 #include <feel/feelcore/commobject.hpp>
 #include <feel/feelmodels/modelmodels.hpp>
 #include <feel/feelmodels/modelparameters.hpp>
@@ -52,6 +52,10 @@ public:
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
     ModelProperties( pt::ptree const& pt,
+                     std::string const& directoryLibExpr = "",
+                     worldcomm_ptr_t const& world = Environment::worldCommPtr(),
+                     std::string const& prefix="" );
+    ModelProperties( nl::json const& j,
                      std::string const& directoryLibExpr = "",
                      worldcomm_ptr_t const& world = Environment::worldCommPtr(),
                      std::string const& prefix="" );
