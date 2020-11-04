@@ -53,6 +53,7 @@
 #endif
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdes_registered_type.hpp>
 
 #include <feel/feelmodels/modelcore/stabilizationglsparameterbase.hpp>
 #include <feel/feelmodels/modelcore/rangedistributionbymaterialname.hpp>
@@ -267,10 +268,7 @@ public:
     typedef std::shared_ptr<element_dist2wall_type> element_dist2wall_ptrtype;
 
     // turbulence model
-    typedef FeelModels::CoefficientFormPDEs< convex_type,
-                                             Lagrange<1,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<2,Scalar,Continuous,PointSetFekete>,
-                                             Lagrange<1,Vectorial,Continuous,PointSetFekete> > turbulence_model_type;
+    using turbulence_model_type = FeelModels::coefficient_form_PDEs_t<convex_type>;
     using turbulence_model_ptrtype = std::shared_ptr<turbulence_model_type>;
 
     struct FilterBasisUnknownTurbulenceModel {
