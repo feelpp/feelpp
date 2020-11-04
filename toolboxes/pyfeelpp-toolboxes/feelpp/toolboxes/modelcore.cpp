@@ -21,6 +21,7 @@
 //! @date 25 Jul 2018
 //! @copyright 2018 Feel++ Consortium
 //!
+#include "pybind11_json.hpp"
 #include <pybind11/pybind11.h>
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
@@ -28,8 +29,10 @@
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
 #include <feel/feelmodels/modelcore/options.hpp>
 
+
 namespace py = pybind11;
 using namespace Feel;
+
 
 PYBIND11_MODULE(_modelcore, m )
 {
@@ -105,6 +108,8 @@ PYBIND11_MODULE(_modelcore, m )
 
         .def("hasModelProperties", &ModelNumerical::hasModelProperties, "returns true if model properties are defined, false otherwise")
         .def("modelProperties", &ModelNumerical::modelPropertiesPtr, "return model properties",py::return_value_policy::reference)
+        .def("setModelProperties", static_cast<void (ModelNumerical::*)(std::string const&)>(&ModelNumerical::setModelProperties), "set model properties from filename",py::arg("model"))
+        .def("setModelProperties", static_cast<void (ModelNumerical::*)(nl::json const&)>(&ModelNumerical::setModelProperties), "set model properties from json",py::arg("model"))
         .def("addParameterInModelProperties", &ModelNumerical::addParameterInModelProperties, "add new parameter in model properties")
         
         .def("time", &ModelNumerical::time, "get the current time")
