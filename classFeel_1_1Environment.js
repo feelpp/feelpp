@@ -46,6 +46,7 @@ var classFeel_1_1Environment =
     [ "saveTimers", "classFeel_1_1Environment.html#a29b2eeaca395bba470dc395348692677", null ],
     [ "saveTimersMD", "classFeel_1_1Environment.html#a03c354cd6b80d01548ccb01f7626e2d4", null ],
     [ "scratchDirectory", "classFeel_1_1Environment.html#a59efa211abbbd03d5c724f149aeb33a5", null ],
+    [ "setConfigFile", "classFeel_1_1Environment.html#af8a764da932892ce2381be38c7061736", null ],
     [ "setLogs", "classFeel_1_1Environment.html#a8466d0b1433677e624082f9f6d13d818", null ],
     [ "setOptionValue", "classFeel_1_1Environment.html#ade8f162c1a40f7f0844edc10c379096e", null ],
     [ "setWorldComm", "classFeel_1_1Environment.html#a722162ff1d789452d792a7c8e9c4ea50", null ],

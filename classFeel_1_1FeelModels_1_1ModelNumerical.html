@@ -359,9 +359,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setManageParameterVal
 <tr class="memitem:a74bfb231a371e4e1168a36175076ae01"><td class="memItemLeft" align="right" valign="top"><a id="a74bfb231a371e4e1168a36175076ae01"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMeshFile</b> (std::string const &amp;file)</td></tr>
 <tr class="separator:a74bfb231a371e4e1168a36175076ae01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afc40acda06ccce12af3b07a74bd15268"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelNumerical.html#afc40acda06ccce12af3b07a74bd15268">setModelProperties</a> (<a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;j)</td></tr>
+<tr class="memdesc:afc40acda06ccce12af3b07a74bd15268"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the Model Properties object from a json struct the json may come from python.  <a href="classFeel_1_1FeelModels_1_1ModelNumerical.html#afc40acda06ccce12af3b07a74bd15268">More...</a><br /></td></tr>
+<tr class="separator:afc40acda06ccce12af3b07a74bd15268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9f9c807b2dcd4385cec62b2bdf3ebb0"><td class="memItemLeft" align="right" valign="top"><a id="ac9f9c807b2dcd4385cec62b2bdf3ebb0"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setModelProperties</b> (std::shared_ptr&lt; ModelProperties &gt; modelProps)</td></tr>
 <tr class="separator:ac9f9c807b2dcd4385cec62b2bdf3ebb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade0422f2a13f8493786e7afcaef4a542"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FeelModels_1_1ModelNumerical.html#ade0422f2a13f8493786e7afcaef4a542">setModelProperties</a> (std::string const &amp;filename)</td></tr>
+<tr class="memdesc:ade0422f2a13f8493786e7afcaef4a542"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the Model Properties object from a filename.  <a href="classFeel_1_1FeelModels_1_1ModelNumerical.html#ade0422f2a13f8493786e7afcaef4a542">More...</a><br /></td></tr>
+<tr class="separator:ade0422f2a13f8493786e7afcaef4a542"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3dea50e8514402b34b11872de8438969"><td class="memItemLeft" align="right" valign="top"><a id="a3dea50e8514402b34b11872de8438969"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setRestart</b> (<a class="el" href="classbool.html">bool</a> b)</td></tr>
 <tr class="separator:a3dea50e8514402b34b11872de8438969"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -692,6 +698,63 @@ template&lt;typename ElementType , typename RangeType , typename SymbolsExpr &gt
 <tr class="memitem:a0fa3f7e738343682b99bce97c33160e3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><b>updateInitialConditions</b> (std::string const &amp;fieldName, RangeType const &amp;defaultRange, <a class="el" href="structFeel_1_1vf_1_1SymbolsExpr.html">SymbolsExpr</a> const &amp;symbolsExpr, std::vector&lt; std::shared_ptr&lt; ElementType &gt; &gt; &amp;dataToUpdate)</td></tr>
 <tr class="separator:a0fa3f7e738343682b99bce97c33160e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="afc40acda06ccce12af3b07a74bd15268"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc40acda06ccce12af3b07a74bd15268">&#9670;&nbsp;</a></span>setModelProperties() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::FeelModels::ModelNumerical::setModelProperties </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacenlohmann.html#a2bfd99e845a2e5cd90aeaf1b1431f474">nl::json</a> const &amp;&#160;</td>
+          <td class="paramname"><em>j</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the Model Properties object from a json struct the json may come from python. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">j</td><td>json data structure </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="ginac_8hpp.html#a5665b51d80042bfc7cbd5ab049d1e3d2">Feel::vf::expr()</a>.</p>
+
+</div>
+</div>
+<a id="ade0422f2a13f8493786e7afcaef4a542"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade0422f2a13f8493786e7afcaef4a542">&#9670;&nbsp;</a></span>setModelProperties() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::FeelModels::ModelNumerical::setModelProperties </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filename</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the Model Properties object from a filename. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filename</td><td>file name </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="ginac_8hpp.html#a5665b51d80042bfc7cbd5ab049d1e3d2">Feel::vf::expr()</a>.</p>
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

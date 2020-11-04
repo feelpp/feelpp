@@ -240,6 +240,9 @@ static po::command_line_parser const  &amp;&#160;</td><td class="memItemRight" v
 <tr class="memitem:adad6ddb79fe801af011ca3ca81dfa343"><td class="memItemLeft" align="right" valign="top"><a id="adad6ddb79fe801af011ca3ca81dfa343"></a>
 static std::vector&lt; std::tuple&lt; std::string, std::istringstream &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>configFiles</b> ()</td></tr>
 <tr class="separator:adad6ddb79fe801af011ca3ca81dfa343"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8a764da932892ce2381be38c7061736"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#af8a764da932892ce2381be38c7061736">setConfigFile</a> (std::string const &amp;filename)</td></tr>
+<tr class="memdesc:af8a764da932892ce2381be38c7061736"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the Configuration from a File.  <a href="classFeel_1_1Environment.html#af8a764da932892ce2381be38c7061736">More...</a><br /></td></tr>
+<tr class="separator:af8a764da932892ce2381be38c7061736"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a777708cb9116c7556145d1b3dd63e852"><td class="memItemLeft" align="right" valign="top"><a id="a777708cb9116c7556145d1b3dd63e852"></a>
 static po::variables_map const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Environment.html#a777708cb9116c7556145d1b3dd63e852">vm</a> ()</td></tr>
 <tr class="memdesc:a777708cb9116c7556145d1b3dd63e852"><td class="mdescLeft">&#160;</td><td class="mdescRight">return variables_map <br /></td></tr>
@@ -1183,6 +1186,42 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = pt
 
 </div>
 </div>
+<a id="af8a764da932892ce2381be38c7061736"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8a764da932892ce2381be38c7061736">&#9670;&nbsp;</a></span>setConfigFile()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Feel::Environment::setConfigFile </td>
+          <td>(</td>
+          <td class="paramtype">std::string const &amp;&#160;</td>
+          <td class="paramname"><em>filename</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the Configuration from a File. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filename</td><td>filename of the config file </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="reference">References <a class="el" href="namespaceFeel.html#a284aa243399471c48629a91886b6647c">Feel::readFromFile()</a>.</p>
+
+</div>
+</div>
 <a id="a8466d0b1433677e624082f9f6d13d818"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8466d0b1433677e624082f9f6d13d818">&#9670;&nbsp;</a></span>setLogs()</h2>
 
@@ -1496,11 +1535,11 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>notify_type</b> = pt
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div class="ttc" id="anamespaceFeel_html"><div class="ttname"><a href="namespaceFeel.html">Feel</a></div><div class="ttdoc">-*- mode: c++; coding: utf-8; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; show-trailing-w...</div><div class="ttdef"><b>Definition:</b> about.cpp:39</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2022</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2429</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2077</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_af0fa80df613e602f56dc46f72d0a456c"><div class="ttname"><a href="classFeel_1_1Environment.html#af0fa80df613e602f56dc46f72d0a456c">Feel::Environment::startLogging</a></div><div class="ttdeci">static void startLogging(std::string decorate)</div><div class="ttdoc">start logging.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2035</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a26e4f2505f0ba9e0a0266390447f68f7"><div class="ttname"><a href="classFeel_1_1Environment.html#a26e4f2505f0ba9e0a0266390447f68f7">Feel::Environment::expand</a></div><div class="ttdeci">static std::string expand(std::string const &amp;expr)</div><div class="ttdoc">expand feel++ pathes in a string</div><div class="ttdef"><b>Definition:</b> environment.cpp:2442</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a7dab59a5c06a5085826c3d83127e473d"><div class="ttname"><a href="classFeel_1_1Environment.html#a7dab59a5c06a5085826c3d83127e473d">Feel::Environment::stopLogging</a></div><div class="ttdeci">static void stopLogging(bool remove=false)</div><div class="ttdoc">stop logging in Feel++.</div><div class="ttdef"><b>Definition:</b> environment.cpp:2090</div></div>
 <div class="ttc" id="aclassFeel_1_1Environment_html"><div class="ttname"><a href="classFeel_1_1Environment.html">Feel::Environment</a></div><div class="ttdoc">Initialize, finalize, and query the Feel++ environment.</div><div class="ttdef"><b>Definition:</b> environment.hpp:135</div></div>
-<div class="ttc" id="aclassFeel_1_1Environment_html_a2e8b71b265fe80aa86b15d1be12ab764"><div class="ttname"><a href="classFeel_1_1Environment.html#a2e8b71b265fe80aa86b15d1be12ab764">Feel::Environment::generateSummary</a></div><div class="ttdeci">static pt::ptree &amp; generateSummary(std::string fname, std::string stage, bool write=true)</div><div class="ttdoc">generate a summary of the execution of the application</div><div class="ttdef"><b>Definition:</b> environment.cpp:1908</div></div>
+<div class="ttc" id="aclassFeel_1_1Environment_html_a2e8b71b265fe80aa86b15d1be12ab764"><div class="ttname"><a href="classFeel_1_1Environment.html#a2e8b71b265fe80aa86b15d1be12ab764">Feel::Environment::generateSummary</a></div><div class="ttdeci">static pt::ptree &amp; generateSummary(std::string fname, std::string stage, bool write=true)</div><div class="ttdoc">generate a summary of the execution of the application</div><div class="ttdef"><b>Definition:</b> environment.cpp:1921</div></div>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>

@@ -1,5 +1,8 @@
 var NAVTREEINDEX15 =
 {
+"classFeel_1_1GeoEntity.html#a841b8c437c0e05661d0940a6e543b158":[6,1,1,88,34],
+"classFeel_1_1GeoEntity.html#a85d3b1af2b16c52b5f8b2b8e79ad9f60":[6,1,1,88,64],
+"classFeel_1_1GeoEntity.html#a8cd4fe91a48e5b062bc98298f6efdbb0":[6,1,1,88,98],
 "classFeel_1_1GeoEntity.html#a97e16d2eb6c01b1e536c8a695a8604eb":[6,1,1,88,19],
 "classFeel_1_1GeoEntity.html#a982d38698150c3d21d5a08d07348b760":[6,1,1,88,97],
 "classFeel_1_1GeoEntity.html#a99e704e32aae12ed505b812861c7b5d8":[6,1,1,88,59],
@@ -246,8 +249,5 @@ var NAVTREEINDEX15 =
 "classFeel_1_1GeometricSpace_1_1ContextGeometric.html#aef871782d4871eeb5f28083b1351c13d":[6,1,1,89,1,5],
 "classFeel_1_1GinacExprManagerDefaultFileNameImpl.html":[6,1,1,96],
 "classFeel_1_1GinacExprManagerDefaultFileNameImpl.html#a34a260516134b1e3db0cda1034a9f57b":[6,1,1,96,2],
-"classFeel_1_1GinacExprManagerDefaultFileNameImpl.html#aa40384565e387d8646d8a91a183e666d":[6,1,1,96,1],
-"classFeel_1_1GinacExprManagerDefaultFileNameImpl.html#aebaabf80c2f848a5a21e0e8dff8f7c14":[6,1,1,96,0],
-"classFeel_1_1GinacExprManagerImpl.html":[6,1,1,98],
-"classFeel_1_1GinacExprManagerImpl.html#a0eccd857c0d679727817027410ec858a":[6,1,1,98,0]
+"classFeel_1_1GinacExprManagerDefaultFileNameImpl.html#aa40384565e387d8646d8a91a183e666d":[6,1,1,96,1]
 };
