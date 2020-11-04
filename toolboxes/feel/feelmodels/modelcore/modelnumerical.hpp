@@ -48,6 +48,7 @@
 #include <feel/feelmodels/modelcore/markermanagement.hpp>
 
 #include <feel/feelcore/tuple_utils.hpp>
+#include <feel/feelcore/json.hpp>
 
 #include <feel/feelmodels/modelcore/modelcontext.hpp>
 
@@ -164,6 +165,21 @@ class ModelNumerical : public ModelAlgebraic
         ModelProperties const& modelProperties() const { return *M_modelProps; }
         ModelProperties & modelProperties() { return *M_modelProps; }
         void setModelProperties( std::shared_ptr<ModelProperties> modelProps ) { M_modelProps = modelProps; }
+
+        /**
+         * @brief Set the Model Properties object from a filename
+         * 
+         * @param filename file name
+         */
+        void setModelProperties( std::string const& filename );
+
+        /**
+         * @brief Set the Model Properties object from a json struct
+         * the json may come from python 
+         * @param j json data structure
+         */
+        void setModelProperties( nl::json const& j );
+
         void addParameterInModelProperties( std::string const& symbolName,double value );
 
         bool manageParameterValues() const { return M_manageParameterValues; }
