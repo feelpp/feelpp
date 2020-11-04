@@ -62,6 +62,14 @@ public :
             }
             return res;
         }
+
+    void updateTime( double time )
+        {
+            for ( auto & [name,data] : M_codbme )
+                data.updateTime( time );
+        }
+
+
 private:
     mesh_base_ptrtype M_mesh;
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
@@ -124,6 +132,12 @@ public:
         for ( auto const& [meshName,mMesh] : *this )
             res =  Feel::vf::symbolsExpr( res, mMesh->symbolsExpr( prefixvm( prefix_symbol, meshName, "_" ) ) );
         return res;
+    }
+
+    void updateTime( double time )
+    {
+        for ( auto & [meshName,mMesh] : *this )
+            mMesh->updateTime( time );
     }
 };
 
