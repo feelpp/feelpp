@@ -451,6 +451,13 @@ public:
     }
 
     /**
+     * @brief Set the Configuration from a File 
+     * 
+     * @param filename filename of the config file
+     */
+    static void setConfigFile( std::string const& filename );
+
+    /**
      * return variables_map
      */
     static po::variables_map const& vm()

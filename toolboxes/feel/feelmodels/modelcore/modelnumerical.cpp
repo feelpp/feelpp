@@ -96,8 +96,22 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         //-----------------------------------------------------------------------//
         std::string modelPropFilename = Environment::expand( soption( _name="filename",_prefix=this->prefix(),_vm=this->clovm()) );
         if ( !modelPropFilename.empty() )
-            M_modelProps = std::make_shared<ModelProperties>( modelPropFilename, this->repository().expr(), this->worldCommPtr(), this->prefix() );
+            this->setModelProperties( modelPropFilename );
     }
+
+   void 
+   ModelNumerical::setModelProperties( std::string const& filename )
+   {
+        M_modelProps = std::make_shared<ModelProperties>( filename, this->repository().expr(), 
+                                                          this->worldCommPtr(), this->prefix() );
+   }
+
+   void 
+   ModelNumerical::setModelProperties( nl::json const& json )
+   {
+        M_modelProps = std::make_shared<ModelProperties>( json, this->repository().expr(), 
+                                                          this->worldCommPtr(), this->prefix() );
+   }
 
    void
    ModelNumerical::addParameterInModelProperties( std::string const& symbolName,double value)
