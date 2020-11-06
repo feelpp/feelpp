@@ -3,12 +3,17 @@
 #pragma once
 
 #include <feel/feelmesh/meshbase.hpp>
+#include <feel/feelmesh/enums.hpp>
 #include <feel/feelfilters/databymeshentity.hpp>
+#include <feel/feelmodels/modelcore/modelbase.hpp>
 
 namespace Feel
 {
 namespace FeelModels
 {
+
+template <typename IndexType>
+class ModelMeshes;
 
 template <typename IndexType>
 class ModelMesh
@@ -19,35 +24,66 @@ public :
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
     using collection_data_by_mesh_entity_type = CollectionOfDataByMeshEntity<index_type>;
 
-    ModelMesh() = default;
+    class ImportConfig
+    {
+    public :
+        ImportConfig()
+            :
+            M_generatePartitioning( false ),
+            M_numberOfPartition( 1 ),
+            M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+            {}
+        ImportConfig( ImportConfig const& ) = default;
+        ImportConfig( ImportConfig && ) = default;
+        ImportConfig( ModelMeshes<IndexType> const& mMeshes );
+
+        std::string const& meshFilename() const { return M_meshFilename; }
+        std::string const& geoFilename() const { return M_geoFilename; }
+        bool generatePartitioning() const { return M_generatePartitioning; }
+        int numberOfPartition() const { return M_numberOfPartition; }
+        double meshSize() const { return M_meshSize; }
+        size_type meshComponents() const { return M_meshComponents; }
+
+        bool hasMeshFilename() const { return !M_meshFilename.empty(); }
+        bool hasGeoFilename() const { return !M_geoFilename.empty(); }
+
+        void setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes );
+        void updateForUse( ModelMeshes<IndexType> const& mMeshes );
+
+        void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
+
+    private :
+        std::string M_inputFilename, M_meshFilename, M_geoFilename;
+        bool M_generatePartitioning;
+        int M_numberOfPartition;
+        double M_meshSize;
+        size_type M_meshComponents;
+    };
+
+    ModelMesh( std::string const& name )
+        :
+        M_name( name )
+        {}
+    ModelMesh( std::string const& name, ModelMeshes<IndexType> const& mMeshes );
     ModelMesh( ModelMesh const& ) = default;
     ModelMesh( ModelMesh && ) = default;
 
-    void setup( pt::ptree const& pt );
+    void setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes );
+
+    void setupRestart( ModelMeshes<IndexType> const& mMeshes );
 
     void setMesh( mesh_base_ptrtype m ) { M_mesh = m; }
 
     template <typename MeshType>
-    void updateForUse()
-        {
-            for ( auto & [name,data] : M_codbme )
-            {
-                data.setMesh( M_mesh );
-                data.template updateForUse<MeshType>();
-            }
-        }
+    void updateForUse( ModelMeshes<IndexType> const& mMeshes );
 
     template <typename MeshType = mesh_base_type>
     auto mesh() const
         {
             if constexpr( std::is_same_v<MeshType,mesh_base_type> )
-                            return M_mesh;
+                return M_mesh;
             else
-            {
-                auto m = std::dynamic_pointer_cast<MeshType>( M_mesh );
-                CHECK( m ) << "dynamic_pointer_cast fail";
-                return m;
-            }
+                return std::dynamic_pointer_cast<MeshType>( M_mesh );
         }
 
     std::map<std::string,collection_data_by_mesh_entity_type> const& collectionOfDataByMeshEntity() const { return M_codbme; }
@@ -69,9 +105,11 @@ public :
                 data.updateTime( time );
         }
 
-
 private:
+    std::string M_name;
     mesh_base_ptrtype M_mesh;
+    std::string M_meshFilename;
+    ImportConfig M_importConfig;
     std::map<std::string,collection_data_by_mesh_entity_type> M_codbme;
 };
 
@@ -83,7 +121,11 @@ class ModelMeshes : protected std::map<std::string,std::shared_ptr<ModelMesh<Ind
     using mesh_base_type = MeshBase<IndexType>;
     using mesh_base_ptrtype = std::shared_ptr<mesh_base_type>;
 public:
-    ModelMeshes() : ModelBase("") {}
+    ModelMeshes() : ModelBase("")
+    {
+        auto me = std::make_shared<ModelMesh<IndexType>>( this->keyword(), *this );
+        this->emplace( std::make_pair( this->keyword(), std::move( me ) ) );
+    }
     ModelMeshes( ModelMeshes const& ) = default;
     ModelMeshes( ModelMeshes && ) = default;
 
@@ -106,17 +148,25 @@ public:
 
     void setup( pt::ptree const& pt );
 
+    void setupRestart( std::string const& meshName )
+    {
+        if ( !this->hasModelMesh( meshName ) )
+            this->emplace( std::make_pair( meshName, std::make_shared<ModelMesh<IndexType>>( meshName ) ) );
+        this->modelMesh( meshName ).setupRestart( *this );
+    }
+
     void setMesh( std::string const& meshName, mesh_base_ptrtype m )
     {
         if ( !this->hasModelMesh( meshName ) )
-            this->emplace( std::make_pair( meshName, std::make_shared<ModelMesh<IndexType>>() ) );
+            this->emplace( std::make_pair( meshName, std::make_shared<ModelMesh<IndexType>>( meshName ) ) );
         this->modelMesh( meshName ).setMesh( m );
     }
 
     template <typename MeshType>
     void updateForUse( std::string const& meshName )
     {
-        this->modelMesh( meshName ).template updateForUse<MeshType>();
+        if ( this->hasModelMesh( meshName ) )
+            this->modelMesh( meshName ).template updateForUse<MeshType>( *this );
     }
 
     template <typename MeshType = mesh_base_type>
@@ -148,19 +198,24 @@ ModelMeshes<IndexType>::setup( pt::ptree const& pt )
     for ( auto const& item : pt )
     {
         std::string meshName = item.first;
-        auto me = std::make_shared<ModelMesh<IndexType>>();
-        me->setup( item.second );
-        this->emplace( std::make_pair( meshName, std::move( me ) ) );
+        if ( this->hasModelMesh( meshName ) )
+            this->at( meshName )->setup( item.second, *this );
+        else
+        {
+            auto me = std::make_shared<ModelMesh<IndexType>>( meshName );
+            me->setup( item.second, *this );
+            this->emplace( std::make_pair( meshName, std::move( me ) ) );
+        }
     }
 }
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::setup( pt::ptree const& pt )
+ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
 {
     if ( auto importPtree = pt.get_child_optional("Import") )
     {
-        // TODO
+        M_importConfig.setup( *importPtree, mMeshes );
     }
 
     if ( auto dataPtree = pt.get_child_optional("Data") )
