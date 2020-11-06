@@ -33,7 +33,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );

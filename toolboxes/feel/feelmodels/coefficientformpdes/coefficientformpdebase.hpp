@@ -82,9 +82,9 @@ public :
 
     //___________________________________________________________________________________//
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype /*const&*/ mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
     // physical parameters
@@ -130,7 +130,6 @@ protected :
 
 protected :
 
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     // physical parameters

@@ -62,13 +62,17 @@ CoefficientFormPDEBase<ConvexType>::initMesh()
     this->log("CoefficientFormPDE","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
-    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    CHECK( M_mesh ) << "mesh generation fail";
+    // std::string fileNameMeshPath = prefixvm(this->prefix(),"CoefficientFormPDEMesh.path");
+    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
+    // CHECK( M_mesh ) << "mesh generation fail";
 
-    super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+
+    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
 
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("CoefficientFormPDE","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
