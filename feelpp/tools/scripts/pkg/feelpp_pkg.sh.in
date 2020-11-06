@@ -15,7 +15,7 @@ if [ "$BUILDKITE_BRANCH" = "master" -o  "$BRANCH" = "master" ]; then
     CHANNEL=stable
 fi 
 DIST=${DIST:-focal}
-if [ "$DIST" = "focal" -o "$DIST" = "eoan" ]; then
+if [ "$DIST" = "bionic" -o "$DIST" = "eoan" -o "$DIST" = "focal"  -o "$DIST" = "groovy"  ]; then
    FLAVOR=ubuntu
 elif [ "$DIST" = "buster" ]; then
     FLAVOR=debian
@@ -96,5 +96,6 @@ pbuilder-dist $DIST build --buildresult ${PBUILDER_RESULTS}  ../${COMPONENT}_${v
 
 echo "+++ uploading ${PBUILDER_RESULTS} to bintray $COMPONENT $FLAVOR/$DIST"
 ls  -1 ${PBUILDER_RESULTS}
+echo "../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT"
 ../upload_bintray.sh $main_version ${PBUILDER_RESULTS} $FLAVOR $DIST $CHANNEL $COMPONENT
 
