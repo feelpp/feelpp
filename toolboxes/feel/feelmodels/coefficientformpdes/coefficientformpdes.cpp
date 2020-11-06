@@ -3,7 +3,7 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
+//#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/utils.hpp>
 
 namespace Feel
@@ -65,7 +65,7 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !this->M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     for ( auto & cfpdeBase : M_coefficientFormPDEs )
@@ -149,12 +149,16 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("CoefficientFormPDEs","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
-    createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
-    CHECK( M_mesh ) << "mesh generation fail";
+    // std::string fileNameMeshPath = prefixvm(this->prefix(),"mesh.path");
+    // createMeshModel<mesh_type>(*this,M_mesh,fileNameMeshPath);
+    // CHECK( M_mesh ) << "mesh generation fail";
 
-    super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
+    if ( this->doRestart() )
+         super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    //super_type::super_model_meshes_type::setMesh( this->keyword(), M_mesh );
     super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");

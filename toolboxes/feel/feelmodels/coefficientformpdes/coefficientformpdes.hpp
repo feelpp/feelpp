@@ -219,8 +219,8 @@ public :
 
     //___________________________________________________________________________________//
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype /*const&*/ mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     //___________________________________________________________________________________//
     // physical parameters
@@ -455,8 +455,6 @@ private :
 private :
 
     static const std::vector<std::string> S_unknownBasisTags;
-
-    mesh_ptrtype M_mesh;
 
     // physical parameters
     materialsproperties_ptrtype M_materialsProperties;
