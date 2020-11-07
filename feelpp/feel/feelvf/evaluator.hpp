@@ -834,7 +834,7 @@ struct minmaxData : public boost::tuple<double,double, Eigen::Matrix<double, Dim
     /**
      * coordinates of the points where  min and max are attained
      */
-    Eigen::Matrix<double, Dim,1> const& coords() const { return this->template get<2>(); }
+    Eigen::Matrix<double, Dim,2> const& coords() const { return this->template get<2>(); }
 
     /**
      * Serialization for minmaxData
