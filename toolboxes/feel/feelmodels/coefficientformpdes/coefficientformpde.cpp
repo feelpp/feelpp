@@ -253,7 +253,47 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
 {
-    // TODO
+    pt::ptree subPt;
+    super_type::super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+}
+
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    tabulate::Table tabInfo;
+
+    tabulate::Table tabInfoEnv;
+    tabInfoEnv.add_row({"Environment"});
+    tabInfoEnv.add_row({ super_type::super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoEnv});
+
+    tabulate::Table tabInfoPDE;
+    tabInfoPDE.add_row({"PDE"});
+    tabInfo.add_row({tabInfoPDE});
+
+    tabulate::Table tabInfoMesh;
+    tabInfoMesh.add_row({"Meshes"});
+    tabInfoMesh.add_row({ super_type::super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoMesh});
+
+    tabulate::Table tabInfoBC;
+    tabInfoBC.add_row({"Boundary conditions"});
+    tabInfo.add_row({tabInfoBC});
+
+    tabulate::Table tabInfoFunctionSpace;
+    tabInfoFunctionSpace.add_row({"Function Space Unknown Discretization"});
+    tabInfo.add_row({tabInfoFunctionSpace});
+
+    tabulate::Table tabInfoAlg;
+    tabInfoAlg.add_row({"Algebraic Solver"});
+    tabInfo.add_row({tabInfoAlg});
+
+    return tabInfo;
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
@@ -278,10 +318,12 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::getInfo() const
            << M_bcNeumannMarkerManagement.getInfoNeumannBC()
            << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << this->mesh()->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
+#endif
     *_ostr << "\n   Space Unknown Discretization"
            << "\n     -- name of unknown         : " << this->unknownName()
            << "\n     -- symbol of unknown : " << this->unknownSymbol()

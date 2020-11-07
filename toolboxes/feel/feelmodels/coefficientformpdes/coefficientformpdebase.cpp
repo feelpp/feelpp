@@ -3,8 +3,6 @@
 
 #include <feel/feelmodels/coefficientformpdes/coefficientformpdebase.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
-
 namespace Feel
 {
 namespace FeelModels
