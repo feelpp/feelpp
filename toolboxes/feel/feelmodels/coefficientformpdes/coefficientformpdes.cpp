@@ -389,6 +389,30 @@ void
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
 {
     // TODO
+    for (auto & cfpde  : M_coefficientFormPDEs )
+    {
+        pt::ptree subPt;
+        cfpde->updateInformationObject( subPt );
+        p.put_child( cfpde->keyword(), subPt );
+    }
+}
+
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) /*const*/
+{
+    tabulate::Table tabInfo;
+    for (auto & cfpde  : M_coefficientFormPDEs )
+    {
+        if ( jsonInfo.contains(cfpde->keyword()) )
+        {
+            tabulate::Table tabInfoCFPDE;
+            tabInfoCFPDE.add_row( { (boost::format("CFPDE : %1%")%cfpde->keyword() ).str() } );
+            tabInfoCFPDE.add_row( { cfpde->tabulateInformation( jsonInfo.at(cfpde->keyword()), tabInfoProp ) } );
+            tabInfo.add_row({tabInfoCFPDE});
+        }
+    }
+    return tabInfo;
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
