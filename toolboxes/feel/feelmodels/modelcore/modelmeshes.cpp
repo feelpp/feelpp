@@ -49,6 +49,7 @@ template <typename IndexType>
 void
 ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
 {
+    CHECK( false ) << "TODO";
     // TODO
 }
 
@@ -71,11 +72,44 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
                 meshfile = dowloadedData[1];
         }
     }
-
+    meshfile = fs::canonical( fs::path( meshfile ) ).string();
     if ( fs::path( meshfile ).extension() == ".geo" )
         M_geoFilename = meshfile;
     else
         M_meshFilename = meshfile;
+}
+
+template <typename IndexType>
+void
+ModelMesh<IndexType>::ImportConfig::updateInformationObject( pt::ptree & p )
+{
+    if ( this->hasMeshFilename() )
+    {
+        p.put( "mesh-filename", M_meshFilename );
+    }
+    else
+    {
+        p.put( "geo-filename", M_geoFilename );
+        p.put( "hsize", M_meshSize );
+    }
+
+    p.put( "generate-partitioning", M_generatePartitioning );
+    if ( M_generatePartitioning )
+        p.put( "number-of-partition", M_numberOfPartition );
+}
+
+template <typename IndexType>
+tabulate::Table
+ModelMesh<IndexType>::ImportConfig::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    tabulate::Table tabInfo;
+    if ( jsonInfo.contains("mesh-filename") )
+        TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "mesh-filename" } );
+    else
+        TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "geo-filename","hsize" } );
+
+    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "generate-partitioning", "number-of-partition" } );
+    return tabInfo;
 }
 
 template <typename IndexType>
@@ -192,6 +226,46 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         data.setMesh( M_mesh );
         data.template updateForUse<MeshType>();
     }
+}
+
+
+template <typename IndexType>
+void
+ModelMesh<IndexType>::updateInformationObject( pt::ptree & p )
+{
+    if ( M_mesh )
+    {
+        pt::ptree subPt;
+        M_mesh->putInformationObject( subPt );
+        p.put_child( "Discretization", subPt );
+        subPt.clear();
+        M_importConfig.updateInformationObject( subPt );
+        p.put_child( "Import configuration", subPt );
+
+        if ( !M_meshFilename.empty() )
+            p.put( "filename", M_meshFilename );
+    }
+}
+
+template <typename IndexType>
+tabulate::Table
+ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    tabulate::Table tabInfo;
+
+    if ( jsonInfo.contains("Import configuration") )
+    {
+        tabulate::Table tabInfoImportConfig;
+        tabInfoImportConfig.add_row({"Import configuration"});
+        tabInfoImportConfig.add_row( { ImportConfig::tabulateInformation( jsonInfo.at("Import configuration"), tabInfoProp ) });
+        tabInfo.add_row( {tabInfoImportConfig} );
+    }
+    tabulate::Table tabInfoOthers;
+    if ( jsonInfo.contains("filename") )
+        tabInfoOthers.add_row( {"filename", jsonInfo.at( "filename" ).template get<std::string>() });
+    if ( tabInfoOthers.shape().first > 0 )
+        tabInfo.add_row({tabInfoOthers});
+    return tabInfo;
 }
 
 

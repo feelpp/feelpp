@@ -31,6 +31,27 @@
 
 namespace Feel {
 
+namespace TabulateInformationToolsFromJSON
+{
+void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys )
+{
+    for ( std::string const& key : keys )
+    {
+        if ( !jsonInfo.contains(key) )
+            continue;
+        auto const& valAtKey = jsonInfo.at(key);
+        if ( !valAtKey.is_primitive() )
+            continue;
+        if ( valAtKey.is_string() )
+            table.add_row( {key, valAtKey.get<std::string>()} );
+        else if ( valAtKey.is_number_float() )
+            table.add_row( {key, std::to_string(valAtKey.get<double>())} );
+    }
+}
+
+} // namespace TabulateInformationToolsFromJSON
+
+
 namespace FeelModels {
 
 namespace ToolboxesDetail
@@ -375,6 +396,36 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 }
 
 // info
+
+void
+ModelBase::updateInformationObject( pt::ptree & p )
+{
+    p.put( "Prefix", this->prefix() );
+    p.put( "Root Repository", this->rootRepository() );
+}
+
+tabulate::Table
+ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) /*const*/
+{
+    tabulate::Table tabInfo;
+    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "Prefix","Root Repository" } );
+    return tabInfo;
+}
+
+tabulate::Table
+ModelBase::tabulateInformation() /*const*/
+{
+    pt::ptree pt;
+    this->updateInformationObject( pt );
+    std::ostringstream pt_ostr;
+    write_json( pt_ostr, pt );
+    std::istringstream pt_istream( pt_ostr.str() );
+    nl::json jsonInfo;
+    pt_istream >> jsonInfo;
+
+    return this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
+}
+
 std::string
 ModelBase::filenameSaveInfo() const
 {

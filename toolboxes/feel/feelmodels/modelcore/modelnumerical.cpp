@@ -41,8 +41,8 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
                                 ModelBaseRepository const& modelRep,
                                 ModelBaseCommandLineOptions const& modelCmdLineOpt )
         :
-        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         ModelBase( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
+        super_type( _theprefix, keyword, _worldComm, subPrefix, modelRep, modelCmdLineOpt ),
         M_isStationary( boption(_name="ts.steady") ),
         M_doRestart( boption(_name="ts.restart") ),
         M_restartPath( soption(_name="ts.restart.path") ),
@@ -66,28 +66,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
         // move in stationary mode if we have this relation
         if ( M_timeInitial + M_timeStep == M_timeFinal)
             M_isStationary=true;
-        //-----------------------------------------------------------------------//
-        if ( this->clovm().count( prefixvm(this->prefix(),"mesh.filename").c_str() ) )
-        {
-            std::string meshfile = Environment::expand( soption(_prefix=this->prefix(),_name="mesh.filename",_vm=this->clovm()) );
-            RemoteData rdTool( meshfile, this->worldCommPtr() );
-            if ( rdTool.canDownload() )
-            {
-                auto dowloadedData = rdTool.download( (fs::path(Environment::downloadsRepository())/fs::path(this->prefix())/fs::path("meshes")).string() );
-                CHECK( dowloadedData.size() > 0 ) << "no data download";
-                meshfile = dowloadedData[0];
-                if ( dowloadedData.size() == 2 )
-                {
-                    if ( fs::path( dowloadedData[0] ).extension() == ".h5" && fs::path( dowloadedData[1] ).extension() == ".json" )
-                        meshfile = dowloadedData[1];
-                }
-            }
-
-            if ( fs::path( meshfile ).extension() == ".geo" )
-                M_geoFile = meshfile;
-            else
-                M_meshFile = meshfile;
-        }
         //-----------------------------------------------------------------------//
         if (soption(_prefix=this->prefix(),_name="geomap",_vm=this->clovm())=="opt")
             M_geomap=GeomapStrategyType::GEOMAP_OPT;
@@ -127,27 +105,6 @@ ModelNumerical::ModelNumerical( std::string const& _theprefix, std::string const
             this->addParameterInModelProperties( "t", M_timeCurrent );
     }
 
-
-
-    void
-    ModelNumerical::saveMeshFile( std::string const& fileSavePath, std::string const& meshPath ) const
-    {
-        std::string meshPathUsed = (meshPath.empty())? this->meshFile() : meshPath;
-        if (this->verbose()) FeelModels::Log(this->prefix()+".ModelNumerical","saveMeshFile",
-                                             "fileSavePath :"+ fileSavePath + "\nwrite :\n" + meshPathUsed,
-                                             this->worldComm(),this->verboseAllProc());
-
-        if ( this->worldComm().isMasterRank() )
-        {
-            fs::path thedir = fs::path( fileSavePath ).parent_path();
-            if ( !fs::exists(thedir))
-                fs::create_directories(thedir);
-
-            std::ofstream file(fileSavePath.c_str(), std::ios::out);
-            file << meshPathUsed;
-            file.close();
-        }
-    }
 
 bool
 ModelNumerical::checkResults() const
