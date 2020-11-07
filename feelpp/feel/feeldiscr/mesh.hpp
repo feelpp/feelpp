@@ -167,8 +167,7 @@ class Mesh
                                                           mpl::identity<Mesh2D<GeoShape, T, IndexT>>,
                                                           mpl::identity<Mesh3D<GeoShape, T, IndexT>>>::type>::type>::type::type,
       public boost::addable<Mesh<GeoShape, T, Tag, IndexT>>,
-      public std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT>>,
-      public JournalWatcher
+      public std::enable_shared_from_this<Mesh<GeoShape, T, Tag, IndexT>>
 {
     using super = typename mpl::if_<is_0d<GeoShape>,
                                     mpl::identity<Mesh0D<GeoShape, T, IndexT>>,
@@ -177,7 +176,6 @@ class Mesh
                                                       typename mpl::if_<is_2d<GeoShape>,
                                                                         mpl::identity<Mesh2D<GeoShape, T, IndexT>>,
                                                                         mpl::identity<Mesh3D<GeoShape, T, IndexT>>>::type>::type>::type::type;
-    using super2 = JournalWatcher;
 
   public:
     //!  @name Constants
