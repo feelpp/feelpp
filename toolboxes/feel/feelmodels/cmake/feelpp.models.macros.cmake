@@ -401,6 +401,7 @@ macro( genLibCoefficientFormPDEs )
     message( FATAL_ERROR "UNKNOWN_BASIS_TYPE and UNKNOWN_BASIS_TAG should be same size" )
   endif()
 
+  unset( COEFFICIENTFORMPDES_LIB_DEPENDS )
   math(EXPR count "${count}-1")
   foreach(i RANGE ${count})
     list(GET FEELMODELS_APP_UNKNOWN_BASIS_TYPE ${i} COEFFICIENTFORMPDE_UNKNOWN_BASIS_TYPE)
