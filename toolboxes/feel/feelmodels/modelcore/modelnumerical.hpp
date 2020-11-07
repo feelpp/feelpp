@@ -38,9 +38,6 @@
 
 #include <feel/feelpoly/geomap.hpp>
 
-// #include <boost/fusion/tuple.hpp>
-// #include <boost/fusion/sequence.hpp>
-// #include <boost/fusion/algorithm.hpp>
 #include <feel/feelvf/ginac.hpp>
 
 #include <feel/feelmodels/modelproperties.hpp>
@@ -63,14 +60,15 @@ namespace FeelModels
 /**
  * Handles some numerical model aspects: timestepping, mesh and properties
  */
-class ModelNumerical : public ModelAlgebraic, public ModelMeshes<typename ModelAlgebraic::index_type>
+class ModelNumerical : virtual public ModelBase,
+                       public ModelAlgebraic,
+                       public ModelMeshes<typename ModelAlgebraic::index_type>
     {
     protected :
+        using super_model_base_type = ModelBase;
         using super_model_meshes_type = ModelMeshes<typename ModelAlgebraic::index_type>;
     public:
         typedef ModelAlgebraic super_type;
-
-        static const bool is_class_null = false;
 
         typedef double value_type;
         using index_type = typename super_type::index_type;
@@ -175,16 +173,6 @@ class ModelNumerical : public ModelAlgebraic, public ModelMeshes<typename ModelA
         GeomapStrategyType geomap() const { return M_geomap; }
 
         //----------------------------------------------------------------------------------//
-
-
-        std::string meshFile() const { return M_meshFile; }
-        void setMeshFile(std::string const& file)  { M_meshFile=file; }
-        std::string geoFile() const { return M_geoFile; }
-        void setGeoFile(std::string const& file)  { M_geoFile=file; }
-        bool hasMeshFile() const { return !M_meshFile.empty(); }
-        bool hasGeoFile() const { return !M_geoFile.empty(); }
-
-        void saveMeshFile( std::string const& fileSavePath, std::string const& meshPath = "" ) const;
 
         void setExporterPath(std::string const& s)  { M_exporterPath=s; }
         std::string exporterPath() const { return M_exporterPath; }
@@ -303,9 +291,6 @@ class ModelNumerical : public ModelAlgebraic, public ModelMeshes<typename ModelA
         std::shared_ptr<ModelProperties> M_modelProps;
         bool M_manageParameterValues, M_manageParameterValuesOfModelProperties;
 
-
-        std::string M_meshFile, M_geoFile;
-
         std::string M_exporterPath;
         std::map<std::string,std::tuple< std::set<std::string>, std::set<std::string>, std::string > > M_postProcessExportsFields; // (fields, allFieldsAvailable,pidName)
         std::set<std::string> M_postProcessSaveFields, M_postProcessSaveAllFieldsAvailable;
@@ -313,8 +298,6 @@ class ModelNumerical : public ModelAlgebraic, public ModelMeshes<typename ModelA
         fs::path M_postProcessSaveRepository;
         ModelMeasuresIO M_postProcessMeasuresIO;
         ModelMeasuresEvaluatorContext M_postProcessMeasuresEvaluatorContext;
-
-        //std::shared_ptr<PsLogger> M_PsLogger;
 
         GeomapStrategyType M_geomap;
 

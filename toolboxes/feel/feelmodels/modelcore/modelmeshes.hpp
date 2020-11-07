@@ -52,6 +52,9 @@ public :
 
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
 
+        void updateInformationObject( pt::ptree & p );
+        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
     private :
         std::string M_inputFilename, M_meshFilename, M_geoFilename;
         bool M_generatePartitioning;
@@ -104,6 +107,11 @@ public :
             for ( auto & [name,data] : M_codbme )
                 data.updateTime( time );
         }
+
+
+    void updateInformationObject( pt::ptree & p );
+
+    static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
 private:
     std::string M_name;
@@ -189,6 +197,33 @@ public:
         for ( auto & [meshName,mMesh] : *this )
             mMesh->updateTime( time );
     }
+
+    void updateInformationObject( pt::ptree & p ) override
+    {
+        for ( auto & [meshName,mMesh] : *this )
+        {
+            pt::ptree subPt;
+            mMesh->updateInformationObject( subPt );
+            p.put_child( meshName, subPt );
+        }
+    }
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) override
+    {
+        tabulate::Table tabInfo;
+        for ( auto & [meshName,mMesh] : *this )
+        {
+            if ( jsonInfo.contains(meshName) )
+            {
+                tabulate::Table tabInfoMesh;
+                tabInfoMesh.add_row( { (boost::format("Mesh : %1%")%meshName ).str() } );
+                tabInfoMesh.add_row( { mMesh->tabulateInformation( jsonInfo.at(meshName), tabInfoProp ) } );
+                tabInfo.add_row({tabInfoMesh});
+            }
+        }
+        return tabInfo;
+    }
+    //static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
+
 };
 
 template <typename IndexType>

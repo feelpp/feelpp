@@ -32,7 +32,7 @@
 
 #include <feel/options.hpp>
 #include <feel/feelcore/environment.hpp>
-#include <feel/feelcore/pslogger.hpp>
+//#include <feel/feelcore/pslogger.hpp>
 #include <feel/feelcore/worldcomm.hpp>
 #include <feel/feelcore/remotedata.hpp>
 
@@ -40,12 +40,34 @@
 #include <feel/feelmodels/modelcore/log.hpp>
 #include <feel/feelmodels/modelcore/timertool.hpp>
 
+#include <tabulate/table.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel
 {
 
 BOOST_PARAMETER_NAME( keyword )
 BOOST_PARAMETER_NAME( repository )
+
+class TabulateInformationProperties
+{
+public:
+    enum class VerboseLevel { NONE,SMALL,MEDIUM,FULL };
+
+    TabulateInformationProperties( VerboseLevel vl = VerboseLevel::FULL )
+        :
+        M_information_level( 0 ),
+        M_verbose_level( vl )
+        {}
+private:
+    uint16_type M_information_level;
+    VerboseLevel M_verbose_level;
+};
+
+namespace TabulateInformationToolsFromJSON
+{
+void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys );
+}
 
 namespace FeelModels
 {
@@ -145,7 +167,7 @@ public :
     virtual ~ModelBase();
 
     // worldcomm
-    worldcomm_ptr_t const&  worldCommPtr() const;
+    worldcomm_ptr_t const& worldCommPtr() const;
     worldcomm_ptr_t & worldCommPtr();
     worldcomm_t & worldComm();
     worldcomm_t const& worldComm() const;
@@ -172,6 +194,10 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
+    void updateInformationObject( pt::ptree & p );
+    tabulate::Table tabulateInformation() /*const*/;
+    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) /*const*/;
+
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
     virtual std::shared_ptr<std::ostringstream> getInfo() const;
@@ -227,13 +253,6 @@ private :
     // upload data tools
     ModelBaseUpload M_upload;
 };
-
-// null application
-struct ModelBaseNull
-{
-    static const bool is_class_null = true;
-};
-
 
 } // namespace FeelModels
 } // namespace feel
