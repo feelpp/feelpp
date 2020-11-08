@@ -60,6 +60,10 @@ void defSM(py::module &m)
         .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
         .def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
 
+        // time stepping
+        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
+        .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")
+
         // solve
         .def("solve",&toolbox_t::solve, "solve the heat mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the heat mechanics problem")
