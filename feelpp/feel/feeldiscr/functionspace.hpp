@@ -2292,6 +2292,8 @@ public:
                                   mpl::identity<local_interpolants<basis_0_type>> >::type::type::type local_interpolants_type;
 
         typedef Element<T,Cont> this_type;
+        using self_t = this_type;
+
         template<int i>
         struct sub_element
         {
@@ -2720,6 +2722,13 @@ public:
 
             return *this;
         }
+        Element operator-() const { Element r_(*this); r_.scale( -1.); return r_; }
+        self_t operator+( value_type f ) const { Element r_(*this); r_.setConstant(f); r_.add( 1., *this); return r_; }
+        friend self_t operator+( value_type f_, self_t const& e_ ) { Element r_(e_); r_.setConstant(f_); r_.add( 1., e_); return r_; }
+        self_t operator-( value_type f ) const { Element r_(*this); r_.setConstant(-f); r_.add( 1., *this); return r_; }
+        friend self_t operator-( value_type f_, self_t const& e_ ) { Element r_(e_); r_.setConstant(f_); r_.add( -1., e_); return r_; }
+        self_t operator*( value_type f_ ) const { Element r_(*this); r_.scale(f_); return r_; }
+        friend self_t operator*( value_type f_, self_t const& e_ ) { Element r_(e_); r_.scale(f_); return r_; }
         /**
          * update element when mesh has been changed
          */
