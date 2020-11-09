@@ -276,7 +276,7 @@ private:
     //! @{
 
     //! update information
-    void updateInformationObject( pt::ptree & p ) override
+    void updateInformationObject( pt::ptree & p ) const override
     {
         using namespace boost::accumulators;
         using namespace std::string_literals;

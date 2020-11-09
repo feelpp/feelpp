@@ -886,7 +886,7 @@ private:
     static FEELPP_NO_EXPORT void parseAndStoreOptions( po::command_line_parser parser, bool extra_parser = false );
 
     //! update information into ptree
-    void updateInformationObject( pt::ptree & p );
+    void updateInformationObject( pt::ptree & p ) const;
 
     //! @}
 
