@@ -1262,7 +1262,7 @@ public:
     //! @{
 
     //! update informations for the current object
-    void updateInformationObject( pt::ptree& p ) override;
+    void updateInformationObject( pt::ptree& p ) const override;
 
 #if defined( FEELPP_HAS_HDF5 )
     //!
@@ -2434,7 +2434,7 @@ Mesh<Shape, T, Tag, IndexT>::exportVTK( bool exportMarkers, std::string const& v
 
 //! Fill mesh properties in journal publication
 template <typename Shape, typename T, int Tag, typename IndexT>
-void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
+void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p ) const
 {
     if ( p.get_child_optional( "shape" ) )
         return;
@@ -2457,10 +2457,19 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p )
     p.put( "n_partition", nProc );
     if ( nProc > 1 )
     {
-        pt::ptree ptTmp;
+        pt::ptree ptEltActive, ptEltAll, ptFacesActives;
         for ( rank_type p = 0; p < nProc; ++p )
-            ptTmp.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsActive( p ) ) ) ) );
-        p.put_child( "partitioning.n_elements", ptTmp );
+        {
+            ptEltActive.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsActive( p ) ) ) ) );
+            ptEltAll.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsAll( p ) ) ) ) );
+            if ( this->dimension() > 1 )
+                ptFacesActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumFacesActive( p ) ) ) ) );
+        }
+        p.put_child( "partitioning.n_elements", ptEltActive );
+        p.put_child( "partitioning.n_elements_with_ghost", ptEltAll );
+        if ( this->dimension() > 1 )
+            p.put_child( "partitioning.n_faces", ptFacesActives );
+
     }
 }
 

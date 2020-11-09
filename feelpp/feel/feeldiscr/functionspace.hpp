@@ -5838,12 +5838,12 @@ private:
         FunctionSpace<A0,A1,A2,A3,A4> * M_functionspace;
         mesh_ptrtype M_mesh;
     };
-
+public :
     //! update informations for the current object
-    void updateInformationObject( pt::ptree & p ) override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
+    void updateInformationObject( pt::ptree & p ) const override { this->updateInformationObject( p, mpl::bool_<is_composite>() ); }
 private :
-    void updateInformationObject( pt::ptree & p, mpl::true_ );
-    void updateInformationObject( pt::ptree & p, mpl::false_ );
+    void updateInformationObject( pt::ptree & p, mpl::true_ ) const;
+    void updateInformationObject( pt::ptree & p, mpl::false_ ) const;
 
 protected:
 
@@ -6389,7 +6389,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::findPoint( node_type const& pt,size_type &cv 
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ )
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::false_ ) const
 {
     if ( p.get_child_optional( "nSpace" ) )
         return;
@@ -6406,6 +6406,7 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::
     p.put( "basis.nComponents2", nComponents2 );
     if ( is_tensor2symm )
         p.put( "basis.nRealComponents", nRealComponents );
+    p.put( "basis.nLocalDof", fe_type::nLocalDof );
 
     std::string shape;
     if ( is_scalar )
@@ -6423,16 +6424,17 @@ FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::
     rank_type nProc = this->worldComm().localSize();
     if ( nProc > 1 )
     {
-        pt::ptree subPt2, subPt3;
+        pt::ptree subPt1, subPt2, subPt3;
         for ( rank_type p=0;p<nProc;++p )
         {
+            subPt1.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalDofWithGhost( p ) ) ) ) );
             subPt2.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalDofWithoutGhost( p ) ) ) ) );
             subPt3.push_back( std::make_pair("", pt::ptree( std::to_string( this->dof()->nLocalGhosts( p ) ) ) ) );
         }
+        subPt.put_child( "nLocalDofWithGhost", subPt1 );
         subPt.put_child( "nLocalDofWithoutGhost", subPt2 );
         subPt.put_child( "nLocalGhost", subPt3 );
         subPt.put( "extended-doftable", this->dof()->buildDofTableMPIExtended() );
-        subPt.put( "nDofOnElement", this->dof()->nLocalDof() );
     }
     p.put_child( "doftable", subPt );
 }
@@ -6453,7 +6455,7 @@ struct UpdateInformationObject
 
 template<typename A0, typename A1, typename A2, typename A3, typename A4>
 void
-FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::true_ )
+FunctionSpace<A0, A1, A2, A3, A4>::updateInformationObject( pt::ptree & p, mpl::true_ ) const
 {
     if ( p.get_child_optional( "nSpace" ) )
         return;
