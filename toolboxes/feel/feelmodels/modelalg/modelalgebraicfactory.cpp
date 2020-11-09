@@ -411,7 +411,7 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
     //---------------------------------------------------------------------------------------------------------------//
 
     void
-    ModelAlgebraicFactory::updateInformationObject( pt::ptree & p )
+    ModelAlgebraicFactory::updateInformationObject( pt::ptree & p ) const
     {
         pt::ptree subPt;
         subPt.put( "prefix",this->backend()->prefix() );
@@ -462,6 +462,26 @@ void ModelAlgebraicFactory::initExplictPartOfSolution()
             subPt.put( "mat-solver-package", this->backend()->pcFactorMatSolverPackageType() );
         p.put_child( "PC", subPt );
     }
+tabulate::Table
+ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+{
+    tabulate::Table tabInfo;
+
+    for ( std::string const& section : std::vector<std::string>({"Backend","KSP","SNES","KSP in SNES", "PC" }) )
+        {
+            tabulate::Table tabInfoSection;
+            tabInfoSection.add_row({section});
+            tabulate::Table tabInfoSectionEntries;
+            TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
+            tabInfoSection.add_row({tabInfoSectionEntries});
+            tabInfo.add_row({tabInfoSection});
+        }
+
+    tabInfo.format().hide_border();
+
+    return tabInfo;
+}
+
 
     std::shared_ptr<std::ostringstream>
     ModelAlgebraicFactory::getInfo() const

@@ -145,7 +145,8 @@ namespace FeelModels
         std::shared_ptr<std::ostringstream> getInfo() const;
         void printInfo() const;
 
-        void updateInformationObject( pt::ptree & p );
+        void updateInformationObject( pt::ptree & p ) const;
+        static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
         //---------------------------------------------------------------------------------------------------------------//
         //---------------------------------------------------------------------------------------------------------------//
