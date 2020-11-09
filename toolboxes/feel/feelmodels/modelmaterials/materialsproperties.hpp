@@ -651,7 +651,7 @@ public :
             return ostr;
         }
 
-    void updateInformationObject( pt::ptree & p )
+    void updateInformationObject( pt::ptree & p ) const
         {
             p.put( "number of materials", this->numberOfMaterials() );
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
@@ -664,6 +664,30 @@ public :
                 p.add_child( matName, matPt );
             }
         }
+
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+        {
+            tabulate::Table tabInfo;
+            tabulate::Table tabInfoOthers;
+            TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+            tabInfo.add_row({tabInfoOthers});
+
+            for ( auto const& [matName,matProps] : M_materialNameToProperties )
+            {
+                if ( !jsonInfo.contains(matName) )
+                    continue;
+                tabulate::Table tabInfoMat;
+                tabInfoMat.add_row({"Material : "+matName});
+                tabulate::Table tabInfoMatEntries;
+                TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
+                tabInfoMat.add_row( { tabInfoMatEntries});
+                tabInfo.add_row( {tabInfoMat} );
+            }
+            tabInfo.format().hide_border();
+
+            return tabInfo;
+        }
+
 
     void setParameterValues( std::map<std::string,double> const& mp )
         {
