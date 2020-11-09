@@ -134,7 +134,8 @@ class Heat : public ModelNumerical,
 
         //___________________________________________________________________________________//
         // mesh, space, element temperature
-        mesh_ptrtype const& mesh() const { return M_mesh; }
+        mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+        void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
         elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
         space_temperature_ptrtype const& spaceTemperature() const { return M_Xh; }
@@ -180,7 +181,9 @@ class Heat : public ModelNumerical,
         //___________________________________________________________________________________//
 
         std::shared_ptr<std::ostringstream> getInfo() const override;
-        void updateInformationObject( pt::ptree & p ) override;
+        void updateInformationObject( pt::ptree & p ) const override;
+        tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     private :
         void loadParameterFromOptionsVm();
         void initMesh();
@@ -192,8 +195,6 @@ class Heat : public ModelNumerical,
 
     public :
         void initAlgebraicFactory();
-
-        void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
 
         BlocksBaseGraphCSR buildBlockMatrixGraph() const override;
         int nBlockMatrixGraph() const { return 1; }
@@ -448,7 +449,6 @@ class Heat : public ModelNumerical,
 
         bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
-        mesh_ptrtype M_mesh;
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
         space_temperature_ptrtype M_Xh;

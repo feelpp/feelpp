@@ -3,7 +3,6 @@
 
 #include <feel/feelmodels/heat/heat.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
 namespace Feel
@@ -64,8 +63,11 @@ HEAT_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("Heat","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("Heat","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
@@ -81,8 +83,6 @@ HEAT_CLASS_TEMPLATE_TYPE::initMaterialProperties()
 
     if ( !M_materialsProperties )
     {
-        // auto paramValues = this->modelProperties().parameters().toParameterValues();
-        // this->modelProperties().materials().setParameterValues( paramValues );
         M_materialsProperties.reset( new materialsproperties_type( this->shared_from_this() ) );
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
@@ -110,13 +110,13 @@ HEAT_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     // functionspace
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
-        M_rangeMeshElements = elements(M_mesh);
-        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_rangeMeshElements = elements(this->mesh());
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_Xh = space_temperature_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+        M_Xh = space_temperature_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
 
     M_fieldTemperature.reset( new element_temperature_type(M_Xh,"temperature"));
@@ -157,7 +157,7 @@ HEAT_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -342,17 +342,23 @@ HEAT_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 void
-HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Prefix" ) )
+    if ( p.get_child_optional( "Environment" ) )
         return;
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
+
+    pt::ptree subPt;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
 
     // Physical Model
-    pt::ptree subPt, subPt2;
+    pt::ptree subPt2;
+    subPt.clear();
     subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
     //subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
     p.put_child( "Physical Model", subPt );
@@ -376,14 +382,15 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     // Materials parameters
     subPt.clear();
     this->materialsProperties()->updateInformationObject( subPt );
-    p.put_child( "Materials parameters", subPt );
+    p.put_child( "Materials Properties", subPt );
 
-    // Mesh and FunctionSpace
+    // FunctionSpace
     subPt.clear();
-    subPt.put("filename", this->meshFile());
-    M_mesh->putInformationObject( subPt );
-    p.put( "Mesh",  M_mesh->journalSectionName() );
-    p.put( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
+    subPt2.clear();
+    M_Xh->updateInformationObject( subPt2 );
+    //subPt.put_child( "FunctionSpace Temperature",  M_Xh->journalSectionName() );
+    subPt.put_child( "Temperature", subPt2 );
+    p.put_child( "Function Spaces",  subPt );
     //if ( this->fieldVelocityConvectionIsUsedAndOperational() )
     //    p.put( "FunctionSpace Velocity Convection", M_XhVelocityConvection->journalSectionName() );
     if ( M_stabilizationGLS )
@@ -403,6 +410,73 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
         p.put_child( "Algebraic Solver", subPt );
     }
 }
+
+HEAT_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+HEAT_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    tabulate::Table tabInfo;
+
+    tabulate::Table tabInfoEnv;
+    tabInfoEnv.add_row({"Environment"});
+    tabInfoEnv.add_row({ super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoEnv});
+
+    tabulate::Table tabInfoPDE;
+    tabInfoPDE.add_row({"PDE"});
+    tabInfo.add_row({tabInfoPDE});
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+    {
+        tabulate::Table tabInfoMatProp;
+        tabInfoMatProp.add_row({"Materials Properties"});
+        tabInfoMatProp.add_row({ this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) });
+        tabInfo.add_row({tabInfoMatProp});
+    }
+
+    tabulate::Table tabInfoBC;
+    tabInfoBC.add_row({"Boundary conditions"});
+    tabInfo.add_row({tabInfoBC});
+
+    tabulate::Table tabInfoMesh;
+    tabInfoMesh.add_row({"Meshes"});
+    tabInfoMesh.add_row({ super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) });
+    tabInfo.add_row({tabInfoMesh});
+
+
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpace;
+        tabInfoFunctionSpace.add_row({"Function Spaces"});
+
+        tabulate::Table tabInfoFunctionSpaceTemperature;
+        tabInfoFunctionSpaceTemperature.add_row({"Temperature"});
+        tabInfoFunctionSpaceTemperature.add_row({ TabulateInformationToolsFromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) });
+
+        // tabInfoFunctionSpaceTemperature.add_row({"Temperature"});
+        // tabulate::Table tabInfoFunctionSpaceTemperatureEntries;
+        // TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoFunctionSpaceTemperatureEntries, jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp );
+        // tabInfoFunctionSpaceTemperature.add_row( { tabInfoFunctionSpaceTemperatureEntries});
+
+        tabInfoFunctionSpace.add_row({tabInfoFunctionSpaceTemperature});
+
+        //tabInfoFunctionSpace.format().hide_border();
+
+        tabInfo.add_row({tabInfoFunctionSpace});
+    }
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+    {
+        tabulate::Table tabInfoAlg;
+        tabInfoAlg.add_row({"Algebraic Solver"});
+        tabInfoAlg.add_row({model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) });
+        tabInfo.add_row({tabInfoAlg});
+    }
+
+    return tabInfo;
+}
+
 
 HEAT_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
@@ -429,10 +503,12 @@ HEAT_CLASS_TEMPLATE_TYPE::getInfo() const
            << M_bcNeumannMarkerManagement.getInfoNeumannBC()
            << M_bcRobinMarkerManagement.getInfoRobinBC();
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+#if 0
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
-           << "\n     -- number of element : " << M_mesh->numGlobalElements()
+           << "\n     -- number of element : " << this->mesh()->numGlobalElements()
            << "\n     -- order             : " << nOrderGeo;
+#endif
     *_ostr << "\n   Space Temperature Discretization"
            << "\n     -- order         : " << nOrderPoly
            << "\n     -- number of dof : " << M_Xh->nDof() << " (" << M_Xh->nLocalDof() << ")";
