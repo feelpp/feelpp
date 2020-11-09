@@ -52,7 +52,7 @@ public :
 
         void setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename );
 
-        void updateInformationObject( pt::ptree & p );
+        void updateInformationObject( pt::ptree & p ) const;
         static tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 
     private :
@@ -109,7 +109,7 @@ public :
         }
 
 
-    void updateInformationObject( pt::ptree & p );
+    void updateInformationObject( pt::ptree & p ) const;
 
     static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
 
@@ -198,73 +198,11 @@ public:
             mMesh->updateTime( time );
     }
 
-    void updateInformationObject( pt::ptree & p ) override
-    {
-        for ( auto & [meshName,mMesh] : *this )
-        {
-            pt::ptree subPt;
-            mMesh->updateInformationObject( subPt );
-            p.put_child( meshName, subPt );
-        }
-    }
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) override
-    {
-        tabulate::Table tabInfo;
-        for ( auto & [meshName,mMesh] : *this )
-        {
-            if ( jsonInfo.contains(meshName) )
-            {
-                tabulate::Table tabInfoMesh;
-                tabInfoMesh.add_row( { (boost::format("Mesh : %1%")%meshName ).str() } );
-                tabInfoMesh.add_row( { mMesh->tabulateInformation( jsonInfo.at(meshName), tabInfoProp ) } );
-                tabInfo.add_row({tabInfoMesh});
-            }
-        }
-        return tabInfo;
-    }
-    //static tabulate::Table tabulateInformation( nl::json const& p, TabulateInformationProperties const& tabInfoProp );
+    void updateInformationObject( pt::ptree & p ) const override;
+
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
 };
-
-template <typename IndexType>
-void
-ModelMeshes<IndexType>::setup( pt::ptree const& pt )
-{
-    for ( auto const& item : pt )
-    {
-        std::string meshName = item.first;
-        if ( this->hasModelMesh( meshName ) )
-            this->at( meshName )->setup( item.second, *this );
-        else
-        {
-            auto me = std::make_shared<ModelMesh<IndexType>>( meshName );
-            me->setup( item.second, *this );
-            this->emplace( std::make_pair( meshName, std::move( me ) ) );
-        }
-    }
-}
-
-template <typename IndexType>
-void
-ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
-{
-    if ( auto importPtree = pt.get_child_optional("Import") )
-    {
-        M_importConfig.setup( *importPtree, mMeshes );
-    }
-
-    if ( auto dataPtree = pt.get_child_optional("Data") )
-    {
-        for ( auto const& item : *dataPtree )
-        {
-            std::string dataName = item.first;
-            collection_data_by_mesh_entity_type c;
-            c.setup( item.second );
-            M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
-        }
-    }
-
-}
 
 
 } // namespace FeelModels

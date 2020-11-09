@@ -66,7 +66,12 @@ private:
 
 namespace TabulateInformationToolsFromJSON
 {
-void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys );
+void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
+inline void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys ) { addKeyToValues( table, jsonInfo, tabInfoProp, std::vector<std::string>(keys) ); }
+
+void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+tabulate::Table tabulateFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
 }
 
 namespace FeelModels
@@ -194,9 +199,9 @@ public :
     bool verboseAllProc() const;
     void log( std::string const& _className,std::string const& _functionName,std::string const& _msg ) const;
     // info
-    void updateInformationObject( pt::ptree & p );
-    tabulate::Table tabulateInformation() /*const*/;
-    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) /*const*/;
+    void updateInformationObject( pt::ptree & p ) const override;
+    tabulate::Table tabulateInformation() const;
+    virtual tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const;
 
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);

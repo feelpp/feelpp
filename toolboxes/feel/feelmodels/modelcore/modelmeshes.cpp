@@ -81,7 +81,7 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::ImportConfig::updateInformationObject( pt::ptree & p )
+ModelMesh<IndexType>::ImportConfig::updateInformationObject( pt::ptree & p ) const
 {
     if ( this->hasMeshFilename() )
     {
@@ -119,6 +119,26 @@ ModelMesh<IndexType>::ModelMesh( std::string const& name, ModelMeshes<IndexType>
     M_importConfig( mMeshes )
 {}
 
+template <typename IndexType>
+void
+ModelMesh<IndexType>::setup( pt::ptree const& pt, ModelMeshes<IndexType> const& mMeshes )
+{
+    if ( auto importPtree = pt.get_child_optional("Import") )
+    {
+        M_importConfig.setup( *importPtree, mMeshes );
+    }
+
+    if ( auto dataPtree = pt.get_child_optional("Data") )
+    {
+        for ( auto const& item : *dataPtree )
+        {
+            std::string dataName = item.first;
+            collection_data_by_mesh_entity_type c;
+            c.setup( item.second );
+            M_codbme.emplace( std::make_pair( dataName, std::move( c ) ) );
+        }
+    }
+}
 
 template <typename IndexType>
 void
@@ -231,12 +251,12 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 
 template <typename IndexType>
 void
-ModelMesh<IndexType>::updateInformationObject( pt::ptree & p )
+ModelMesh<IndexType>::updateInformationObject( pt::ptree & p ) const
 {
     if ( M_mesh )
     {
         pt::ptree subPt;
-        M_mesh->putInformationObject( subPt );
+        M_mesh->updateInformationObject( subPt );
         p.put_child( "Discretization", subPt );
         subPt.clear();
         M_importConfig.updateInformationObject( subPt );
@@ -253,6 +273,15 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
 {
     tabulate::Table tabInfo;
 
+    tabulate::Table tabInfoOthers;
+    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo/*.at( "Backend" )*/, tabInfoProp );
+    if ( tabInfoOthers.begin() != tabInfoOthers.end() )
+        tabInfo.add_row({tabInfoOthers});
+    // if ( jsonInfo.contains("filename") )
+    //     tabInfoOthers.add_row( {"filename", jsonInfo.at( "filename" ).template get<std::string>() });
+    // if ( tabInfoOthers.shape().first > 0 )
+    //     tabInfo.add_row({tabInfoOthers});
+
     if ( jsonInfo.contains("Import configuration") )
     {
         tabulate::Table tabInfoImportConfig;
@@ -260,16 +289,74 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
         tabInfoImportConfig.add_row( { ImportConfig::tabulateInformation( jsonInfo.at("Import configuration"), tabInfoProp ) });
         tabInfo.add_row( {tabInfoImportConfig} );
     }
-    tabulate::Table tabInfoOthers;
-    if ( jsonInfo.contains("filename") )
-        tabInfoOthers.add_row( {"filename", jsonInfo.at( "filename" ).template get<std::string>() });
-    if ( tabInfoOthers.shape().first > 0 )
-        tabInfo.add_row({tabInfoOthers});
+
+    if ( jsonInfo.contains("Discretization") )
+    {
+        tabulate::Table tabInfoDiscr;
+        tabInfoDiscr.add_row({"Discretization"});
+        tabulate::Table tabInfoDiscrEntries;
+        TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
+        tabInfoDiscr.add_row( { tabInfoDiscrEntries});
+        tabInfo.add_row( {tabInfoDiscr} );
+    }
+
+    tabInfo.format().hide_border();
+
+    return tabInfo;
+}
+
+template <typename IndexType>
+void
+ModelMeshes<IndexType>::setup( pt::ptree const& pt )
+{
+    for ( auto const& item : pt )
+    {
+        std::string meshName = item.first;
+        if ( this->hasModelMesh( meshName ) )
+            this->at( meshName )->setup( item.second, *this );
+        else
+        {
+            auto me = std::make_shared<ModelMesh<IndexType>>( meshName );
+            me->setup( item.second, *this );
+            this->emplace( std::make_pair( meshName, std::move( me ) ) );
+        }
+    }
+}
+
+template <typename IndexType>
+void
+ModelMeshes<IndexType>::updateInformationObject( pt::ptree & p ) const
+{
+    for ( auto & [meshName,mMesh] : *this )
+    {
+        pt::ptree subPt;
+        mMesh->updateInformationObject( subPt );
+        p.put_child( meshName, subPt );
+    }
+}
+
+template <typename IndexType>
+tabulate::Table
+ModelMeshes<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    tabulate::Table tabInfo;
+    for ( auto & [meshName,mMesh] : *this )
+    {
+        if ( jsonInfo.contains(meshName) )
+        {
+            tabulate::Table tabInfoMesh;
+            tabInfoMesh.add_row( { (boost::format("Mesh : %1%")%meshName ).str() } );
+            tabInfoMesh.add_row( { mMesh->tabulateInformation( jsonInfo.at(meshName), tabInfoProp ) } );
+            tabInfo.add_row({tabInfoMesh});
+        }
+    }
+    tabInfo.format().hide_border();
     return tabInfo;
 }
 
 
 template class ModelMesh<uint32_type>;
+template class ModelMeshes<uint32_type>;
 
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,1>>>( ModelMeshes<uint32_type> const& );
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,1>>>( ModelMeshes<uint32_type> const& );
