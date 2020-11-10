@@ -28,6 +28,10 @@
  */
 
 #include <feel/feelmodels/modelcore/modelbase.hpp>
+#if 0
+#include <tabulate/asciidoc_exporter.hpp>
+#include <tabulate/markdown_exporter.hpp>
+#endif
 
 namespace Feel {
 
@@ -503,15 +507,19 @@ ModelBase::log( std::string const& _className,std::string const& _functionName,s
 void
 ModelBase::updateInformationObject( pt::ptree & p ) const
 {
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
+    p.put( "prefix", this->prefix() );
+    p.put( "keyword", this->keyword() );
+    p.put( "root repository", this->rootRepository() );
+    p.put( "expr repository", this->repository().expr() );
+    p.put( "number of processus", this->worldComm().localSize() );
 }
 
 tabulate::Table
 ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
     tabulate::Table tabInfo;
-    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "Prefix","Root Repository" } );
+    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
+    //TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
     return tabInfo;
 }
 
@@ -575,6 +583,18 @@ ModelBase::saveInfo() const
     }
 
     this->upload( thepath.string() );
+#if 0
+    auto tabInfo = this->tabulateInformation();
+    if (this->worldComm().isMasterRank() )
+    {
+        //tabulate::AsciiDocExporter exporter;
+        tabulate::MarkdownExporter exporter;
+        auto asciidoc = exporter.dump(tabInfo);
+        std::ofstream file( "toto.adoc", std::ios::out);
+        file << asciidoc;
+        file.close();
+    }
+#endif
 }
 void
 ModelBase::printAndSaveInfo() const
