@@ -27,6 +27,7 @@ set(SRC
   feelio.cpp
   application.cpp
   environment.cpp
+  repository.cpp
   simget.cpp
   xmlparser.hpp
   about.cpp
