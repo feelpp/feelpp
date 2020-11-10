@@ -2457,19 +2457,26 @@ void Mesh<Shape, T, Tag, IndexT>::updateInformationObject( pt::ptree& p ) const
     p.put( "n_partition", nProc );
     if ( nProc > 1 )
     {
-        pt::ptree ptEltActive, ptEltAll, ptFacesActives;
+        pt::ptree ptEltActive, ptEltAll, ptFacesActives, ptEdgesActives, ptPointsActives;
         for ( rank_type p = 0; p < nProc; ++p )
         {
             ptEltActive.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsActive( p ) ) ) ) );
             ptEltAll.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumElementsAll( p ) ) ) ) );
             if ( this->dimension() > 1 )
                 ptFacesActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumFacesActive( p ) ) ) ) );
+            if ( this->dimension() > 2 )
+                ptEdgesActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumEdgesActive( p ) ) ) ) );
+            if ( this->dimension() > 0 )
+                ptPointsActives.push_back( std::make_pair( "", pt::ptree( std::to_string( this->statNumPointsActive( p ) ) ) ) );
         }
         p.put_child( "partitioning.n_elements", ptEltActive );
         p.put_child( "partitioning.n_elements_with_ghost", ptEltAll );
         if ( this->dimension() > 1 )
             p.put_child( "partitioning.n_faces", ptFacesActives );
-
+        if ( this->dimension() > 2 )
+            p.put_child( "partitioning.n_edges", ptEdgesActives );
+        if ( this->dimension() > 0 )
+            p.put_child( "partitioning.n_points", ptPointsActives );
     }
 }
 
