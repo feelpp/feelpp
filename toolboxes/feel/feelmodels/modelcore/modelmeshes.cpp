@@ -49,8 +49,8 @@ template <typename IndexType>
 void
 ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioning( std::string const& filename )
 {
-    CHECK( false ) << "TODO";
-    // TODO
+    M_inputFilename = filename;
+    M_generatePartitioning = false;
 }
 
 template <typename IndexType>
@@ -153,13 +153,15 @@ ModelMesh<IndexType>::setupRestart( ModelMeshes<IndexType> const& mMeshes )
         if ( !file )
             CHECK( false ) << "Fail to open the txt file containing path of mesh file : " << fileNameMeshPath << "\n";
 
-        std::string meshFilename;
         if ( ! ( file >> meshFilename ) )
             CHECK( false ) << "Fail to read the msh path in file : " << fileNameMeshPath << "\n";
         file.close();
+
+        CHECK( fs::exists( meshFilename ) ) << "restart mesh file doesn't exists : " << meshFilename;
     }
     mpi::broadcast( mMeshes.worldComm().localComm(), meshFilename, mMeshes.worldComm().masterRank() );
 
+    mMeshes.log("ModelMesh","setupRestart", "mesh file : " + meshFilename);
     M_importConfig.setupInputMeshFilenameWithoutApplyPartitioning( meshFilename );
 }
 
@@ -178,7 +180,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         if ( M_importConfig.hasMeshFilename() )
         {
             std::string const& inputMeshFilename = M_importConfig.meshFilename();
-            mMeshes.log("createMeshModel","", "load mesh file : " + inputMeshFilename);
+            mMeshes.log("ModelMesh","updateForUse", "load mesh file : " + inputMeshFilename);
 
             std::string rootpath = mMeshes.rootRepository();
             std::string meshPartitionedFilename = (fs::path( rootpath ) / (mMeshes.prefix() + ".json")).string();
@@ -203,6 +205,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
         else if ( M_importConfig.hasGeoFilename() )
         {
             std::string const& inputGeoFilename = M_importConfig.geoFilename();
+            mMeshes.log("ModelMesh","updateForUse", "load geo file : " + inputGeoFilename);
             std::string path = mMeshes.rootRepository();
 
             std::string mshfile = (fs::path( path ) / mMeshes.prefix()).string();
@@ -274,13 +277,9 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
     tabulate::Table tabInfo;
 
     tabulate::Table tabInfoOthers;
-    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo/*.at( "Backend" )*/, tabInfoProp );
+    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
     if ( tabInfoOthers.begin() != tabInfoOthers.end() )
         tabInfo.add_row({tabInfoOthers});
-    // if ( jsonInfo.contains("filename") )
-    //     tabInfoOthers.add_row( {"filename", jsonInfo.at( "filename" ).template get<std::string>() });
-    // if ( tabInfoOthers.shape().first > 0 )
-    //     tabInfo.add_row({tabInfoOthers});
 
     if ( jsonInfo.contains("Import configuration") )
     {
@@ -297,6 +296,54 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
         tabulate::Table tabInfoDiscrEntries;
         TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
         tabInfoDiscr.add_row( { tabInfoDiscrEntries});
+
+        auto const& jsonInfoDiscr = jsonInfo.at( "Discretization" );
+        if ( jsonInfoDiscr.contains( "partitioning" ) )
+        {
+            int dim = std::stoi( jsonInfoDiscr.at("dim").template get<std::string>());
+            auto const& jsonInfoDiscrPartitioning = jsonInfoDiscr.at( "partitioning" );
+            tabulate::Table tabInfoDiscrEntriesDataByPartition;
+            if ( dim == 1 )
+                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_points"});
+            else if ( dim == 2 )
+                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_points"});
+            else if ( dim == 3 )
+                tabInfoDiscrEntriesDataByPartition.add_row({"partition id","n_elements","n_elements_with_ghost","n_faces","n_edges","n_points"});
+            auto jarray_n_elements = jsonInfoDiscrPartitioning.at("n_elements");
+            auto jarray_n_elements_with_ghost = jsonInfoDiscrPartitioning.at("n_elements_with_ghost");
+            auto itFind_n_faces = jsonInfoDiscrPartitioning.find( "n_faces" );
+            auto itFind_n_edges = jsonInfoDiscrPartitioning.find( "n_edges" );
+            auto itFind_n_points = jsonInfoDiscrPartitioning.find( "n_points" );
+            for (int p=0;p<jarray_n_elements.size();++p)
+            {
+                if ( dim == 1 )
+                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
+                                jarray_n_elements[p].template get<std::string>(),
+                                jarray_n_elements_with_ghost[p].template get<std::string>(),
+                                itFind_n_points.value()[p].template get<std::string>() });
+                else if ( dim == 2 )
+                {
+                    CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "aiaia";
+                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
+                                jarray_n_elements[p].template get<std::string>(),
+                                jarray_n_elements_with_ghost[p].template get<std::string>(),
+                                itFind_n_faces.value()[p].template get<std::string>(),
+                                itFind_n_points.value()[p].template get<std::string>() });
+                }
+                else if ( dim == 3 )
+                {
+                    CHECK( itFind_n_faces != jsonInfoDiscrPartitioning.end() ) << "aiaia";
+                    tabInfoDiscrEntriesDataByPartition.add_row({ std::to_string(p),
+                                jarray_n_elements[p].template get<std::string>(),
+                                jarray_n_elements_with_ghost[p].template get<std::string>(),
+                                itFind_n_faces.value()[p].template get<std::string>(),
+                                itFind_n_edges.value()[p].template get<std::string>(),
+                                itFind_n_points.value()[p].template get<std::string>() });
+                }
+            }
+            tabInfoDiscr.add_row({tabInfoDiscrEntriesDataByPartition});
+        }
+
         tabInfo.add_row( {tabInfoDiscr} );
     }
 
