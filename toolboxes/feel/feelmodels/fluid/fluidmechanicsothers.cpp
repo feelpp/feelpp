@@ -759,13 +759,13 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::solve()
     this->timerTool("Solve").start();
 
     this->setStartBlockSpaceIndex( 0 );
-    Feel::cout << " ok setStartBlockSpaceIndex" << std::endl;
+    
     // copy velocity/pressure in algebraic vector solution (maybe velocity/pressure has been changed externaly)
     this->updateBlockVectorSolution();
-    Feel::cout << " ok updateBlockVectorSolution" << std::endl;
+    
     if ( M_applyMovingMeshBeforeSolve && ( !M_bcMovingBoundaryImposed.empty() || !M_bodySetBC.empty() ) )
         this->updateALEmesh();
-    Feel::cout << " ok updateALEmesh" << std::endl;
+    
     M_bodySetBC.updateForUse( *this );
     M_bodySetBC.updateAlgebraicFactoryForUse( *this, M_algebraicFactory );
 #if 0 // TODO

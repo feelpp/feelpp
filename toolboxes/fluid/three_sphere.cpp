@@ -61,9 +61,10 @@ namespace Feel
                                             Lagrange<OrderPressure, Scalar,Continuous,PointSetFekete> > model_type;
         auto FM = model_type::New("fluid");
 
+        // Initialize the files where the spheres' speeds and positions are stored
         std::ofstream outfile;
         std::ofstream outfile2;
-        outfile.open("/ssd/berti/phd/threeSphereCM.csv", std::ios_base::out);
+        outfile.open("/ssd/berti/phd/threeSphereCM.csv", std::ios_base::out); // here the path is absolute -> should be changed to relative
         outfile2.open("/ssd/berti/phd/threeSphereSPEED.csv", std::ios_base::out);
         if(outfile.is_open() )
         {
@@ -81,10 +82,9 @@ namespace Feel
         {
             std::cout << "outfile not open" <<std::endl;
         }
-        double sphere_radius = 1;
+        // Solve the fluid problem and store the results
         FM->init();
         FM->printAndSaveInfo();
-        double single_step = 100*FM->timeStep();
         if ( FM->isStationary() )
         {
             FM->solve();
@@ -108,8 +108,6 @@ namespace Feel
 
                 //testPmatrix(FM);
 
-                // P, u_d, U_C, recuperer vect u, U_R, U_L
-
                 auto u = FM->fieldVelocity();
                 auto p = FM->fieldPressure();
                 auto Id = eye<nDim,nDim>();
@@ -122,33 +120,9 @@ namespace Feel
                 auto force_left =integrate(_range=markedfaces(fluid_mesh,"SphereLeft"),_expr=sigmav*N()).evaluate();
                 auto force_right =integrate(_range=markedfaces(fluid_mesh,"SphereRight"),_expr=sigmav*N()).evaluate();
 
-                /*auto force_center_newmethod = integrate(_range=markedfaces(FM->mesh(),"SphereCenter"),_expr=leftfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))+
-                                                        rightfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))).evaluate();
-                auto force_left_newmethod =integrate(_range=markedfaces(FM->mesh(),"SphereLeft"),_expr=leftfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))+
-                                                    rightfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))).evaluate();
-                auto force_right_newmethod =integrate(_range=markedfaces(FM->mesh(),"SphereRight"),_expr=leftfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))+
-                rightfacev(sigmav*N()*(emarker()==FM->mesh()->markerId("Fluid")))).evaluate();*/
-
                 auto speed_center = mean(_range=markedfaces(fluid_mesh,"SphereCenter"),_expr=idv(u));
                 auto speed_left =mean(_range=markedfaces(fluid_mesh,"SphereLeft"),_expr=idv(u));
-                auto speed_right =mean(_range=markedfaces(fluid_mesh,"SphereRight"),_expr=idv(u));
-
-                /*auto l = form1(_test=FM->fieldVelocity().functionSpace());
-                l = integrate(_range=markedfaces(FM->mesh(),{"SphereCenter","SphereLeft","SphereRight"}),_expr=inner(sigmav*N(),id(u)));
-                auto vitesse = FM->fieldVelocity();
-                vitesse.setZero();
-                vitesse[ComponentType::X].setOnes();
-                auto force_linform_X = l(vitesse);
-                vitesse.setZero();
-                vitesse[ComponentType::Y].setOnes();
-                auto force_linform_Y = l(vitesse);
-                vitesse.setZero();
-                vitesse[ComponentType::Z].setOnes();
-                auto force_linform_Z = l(vitesse);
-                vitesse.setZero();*/
-
-
-                
+                auto speed_right =mean(_range=markedfaces(fluid_mesh,"SphereRight"),_expr=idv(u));               
                 
                 Feel::cout << force_left << " " << force_center << " " << force_right << std::endl;
                 auto cm_central_sphere = integrate(_range=markedfaces(FM->mesh(),"SphereCenter"),_expr=P()).evaluate();
@@ -162,58 +136,26 @@ namespace Feel
                 cm_right_sphere /= meas_r;
                 if (FM->worldComm().isMasterRank())
                 {
-                    // recover CM
+                    // store the CM data (calculated above)
                     outfile << FM->time()<< ", "<< cm_central_sphere(0,0)<<", " << cm_central_sphere(1,0) <<", "<< cm_central_sphere(2,0) <<", "
                     << cm_left_sphere(0,0)<<", " << cm_left_sphere(1,0) <<", "<< cm_left_sphere(2,0) <<", "
                     << cm_right_sphere(0,0)<<", " << cm_right_sphere(1,0) <<", "<< cm_right_sphere(2,0) <<", "
                     << cm_left_sphere(0,0)-cm_central_sphere(0,0)<<", " << cm_left_sphere(1,0)-cm_central_sphere(1,0) <<", "<< cm_left_sphere(2,0)-cm_central_sphere(2,0) <<
                     ", "<< cm_central_sphere(0,0)-cm_right_sphere(0,0)<<", " << cm_central_sphere(1,0)-cm_right_sphere(1,0) <<", "<< cm_central_sphere(2,0)-cm_right_sphere(2,0) <<std::endl;
-                    /*outfile << FM->time()<< "Central sphere force: ( "<< force_center(0,0)<<", " << force_center(1,0) <<", "<< force_center(2,0) <<")\n";
-                    outfile << FM->time()<< "Left sphere force: ( "<< force_left(0,0)<<", " << force_left(1,0) <<", "<< force_left(2,0) <<")\n";
-                    outfile << FM->time()<< "Right sphere force: ( "<< force_right(0,0)<<", " << force_right(1,0) <<", "<< force_right(2,0) <<")\n";
-                    outfile << FM->time()<< "Overall force: ( "<< force_right(0,0)+force_left(0,0)+force_center(0,0)<<", " << force_right(1,0)+force_left(1,0)+force_center(1,0) <<", "<< force_right(2,0)+force_left(2,0)+force_center(2,0) <<")\n";*/
-                    /* outfile << FM->time()<< "Central sphere force - new method: ( "<< force_center_newmethod(0,0)<<", " << force_center_newmethod(1,0) <<", "<< force_center_newmethod(2,0) <<")\n";
-                    outfile << FM->time()<< "Left sphere force - new method: ( "<< force_left_newmethod(0,0)<<", " << force_left_newmethod(1,0) <<", "<< force_left_newmethod(2,0) <<")\n";
-                    outfile << FM->time()<< "Right sphere force - new method: ( "<< force_right_newmethod(0,0)<<", " << force_right_newmethod(1,0) <<", "<< force_right_newmethod(2,0) <<")\n";
-                    outfile << FM->time()<< "Overall force - new method: ( "<< force_right_newmethod(0,0)+force_left_newmethod(0,0)+force_center_newmethod(0,0)<<", " << force_right_newmethod(1,0)+force_left_newmethod(1,0)+force_center_newmethod(1,0) <<", "<< force_right_newmethod(2,0)+force_left_newmethod(2,0)+force_center_newmethod(2,0) <<")\n";*/
-                    /*outfile << FM->time()<< "Overall force - linspace: (" << force_linform_X <<", " << force_linform_Y << ", " <<force_linform_Z << ")\n";*/
+                    // Store the translational velocities (computed above)
                     outfile2 << FM->time() << "," << speed_center(0,0) << ", " << speed_center(1,0) << ", " << speed_center(2,0) << ", " 
                                                 << speed_left(0,0) << ", " << speed_left(1,0) << ", " << speed_left(2,0) << ", " 
                                                 << speed_right(0,0) << ", " << speed_right(1,0) << ", " << speed_right(2,0) ;
                     for(auto const& [name,body] : FM->bodySet())
                     {
+                        // Store the translational velocities for comparison
                         for(int i=0;i<=2;i++)
                         {
                             outfile2 << ", " << (*body.fieldTranslationalVelocityPtr())(i);
                         }
                     }
                     outfile2 << std::endl;   
-                }
-                /*            if(FM->time()<=single_step)
-                {
-                    auto u = FM->fieldVelocity();
-                    u.on(_range=markedfaces(FM->mesh(),"SphereLeft"),_expr=oneX()*cst(4.0*sphere_radius/single_step));
-                }
-                    //Impose Dirichlet first part
-                else if (FM->time()>single_step && FM->time()<=2*single_step )
-                {
-                    auto u = FM->fieldVelocity();
-                    u.on(_range=markedfaces(FM->mesh(),"SphereRight"),_expr=-oneX()*cst(4.0*sphere_radius/single_step));
-                }//Impose Dirichlet second part
-                else if (FM->time()>2*single_step && FM->time()<=3*single_step )
-                {
-                    auto u = FM->fieldVelocity();
-                    u.on(_range=markedfaces(FM->mesh(),"SphereLeft"),_expr=-oneX()*cst(4.0*sphere_radius/single_step));
-                }  //Impose Dirichlet third part
-                else if (FM->time()>3*single_step && FM->time()<=4*single_step )
-                {
-                    auto u = FM->fieldVelocity();
-                    u.on(_range=markedfaces(FM->mesh(),"SphereRight"),_expr=oneX()*cst(4.0*sphere_radius/single_step));
-                }    //Impose Dirichlet fourth part
-                MPI_Barrier(FM->worldComm());*/
-
-
-            
+                }            
             }
             outfile.close();
             outfile2.close();
