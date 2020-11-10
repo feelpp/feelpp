@@ -254,6 +254,121 @@ public :
                              _expr= (v + idv(M_bdf_ale_identity->polyDeriv()))/M_bdf_ale_identity->polyDerivCoefficient(0) - idv(this->identityALE()) + idv( this->displacement() ) );
         }
 
+    // make the new mesh the new reference for the fields -> disp=0 on it
+    void remeshingRevertBDF( bdf_ale_displacement_ptrtype const& old_meshALE_bdf_velocity, bdf_ale_displacement_ref_ptrtype const& old_meshALE_bdf_displacement_ref,
+    bdf_ale_displacement_ptrtype const& old_meshALE_bdf_identity)
+    {
+        for ( int  i = old_meshALE_bdf_displacement_ref->timeOrder()+1;i >= 0; --i )
+        //for ( int  i = 0;i < old_meshALE_bdf_displacement_ref->timeOrder();++i )
+        {
+            old_meshALE_bdf_displacement_ref->unknown(i).printMatlab("bdf_disp_ref_"+std::to_string(i)+".m");
+            auto temp = old_meshALE_bdf_displacement_ref->functionSpace()->elementPtr();
+            temp->zero();
+            temp->add(1.0,old_meshALE_bdf_displacement_ref->unknown(i));
+            temp->add(-1.0,old_meshALE_bdf_displacement_ref->unknown(0));
+            old_meshALE_bdf_displacement_ref->setUnknown(i,*temp);
+            old_meshALE_bdf_displacement_ref->unknown(i).printMatlab("bdf_disp_ref_"+std::to_string(i)+"_apres_soustraction.m");
+
+        }
+#if 0
+        for ( int  i = old_meshALE_bdf_velocity->timeOrder()+1;i >= 0; --i )
+        //for ( int  i = 0;i < old_meshALE_bdf_velocity->timeOrder();++i )
+        {
+            old_meshALE_bdf_velocity->unknown(i).printMatlab("bdf_vel_"+std::to_string(i)+".m");
+            auto temp = old_meshALE_bdf_velocity->functionSpace()->elementPtr();
+            temp->zero();
+            temp->add(1.0,old_meshALE_bdf_velocity->unknown(i));
+            temp->add(-1.0,old_meshALE_bdf_velocity->unknown(0));
+            
+            old_meshALE_bdf_velocity->setUnknown(i,*temp);
+            old_meshALE_bdf_velocity->unknown(i).printMatlab("bdf_vel_"+std::to_string(i)+"_apres_soustraction.m");
+        }
+        for ( int  i = old_meshALE_bdf_identity->timeOrder()+1;i >= 0; --i )
+        //for ( int  i = 0;i < old_meshALE_bdf_identity->timeOrder();++i )
+        {
+            old_meshALE_bdf_identity->unknown(i).printMatlab("bdf_identity_"+std::to_string(i)+".m");
+            auto ind_max=old_meshALE_bdf_identity->timeOrder()-1;
+            auto temp = old_meshALE_bdf_identity->functionSpace()->elementPtr();
+            temp->zero();
+            temp->add(1.0,old_meshALE_bdf_identity->unknown(i));
+            temp->add(-1.0,old_meshALE_bdf_identity->unknown(0));
+            old_meshALE_bdf_identity->setUnknown(i,*temp);
+            old_meshALE_bdf_velocity->unknown(i).printMatlab("bdf_identity_"+std::to_string(i)+"_apres_soustraction.m");
+            
+        }
+        
+#endif
+#if 0        
+        //M_bdf_ale_displacement_ref = unwrap_ptr(old_meshALE_bdf_displacement_ref).deepCopy();
+        M_bdf_ale_displacement_ref = bdf_ale_displacement_ref_ptrtype( new bdf_ale_displacement_ref_type( *old_meshALE_bdf_displacement_ref ) );
+        for ( auto it = M_bdf_ale_displacement_ref->unknowns().begin(), en = M_bdf_ale_displacement_ref->unknowns().end(); it != en; ++ it )
+        {
+            *it = ale_map_element_ref_ptrtype( new ale_map_element_ref_type( this->M_bdf_ale_displacement_ref->functionSpace() ) );
+        }
+
+        M_bdf_ale_velocity=unwrap_ptr(old_meshALE_bdf_velocity).deepCopy();
+        M_bdf_ale_identity=unwrap_ptr(old_meshALE_bdf_identity).deepCopy();   
+
+        for(auto itdisp = old_meshALE_bdf_displacement_ref->unknowns().begin(), endisp = old_meshALE_bdf_displacement_ref->unknowns().end(); itdisp != endisp; ++ itdisp)
+           {
+               //Feel::cout << itdisp << std::endl;
+               /*auto element_ale = this->M_bdf_ale_displacement_ref->functionSpace()->element();
+               element_ale.add(1.0,unwrap_ptr(*itdisp));
+               element_ale.add(-1.0,unwrap_ptr(*endisp));*/
+           }
+           for(auto itdisp = old_meshALE_bdf_velocity->unknowns().begin(), endisp = old_meshALE_bdf_velocity->unknowns().end(); itdisp != endisp; ++ itdisp)
+           {
+               //Feel::cout << itdisp << std::endl;
+               /*auto element_ale = this->M_bdf_ale_displacement_ref->functionSpace()->element();
+               element_ale.add(1.0,unwrap_ptr(*itdisp));
+               element_ale.add(-1.0,unwrap_ptr(*endisp));*/
+           }
+           for(auto itdisp = old_meshALE_bdf_identity->unknowns().begin(), endisp = old_meshALE_bdf_identity->unknowns().end(); itdisp != endisp; ++ itdisp)
+           {
+               //Feel::cout << itdisp << std::endl;
+               /*auto element_ale = this->M_bdf_ale_displacement_ref->functionSpace()->element();
+               element_ale.add(1.0,unwrap_ptr(*itdisp));
+               element_ale.add(-1.0,unwrap_ptr(*endisp));*/
+           }
+
+        M_bdf_ale_displacement_ref = unwrap_ptr(old_meshALE_bdf_displacement_ref).deepCopy();
+        M_bdf_ale_velocity=unwrap_ptr(old_meshALE_bdf_velocity).deepCopy();
+        M_bdf_ale_identity=unwrap_ptr(old_meshALE_bdf_identity).deepCopy();
+
+        std::copy(old_meshALE_bdf_velocity->unknowns().begin(), old_meshALE_bdf_velocity->unknowns().end(), M_bdf_ale_velocity->unknowns().begin());
+        std::copy(old_meshALE_bdf_displacement_ref->unknowns().begin(), old_meshALE_bdf_displacement_ref->unknowns().end(), M_bdf_ale_displacement_ref->unknowns().begin());
+        
+        
+        
+        for (int itvel =0 ; itvel<old_meshALE_bdf_displacement_ref->timeValues().size();//, envel = this->M_bdf_ale_velocity->unknowns().end(); 
+        //itvel!=envel;
+        ++itvel )
+        {
+            Feel::cout << itvel << std::endl;
+            auto end_index =old_meshALE_bdf_displacement_ref->timeValues().size();
+            auto current_unknown = unwrap_ptr(old_meshALE_bdf_displacement_ref->unknown(itvel));
+            auto final_unknown = unwrap_ptr(old_meshALE_bdf_displacement_ref->unknown(end_index-1));
+            current_unknown.add(-1.0,final_unknown);
+            this->M_bdf_ale_displacement_ref->unknown(itvel) = (current_unknown);
+            //unwrap_ptr(*itvel).add(-1.0,unwrap_ptr(*envel));
+        }
+        for (int itvel =0 ; itvel<old_meshALE_bdf_velocity->timeValues().size();//, envel = this->M_bdf_ale_velocity->unknowns().end(); 
+        //itvel!=envel;
+        ++itvel )
+        {
+            Feel::cout << itvel << std::endl;
+            auto end_index =old_meshALE_bdf_velocity->timeValues().size();Feel::cout << end_index << std::endl;
+            auto current_unknown = unwrap_ptr(old_meshALE_bdf_velocity->unknown(itvel));Feel::cout << itvel << std::endl;
+            auto final_unknown = unwrap_ptr(old_meshALE_bdf_velocity->unknown(itvel));Feel::cout << itvel << std::endl;
+            current_unknown.add(-1.0,final_unknown);Feel::cout << itvel << std::endl;
+            this->M_bdf_ale_velocity->unknown(itvel) = (current_unknown);
+            //unwrap_ptr(*itvel).add(-1.0,unwrap_ptr(*envel));
+        }
+        /*for(auto itdisp = 0; itdisp<M_bdf_ale_displacement_ref->->timeValues().size(); ++ itdisp)
+        //(auto itdisp = M_bdf_ale_displacement_ref->unknowns().begin(), endisp = M_bdf_ale_displacement_ref->unknowns().end(); itdisp != endisp; ++ itdisp)
+            unwrap_ptr(*itdisp).add(-1.0,unwrap_ptr(*endisp));*/
+#endif
+    }
 private :
 
     void updateIdentityMap();
@@ -288,7 +403,17 @@ private :
     std::shared_ptr<ale_map_element_ref_type> M_map_ref;
     std::shared_ptr<ale_map_element_type> M_meshVelocity;
     std::shared_ptr<ale_map_element_type> M_fieldTmp;
-
+public:
+    bdf_ale_displacement_ref_ptrtype displacementRefBDF() { return M_bdf_ale_displacement_ref; }
+    bdf_ale_displacement_ref_ptrtype const& displacementRefBDF() const { return M_bdf_ale_displacement_ref; }
+    bdf_ale_displacement_ptrtype aleIdentityBDF() { return M_bdf_ale_identity; }
+    bdf_ale_displacement_ptrtype const& aleIdentityBDF() const { return M_bdf_ale_identity; }
+    bdf_ale_displacement_ptrtype aleVelocityBDF() { return M_bdf_ale_velocity; }
+    bdf_ale_displacement_ptrtype const& aleVelocityBDF() const { return M_bdf_ale_velocity; }
+    exporter_ptrtype exporterALE() {return M_exporter;};
+    exporter_ref_ptrtype exporterRef() {return M_exporter_ref;};
+    mesh_ref_ptrtype & modifyReferenceMesh() & { return M_referenceMesh; }
+private:
     bdf_ale_displacement_ref_ptrtype M_bdf_ale_displacement_ref;
     bdf_ale_displacement_ptrtype M_bdf_ale_identity;
     bdf_ale_displacement_ptrtype M_bdf_ale_velocity;

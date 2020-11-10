@@ -328,7 +328,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::exportResults( double time )
         if ( this->hasMarkerPressureBC() && M_spaceLagrangeMultiplierPressureBC &&
              this->hasPostProcessFieldExported( "pressurebc" ) )
         {
-            std::string geoExportType="static";//change_coords_only, change, static
+            std::string geoExportType="change";//change_coords_only, change, static
             if ( !M_exporterLagrangeMultiplierPressureBC )
                 M_exporterLagrangeMultiplierPressureBC = exporter( _mesh=M_spaceLagrangeMultiplierPressureBC->mesh(),
                                                                    _name="ExportLagrangeMultiplierPressureBC",

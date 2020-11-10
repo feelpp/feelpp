@@ -311,7 +311,7 @@ MeshALE<Convex>::exportResults(double time)
     if (!M_exporter_ref)
     {
         //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
-        std::string geoExportType="static";//change_coords_only, change, static
+        std::string geoExportType="change";//change_coords_only, change, static
         M_exporter_ref = exporter( _mesh=this->referenceMesh(),
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ref"),
@@ -330,7 +330,7 @@ MeshALE<Convex>::exportResults(double time)
         if (!M_exporter)
         {
             //auto const geoExportType = ExporterGeometry::EXPORTER_GEOMETRY_STATIC;
-            std::string geoExportType="static";//change_coords_only, change, static
+            std::string geoExportType="change";//change_coords_only, change, static
             M_exporter = exporter( _mesh=this->movingMesh(),
                                    //ame=prefixvm(this->prefix(), prefixvm(this->subPrefix(),"Export")),
                                    _name=prefixvm(this->prefix(),"exportMeshALE_ho"),

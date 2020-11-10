@@ -849,6 +849,11 @@ private :
     void createPostProcessExporters();
 public :
     void init( bool buildModelAlgebraicFactory=true );
+    void init(self_ptrtype const& oldToolbox,
+        I_ptr_t<space_velocity_type,space_velocity_type> I_vel,
+        I_ptr_t<space_pressure_type,space_pressure_type> I_press,
+        I_ptr_t<space_mesh_disp_type,space_mesh_disp_type> I_disp,
+        bool buildModelAlgebraicFactory=true); //to do I_ptr_t<ALE_SPACE,ALE_SPACE> I_ALE,
     void initAlgebraicFactory();
 
     void createFunctionSpacesNormalStress();
@@ -1797,6 +1802,7 @@ private :
     bool M_isHOVisu;
     // exporter fluid
     export_ptrtype M_exporter;
+    export_ptrtype exp_remesh_instant; // LUCA
     export_trace_ptrtype M_exporterTrace;
     export_trace_ptrtype M_exporterFluidOutlet;
     export_trace_ptrtype M_exporterLagrangeMultiplierPressureBC;
@@ -1984,21 +1990,25 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
 {
     this->log("FluidMechanics","exportResults", (boost::format("start at time %1%")%time).str() );
     this->timerTool("PostProcessing").start();
-
+    Feel::cout << "OK until here" << std::endl;
     if constexpr ( nOrderGeo <= 2 )
     {
+        Feel::cout << "M_exporter" << M_exporter<< std::endl;
+        Feel::cout << "time" << time<< std::endl;
         this->executePostProcessExports( M_exporter, time, mfields, symbolsExpr, exportsExpr );
+        Feel::cout << "OK until here1.1" << std::endl;
         this->executePostProcessExports( M_exporterTrace, "trace_mesh", time, mfields, symbolsExpr, exportsExpr );
+        Feel::cout << "OK until here1.2" << std::endl;
     }
     if ( M_isHOVisu )
         this->exportResultsImplHO( time );
-
+    Feel::cout << "OK until here 2" << std::endl;
     this->executePostProcessMeasures( time, mfields, symbolsExpr );
     this->executePostProcessSave( (this->isStationary())? invalid_uint32_type_value : M_bdfVelocity->iteration(), mfields );
 
     if ( this->isMoveDomain() && this->hasPostProcessExportsField( "alemesh" ) )
         this->meshALE()->exportResults( time );
-
+    Feel::cout << "OK until here 3" << std::endl;
     this->timerTool("PostProcessing").stop("exportResults");
     if ( this->scalabilitySave() )
     {
@@ -2006,6 +2016,7 @@ FluidMechanics<ConvexType,BasisVelocityType,BasisPressureType>::exportResults( d
             this->timerTool("PostProcessing").setAdditionalParameter("time",this->currentTime());
         this->timerTool("PostProcessing").save();
     }
+    Feel::cout << "OK until here 4" << std::endl;
     this->log("FluidMechanics","exportResults", "finish" );
 }
 

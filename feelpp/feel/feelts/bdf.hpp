@@ -62,6 +62,7 @@
 #include <feel/feelalg/glas.hpp>
 #include <feel/feelts/tsbase.hpp>
 #include <feel/feeldiscr/functionspace.hpp>
+#include <feel/feeldiscr/operatorinterpolation.hpp>
 
 namespace Feel
 {
@@ -150,6 +151,17 @@ public:
         }
 
         return b;
+    }
+    //template <typename space_type_domain,typename space_type_image>
+    // interpolates fields from oldBdf according to I_interp
+    void interpolate(bdf_ptrtype const& oldBdf,I_ptr_t<space_type,space_type> const& I_interp)
+    {
+        for ( auto oldit = oldBdf->M_unknowns.begin(), olden = oldBdf->M_unknowns.end(), 
+        it = this->M_unknowns.begin(), en = this->M_unknowns.end(); 
+        oldit != olden; ++ oldit,++it )
+        {
+            I_interp->apply(unwrap_ptr( *oldit ),unwrap_ptr( *it ) );
+        }
     }
 
 
@@ -301,7 +313,7 @@ public:
         return M_alpha[this->timeOrder()-1][i]/math::abs( this->timeStep() );
         //return M_alpha[this->timeOrder()-1][i]/this->timeStep();
     }
-
+    space_ptrtype const& functionSpace() const {return M_space;}
     //! Returns the right hand side \f$ \bar{p} \f$ of the time derivative formula
     element_type const& polyDeriv() const;
 
@@ -317,7 +329,7 @@ public:
     element_ptrtype const& polyPtr() const { return M_poly; }
 
     //! Return a vector with the last n state vectors
-    unknowns_type const& unknowns() const;
+    unknowns_type & unknowns() ;
 
     //! Return the previous element at previous time i-1
     element_type& unknown( int i );
@@ -709,9 +721,8 @@ Bdf<SpaceType>::restart()
 }
 
 template <typename SpaceType>
-const
 typename Bdf<SpaceType>::unknowns_type&
-Bdf<SpaceType>::unknowns() const
+Bdf<SpaceType>::unknowns()
 {
     return M_unknowns;
 }
