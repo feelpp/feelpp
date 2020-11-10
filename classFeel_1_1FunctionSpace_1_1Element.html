@@ -179,6 +179,9 @@ typedef mpl::if_&lt; mpl::bool_&lt; is_modal &gt;, mpl::identity&lt; mpl::identi
 <tr class="memitem:a66b9d04d5969fc1d10ab539d71eddd91"><td class="memItemLeft" align="right" valign="top"><a id="a66b9d04d5969fc1d10ab539d71eddd91"></a>
 typedef <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; T, Cont &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>this_type</b></td></tr>
 <tr class="separator:a66b9d04d5969fc1d10ab539d71eddd91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab780f9ef8eaf568b5d6f8e238598e608"><td class="memItemLeft" align="right" valign="top"><a id="ab780f9ef8eaf568b5d6f8e238598e608"></a>
+using&#160;</td><td class="memItemRight" valign="bottom"><b>self_t</b> = <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">this_type</a></td></tr>
+<tr class="separator:ab780f9ef8eaf568b5d6f8e238598e608"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae724fc70b8dc80df1b16517d74814c01"><td class="memTemplParams" colspan="2"><a id="ae724fc70b8dc80df1b16517d74814c01"></a>
 template&lt;int i&gt; </td></tr>
 <tr class="memitem:ae724fc70b8dc80df1b16517d74814c01"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><b>sub_element_ptrtype</b> = typename mpl::at_c&lt; element_vector_type, i &gt;::type::second_type</td></tr>
@@ -285,6 +288,15 @@ using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_t</b> = <a clas
 <tr class="memitem:a4f64f28ec1295d607eed10c6e7f346f7"><td class="memItemLeft" align="right" valign="top"><a id="a4f64f28ec1295d607eed10c6e7f346f7"></a>
 using&#160;</td><td class="memItemRight" valign="bottom"><b>p0dh_element_t</b> = typename <a class="el" href="classFeel_1_1FunctionSpace.html">FunctionSpace</a>&lt; mesh_type, <a class="el" href="structFeel_1_1bases.html">bases</a>&lt; Lagrange&lt; 0, Scalar, Discontinuous &gt; &gt;&gt;::template <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&lt; value_type &gt;</td></tr>
 <tr class="separator:a4f64f28ec1295d607eed10c6e7f346f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a594aad4abbbb8fe4bc1236a36c6f67a0"><td class="memItemLeft" align="right" valign="top"><a id="a594aad4abbbb8fe4bc1236a36c6f67a0"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator+</b> (value_type f_, <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a> const &amp;e_)</td></tr>
+<tr class="separator:a594aad4abbbb8fe4bc1236a36c6f67a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af18686c20a01b6f943f208c00c6cda0b"><td class="memItemLeft" align="right" valign="top"><a id="af18686c20a01b6f943f208c00c6cda0b"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator-</b> (value_type f_, <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a> const &amp;e_)</td></tr>
+<tr class="separator:af18686c20a01b6f943f208c00c6cda0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ce0604f84ea5a9b940d21735e79c1b9"><td class="memItemLeft" align="right" valign="top"><a id="a3ce0604f84ea5a9b940d21735e79c1b9"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator*</b> (value_type f_, <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a> const &amp;e_)</td></tr>
+<tr class="separator:a3ce0604f84ea5a9b940d21735e79c1b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a515a8869d4aeb55c1c99ce7d011659"><td class="memItemLeft" align="right" valign="top"><a id="a2a515a8869d4aeb55c1c99ce7d011659"></a>
 <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator=</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> &amp;&amp;__e)</td></tr>
 <tr class="separator:a2a515a8869d4aeb55c1c99ce7d011659"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -364,6 +376,18 @@ template&lt;typename elt_t  = p0dh_element_t, class  = std::enable_if_t&lt;!std:
 <tr class="memitem:a27701c31bf4f4466317a041bcaac7da0"><td class="memItemLeft" align="right" valign="top"><a id="a27701c31bf4f4466317a041bcaac7da0"></a>
 <a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>operator-=</b> (<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a> const &amp;_e)</td></tr>
 <tr class="separator:a27701c31bf4f4466317a041bcaac7da0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af64933a1a61d0cc20f582d0e1efbcb99"><td class="memItemLeft" align="right" valign="top"><a id="af64933a1a61d0cc20f582d0e1efbcb99"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">Element</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator-</b> () const</td></tr>
+<tr class="separator:af64933a1a61d0cc20f582d0e1efbcb99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fe90ae1c8041394291334ed6b29ba2f"><td class="memItemLeft" align="right" valign="top"><a id="a5fe90ae1c8041394291334ed6b29ba2f"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator+</b> (value_type f) const</td></tr>
+<tr class="separator:a5fe90ae1c8041394291334ed6b29ba2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21d9a49126daae7714ac5de2f0b6e09b"><td class="memItemLeft" align="right" valign="top"><a id="a21d9a49126daae7714ac5de2f0b6e09b"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator-</b> (value_type f) const</td></tr>
+<tr class="separator:a21d9a49126daae7714ac5de2f0b6e09b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04c1bd43aa48f6e12cd025690540298b"><td class="memItemLeft" align="right" valign="top"><a id="a04c1bd43aa48f6e12cd025690540298b"></a>
+<a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html">self_t</a>&#160;</td><td class="memItemRight" valign="bottom"><b>operator*</b> (value_type f_) const</td></tr>
+<tr class="separator:a04c1bd43aa48f6e12cd025690540298b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab50cc20c26d6c5c9a507fd47e90361da"><td class="memItemLeft" align="right" valign="top"><a id="ab50cc20c26d6c5c9a507fd47e90361da"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1FunctionSpace_1_1Element.html#ab50cc20c26d6c5c9a507fd47e90361da">operator()</a> (MESH_CHANGES mesh_changes)</td></tr>
 <tr class="memdesc:ab50cc20c26d6c5c9a507fd47e90361da"><td class="mdescLeft">&#160;</td><td class="mdescRight">update element when mesh has been changed <br /></td></tr>

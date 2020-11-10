@@ -689,6 +689,7 @@ var namespaceFeel =
     [ "remove_shared_ptr< std::shared_ptr< T > >", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html", "structFeel_1_1remove__shared__ptr_3_01std_1_1shared__ptr_3_01T_01_4_01_4" ],
     [ "remove_std_vector", "structFeel_1_1remove__std__vector.html", "structFeel_1_1remove__std__vector" ],
     [ "remove_std_vector< std::vector< T > >", "structFeel_1_1remove__std__vector_3_01std_1_1vector_3_01T_01_4_01_4.html", "structFeel_1_1remove__std__vector_3_01std_1_1vector_3_01T_01_4_01_4" ],
+    [ "Repository", "classFeel_1_1Repository.html", "classFeel_1_1Repository" ],
     [ "SensorBase", "classFeel_1_1SensorBase.html", "classFeel_1_1SensorBase" ],
     [ "SensorGaussian", "classFeel_1_1SensorGaussian.html", "classFeel_1_1SensorGaussian" ],
     [ "SensorPointwise", "classFeel_1_1SensorPointwise.html", "classFeel_1_1SensorPointwise" ],
