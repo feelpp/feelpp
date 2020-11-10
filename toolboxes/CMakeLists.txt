@@ -43,6 +43,11 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
+if ( FEELPP_HAS_PYTHON )
+  message(STATUS "[feelpp-toolboxes] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+endif()
+
+
 option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if ( FEELPP_ENABLE_ASCIIDOCTOR )
@@ -65,7 +70,7 @@ option(FEELPP_TOOLBOXES_ENABLE_SOLIDMECHANICS "Enable/Disable SolidMechanics" ${
 option(FEELPP_TOOLBOXES_ENABLE_FSI "Enable/Disable FSI" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_ADVECTION "Enable/Disable Advection" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_LEVELSET "Enable/Disable LevelSet" ${FEELPP_TOOLBOXES_ENABLE})
-option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" ${FEELPP_TOOLBOXES_ENABLE})
+option(FEELPP_TOOLBOXES_ENABLE_MULTIFLUID "Enable/Disable MultiFluid" OFF ) # ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_HDG "Enable/Disable HDG" ${FEELPP_TOOLBOXES_ENABLE})
 option(FEELPP_TOOLBOXES_ENABLE_MAXWELL "Enable/Disable Magnetostatic" ${FEELPP_TOOLBOXES_ENABLE})
 #option(FEELPP_ENABLE_PCH_MODELS "Enable precompiled headers for models (pch)" OFF)
@@ -83,6 +88,8 @@ ENABLE_TESTING()
 add_subdirectory(cmake)
 add_subdirectory( feel/feelmodels )
 add_subdirectory( pyfeelpp-toolboxes )
+
+add_subdirectory( coefficientformpdes )
 
 if ( FEELPP_TOOLBOXES_ENABLE_FLUIDMECHANICS )
   add_subdirectory( fluid )

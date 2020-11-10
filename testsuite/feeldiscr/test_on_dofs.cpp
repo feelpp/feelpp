@@ -136,20 +136,23 @@ void runTestAssignMeshRelated()
 
     auto g = Px()+Py()+Pz();
 
-    auto Vh = Pch<PolyOrder>( mesh );
-    auto Qh = Pch<PolyOrder>( submesh );
-    auto v = Vh->element();
-    auto q1 = Qh->element();
-    auto q2 = Qh->element();
+    if constexpr ( PolyOrder>0 )
+    {
+        auto Vh = Pch<PolyOrder>( mesh );
+        auto Qh = Pch<PolyOrder>( submesh );
+        auto v = Vh->element();
+        auto q1 = Qh->element();
+        auto q2 = Qh->element();
 
-    v.on(_range=therange,_expr=g);
-    q1.on(_range=elements(submesh),_expr=g);
-    q2.on(_range=therange,_expr=g);
-    double int1 = integrate(_range=therange,_expr=idv(v)).evaluate()(0,0);
-    double int2 = integrate(_range=elements(submesh),_expr=idv(q1)).evaluate()(0,0);
-    double int3 = integrate(_range=therange,_expr=idv(q2)).evaluate()(0,0);
-    BOOST_CHECK_CLOSE( int1, int2, 1e-12 );
-    BOOST_CHECK_CLOSE( int1, int3, 1e-12 );
+        v.on(_range=therange,_expr=g);
+        q1.on(_range=elements(submesh),_expr=g);
+        q2.on(_range=therange,_expr=g);
+        double int1 = integrate(_range=therange,_expr=idv(v)).evaluate()(0,0);
+        double int2 = integrate(_range=elements(submesh),_expr=idv(q1)).evaluate()(0,0);
+        double int3 = integrate(_range=therange,_expr=idv(q2)).evaluate()(0,0);
+        BOOST_CHECK_CLOSE( int1, int2, 1e-12 );
+        BOOST_CHECK_CLOSE( int1, int3, 1e-12 );
+    }
 
     auto Wh = Pdhv<PolyOrder>( mesh );
     auto Rh = Pdhv<PolyOrder>( submesh );
@@ -160,7 +163,8 @@ void runTestAssignMeshRelated()
     r.on(_range=therange,_expr=g*N());
     double intv1 = integrate(_range=therange,_expr=inner(idv(w))).evaluate()(0,0);
     double intv2 = integrate(_range=elements(submesh),_expr=inner(idv(r))).evaluate()(0,0);
-    BOOST_CHECK_CLOSE( intv1, intv2, 1e-12 );
+    if constexpr ( PolyOrder>0 ) // currently intv1 is equal to 0 if P0dv because it seems that we can't apply w.on(...) from a range of faces
+        BOOST_CHECK_CLOSE( intv1, intv2, 1e-12 );
 
 #if 0
     auto e1 = exporter( _mesh=mesh,_name="e1");
@@ -185,6 +189,7 @@ BOOST_AUTO_TEST_CASE( assign_3d )
 {
     runTestAssign<3>();
     runTestAssignMeshRelated<3,4>();
+    runTestAssignMeshRelated<3,0>();
 }
 
 BOOST_AUTO_TEST_CASE( elimination_3d )

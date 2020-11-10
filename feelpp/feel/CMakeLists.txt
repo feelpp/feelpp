@@ -69,6 +69,11 @@ endif()
 set_property(TARGET feelpp PROPERTY FEELPP_STD_CPP ${FEELPP_STD_CPP} )
 
 set_property(TARGET feelpp PROPERTY LABELS feel++)
+if ( CMAKE_BUILD_TYPE MATCHES Coverage )
+# target_compile_options(${project_name} INTERFACE --coverage -O0 -g)
+  target_link_libraries( feelpp INTERFACE --coverage )
+endif()
+
 
 # put at the beginning in order to have the include ordered
 target_link_libraries( feelpp PUBLIC feelpp_contrib )
@@ -101,6 +106,7 @@ if ( MPI_FOUND )
 endif()
 if ( PYTHONLIBS_FOUND )
   target_compile_definitions( feelpp PUBLIC FEELPP_HAS_PYTHON )
+  set_property( TARGET feelpp PROPERTY FEELPP_PYTHON_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
   target_include_directories( feelpp PUBLIC ${PYTHON_INCLUDE_DIRS})
   target_link_libraries( feelpp PRIVATE ${PYTHON_LIBRARIES} )
 endif()

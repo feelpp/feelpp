@@ -37,7 +37,7 @@ namespace Feel
 {
 template <typename T, typename SizeT>
 inline
-SolverNonLinear<T,SizeT>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::SolverNonLinear ( std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
     :
     super( worldComm ),
     residual        ( 0 ),
@@ -46,8 +46,8 @@ SolverNonLinear<T,SizeT>::SolverNonLinear ( std::string const& prefix, worldcomm
     M_prefix( prefix ),
     M_is_initialized ( false ),
     M_prec_matrix_structure( SAME_NONZERO_PATTERN ),
-    M_snl_type( snesTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-type" ) ) ),
-    M_snl_lstype( snesLineSearchTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-line-search-type" ) ) ),
+    M_snl_type( snesTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-type",_vm=vm ) ) ),
+    M_snl_lstype( snesLineSearchTypeConvertStrToEnum( soption(_prefix=prefix,_name="snes-line-search-type",_vm=vm ) ) ),
     M_kspSolver_type( GMRES ),
     M_preconditioner_type( LU_PRECOND ),
     M_preconditioner(),
@@ -63,11 +63,11 @@ SolverNonLinear<T,SizeT>::SolverNonLinear ( std::string const& prefix, worldcomm
     M_nbItMax( 0 ),
     M_reuse_jac( 0 ),
     M_reuse_prec( 0 ),
-    M_showKSPMonitor( boption(_prefix=prefix,_name="ksp-monitor") ),
-    M_showSNESMonitor( boption(_prefix=prefix,_name="snes-monitor" ) ),
-    M_showKSPConvergedReason( Environment::vm().count(prefixvm( prefix,"ksp-converged-reason" )) ),
-    M_showSNESConvergedReason( Environment::vm().count(prefixvm( prefix,"snes-converged-reason" )) ),
-    M_viewSNESInfo( boption( _prefix=prefix, _name="snes-view" ) ),
+    M_showKSPMonitor( boption(_prefix=prefix,_name="ksp-monitor",_vm=vm) ),
+    M_showSNESMonitor( boption(_prefix=prefix,_name="snes-monitor",_vm=vm ) ),
+    M_showKSPConvergedReason( vm.count(prefixvm( prefix,"ksp-converged-reason")) ),
+    M_showSNESConvergedReason( vm.count(prefixvm( prefix,"snes-converged-reason")) ),
+    M_viewSNESInfo( boption( _prefix=prefix, _name="snes-view",_vm=vm ) ),
     M_rtoleranceKSP( 1e-13 ),
     M_dtoleranceKSP( 1e5 ),
     M_atoleranceKSP( 1e-50 ),
@@ -123,17 +123,17 @@ template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
 SolverNonLinear<T,SizeT>::build( po::variables_map const& vm, std::string const& prefix, worldcomm_ptr_t const& worldComm )
 {
-    return build( prefix,worldComm );
+    return build( prefix,worldComm,vm );
 }
 template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T,SizeT>::build( std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 {
-    return build( soption(_name="backend"),prefix,worldComm );
+    return build( soption(_name="backend"),prefix,worldComm,vm );
 }
 template <typename T, typename SizeT>
 std::shared_ptr<SolverNonLinear<T> >
-SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
@@ -168,7 +168,7 @@ SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& pre
     {
 
 
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm,vm ) );
         return ap;
     }
     break;
@@ -178,7 +178,7 @@ SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& pre
 
     case SOLVERS_TRILINOS:
     {
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm )  );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm,vm )  );
         return ap;
     }
     break;
@@ -195,7 +195,7 @@ SolverNonLinear<T,SizeT>::build( std::string const& kind, std::string const& pre
 }
 template <>
 std::shared_ptr<SolverNonLinear<std::complex<double>> >
-SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm )
+SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::string const& prefix, worldcomm_ptr_t const& worldComm, po::variables_map const& vm )
 {
     SolverPackage solver_package=SOLVER_INVALID_PACKAGE;
 
@@ -231,7 +231,7 @@ SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::stri
     {
 
 
-        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm ) );
+        solvernonlinear_ptrtype ap( new SolverNonLinearPetsc<T>( prefix,worldComm,vm ) );
         return ap;
     }
     break;
@@ -241,7 +241,7 @@ SolverNonLinear<std::complex<double>>::build( std::string const& kind, std::stri
 
     case SOLVERS_TRILINOS:
     {
-        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm )  );
+        solvernonlinear_ptrtype ap( new SolverNonLinearTrilinos<T>( prefix,worldComm,vm )  );
         return ap;
     }
     break;

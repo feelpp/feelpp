@@ -541,7 +541,13 @@ Environment::Environment( int argc, char** argv,
     GmshInitialize();
 #endif
 #endif
-    py::initialize_interpreter();
+    if ( !Py_IsInitialized() )
+    {
+        py::initialize_interpreter();
+        S_init_python = true;
+    }
+    else
+        S_init_python = false;
 
     // parse options
     doOptions( argc, envargv, *S_desc, *S_desc_lib, about.appName() );
@@ -790,7 +796,8 @@ Environment::~Environment()
 
     Environment::clearSomeMemory();
 
-    py::finalize_interpreter();
+    if ( S_init_python )
+        py::finalize_interpreter();
 #if defined(FEELPP_HAS_MONGOCXX )
     VLOG( 2 ) << "cleaning mongocxxInstance";
     MongoCxx::reset();
@@ -1574,7 +1581,20 @@ Environment::doOptions( int argc, char** argv,
     }
 }
 
-
+void
+Environment::setConfigFile( std::string const& cfgfile )
+{
+    if ( !fs::exists( cfgfile ) ) return;
+    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
+    // LOG( INFO ) << "Reading " << cfgfile << "...";
+    S_cfgdir = cfgAbsolutePath.parent_path();
+    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+    po::notify( S_vm );
+}
 bool
 Environment::initialized()
 {
@@ -1587,6 +1607,21 @@ Environment::finalized()
     return mpi::environment::finalized();
 }
 
+mpi::threading::level 
+Environment::threadLevel()
+{
+    return mpi::environment::thread_level();
+}
+bool
+Environment::isMainThread()
+{
+    return mpi::environment::is_main_thread();
+}
+void
+Environment::abort( int error_code )
+{
+    return mpi::environment::abort( error_code );
+}
 
 std::string const&
 Environment::rootRepository()
@@ -2451,7 +2486,7 @@ Environment::expand( std::string const& expr )
     boost::replace_all( res, "$datadir", dataDir );
     boost::replace_all( res, "$exprdbdir", exprdbDir );
     boost::replace_all( res, "$h", std::to_string(doption("gmsh.hsize") ) );
-
+    boost::replace_all( res, "$np", std::to_string(Environment::numberOfProcessors()) );
 
     typedef std::vector< std::string > split_vector_type;
 

@@ -538,9 +538,26 @@ if(FEELPP_ENABLE_PYTHON)
       
   endif()
 
-endif()
+  if (DEFINED PYTHON_SITE_PACKAGES)
+    set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
+  else ()
+    execute_process (COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
+                      OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
+                      RESULT_VARIABLE _PYTHON_pythonlib_result
+                      OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Boost.Python wrapping implementation" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION})
+    if (_PYTHON_pythonlib_result)
+      message (SEND_ERROR "Could not run ${PYTHON_EXECUTABLE}")
+    endif ()
+
+    get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
+    file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
+  endif ()
+  set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
+  message(STATUS "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
+endif(FEELPP_ENABLE_PYTHON)
+
+option(FEELPP_ENABLE_PYTHON_WRAPPING "Enable Python wrapping implementation" ON)
 
 # Boost
 SET(BOOST_MIN_VERSION "1.65.0")
@@ -606,7 +623,7 @@ ENDIF()
 OPTION(BOOST_ENABLE_TEST_DYN_LINK "enable boost test with dynamic lib" ON)
 MARK_AS_ADVANCED(BOOST_ENABLE_TEST_DYN_LINK)
 
-set( BOOST_PARAMETER_MAX_ARITY 24 )
+set( BOOST_PARAMETER_MAX_ARITY 25 )
 #set( BOOST_FILESYSTEM_VERSION 2)
 set( BOOST_FILESYSTEM_VERSION 3)
 if (BOOST_ENABLE_TEST_DYN_LINK)

@@ -418,6 +418,8 @@ po::options_description ts_options( std::string const& prefix )
         ( prefixvm( prefix, "ts.time-initial" ).c_str(), Feel::po::value<double>()->default_value( 0.0 ), "initial time" )
         ( prefixvm( prefix, "ts.time-final" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "final time" )
         ( prefixvm( prefix, "ts.time-step" ).c_str(), Feel::po::value<double>()->default_value( 1.0 ), "time step" )
+        ( prefixvm( prefix, "ts.adaptive" ).c_str(), Feel::po::value<bool>()->default_value( false ), "enable/disable adaptive time step if available" ) 
+        ( prefixvm( prefix, "ts.tol" ).c_str(), Feel::po::value<double>()->default_value( 1e-3 ), "time step tolerance" )
         //( prefixvm( prefix, "ts.strategy" ).c_str(), Feel::po::value<int>()->default_value( 0 ), "strategy, 0=constant time steps, 1=adaptive time steps" )
         ( prefixvm( prefix, "ts.steady" ).c_str(), Feel::po::value<bool>()->default_value( 0 ), "false: unsteady, true:steady" )
         ( prefixvm( prefix, "ts.reverse" ).c_str(), Feel::po::value<bool>()->default_value( false ), "reverse time" )
@@ -479,6 +481,21 @@ po::options_description sc_options( std::string const& prefix )
 
 
 Feel::po::options_description
+geim_options( std::string const& prefix )
+{
+    Feel::po::options_description geimoptions( "GEIM Options" );
+    geimoptions.add_options()
+        ( "geim.dimension-max", po::value<int>()->default_value(10), "maximum number of basis" )
+        ( "geim.tolerance", po::value<double>()->default_value(1e-10), "tolerance" )
+        ( "geim.rebuild-database", po::value<bool>()->default_value(false), "rebuild the database" )
+        ( "geim.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
+        ( "geim.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
+        ( "geim.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
+        ;
+    return geimoptions;
+}
+
+Feel::po::options_description
 eimOptions( std::string const& prefix )
 {
     Feel::po::options_description eimoptions( "EIM Options" );
@@ -532,6 +549,19 @@ deimOptions( std::string const& prefix )
         ;
 
     return deimoptions.add(backend_options(prefixvm(prefix,"deim-online")));
+}
+
+Feel::po::options_description
+pbdw_options( std::string const& prefix )
+{
+    Feel::po::options_description pbdwoptions( "PBDW Options" );
+    pbdwoptions.add_options()
+        ( "pbdw.rebuild-database", po::value<bool>()->default_value(false), "rebuild the database" )
+        ( "pbdw.db.load", po::value<int>()->default_value(2), "=0 use db.filename, =1 use last DB created =2 use last DB modified =3 use db.id =4 create new db" )
+        ( "pbdw.db.filename", po::value<std::string>()->default_value(""), "path to the db when db.load or db.update = 0" )
+        ( "pbdw.db.id", po::value<std::string>()->default_value(""), "id of the db when db.load or db.update = 3" )
+        ;
+    return pbdwoptions.add( backend_options("pbdw"));
 }
 
 Feel::po::options_description

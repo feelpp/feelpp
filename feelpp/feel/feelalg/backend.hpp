@@ -235,7 +235,7 @@ public:
      * \param worldcomm the communicator
      * \return the backend
      */
-    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
+    static backend_ptrtype build( std::string const& kind, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr(), po::variables_map const& vm = Environment::vm() );
 
 
     static FEELPP_DEPRECATED backend_ptrtype build( po::variables_map const& vm, std::string const& prefix = "", worldcomm_ptr_t const& worldComm=Environment::worldCommPtr() );
@@ -362,6 +362,12 @@ public:
 
     virtual sparse_matrix_ptrtype newZeroMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 ) = 0;
 
+    virtual sparse_matrix_ptrtype newIdentityMatrix( datamap_ptrtype const& dm1, datamap_ptrtype const& dm2 )
+    {
+        CHECK( false ) << "Not Implemented in base class!";
+        return sparse_matrix_ptrtype{};
+    }
+
     /**
      * helper function
      */
@@ -377,7 +383,7 @@ public:
                                        ( buildGraphWithTranspose, ( bool ),false )
                                        ( pattern_block,    *, ( BlocksStencilPattern(1,1,size_type( Pattern::HAS_NO_BLOCK_PATTERN ) ) ) )
                                        ( diag_is_nonzero,  *( boost::is_integral<mpl::_> ), true )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
+                                       ( verbose,   ( bool ), M_verbose )
                                        ( collect_garbage, *( boost::is_integral<mpl::_> ), true )
                                      ) )
     {
@@ -1059,7 +1065,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
+                                       ( verbose,   ( bool ), M_verbose )
                                      )
                                    )
     {
@@ -1237,7 +1243,7 @@ public:
                                        ( pc,( std::string ),M_pc/*"lu"*/ )
                                        ( ksp,( std::string ),M_ksp/*"gmres"*/ )
                                        ( pcfactormatsolverpackage,( std::string ), M_pcFactorMatSolverPackage )
-                                       ( verbose,   ( bool ), boption(_prefix=this->prefix(),_name="backend.verbose") )
+                                       ( verbose,   ( bool ), M_verbose )
                                      )
                                    )
     {
@@ -1519,6 +1525,8 @@ private:
     post_solve_type M_post_solve;
     datamap_ptrtype M_datamap;
     boost::signals2::signal<void()> M_deleteObservers;
+
+    bool M_verbose;
 };
 
 

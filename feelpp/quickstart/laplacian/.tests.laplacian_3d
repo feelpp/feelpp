@@ -1,0 +1,6 @@
+tetrahedron-oneelt-cst --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --checker.solution=1
+tetrahedron-oneelt-linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --checker.solution=x+y
+tetrahedron-oneelt-quadratic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg --gmsh.hsize=4 --checker.solution=x**2+y**2+z**2  --functions.f=-4
+tetrahedron-cst --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg   --checker.solution=1
+tetrahedron-linear --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg --checker.solution=x+y
+tetrahedron-quadratic --config-file ${CMAKE_CURRENT_SOURCE_DIR}/cases/tetrahedron/tetrahedron.cfg  --checker.solution=x**2+y**2+z**2  --functions.f=-6

@@ -81,9 +81,12 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_tolower)
 if(     NOT cmake_build_type_tolower STREQUAL "debug"
     AND NOT cmake_build_type_tolower STREQUAL "release"
     AND NOT cmake_build_type_tolower STREQUAL "minsizerel"
+    AND NOT cmake_build_type_tolower STREQUAL "asan"
+    AND NOT cmake_build_type_tolower STREQUAL "coverage"
+    AND NOT cmake_build_type_tolower STREQUAL "debugfull"
     AND NOT cmake_build_type_tolower STREQUAL "none"
     AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
-  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive).")
+  message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, MinSizeRel, RelWithDebInfo (case-insensitive), Asan, Coverage, DebugFull.")
 endif()
 
 
@@ -107,6 +110,8 @@ endmacro(set_config_option)
 # normally set to ON (useful if you want to configure a minimal version of feel++:
 # e.g. "cmake -DFEELPP_DEFAULT=0 -DFEELPP_ENABLE_TESTS=1 -DFEELPP_ENABLE_=1")
 set(FEELPP_DEFAULT ON CACHE INTERNAL "Default value for enabled-by-default options")
+SET(FEELPP_STD_CPP "17" CACHE PATH "Feel++ c++ standard 17(default) 20")
+SET(FEELPP_STDLIB_CPP "stdc++" CACHE PATH "Feel++ c++ standard library stdc++ or c++")
 
 OPTION(FEELPP_ENABLE_VERBOSE_CMAKE "enable Feel++ verbose cmake" OFF)
 OPTION(FEELPP_ENABLE_BUILD_STATIC "Enable Feel++ library statically built" OFF )

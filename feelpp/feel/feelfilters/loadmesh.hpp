@@ -65,26 +65,27 @@ BOOST_PARAMETER_FUNCTION(
 
     ( optional
       ( prefix,(std::string), "" )
-      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename") )
+      ( vm, ( po::variables_map const& ), Environment::vm() )
+      ( filename, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.filename",_vm=vm) )
       ( desc, *,std::shared_ptr<gmsh_type>() )  // geo() can't be used here as default !!
 
-      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize") )
-      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale") )
-      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten") )
-      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine") )
+      ( h,              *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="gmsh.hsize",_vm=vm) )
+      ( scale,          *( boost::is_arithmetic<mpl::_> ), doption(_prefix=prefix,_name="mesh.scale",_vm=vm) )
+      ( straighten,          (bool), boption(_prefix=prefix,_name="gmsh.straighten",_vm=vm) )
+      ( refine,          *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.refine",_vm=vm) )
       ( update,          *( boost::is_integral<mpl::_> ), MESH_CHECK|MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
-      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions") )
+      ( physical_are_elementary_regions,		   (bool), boption(_prefix=prefix,_name="gmsh.physical_are_elementary_regions",_vm=vm) )
       ( worldcomm,       *, mesh->worldCommPtr() )
-      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild") )
-      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition") )
-      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition") )
+      ( force_rebuild,   *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.rebuild",_vm=vm) )
+      ( respect_partition,	(bool), boption(_prefix=prefix,_name="gmsh.respect_partition",_vm=vm) )
+      ( rebuild_partitions,	(bool), boption(_prefix=prefix,_name="gmsh.partition",_vm=vm) )
       ( rebuild_partitions_filename, *( boost::is_convertible<mpl::_,std::string> )	, "" )
       ( partitions,      *( boost::is_integral<mpl::_> ), (worldcomm)?worldcomm->globalSize():1 )
-      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner") )
-      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5") )
+      ( partitioner,     *( boost::is_integral<mpl::_> ), ioption(_prefix=prefix,_name="gmsh.partitioner",_vm=vm) )
+      ( savehdf5,        *( boost::is_integral<mpl::_> ), boption(_prefix=prefix,_name="gmsh.savehdf5",_vm=vm) )
       ( partition_file,   *( boost::is_integral<mpl::_> ), 0 )
-      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends") )
-      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity") )
+      ( depends, *( boost::is_convertible<mpl::_,std::string> ), soption(_prefix=prefix,_name="gmsh.depends",_vm=vm) )
+      ( verbose,   (int), ioption(_prefix=prefix,_name="gmsh.verbosity",_vm=vm) )
       )
                          )
 {
@@ -156,6 +157,7 @@ BOOST_PARAMETER_FUNCTION(
                                       _depends=depends,
                                       _worldcomm=worldcomm  ) : desc;
         auto m = createGMSHMesh(
+            _vm=vm,
             _mesh=mesh,
             _desc= thedesc ,
             _h=h,
@@ -197,7 +199,8 @@ BOOST_PARAMETER_FUNCTION(
             cout << "[loadMesh] Loading Gmsh compatible mesh: " << fs::system_complete(mesh_name) << "\n";
 
         tic();
-        auto m = loadGMSHMesh( _mesh=mesh,
+        auto m = loadGMSHMesh( _vm=vm,
+                               _mesh=mesh,
                                _filename=mesh_name.string(),
                                _straighten=straighten,
                                _refine=refine,
@@ -278,7 +281,8 @@ BOOST_PARAMETER_FUNCTION(
              << "[loadMesh] automatically generating amesh from gmsh.domain.shape in format geo+msh: "
              << mesh_name << ".geo\n";
     LOG(WARNING) << "File " << mesh_name << " not found, generating instead an hypercube in " << _mesh_type::nDim << "D geometry and mesh...";
-    auto m = createGMSHMesh(_mesh=mesh,
+    auto m = createGMSHMesh(_vm=vm,
+                            _mesh=mesh,
                             _desc=domain( _name=mesh_name.string(), _h=h, _worldcomm=worldcomm ),
                             _h=h,
                             _scale=scale,

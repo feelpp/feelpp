@@ -54,31 +54,33 @@ TSBase::TSBase()
     M_rankProcInNameOfFiles( false ),
     M_fileFormat( "binary" ),
     M_worldComm( Environment::worldComm() ),
-    M_prefix()
+    M_prefix(),
+    M_displayStats( false )
 {}
 
-TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm )
+TSBase::TSBase( std::string name, std::string const& prefix, WorldComm const& worldComm, po::variables_map const& vm )
     :
     M_name( name ),
-    M_time( doption(_prefix=prefix,_name="ts.time-initial") ),
+    M_time( doption(_prefix=prefix,_name="ts.time-initial",_vm=vm) ),
     M_iteration( 0 ),
-    M_Ti( doption(_prefix=prefix,_name="ts.time-initial") ),
-    M_Tf( doption(_prefix=prefix,_name="ts.time-final") ),
-    M_dt( doption(_prefix=prefix,_name="ts.time-step") ),
+    M_Ti( doption(_prefix=prefix,_name="ts.time-initial",_vm=vm) ),
+    M_Tf( doption(_prefix=prefix,_name="ts.time-final",_vm=vm) ),
+    M_dt( doption(_prefix=prefix,_name="ts.time-step",_vm=vm) ),
     M_state( TS_UNITIALIZED ),
     M_reverse( false ),
     M_reverseLoad( false ),
     M_n_restart( 0 ),
-    M_restart( boption(_prefix=prefix,_name="ts.restart") ),
-    M_restartPath( soption(_prefix=prefix,_name="ts.restart.path") ),
-    M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save") ),
-    M_restartAtLastSave( boption(_prefix=prefix,_name="ts.restart.at-last-save") ),
-    M_saveInFile( boption(_prefix=prefix,_name="ts.save") ),
-    M_saveFreq( ioption(_prefix=prefix,_name="ts.save.freq") ),
-    M_rankProcInNameOfFiles( boption(_prefix=prefix,_name="ts.rank-proc-in-files-name") ),
-    M_fileFormat( soption(_prefix=prefix,_name="ts.file-format") ),
+    M_restart( boption(_prefix=prefix,_name="ts.restart",_vm=vm) ),
+    M_restartPath( soption(_prefix=prefix,_name="ts.restart.path",_vm=vm) ),
+    M_restartStepBeforeLastSave( ioption(_prefix=prefix,_name="ts.restart.step-before-last-save",_vm=vm) ),
+    M_restartAtLastSave( boption(_prefix=prefix,_name="ts.restart.at-last-save",_vm=vm) ),
+    M_saveInFile( boption(_prefix=prefix,_name="ts.save",_vm=vm) ),
+    M_saveFreq( ioption(_prefix=prefix,_name="ts.save.freq",_vm=vm) ),
+    M_rankProcInNameOfFiles( boption(_prefix=prefix,_name="ts.rank-proc-in-files-name",_vm=vm) ),
+    M_fileFormat( soption(_prefix=prefix,_name="ts.file-format",_vm=vm) ),
     M_worldComm( worldComm ),
-    M_prefix( prefix )
+    M_prefix( prefix ),
+    M_displayStats( boption(_prefix=prefix,_name="ts.display-stats",_vm=vm) )
 {}
 
 TSBase::TSBase( std::string name, WorldComm const& worldComm )
@@ -101,7 +103,8 @@ TSBase::TSBase( std::string name, WorldComm const& worldComm )
     M_saveFreq( 1 ),
     M_fileFormat( "binary" ),
     M_worldComm( worldComm ),
-    M_prefix()
+    M_prefix(),
+    M_displayStats( false)
 {}
 
 TSBase::TSBase( TSBase const& b )
@@ -126,7 +129,8 @@ TSBase::TSBase( TSBase const& b )
     M_rankProcInNameOfFiles( b.M_rankProcInNameOfFiles ),
     M_fileFormat( b.M_fileFormat ),
     M_worldComm( b.M_worldComm ),
-    M_prefix( b.M_prefix )
+    M_prefix( b.M_prefix ),
+    M_displayStats( b.M_displayStats )
 {}
 
 TSBase&
@@ -155,6 +159,8 @@ TSBase::operator=( TSBase const& b )
 
         M_time_values_map = b.M_time_values_map;
         M_worldComm = b.M_worldComm;
+
+        M_displayStats = b.M_displayStats;
     }
 
     return *this;

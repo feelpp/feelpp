@@ -38,6 +38,35 @@ struct ChangeBasisPolySet<NewPolySetType, BasisType<Order, PolySetType, Continui
     typedef BasisType<Order, NewPolySetType, ContinuityType, Pts, Tag> type;
 };
 
+
+
+template <typename T>
+std::set<T>
+set_difference( std::set<T> const& a,  std::set<T> const& b )
+{
+    std::set<T> res;
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                        std::inserter(res, res.begin()));
+    return res;
+}
+
+template<typename C, typename T> struct ChangeBasisContinuity;
+
+template<
+    typename NewContinuityType,
+    template<uint16_type, template<uint16_type> class, typename, template<class, uint16_type, class> class, uint16_type > class BasisType,
+    uint16_type Order,
+    template<uint16_type> class PolySetType,
+    typename ContinuityType,
+    template<class, uint16_type, class> class Pts,
+    uint16_type Tag
+        >
+struct ChangeBasisContinuity<NewContinuityType, BasisType<Order, PolySetType, ContinuityType, Pts, Tag>>
+{
+    typedef BasisType<Order, PolySetType, NewContinuityType, Pts, Tag> type;
+};
+
+
 } // namespace detail
 } // namespace FeelModels
 } // namespace Feel
