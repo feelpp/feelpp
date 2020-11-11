@@ -2813,11 +2813,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::BodySetBoundaryCondition::updateAlgebraicFac
 
             myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity) = bpbc.matrixPTilde_translational();
             myblockMat(startBlockIndexVelocity,startBlockIndexAngularVelocity) = bpbc.matrixPTilde_angular();
-            Feel::cout << "Map row" << bpbc.matrixPTilde_translational()->graph()->mapRow().dofIdToContainerId( 0 ) << std::endl;
+            /*Feel::cout << "Map row" << bpbc.matrixPTilde_translational()->graph()->mapRow().dofIdToContainerId( 0 ) << std::endl;
             Feel::cout << "Map col" << bpbc.matrixPTilde_translational()->graph()->mapCol().dofIdToContainerId( 0 ) << std::endl;
             Feel::cout << "block mat rows" << myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity)->mapRow().dofIdToContainerId( 0 ) <<std::endl;
             Feel::cout << "block mat columns" << myblockMat(startBlockIndexVelocity,startBlockIndexTranslationalVelocity)->mapCol().dofIdToContainerId( 0 ) <<std::endl;
-
+            */
 
             auto dofsBody = fluidToolbox.functionSpaceVelocity()->dofs( bpbc.rangeMarkedFacesOnFluid() );
             auto matFI_Id = myblockMat(startBlockIndexVelocity,startBlockIndexVelocity);
