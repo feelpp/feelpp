@@ -35,7 +35,9 @@
 
 namespace Feel {
 
-namespace TabulateInformationToolsFromJSON
+namespace TabulateInformationTools
+{
+namespace FromJSON
 {
 #if 0
 bool is_array_of_primitive( nl::json const& jsonInfo )
@@ -71,6 +73,7 @@ tabulate::Table tabulateArrayOfPrimitive( nl::json const& jsonInfo )
     return table;
 }
 #endif
+
 void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys )
 {
     size_t nrow = 0; //std::distance(table.begin(),table.end());
@@ -119,13 +122,13 @@ tabulate::Table tabulateFunctionSpace(  nl::json const& jsonInfo, TabulateInform
     tabulate::Table tabInfo;
 
     tabulate::Table tabInfoOthers;
-    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
     tabInfo.add_row({tabInfoOthers});
 
     tabulate::Table tabInfoBasis;
     tabInfoBasis.add_row({"Basis"});
     tabulate::Table tabInfoBasisEntries;
-    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoBasisEntries, jsonInfo.at("basis"), tabInfoProp );
     tabInfoBasis.add_row({tabInfoBasisEntries});
     tabInfo.add_row({tabInfoBasis});
 
@@ -133,7 +136,7 @@ tabulate::Table tabulateFunctionSpace(  nl::json const& jsonInfo, TabulateInform
     tabInfoDofTable.add_row({"Dof Table"});
     tabulate::Table tabInfoDofTableEntries;
     auto const& jsonInfoDofTable = jsonInfo.at("doftable");
-    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoDofTableEntries, jsonInfoDofTable, tabInfoProp );
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDofTableEntries, jsonInfoDofTable, tabInfoProp );
     tabInfoDofTable.add_row({tabInfoDofTableEntries});
 
     if ( jsonInfoDofTable.contains( "nLocalDofWithoutGhost" ) )
@@ -156,10 +159,84 @@ tabulate::Table tabulateFunctionSpace(  nl::json const& jsonInfo, TabulateInform
     return tabInfo;
 }
 
-} // namespace TabulateInformationToolsFromJSON
+} // namespace FromJSON
+
+
+void
+mergeSections( tabulate::Table & tabInfoMerge, std::vector<std::pair<std::string,tabulate::Table>> tabInfos, bool hasTitle )
+{
+    size_t rowStartSections = hasTitle? 1 : 0;
+    size_t nrow = 0; //std::distance(table.begin(),table.end());
+    for ( auto const& t : tabInfoMerge ) ++nrow;
+    for ( auto const& [tableName,tableInfo] : tabInfos )
+    {
+        tabulate::Table tabInfoSection;
+        tabInfoSection.add_row({tableName});
+        tabInfoSection.add_row({tableInfo});
+        tabInfoMerge.add_row({tabInfoSection});
+
+        if ( nrow > rowStartSections )
+            tabInfoMerge[nrow].format().hide_border_top();
+        ++nrow;
+    }
+}
+tabulate::Table
+createSections( std::vector<std::pair<std::string,tabulate::Table>> tabInfos, std::string const& title )
+{
+    tabulate::Table tabInfo;
+    bool hasTitle = !title.empty();
+    if ( hasTitle )
+        tabInfo.add_row( {title} );
+    mergeSections( tabInfo, tabInfos, hasTitle );
+    return tabInfo;
+}
+
+
+} // namespace TabulateInformationTools
 
 
 namespace FeelModels {
+
+
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm )
+{
+    std::vector<std::string> all_lines;
+    all_lines.push_back("███████╗███████╗███████╗██╗       ██╗         ██╗           ████████╗ ██████╗  ██████╗ ██╗     ██████╗  ██████╗ ██╗  ██╗███████╗███████╗");
+    all_lines.push_back("██╔════╝██╔════╝██╔════╝██║       ██║         ██║           ╚══██╔══╝██╔═══██╗██╔═══██╗██║     ██╔══██╗██╔═══██╗╚██╗██╔╝██╔════╝██╔════╝");
+    all_lines.push_back("█████╗  █████╗  █████╗  ██║   ██████████╗ ██████████╗          ██║   ██║   ██║██║   ██║██║     ██████╔╝██║   ██║ ╚███╔╝ █████╗  ███████╗");
+    all_lines.push_back("██╔══╝  ██╔══╝  ██╔══╝  ██║   ╚═══██╔═══╝ ╚═══██╔═══╝  █████╗  ██║   ██║   ██║██║   ██║██║     ██╔══██╗██║   ██║ ██╔██╗ ██╔══╝  ╚════██║");
+    all_lines.push_back("██║     ███████╗███████╗███████╗  ██║         ██║      ╚════╝  ██║   ╚██████╔╝╚██████╔╝███████╗██████╔╝╚██████╔╝██╔╝ ██╗███████╗███████║");
+    all_lines.push_back("╚═╝     ╚══════╝╚══════╝╚══════╝  ╚═╝         ╚═╝              ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝");
+
+    std::vector<std::string> all_lines_app;
+    if ( toolboxName == "heat" )
+    {
+        all_lines_app.push_back("██╗  ██╗███████╗ █████╗ ████████╗");
+        all_lines_app.push_back("██║  ██║██╔════╝██╔══██╗╚══██╔══╝");
+        all_lines_app.push_back("███████║█████╗  ███████║   ██║   ");
+        all_lines_app.push_back("██╔══██║██╔══╝  ██╔══██║   ██║   ");
+        all_lines_app.push_back("██║  ██║███████╗██║  ██║   ██║   ");
+        all_lines_app.push_back("╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝   ╚═╝   ");
+    }
+
+    tabulate::Table tabInfo;
+    // the a\b added is for fix the FontAlign::center, not very nice but work if we hide the left/right borders
+    for ( int k=0;k<all_lines.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines[k] + "a\b" });
+    for ( int k=0;k<all_lines_app.size();++k )
+        tabInfo.add_row({ "a\b" +all_lines_app[k] +"a\b" });
+    tabInfo.format()
+        .hide_border()
+        .multi_byte_characters(true)
+        //.hide_border_top()
+        .font_color(tabulate::Color::red)
+        .font_align(tabulate::FontAlign::center);
+
+    if ( worldComm.isMasterRank() )
+        std::cout << tabInfo << std::endl;
+    worldComm.barrier();
+}
+
 
 namespace ToolboxesDetail
 {
@@ -517,9 +594,15 @@ ModelBase::updateInformationObject( pt::ptree & p ) const
 tabulate::Table
 ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+
     tabulate::Table tabInfo;
-    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
-    //TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "prefix","keyword","root repository","expr eepository", "number of processus" } );
+    //TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfo, jsonInfo, tabInfoProp ); // bad ordering due to boost properties
+#if 0
+    tabInfo/*[0][0]*/.format()
+        .font_style({tabulate::FontStyle::bold})
+        .font_background_color(tabulate::Color::blue);
+#endif
     return tabInfo;
 }
 
@@ -535,6 +618,14 @@ ModelBase::tabulateInformation() const
     pt_istream >> jsonInfo;
 
     return this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
+#if 0
+    auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
+    tabRes.format()
+    //.hide_border()
+    .multi_byte_characters(true)
+    ;
+    return tabRes;
+#endif
 }
 
 std::string
@@ -554,10 +645,8 @@ ModelBase::getInfo() const
     return _ostr;
 }
 void
-ModelBase::printInfo() const
+ModelBase::printInfo( tabulate::Table const& tabInfo ) const
 {
-    //auto tabInfo = const_cast<ModelBase&>( *this ).tabulateInformation();
-    auto tabInfo = this->tabulateInformation();
     if ( this->verboseAllProc() )
     {
         std::cout << this->getInfo()->str();
@@ -570,7 +659,7 @@ ModelBase::printInfo() const
     }
 }
 void
-ModelBase::saveInfo() const
+ModelBase::saveInfo( tabulate::Table const& tabInfo ) const
 {
     Environment::journalCheckpoint();
 
@@ -579,6 +668,7 @@ ModelBase::saveInfo() const
     {
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
+        file << tabInfo << std::endl;;
         file.close();
     }
 
@@ -599,8 +689,9 @@ ModelBase::saveInfo() const
 void
 ModelBase::printAndSaveInfo() const
 {
-    this->printInfo();
-    this->saveInfo();
+    auto tabInfo = this->tabulateInformation();
+    this->printInfo( tabInfo );
+    this->saveInfo( tabInfo );
 }
 
 // timer
