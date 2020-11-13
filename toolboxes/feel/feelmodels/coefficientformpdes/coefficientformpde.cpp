@@ -251,7 +251,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 {
     pt::ptree subPt;
     super_type::super_type::super_model_base_type::updateInformationObject( subPt );
@@ -259,12 +259,55 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
     subPt.clear();
     super_type::super_type::super_model_meshes_type::updateInformationObject( subPt );
     p.put_child( "Meshes", subPt );
+
+
+    // FunctionSpace
+    subPt.clear();
+    pt::ptree subPt2;
+    M_Xh->updateInformationObject( subPt2 );
+    subPt.put_child( this->unknownName(), subPt2 );
+    p.put_child( "Function Spaces",  subPt );
+
+#if 0
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+#endif
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
 tabulate::Table
-COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp )
+COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfos;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfos.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfos.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+
+    tabInfos.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpaces;
+        if ( jsonInfoFunctionSpaces.contains( this->unknownName() ) )
+        {
+            tabInfoFunctionSpaces.add_row({this->unknownName()});
+            tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( this->unknownName() ), tabInfoProp ) });
+            tabInfos.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+        }
+    }
+
+    return TabulateInformationTools::createSections( tabInfos, (boost::format("Toolbox Coefficient Form PDE : %1%")%this->keyword()).str() );
+
+
+#if 0
     tabulate::Table tabInfo;
 
     tabulate::Table tabInfoEnv;
@@ -294,6 +337,7 @@ COEFFICIENTFORMPDE_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jso
     tabInfo.add_row({tabInfoAlg});
 
     return tabInfo;
+#endif
 }
 
 COEFFICIENTFORMPDE_CLASS_TEMPLATE_DECLARATIONS
