@@ -361,7 +361,7 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
     subPt.clear();
     subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
     //subPt.put( "velocity-convection",  std::string( (this->fieldVelocityConvectionIsUsedAndOperational())?"Yes":"No" ) );
-    p.put_child( "Physical Model", subPt );
+    p.put_child( "Physics", subPt );
 
     // Boundary Conditions
     subPt.clear();
@@ -402,6 +402,17 @@ HEAT_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
         p.put_child( "Finite element stabilization", subPt );
     }
 
+    if ( !this->isStationary() )
+    {
+        subPt.clear();
+        subPt.put( "initial time", this->timeStepBase()->timeInitial() );
+        subPt.put( "final time", this->timeStepBase()->timeFinal() );
+        subPt.put( "time step", this->timeStepBase()->timeStep() );
+        subPt.put( "type", M_timeStepping );
+        p.put_child( "Time Discretization", subPt );
+    }
+
+
     // Algebraic Solver
     if ( M_algebraicFactory )
     {
@@ -415,66 +426,53 @@ HEAT_CLASS_TEMPLATE_DECLARATIONS
 tabulate::Table
 HEAT_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    tabulate::Table tabInfo;
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfos;
 
-    tabulate::Table tabInfoEnv;
-    tabInfoEnv.add_row({"Environment"});
-    tabInfoEnv.add_row({ super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) });
-    tabInfo.add_row({tabInfoEnv});
+    if ( jsonInfo.contains("Environment") )
+        tabInfos.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
 
-    tabulate::Table tabInfoPDE;
-    tabInfoPDE.add_row({"PDE"});
-    tabInfo.add_row({tabInfoPDE});
-
-    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+    if ( jsonInfo.contains("Physics") )
     {
-        tabulate::Table tabInfoMatProp;
-        tabInfoMatProp.add_row({"Materials Properties"});
-        tabInfoMatProp.add_row({ this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) });
-        tabInfo.add_row({tabInfoMatProp});
+        tabulate::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
+        tabInfos.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
     }
 
-    tabulate::Table tabInfoBC;
-    tabInfoBC.add_row({"Boundary conditions"});
-    tabInfo.add_row({tabInfoBC});
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfos.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
 
-    tabulate::Table tabInfoMesh;
-    tabInfoMesh.add_row({"Meshes"});
-    tabInfoMesh.add_row({ super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) });
-    tabInfo.add_row({tabInfoMesh});
+    tabInfos.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
 
+    if ( jsonInfo.contains("Meshes") )
+        tabInfos.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
 
     if ( jsonInfo.contains("Function Spaces") )
     {
         auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
-        tabulate::Table tabInfoFunctionSpace;
-        tabInfoFunctionSpace.add_row({"Function Spaces"});
+        tabulate::Table tabInfoFunctionSpaces;
+        tabInfoFunctionSpaces.add_row({"Temperature"});
+        tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) });
+        tabInfos.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+    }
 
-        tabulate::Table tabInfoFunctionSpaceTemperature;
-        tabInfoFunctionSpaceTemperature.add_row({"Temperature"});
-        tabInfoFunctionSpaceTemperature.add_row({ TabulateInformationToolsFromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp ) });
+    if ( jsonInfo.contains("Time Discretization") )
+    {
+        tabulate::Table tabInfoTimeDiscr;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoTimeDiscr, jsonInfo.at("Time Discretization"), tabInfoProp );
+        tabInfos.push_back( std::make_pair( "Time Discretization",  tabInfoTimeDiscr ) );
+    }
 
-        // tabInfoFunctionSpaceTemperature.add_row({"Temperature"});
-        // tabulate::Table tabInfoFunctionSpaceTemperatureEntries;
-        // TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoFunctionSpaceTemperatureEntries, jsonInfoFunctionSpaces.at( "Temperature" ), tabInfoProp );
-        // tabInfoFunctionSpaceTemperature.add_row( { tabInfoFunctionSpaceTemperatureEntries});
-
-        tabInfoFunctionSpace.add_row({tabInfoFunctionSpaceTemperature});
-
-        //tabInfoFunctionSpace.format().hide_border();
-
-        tabInfo.add_row({tabInfoFunctionSpace});
+    if ( jsonInfo.contains("Finite element stabilization") )
+    {
+        tabulate::Table tabInfoStab;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoStab, jsonInfo.at("Finite element stabilization"), tabInfoProp );
+        tabInfos.push_back( std::make_pair( "Finite element stabilization",  tabInfoStab ) );
     }
 
     if ( jsonInfo.contains( "Algebraic Solver" ) )
-    {
-        tabulate::Table tabInfoAlg;
-        tabInfoAlg.add_row({"Algebraic Solver"});
-        tabInfoAlg.add_row({model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) });
-        tabInfo.add_row({tabInfoAlg});
-    }
+        tabInfos.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
 
-    return tabInfo;
+    return TabulateInformationTools::createSections( tabInfos, "Toolbox Heat" );
 }
 
 
