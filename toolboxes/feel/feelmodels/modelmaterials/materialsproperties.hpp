@@ -669,7 +669,7 @@ public :
         {
             tabulate::Table tabInfo;
             tabulate::Table tabInfoOthers;
-            TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
             tabInfo.add_row({tabInfoOthers});
 
             for ( auto const& [matName,matProps] : M_materialNameToProperties )
@@ -679,7 +679,7 @@ public :
                 tabulate::Table tabInfoMat;
                 tabInfoMat.add_row({"Material : "+matName});
                 tabulate::Table tabInfoMatEntries;
-                TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
+                TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoMatEntries, jsonInfo.at( matName ), tabInfoProp );
                 tabInfoMat.add_row( { tabInfoMatEntries});
                 tabInfo.add_row( {tabInfoMat} );
             }

@@ -472,7 +472,7 @@ ModelAlgebraicFactory::tabulateInformation( nl::json const& jsonInfo, TabulateIn
             tabulate::Table tabInfoSection;
             tabInfoSection.add_row({section});
             tabulate::Table tabInfoSectionEntries;
-            TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
+            TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoSectionEntries, jsonInfo.at( section ), tabInfoProp );
             tabInfoSection.add_row({tabInfoSectionEntries});
             tabInfo.add_row({tabInfoSection});
         }
