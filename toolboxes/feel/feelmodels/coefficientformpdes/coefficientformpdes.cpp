@@ -386,33 +386,63 @@ COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::getInfo() const
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
 void
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 {
-    // TODO
+    pt::ptree subPt;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+
+    subPt.clear();
     for (auto & cfpde  : M_coefficientFormPDEs )
     {
-        pt::ptree subPt;
-        cfpde->updateInformationObject( subPt );
-        p.put_child( cfpde->keyword(), subPt );
+        pt::ptree subPt2;
+        cfpde->updateInformationObject( subPt2 );
+        subPt.put_child( cfpde->keyword(), subPt2 );
     }
+    p.put_child( "Coefficient Form PDE", subPt );
+
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS
-tabulate::Table
-COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) /*const*/
+std::vector<tabulate::Table>
+COEFFICIENTFORMPDES_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
-    tabulate::Table tabInfo;
-    for (auto & cfpde  : M_coefficientFormPDEs )
+    std::vector<tabulate::Table> tabInfos;
+
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+
+    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Coefficient Form PDEs : %1%")%this->keyword()).str() ) );
+
+    if ( jsonInfo.contains("Coefficient Form PDE") )
     {
-        if ( jsonInfo.contains(cfpde->keyword()) )
+        auto const& jsonInfo_cfpde = jsonInfo.at("Coefficient Form PDE");
+        for (auto & cfpde  : M_coefficientFormPDEs )
         {
-            tabulate::Table tabInfoCFPDE;
-            tabInfoCFPDE.add_row( { (boost::format("CFPDE : %1%")%cfpde->keyword() ).str() } );
-            tabInfoCFPDE.add_row( { cfpde->tabulateInformation( jsonInfo.at(cfpde->keyword()), tabInfoProp ) } );
-            tabInfo.add_row({tabInfoCFPDE});
+            if ( jsonInfo_cfpde.contains(cfpde->keyword()) )
+            {
+                auto tabInfos_cfpde = cfpde->tabulateInformations( jsonInfo_cfpde.at(cfpde->keyword()), tabInfoProp );
+                for ( auto const& tabInfo_cfpde : tabInfos_cfpde )
+                    tabInfos.push_back( std::move( tabInfo_cfpde ) );
+            }
         }
     }
-    return tabInfo;
+    return tabInfos;
 }
 
 COEFFICIENTFORMPDES_CLASS_TEMPLATE_DECLARATIONS

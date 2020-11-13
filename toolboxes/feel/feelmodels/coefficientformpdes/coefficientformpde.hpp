@@ -109,8 +109,8 @@ public:
     //___________________________________________________________________________________//
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
-    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) override;
+    void updateInformationObject( pt::ptree & p ) const override;
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
 
     void init( bool buildModelAlgebraicFactory=true );
     void initAlgebraicFactory();
