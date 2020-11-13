@@ -104,11 +104,11 @@ ModelMesh<IndexType>::ImportConfig::tabulateInformation( nl::json const& jsonInf
 {
     tabulate::Table tabInfo;
     if ( jsonInfo.contains("mesh-filename") )
-        TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "mesh-filename" } );
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "mesh-filename" } );
     else
-        TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "geo-filename","hsize" } );
+        TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "geo-filename","hsize" } );
 
-    TabulateInformationToolsFromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "generate-partitioning", "number-of-partition" } );
+    TabulateInformationTools::FromJSON::addKeyToValues( tabInfo, jsonInfo, tabInfoProp, { "generate-partitioning", "number-of-partition" } );
     return tabInfo;
 }
 
@@ -277,7 +277,7 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
     tabulate::Table tabInfo;
 
     tabulate::Table tabInfoOthers;
-    TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
+    TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoOthers, jsonInfo, tabInfoProp );
     if ( tabInfoOthers.begin() != tabInfoOthers.end() )
         tabInfo.add_row({tabInfoOthers});
 
@@ -294,7 +294,7 @@ ModelMesh<IndexType>::tabulateInformation( nl::json const& jsonInfo, TabulateInf
         tabulate::Table tabInfoDiscr;
         tabInfoDiscr.add_row({"Discretization"});
         tabulate::Table tabInfoDiscrEntries;
-        TabulateInformationToolsFromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoDiscrEntries, jsonInfo.at( "Discretization" ), tabInfoProp );
         tabInfoDiscr.add_row( { tabInfoDiscrEntries});
 
         auto const& jsonInfoDiscr = jsonInfo.at( "Discretization" );

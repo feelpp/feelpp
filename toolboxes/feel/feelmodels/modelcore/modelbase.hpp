@@ -64,18 +64,41 @@ private:
     VerboseLevel M_verbose_level;
 };
 
-namespace TabulateInformationToolsFromJSON
+namespace TabulateInformationTools
 {
-void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
-inline void addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys ) { addKeyToValues( table, jsonInfo, tabInfoProp, std::vector<std::string>(keys) ); }
+namespace FromJSON
+{
 
-void addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+void
+addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::vector<std::string> const& keys );
 
-tabulate::Table tabulateFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+inline
+void
+addKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp, std::initializer_list<std::string> const& keys )
+{
+    addKeyToValues( table, jsonInfo, tabInfoProp, std::vector<std::string>(keys) );
 }
+
+void
+addAllKeyToValues( tabulate::Table &table, nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+tabulate::Table
+tabulateFunctionSpace( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp );
+
+} // namespace FromJSON
+
+void
+mergeSections( tabulate::Table & tabInfoMerge, std::vector<std::pair<std::string,tabulate::Table>> tabInfos, bool hasTitle = false );
+
+tabulate::Table
+createSections( std::vector<std::pair<std::string,tabulate::Table>> tabInfos, std::string const& title = "" );
+
+} // namespace TabulateInformationTools
 
 namespace FeelModels
 {
+
+void printToolboxApplication( std::string const& toolboxName, worldcomm_t const& worldComm = Environment::worldComm() );
 
 struct ModelBaseCommandLineOptions
 {
@@ -206,9 +229,13 @@ public :
     std::string filenameSaveInfo() const;
     void setFilenameSaveInfo(std::string const& s);
     virtual std::shared_ptr<std::ostringstream> getInfo() const;
-    virtual void printInfo() const;
-    virtual void saveInfo() const;
-    virtual void printAndSaveInfo() const;
+    void printInfo() const { this->printInfo( this->tabulateInformation() ); }
+    void saveInfo() const { this->saveInfo( this->tabulateInformation() ); }
+    void printAndSaveInfo() const;
+private :
+    void printInfo( tabulate::Table const& tabInfo ) const;
+    void saveInfo( tabulate::Table const& tabInfo ) const;
+public :
     // timer
     TimerToolBase & timerTool( std::string const& s ) const;
     void addTimerTool( std::string const& s, std::string const& fileName ) const;
