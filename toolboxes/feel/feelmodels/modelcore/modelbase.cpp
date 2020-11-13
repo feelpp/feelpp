@@ -209,7 +209,16 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
     all_lines.push_back("╚═╝     ╚══════╝╚══════╝╚══════╝  ╚═╝         ╚═╝              ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝");
 
     std::vector<std::string> all_lines_app;
-    if ( toolboxName == "heat" )
+    if ( toolboxName == "cfpdes" )
+    {
+        all_lines_app.push_back(" ██████╗ ██████╗ ███████╗███████╗███████╗██╗ ██████╗██╗███████╗███╗   ██╗████████╗    ███████╗ ██████╗ ██████╗ ███╗   ███╗    ██████╗ ██████╗ ███████╗███████╗");
+        all_lines_app.push_back("██╔════╝██╔═══██╗██╔════╝██╔════╝██╔════╝██║██╔════╝██║██╔════╝████╗  ██║╚══██╔══╝    ██╔════╝██╔═══██╗██╔══██╗████╗ ████║    ██╔══██╗██╔══██╗██╔════╝██╔════╝");
+        all_lines_app.push_back("██║     ██║   ██║█████╗  █████╗  █████╗  ██║██║     ██║█████╗  ██╔██╗ ██║   ██║       █████╗  ██║   ██║██████╔╝██╔████╔██║    ██████╔╝██║  ██║█████╗  ███████╗");
+        all_lines_app.push_back("██║     ██║   ██║██╔══╝  ██╔══╝  ██╔══╝  ██║██║     ██║██╔══╝  ██║╚██╗██║   ██║       ██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║    ██╔═══╝ ██║  ██║██╔══╝  ╚════██║");
+        all_lines_app.push_back("╚██████╗╚██████╔╝███████╗██║     ██║     ██║╚██████╗██║███████╗██║ ╚████║   ██║       ██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║    ██║     ██████╔╝███████╗███████║");
+        all_lines_app.push_back(" ╚═════╝ ╚═════╝ ╚══════╝╚═╝     ╚═╝     ╚═╝ ╚═════╝╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝       ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝    ╚═╝     ╚═════╝ ╚══════╝╚══════╝");
+    }
+    else if ( toolboxName == "heat" )
     {
         all_lines_app.push_back("██╗  ██╗███████╗ █████╗ ████████╗");
         all_lines_app.push_back("██║  ██║██╔════╝██╔══██╗╚══██╔══╝");
@@ -229,8 +238,10 @@ void printToolboxApplication( std::string const& toolboxName, worldcomm_t const&
         .hide_border()
         .multi_byte_characters(true)
         //.hide_border_top()
-        .font_color(tabulate::Color::red)
-        .font_align(tabulate::FontAlign::center);
+        .font_color(tabulate::Color::green/*red*/)
+        .font_align(tabulate::FontAlign::center)
+        //.font_background_color(tabulate::Color::green)
+        ;
 
     if ( worldComm.isMasterRank() )
         std::cout << tabInfo << std::endl;
@@ -605,9 +616,15 @@ ModelBase::tabulateInformation( nl::json const& jsonInfo, TabulateInformationPro
 #endif
     return tabInfo;
 }
+std::vector<tabulate::Table>
+ModelBase::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<tabulate::Table> res = { tabulateInformation( jsonInfo, tabInfoProp ) };
+    return res;
+}
 
-tabulate::Table
-ModelBase::tabulateInformation() const
+std::vector<tabulate::Table>
+ModelBase::tabulateInformations() const
 {
     pt::ptree pt;
     this->updateInformationObject( pt );
@@ -617,7 +634,7 @@ ModelBase::tabulateInformation() const
     nl::json jsonInfo;
     pt_istream >> jsonInfo;
 
-    return this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
+    return this->tabulateInformations( jsonInfo, TabulateInformationProperties{} );
 #if 0
     auto tabRes = this->tabulateInformation( jsonInfo, TabulateInformationProperties{} );
     tabRes.format()
@@ -645,21 +662,17 @@ ModelBase::getInfo() const
     return _ostr;
 }
 void
-ModelBase::printInfo( tabulate::Table const& tabInfo ) const
+ModelBase::printInfo( std::vector<tabulate::Table> const& tabInfos ) const
 {
-    if ( this->verboseAllProc() )
+    if ( this->verboseAllProc() || this->worldComm().isMasterRank() )
     {
         std::cout << this->getInfo()->str();
-        std::cout << tabInfo << std::endl;
-    }
-    else if (this->worldComm().isMasterRank() )
-    {
-        std::cout << this->getInfo()->str();
-        std::cout << tabInfo << std::endl;
+        for ( tabulate::Table const& tabInfo : tabInfos )
+            std::cout << tabInfo << std::endl;
     }
 }
 void
-ModelBase::saveInfo( tabulate::Table const& tabInfo ) const
+ModelBase::saveInfo( std::vector<tabulate::Table> const& tabInfos ) const
 {
     Environment::journalCheckpoint();
 
@@ -668,7 +681,8 @@ ModelBase::saveInfo( tabulate::Table const& tabInfo ) const
     {
         std::ofstream file( thepath.string().c_str(), std::ios::out);
         file << this->getInfo()->str();
-        file << tabInfo << std::endl;;
+        for ( tabulate::Table const& tabInfo : tabInfos )
+            file << tabInfo << std::endl;
         file.close();
     }
 
@@ -689,7 +703,7 @@ ModelBase::saveInfo( tabulate::Table const& tabInfo ) const
 void
 ModelBase::printAndSaveInfo() const
 {
-    auto tabInfo = this->tabulateInformation();
+    auto tabInfo = this->tabulateInformations();
     this->printInfo( tabInfo );
     this->saveInfo( tabInfo );
 }
