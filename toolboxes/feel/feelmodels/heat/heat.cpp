@@ -472,7 +472,7 @@ HEAT_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, Tabulat
     if ( jsonInfo.contains( "Algebraic Solver" ) )
         tabInfos.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
 
-    return TabulateInformationTools::createSections( tabInfos, "Toolbox Heat" );
+    return TabulateInformationTools::createSections( tabInfos, (boost::format("Toolbox Heat : %1%")this->keyword()).str() );
 }
 
 
