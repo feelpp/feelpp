@@ -407,9 +407,13 @@ template class ModelMeshes<uint32_type>;
 
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,1>>>( ModelMeshes<uint32_type> const& );
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,1>>>( ModelMeshes<uint32_type> const& );
+template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,2>>>( ModelMeshes<uint32_type> const& );
+template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,1,3>>>( ModelMeshes<uint32_type> const& );
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 2 )
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,2>>>( ModelMeshes<uint32_type> const& );
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<3,2>>>( ModelMeshes<uint32_type> const& );
+template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,2>>>( ModelMeshes<uint32_type> const& );
+template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<1,2,3>>>( ModelMeshes<uint32_type> const& );
 #endif
 #if BOOST_PP_GREATER_EQUAL( FEELPP_MESH_MAX_ORDER, 3 )
 template void ModelMesh<uint32_type>::updateForUse<Mesh<Simplex<2,3>>>( ModelMeshes<uint32_type> const& );
