@@ -125,6 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a69633884773071a83a28f4b0546c3fd9"><td class="memItemLeft" align="right" valign="top">fs::path const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a69633884773071a83a28f4b0546c3fd9">geo</a> () const</td></tr>
 <tr class="memdesc:a69633884773071a83a28f4b0546c3fd9"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the geo directory The geo directory contains geo files of Gmsh  <a href="classFeel_1_1Repository.html#a69633884773071a83a28f4b0546c3fd9">More...</a><br /></td></tr>
 <tr class="separator:a69633884773071a83a28f4b0546c3fd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2de6a6d0f0d9c1d32ef05fa48749007"><td class="memItemLeft" align="right" valign="top">fs::path const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#aa2de6a6d0f0d9c1d32ef05fa48749007">globalRoot</a> () const</td></tr>
+<tr class="separator:aa2de6a6d0f0d9c1d32ef05fa48749007"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f07bf456f23917853a0ceb1ce6d6416"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a0f07bf456f23917853a0ceb1ce6d6416">isGit</a> () const</td></tr>
 <tr class="separator:a0f07bf456f23917853a0ceb1ce6d6416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fb36bba563a9853666f4b79a38d57f6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbool.html">bool</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a2fb36bba563a9853666f4b79a38d57f6">isGiven</a> () const</td></tr>
@@ -142,6 +144,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac4ee997170c7a5e954918f703b012d44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aced500213fc9de20e0fa448c0b852852"><td class="memItemLeft" align="right" valign="top">fs::path const  &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#aced500213fc9de20e0fa448c0b852852">root</a> () const</td></tr>
 <tr class="separator:aced500213fc9de20e0fa448c0b852852"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1473f88bec050071270425bea82f1cf0"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a1473f88bec050071270425bea82f1cf0">userEmail</a> () const</td></tr>
+<tr class="memdesc:a1473f88bec050071270425bea82f1cf0"><td class="mdescLeft">&#160;</td><td class="mdescRight">the user email  <a href="classFeel_1_1Repository.html#a1473f88bec050071270425bea82f1cf0">More...</a><br /></td></tr>
+<tr class="separator:a1473f88bec050071270425bea82f1cf0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bff71c4ecc9ce2a43388b5277bb944b"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classFeel_1_1Repository.html#a7bff71c4ecc9ce2a43388b5277bb944b">userName</a> () const</td></tr>
+<tr class="memdesc:a7bff71c4ecc9ce2a43388b5277bb944b"><td class="mdescLeft">&#160;</td><td class="mdescRight">the user name  <a href="classFeel_1_1Repository.html#a7bff71c4ecc9ce2a43388b5277bb944b">More...</a><br /></td></tr>
+<tr class="separator:a7bff71c4ecc9ce2a43388b5277bb944b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ab6f60083e5ba3fb0f53606a74e430e87"></a>
@@ -162,8 +170,6 @@ Public Member Functions</h2></td></tr>
 <p>the result repository absolute directory </p>
 <dl class="section return"><dt>Returns</dt><dd>fs::path </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Repository.html#a29f62013c6e366c25ae0551253c0743f">relativeDirectory()</a>, and <a class="el" href="classFeel_1_1Repository.html#aced500213fc9de20e0fa448c0b852852">root()</a>.</p>
-
 </div>
 </div>
 <a id="a69633884773071a83a28f4b0546c3fd9"></a>
@@ -183,6 +189,24 @@ Public Member Functions</h2></td></tr>
 
 <p>get the geo directory The geo directory contains geo files of Gmsh </p>
 <dl class="section return"><dt>Returns</dt><dd>get the geo directory of the repository </dd></dl>
+
+</div>
+</div>
+<a id="aa2de6a6d0f0d9c1d32ef05fa48749007"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2de6a6d0f0d9c1d32ef05fa48749007">&#9670;&nbsp;</a></span>globalRoot()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">fs::path const&amp; Feel::Repository::globalRoot </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>get the global root repository </dd></dl>
 
 </div>
 </div>
@@ -221,8 +245,6 @@ Public Member Functions</h2></td></tr>
 
 <p>if Config.directory is absolute, then the repository is considered given </p>
 <dl class="section return"><dt>Returns</dt><dd>true if repository is given, false otherwise </dd></dl>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#a29f62013c6e366c25ae0551253c0743f">relativeDirectory()</a>.</p>
 
 </div>
 </div>
@@ -280,9 +302,7 @@ Public Member Functions</h2></td></tr>
 <p>the result repository directory relative to root </p>
 <dl class="section return"><dt>Returns</dt><dd>fs::path </dd></dl>
 
-<p class="reference">References <a class="el" href="classFeel_1_1Repository.html#a2fb36bba563a9853666f4b79a38d57f6">isGiven()</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">directory()</a>.</p>
+<p class="reference">References <a class="el" href="classFeel_1_1Environment.html#a6c55a43784441001b70b5aaca4c235ba">Feel::Environment::numberOfProcessors()</a>.</p>
 
 </div>
 </div>
@@ -302,7 +322,49 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>get the root of the repository </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="classFeel_1_1Repository.html#ab6f60083e5ba3fb0f53606a74e430e87">directory()</a>.</p>
+</div>
+</div>
+<a id="a1473f88bec050071270425bea82f1cf0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1473f88bec050071270425bea82f1cf0">&#9670;&nbsp;</a></span>userEmail()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string Feel::Repository::userEmail </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the user email </p>
+<dl class="section return"><dt>Returns</dt><dd>std::string </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a0c42bdda2432e4027f4b63ef20ae74e6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
+
+</div>
+</div>
+<a id="a7bff71c4ecc9ce2a43388b5277bb944b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bff71c4ecc9ce2a43388b5277bb944b">&#9670;&nbsp;</a></span>userName()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string Feel::Repository::userName </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>the user name </p>
+<dl class="section return"><dt>Returns</dt><dd>std::string </dd></dl>
+
+<p class="reference">References <a class="el" href="classnlohmann_1_1basic__json.html#a02c9bc4d0f33b7dec20b2798301d6971">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::contains()</a>, and <a class="el" href="classnlohmann_1_1basic__json.html#a0c42bdda2432e4027f4b63ef20ae74e6">nlohmann::basic_json&lt; ObjectType, ArrayType, StringType, BooleanType, NumberIntegerType, NumberUnsignedType, NumberFloatType, AllocatorType, JSONSerializer, BinaryType &gt;::get()</a>.</p>
 
 </div>
 </div>

@@ -1,5 +1,10 @@
 var NAVTREEINDEX25 =
 {
+"classFeel_1_1SensorGaussian.html#abb04b588fd4db398a04b29259ddd4cc8":[6,1,1,235,10],
+"classFeel_1_1SensorGaussian.html#ac74c38856ecc77c5a173efa1c3c4eba3":[6,1,1,235,11],
+"classFeel_1_1SensorGaussian.html#acf39cf46f41fd1800c8cea14fa688d53":[6,1,1,235,2],
+"classFeel_1_1SensorGaussian.html#adc47c83dae3a31c5beba9580fc874011":[6,1,1,235,8],
+"classFeel_1_1SensorGaussian.html#af994fbb89754ecc6e06dc974ee7bff5e":[6,1,1,235,6],
 "classFeel_1_1SensorPointwise.html":[6,1,1,236],
 "classFeel_1_1SensorPointwise.html#a0ace082c167e9b23e52dbad9e4fe2821":[6,1,1,236,0],
 "classFeel_1_1SensorPointwise.html#a0ad5239304392b765a51a1918f4bebe0":[6,1,1,236,2],
@@ -244,10 +249,5 @@ var NAVTREEINDEX25 =
 "classFeel_1_1SubFaceOfNone.html#a2c7685e6228541fa2fd080e6130d6f55":[6,1,1,257,9],
 "classFeel_1_1SubFaceOfNone.html#a67822bf30068e04b4db30c1ba3e2a69d":[6,1,1,257,6],
 "classFeel_1_1SubFaceOfNone.html#a6defecb7d92f9159cc427225b17dd00d":[6,1,1,257,10],
-"classFeel_1_1SubFaceOfNone.html#a748b243a7e26da85d7804c93b43293b9":[6,1,1,257,3],
-"classFeel_1_1SubFaceOfNone.html#a9b07a3ebe6da5eaf8da988a45770c531":[6,1,1,257,15],
-"classFeel_1_1SubFaceOfNone.html#ab0518790a74d8cc2482c3c0e69a69cae":[6,1,1,257,14],
-"classFeel_1_1SubFaceOfNone.html#ac3c439e1aa518fd036435e628926ca61":[6,1,1,257,16],
-"classFeel_1_1SubFaceOfNone.html#ac7ee3e138e137af6e955d476c1fc68a7":[6,1,1,257,8],
-"classFeel_1_1SubFaceOfNone.html#ac83d82dce54d294f354f31bf9a42991d":[6,1,1,257,5]
+"classFeel_1_1SubFaceOfNone.html#a748b243a7e26da85d7804c93b43293b9":[6,1,1,257,3]
 };

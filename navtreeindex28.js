@@ -1,5 +1,10 @@
 var NAVTREEINDEX28 =
 {
+"classFeel_1_1mpfr_1_1MpfrClass.html#a9e782220983a3e872c481ea087a5e66d":[6,1,1,8,1,13],
+"classFeel_1_1mpfr_1_1MpfrClass.html#aa05c8659a406802955863c3864046b88":[6,1,1,8,1,68],
+"classFeel_1_1mpfr_1_1MpfrClass.html#aa2753dbe4f9231845f7cef8870823388":[6,1,1,8,1,119],
+"classFeel_1_1mpfr_1_1MpfrClass.html#aa327768332bd80c2b7f48e5dffb2f2d9":[6,1,1,8,1,93],
+"classFeel_1_1mpfr_1_1MpfrClass.html#aa3c1ff2331631bc12fd19bfb8a502a8a":[6,1,1,8,1,32],
 "classFeel_1_1mpfr_1_1MpfrClass.html#aa8f3ca82a374222e092d8d5b1b63574b":[6,1,1,8,1,165],
 "classFeel_1_1mpfr_1_1MpfrClass.html#aaa987bf1ae53d0cb6d1bc1527276ded2":[6,1,1,8,1,191],
 "classFeel_1_1mpfr_1_1MpfrClass.html#aaaa920fa8ac54f70cea3b7c9bc2659b4":[6,1,1,8,1,98],
@@ -149,7 +154,7 @@ var NAVTREEINDEX28 =
 "classFeel_1_1vf_1_1Cst.html#ad9a85a5f0cd85d119eeae2eeed2be7ff":[6,1,1,12,7,16],
 "classFeel_1_1vf_1_1Cst.html#afaf517f975c43768475182d30971a8ce":[6,1,1,12,7,23],
 "classFeel_1_1vf_1_1CstBase.html":[6,1,1,12,8],
-"classFeel_1_1vf_1_1ExprDynamicBase.html":[6,1,35],
+"classFeel_1_1vf_1_1ExprDynamicBase.html":[6,1,36],
 "classFeel_1_1vf_1_1GiNaCBase.html":[6,1,1,12,9],
 "classFeel_1_1vf_1_1GiNaCBase.html#a096db6e0479a7d92ac8c3a4fd6f4efa7":[6,1,1,12,9,27],
 "classFeel_1_1vf_1_1GiNaCBase.html#a0c1c3a8444320ace775d5b8ddb2454af":[6,1,1,12,9,15],
@@ -244,10 +249,5 @@ var NAVTREEINDEX28 =
 "classFeel_1_1vf_1_1LambdaExpr.html#a97c23b872a6be6a6480dcb4956b574d2":[6,1,1,12,11,13],
 "classFeel_1_1vf_1_1LambdaExpr.html#a9891ee38ac2c2f089fee06e1642fb0b2":[6,1,1,12,11,23],
 "classFeel_1_1vf_1_1LambdaExpr.html#a9aea1699b31335331ea84a6303e4b29f":[6,1,1,12,11,11],
-"classFeel_1_1vf_1_1LambdaExpr.html#a9c52907cd0856675ae33704d79ecbb0e":[6,1,1,12,11,4],
-"classFeel_1_1vf_1_1LambdaExpr.html#aa0dcf0911cadf7c251ac4949eeba5d25":[6,1,1,12,11,12],
-"classFeel_1_1vf_1_1LambdaExpr.html#ad3e157340fc94a5433f8c70b1a84a894":[6,1,1,12,11,9],
-"classFeel_1_1vf_1_1LambdaExpr.html#ada33b7ae405754fc0cbf641fcab8f67b":[6,1,1,12,11,25],
-"classFeel_1_1vf_1_1LambdaExpr.html#adc0474e8fe72e8919581872b7ca700da":[6,1,1,12,11,17],
-"classFeel_1_1vf_1_1LambdaExpr.html#ae35a4b7b415f940ac216fa4000ed3d50":[6,1,1,12,11,10]
+"classFeel_1_1vf_1_1LambdaExpr.html#a9c52907cd0856675ae33704d79ecbb0e":[6,1,1,12,11,4]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX4 =
 {
+"classFeel_1_1DofTable.html#ad6403572157a04f0313d3f825199accf":[6,1,1,57,98],
+"classFeel_1_1DofTable.html#ad67f1fbfa514a3e67ef9a3e774fd504c":[6,1,1,57,34],
 "classFeel_1_1DofTable.html#ad6ff5de7bdbb7715adae4590f1bae6b0":[6,1,1,57,65],
 "classFeel_1_1DofTable.html#adaf0ba78bf93b139694fe693e15145b4":[6,1,1,57,81],
 "classFeel_1_1DofTable.html#adb55fd5c758b7dd75d46aa993da03191":[6,1,1,57,28],
@@ -247,7 +249,5 @@ var NAVTREEINDEX4 =
 "classFeel_1_1FeelModels_1_1Electric.html#ab50cf085fc1e6dc8e233385f05864bd5":[5,11,0,58],
 "classFeel_1_1FeelModels_1_1Electric.html#ab512ce746a6112f867db1c78c8674d68":[5,11,0,22],
 "classFeel_1_1FeelModels_1_1Electric.html#abcbe30b10dfd591a4cd165b288118aad":[5,11,0,71],
-"classFeel_1_1FeelModels_1_1Electric.html#abff9d1acd89d727597b501708eec4171":[5,11,0,62],
-"classFeel_1_1FeelModels_1_1Electric.html#ac17a5cd1284232ad77f24107de663950":[5,11,0,60],
-"classFeel_1_1FeelModels_1_1Electric.html#ac290db468717cb31460bcdcebc8b7ab9":[5,11,0,40]
+"classFeel_1_1FeelModels_1_1Electric.html#abff9d1acd89d727597b501708eec4171":[5,11,0,62]
 };

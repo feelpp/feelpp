@@ -5,6 +5,11 @@ var annotated =
     ] ],
     [ "Feel", "namespaceFeel.html", "namespaceFeel" ],
     [ "nlohmann", "namespacenlohmann.html", "namespacenlohmann" ],
+    [ "pybind11", null, [
+      [ "detail", null, [
+        [ "type_caster< nl::json >", "structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4.html", "structpybind11_1_1detail_1_1type__caster_3_01nl_1_1json_01_4" ]
+      ] ]
+    ] ],
     [ "std", null, [
       [ "hash< nlohmann::json >", "structstd_1_1hash_3_01nlohmann_1_1json_01_4.html", "structstd_1_1hash_3_01nlohmann_1_1json_01_4" ],
       [ "hash< std::tuple< TT... > >", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4.html", "structstd_1_1hash_3_01std_1_1tuple_3_01TT_8_8_8_01_4_01_4" ],

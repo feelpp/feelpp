@@ -1,5 +1,7 @@
 var NAVTREEINDEX15 =
 {
+"classFeel_1_1GeoEntity.html#a70eb577756f509f06305d8c900527891":[6,1,1,88,50],
+"classFeel_1_1GeoEntity.html#a712db5c96eab518810c5daaaafce5614":[6,1,1,88,60],
 "classFeel_1_1GeoEntity.html#a7708e624e25573338017c50992b174be":[6,1,1,88,96],
 "classFeel_1_1GeoEntity.html#a77fc635169bd29f886e2871635101bc5":[6,1,1,88,27],
 "classFeel_1_1GeoEntity.html#a7b519a880f0a6026d931d1fbf5af11fb":[6,1,1,88,91],
@@ -247,7 +249,5 @@ var NAVTREEINDEX15 =
 "classFeel_1_1GeometricSpace_1_1Context.html#ac98d07dd8f7b70e16ccb9a01abf56b9c":[6,1,1,89,0,0],
 "classFeel_1_1GeometricSpace_1_1Context.html#ad76c8cedb1bbc01678534e6d96ba7456":[6,1,1,89,0,12],
 "classFeel_1_1GeometricSpace_1_1Context.html#adc52a8e88a83f08522a357d87f465336":[6,1,1,89,0,10],
-"classFeel_1_1GeometricSpace_1_1ContextGeometric.html":[6,1,1,89,1],
-"classFeel_1_1GeometricSpace_1_1ContextGeometric.html#a210437d5f01e376d280b2957b1916d75":[6,1,1,89,1,4],
-"classFeel_1_1GeometricSpace_1_1ContextGeometric.html#a234d670060d38c881e20bf91307c0fa1":[6,1,1,89,1,2]
+"classFeel_1_1GeometricSpace_1_1ContextGeometric.html":[6,1,1,89,1]
 };
