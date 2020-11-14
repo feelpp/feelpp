@@ -30,12 +30,6 @@
 #include <feel/feelmodels/electric/electric.hpp>
 
 #include <feel/feelvf/vf.hpp>
-/*#include <feel/feelvf/form.hpp>
-#include <feel/feelvf/on.hpp>
-#include <feel/feelvf/operators.hpp>
- #include <feel/feelvf/operations.hpp>*/
-
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 
 namespace Feel
 {
@@ -86,15 +80,15 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("Electric","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("createMesh");
     this->log("Electric","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
-
-} // createMesh()
-
-
+}
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 int
@@ -136,7 +130,7 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
         M_materialsProperties->updateForUse( this->modelProperties().materials() );
     }
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -145,13 +139,13 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
     // functionspace
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
-        M_rangeMeshElements = elements(M_mesh);
-        M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+        M_rangeMeshElements = elements(this->mesh());
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
     }
     else
     {
-        M_rangeMeshElements = markedelements(M_mesh, mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_XhElectricPotential = space_electricpotential_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
+        M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
+        M_XhElectricPotential = space_electricpotential_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),_range=M_rangeMeshElements );
     }
     M_fieldElectricPotential.reset( new element_electricpotential_type(M_XhElectricPotential,"V"));
 
@@ -307,20 +301,25 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::initAlgebraicFactory()
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 void
-ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
+ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
 {
     if ( !this->isUpdatedForUse() )
         return;
-    if ( p.get_child_optional( "Prefix" ) )
+    if ( p.get_child_optional( "Environment" ) )
         return;
 
-    p.put( "Prefix", this->prefix() );
-    p.put( "Root Repository", this->rootRepository() );
+    pt::ptree subPt;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
 
-    // Physical Model
-    pt::ptree subPt, subPt2;
+    // Physics
+    pt::ptree subPt2;
+    subPt.clear();
     subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
-    p.put_child( "Physical Model", subPt );
+    p.put_child( "Physics", subPt );
 
     // Boundary Conditions
     subPt.clear();
@@ -338,19 +337,20 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
         subPt.put_child( ptIter.first, ptIter.second );
     p.put_child( "Boundary Conditions",subPt );
 
-#if 0
-    // Materials parameters
-    subPt.clear();
-    this->thermalProperties()->updateInformationObject( subPt );
-    p.put_child( "Materials parameters", subPt );
-#endif
+    // Materials properties
+    if ( this->materialsProperties() )
+    {
+        subPt.clear();
+        this->materialsProperties()->updateInformationObject( subPt );
+        p.put_child( "Materials Properties", subPt );
+    }
 
-    // Mesh and FunctionSpace
+    // Function Spaces
     subPt.clear();
-    subPt.put("filename", this->meshFile());
-    M_mesh->putInformationObject( subPt );
-    p.put( "Mesh",  M_mesh->journalSectionName() );
-    p.put( "FunctionSpace ElectricPotential",  M_XhElectricPotential->journalSectionName() );
+    subPt2.clear();
+    M_XhElectricPotential->updateInformationObject( subPt2 );
+    subPt.put_child( "Electric Potential", subPt2 );
+    p.put_child( "Function Spaces",  subPt );
 
     // Algebraic Solver
     if ( M_algebraicFactory )
@@ -359,8 +359,44 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p )
         M_algebraicFactory->updateInformationObject( subPt );
         p.put_child( "Algebraic Solver", subPt );
     }
-
 }
+
+ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+ELECTRIC_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains("Physics") )
+    {
+        tabulate::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
+        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+    }
+
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+
+    tabInfoSections.push_back( std::make_pair( "Boundary conditions",  tabulate::Table{} ) );
+
+    if ( jsonInfo.contains("Meshes") )
+       tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpaces;
+        tabInfoFunctionSpaces.add_row({"Electric Potential"});
+        tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( "Electric Potential" ), tabInfoProp ) });
+        tabInfoSections.push_back( std::make_pair( "Function Spaces",  tabInfoFunctionSpaces ) );
+    }
+
+    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Electric : %1%")%this->keyword()).str() );
+}
+
 
 ELECTRIC_CLASS_TEMPLATE_DECLARATIONS
 std::shared_ptr<std::ostringstream>
@@ -382,7 +418,9 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
            << M_bcDirichletMarkerManagement.getInfoDirichletBC()
            << M_bcNeumannMarkerManagement.getInfoNeumannBC()
            << M_bcRobinMarkerManagement.getInfoRobinBC();
+#if 0
     *_ostr << this->materialsProperties()->getInfoMaterialParameters()->str();
+
     *_ostr << "\n   Mesh Discretization"
            << "\n     -- mesh filename      : " << this->meshFile()
            << "\n     -- number of element : " << M_mesh->numGlobalElements()
@@ -390,8 +428,10 @@ ELECTRIC_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n   Space ElectricPotential Discretization"
            << "\n     -- order         : " << nOrderPolyElectricPotential
            << "\n     -- number of dof : " << M_XhElectricPotential->nDof() << " (" << M_XhElectricPotential->nLocalDof() << ")";
+
     if ( M_algebraicFactory )
         *_ostr << M_algebraicFactory->getInfo()->str();
+#endif
     *_ostr << "\n||==============================================||"
            << "\n||==============================================||"
            << "\n||==============================================||"

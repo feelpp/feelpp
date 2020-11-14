@@ -10,7 +10,6 @@
 #include <feel/feelpde/operatorpcd.hpp>
 #include <feel/feells/reinit_fms.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelmodels/modelmesh/markedmeshtool.hpp>
 #include <feel/feelmodels/modelcore/stabilizationglsparameter.hpp>
 
@@ -96,7 +95,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::loadMesh( mesh_ptrtype __mesh )
     if (this->doRestart() && !__mesh)
         this->initMesh();
     else
-        M_mesh = __mesh;
+        this->setMesh(  __mesh );
     //-----------------------------------------------------------------------------//
     this->log("FluidMechanics","loadMesh", "finish");
 }
@@ -216,8 +215,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("FluidMechanics","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("initMesh");
     this->log("FluidMechanics","initMesh", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -317,18 +319,18 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( mom->isDefinedOnWholeMesh( this->physicsAvailableFromCurrentType() ) )
     {
         M_rangeMeshElements = elements(this->mesh());
-        M_XhVelocity = space_velocity_type::New( _mesh=M_mesh,
+        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
                                                  _extended_doftable=extendedDT[0] );
-        M_XhPressure = space_pressure_type::New( _mesh=M_mesh,
+        M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
                                                  _extended_doftable=extendedDT[1] );
     }
     else
     {
         M_rangeMeshElements = markedelements(this->mesh(), mom->markers( this->physicsAvailableFromCurrentType() ));
-        M_XhVelocity = space_velocity_type::New( _mesh=M_mesh,
+        M_XhVelocity = space_velocity_type::New( _mesh=this->mesh(),
                                                  _extended_doftable=extendedDT[0],
                                                  _range=M_rangeMeshElements );
-        M_XhPressure = space_pressure_type::New( _mesh=M_mesh,
+        M_XhPressure = space_pressure_type::New( _mesh=this->mesh(),
                                                  _extended_doftable=extendedDT[1],
                                                  _range=M_rangeMeshElements );
     }
@@ -355,7 +357,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createALE()
 
         M_isMoveDomain=true;
 
-        M_meshALE = meshale( _mesh=M_mesh,_prefix=this->prefix(),_directory=this->repository() );
+        M_meshALE = meshale( _mesh=this->mesh(),_prefix=this->prefix(),_directory=this->repository() );
         this->log("FluidMechanics","createALE", "create meshale object done" );
         // mesh displacement only on moving
         M_meshDisplacementOnInterface.reset( new element_mesh_disp_type(M_meshALE->displacement()->functionSpace(),"mesh_disp_on_interface") );
@@ -816,9 +818,9 @@ void
 FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::createFunctionSpacesSourceAdded()
 {
     if ( this->functionSpaceVelocity()->dof()->meshSupport()->isPartialSupport() ) //M_materialProperties->isDefinedOnWholeMesh() )
-        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm() );
+        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=this->mesh(),_worldscomm=this->localNonCompositeWorldsComm() );
     else
-        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=M_mesh,_worldscomm=this->localNonCompositeWorldsComm(),
+        M_XhSourceAdded=space_vectorial_PN_type::New( _mesh=this->mesh(),_worldscomm=this->localNonCompositeWorldsComm(),
                                                       _range=M_rangeMeshElements );
     M_SourceAdded.reset( new element_vectorial_PN_type(M_XhSourceAdded,"SourceAdded"));
 }
@@ -979,7 +981,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildModelAlgebraicFactory )
 
     this->initMaterialProperties();
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );

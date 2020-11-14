@@ -2,9 +2,6 @@
  */
 
 #include <feel/feelmodels/solid/solidmechanics1dreduced.hpp>
-
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
-
 namespace Feel
 {
 namespace FeelModels
@@ -43,7 +40,7 @@ void
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 {
 
-    if ( !M_mesh )
+    if ( !this->mesh() )
         this->initMesh();
 
     this->materialsProperties()->addMesh( this->mesh() );
@@ -86,76 +83,15 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics1dReduced","initMesh", "start");
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh, prefixvm(this->prefix(),"Solid1dReducedMesh.path") /*this->fileNameMeshPath()*/);
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElpased = this->timerTool("Constructor").stop("initMesh");
     this->log("SolidMechanics1dReduced","initMesh",(boost::format("finish in %1% s")%tElpased).str() );
 
-#if 0
-        this->log("SolidMechanics","initMesh1dReduced", "start" );
-    std::string prefix1dreduced = prefixvm(this->prefix(),"1dreduced");
-
-    std::string modelMeshRestartFile = prefixvm(this->prefix(),"SolidMechanics1dreducedMesh.path");
-    std::string smpath = (fs::path( this->rootRepository() ) / fs::path( modelMeshRestartFile)).string();
-
-    if (this->doRestart())
-    {
-        this->log("SolidMechanics","createMesh1dReduced", "reload mesh (because restart)" );
-
-        if ( !this->restartPath().empty() )
-            smpath = (fs::path( this->restartPath() ) / fs::path( modelMeshRestartFile)).string();
-
-#if defined(SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH)
-        auto meshSM2dClass = reloadMesh<mesh_type>(smpath,this->worldCommPtr());
-        SOLIDMECHANICS_1D_REDUCED_CREATESUBMESH(meshSM2dClass);
-        M_mesh_1dReduced=mesh;
-#else
-        M_mesh_1dReduced = reloadMesh<mesh_1dreduced_type>(smpath,this->worldCommPtr());
-#endif
-    }
-    else
-    {
-        if (Environment::vm().count(prefixvm(this->prefix(),"1dreduced-geofile")))
-        {
-            this->log("SolidMechanics","createMesh1dReduced", "use 1dreduced-geofile" );
-            std::string geofile=soption(_name="1dreduced-geofile",_prefix=this->prefix() );
-            std::string path = this->rootRepository();
-            std::string mshfile = path + "/" + prefix1dreduced + ".msh";
-            this->setMeshFile(mshfile);
-
-            fs::path curPath=fs::current_path();
-            bool hasChangedRep=false;
-            if ( curPath != fs::path(this->rootRepository()) )
-            {
-                this->log("createMeshModel","", "change repository (temporary) for build mesh from geo : "+ this->rootRepository() );
-                hasChangedRep=true;
-                Environment::changeRepository( _directory=boost::format(this->rootRepository()), _subdir=false );
-            }
-
-            gmsh_ptrtype geodesc = geo( _filename=geofile,
-                                        _prefix=prefix1dreduced,
-                                        _worldcomm=this->worldCommPtr() );
-            // allow to have a geo and msh file with a filename equal to prefix
-            geodesc->setPrefix(prefix1dreduced);
-            M_mesh_1dReduced = createGMSHMesh(_mesh=new mesh_1dreduced_type,_desc=geodesc,
-                                              _prefix=prefix1dreduced,_worldcomm=this->worldCommPtr(),
-                                              _partitions=this->worldComm().localSize() );
-
-            // go back to previous repository
-            if ( hasChangedRep )
-                Environment::changeRepository( _directory=boost::format(curPath.string()), _subdir=false );
-        }
-        else
-        {
-            this->loadConfigMeshFile1dReduced( prefix1dreduced );
-        }
-        this->saveMeshFile( smpath );
-    }
-
-    this->log("SolidMechanics","initMesh1dReduced", "finish" );
-
-#endif
 }
 
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS

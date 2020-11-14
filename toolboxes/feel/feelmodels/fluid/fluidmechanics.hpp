@@ -807,16 +807,18 @@ public :
     void createFunctionSpacesNormalStress();
     void createFunctionSpacesSourceAdded();
 
-    void loadMesh(mesh_ptrtype __mesh );
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    FEELPP_DEPRECATED void loadMesh(mesh_ptrtype __mesh );
 
     void updateMarkedZonesInMesh();
 
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"FluidMechanicsMesh.path"); }
+    void updateInformationObject( pt::ptree & p ) const override;
+    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
     std::shared_ptr<RangeDistributionByMaterialName<mesh_type> > rangeDistributionByMaterialName() const { return M_rangeDistributionByMaterialName; }
 
@@ -1627,7 +1629,6 @@ private :
 
     //----------------------------------------------------
     // mesh
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
     MeshMover<mesh_type> M_mesh_mover;
     trace_mesh_ptrtype M_meshTrace;

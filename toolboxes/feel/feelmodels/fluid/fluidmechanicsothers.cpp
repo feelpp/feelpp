@@ -144,6 +144,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << this->getInfoALEMeshBC();
 #endif
     *_ostr << "\n   Space Discretization";
+#if 0
     if ( this->hasGeoFile() )
         *_ostr << "\n     -- geo file name   : " << this->geoFile();
     *_ostr << "\n     -- mesh file name   : " << this->meshFile()
@@ -153,8 +154,9 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
            << "\n     -- hMin            : " << M_mesh->hMin()
            << "\n     -- hMax            : " << M_mesh->hMax()
            << "\n     -- hAverage        : " << M_mesh->hAverage()
-           << "\n     -- geometry order  : " << nOrderGeo
-           << "\n     -- velocity order  : " << nOrderVelocity
+           << "\n     -- geometry order  : " << nOrderGeo;
+#endif
+    *_ostr << "\n     -- velocity order  : " << nOrderVelocity
            << "\n     -- pressure order  : " << nOrderPressure
            << "\n     -- nb dof (u)      : " << M_XhVelocity->nDof() << " (" << M_XhVelocity->nLocalDof() << ")"
            << "\n     -- nb dof (p)      : " << M_XhPressure->nDof() << " (" << M_XhPressure->nLocalDof() << ")"
@@ -227,6 +229,104 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     return _ostr;
 }
+
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Environment" ) )
+        return;
+
+    pt::ptree subPt, subPt2;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+
+    subPt.clear();
+    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p.put_child( "Physics", subPt );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+    {
+        subPt.clear();
+        this->materialsProperties()->updateInformationObject( subPt );
+        p.put_child( "Materials Properties", subPt );
+    }
+
+    // FunctionSpace
+    subPt.clear();
+    subPt2.clear();
+    this->functionSpaceVelocity()->updateInformationObject( subPt2 );
+    subPt.put_child( "Velocity", subPt2 );
+    subPt2.clear();
+    this->functionSpacePressure()->updateInformationObject( subPt2 );
+    subPt.put_child( "Pressure", subPt2 );
+    p.put_child( "Function Spaces",  subPt );
+
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+}
+
+FLUIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::vector<tabulate::Table>
+FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<tabulate::Table> tabInfos;
+
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+    // ------------------------------------------------------------------
+    // Environment
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Physics
+    if ( jsonInfo.contains("Physics") )
+    {
+        tabulate::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
+        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+    }
+    // ------------------------------------------------------------------
+    // Materials Properties
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Meshes
+    if ( jsonInfo.contains("Meshes") )
+        tabInfos.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Function Spaces
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpaces;
+        for ( std::string const& spaceName : std::vector<std::string>({"Velocity","Pressure"}) )
+        {
+            tabInfoFunctionSpaces.add_row({spaceName});
+            tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) });
+        }
+        tabInfoSections.push_back( std::make_pair( "Function Spaces", tabInfoFunctionSpaces ) );
+    }
+    // ------------------------------------------------------------------
+    // Algebraic Solver
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+
+    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Coefficient Form PDEs : %1%")%this->keyword()).str() ) );
+
+    return tabInfos;
+}
+
 
 //---------------------------------------------------------------------------------------------------------//
 
@@ -1145,8 +1245,8 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
     for ( auto const& markers : M_definePressureCstMarkers )
     {
         for ( std::string const& marker : markers )
-            CHECK( M_mesh->hasElementMarker( marker ) ) << "marker " << marker << "does not found in mesh";
-        M_definePressureCstMeshRanges.push_back( markedelements(M_mesh,markers) );
+            CHECK( this->mesh()->hasElementMarker( marker ) ) << "marker " << marker << "does not found in mesh";
+        M_definePressureCstMeshRanges.push_back( markedelements(this->mesh(),markers) );
     }
     if ( M_definePressureCstMeshRanges.empty() )
         M_definePressureCstMeshRanges.push_back( M_rangeMeshElements );
@@ -1159,11 +1259,11 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::updateDefinePressureCst()
     {
         M_XhMeanPressureLM.resize( M_definePressureCstMeshRanges.size() );
         if ( M_definePressureCstOnlyOneZoneAppliedOnWholeMesh )
-            M_XhMeanPressureLM[0] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+            M_XhMeanPressureLM[0] = space_meanpressurelm_type::New( _mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
         else
         {
             for ( int k=0;k<M_definePressureCstMeshRanges.size();++k )
-                M_XhMeanPressureLM[k] = space_meanpressurelm_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm(),
+                M_XhMeanPressureLM[k] = space_meanpressurelm_type::New( _mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm(),
                                                                         _range=M_definePressureCstMeshRanges[k] );
         }
     }

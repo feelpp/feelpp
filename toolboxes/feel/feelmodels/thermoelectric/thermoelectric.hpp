@@ -80,9 +80,11 @@ public:
                     worldcomm_ptr_t const& _worldComm = Environment::worldCommPtr(),
                     std::string const& subPrefix = "",
                     ModelBaseRepository const& modelRep = ModelBaseRepository() );
-    std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"ThermoElectricMesh.path"); }
+
     std::shared_ptr<std::ostringstream> getInfo() const override;
-    void updateInformationObject( pt::ptree & p ) override;
+    void updateInformationObject( pt::ptree & p ) const override;
+    std::vector<tabulate::Table> tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
 
 private :
     void loadParameterFromOptionsVm();
@@ -103,8 +105,8 @@ public :
 
     //___________________________________________________________________________________//
 
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
     //elements_reference_wrapper_t<mesh_type> const& rangeMeshElements() const { return M_rangeMeshElements; }
 
     heat_model_ptrtype const& heatModel() const { return M_heatModel; }
@@ -231,10 +233,6 @@ public :
 private :
     heat_model_ptrtype M_heatModel;
     electric_model_ptrtype M_electricModel;
-
-    bool M_hasBuildFromMesh, M_isUpdatedForUse;
-
-    mesh_ptrtype M_mesh;
 
     // physical parameter
     std::string M_modelName;

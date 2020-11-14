@@ -90,8 +90,8 @@ public :
     void setMaterialsProperties( materialsproperties_ptrtype mp ) { CHECK( !this->isUpdatedForUse() ) << "setMaterialsProperties can be called only before called isUpdatedForUse";  M_materialsProperties = mp; }
 
     // mesh
-    mesh_ptrtype const& mesh() const { return M_mesh; }
-    void setMesh( mesh_ptrtype const& mesh ) { M_mesh = mesh; }
+    mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
+    void setMesh( mesh_ptrtype const& mesh ) { super_type::super_model_meshes_type::setMesh( this->keyword(), mesh ); }
 
     BlocksBaseVector<double> const& blockVectorSolution() const { return M_blockVectorSolution; }
     BlocksBaseVector<double> & blockVectorSolution() { return M_blockVectorSolution; }
