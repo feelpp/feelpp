@@ -30,6 +30,7 @@
 
 #include <string>
 #include <feel/feelcore/feel.hpp>
+#include <feel/feelcore/json.hpp>
 
 namespace Feel
 {
@@ -97,8 +98,12 @@ class Repository
 
 public:
     struct Config {
+        Config() = default;
+        Config( fs::path d, Location l): directory(d), location(l) {};
+
         fs::path directory;
         Location location =  Location::global;
+        nl::json data;
     };
 
     Repository() = default;
@@ -108,6 +113,11 @@ public:
      * @return get the root of the repository
      */
     fs::path const& root()  const { return root_; }
+
+    /**
+     * @return get the global root repository
+     */
+    fs::path const& globalRoot()  const { return global_root_; }
 
     /**
      * @brief get the geo directory
@@ -122,22 +132,14 @@ public:
      * 
      * @return fs::path 
      */
-    fs::path directory() const 
-    { 
-        return  root() / relativeDirectory(); 
-    }
+    fs::path directory() const; 
 
     /**
      * @brief the result repository directory relative to root
      * 
      * @return fs::path 
      */
-    fs::path relativeDirectory() const 
-    { 
-        if ( isGiven() ) return {};
-        else
-            return  config_.directory; 
-    }
+    fs::path relativeDirectory() const;
 
     /**
      * 
@@ -162,9 +164,26 @@ public:
      * @return true if repository is given, false otherwise
      */
     bool isGiven() const { return config_.location == Location::given; }
+
+    /**
+     * @brief the user name
+     * 
+     * @return std::string 
+     */
+    std::string userName() const { return ( config_.data.contains("user") && config_.data["user"].contains("name") )?config_.data["user"]["name"].get<std::string>():""; }
+
+    /**
+     * @brief the user email
+     * 
+     * @return std::string 
+     */
+    std::string userEmail() const { return ( config_.data.contains("user") && config_.data["user"].contains("email") )?config_.data["user"]["email"].get<std::string>():""; }
+
+
 private:
     Config config_;
     fs::path root_;
+    fs::path global_root_;
     fs::path geo_;
 };
 

@@ -27,7 +27,8 @@
 //! \date 2020-11-10
 //! 
 #include <feel/feelcore/repository.hpp>
-
+#include <feel/feelcore/feelio.hpp>
+#include <boost/algorithm/string/replace.hpp>
 namespace Feel
 {
 fs::path findHome()
@@ -42,9 +43,10 @@ fs::path findHome()
 }
 std::optional<fs::path> findGitDirectory( fs::path p )
 {
-    if ( fs::exists( p/".git" ) && ( fs::status(p).permissions() == fs::perms::owner_write ) )
+    //Feel::cout << "path:"  << p << " parent: " << p.parent_path() << std::endl;
+    if ( fs::exists( p/".git" ) && ( (fs::status(p).permissions() & fs::perms::owner_all) != fs::perms::no_perms ) )
         return p;
-    else if ( fs::status(p.parent_path()).permissions() == fs::perms::owner_write )
+    else if ( !p.parent_path().empty() && (fs::status(p.parent_path()).permissions() & fs::perms::owner_all) != fs::perms::no_perms )
         return findGitDirectory( p.parent_path() );
     else 
         return {};
@@ -53,6 +55,12 @@ Repository::Repository( Config c )
     :
     config_( c )
 {
+    fs::path home = findHome();
+    if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
+        global_root_ = home / "feel";
+    else
+        global_root_ = home / "feelppdb";
+
     if ( config_.directory.is_absolute() )
     {
         root_= config_.directory;
@@ -62,25 +70,82 @@ Repository::Repository( Config c )
     else
     {
         if ( config_.location == Location::local )
-            root_ = fs::current_path() / "feelpp";
+            root_ = fs::current_path() / "feelppdb";
         if ( config_.location == Location::git )
         {
             if ( auto p = findGitDirectory( fs::current_path() ); p )
-                root_ = p.value();
+                root_ = p.value() / "feelppdb";
             else
-                throw std::invalid_argument( "the current directory is not inside a git repository" );
+                throw std::invalid_argument( ("the current directory " + fs::current_path().string()  + "  is not inside a git repository").c_str() );
         }
         if ( config_.location == Location::global )
         {
-            fs::path home = findHome();
-            if ( fs::exists( home / "feel" ) && fs::is_directory( home / "feel" ) )
-                root_ = home / "feel";
-            else
-                root_ = home / "feelpp";
+            root_ = global_root_;
         }
     }
     geo_ = root_ / "geo";
-}
+    // read config file in root_/.feelppconfig then try $HOME/.feelppconfig
+    if ( fs::exists( root_/".feelppconfig" ) )
+    {
+        std::ifstream i(root_/".feelppconfig");
+        i >> config_.data;
+    }
+    else if ( config_.location != Location::global && fs::exists( global_root_.parent_path()/".feelppconfig" ) )
+    {
+        Feel::cout << "[feelpp] reading config " << this->globalRoot().parent_path()/".feelppconfig" << std::endl;
+        std::ifstream i(this->globalRoot().parent_path()/".feelppconfig");
+        i >> config_.data;
 
+    }
+    if ( Environment::isMasterRank() )
+    {
+        if ( !fs::exists( root_ ) )
+        {
+            bool created = fs::create_directories( root_ );
+            Feel::cout << "[feelpp] create Feel++ repository " << root_ << " ..." << std::endl;
+        }
+        if ( !fs::exists( geo_ ) )
+        {
+            bool created = fs::create_directories( geo_ );
+            Feel::cout << "[feelpp] create Feel++ geo repository " << geo_ << " ..." << std::endl;
+        }
+        if ( !fs::exists( directory() ) )
+        {
+            bool created = fs::create_directories( directory() );
+            Feel::cout << "[feelpp] create Feel++ results directory " << this->directory() << " ..." << std::endl;
+        }
+    }
+    
+}
+fs::path
+Repository::directory() const 
+{ 
+    return  root() / relativeDirectory(); 
+}
+fs::path 
+Repository::relativeDirectory() const 
+{ 
+    if ( isGiven() ) return {};
+    else
+    {
+        fs::path p = config_.directory;
+        bool append_date = config_.data.value("/directory/append/date"_json_pointer,false);
+        if ( append_date )
+        {
+            using boost::posix_time::ptime;
+            using boost::posix_time::second_clock;
+            using boost::posix_time::to_simple_string;
+            using boost::gregorian::day_clock;
+
+            ptime todayUtc(day_clock::universal_day(), second_clock::universal_time().time_of_day());
+            std::string today = boost::replace_all_copy( boost::replace_all_copy( to_simple_string(todayUtc), " ", "-"), ":", "-");
+            p=p/today;
+        }
+        bool append_np = config_.data.value("/directory/append/np"_json_pointer,false);
+        if ( append_np )
+            p /= "np_"+std::to_string(Environment::numberOfProcessors()); 
+        return p; 
+    }        
+}
 
 } // namespace Feel
