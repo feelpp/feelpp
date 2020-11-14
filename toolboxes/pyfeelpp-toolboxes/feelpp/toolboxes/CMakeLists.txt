@@ -68,6 +68,10 @@ if ( FEELPP_TOOLBOXES_ENABLE_MAXWELL )
   add_subdirectory( maxwell )
 endif()
 else()
+
+add_subdirectory( coefficientformpdes )
+add_dependencies(pyfeelpptoolboxes _cfpdes)
+
 if ( FEELPP_TOOLBOXES_ENABLE_HEAT )
   add_subdirectory( heat )
   add_dependencies(pyfeelpptoolboxes _heat)
