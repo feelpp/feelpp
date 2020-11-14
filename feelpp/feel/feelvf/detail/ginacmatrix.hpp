@@ -56,7 +56,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template HasTestFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template HasTestFunction<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -65,7 +65,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template HasTrialFunction<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template HasTrialFunction<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -74,7 +74,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template has_test_basis<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template has_test_basis<Funct>::result >{};
                 }
         };
         template<typename Funct>
@@ -83,7 +83,7 @@ public:
             template <typename T1,typename T2>
             constexpr auto operator()( T1 const& res,T2 const& e ) const
                 {
-                    return hana::integral_constant<bool, T1::value || std::tuple_element<1,typename T2::value_type>::type::template has_trial_basis<Funct>::result >{};
+                    return hana::integral_constant<bool, T1::value || T2::symbolexpr1_type::expr_type::template has_trial_basis<Funct>::result >{};
                 }
         };
 
