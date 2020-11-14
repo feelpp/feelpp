@@ -25,7 +25,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
 
     std::string StateTemporal = (this->isStationary())? "Stationary" : "Transient";
     size_type nElt,nDof;
-    if (this->hasSolidEquationStandard()) {nElt=M_mesh->numGlobalElements(); nDof=M_XhDisplacement->nDof();}
+    if (this->hasSolidEquationStandard()) {/*nElt=M_mesh->numGlobalElements();*/ nDof=M_XhDisplacement->nDof();}
 #if 0
     else {nElt=M_mesh_1dReduced->numGlobalElements(); nDof=M_Xh_1dReduced->nDof();}
 #endif
@@ -90,6 +90,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << M_bcNeumannEulerianFrameMarkerManagement.getInfoNeumannEulerianFrameBC()
                << M_bcRobinMarkerManagement.getInfoRobinBC()
                << M_bcFSIMarkerManagement.getInfoFluidStructureInterfaceBC();
+#if 0
         *_ostr << "\n   Space Discretization";
         if ( this->hasGeoFile() )
             *_ostr << "\n     -- geo file name   : " << this->geoFile();
@@ -99,6 +100,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
                << "\n     -- polynomial order : " << nOrder;
         if ( this->hasDisplacementPressureFormulation() )
             *_ostr << "\n     -- nb dof (pressure) : " << M_XhPressure->nDof();
+#endif
     }
     if ( !this->isStationary() )
     {
@@ -152,6 +154,66 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::getInfo() const
     this->log("SolidMechanics","getInfo", "finish" );
 
     return _ostr;
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Environment" ) )
+        return;
+
+    pt::ptree subPt, subPt2;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+
+    subPt.clear();
+    subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
+    p.put_child( "Physics", subPt );
+
+    // Materials properties
+    if ( this->materialsProperties() )
+    {
+        subPt.clear();
+        this->materialsProperties()->updateInformationObject( subPt );
+        p.put_child( "Materials Properties", subPt );
+    }
+
+    // FunctionSpace
+    subPt.clear();
+    if (this->hasSolidEquationStandard())
+    {
+        subPt2.clear();
+        this->functionSpaceDisplacement()->updateInformationObject( subPt2 );
+        subPt.put_child( "Displacement", subPt2 );
+        if ( this->hasDisplacementPressureFormulation() )
+        {
+            subPt2.clear();
+            this->functionSpacePressure()->updateInformationObject( subPt2 );
+            subPt.put_child( "Pressure", subPt2 );
+        }
+    }
+    p.put_child( "Function Spaces",  subPt );
+
+    if ( M_algebraicFactory )
+    {
+        subPt.clear();
+        M_algebraicFactory->updateInformationObject( subPt );
+        p.put_child( "Algebraic Solver", subPt );
+    }
+}
+
+SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
+std::vector<tabulate::Table>
+SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<tabulate::Table> tabInfos;
+    return tabInfos;
 }
 
 //---------------------------------------------------------------------------------------------------//

@@ -130,8 +130,6 @@ class Heat : public ModelNumerical,
               std::string const& subPrefix  = "",
               ModelBaseRepository const& modelRep = ModelBaseRepository() );
 
-        std::string fileNameMeshPath() const { return prefixvm(this->prefix(),"HeatMesh.path"); }
-
         //___________________________________________________________________________________//
         // mesh, space, element temperature
         mesh_ptrtype mesh() const { return super_type::super_model_meshes_type::mesh<mesh_type>( this->keyword() ); }
@@ -446,8 +444,6 @@ class Heat : public ModelNumerical,
         void updateTimeStepCurrentResidual();
 
     protected :
-
-        bool M_hasBuildFromMesh, M_isUpdatedForUse;
 
         elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 

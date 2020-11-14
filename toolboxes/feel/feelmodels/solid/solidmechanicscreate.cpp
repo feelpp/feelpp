@@ -9,9 +9,6 @@
 //#include <feel/feelfilters/geotool.hpp>
 #include <feel/feeldiscr/operatorlagrangep1.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
-
-
 namespace Feel
 {
 namespace FeelModels
@@ -301,8 +298,11 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initMesh()
     this->log("SolidMechanics","initMesh", "start" );
     this->timerTool("Constructor").start();
 
-    createMeshModel<mesh_type>(*this,M_mesh,this->fileNameMeshPath());
-    CHECK( M_mesh ) << "mesh generation fail";
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     this->timerTool("Constructor").stop("createMesh");
     this->log("SolidMechanics","initMesh", "finish" );
@@ -370,12 +370,12 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     if ( !physicUseDisplacementPressureFormulation.empty() )
     {
         if ( mom->isDefinedOnWholeMesh( physicUseDisplacementPressureFormulation ) )
-            M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm() );
+            M_XhPressure = space_pressure_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm() );
         else
         {
             //auto matNamesWithDisplacementPressureFormulation = this->materialsProperties()->physicToMaterials( physicUseDisplacementPressureFormulation );
             auto rangePressure = markedelements(this->mesh(), mom->markers( physicUseDisplacementPressureFormulation ) );
-            M_XhPressure = space_pressure_type::New( _mesh=M_mesh, _worldscomm=this->worldsComm(),
+            M_XhPressure = space_pressure_type::New( _mesh=this->mesh(), _worldscomm=this->worldsComm(),
                                                      _range=rangePressure );
         }
         M_fieldPressure.reset( new element_pressure_type( M_XhPressure, "pressure" ) );
@@ -403,7 +403,7 @@ void
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::createAdditionalFunctionSpacesNormalStress()
 {
     if ( !M_XhNormalStress )
-        M_XhNormalStress = space_normal_stress_type::New( _mesh=M_mesh, _worldscomm=this->localNonCompositeWorldsComm() );
+        M_XhNormalStress = space_normal_stress_type::New( _mesh=this->mesh(), _worldscomm=this->localNonCompositeWorldsComm() );
     if ( !M_fieldNormalStressFromStruct )
         M_fieldNormalStressFromStruct.reset( new element_normal_stress_type( M_XhNormalStress ) );
 }
@@ -638,7 +638,7 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::init( bool buildAlgebraicFactory )
 
     if ( this->hasSolidEquationStandard() )
     {
-        if ( !M_mesh )
+        if ( !this->mesh() )
             this->initMesh();
 
         this->materialsProperties()->addMesh( this->mesh() );
