@@ -61,7 +61,7 @@ void defSM(py::module &m)
         .def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
 
         // time stepping
-        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&fm_t::timeStepBase), "get time stepping base")
+        .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::timeStepBase), "get time stepping base")
         .def("updateTimeStep",&toolbox_t::updateTimeStep, "update time stepping")
 
         // solve
