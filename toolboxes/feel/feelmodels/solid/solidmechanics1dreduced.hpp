@@ -84,6 +84,9 @@ public :
 
     void init();
 
+    void updateInformationObject( pt::ptree & p ) const override;
+    tabulate::Table tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const override;
+
     // physical parameters
     materialsproperties_ptrtype const& materialsProperties() const { return M_materialsProperties; }
     materialsproperties_ptrtype & materialsProperties() { return M_materialsProperties; }
@@ -200,7 +203,6 @@ private :
     materialsproperties_ptrtype M_materialsProperties;
 
     // mesh
-    mesh_ptrtype M_mesh;
     elements_reference_wrapper_t<mesh_type> M_rangeMeshElements;
 
     // function space
