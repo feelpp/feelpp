@@ -4,7 +4,6 @@
 #include <feel/feelmodels/modelcore/modelmeshes.hpp>
 
 #include <feel/feeldiscr/mesh.hpp>
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
 #include <feel/feelfilters/loadmesh.hpp>
 
 namespace Feel
@@ -19,7 +18,8 @@ ModelMesh<IndexType>::ImportConfig::ImportConfig( ModelMeshes<IndexType> const& 
     M_generatePartitioning( boption(_prefix=mMeshes.prefix(),_name="gmsh.partition",_vm=mMeshes.clovm()) ),
     M_numberOfPartition( mMeshes.worldComm().localSize() ),
     M_meshSize( doption(_prefix=mMeshes.prefix(),_name="gmsh.hsize",_vm=mMeshes.clovm()) ),
-    M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES )
+    M_meshComponents( MESH_UPDATE_FACES|MESH_UPDATE_EDGES ),
+    M_loadByMasterRankOnly( false )
 {
     if ( mMeshes.clovm().count( prefixvm(mMeshes.prefix(),"mesh.filename").c_str() ) )
         M_inputFilename = Environment::expand( soption(_prefix=mMeshes.prefix(),_name="mesh.filename",_vm=mMeshes.clovm()) );
@@ -55,6 +55,15 @@ ModelMesh<IndexType>::ImportConfig::setupInputMeshFilenameWithoutApplyPartitioni
 
 template <typename IndexType>
 void
+ModelMesh<IndexType>::ImportConfig::setupSequentialAndLoadByMasterRankOnly()
+{
+    M_generatePartitioning = false;
+    M_numberOfPartition = 1;
+    M_loadByMasterRankOnly = true;
+}
+
+template <typename IndexType>
+void
 ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& mMeshes )
 {
     if ( M_inputFilename.empty() )
@@ -77,6 +86,9 @@ ModelMesh<IndexType>::ImportConfig::updateForUse( ModelMeshes<IndexType> const& 
         M_geoFilename = meshfile;
     else
         M_meshFilename = meshfile;
+
+    if ( this->hasGeoFilename() && M_numberOfPartition > 1 )
+        M_generatePartitioning = true;
 }
 
 template <typename IndexType>
@@ -177,6 +189,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
     {
         M_importConfig.updateForUse( mMeshes );
 
+        auto wcPtr = ( M_importConfig.loadByMasterRankOnly() )? mMeshes.worldCommPtr()->subWorldCommSeqPtr() : mMeshes.worldCommPtr();
         if ( M_importConfig.hasMeshFilename() )
         {
             std::string const& inputMeshFilename = M_importConfig.meshFilename();
@@ -189,16 +202,19 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
             if ( generatePartitioning && meshFileExt != ".msh" )
                 CHECK( false ) << "Can not rebuild at this time the mesh partitionining with other format than .msh : TODO";
 
-            M_mesh = loadMesh(_mesh=new mesh_type( M_name, mMeshes.worldCommPtr() ),
-                              _filename=inputMeshFilename,
-                              _prefix=mMeshes.prefix(),
-                              _vm=mMeshes.clovm(),
-                              _worldcomm=mMeshes.worldCommPtr(),
-                              _rebuild_partitions=generatePartitioning,
-                              _rebuild_partitions_filename=meshPartitionedFilename,
-                              _partitions=M_importConfig.numberOfPartition(),
-                              _savehdf5=0,
-                              _update= M_importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            {
+                M_mesh = loadMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                  _filename=inputMeshFilename,
+                                  _prefix=mMeshes.prefix(),
+                                  _vm=mMeshes.clovm(),
+                                  _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                  _rebuild_partitions=generatePartitioning,
+                                  _rebuild_partitions_filename=meshPartitionedFilename,
+                                  _partitions=M_importConfig.numberOfPartition(),
+                                  _savehdf5=0,
+                                  _update= M_importConfig.meshComponents()/*MESH_UPDATE_EDGES|MESH_UPDATE_FACES*/);
+            }
 
             M_meshFilename = (generatePartitioning)? meshPartitionedFilename : M_importConfig.meshFilename();
         }
@@ -213,21 +229,23 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                 mshfile += ".json";
             else
                 mshfile += ".msh";
-
-            gmsh_ptrtype geodesc = geo( _filename=inputGeoFilename,
+            if ( !M_importConfig.loadByMasterRankOnly() || mMeshes.worldCommPtr()->isMasterRank() )
+            {
+                gmsh_ptrtype geodesc = geo( _filename=inputGeoFilename,
+                                            _prefix=mMeshes.prefix(),
+                                            _vm=mMeshes.clovm(),
+                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/ );
+                // allow to have a geo and msh file with a filename equal to prefix
+                geodesc->setPrefix(mMeshes.prefix());
+                M_mesh = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
+                                        _desc=geodesc,
                                         _prefix=mMeshes.prefix(),
                                         _vm=mMeshes.clovm(),
-                                        _worldcomm=mMeshes.worldCommPtr() );
-            // allow to have a geo and msh file with a filename equal to prefix
-            geodesc->setPrefix(mMeshes.prefix());
-            M_mesh = createGMSHMesh(_mesh=new mesh_type( M_name, mMeshes.worldCommPtr() ),
-                                    _desc=geodesc,
-                                    _prefix=mMeshes.prefix(),
-                                    _vm=mMeshes.clovm(),
-                                    _worldcomm=mMeshes.worldCommPtr(),
-                                    _partitions=M_importConfig.numberOfPartition(),
-                                    _update=M_importConfig.meshComponents(),
-                                    _directory=mMeshes.rootRepository() );
+                                        _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                        _partitions=M_importConfig.numberOfPartition(),
+                                        _update=M_importConfig.meshComponents(),
+                                        _directory=mMeshes.rootRepository() );
+            }
             M_meshFilename = mshfile;
         }
 
