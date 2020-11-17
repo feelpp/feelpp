@@ -303,7 +303,7 @@ FLUIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonIn
     // ------------------------------------------------------------------
     // Meshes
     if ( jsonInfo.contains("Meshes") )
-        tabInfos.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
     // ------------------------------------------------------------------
     // Function Spaces
     if ( jsonInfo.contains("Function Spaces") )
