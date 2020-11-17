@@ -39,6 +39,9 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 void
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
 {
+    if ( this->isUpdatedForUse() ) return;
+
+    this->log("SolidMechanics1dReduced","init", "start" );
 
     if ( !this->mesh() )
         this->initMesh();
@@ -57,6 +60,9 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::init()
     M_blockVectorSolution.resize( 1 );
     M_blockVectorSolution(0) = M_fieldDisp;
 
+    this->setIsUpdatedForUse( true );
+
+    this->log("SolidMechanics1dReduced","init", "finish" );
 }
 
 
@@ -101,7 +107,7 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::initFunctionSpaces()
     this->log("SolidMechanics1dReduced","initFunctionSpaces", "start" );
 
     // function space and elements
-    M_spaceDispVect = space_displacement_type::New(_mesh=M_mesh );
+    M_spaceDispVect = space_displacement_type::New(_mesh=this->mesh() );
     M_spaceDisp = M_spaceDispVect->compSpace();
     // scalar field
     M_fieldDisp.reset( new element_displacement_component_type( M_spaceDisp, "structure displacement" ));
@@ -239,6 +245,39 @@ SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::buildBlockMatrixGraph() const
     myblockGraph.close();
     return myblockGraph;
 }
+
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
+void
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) const
+{
+    if ( !this->isUpdatedForUse() )
+        return;
+    if ( p.get_child_optional( "Environment" ) )
+        return;
+
+    pt::ptree subPt;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+
+    subPt.clear();
+    super_type::super_model_meshes_type::updateInformationObject( subPt );
+    p.put_child( "Meshes", subPt );
+}
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
+tabulate::Table
+SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_TYPE::tabulateInformation( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    if ( jsonInfo.contains("Meshes") )
+        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+
+    return TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Solid 1d : %1%")%this->keyword()).str() );
+}
+
 
 SOLIDMECHANICS_1DREDUCED_CLASS_TEMPLATE_DECLARATIONS
 void

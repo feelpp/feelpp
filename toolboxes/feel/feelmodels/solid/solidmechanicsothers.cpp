@@ -168,9 +168,6 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
     pt::ptree subPt, subPt2;
     super_type::super_model_base_type::updateInformationObject( subPt );
     p.put_child( "Environment", subPt );
-    subPt.clear();
-    super_type::super_model_meshes_type::updateInformationObject( subPt );
-    p.put_child( "Meshes", subPt );
 
     subPt.clear();
     subPt.put( "time mode", std::string( (this->isStationary())?"Stationary":"Transient") );
@@ -184,10 +181,13 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
         p.put_child( "Materials Properties", subPt );
     }
 
-    // FunctionSpace
-    subPt.clear();
     if (this->hasSolidEquationStandard())
     {
+        subPt.clear();
+        super_type::super_model_meshes_type::updateInformationObject( subPt );
+        p.put_child( "Meshes", subPt );
+
+        subPt.clear();
         subPt2.clear();
         this->functionSpaceDisplacement()->updateInformationObject( subPt2 );
         subPt.put_child( "Displacement", subPt2 );
@@ -197,15 +197,23 @@ SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::updateInformationObject( pt::ptree & p ) con
             this->functionSpacePressure()->updateInformationObject( subPt2 );
             subPt.put_child( "Pressure", subPt2 );
         }
-    }
-    p.put_child( "Function Spaces",  subPt );
+        p.put_child( "Function Spaces",  subPt );
 
-    if ( M_algebraicFactory )
+        if ( M_algebraicFactory )
+        {
+            subPt.clear();
+            M_algebraicFactory->updateInformationObject( subPt );
+            p.put_child( "Algebraic Solver", subPt );
+        }
+    }
+
+    if ( this->hasSolidEquation1dReduced() )
     {
         subPt.clear();
-        M_algebraicFactory->updateInformationObject( subPt );
-        p.put_child( "Algebraic Solver", subPt );
+        M_solid1dReduced->updateInformationObject( subPt );
+        p.put_child( "Toolbox Solid 1d Reduced", subPt );
     }
+
 }
 
 SOLIDMECHANICS_CLASS_TEMPLATE_DECLARATIONS
@@ -213,6 +221,55 @@ std::vector<tabulate::Table>
 SOLIDMECHANICS_CLASS_TEMPLATE_TYPE::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
 {
     std::vector<tabulate::Table> tabInfos;
+
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+    // ------------------------------------------------------------------
+    // Environment
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Physics
+    if ( jsonInfo.contains("Physics") )
+    {
+        tabulate::Table tabInfoPhysics;
+        TabulateInformationTools::FromJSON::addAllKeyToValues( tabInfoPhysics, jsonInfo.at("Physics"), tabInfoProp );
+        tabInfoSections.push_back( std::make_pair( "Physics",  tabInfoPhysics ) );
+    }
+    // ------------------------------------------------------------------
+    // Materials Properties
+    if ( this->materialsProperties() && jsonInfo.contains("Materials Properties") )
+        tabInfoSections.push_back( std::make_pair( "Materials Properties", this->materialsProperties()->tabulateInformation(jsonInfo.at("Materials Properties"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Meshes
+    if ( jsonInfo.contains("Meshes") )
+        tabInfoSections.push_back( std::make_pair( "Meshes", super_type::super_model_meshes_type::tabulateInformation( jsonInfo.at("Meshes"), tabInfoProp ) ) );
+    // ------------------------------------------------------------------
+    // Function Spaces
+    if ( jsonInfo.contains("Function Spaces") )
+    {
+        auto const& jsonInfoFunctionSpaces = jsonInfo.at("Function Spaces");
+        tabulate::Table tabInfoFunctionSpaces;
+        for ( std::string const& spaceName : std::vector<std::string>({"Displacement","Pressure"}) )
+        {
+            if ( jsonInfoFunctionSpaces.contains( spaceName ) )
+            {
+                tabInfoFunctionSpaces.add_row({spaceName});
+                tabInfoFunctionSpaces.add_row({ TabulateInformationTools::FromJSON::tabulateFunctionSpace( jsonInfoFunctionSpaces.at( spaceName ), tabInfoProp ) });
+            }
+        }
+        tabInfoSections.push_back( std::make_pair( "Function Spaces", tabInfoFunctionSpaces ) );
+    }
+    // ------------------------------------------------------------------
+    // Algebraic Solver
+    if ( jsonInfo.contains( "Algebraic Solver" ) )
+        tabInfoSections.push_back( std::make_pair( "Algebraic Solver", model_algebraic_factory_type::tabulateInformation( jsonInfo.at("Algebraic Solver"), tabInfoProp ) ) );
+
+    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox Solid : %1%")%this->keyword()).str() ) );
+
+
+    if ( this->hasSolidEquation1dReduced() && jsonInfo.contains( "Toolbox Solid 1d Reduced" ) )
+        tabInfos.push_back( M_solid1dReduced->tabulateInformation( jsonInfo.at("Toolbox Solid 1d Reduced"), tabInfoProp ) );
+
     return tabInfos;
 }
 
