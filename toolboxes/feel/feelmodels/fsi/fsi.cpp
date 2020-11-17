@@ -106,7 +106,6 @@ void
 FSI<FluidType,SolidType>::createMesh()
 {
     this->log("FSI","createMesh","start");
-
     FSIMesh<typename fluid_type::convex_type> fsimeshTool(this->prefix(),this->worldCommPtr());
 
     int nPart = this->worldComm().size();//this->nPartitions();
@@ -122,7 +121,7 @@ FSI<FluidType,SolidType>::createMesh()
     }
     else
         meshesdirectories = fs::path(this->repository().rootWithoutNumProc()) / fs::path("meshes");
-
+#if 0
     fs::path gp;
     if (this->hasMeshFile())
         gp = this->meshFile();
@@ -130,6 +129,8 @@ FSI<FluidType,SolidType>::createMesh()
         gp = this->geoFile();
 
     std::string nameMeshFile = gp.stem().string();
+#endif
+    std::string nameMeshFile = "fsi";
     fs::path mshFileNameFluidPart1, mshFileNameSolidPart1,mshFileNameFluidPartN,mshFileNameSolidPartN;
     fs::path mshFileNameFSI;
 #ifdef FEELPP_HAS_HDF5
@@ -166,25 +167,17 @@ FSI<FluidType,SolidType>::createMesh()
 
     fsimeshTool.setForceRebuild( boption(_prefix=this->prefix(),_name="mesh-save.force-rebuild" ) );
 
-    if (this->hasMeshFile())
-    {
-        fsimeshTool.setMshPathFSI( fs::path(this->meshFile()) );
-        fsimeshTool.buildFSIMeshFromMsh();
-    }
-    else if (this->hasGeoFile())
-    {
-        fs::path mshFileNameFSI;
-        if ( !M_tagFileNameMeshGenerated.empty() )
-            mshFileNameFSI = (boost::format("%1%_fsi_%2%_%3%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() %M_tagFileNameMeshGenerated ).str();
-        else
-            mshFileNameFSI = (boost::format("%1%_fsi_%2%.msh") %nameMeshFile %fluid_type::mesh_type::shape_type::name() ).str();
-        fs::path mshPathFSI = meshesdirectories / mshFileNameFSI;
 
-        fsimeshTool.setGeoPathFSI( fs::path(this->geoFile()) );
-        fsimeshTool.setMshPathFSI( mshPathFSI );
-        fsimeshTool.setMeshSize( this->meshSize() );
-        fsimeshTool.buildFSIMeshFromGeo();
+    this->modelMesh( this->keyword() ).importConfig().setupSequentialAndLoadByMasterRankOnly();
+    this->modelMesh( this->keyword() ).importConfig().setMeshComponents( MESH_UPDATE_FACES_MINIMAL|MESH_UPDATE_EDGES );
+    if ( !fs::exists( M_mshfilepathFluidPart1 ) || !fs::exists( M_mshfilepathSolidPart1 ) || fsimeshTool.forceRebuild() )
+    {
+        super_type::super_model_meshes_type::updateForUse<mesh_fluid_type>( this->keyword() );
+        if ( this->worldComm().isMasterRank() )
+            fsimeshTool.buildSubMesh( this->modelMesh( this->keyword() ).template mesh<mesh_fluid_type>()  );
     }
+    if ( nPart > 1 )
+        fsimeshTool.buildMeshesPartitioning();
 
     this->log("FSI","createMesh","finish");
 }
@@ -265,7 +258,7 @@ FSI<FluidType,SolidType>::init()
     this->log("FSI","init","start");
 
     // create fsimesh and partitioned meshes if require
-    if ( this->hasMeshFile() || this->hasGeoFile() )
+    if ( !this->modelMesh( this->keyword() ).importConfig().inputFilename().empty() && !this->doRestart() )
         this->createMesh();
 
     // fluid model build
@@ -273,7 +266,7 @@ FSI<FluidType,SolidType>::init()
     {
         M_fluidModel = std::make_shared<fluid_type>("fluid","fluid",this->worldCommPtr(), "", this->repository() );
         if ( !M_mshfilepathFluidPartN.empty() )
-            M_fluidModel->setMeshFile(M_mshfilepathFluidPartN.string());
+            M_fluidModel->modelMesh( M_fluidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathFluidPartN.string() );
 
         // temporary fix (else use in dirichle-neunamm bc in residual) TODO !!!!
         M_fluidModel->couplingFSIcondition(this->fsiCouplingBoundaryCondition());
@@ -315,7 +308,7 @@ FSI<FluidType,SolidType>::init()
         else
         {
             if ( !M_mshfilepathSolidPartN.empty() )
-                M_solidModel->setMeshFile( M_mshfilepathSolidPartN.string() );
+                M_solidModel->modelMesh( M_solidModel->keyword() ).importConfig().setupInputMeshFilenameWithoutApplyPartitioning( M_mshfilepathSolidPartN.string() );
         }
 
         // temporary fix TODO !!!!
@@ -1302,6 +1295,52 @@ FSI<FluidType,SolidType>::getInfo() const
     return _ostr;
 }
 
+template< class FluidType, class SolidType >
+void
+FSI<FluidType,SolidType>::updateInformationObject( pt::ptree & p ) const
+{
+    pt::ptree subPt;
+    super_type::super_model_base_type::updateInformationObject( subPt );
+    p.put_child( "Environment", subPt );
+
+    subPt.clear();
+    M_fluidModel->updateInformationObject( subPt );
+    p.put_child( "Toolbox Fluid", subPt );
+    subPt.clear();
+    M_solidModel->updateInformationObject( subPt );
+    p.put_child( "Toolbox Solid", subPt );
+
+}
+
+template< class FluidType, class SolidType >
+std::vector<tabulate::Table>
+FSI<FluidType,SolidType>::tabulateInformations( nl::json const& jsonInfo, TabulateInformationProperties const& tabInfoProp ) const
+{
+    std::vector<tabulate::Table> tabInfos;
+
+    std::vector<std::pair<std::string,tabulate::Table>> tabInfoSections;
+
+    if ( jsonInfo.contains("Environment") )
+        tabInfoSections.push_back( std::make_pair( "Environment", super_type::super_model_base_type::tabulateInformation( jsonInfo.at("Environment"), tabInfoProp ) ) );
+
+    tabInfos.push_back( TabulateInformationTools::createSections( tabInfoSections, (boost::format("Toolbox FSI : %1%")%this->keyword()).str() ) );
+
+    // generate sub toolboxes info
+    if ( M_fluidModel && jsonInfo.contains( "Toolbox Fluid" ) )
+    {
+        auto tabInfos_fluid = M_fluidModel->tabulateInformations( jsonInfo.at("Toolbox Fluid"), tabInfoProp );
+        for ( auto const& tabInfo_fluid : tabInfos_fluid )
+            tabInfos.push_back( std::move( tabInfo_fluid ) );
+    }
+    if ( M_solidModel && jsonInfo.contains( "Toolbox Solid" ) )
+    {
+        auto tabInfos_solid = M_solidModel->tabulateInformations( jsonInfo.at("Toolbox Solid"), tabInfoProp );
+        for ( auto const& tabInfo_solid  : tabInfos_solid )
+            tabInfos.push_back( std::move( tabInfo_solid  ) );
+    }
+
+    return tabInfos;
+}
 
 } // namespace FeelModels
 } // namespace Feel
