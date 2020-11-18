@@ -24,41 +24,45 @@
 #include <pybind11/pybind11.h>
 
 #include <feel/feelmodels/modelcore/modelnumerical.hpp>
-#include <feel/feelmodels/heat/heat.hpp>
+#include <feel/feelmodels/coefficientformpdes/coefficientformpdes.hpp>
+
 
 namespace py = pybind11;
 using namespace Feel;
 
-template<int nDim, int Order>
+template<int nDim>
 void defSM(py::module &m)
 {
     using namespace Feel;
     using namespace Feel::FeelModels;
-    using toolbox_t = Heat< Simplex<nDim,1>,
-                           Lagrange<Order, Scalar,Continuous,PointSetFekete> >;
-    using element_temperature_t = typename toolbox_t::element_temperature_type;
-    using element_temperature_ptr_t = typename toolbox_t::element_temperature_ptrtype;
+    using toolbox_t =  CoefficientFormPDEs< Simplex<nDim,1>,
+                                            Lagrange<0,Scalar,Continuous,PointSetFekete>,
+                                            Lagrange<1,Scalar,Continuous,PointSetFekete>,
+                                            Lagrange<2,Scalar,Continuous,PointSetFekete>,
+                                            Lagrange<1,Vectorial,Continuous,PointSetFekete> >;
+    //using element_temperature_t = typename toolbox_t::element_temperature_type;
+    //using element_temperature_ptr_t = typename toolbox_t::element_temperature_ptrtype;
 
-    std::string pyclass_name = std::string("Heat_") + std::to_string(nDim) + std::string("DP") + std::to_string(Order);
+    std::string pyclass_name = std::string("cfpdes_") + std::to_string(nDim) + std::string("D");
     py::class_<toolbox_t,std::shared_ptr<toolbox_t>,ModelNumerical>(m,pyclass_name.c_str())
         .def(py::init<std::string const&,std::string const&,worldcomm_ptr_t const&,std::string const&, ModelBaseRepository const&>(),
              py::arg("prefix"),
-             py::arg("keyword")=std::string("heat"),
+             py::arg("keyword")=std::string("cfpdes"),
              py::arg("worldComm")=Environment::worldCommPtr(),
              py::arg("subprefix")=std::string(""),
              py::arg("modelRep") = ModelBaseRepository(),
-             "Initialize the heat mechanics toolbox"
+             "Initialize the coefficient form pdes toolbox"
              )
         .def("init",&toolbox_t::init, "initialize the heat  toolbox",py::arg("buildModelAlgebraicFactory")= true)
 
         // mesh
         .def( "mesh", &toolbox_t::mesh, "get the mesh" )
-        .def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
+        //.def( "rangeMeshElements", &toolbox_t::rangeMeshElements, "get the range of mesh elements" )
 
         // elements
-        .def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space")
-        .def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
-        .def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
+        //.def( "spaceTemperature", &toolbox_t::spaceTemperature, "get the temperature function space")
+        //.def( "fieldTemperature", static_cast<element_temperature_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperature), "returns the temperature field" )
+        //.def( "fieldTemperaturePtr", static_cast<element_temperature_ptr_t const& (toolbox_t::*)() const>(&toolbox_t::fieldTemperaturePtr), "returns the temperature field shared_ptr" )
 
         // time stepping
         .def("timeStepBase",static_cast<std::shared_ptr<TSBase> (toolbox_t::*)() const>(&toolbox_t::timeStepBase), "get time stepping base")
@@ -67,20 +71,18 @@ void defSM(py::module &m)
         // solve
         .def("solve",&toolbox_t::solve, "solve the heat mechanics problem, set boolean to true to update velocity and acceleration")
         .def("exportResults",static_cast<void (toolbox_t::*)()>(&toolbox_t::exportResults), "export the results of the heat mechanics problem")
-        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
+//        .def("exportResults",static_cast<void (toolbox_t::*)( double )>(&toolbox_t::exportResults), "export the results of the heat mechanics problem", py::arg("time"))
         ;
         
 }
     
 
-PYBIND11_MODULE(_heat, m )
+PYBIND11_MODULE(_cfpdes, m )
 {
     using namespace Feel;
     
-    defSM<2,1>(m);
-    defSM<2,2>(m);
-    defSM<3,1>(m);
-    defSM<3,2>(m);
+    defSM<2>(m);
+    defSM<3>(m);
 
 }
 

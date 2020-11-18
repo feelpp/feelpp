@@ -24,10 +24,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(toolboxes-heat)
 
-pybind11_add_module(_heat  heat.cpp)
-target_link_libraries( _heat PRIVATE Feelpp::feelpp_toolbox_heat_lib )
-
-
-install(TARGETS _heat DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heat)
+feelpp_add_pymodule(heat SRCS heat.cpp DESTINATION feelpp/toolboxes/heat LINK_LIBRARIES Feelpp::feelpp_toolbox_heat_lib)
 install(FILES  __init__.py heat.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/heat)
 

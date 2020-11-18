@@ -33,7 +33,9 @@
 //#include <boost/parameter/python.hpp>
 #include <boost/mpl/vector.hpp>
 
-#include<feel/feelcore/environment.hpp>
+#include <feel/feelcore/environment.hpp>
+#include <feel/feelcore/pybind11_json.hpp>
+#include <feel/feelcore/repository.hpp>
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
@@ -45,9 +47,18 @@ PYBIND11_MAKE_OPAQUE(Feel::worldscomm_ptr_t);
 PYBIND11_MODULE(_core, m )
 {
     using namespace Feel;
-
+    namespace fs = Feel::fs;
     if (import_mpi4py()<0) return ;
 
+    /**
+     * @brief bind boost filesystem
+     * 
+     */
+    py::class_<fs::path>(m, "Path")
+        .def(py::init<std::string>())
+        .def("string",&fs::path::native,"convert path to string")
+        ;
+    py::implicitly_convertible<std::string, boost::filesystem::path>();
     
     py::class_<po::options_description>(m,"OptionsDescription")
         .def(py::init<>())
@@ -70,8 +81,37 @@ PYBIND11_MODULE(_core, m )
     //py::bind_vector<worldscomm_ptr_t>(m, "WorldsComm");
     m.def( "makeWorldsComm", static_cast<worldscomm_ptr_t (*)(int, worldcomm_ptr_t const& )>(&Feel::makeWorldsComm), py::arg("n")=1, py::arg("worldComm"), "create a vector of WorldComm with n entries" );
     
+    py::enum_<Location>(m,"Location")
+        .value("UKNOWN", Location::unknown )
+        .value("GLOBAL", Location::global )
+        .value("LOCAL", Location::local )
+        .value("GIT", Location::git )
+        .value("GIVEN", Location::given )
+        .export_values();
+    py::class_<Repository::Config>(m,"Config")
+        .def(py::init<fs::path,Location>(),"Construct a Config",py::arg("directory"),py::arg("location"))
+        .def_readwrite("directory", &Repository::Config::directory)
+        .def_readwrite("location", &Repository::Config::location)
+        .def_readwrite("data", &Repository::Config::data)
+        ;
+    py::class_<Repository>(m,"Repository")
+        .def(py::init<>())
+        .def(py::init<Repository::Config>(),"Construct a repository from a path and location type",py::arg("config"))
+        .def("root",&Feel::Repository::root, "return the root directory of the repository")
+        .def("globalRoot",&Feel::Repository::globalRoot, "return the global root directory")
+        .def("geo",&Feel::Repository::geo, "return the geo directory of the repository")
+        .def("directory",&Feel::Repository::directory, "return the directory relative to the root of the repository")
+        .def("relativeDirectory",&Feel::Repository::relativeDirectory, "return the directory relative to the root of the repository")
+        .def("isLocal",&Feel::Repository::isLocal, "return true if the repository is local")
+        .def("isGlobal",&Feel::Repository::isGlobal, "return true if the repository is global")
+        .def("isGit",&Feel::Repository::isGit, "return true if the repository is git")
+        .def("isGiven",&Feel::Repository::isGiven, "return true if the repository is given")
+        .def("userName",&Feel::Repository::userName, "return the user name")
+        .def("userEmail",&Feel::Repository::userEmail, "return the user email")
+        ;
+
     py::class_<Environment>(m,"Environment")
-        .def( py::init<py::list,po::options_description>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions())
+        .def( py::init<py::list,po::options_description,std::string,bool>(),"Construct a Feel++ Environment",py::arg("arg"), py::arg("opts") = feel_nooptions(),py::arg("dir")=".", py::arg("chdir")=false)
         .def( py::init<py::list>(),"Construct a Feel++ Environment")//,py::arg("arg"), py::arg("opts") = feel_nooptions())
         .def_static("initialized",&Feel::Environment::initialized, "return true if MPI is initialized, false otherwise",py::return_value_policy::copy)
         .def_static("finalized",&Feel::Environment::finalized, "return true if MPI is finalized, false otherwise",py::return_value_policy::copy)
@@ -89,6 +129,7 @@ PYBIND11_MODULE(_core, m )
         .def_static("downloadsRepository",&Feel::Environment::downloadsRepository,"get the downloads repository for Feel++",py::return_value_policy::move)
         .def_static("findFile",&Feel::Environment::findFile,"find file",py::return_value_policy::move)
         .def_static("expand",&Feel::Environment::expand,"expand variable in string",py::return_value_policy::move)
+        .def_static("setConfigFile",&Feel::Environment::setConfigFile,"set config file and update variable map",py::arg("filename"))
         ;
 
     py::class_<Info>(m,"Info")

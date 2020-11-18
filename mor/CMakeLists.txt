@@ -3,7 +3,7 @@
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
 #       Date: 2009-11-12
 #
-#  Copyright (C) 2009-2017 Université Joseph Fourier (Grenoble I)
+#  Copyright (C) 2009-2017 Universitï¿½ Joseph Fourier (Grenoble I)
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -38,11 +38,16 @@ if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
     message(WARNING "Feel++ was not installed with toolboxes")
   endif()
 else()
+  feelpp_get_environment()
+  # useful for pyfeelpp-toolboxes
+  set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
   include_directories(${FEELPP_MOR_SOURCE_DIR})
   include_directories(${FEELPP_MOR_BINARY_DIR})  
 endif()
 
-
+if ( FEELPP_HAS_PYTHON )
+  message(STATUS "[feelpp-mor] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+endif()
 
 
 
@@ -191,3 +196,8 @@ install(EXPORT feelpp-mor-export-targets
   NAMESPACE Feelpp::
   DESTINATION share/feelpp/mor/cmake/
   )
+
+if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp-mor.package.cmake)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/feelpp.version.cmake)
+endif()

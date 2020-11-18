@@ -90,9 +90,9 @@ public:
 template<typename T, typename Storage = ublas::vector<T> >
 class FEELPP_EXPORT VectorUblas
     : public Vector<T>
-    , boost::addable<VectorUblas<T,Storage> >
-    , boost::subtractable<VectorUblas<T,Storage> >
-    , boost::multipliable<VectorUblas<T,Storage>, T >
+//    , boost::addable<VectorUblas<T,Storage> >
+//    , boost::subtractable<VectorUblas<T,Storage> >
+//    , boost::multipliable<VectorUblas<T,Storage>, T >
 {
     typedef Vector<T> super1;
 public:
@@ -112,7 +112,7 @@ public:
     typedef Vector<value_type> clone_type;
     typedef std::shared_ptr<clone_type> clone_ptrtype;
     typedef VectorUblas<value_type, Storage> this_type;
-
+    using self_t = this_type;
     typedef typename vector_type::iterator iterator;
     typedef typename vector_type::const_iterator const_iterator;
 
@@ -318,16 +318,61 @@ public:
         add( 1., v );
         return *this;
     }
+    /**
+     * Addition operator.
+     */
+    self_t operator+( const self_t& v ) const
+    {
+        self_t w( *this );
+        w += v;
+        return w;
+    }
+    /**
+     * Addition operator with a scalar
+     */
+    self_t operator+( T const& f ) const
+    {
+        self_t v( *this );
+        v.setConstant( f );
+        v.add( 1., *this );
+        return v;
+    }
+    /**
+     * @brief operator f + v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t new vector
+     */
+    friend self_t operator+(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(1.,v); return w;  }
 
     /**
      * Subtraction operator.
      * Fast equivalent to \p U.add(-1, V).
      */
-    Vector<T>& operator-=( const Vector<T>& v )
+    Vector<T>& operator-=( const Vector<T>& v ) { add( -1., v ); return *this; }
+    /**
+     * Addition operator.
+     */
+    self_t operator-( const self_t& v ) const { self_t w( *this ); w -= v; return w; }
+    /**
+     * substraction operator with a scalar
+     */
+    self_t operator-( T const& f ) const
     {
-        add( -1., v );
-        return *this;
+        self_t v( *this );
+        v.setConstant( -f );
+        v.add( 1., *this );
+        return v;
     }
+    /**
+     * @brief operator f - v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t new vector
+     */
+    friend self_t operator-(T f, const self_t &v) { self_t w( v ); w.setConstant( f ); w.add(-1.,v); return w;  }
 
     /**
      * multiplication by a scalar value
@@ -337,6 +382,33 @@ public:
         this->scale( v );
         return *this;
     }
+    /**
+     * @return negative of this vector
+     */
+    self_t operator-() const
+    {
+        self_t v( *this );
+        v.scale( -1. );
+        return v;
+    }
+    /**
+     * @return v * f
+     */
+    self_t operator*( T f ) const
+    {
+        self_t v( *this );
+        v.scale( f );
+        return v;
+    }
+    /**
+     * @brief operator f * v
+     * 
+     * @param f scalar
+     * @param v VectorUblas
+     * @return self_t scaled vector
+     */
+    friend self_t operator*(T f, const self_t &v) { self_t w( v ); w.scale( f ); return w;  }
+
     //@}
 
     /** @name Accessors

@@ -34,6 +34,7 @@
 #include <boost/mpl/vector.hpp>
 
 #include<feel/feelalg/backend.hpp>
+#include<feel/feelalg/vectorublas.hpp>
 #include <pybind11/stl_bind.h>
 
 namespace py = pybind11;
@@ -45,5 +46,23 @@ PYBIND11_MODULE(_alg, m )
     if (import_mpi4py()<0) return ;
 
     m.def( "backend_options", &Feel::backend_options, py::arg("prefix"), "create a backend options descriptions with prefix" );
-    
+    py::class_<VectorUblas<double>,std::shared_ptr<VectorUblas<double>>> vublas(m,"VectorUBlas<double,ublas::vector<double>>");
+    vublas.def(py::init<>())
+        .def(py::self + py::self )
+        .def(py::self - py::self)
+        .def(double() + py::self)
+        .def(double() - py::self)
+        .def(py::self + double())
+        .def(py::self - double())
+        .def(py::self * double())
+        .def(double() * py::self)
+        //.def(double() / py::self)
+        .def(py::self += py::self)
+        .def(py::self -= py::self)
+        .def(py::self *= double())
+        .def(-py::self)
+//        .def(py::self /= double())
+//        .def(py::self *= py::self)
+//        .def(py::self /= py::self)
+        ;
 }

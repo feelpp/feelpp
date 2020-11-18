@@ -22,13 +22,17 @@
 //! @copyright 2018 Feel++ Consortium
 //!
 #include <pybind11/pybind11.h>
-
+#include <pybind11/eigen.h>
 #include <feel/feeldiscr/pch.hpp>
 #include <feel/feeldiscr/pchv.hpp>
 #include <feel/feeldiscr/pdh.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
 #include <feel/feeldiscr/operatorinterpolation.hpp>
 #include <feel/feeldiscr/pdhv.hpp>
+#include <feel/feelvf/mean.hpp>
+#include <feel/feelvf/evaluator.hpp>
+#include <feel/feelvf/norml2.hpp>
+#include <feel/feelvf/normh1.hpp>
 #include <feel/feelvf/ginac.hpp>
 #include <mpi4py/mpi4py.h>
 #include <pybind11/stl_bind.h>
@@ -45,6 +49,35 @@ public:
     using base = typename Pch_type<MeshT,Order>::element_type;
     MyElement() : base() {}
 };
+
+template<typename RangeT, typename FunctionT>
+double
+f_norml2( RangeT const& elts, FunctionT const& f ) 
+{
+    return normL2( _range=elts, _expr=idv(f) );
+}
+template<typename RangeT, typename FunctionT>
+double
+f_normh1( RangeT const& elts, FunctionT const& f ) 
+{
+    return normH1( _range=elts, _expr=idv(f), _grad_expr=gradv(f) );
+}
+using eigen_v_t = Eigen::Matrix<double,Eigen::Dynamic,1>;
+template<typename RangeT, typename FunctionT>
+eigen_v_t
+f_mean( RangeT const& elts, FunctionT const& f ) 
+{
+    return mean( _range=elts, _expr=idv(f) );
+}
+using eigen_v2_t = Eigen::Matrix<double,Eigen::Dynamic,2>;
+template<typename RangeT, typename FunctionT>
+std::tuple<double,double,eigen_v2_t>
+f_minmax( RangeT const& elts, FunctionT const& f ) 
+{
+    auto e = minmax( _range=elts, _pset=_Q<3>(), _expr=idv(f) );
+    return std::tuple{e.min(),e.max(),e.coords()};
+}
+
 template<typename SpaceT>
 void defDiscr(py::module &m)
 {
@@ -93,14 +126,31 @@ void defDiscr(py::module &m)
 
     // Element
     std::string e_pyclass_name = std::string("Element_") + pyclass_name;
-    py::class_<element_t,std::shared_ptr<element_t>> elt(m,e_pyclass_name.c_str());
+    py::class_<element_t,std::shared_ptr<element_t>,VectorUblas<double>> elt(m,e_pyclass_name.c_str());
     elt.def(py::init<>())
         .def(py::init<std::shared_ptr<space_t> const&, std::string const&, std::string const&, size_type, ComponentType>(),py::arg("space"), py::arg("name"), py::arg("desc"), py::arg("start")=0, py::arg("ct")= ComponentType::NO_COMPONENT)
         .def("functionSpace",static_cast<space_ptr_t const&(element_t::*)() const>(&element_t::functionSpace), "Get funtion space from element")
         .def("size", static_cast< size_type (element_t::*)() const>(&element_t::size), "Get size of element")
         
         .def("save", &element_t::saveImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "save functionspace element in file ")
-        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ");
+        .def("load", &element_t::loadImpl, py::arg("path"), py::arg("name"), py::arg("type")="default", py::arg("suffix")="", py::arg("sep")="", "load functionspace element from file ")
+        .def(py::self + py::self )
+        .def(py::self - py::self)
+        .def(double() + py::self)
+        .def(double() - py::self)
+        .def(py::self + double())
+        .def(py::self - double())
+        .def(py::self * double())
+        .def(double() * py::self)
+        //.def(double() / py::self)
+        .def(py::self += py::self)
+        .def(py::self -= py::self)
+        .def(py::self *= double())
+        .def(-py::self)
+//        .def(py::self /= double())
+//        .def(py::self *= py::self)
+//        .def(py::self /= py::self)
+        ;
 
         if constexpr( space_t::is_scalar )
             {
@@ -114,7 +164,11 @@ void defDiscr(py::module &m)
         .def(py::init<>())
         //.def(py::init<std::shared_ptr<space_t> const&, std::shared_ptr<space_t> const&>())
         ;
-    
+    m.def( "normL2", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_norml2<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute L2 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "normH1", static_cast<double (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_normh1<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute H1 norm of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "mean", static_cast<eigen_v_t (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_mean<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute mean of function over a range of elements", py::arg("range"), py::arg("expr") );
+    m.def( "minmax", static_cast<std::tuple<double,double,eigen_v2_t> (*)( elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&)>( &f_minmax<elements_reference_wrapper_t<mesh_ptr_t> const&,element_t const&> ), "compute min max argmin argmax of a function over a range of elements", py::arg("range"), py::arg("expr") );
+
 }
 template<typename space_t>
 void defDiscrDiscontinuous(py::module &m )

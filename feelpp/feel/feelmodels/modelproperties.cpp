@@ -75,7 +75,6 @@ ModelProperties::ModelProperties( std::string const& filename, std::string const
 
     this->setup();
 }
-
 ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
     :
     super( world ),
@@ -83,6 +82,19 @@ ModelProperties::ModelProperties( pt::ptree const& pt, std::string const& direct
     M_directoryLibExpr( directoryLibExpr ),
     M_p( pt )
 {
+    this->setup();
+}
+ModelProperties::ModelProperties( nl::json const& j, std::string const& directoryLibExpr, worldcomm_ptr_t const& world, std::string const& prefix )
+    :
+    super( world ),
+    M_prefix( prefix ),
+    M_directoryLibExpr( directoryLibExpr ),
+    M_p()
+{
+    auto json_str_wo_comments = removeComments(j.dump(1));
+    LOG(INFO) << "json file without comment:" << json_str_wo_comments;
+    std::istringstream istr( json_str_wo_comments );
+    pt::read_json(istr, M_p);
     this->setup();
 }
 
