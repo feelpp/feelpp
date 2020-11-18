@@ -1,7 +1,5 @@
 #include <feel/feelmodels/levelset/levelsetbase.hpp>
 
-#include <feel/feelmodels/modelmesh/createmesh.hpp>
-
 #include <feel/feelmodels/levelset/levelsetdeltaexpr.hpp>
 #include <feel/feelmodels/levelset/levelsetheavisideexpr.hpp>
 
@@ -89,10 +87,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::createMesh()
 {
     this->log("LevelSetBase","createMesh","start");
     this->timerTool("Constructor").start();
-    
-    createMeshModel<mesh_type>(*this, M_mesh, this->fileNameMeshPath() );
-    CHECK( M_mesh ) << "mesh generation failed";
-    //M_isUpdatedForUse = false;
+
+    if ( this->doRestart() )
+        super_type::super_model_meshes_type::setupRestart( this->keyword() );
+    super_type::super_model_meshes_type::updateForUse<mesh_type>( this->keyword() );
+
+    CHECK( this->mesh() ) << "mesh generation fail";
 
     double tElapsed = this->timerTool("Constructor").stop("create");
     this->log("LevelSetBase","createMesh", (boost::format("finish in %1% s") %tElapsed).str() );
@@ -107,16 +107,16 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::init()
     // Mesh and space manager
     if( !M_spaceManager )
     {
-        if( !M_mesh )
+        if( !this->mesh() )
         {
             // Create mesh
             this->createMesh();
         }
-        M_spaceManager = std::make_shared<levelset_space_manager_type>( M_mesh );
+        M_spaceManager = std::make_shared<levelset_space_manager_type>( this->mesh() );
     }
     else
     {
-        M_mesh = M_spaceManager->mesh();
+        this->setMesh( M_spaceManager->mesh() );
     }
     // Tool manager
     if( !M_toolManager )
@@ -1950,10 +1950,12 @@ LEVELSETBASE_CLASS_TEMPLATE_TYPE::getInfo() const
     *_ostr << "\n     -- vectorial smoother : " << vectorialSmootherParameters;
 
     *_ostr << "\n   Space Discretization";
+#if 0
     if( this->hasGeoFile() )
     *_ostr << "\n     -- geo file name   : " << this->geoFile();
-    *_ostr << "\n     -- mesh file name  : " << this->meshFile()
-           << "\n     -- nb elt in mesh  : " << this->mesh()->numGlobalElements()//numElements()
+    *_ostr << "\n     -- mesh file name  : " << this->meshFile();
+#endif
+    *_ostr << "\n     -- nb elt in mesh  : " << this->mesh()->numGlobalElements()//numElements()
          //<< "\n     -- nb elt in mesh  : " << this->mesh()->numElements()
          //<< "\n     -- nb face in mesh : " << this->mesh()->numFaces()
            << "\n     -- hMin            : " << this->mesh()->hMin()
