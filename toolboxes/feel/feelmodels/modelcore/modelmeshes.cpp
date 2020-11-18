@@ -234,7 +234,8 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                 gmsh_ptrtype geodesc = geo( _filename=inputGeoFilename,
                                             _prefix=mMeshes.prefix(),
                                             _vm=mMeshes.clovm(),
-                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/ );
+                                            _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                            _h=M_importConfig.meshSize());
                 // allow to have a geo and msh file with a filename equal to prefix
                 geodesc->setPrefix(mMeshes.prefix());
                 M_mesh = createGMSHMesh(_mesh=new mesh_type( M_name, wcPtr/*mMeshes.worldCommPtr()*/ ),
@@ -242,6 +243,7 @@ ModelMesh<IndexType>::updateForUse( ModelMeshes<IndexType> const& mMeshes )
                                         _prefix=mMeshes.prefix(),
                                         _vm=mMeshes.clovm(),
                                         _worldcomm=wcPtr/*mMeshes.worldCommPtr()*/,
+                                        _h=M_importConfig.meshSize(),
                                         _partitions=M_importConfig.numberOfPartition(),
                                         _update=M_importConfig.meshComponents(),
                                         _directory=mMeshes.rootRepository() );
