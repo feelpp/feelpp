@@ -1,9 +1,9 @@
 ###  CMakeLists.txt; coding: utf-8 --- 
 
 #  Author(s): Christophe Prud'homme <christophe.prudhomme@feelpp.org>
-#       Date: 06 Aug 2018
+#       Date: 23 Jun 2017
 #
-#  Copyright (C) 2018 Feel++ Consortium
+#  Copyright (C) 2017 Feel++ Consortium
 #
 # Distributed under the GPL(GNU Public License):
 # This program is free software; you can redistribute it and/or modify
@@ -21,6 +21,4 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-feelpp_add_pymodule(thermoelectric SRCS thermoelectric.cpp DESTINATION feelpp/toolboxes/thermoelectric LINK_LIBRARIES Feelpp::feelpp_toolbox_thermoelectric_lib)
-install(FILES  __init__.py thermoelectric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/thermoelectric)
-
+add_subdirectory(mor)

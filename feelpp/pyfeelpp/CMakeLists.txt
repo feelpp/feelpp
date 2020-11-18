@@ -80,23 +80,5 @@ endif()
 #    set (PYTHON_SITE_PACKAGES ${CMAKE_INSTALL_LIBDIR}/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages/feelpp)
 #  endif ()
 
-if (DEFINED PYTHON_SITE_PACKAGES)
-  set (FEELPP_PYTHON_MODULE_PATH ${PYTHON_SITE_PACKAGES})
-else ()
-  execute_process (COMMAND ${PYTHON_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))"
-                    OUTPUT_VARIABLE _ABS_PYTHON_MODULE_PATH
-                    RESULT_VARIABLE _PYTHON_pythonlib_result
-                    OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  if (_PYTHON_pythonlib_result)
-    message (SEND_ERROR "Could not run ${PYTHON_EXECUTABLE}")
-  endif ()
-
-  get_filename_component (_ABS_PYTHON_MODULE_PATH ${_ABS_PYTHON_MODULE_PATH} ABSOLUTE)
-  file (RELATIVE_PATH FEELPP_PYTHON_MODULE_PATH ${CMAKE_INSTALL_PREFIX} ${_ABS_PYTHON_MODULE_PATH})
-endif ()
-set (FEELPP_PYTHON${PYTHON_VERSION_MAJOR}_MODULE_PATH ${FEELPP_PYTHON_MODULE_PATH})
-message(Status "[feelpp] python module path: ${FEELPP_PYTHON_MODULE_PATH}")
-
 add_subdirectory(feelpp)
 add_subdirectory(tests)

@@ -21,18 +21,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-fsi)
-
-if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} )
-  find_package(Feel++ PATHS ${FEELPP_DIR}/share/feelpp/feel/cmake/modules $ENV{FEELPP_DIR}/share/feelpp/feel/cmake/modules /usr/share/feelpp/feel/cmake/modules /usr/local/share/feelpp/feel/cmake/modules )
-  if(NOT FEELPP_FOUND)
-      message(FATAL_ERROR "Feel++ was not found on your system. Make sure to install it and specify the FEELPP_DIR to reference the installation directory.")
-  endif()
-endif()
-
-
-pybind11_add_module(_fsi  fsi.cpp)
-target_include_directories(_fsi PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
-find_library( FEELPP_FSI feelpp_toolbox_fsi_lib HINTS ${FEELPP_DIR}/lib)
-target_link_libraries( _fsi PRIVATE ${FEELPP_FSI}  ${FEELPP_LIBRARIES} )
+feelpp_add_pymodule(_fsi  SRCS fsi.cpp LINK_LIBRARIES Feelpp::feelpp_toolbox_fsi_lib DESTINATION feelpp/toolboxes/fsi )
+#target_include_directories(_fsi PRIVATE ${PYTHON_INCLUDE_DIRS} ${MPI4PY_INCLUDE_DIR} ${FEELPP_DIR}/include/feelpp/toolboxes)
+#find_library( FEELPP_FSI feelpp_toolbox_fsi_lib HINTS ${FEELPP_DIR}/lib)
+#target_link_libraries( _fsi PRIVATE ${FEELPP_FSI}  ${FEELPP_LIBRARIES} )
+install(FILES  __init__.py fluid.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/fsi)

@@ -43,6 +43,11 @@ else()
   set(FEELPP_DIR ${CMAKE_INSTALL_PREFIX})
 endif()
 
+if ( FEELPP_HAS_PYTHON )
+  message(STATUS "[feelpp-toolboxes] python module path:${FEELPP_PYTHON_MODULE_PATH}")
+endif()
+
+
 option( FEELPP_ENABLE_ASCIIDOCTOR "Enable AsciiDoctor Support" ${FEELPP_ENABLE_PACKAGE_DEFAULT_OPTION} )
 
 if ( FEELPP_ENABLE_ASCIIDOCTOR )

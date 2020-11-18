@@ -1581,7 +1581,20 @@ Environment::doOptions( int argc, char** argv,
     }
 }
 
-
+void
+Environment::setConfigFile( std::string const& cfgfile )
+{
+    if ( !fs::exists( cfgfile ) ) return;
+    fs::path cfgAbsolutePath = fs::absolute( cfgfile );
+    cout << tc::green << "Reading " << cfgAbsolutePath.string() << "..." << tc::reset << std::endl;
+    // LOG( INFO ) << "Reading " << cfgfile << "...";
+    S_cfgdir = cfgAbsolutePath.parent_path();
+    std::ifstream ifs( cfgAbsolutePath.string().c_str() );
+    std::istringstream iss( readFromFile( cfgAbsolutePath.string() ) );
+    po::store( parse_config_file( ifs, *S_desc, true ), S_vm );
+    S_configFiles.push_back( std::make_tuple( cfgAbsolutePath.string(), std::forward<std::istringstream>( iss ) ) );
+    po::notify( S_vm );
+}
 bool
 Environment::initialized()
 {

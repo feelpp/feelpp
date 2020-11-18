@@ -1,4 +1,4 @@
-import online
+import feelpp.mor.online
 online.initOnline()
 p=online.loadPlugin('heat3d')
 D=p.parameterSpace()

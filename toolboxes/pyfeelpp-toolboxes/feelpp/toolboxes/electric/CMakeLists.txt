@@ -21,14 +21,6 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-cmake_minimum_required(VERSION 3.3)
-project(toolboxes-electric)
-
-
-pybind11_add_module(_electric  electric.cpp)
-target_link_libraries( _electric PRIVATE Feelpp::feelpp_toolbox_electric_lib )
-
-
-install(TARGETS _electric DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric)
+feelpp_add_pymodule(electric SRCS electric.cpp DESTINATION feelpp/toolboxes/electric LINK_LIBRARIES Feelpp::feelpp_toolbox_electric_lib)
 install(FILES  __init__.py electric.py DESTINATION ${FEELPP_PYTHON_MODULE_PATH}/feelpp/toolboxes/electric)
 

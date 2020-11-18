@@ -23,8 +23,12 @@ def run( m, geo ):
     assert m3==m2d
 
     u=Xh.element()
-    u.on(range=feelpp.elements(m2d),expr=feelpp.expr("x:x"))
 
+    u.on(range=feelpp.elements(m2d),expr=feelpp.expr("x:x"))
+    w=(2*u-u)-u
+    l2_w=feelpp.normL2(range=feelpp.elements(m2d),expr=w)
+    print("norm(w)",l2_w)
+    assert abs(l2_w) < 1e-12
     assert u.functionSpace() == Xh
     assert u.size() == Xh.nDof()
 

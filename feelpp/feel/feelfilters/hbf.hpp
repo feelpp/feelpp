@@ -97,16 +97,21 @@ std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::string con
 /**
  * Given a std::ifstream, read the header and return the sizes of the HBF and the type of data
  */
-std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::ifstream& in );
+std::tuple<int32_t, int32_t, std::string> readHBFHeaderAndSizes( std::istream& in );
 
 /**
  * @brief read an HBF file containing an array of floats
  * @param s file name
  * @return eigen array of type T
  */
-template <typename T>
-holo3_image<T>
-readHBF( std::string const& s );
+template <typename T> holo3_image<T> readHBF( std::string const& s );
+
+/**
+ * @brief read an HBF stream containing an array of floats
+ * @param s hbf stream
+ * @return eigen array of type T
+ */
+template <typename T> holo3_image<T> readHBF( std::istream& s );
 
 /**
  * @brief write a HBF file containing an array of floats
@@ -114,9 +119,16 @@ readHBF( std::string const& s );
  * @param s file name
  * @param x eigen array of type T
  */
-template <typename T>
-void
-writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc = Environment::worldCommPtr() );
+template <typename T> void writeHBF( std::string const& s, holo3_image<T> const& x, worldcomm_ptr_t wc = Environment::worldCommPtr() );
+
+/**
+ * @brief write a HBF stream containing an array of floats
+ *
+ * @param s stream to write the hbf to
+ * @param x eigen array of type T
+ */
+template <typename T> void writeHBF( std::ostream& s, holo3_image<T> const& x );
+
 
 holo3_image<float> cutHbf ( holo3_image<float> const& im, int n, int start );
 

@@ -90,7 +90,6 @@ int main( int argc, char** argv )
         return 0;
     }
     nl::json partconfig;
-    Feel::cout << "reading partitioner configuration: " << ( fs::current_path() / soption("json") ) << std::endl;
     if ( Environment::vm().count("json") && fs::exists( fs::current_path() / soption("json") ) )
     {
         Feel::cout << "reading partitioner configuration: " << ( fs::current_path() / soption("json") ) << std::endl;
