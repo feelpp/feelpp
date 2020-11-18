@@ -75,8 +75,8 @@ PYBIND11_MODULE(_modelcore, m )
 
         // info
         .def("filenameSaveInfo", &ModelBase::filenameSaveInfo, "return the filename where model info are saved")
-        .def("printInfo", &ModelBase::printInfo, "print model info")
-        .def("saveInfo", &ModelBase::saveInfo, "save model info")
+        .def("printInfo", py::overload_cast<>(&ModelBase::printInfo,py::const_), "print model info")
+        .def("saveInfo", py::overload_cast<>(&ModelBase::saveInfo,py::const_), "save model info")
         .def("printAndSaveInfo", &ModelBase::printAndSaveInfo, "print and save model info")
         ;
 
