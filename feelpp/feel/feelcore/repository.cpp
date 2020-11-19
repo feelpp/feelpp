@@ -90,13 +90,13 @@ Repository::configure()
     // read config file in root_/.feelppconfig then try $HOME/.feelppconfig
     if ( fs::exists( root_/".feelppconfig" ) )
     {
-        std::ifstream i(root_/".feelppconfig");
+        std::ifstream i((root_/".feelppconfig").string());
         i >> config_.data;
     }
     else if ( config_.location != Location::global && fs::exists( global_root_.parent_path()/".feelppconfig" ) )
     {
         Feel::cout << "[feelpp] reading config " << this->globalRoot().parent_path()/".feelppconfig" << std::endl;
-        std::ifstream i(this->globalRoot().parent_path()/".feelppconfig");
+        std::ifstream i((this->globalRoot().parent_path()/".feelppconfig").string());
         i >> config_.data;
 
     }
