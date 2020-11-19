@@ -76,7 +76,7 @@
 #if defined(FEELPP_HAS_HARTS)
 #include <hwloc.h>
 #endif
-
+#include <feel/feelcore/repository.hpp>
 #include <feel/feelcore/journalmanager.hpp>
 #include <feel/feelhwsys/hwsys.hpp>
 
@@ -226,18 +226,34 @@ public:
      */
     Environment( int& argc, char** &argv );
 
+    /**
+     * @brief Construct a new Environment object
+     * 
+     * @param argc number of command line aguments
+     * @param argv command line aguments
+     * @param lvl level of threading in MPI 
+     * @param desc command line options for application
+     * @param desc_lib command line options for library
+     * @param about about data structure
+     * @param config configuration of the repository of the resut&lts
+     */
     Environment( int argc, char** argv,
-#if BOOST_VERSION >= 105500
                  mpi::threading::level lvl,
-#endif
                  po::options_description const& desc,
                  po::options_description const& desc_lib,
                  AboutData const& about,
-                 std::string directory,
-                 bool add_subdir_np = true );
+                 Repository::Config const& config );
 
 #if defined(FEELPP_ENABLE_PYTHON_WRAPPING)
-    Environment( pybind11::list arg, po::options_description const& desc );
+    /**
+     * @brief Construct a new Environment object
+     * 
+     * @param arg sys arg
+     * @param desc description of the options
+     * @param directory directory to save the results
+     * @param chdir change directory to FEELPP_REPOSITORY or stay in current directory
+     */
+    Environment( pybind11::list arg, po::options_description const& desc, Repository::Config const& config );
     Environment( pybind11::list arg );
 #endif
 
@@ -253,8 +269,7 @@ public:
                      args[_desc|feel_nooptions()],
                      args[_desc_lib | feel_options()],
                      args[_about| makeAboutDefault( args[_argv][0] )],
-                     args[_directory|args[_about| makeAboutDefault( args[_argv][0] )].appName()],
-                     args[_subdir| true ] )
+                     args[_config|globalRepository(makeAboutDefault( args[_argv][0] ).appName())] )
         {}
 #if BOOST_VERSION >= 105500
     BOOST_PARAMETER_CONSTRUCTOR(
@@ -267,8 +282,7 @@ public:
           ( desc_lib,* )
           ( about,* )
           ( threading,(mpi::threading::level) )
-          ( directory,( std::string ) )
-          ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
+          ( config,( Repository::Config ) )
           ) ) // no semicolon
 #else
     BOOST_PARAMETER_CONSTRUCTOR(
@@ -281,6 +295,7 @@ public:
           ( desc_lib,* )
           ( about,* )
           ( directory,( std::string ) )
+          ( chdir,*( boost::is_convertible<mpl::_,bool> ) )
           ( subdir,*( boost::is_convertible<mpl::_,bool> ) )
           ) ) // no semicolon
 #endif
@@ -908,6 +923,7 @@ private:
 
     static std::vector<fs::path> S_paths;
 
+    inline static Repository S_repository = unknownRepository();
     static fs::path S_rootdir;
     static fs::path S_appdir;
     static fs::path S_appdirWithoutNumProc;
